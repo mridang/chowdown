@@ -5,16 +5,31 @@ opened straight from Google Drive. Pure static page: Google Identity Services +
 Google Picker + [`@cooklang/cooklang-ts`](https://github.com/cooklang/cooklang-ts),
 all client-side. No server, no secrets.
 
-## Run locally
+## Run locally (HTTPS on the dev domain)
+
+`chowdown.dev.mrida.ng` is a loopback domain (resolves to `127.0.0.1`). We serve
+over real TLS so the origin matches production. Google's OAuth only accepts
+`http://` for `localhost`; any other host must be `https://`, hence the cert.
+
+One-time CA trust (needs your password / keychain):
 
 ```sh
-python3 -m http.server 8123 --directory .
-# open http://localhost:8123
+mkcert -install   # trust the local CA; certs already generated in certs/
 ```
 
-- `http://localhost:8123/?demo` — render the bundled sample (no Google needed).
+Then run the dev server (port 8443 — binding 443 needs root):
+
+```sh
+node server.mjs
+# open https://chowdown.dev.mrida.ng:8443
+```
+
+- `https://chowdown.dev.mrida.ng:8443/?demo` — render the bundled sample (no Google needed).
 - **Open local .cook** button — preview any local file (no Google needed).
 - **Open from Drive** — needs the Google setup below.
+
+Certs live in `certs/` (gitignored), generated with
+`mkcert chowdown.dev.mrida.ng`.
 
 ## Google Cloud setup (one-time, no app review needed)
 
@@ -38,11 +53,12 @@ Marketplace**. It's a private app used only by your own account.
 4. **OAuth client ID** — *APIs & Services → Credentials → Create credentials →
    OAuth client ID*:
    - Type **Web application**.
-   - *Authorized JavaScript origins*: `http://localhost:8123` (add your deployed
-     origin later too).
+   - *Authorized JavaScript origins*: `https://chowdown.dev.mrida.ng:8443` (dev)
+     and `https://chowdown.app.mrida.ng` (prod).
    - Copy the **Client ID**.
 5. **API key** — *Create credentials → API key*:
-   - *Application restrictions* → **HTTP referrers**, add `http://localhost:8123/*`.
+   - *Application restrictions* → **HTTP referrers**, add
+     `https://chowdown.dev.mrida.ng:8443/*` and `https://chowdown.app.mrida.ng/*`.
    - *API restrictions* → restrict to **Google Picker API**.
    - Copy the **API key**.
 6. **(Optional) project number** — the Cloud Console dashboard shows a *Project

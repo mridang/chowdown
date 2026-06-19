@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "chowdown",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8000", "--directory", "/Users/mridang/Code/chowdown"],
-      "port": 8000
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["/Users/mridang/Code/chowdown/server.mjs"],
+      "port": 8443
     }
   ]
 }
