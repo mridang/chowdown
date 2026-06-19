@@ -5,7 +5,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:https": "next dev --experimental-https --experimental-https-key ./certs/chowdown.dev.mrida.ng-key.pem --experimental-https-cert ./certs/chowdown.dev.mrida.ng.pem -H chowdown.dev.mrida.ng -p 443",
     "build": "next build",
     "start": "next start",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv",
