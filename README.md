@@ -17,14 +17,17 @@ One-time CA trust (needs your password / keychain):
 mkcert -install   # trust the local CA; certs already generated in certs/
 ```
 
-Then run the dev server (port 8443 — binding 443 needs root):
+Then run the dev server. Port 443 is privileged, so it needs `sudo`:
 
 ```sh
-node server.mjs
-# open https://chowdown.dev.mrida.ng:8443
+sudo node server.mjs
+# open https://chowdown.dev.mrida.ng
 ```
 
-- `https://chowdown.dev.mrida.ng:8443/?demo` — render the bundled sample (no Google needed).
+Prefer no sudo? Run `PORT=8443 node server.mjs` and use
+`https://chowdown.dev.mrida.ng:8443` (register that origin in Google too).
+
+- `https://chowdown.dev.mrida.ng/?demo` — render the bundled sample (no Google needed).
 - **Open local .cook** button — preview any local file (no Google needed).
 - **Open from Drive** — needs the Google setup below.
 
@@ -53,12 +56,12 @@ Marketplace**. It's a private app used only by your own account.
 4. **OAuth client ID** — *APIs & Services → Credentials → Create credentials →
    OAuth client ID*:
    - Type **Web application**.
-   - *Authorized JavaScript origins*: `https://chowdown.dev.mrida.ng:8443` (dev)
+   - *Authorized JavaScript origins*: `https://chowdown.dev.mrida.ng` (dev)
      and `https://chowdown.app.mrida.ng` (prod).
    - Copy the **Client ID**.
 5. **API key** — *Create credentials → API key*:
    - *Application restrictions* → **HTTP referrers**, add
-     `https://chowdown.dev.mrida.ng:8443/*` and `https://chowdown.app.mrida.ng/*`.
+     `https://chowdown.dev.mrida.ng/*` and `https://chowdown.app.mrida.ng/*`.
    - *API restrictions* → restrict to **Google Picker API**.
    - Copy the **API key**.
 6. **(Optional) project number** — the Cloud Console dashboard shows a *Project

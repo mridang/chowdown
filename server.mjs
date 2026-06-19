@@ -2,9 +2,10 @@
 // Serves the project over TLS so the origin matches production
 // (https://chowdown.dev.mrida.ng). Run: node server.mjs
 //
-// Port 8443 is used because binding 443 needs root on macOS. The dev domain
-// resolves to 127.0.0.1 (loopback), so https://chowdown.dev.mrida.ng:8443
-// reaches this server. Certs come from mkcert (see README).
+// Defaults to port 443 (run with sudo). The dev domain resolves to 127.0.0.1
+// (loopback), so https://chowdown.dev.mrida.ng reaches this server. For a
+// no-sudo run, set PORT=8443 (origin then needs the :8443 suffix in Google).
+// Certs come from mkcert (see README).
 
 import { createServer } from "node:https";
 import { readFile } from "node:fs/promises";
@@ -13,7 +14,7 @@ import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL(".", import.meta.url));
-const PORT = Number(process.env.PORT) || 8443;
+const PORT = Number(process.env.PORT) || 443;
 const HOST = "chowdown.dev.mrida.ng";
 
 const TYPES = {
@@ -54,5 +55,6 @@ createServer({ cert, key }, (req, res) => {
     res.writeHead(404, { "content-type": "text/plain" }).end("Not found");
   });
 }).listen(PORT, () => {
-  console.log(`chowdown serving https://${HOST}:${PORT}`);
+  const suffix = PORT === 443 ? "" : `:${PORT}`;
+  console.log(`chowdown serving https://${HOST}${suffix}`);
 });

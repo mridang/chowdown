@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "chowdown",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["/Users/mridang/Code/chowdown/server.mjs"],
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "PORT=8443 exec node /Users/mridang/Code/chowdown/server.mjs"],
       "port": 8443
     }
   ]
