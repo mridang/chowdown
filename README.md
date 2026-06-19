@@ -1,92 +1,70 @@
-# 🍳 Chowdown
+# 🍳 chowdown
 
-A zero-backend viewer for [Cooklang](https://cooklang.org) `.cook` recipe files,
-opened straight from Google Drive. Pure static page: Google Identity Services +
-Google Picker + [`@cooklang/cooklang-ts`](https://github.com/cooklang/cooklang-ts),
-all client-side. No server, no secrets.
+A viewer for [Cooklang](https://cooklang.org) `.cook` recipe files, opened
+straight from Google Drive. Built as a Next.js app on Cloudflare (OpenNext) —
+the same stack and conventions as [`scenery`](https://github.com/mridang/scenery).
 
-## Run locally (HTTPS on the dev domain)
+The recipe rendering and the Google Drive Picker run entirely client-side; the
+Cloudflare Worker just serves the app. A minimal D1/Drizzle layer is wired in
+for future persistence (open history) but the viewer works without it.
 
-`chowdown.dev.mrida.ng` is a loopback domain (resolves to `127.0.0.1`). We serve
-over real TLS so the origin matches production. Google's OAuth only accepts
-`http://` for `localhost`; any other host must be `https://`, hence the cert.
+## Stack
 
-One-time CA trust (needs your password / keychain):
+- **Next.js 16** (App Router) + **React 19**, **Tailwind 4**
+- **Cloudflare Workers** via **OpenNext** (`@opennextjs/cloudflare`)
+- **D1** + **Drizzle** (minimal `recipes` table)
+- **devbox** (Node 24), **Jest**, **Cypress**, `@mridang/eslint-defaults`
+- **[`@cooklang/cooklang-ts`](https://github.com/cooklang/cooklang-ts)** for parsing
+
+## Develop
+
+All commands go through devbox (pins Node 24):
 
 ```sh
-mkcert -install   # trust the local CA; certs already generated in certs/
+devbox run dev        # next dev on http://localhost:3737
+devbox run test       # jest
+devbox run lint       # eslint
+devbox run check      # test + build + lint
+devbox run migrate    # apply D1 migrations locally
 ```
 
-Then run the dev server. Port 443 is privileged, so it needs `sudo`:
+Try the renderer with no Google setup:
+
+- http://localhost:3737/?demo — render the bundled sample
+- the **Open local .cook** button — open any file off disk
+
+## Google Drive setup (no app review needed)
+
+Only the **`drive.file`** scope is used (non-sensitive), so there is **no Google
+verification** and nothing is published to the Marketplace — a private app used
+by your own account.
+
+1. Enable **Google Drive API** and **Google Picker API** in a Google Cloud project.
+2. **OAuth consent screen**: External, add the `.../auth/drive.file` scope, add
+   your Gmail as a test user (or publish to production — still review-free).
+3. **OAuth client ID** (Web application) → Authorized JavaScript origins:
+   - `http://localhost:3737` (dev — Google allows http only for localhost)
+   - `https://chowdown.apps.mrida.ng` (prod)
+4. **API key** → restrict to HTTP referrers (`http://localhost:3737/*`,
+   `https://chowdown.apps.mrida.ng/*`) and the Picker API.
+
+Put the values in `.env.local` (gitignored; public by design):
 
 ```sh
-sudo node server.mjs
-# open https://chowdown.dev.mrida.ng
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=....apps.googleusercontent.com
+NEXT_PUBLIC_GOOGLE_API_KEY=AIzaSy....
+NEXT_PUBLIC_GOOGLE_APP_ID=123456789012   # Cloud project number
 ```
 
-Prefer no sudo? Run `PORT=8443 node server.mjs` and use
-`https://chowdown.dev.mrida.ng:8443` (register that origin in Google too).
-
-- `https://chowdown.dev.mrida.ng/?demo` — render the bundled sample (no Google needed).
-- **Open local .cook** button — preview any local file (no Google needed).
-- **Open from Drive** — needs the Google setup below.
-
-Certs live in `certs/` (gitignored), generated with
-`mkcert chowdown.dev.mrida.ng`.
-
-## Google Cloud setup (one-time, no app review needed)
-
-Because we only use the **`drive.file`** scope (non-sensitive), there is **no
-Google verification/security review** and **nothing is published to the
-Marketplace**. It's a private app used only by your own account.
-
-1. **Create a project** — https://console.cloud.google.com → project picker →
-   *New Project* → name it `Chowdown`.
-2. **Enable two APIs** — *APIs & Services → Library*, enable:
-   - **Google Drive API**
-   - **Google Picker API**
-3. **OAuth consent screen** — *APIs & Services → OAuth consent screen*:
-   - User type **External** → Create.
-   - App name `Chowdown`, your email for support + developer contact.
-   - *Scopes* → Add → `.../auth/drive.file`.
-   - *Test users* → add your own Gmail address.
-   - Leave publishing status on **Testing** (tokens re-consent every 7 days), or
-     click **Publish app** → status **In production** to stop that — with only
-     `drive.file` this still needs **no review**.
-4. **OAuth client ID** — *APIs & Services → Credentials → Create credentials →
-   OAuth client ID*:
-   - Type **Web application**.
-   - *Authorized JavaScript origins*: `https://chowdown.dev.mrida.ng` (dev)
-     and `https://chowdown.app.mrida.ng` (prod).
-   - Copy the **Client ID**.
-5. **API key** — *Create credentials → API key*:
-   - *Application restrictions* → **HTTP referrers**, add
-     `https://chowdown.dev.mrida.ng/*` and `https://chowdown.app.mrida.ng/*`.
-   - *API restrictions* → restrict to **Google Picker API**.
-   - Copy the **API key**.
-6. **(Optional) project number** — the Cloud Console dashboard shows a *Project
-   number*. Setting it as `APP_ID` improves `drive.file` picker behaviour.
-
-Paste the three values into [`config.js`](./config.js):
-
-```js
-export const CLIENT_ID = "....apps.googleusercontent.com";
-export const API_KEY   = "AIzaSy....";
-export const APP_ID    = "123456789012"; // optional
-```
-
-Reload `http://localhost:8123`, click **Open from Drive**, pick a `.cook` file.
-
-## Later: the native "Open with" entry (optional)
-
-This build opens a file *from inside the app*. If you want `.cook` files in
-Drive to show **Open with → Chowdown** on right-click, register the app with the
-**Google Workspace Marketplace SDK** and publish it **Unlisted**. With
-`drive.file` that's still review-free; the app code barely changes (Drive passes
-a `state` param with the file id instead of using the Picker).
+These are inlined into the client bundle at build time, so the same values must
+be present in the deploy environment for the production build.
 
 ## Deploy
 
-Any static host. For Cloudflare Pages: point it at this directory, no build
-command. Then add the deployed origin to the OAuth client's authorized origins
-and the API key's referrer list.
+```sh
+wrangler d1 create chowdown-db   # paste the id into wrangler.jsonc
+devbox run deploy                # opennextjs-cloudflare build && wrangler deploy
+```
+
+The custom domain `chowdown.apps.mrida.ng` requires the `apps.mrida.ng` zone on
+the Cloudflare account.

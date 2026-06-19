@@ -1,0 +1,41 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "chowdown",
+  "main": "src/worker.ts",
+  "account_id": "779037e608ab1102679ef8b1bd499d49",
+  "compatibility_date": "2026-05-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Cloudflare auto-routes the Worker to the colo closest to D1
+  // (avoids the worst-case ~70 ms hop). Free on all plans.
+  "placement": { "mode": "smart" },
+  // Full Workers Observability: logs, metrics, invocation traces — all
+  // sampled at 100% (the volume is tiny, the data is gold for debugging).
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+    },
+  },
+  // Custom domain — the workers.dev subdomain is disabled so the
+  // canonical URL is the one we control. The apps.mrida.ng zone must be
+  // attached to this Cloudflare account for the custom_domain bind to
+  // succeed.
+  "workers_dev": false,
+  "routes": [{ "pattern": "chowdown.apps.mrida.ng", "custom_domain": true }],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "chowdown-db",
+      // Create with `wrangler d1 create chowdown-db` and paste the id here.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations",
+    },
+  ],
+}
