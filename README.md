@@ -28,6 +28,19 @@ devbox run check      # test + build + lint
 devbox run migrate    # apply D1 migrations locally
 ```
 
+To dev against the real domain over HTTPS (mirrors prod, valid OAuth origin),
+trust the mkcert CA once, then run Next's HTTPS dev on port 443 (needs root):
+
+```sh
+mkcert -install                            # once — trusts the local CA
+devbox shell                               # enter the Node 24 env
+sudo env "PATH=$PATH" npm run dev:https     # https://chowdown.dev.mrida.ng
+```
+
+The cert is in `certs/` (gitignored), generated with
+`mkcert chowdown.dev.mrida.ng`. The domain is a loopback (resolves to
+127.0.0.1). Add `https://chowdown.dev.mrida.ng` to the OAuth origins for this.
+
 Try the renderer with no Google setup:
 
 - http://localhost:3737/?demo — render the bundled sample
