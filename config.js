@@ -5,9 +5,10 @@
 //
 // Fill these in after the Google Cloud setup (see README.md).
 
-export const CLIENT_ID = ""; // e.g. "1234567890-abc123.apps.googleusercontent.com"
-export const API_KEY = ""; // e.g. "AIzaSy..."
+export const CLIENT_ID =
+  "434845710067-trna13m2kv17970atnnb7p1pbtba5pc7.apps.googleusercontent.com";
+export const API_KEY = "AIzaSyCMURpY9CODwV5aoZwW1j-oEmyBukslSYU";
 
 // Optional but recommended for the drive.file scope: your Cloud project NUMBER
 // (not the project ID). Found on the Cloud Console dashboard. Leave "" if unsure.
-export const APP_ID = "";
+export const APP_ID = "434845710067";
