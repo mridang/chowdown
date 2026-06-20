@@ -28,10 +28,31 @@ devbox run check      # test + build + lint
 devbox run migrate    # apply D1 migrations locally
 ```
 
-Google OAuth allows `http://localhost` with no certificate, so local dev needs
-no TLS setup — just add `http://localhost:3737` to the OAuth client's authorized
-origins. For a public HTTPS URL on the real domain, deploy (below) or use
-`devbox run tunnel` (cloudflared).
+### Dev on the real domain (https://chowdown.dev.mrida.ng)
+
+`chowdown.dev.mrida.ng` is a loopback domain (resolves to 127.0.0.1). To serve
+the app there over HTTPS on port 443, with a self-signed cert (no mkcert, no CA
+installed):
+
+```sh
+npm run cert:dev                              # once — generates certs/ (gitignored)
+sudo env "PATH=$PATH" npm run dev:https        # binds 443 (privileged → sudo)
+```
+
+Then in Chrome: clear HSTS once at `chrome://net-internals/#hsts` (delete
+`mrida.ng` — it inherits HSTS, which otherwise blocks the cert click-through),
+open https://chowdown.dev.mrida.ng, and **Advanced → Proceed** past the
+self-signed warning. Add `https://chowdown.dev.mrida.ng` to the OAuth origins
+for Drive to work there.
+
+> Passing the cert explicitly is what stops `--experimental-https` from
+> downloading mkcert and installing a CA.
+
+### Dev on localhost (simplest)
+
+`http://localhost:3737` needs no cert at all — Google OAuth allows http for
+localhost. Just `devbox run dev` and add `http://localhost:3737` to the OAuth
+origins.
 
 Try the renderer with no Google setup:
 
