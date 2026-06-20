@@ -33,6 +33,12 @@ export interface PickedFile {
   name: string;
 }
 
+/** A file listed from a Drive folder. */
+export interface DriveFile {
+  id: string;
+  name: string;
+}
+
 const loaded = new Set<string>();
 
 function loadScript(src: string): Promise<void> {
@@ -123,4 +129,98 @@ export async function fetchDriveFile(
     throw new Error(`Drive returned ${response.status}`);
   }
   return response.text();
+}
+
+/**
+ * Show the Picker in folder mode; resolve with the chosen folder, or null
+ * if cancelled. Under `drive.file`, selecting a folder grants the app
+ * access to that folder and the files inside it.
+ */
+export function pickFolder(accessToken: string): Promise<PickedFile | null> {
+  return new Promise((resolve) => {
+    const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
+      .setSelectFolderEnabled(true)
+      .setMimeTypes('application/vnd.google-apps.folder');
+
+    const builder = new google.picker.PickerBuilder()
+      .setDeveloperKey(GOOGLE_CONFIG.apiKey)
+      .setOAuthToken(accessToken)
+      .addView(view)
+      .setCallback((data) => {
+        if (data.action === google.picker.Action.PICKED) {
+          const doc = data.docs[0];
+          resolve(doc ? { id: doc.id, name: doc.name } : null);
+        } else if (data.action === google.picker.Action.CANCEL) {
+          resolve(null);
+        }
+      });
+
+    if (GOOGLE_CONFIG.appId) {
+      builder.setAppId(GOOGLE_CONFIG.appId);
+    }
+    builder.build().setVisible(true);
+  });
+}
+
+/** List the `.cook` files directly inside a Drive folder. */
+export async function listFolderRecipes(
+  folderId: string,
+  accessToken: string,
+): Promise<DriveFile[]> {
+  const query = `'${folderId}' in parents and trashed = false`;
+  const params = new URLSearchParams({
+    q: query,
+    fields: 'files(id,name)',
+    pageSize: '200',
+    orderBy: 'name',
+  });
+  const response = await fetch(
+    `https://www.googleapis.com/drive/v3/files?${params.toString()}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  if (!response.ok) {
+    throw new Error(`Drive returned ${response.status}`);
+  }
+  const data = (await response.json()) as { files?: DriveFile[] };
+  return (data.files ?? []).filter((file) => file.name.endsWith('.cook'));
+}
+
+/** Create a new `.cook` file inside a folder. Returns the created file. */
+export async function createRecipe(
+  folderId: string,
+  name: string,
+  content: string,
+  accessToken: string,
+): Promise<DriveFile> {
+  const filename = name.endsWith('.cook') ? name : `${name}.cook`;
+  const boundary = 'chowdown-boundary';
+  const metadata = {
+    name: filename,
+    mimeType: 'text/plain',
+    parents: [folderId],
+  };
+  const body =
+    `--${boundary}\r\n` +
+    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+    `${JSON.stringify(metadata)}\r\n` +
+    `--${boundary}\r\n` +
+    'Content-Type: text/plain; charset=UTF-8\r\n\r\n' +
+    `${content}\r\n` +
+    `--${boundary}--`;
+
+  const response = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': `multipart/related; boundary=${boundary}`,
+      },
+      body,
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`Drive returned ${response.status}`);
+  }
+  return (await response.json()) as DriveFile;
 }

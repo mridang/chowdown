@@ -33,6 +33,7 @@ declare global {
   namespace google.picker {
     enum ViewId {
       DOCS = 'docs',
+      FOLDERS = 'folders',
     }
 
     enum DocsViewMode {
