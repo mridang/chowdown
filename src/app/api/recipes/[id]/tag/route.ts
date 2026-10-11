@@ -12,9 +12,7 @@
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser, getUserAccessToken } from '@/lib/auth/current-user';
-import { upsertMetadata } from '@/lib/recipe/cook-text';
-import { parseRecipe } from '@/lib/recipe/cooklang';
-import { suggestTags } from '@/lib/recipe/tagging';
+import { tagCookSource } from '@/lib/recipe/tagging';
 import { getFileContent, updateRecipeFile } from '@/lib/drive/drive-client';
 import { getEnv } from '@/lib/util';
 
@@ -29,13 +27,12 @@ export async function POST(
   const { id } = await params;
   const accessToken = await getUserAccessToken(user);
   try {
-    const source = await getFileContent(id, accessToken);
-    const tags = await suggestTags(parseRecipe(source, 'recipe.cook'), getEnv());
+    const original = await getFileContent(id, accessToken);
+    const { source, tags } = await tagCookSource(original, 'recipe.cook', getEnv());
     if (tags.length === 0) {
       return NextResponse.json({ tagged: false, tags: [] });
     }
-    const updated = upsertMetadata(source, tags);
-    await updateRecipeFile(id, updated, accessToken);
+    await updateRecipeFile(id, source, accessToken);
     return NextResponse.json({ tagged: true, tags });
   } catch {
     return NextResponse.json({ error: 'not found' }, { status: 404 });

@@ -20,6 +20,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { parseRecipe } from '@/lib/recipe/cooklang';
 import { planImport, type ImportUnit } from '@/lib/recipe/import-blob';
+import { tagCookSource } from '@/lib/recipe/tagging';
 import { convertToCooklang } from '@/lib/recipe/to-cooklang';
 import { getEnv } from '@/lib/util';
 
@@ -59,17 +60,19 @@ async function prepareUnit(
   env: CloudflareEnv,
 ): Promise<ImportDraft> {
   try {
-    if (unit.kind === 'url') {
-      const html = await fetchPage(unit.url);
-      const cook = await convertToCooklang(html, env, { sourceUrl: unit.url });
-      return {
-        title: parseRecipe(cook, 'Imported Recipe').title,
-        cook,
-        source: unit.url,
-      };
-    }
-    const cook = await convertToCooklang(unit.text, env);
-    return { title: parseRecipe(cook, 'Imported Recipe').title, cook };
+    const raw =
+      unit.kind === 'url'
+        ? await convertToCooklang(await fetchPage(unit.url), env, {
+            sourceUrl: unit.url,
+          })
+        : await convertToCooklang(unit.text, env);
+    // Auto-tag the draft so imported recipes arrive ready to filter by facet.
+    const { source: cook } = await tagCookSource(raw, 'Imported Recipe', env);
+    return {
+      title: parseRecipe(cook, 'Imported Recipe').title,
+      cook,
+      source: unit.kind === 'url' ? unit.url : undefined,
+    };
   } catch (err) {
     const where = unit.kind === 'url' ? unit.url : 'pasted text';
     return {

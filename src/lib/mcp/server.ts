@@ -31,12 +31,11 @@ import {
   isUncurated,
   recipeDisplayName,
   uncuratedFilename,
-  upsertMetadata,
 } from '../recipe/cook-text';
 import { parseRecipe } from '../recipe/cooklang';
 import { embedText } from '../recipe/embeddings';
 import { ensureEmbeddings, topSimilar } from '../recipe/similar';
-import { suggestTags } from '../recipe/tagging';
+import { tagCookSource } from '../recipe/tagging';
 import { convertToCooklang } from '../recipe/to-cooklang';
 import { convertRecipe, isUnitSystem, type UnitSystem } from '../recipe/units';
 import { getDatabase, getEnv } from '../util';
@@ -655,14 +654,17 @@ async function callTool(
       if (!file) {
         return text(`No recipe found matching "${args['recipe']}".`);
       }
-      const source = await getFileContent(file.id, token);
-      const tags = await suggestTags(parseRecipe(source, file.name), getEnv());
+      const original = await getFileContent(file.id, token);
+      const { source: updated, tags } = await tagCookSource(
+        original,
+        file.name,
+        getEnv(),
+      );
       if (tags.length === 0) {
         return text(
           `Couldn't confidently tag "${recipeDisplayName(file.name)}".`,
         );
       }
-      const updated = upsertMetadata(source, tags);
       await updateRecipeFile(file.id, updated, token);
       return recipeCardResult(
         file.id,

@@ -11,7 +11,8 @@
  * shape the recipe page and facet filter read back.
  */
 
-import type { ParsedRecipe } from './cooklang';
+import { upsertMetadata } from './cook-text';
+import { parseRecipe, type ParsedRecipe } from './cooklang';
 import { buildEmbeddingText } from './embeddings';
 import { FACETS, validateTags } from './taxonomy';
 
@@ -83,4 +84,23 @@ export async function suggestTags(
     return [];
   }
   return validateTags(proposed);
+}
+
+/**
+ * Tag a `.cook` source in place: classify it and merge the validated tags into
+ * its metadata, returning the updated source and the tags applied. Returns the
+ * source unchanged (and `tags: []`) when nothing could be confidently tagged,
+ * so it's always safe to call. Shared by `tag_recipe`, the tag API, and the
+ * import flow so they all tag identically.
+ */
+export async function tagCookSource(
+  source: string,
+  filename: string,
+  env: CloudflareEnv,
+): Promise<{ source: string; tags: [string, string][] }> {
+  const tags = await suggestTags(parseRecipe(source, filename), env);
+  if (tags.length === 0) {
+    return { source, tags: [] };
+  }
+  return { source: upsertMetadata(source, tags), tags };
 }
