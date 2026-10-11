@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 
+import { AddRecipes } from './add-recipes';
+
 /** A recipe as summarised by the list API. */
 interface RecipeSummary {
   id: string;
@@ -40,6 +42,7 @@ export function RecipeApp({
   const [recipes, setRecipes] = useState<RecipeSummary[]>(initialRecipes);
   const [query, setQuery] = useState('');
   const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [newName, setNewName] = useState('');
   const [newContent, setNewContent] = useState(STARTER);
   const [busy, setBusy] = useState(false);
@@ -124,8 +127,21 @@ export function RecipeApp({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setCreating(true)}
+            onClick={() => {
+              setImporting(true);
+              setCreating(false);
+            }}
             className="rounded-md bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-amber-700"
+          >
+            Add recipes
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCreating(true);
+              setImporting(false);
+            }}
+            className="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition hover:bg-slate-50"
           >
             + New recipe
           </button>
@@ -192,7 +208,12 @@ export function RecipeApp({
         </aside>
 
         <section className="min-w-0">
-          {creating ? (
+          {importing ? (
+            <AddRecipes
+              onClose={() => setImporting(false)}
+              onSaved={() => void load()}
+            />
+          ) : creating ? (
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <h2 className="text-sm font-semibold text-slate-900">New recipe</h2>
               <input
