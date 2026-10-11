@@ -19,6 +19,7 @@ import { ensureEmbeddings, topSimilar } from '@/lib/recipe/similar';
 import { getDatabase } from '@/lib/util';
 
 import { HeartButton } from './_components/heart-button';
+import { TagButton } from './_components/tag-button';
 
 /** Canonical origin — mirrors `SITE_URL` in the root layout. */
 const SITE_URL = 'https://chowdown.apps.mrida.ng';
@@ -146,7 +147,10 @@ export default async function RecipePage({
         >
           ← All recipes
         </Link>
-        <HeartButton recipeId={id} initial={favourited} />
+        <div className="flex items-center gap-2">
+          <TagButton recipeId={id} />
+          <HeartButton recipeId={id} initial={favourited} />
+        </div>
       </nav>
 
       <RecipeView recipe={data.recipe} />

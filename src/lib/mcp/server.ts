@@ -30,10 +30,12 @@ import {
   isUncurated,
   recipeDisplayName,
   uncuratedFilename,
+  upsertMetadata,
 } from '../recipe/cook-text';
 import { parseRecipe } from '../recipe/cooklang';
 import { embedText } from '../recipe/embeddings';
 import { ensureEmbeddings, topSimilar } from '../recipe/similar';
+import { suggestTags } from '../recipe/tagging';
 import { convertToCooklang } from '../recipe/to-cooklang';
 import { convertRecipe, isUnitSystem, type UnitSystem } from '../recipe/units';
 import { getDatabase, getEnv } from '../util';
@@ -156,6 +158,8 @@ const CARD_META_KEYS = new Set([
   'category',
   'difficulty',
   'diet',
+  'protein',
+  'method',
 ]);
 
 /**
@@ -398,6 +402,20 @@ const TOOLS = [
       required: ['recipe'],
     },
   },
+  {
+    name: 'tag_recipe',
+    description:
+      "Auto-tag a recipe: classify it by protein, cuisine, course, diet, difficulty, method and keywords and write those tags onto the recipe. Call this when the user asks to tag, categorise or organise a recipe.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        recipe: { type: 'string', description: 'Name of the recipe to tag.' },
+      },
+      required: ['recipe'],
+    },
+    outputSchema: RECIPE_CARD_OUTPUT_SCHEMA,
+    _meta: CARD_TOOL_META,
+  },
 ] as const;
 
 /** Resolve a fresh Drive token and the user's Recipes folder id. */
@@ -605,6 +623,29 @@ async function callTool(
         on
           ? `Added "${label}" to your favourites.`
           : `Removed "${label}" from your favourites.`,
+      );
+    }
+    case 'tag_recipe': {
+      const files = await listRecipeFiles(folderId, token);
+      const file = matchFile(files, String(args['recipe'] ?? ''));
+      if (!file) {
+        return text(`No recipe found matching "${args['recipe']}".`);
+      }
+      const source = await getFileContent(file.id, token);
+      const tags = await suggestTags(parseRecipe(source, file.name), getEnv());
+      if (tags.length === 0) {
+        return text(
+          `Couldn't confidently tag "${recipeDisplayName(file.name)}".`,
+        );
+      }
+      const updated = upsertMetadata(source, tags);
+      await updateRecipeFile(file.id, updated, token);
+      return recipeCardResult(
+        file.id,
+        file.name,
+        updated,
+        `Tagged "${recipeDisplayName(file.name)}".`,
+        system,
       );
     }
     default:

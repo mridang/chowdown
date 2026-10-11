@@ -111,6 +111,64 @@ export function buildStubSource(input: {
   return `${lines.join('\n')}\n`;
 }
 
+/**
+ * Insert or update `>> key: value` metadata lines, non-destructively. An
+ * existing line for a key (case-insensitive) is rewritten in place; new keys
+ * are inserted just after the last metadata line at the top of the file, so the
+ * metadata block stays together and the method below is untouched. Like the
+ * rest of this module, it's text surgery — it never round-trips through the
+ * parser, so comments, ordering and the cooking log all survive.
+ *
+ * @param source - The `.cook` source.
+ * @param pairs - `[key, value]` metadata to set (one line each).
+ */
+export function upsertMetadata(
+  source: string,
+  pairs: [string, string][],
+): string {
+  const lines = source.split(/\r?\n/);
+  const applied = new Set<string>();
+  const byLowerKey = new Map(
+    pairs.map(([k, v]) => [k.trim().toLowerCase(), { k: k.trim(), v }]),
+  );
+
+  // Rewrite existing metadata lines in place.
+  for (let i = 0; i < lines.length; i++) {
+    const m = /^>>\s*([^:]+):\s*(.*)$/.exec(lines[i]!);
+    if (!m) {
+      continue;
+    }
+    const lk = m[1]!.trim().toLowerCase();
+    const entry = byLowerKey.get(lk);
+    if (entry && !applied.has(lk)) {
+      lines[i] = `>> ${entry.k}: ${entry.v}`;
+      applied.add(lk);
+    }
+  }
+
+  // Insert the keys that weren't already present.
+  const toInsert = pairs
+    .filter(([k]) => !applied.has(k.trim().toLowerCase()))
+    .map(([k, v]) => `>> ${k.trim()}: ${v}`);
+  if (toInsert.length > 0) {
+    let lastMeta = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (/^>>/.test(lines[i]!)) {
+        lastMeta = i;
+        continue;
+      }
+      if (lines[i]!.trim() === '') {
+        continue;
+      }
+      break;
+    }
+    lines.splice(lastMeta + 1, 0, ...toInsert);
+  }
+
+  const out = lines.join('\n');
+  return out.endsWith('\n') ? out : `${out}\n`;
+}
+
 /** A single dated cooking-log entry parsed back out of a `.cook` file. */
 export interface CookingLogEntry {
   date: string;
