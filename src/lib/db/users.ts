@@ -75,7 +75,10 @@ export async function upsertUser(
 }
 
 /** Fetch a user by primary key. */
-export async function getUserById(db: Database, id: number): Promise<User | undefined> {
+export async function getUserById(
+  db: Database,
+  id: number,
+): Promise<User | undefined> {
   return db.query.users.findFirst({ where: eq(users.id, id) });
 }
 

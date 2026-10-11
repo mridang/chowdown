@@ -82,6 +82,9 @@ export async function getRecipeByFileId(
   driveFileId: string,
 ): Promise<Recipe | undefined> {
   return db.query.recipes.findFirst({
-    where: and(eq(recipes.user_id, userId), eq(recipes.drive_file_id, driveFileId)),
+    where: and(
+      eq(recipes.user_id, userId),
+      eq(recipes.drive_file_id, driveFileId),
+    ),
   });
 }

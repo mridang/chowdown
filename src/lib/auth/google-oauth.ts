@@ -86,7 +86,9 @@ export async function exchangeCode(params: {
     body,
   });
   if (!response.ok) {
-    throw new Error(`Token exchange failed: ${response.status} ${await response.text()}`);
+    throw new Error(
+      `Token exchange failed: ${response.status} ${await response.text()}`,
+    );
   }
   return (await response.json()) as TokenResponse;
 }
@@ -112,9 +114,14 @@ export async function refreshAccessToken(params: {
     body,
   });
   if (!response.ok) {
-    throw new Error(`Token refresh failed: ${response.status} ${await response.text()}`);
+    throw new Error(
+      `Token refresh failed: ${response.status} ${await response.text()}`,
+    );
   }
-  return (await response.json()) as { access_token: string; expires_in: number };
+  return (await response.json()) as {
+    access_token: string;
+    expires_in: number;
+  };
 }
 
 /** Fetch the signed-in user's identity from the OpenID userinfo endpoint. */

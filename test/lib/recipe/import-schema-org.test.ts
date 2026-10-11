@@ -32,9 +32,9 @@ describe('parseIngredientLine', () => {
   });
 
   it('renders Cooklang tokens', () => {
-    expect(toCookIngredient({ quantity: '200', unit: 'g', name: 'flour' })).toBe(
-      '@flour{200%g}',
-    );
+    expect(
+      toCookIngredient({ quantity: '200', unit: 'g', name: 'flour' }),
+    ).toBe('@flour{200%g}');
     expect(toCookIngredient({ quantity: '2', name: 'eggs' })).toBe('@eggs{2}');
     expect(toCookIngredient({ name: 'salt to taste' })).toBe(
       '@salt to taste{}',
@@ -122,7 +122,9 @@ describe('schemaOrgToCook', () => {
     expect(out).toContain('>> prep: 15 min');
     expect(out).toContain('>> author: Asma Khan');
     expect(out).toContain('>> published: 2024-06-01');
-    expect(out).toContain('>> images: https://ex.com/a.jpg, https://ex.com/b.jpg');
+    expect(out).toContain(
+      '>> images: https://ex.com/a.jpg, https://ex.com/b.jpg',
+    );
     expect(out).toContain('>> video: https://ex.com/v.mp4');
   });
 
