@@ -1,5 +1,6 @@
 import type { Note } from '@/lib/recipe/cook-text';
 import type { ParsedRecipe, StepToken } from '@/lib/recipe/cooklang';
+import { MEDIA_META_KEYS } from '@/lib/recipe/media';
 
 /** A small amber note chip shown beside an ingredient or step. */
 function NoteChip({ text }: { text: string }) {
@@ -63,6 +64,10 @@ export function RecipeView({
   const stepNotes = (oneBased: number) =>
     notes.filter((n) => n.scope === 'step' && n.key === String(oneBased));
   const generalNotes = notes.filter((n) => n.scope === 'general');
+  // Media (image/video URLs) renders as a gallery, not as raw metadata text.
+  const metaRow = recipe.metadata.filter(
+    ([key]) => !MEDIA_META_KEYS.has(key.toLowerCase()),
+  );
 
   return (
     <article className="mt-6">
@@ -70,9 +75,9 @@ export function RecipeView({
         {recipe.title}
       </h1>
 
-      {recipe.metadata.length > 0 ? (
+      {metaRow.length > 0 ? (
         <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-slate-500">
-          {recipe.metadata.map(([key, value]) => (
+          {metaRow.map(([key, value]) => (
             <span key={key}>
               <span className="font-semibold text-slate-600 capitalize">
                 {key}

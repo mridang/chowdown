@@ -2,11 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
+import { RecipeGallery } from '@/components/recipe-gallery';
 import { RecipeView } from '@/components/recipe-view';
 import { getCurrentUser, getUserAccessToken } from '@/lib/auth/current-user';
 import { isFavourite } from '@/lib/db/favourites';
 import { setRecipesFolderId } from '@/lib/db/users';
 import { extractNotes, type Note } from '@/lib/recipe/cook-text';
+import { extractMedia } from '@/lib/recipe/media';
 import {
   ensureRecipesFolder,
   getFileContent,
@@ -162,6 +164,8 @@ export default async function RecipePage({
           <HeartButton recipeId={id} initial={favourited} />
         </div>
       </nav>
+
+      <RecipeGallery media={extractMedia(data.recipe)} />
 
       <RecipeView recipe={data.recipe} notes={data.notes} />
 

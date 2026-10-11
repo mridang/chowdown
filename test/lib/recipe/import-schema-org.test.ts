@@ -122,7 +122,7 @@ describe('schemaOrgToCook', () => {
     expect(out).toContain('>> prep: 15 min');
     expect(out).toContain('>> author: Asma Khan');
     expect(out).toContain('>> published: 2024-06-01');
-    expect(out).toContain('>> images: https://ex.com/a.jpg, https://ex.com/b.jpg');
+    expect(out).toContain('>> images: https://ex.com/a.jpg https://ex.com/b.jpg');
     expect(out).toContain('>> video: https://ex.com/v.mp4');
   });
 

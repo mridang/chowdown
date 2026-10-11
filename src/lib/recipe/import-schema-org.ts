@@ -296,9 +296,11 @@ export function schemaOrgToCook(
   add('source', sourceUrl ?? firstString(recipe['url']));
 
   // Media references (may be mirrored to R2/Images/Stream for permanence later).
+  // Space-separated: image URLs can contain commas (e.g. `?resize=440,400`) but
+  // never spaces, so whitespace is a safe delimiter (see media.ts).
   const images = imageUrls(recipe['image']);
   if (images.length) {
-    add('images', images.join(', '));
+    add('images', images.join(' '));
   }
   add('video', videoUrl(recipe['video']));
 
