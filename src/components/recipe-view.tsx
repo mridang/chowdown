@@ -1,4 +1,14 @@
+import type { Note } from '@/lib/recipe/cook-text';
 import type { ParsedRecipe, StepToken } from '@/lib/recipe/cooklang';
+
+/** A small amber note chip shown beside an ingredient or step. */
+function NoteChip({ text }: { text: string }) {
+  return (
+    <span className="mt-1 block rounded-md bg-amber-50 px-2 py-1 text-[12px] text-amber-800">
+      <span className="font-semibold">Note</span> {text}
+    </span>
+  );
+}
 
 /** Render a single step token: plain text or a coloured highlight chip. */
 function Token({ token }: { token: StepToken }) {
@@ -30,7 +40,30 @@ function Token({ token }: { token: StepToken }) {
 }
 
 /** The full recipe: metadata, an ingredients/cookware panel, and the method. */
-export function RecipeView({ recipe }: { recipe: ParsedRecipe }) {
+export function RecipeView({
+  recipe,
+  notes = [],
+}: {
+  recipe: ParsedRecipe;
+  /** Personal annotations to show inline and in a Notes section. */
+  notes?: Note[];
+}) {
+  const ingredientNotes = (name: string) => {
+    const lower = name.toLowerCase();
+    return notes.filter((n) => {
+      if (n.scope !== 'ingredient') {
+        return false;
+      }
+      const key = n.key.toLowerCase();
+      // Tolerant match: exact, or either name contains the other, so a note on
+      // "lime" lands on "lime juice" (and an app note's exact name still works).
+      return key === lower || lower.includes(key) || key.includes(lower);
+    });
+  };
+  const stepNotes = (oneBased: number) =>
+    notes.filter((n) => n.scope === 'step' && n.key === String(oneBased));
+  const generalNotes = notes.filter((n) => n.scope === 'general');
+
   return (
     <article className="mt-6">
       <h1 className="text-3xl font-bold tracking-tight text-slate-900">
@@ -58,19 +91,27 @@ export function RecipeView({ recipe }: { recipe: ParsedRecipe }) {
                 Ingredients
               </h2>
               <ul className="flex flex-col">
-                {recipe.ingredients.map((ing, idx) => (
-                  <li
-                    key={`${ing.name}-${idx}`}
-                    className="flex justify-between gap-3 border-b border-slate-100 py-1.5 last:border-0"
-                  >
-                    <span>{ing.name}</span>
-                    {ing.quantity ? (
-                      <span className="whitespace-nowrap text-slate-500">
-                        {ing.quantity}
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
+                {recipe.ingredients.map((ing, idx) => {
+                  const ingNotes = ingredientNotes(ing.name);
+                  return (
+                    <li
+                      key={`${ing.name}-${idx}`}
+                      className="border-b border-slate-100 py-1.5 last:border-0"
+                    >
+                      <div className="flex justify-between gap-3">
+                        <span>{ing.name}</span>
+                        {ing.quantity ? (
+                          <span className="whitespace-nowrap text-slate-500">
+                            {ing.quantity}
+                          </span>
+                        ) : null}
+                      </div>
+                      {ingNotes.map((n, ni) => (
+                        <NoteChip key={ni} text={n.text} />
+                      ))}
+                    </li>
+                  );
+                })}
               </ul>
             </>
           ) : null}
@@ -102,14 +143,37 @@ export function RecipeView({ recipe }: { recipe: ParsedRecipe }) {
                 <span className="grid h-7 w-7 flex-none place-items-center rounded-full bg-amber-600 text-sm font-bold text-white">
                   {idx + 1}
                 </span>
-                <p className="leading-relaxed">
-                  {step.map((token, ti) => (
-                    <Token key={ti} token={token} />
+                <div className="min-w-0">
+                  <p className="leading-relaxed">
+                    {step.map((token, ti) => (
+                      <Token key={ti} token={token} />
+                    ))}
+                  </p>
+                  {stepNotes(idx + 1).map((n, ni) => (
+                    <NoteChip key={ni} text={n.text} />
                   ))}
-                </p>
+                </div>
               </li>
             ))}
           </ol>
+
+          {generalNotes.length > 0 ? (
+            <div className="mt-6 border-t border-slate-100 pt-4">
+              <h2 className="mb-2 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                Notes
+              </h2>
+              <ul className="flex flex-col gap-1.5">
+                {generalNotes.map((n, ni) => (
+                  <li
+                    key={ni}
+                    className="rounded-md bg-amber-50 px-3 py-1.5 text-[13px] text-amber-800"
+                  >
+                    {n.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </section>
       </div>
     </article>

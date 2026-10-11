@@ -25,6 +25,7 @@ import {
 } from '../drive/drive-client';
 import {
   appendCookingLog,
+  appendNote,
   buildStubSource,
   extractCookingLogs,
   isUncurated,
@@ -416,6 +417,29 @@ const TOOLS = [
     outputSchema: RECIPE_CARD_OUTPUT_SCHEMA,
     _meta: CARD_TOOL_META,
   },
+  {
+    name: 'annotate_recipe',
+    description:
+      "Add a personal note to a recipe without changing the original. Attach it to an ingredient (pass `ingredient`), to a step (pass `step` number), or leave both out for a general note. Use this when the user wants to remember a tweak, e.g. 'use 3 avocados instead of 2' or 'marinate overnight'.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        recipe: { type: 'string', description: 'Name of the recipe to annotate.' },
+        note: { type: 'string', description: 'The note text.' },
+        ingredient: {
+          type: 'string',
+          description: 'Attach the note to this ingredient (by name).',
+        },
+        step: {
+          type: 'number',
+          description: 'Attach the note to this step (1-based number).',
+        },
+      },
+      required: ['recipe', 'note'],
+    },
+    outputSchema: RECIPE_CARD_OUTPUT_SCHEMA,
+    _meta: CARD_TOOL_META,
+  },
 ] as const;
 
 /** Resolve a fresh Drive token and the user's Recipes folder id. */
@@ -645,6 +669,48 @@ async function callTool(
         file.name,
         updated,
         `Tagged "${recipeDisplayName(file.name)}".`,
+        system,
+      );
+    }
+    case 'annotate_recipe': {
+      const files = await listRecipeFiles(folderId, token);
+      const file = matchFile(files, String(args['recipe'] ?? ''));
+      if (!file) {
+        return text(`No recipe found matching "${args['recipe']}".`);
+      }
+      const noteText = String(args['note'] ?? '').trim();
+      if (!noteText) {
+        return { ...text('What note should I add?'), isError: true };
+      }
+      const ingredient = args['ingredient']
+        ? String(args['ingredient']).trim()
+        : '';
+      const stepArg = args['step'];
+      const scope: 'general' | 'ingredient' | 'step' = ingredient
+        ? 'ingredient'
+        : stepArg != null
+          ? 'step'
+          : 'general';
+      const key =
+        scope === 'ingredient'
+          ? ingredient
+          : scope === 'step'
+            ? String(stepArg)
+            : '';
+      const source = await getFileContent(file.id, token);
+      const updated = appendNote(source, { scope, key, text: noteText });
+      await updateRecipeFile(file.id, updated, token);
+      const where =
+        scope === 'ingredient'
+          ? ` on ${ingredient}`
+          : scope === 'step'
+            ? ` on step ${stepArg}`
+            : '';
+      return recipeCardResult(
+        file.id,
+        file.name,
+        updated,
+        `Added your note${where} to "${recipeDisplayName(file.name)}".`,
         system,
       );
     }

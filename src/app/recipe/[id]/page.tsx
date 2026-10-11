@@ -6,6 +6,7 @@ import { RecipeView } from '@/components/recipe-view';
 import { getCurrentUser, getUserAccessToken } from '@/lib/auth/current-user';
 import { isFavourite } from '@/lib/db/favourites';
 import { setRecipesFolderId } from '@/lib/db/users';
+import { extractNotes, type Note } from '@/lib/recipe/cook-text';
 import {
   ensureRecipesFolder,
   getFileContent,
@@ -18,6 +19,7 @@ import { recipeToJsonLd } from '@/lib/recipe/schema-org';
 import { ensureEmbeddings, topSimilar } from '@/lib/recipe/similar';
 import { getDatabase } from '@/lib/util';
 
+import { AddNote } from './_components/add-note';
 import { HeartButton } from './_components/heart-button';
 import { TagButton } from './_components/tag-button';
 
@@ -55,6 +57,7 @@ async function requireDriveContext(): Promise<{
 interface RecipePageData {
   file: DriveFile;
   recipe: ParsedRecipe;
+  notes: Note[];
   files: DriveFile[];
   user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
   token: string;
@@ -73,7 +76,14 @@ async function loadRecipe(id: string): Promise<RecipePageData | null> {
     return null;
   }
   const source = await getFileContent(file.id, token);
-  return { file, recipe: parseRecipe(source, file.name), files, user: user!, token };
+  return {
+    file,
+    recipe: parseRecipe(source, file.name),
+    notes: extractNotes(source),
+    files,
+    user: user!,
+    token,
+  };
 }
 
 /** Compute the "find similar" row for a recipe, server-side. */
@@ -153,7 +163,14 @@ export default async function RecipePage({
         </div>
       </nav>
 
-      <RecipeView recipe={data.recipe} />
+      <RecipeView recipe={data.recipe} notes={data.notes} />
+
+      <div className="mt-6">
+        <AddNote
+          recipeId={id}
+          ingredients={data.recipe.ingredients.map((i) => i.name)}
+        />
+      </div>
 
       {similar.length > 0 ? (
         <section className="mt-10">

@@ -169,6 +169,54 @@ export function upsertMetadata(
   return out.endsWith('\n') ? out : `${out}\n`;
 }
 
+/**
+ * A personal annotation attached to a recipe. Notes are additive and never
+ * touch the original method: they're stored as Cooklang comment lines so the
+ * recipe the user imported stays verbatim, while their own amendments ("use 3
+ * avocados", "marinate overnight") accrue alongside it.
+ *
+ *   - `scope: 'ingredient'` — shown next to the matching ingredient (`key` is
+ *     the ingredient name).
+ *   - `scope: 'step'` — shown next to the step (`key` is the 1-based number).
+ *   - `scope: 'general'` — a free note shown in a Notes section.
+ */
+export interface Note {
+  scope: 'general' | 'ingredient' | 'step';
+  /** Ingredient name or step number; empty for a general note. */
+  key: string;
+  text: string;
+}
+
+/** Matches a note comment: `-- [note]`, `-- [note ingredient:x]`, `-- [note step:2]`. */
+const NOTE_LINE = /^-- \[note(?:\s+(ingredient|step):([^\]]+))?\]\s*(.*)$/;
+
+/**
+ * Append a personal note to a recipe's source, non-destructively. The text is
+ * flattened to one line (so it stays a valid Cooklang comment) and a trailing
+ * newline is ensured. The original method is never modified.
+ */
+export function appendNote(source: string, note: Note): string {
+  const flat = note.text.replace(/\s*\r?\n\s*/g, ' ').trim();
+  const target =
+    note.scope === 'general' ? '' : ` ${note.scope}:${note.key.trim()}`;
+  const base = source.endsWith('\n') ? source : `${source}\n`;
+  return `${base}-- [note${target}] ${flat}\n`;
+}
+
+/** Extract all personal notes from a recipe's source, in file order. */
+export function extractNotes(source: string): Note[] {
+  const notes: Note[] = [];
+  for (const line of source.split(/\r?\n/)) {
+    const m = NOTE_LINE.exec(line);
+    if (!m) {
+      continue;
+    }
+    const scope = (m[1] as 'ingredient' | 'step' | undefined) ?? 'general';
+    notes.push({ scope, key: (m[2] ?? '').trim(), text: m[3]!.trim() });
+  }
+  return notes;
+}
+
 /** A single dated cooking-log entry parsed back out of a `.cook` file. */
 export interface CookingLogEntry {
   date: string;
