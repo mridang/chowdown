@@ -8,6 +8,7 @@ import type { FacetView } from '@/lib/recipe/facet-filter';
 
 import { AddRecipes } from './add-recipes';
 import { FilterControls } from './filter-controls';
+import { WhatToEat } from './what-to-eat';
 
 /** A recipe as summarised for the list. */
 interface RecipeSummary {
@@ -227,9 +228,7 @@ export function RecipeApp({
               </div>
             </div>
           ) : (
-            <p className="mt-16 text-center text-slate-400">
-              Pick a recipe, filter by the facets on the left, or add new ones.
-            </p>
+            <WhatToEat />
           )}
         </section>
       </div>
