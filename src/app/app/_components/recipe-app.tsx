@@ -1,9 +1,8 @@
 'use client';
 
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
-
-import { RecipeView } from '@/components/recipe-view';
-import { parseRecipe, type ParsedRecipe } from '@/lib/recipe/cooklang';
 
 /** A recipe as summarised by the list API. */
 interface RecipeSummary {
@@ -37,10 +36,9 @@ export function RecipeApp({
   /** Recipes loaded on the server so the list is present in the SSR HTML. */
   initialRecipes: RecipeSummary[];
 }) {
+  const router = useRouter();
   const [recipes, setRecipes] = useState<RecipeSummary[]>(initialRecipes);
   const [query, setQuery] = useState('');
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [recipe, setRecipe] = useState<ParsedRecipe | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [newContent, setNewContent] = useState(STARTER);
@@ -70,25 +68,6 @@ export function RecipeApp({
   // No fetch-on-mount: the list is server-rendered and seeded via props, so
   // there's no loading flash. `load()` is only used to refresh after a create.
 
-  const open = useCallback(async (item: RecipeSummary) => {
-    setBusy(true);
-    setError(null);
-    setCreating(false);
-    try {
-      const res = await fetch(`/api/recipes/${item.id}`);
-      if (!res.ok) {
-        throw new Error(String(res.status));
-      }
-      const { source } = (await res.json()) as { source: string };
-      setActiveId(item.id);
-      setRecipe(parseRecipe(source, item.name));
-    } catch {
-      setError('Could not open that recipe.');
-    } finally {
-      setBusy(false);
-    }
-  }, []);
-
   const create = useCallback(async () => {
     if (!newName.trim()) {
       return;
@@ -109,14 +88,14 @@ export function RecipeApp({
       setNewName('');
       setNewContent(STARTER);
       await load();
-      setActiveId(created.id);
-      setRecipe(parseRecipe(newContent, created.name));
+      // Land on the new recipe's server-rendered page.
+      router.push(`/recipe/${created.id}`);
     } catch {
       setError('Could not save the recipe.');
     } finally {
       setBusy(false);
     }
-  }, [newName, newContent, load]);
+  }, [newName, newContent, load, router]);
 
   const copyMcp = useCallback(() => {
     void navigator.clipboard?.writeText(mcpUrl).then(() => {
@@ -145,11 +124,7 @@ export function RecipeApp({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => {
-              setCreating(true);
-              setRecipe(null);
-              setActiveId(null);
-            }}
+            onClick={() => setCreating(true)}
             className="rounded-md bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-amber-700"
           >
             + New recipe
@@ -199,15 +174,9 @@ export function RecipeApp({
             ) : (
               filtered.map((item) => (
                 <li key={item.id}>
-                  <button
-                    type="button"
-                    onClick={() => open(item)}
-                    disabled={busy}
-                    className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm transition hover:bg-slate-50 disabled:opacity-50 ${
-                      item.id === activeId
-                        ? 'bg-amber-50 font-semibold text-amber-800'
-                        : 'text-slate-700'
-                    }`}
+                  <Link
+                    href={`/recipe/${item.id}`}
+                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-slate-700 transition hover:bg-slate-50"
                   >
                     <span className="min-w-0 flex-1 truncate">{item.display}</span>
                     {item.uncurated ? (
@@ -215,7 +184,7 @@ export function RecipeApp({
                         idea
                       </span>
                     ) : null}
-                  </button>
+                  </Link>
                 </li>
               ))
             )}
@@ -257,8 +226,6 @@ export function RecipeApp({
                 </button>
               </div>
             </div>
-          ) : recipe ? (
-            <RecipeView recipe={recipe} />
           ) : (
             <p className="mt-16 text-center text-slate-400">
               Pick a recipe, or create a new one.
