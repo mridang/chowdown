@@ -1,0 +1,112 @@
+/**
+ * @packageDocumentation
+ *
+ * Repository for the `users` table: the per-account record created on first
+ * Google sign-in. Holds identity, the sealed Drive refresh token, the id of
+ * the app-managed Recipes folder, and the unguessable `mcp_token` that forms
+ * the user's personal MCP link.
+ */
+
+import { eq } from 'drizzle-orm';
+
+import type { Database } from './client';
+import { users } from './schema';
+
+/** A full user row. */
+export type User = typeof users.$inferSelect;
+
+/** Current time as an ISO-8601 string (the format every timestamp column uses). */
+function now(): string {
+  return new Date().toISOString();
+}
+
+/** Generate a high-entropy, URL-safe token (32 bytes, hex) for the MCP link. */
+export function generateMcpToken(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Insert the user on first sign-in, or refresh their identity fields on
+ * return. `google_sub` is the stable key. The `mcp_token` is minted once and
+ * preserved across logins; the refresh token is only overwritten when a new
+ * one is supplied (Google omits it on silent re-grants).
+ */
+export async function upsertUser(
+  db: Database,
+  input: {
+    google_sub: string;
+    email: string;
+    name?: string;
+    picture?: string;
+    refresh_token_enc?: string;
+  },
+): Promise<User> {
+  const timestamp = now();
+  const update: Partial<typeof users.$inferInsert> = {
+    email: input.email,
+    updated_at: timestamp,
+  };
+  if (input.name !== undefined) {
+    update.name = input.name;
+  }
+  if (input.picture !== undefined) {
+    update.picture = input.picture;
+  }
+  if (input.refresh_token_enc !== undefined) {
+    update.refresh_token_enc = input.refresh_token_enc;
+  }
+
+  const [row] = await db
+    .insert(users)
+    .values({
+      google_sub: input.google_sub,
+      email: input.email,
+      name: input.name ?? null,
+      picture: input.picture ?? null,
+      refresh_token_enc: input.refresh_token_enc ?? null,
+      mcp_token: generateMcpToken(),
+      created_at: timestamp,
+      updated_at: timestamp,
+    })
+    .onConflictDoUpdate({ target: users.google_sub, set: update })
+    .returning();
+  return row!;
+}
+
+/** Fetch a user by primary key. */
+export async function getUserById(db: Database, id: number): Promise<User | undefined> {
+  return db.query.users.findFirst({ where: eq(users.id, id) });
+}
+
+/** Fetch a user by their MCP token (the key the MCP endpoint authenticates on). */
+export async function getUserByMcpToken(
+  db: Database,
+  token: string,
+): Promise<User | undefined> {
+  return db.query.users.findFirst({ where: eq(users.mcp_token, token) });
+}
+
+/** Store the user's preferred measurement system ('metric' | 'us' | 'imperial'). */
+export async function setUserUnits(
+  db: Database,
+  userId: number,
+  units: string,
+): Promise<void> {
+  await db
+    .update(users)
+    .set({ units, updated_at: now() })
+    .where(eq(users.id, userId));
+}
+
+/** Store the id of the user's app-managed Recipes folder. */
+export async function setRecipesFolderId(
+  db: Database,
+  userId: number,
+  folderId: string,
+): Promise<void> {
+  await db
+    .update(users)
+    .set({ recipes_folder_id: folderId, updated_at: now() })
+    .where(eq(users.id, userId));
+}

@@ -9,6 +9,8 @@
         "cloudflared tunnel --no-autoupdate --url http://localhost:3737"
       ],
       "migrate": ["npx wrangler d1 migrations apply chowdown-db --local"],
+      "login": ["npx wrangler login"],
+      "d1-create": ["npx wrangler d1 create chowdown-db"],
       "build": ["npm run build"],
       "test": ["npm test"],
       "lint": ["npx eslint ."],

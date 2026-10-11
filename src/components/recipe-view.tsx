@@ -1,4 +1,4 @@
-import type { ParsedRecipe, StepToken } from '../_lib/cooklang';
+import type { ParsedRecipe, StepToken } from '@/lib/recipe/cooklang';
 
 /** Render a single step token: plain text or a coloured highlight chip. */
 function Token({ token }: { token: StepToken }) {

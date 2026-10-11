@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "next dev",
     "dev:https": "next dev --experimental-https --experimental-https-key ./certs/chowdown.dev.mrida.ng-key.pem --experimental-https-cert ./certs/chowdown.dev.mrida.ng.pem -H chowdown.dev.mrida.ng -p 443",
-    "build": "next build",
+    "build:views": "node scripts/build-views.mjs",
+    "build": "node scripts/build-views.mjs && next build",
     "start": "next start",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv",
     "cert:dev": "mkdir -p certs && openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/chowdown.dev.mrida.ng-key.pem -out certs/chowdown.dev.mrida.ng.pem -days 825 -subj '/CN=chowdown.dev.mrida.ng' -addext 'subjectAltName=DNS:chowdown.dev.mrida.ng'",
@@ -25,6 +26,8 @@
   },
   "dependencies": {
     "@cooklang/cooklang-ts": "^1.1.2",
+    "@modelcontextprotocol/ext-apps": "^2.0.3",
+    "@modelcontextprotocol/server": "^2.3.1",
     "@opennextjs/cloudflare": "^1.19.11",
     "drizzle-orm": "^0.45.2",
     "next": "16.2.7",
@@ -41,6 +44,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "cypress": "^14.5.4",
+    "esbuild": "^0.28.2",
     "eslint": "^9.39.4",
     "eslint-plugin-drizzle": "^0.2.3",
     "jest": "^30.0.3",

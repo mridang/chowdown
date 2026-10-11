@@ -29,12 +29,18 @@
     "binding": "ASSETS",
     "directory": ".open-next/assets",
   },
+  // Workers AI — used server-side to convert fetched recipe content into
+  // Cooklang under our control (the client passes raw page text/HTML, never
+  // the Cooklang itself). Free daily allocation covers hobby volume.
+  "ai": {
+    "binding": "AI",
+  },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "chowdown-db",
       // Create with `wrangler d1 create chowdown-db` and paste the id here.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "a671876a-08e1-4e34-8ee5-9bd6222169cc",
       "migrations_dir": "migrations",
     },
   ],

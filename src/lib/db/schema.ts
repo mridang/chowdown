@@ -10,20 +10,62 @@
  * in sync when adding a migration (it matches the live D1 exactly).
  */
 
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 /**
- * A recipe the user has opened through the app. Cached by its Drive file
- * id so re-opening is instant and recent recipes can be listed without a
- * round-trip to Drive. The viewer itself is client-side and works without
- * this table; it exists for future persistence (history, sharing).
+ * One row per signed-in Google account. `google_sub` is Google's stable,
+ * opaque user id (the OpenID `sub` claim) — the real identity key, since an
+ * email can be reassigned but `sub` never changes.
+ *
+ * `refresh_token_enc` holds the user's Drive OAuth refresh token, encrypted
+ * at rest (AES-GCM, key held only as a Worker secret). It is what lets the
+ * app act on the user's Drive — writing new recipes, re-reading edits —
+ * without the user being present. `recipes_folder_id` is the Drive id of the
+ * "Recipes" folder chowdown created in the user's Drive and shared with the
+ * service account. `mcp_token` is the high-entropy secret embedded in the
+ * user's unique MCP link (`/api/mcp/<mcp_token>`); possession of the link is
+ * what authorizes access to that user's recipes.
  */
-export const recipes = sqliteTable('recipes', {
+export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  drive_file_id: text('drive_file_id').notNull().unique(),
-  name: text('name').notNull(),
-  title: text('title'),
-  source: text('source').notNull(),
-  first_opened_at: text('first_opened_at').notNull(),
-  last_opened_at: text('last_opened_at').notNull(),
+  google_sub: text('google_sub').notNull().unique(),
+  email: text('email').notNull(),
+  name: text('name'),
+  picture: text('picture'),
+  refresh_token_enc: text('refresh_token_enc'),
+  recipes_folder_id: text('recipes_folder_id'),
+  /** Preferred measurement system: 'metric' | 'us' | 'imperial' | null. */
+  units: text('units'),
+  mcp_token: text('mcp_token').notNull().unique(),
+  created_at: text('created_at').notNull(),
+  updated_at: text('updated_at').notNull(),
 });
+
+/**
+ * A recipe cached from the user's Drive "Recipes" folder, keyed by its Drive
+ * file id. Drive is the source of truth; this table is a read cache so the
+ * recipe list renders instantly and the headless MCP endpoint can answer
+ * without a live Drive round-trip.
+ *
+ * `modified_time` mirrors Drive's `modifiedTime` and drives incremental
+ * re-sync: a folder scan re-fetches only files whose Drive time is newer than
+ * the cached one. `parse_error` is set when the `.cook` file fails to parse,
+ * so a corrupted recipe surfaces as "couldn't parse" instead of being dropped
+ * or breaking the list.
+ */
+export const recipes = sqliteTable(
+  'recipes',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    user_id: integer('user_id').references(() => users.id),
+    drive_file_id: text('drive_file_id').notNull().unique(),
+    name: text('name').notNull(),
+    title: text('title'),
+    source: text('source').notNull(),
+    modified_time: text('modified_time'),
+    parse_error: text('parse_error'),
+    first_opened_at: text('first_opened_at').notNull(),
+    last_opened_at: text('last_opened_at').notNull(),
+  },
+  (table) => [index('idx_recipes_user_id').on(table.user_id)],
+);
