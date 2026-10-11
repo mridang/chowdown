@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { RecipeView } from '@/components/recipe-view';
 import { parseRecipe, type ParsedRecipe } from '@/lib/recipe/cooklang';
@@ -30,11 +30,14 @@ Add @your ingredient{1} to a #pan{} and cook for ~{5%minutes}.
 export function RecipeApp({
   userName,
   mcpToken,
+  initialRecipes,
 }: {
   userName: string;
   mcpToken: string;
+  /** Recipes loaded on the server so the list is present in the SSR HTML. */
+  initialRecipes: RecipeSummary[];
 }) {
-  const [recipes, setRecipes] = useState<RecipeSummary[]>([]);
+  const [recipes, setRecipes] = useState<RecipeSummary[]>(initialRecipes);
   const [query, setQuery] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
   const [recipe, setRecipe] = useState<ParsedRecipe | null>(null);
@@ -64,9 +67,8 @@ export function RecipeApp({
     setRecipes(data.recipes);
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  // No fetch-on-mount: the list is server-rendered and seeded via props, so
+  // there's no loading flash. `load()` is only used to refresh after a create.
 
   const open = useCallback(async (item: RecipeSummary) => {
     setBusy(true);

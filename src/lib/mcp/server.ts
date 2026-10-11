@@ -144,9 +144,22 @@ const RECIPE_LIST_OUTPUT_SCHEMA = {
   },
 } as const;
 
+/** Metadata keys worth showing in the card's meta row (the rest stay in the file). */
+const CARD_META_KEYS = new Set([
+  'servings',
+  'prep',
+  'time',
+  'cuisine',
+  'category',
+  'difficulty',
+  'diet',
+]);
+
 /**
  * Build the card `structuredContent` for a recipe file, converting quantities
- * to the user's preferred measurement system when one is set.
+ * to the user's preferred measurement system when one is set. The visible meta
+ * row is filtered to the useful facets; provenance/media/keywords stay in the
+ * file but aren't dumped into the card.
  */
 export function buildRecipeCardData(
   id: string,
@@ -159,6 +172,9 @@ export function buildRecipeCardData(
   const sourceMeta = recipe.metadata.find(([key]) => key === 'source')?.[1];
   return {
     ...recipe,
+    metadata: recipe.metadata.filter(([key]) =>
+      CARD_META_KEYS.has(key.toLowerCase()),
+    ),
     id,
     uncurated: isUncurated(filename),
     source: sourceMeta,
