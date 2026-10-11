@@ -25,25 +25,60 @@ export function isUnitSystem(value: string): value is UnitSystem {
 
 /** Mass units → grams. */
 const MASS_TO_G: Record<string, number> = {
-  g: 1, gram: 1, grams: 1, kg: 1000, kgs: 1000, mg: 0.001,
-  oz: 28.3495, ounce: 28.3495, ounces: 28.3495,
-  lb: 453.592, lbs: 453.592, pound: 453.592, pounds: 453.592,
+  g: 1,
+  gram: 1,
+  grams: 1,
+  kg: 1000,
+  kgs: 1000,
+  mg: 0.001,
+  oz: 28.3495,
+  ounce: 28.3495,
+  ounces: 28.3495,
+  lb: 453.592,
+  lbs: 453.592,
+  pound: 453.592,
+  pounds: 453.592,
 };
 
 /** Volume units → millilitres (cup/tbsp/tsp assumed US when used as a source). */
 const VOL_TO_ML: Record<string, number> = {
-  ml: 1, milliliter: 1, millilitre: 1, l: 1000, liter: 1000, litre: 1000,
-  tsp: 4.92892, teaspoon: 4.92892, teaspoons: 4.92892,
-  tbsp: 14.7868, tablespoon: 14.7868, tablespoons: 14.7868,
-  cup: 236.588, cups: 236.588,
-  floz: 29.5735, pint: 473.176, pints: 473.176, quart: 946.353, quarts: 946.353,
+  ml: 1,
+  milliliter: 1,
+  millilitre: 1,
+  l: 1000,
+  liter: 1000,
+  litre: 1000,
+  tsp: 4.92892,
+  teaspoon: 4.92892,
+  teaspoons: 4.92892,
+  tbsp: 14.7868,
+  tablespoon: 14.7868,
+  tablespoons: 14.7868,
+  cup: 236.588,
+  cups: 236.588,
+  floz: 29.5735,
+  pint: 473.176,
+  pints: 473.176,
+  quart: 946.353,
+  quarts: 946.353,
 };
 
 /** Target volume unit sizes (ml) per system, largest first. */
 const VOL_TARGETS: Record<UnitSystem, [string, number][]> = {
-  metric: [['l', 1000], ['ml', 1]],
-  us: [['cup', 236.588], ['tbsp', 14.7868], ['tsp', 4.92892]],
-  imperial: [['cup', 284.131], ['tbsp', 17.7582], ['tsp', 5.91939]],
+  metric: [
+    ['l', 1000],
+    ['ml', 1],
+  ],
+  us: [
+    ['cup', 236.588],
+    ['tbsp', 14.7868],
+    ['tsp', 4.92892],
+  ],
+  imperial: [
+    ['cup', 284.131],
+    ['tbsp', 17.7582],
+    ['tsp', 5.91939],
+  ],
 };
 
 /** Round to `step` (e.g. 0.25) then drop trailing zeros. */
@@ -65,7 +100,9 @@ function parseNumber(text: string): number | null {
 /** Format a mass given in grams for the target system. */
 function formatMass(grams: number, system: UnitSystem): string {
   if (system === 'metric') {
-    return grams >= 1000 ? `${roundTo(grams / 1000, 0.01)} kg` : `${roundTo(grams, 1)} g`;
+    return grams >= 1000
+      ? `${roundTo(grams / 1000, 0.01)} kg`
+      : `${roundTo(grams, 1)} g`;
   }
   const oz = grams / 28.3495;
   return oz >= 16 ? `${roundTo(oz / 16, 0.05)} lb` : `${roundTo(oz, 0.1)} oz`;
@@ -75,7 +112,8 @@ function formatMass(grams: number, system: UnitSystem): string {
 function formatVolume(ml: number, system: UnitSystem): string {
   for (const [unit, size] of VOL_TARGETS[system]) {
     if (ml >= size) {
-      const step = unit === 'ml' ? 1 : unit === 'l' ? 0.01 : unit === 'cup' ? 0.25 : 0.5;
+      const step =
+        unit === 'ml' ? 1 : unit === 'l' ? 0.01 : unit === 'cup' ? 0.25 : 0.5;
       return `${roundTo(ml / size, step)} ${unit}`;
     }
   }
@@ -94,7 +132,11 @@ export function convertQuantity(quantity: string, system: UnitSystem): string {
     return quantity;
   }
   const value = parseNumber(match[1]!.trim());
-  const unit = match[2]!.trim().toLowerCase().replace(/\./g, '').replace('fl oz', 'floz');
+  const unit = match[2]!
+    .trim()
+    .toLowerCase()
+    .replace(/\./g, '')
+    .replace('fl oz', 'floz');
   if (value === null || !unit) {
     return quantity;
   }
@@ -105,16 +147,23 @@ export function convertQuantity(quantity: string, system: UnitSystem): string {
     return formatVolume(value * VOL_TO_ML[unit]!, system);
   }
   if (unit === 'c' || unit === '°c' || unit === 'celsius') {
-    return system === 'metric' ? `${Math.round(value)} °C` : `${Math.round((value * 9) / 5 + 32)} °F`;
+    return system === 'metric'
+      ? `${Math.round(value)} °C`
+      : `${Math.round((value * 9) / 5 + 32)} °F`;
   }
   if (unit === 'f' || unit === '°f' || unit === 'fahrenheit') {
-    return system === 'metric' ? `${Math.round(((value - 32) * 5) / 9)} °C` : `${Math.round(value)} °F`;
+    return system === 'metric'
+      ? `${Math.round(((value - 32) * 5) / 9)} °C`
+      : `${Math.round(value)} °F`;
   }
   return quantity;
 }
 
 /** Convert every quantity in a parsed recipe to the target system. */
-export function convertRecipe(recipe: ParsedRecipe, system: UnitSystem): ParsedRecipe {
+export function convertRecipe(
+  recipe: ParsedRecipe,
+  system: UnitSystem,
+): ParsedRecipe {
   const ingredients: ParsedIngredient[] = recipe.ingredients.map((i) => ({
     ...i,
     quantity: i.quantity ? convertQuantity(i.quantity, system) : i.quantity,

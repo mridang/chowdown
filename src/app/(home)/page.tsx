@@ -7,7 +7,9 @@ function Feature({ title, body }: { title: string; body: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5">
       <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-      <p className="mt-1.5 text-[13px] leading-relaxed text-slate-600">{body}</p>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-slate-600">
+        {body}
+      </p>
     </div>
   );
 }

@@ -67,7 +67,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     content?: string;
   } | null;
   if (!body?.name?.trim() || typeof body.content !== 'string') {
-    return NextResponse.json({ error: 'name and content required' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'name and content required' },
+      { status: 400 },
+    );
   }
   const accessToken = await getUserAccessToken(user);
   const folderId = await resolveFolderId(

@@ -177,9 +177,7 @@ export function RecipeApp({
         </button>
       </div>
 
-      {error ? (
-        <p className="mt-3 text-[13px] text-red-600">{error}</p>
-      ) : null}
+      {error ? <p className="mt-3 text-[13px] text-red-600">{error}</p> : null}
 
       <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-[18rem_1fr]">
         <aside>
@@ -209,7 +207,9 @@ export function RecipeApp({
                         : 'text-slate-700'
                     }`}
                   >
-                    <span className="min-w-0 flex-1 truncate">{item.display}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {item.display}
+                    </span>
                     {item.uncurated ? (
                       <span className="flex-none rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-slate-600 uppercase">
                         idea
@@ -225,7 +225,9 @@ export function RecipeApp({
         <section className="min-w-0">
           {creating ? (
             <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <h2 className="text-sm font-semibold text-slate-900">New recipe</h2>
+              <h2 className="text-sm font-semibold text-slate-900">
+                New recipe
+              </h2>
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}

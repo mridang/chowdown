@@ -14,7 +14,9 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-12 text-slate-700 sm:px-6">
       <h1 className="text-2xl font-bold text-slate-900">Privacy Policy</h1>
-      <p className="mt-2 text-sm text-slate-500">Last updated: 11 October 2026</p>
+      <p className="mt-2 text-sm text-slate-500">
+        Last updated: 11 October 2026
+      </p>
 
       <div className="mt-6 space-y-5 text-sm leading-relaxed">
         <p>
@@ -32,9 +34,11 @@ export default function PrivacyPage() {
             </li>
             <li>
               Google Drive, using the <code>drive.file</code> scope only. This
-              grants access <strong>solely to the recipe files chowdown itself
-              creates</strong> in a “Recipes” folder — never the rest of your
-              Drive.
+              grants access{' '}
+              <strong>
+                solely to the recipe files chowdown itself creates
+              </strong>{' '}
+              in a “Recipes” folder — never the rest of your Drive.
             </li>
           </ul>
         </section>

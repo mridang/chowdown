@@ -49,9 +49,7 @@ describe('buildStubSource', () => {
   });
 
   it('preserves the original prompt verbatim as comments', () => {
-    expect(src).toContain(
-      '-- I should figure out how to make paneer ki sabji',
-    );
+    expect(src).toContain('-- I should figure out how to make paneer ki sabji');
     expect(src).toContain('-- like mom did');
   });
 

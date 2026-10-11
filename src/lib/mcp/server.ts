@@ -87,7 +87,10 @@ const RECIPE_CARD_OUTPUT_SCHEMA = {
     title: { type: 'string' },
     uncurated: { type: 'boolean' },
     source: { type: 'string' },
-    metadata: { type: 'array', items: { type: 'array', items: { type: 'string' } } },
+    metadata: {
+      type: 'array',
+      items: { type: 'array', items: { type: 'string' } },
+    },
     ingredients: {
       type: 'array',
       items: {
@@ -96,7 +99,10 @@ const RECIPE_CARD_OUTPUT_SCHEMA = {
       },
     },
     cookware: { type: 'array', items: { type: 'string' } },
-    steps: { type: 'array', items: { type: 'array', items: { type: 'object' } } },
+    steps: {
+      type: 'array',
+      items: { type: 'array', items: { type: 'object' } },
+    },
     logs: {
       type: 'array',
       items: {
@@ -248,7 +254,12 @@ const TOOLS = [
     description: 'Find recipes whose name matches a query.',
     inputSchema: {
       type: 'object',
-      properties: { query: { type: 'string', description: 'Text to match in recipe names.' } },
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Text to match in recipe names.',
+        },
+      },
       required: ['query'],
     },
     outputSchema: RECIPE_LIST_OUTPUT_SCHEMA,
@@ -256,10 +267,13 @@ const TOOLS = [
   },
   {
     name: 'get_recipe',
-    description: 'Get the full Cooklang source and details of one recipe by name.',
+    description:
+      'Get the full Cooklang source and details of one recipe by name.',
     inputSchema: {
       type: 'object',
-      properties: { name: { type: 'string', description: 'The recipe name to open.' } },
+      properties: {
+        name: { type: 'string', description: 'The recipe name to open.' },
+      },
       required: ['name'],
     },
     outputSchema: RECIPE_CARD_OUTPUT_SCHEMA,
@@ -277,8 +291,15 @@ const TOOLS = [
           description:
             "The recipe page's raw text or HTML that you fetched. This must be the page content, never a URL.",
         },
-        url: { type: 'string', description: 'The source page URL, for attribution.' },
-        name: { type: 'string', description: 'Optional recipe name; inferred from the content if omitted.' },
+        url: {
+          type: 'string',
+          description: 'The source page URL, for attribution.',
+        },
+        name: {
+          type: 'string',
+          description:
+            'Optional recipe name; inferred from the content if omitted.',
+        },
       },
       required: ['content'],
     },
@@ -288,7 +309,7 @@ const TOOLS = [
   {
     name: 'add_recipe',
     description:
-      "Save a recipe you already have as Cooklang (e.g. one the user dictated). For importing from a web page, prefer import_recipe. This tool does NOT fetch URLs or browse the web — if the user gives a link, YOU open and read the page yourself, extract the recipe, and pass it here. Convert it to Cooklang: put metadata at the top as `>> key: value` lines (e.g. `>> servings: 4`), write ingredients inline as @name{quantity%unit} (e.g. @flour{200%g}, @eggs{2}), cookware as #item{} (e.g. #pan{}), and timers as ~{10%minutes}. Pass the full Cooklang text as `content`.",
+      'Save a recipe you already have as Cooklang (e.g. one the user dictated). For importing from a web page, prefer import_recipe. This tool does NOT fetch URLs or browse the web — if the user gives a link, YOU open and read the page yourself, extract the recipe, and pass it here. Convert it to Cooklang: put metadata at the top as `>> key: value` lines (e.g. `>> servings: 4`), write ingredients inline as @name{quantity%unit} (e.g. @flour{200%g}, @eggs{2}), cookware as #item{} (e.g. #pan{}), and timers as ~{10%minutes}. Pass the full Cooklang text as `content`.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -311,9 +332,18 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        name: { type: 'string', description: 'The dish name to use for the file.' },
-        prompt: { type: 'string', description: 'The original request, kept verbatim.' },
-        draft: { type: 'string', description: 'Optional draft Cooklang recipe.' },
+        name: {
+          type: 'string',
+          description: 'The dish name to use for the file.',
+        },
+        prompt: {
+          type: 'string',
+          description: 'The original request, kept verbatim.',
+        },
+        draft: {
+          type: 'string',
+          description: 'Optional draft Cooklang recipe.',
+        },
       },
       required: ['name', 'prompt'],
     },
@@ -323,12 +353,18 @@ const TOOLS = [
   {
     name: 'log_cooking',
     description:
-      "Append a dated note to an existing recipe about a time you cooked it (ingredients used, tweaks, how it turned out).",
+      'Append a dated note to an existing recipe about a time you cooked it (ingredients used, tweaks, how it turned out).',
     inputSchema: {
       type: 'object',
       properties: {
-        recipe: { type: 'string', description: 'Name of the recipe to annotate.' },
-        note: { type: 'string', description: 'What to record about this cook.' },
+        recipe: {
+          type: 'string',
+          description: 'Name of the recipe to annotate.',
+        },
+        note: {
+          type: 'string',
+          description: 'What to record about this cook.',
+        },
       },
       required: ['recipe', 'note'],
     },
@@ -354,7 +390,9 @@ const TOOLS = [
 ] as const;
 
 /** Resolve a fresh Drive token and the user's Recipes folder id. */
-async function driveContext(user: User): Promise<{ token: string; folderId: string }> {
+async function driveContext(
+  user: User,
+): Promise<{ token: string; folderId: string }> {
   const token = await getUserAccessToken(user);
   const folderId = user.recipes_folder_id ?? (await ensureRecipesFolder(token));
   return { token, folderId };
@@ -380,14 +418,18 @@ async function callTool(
   params: Record<string, unknown> | undefined,
 ): Promise<object> {
   const name = params?.['name'] as string | undefined;
-  const args = (params?.['arguments'] as Record<string, unknown> | undefined) ?? {};
+  const args =
+    (params?.['arguments'] as Record<string, unknown> | undefined) ?? {};
 
   // set_measurement_system just records a preference — handle it before the
   // Drive round-trip the recipe tools need.
   if (name === 'set_measurement_system') {
     const sys = String(args['system'] ?? '').toLowerCase();
     if (!isUnitSystem(sys)) {
-      return { ...text('Please choose metric, us, or imperial.'), isError: true };
+      return {
+        ...text('Please choose metric, us, or imperial.'),
+        isError: true,
+      };
     }
     await setUserUnits(getDatabase(), user.id, sys);
     return text(`Done — I'll show recipes in ${sys} units from now on.`);
@@ -404,7 +446,9 @@ async function callTool(
       const files = await listRecipeFiles(folderId, token);
       return recipeListResult(
         files,
-        files.length ? `Showing your ${files.length} recipes.` : 'No recipes yet.',
+        files.length
+          ? `Showing your ${files.length} recipes.`
+          : 'No recipes yet.',
       );
     }
     case 'search_recipes': {
@@ -441,7 +485,9 @@ async function callTool(
       const content = String(args['content'] ?? '');
       if (!content.trim()) {
         return {
-          ...text('No page content provided. Fetch the page and pass its text/HTML as `content`.'),
+          ...text(
+            'No page content provided. Fetch the page and pass its text/HTML as `content`.',
+          ),
           isError: true,
         };
       }
@@ -452,7 +498,9 @@ async function callTool(
         name: providedName,
       });
       const name =
-        providedName || parseRecipe(cook, 'recipe.cook').title || 'Imported Recipe';
+        providedName ||
+        parseRecipe(cook, 'recipe.cook').title ||
+        'Imported Recipe';
       const file = await createRecipeFile(folderId, name, cook, token);
       return recipeCardResult(
         file.id,
@@ -553,7 +601,11 @@ export async function handleMcpMessage(
       case 'tools/list':
         return { jsonrpc: '2.0', id, result: { tools: TOOLS } };
       case 'tools/call':
-        return { jsonrpc: '2.0', id, result: await callTool(user, message.params) };
+        return {
+          jsonrpc: '2.0',
+          id,
+          result: await callTool(user, message.params),
+        };
       case 'resources/list':
         return {
           jsonrpc: '2.0',
@@ -594,13 +646,20 @@ export async function handleMcpMessage(
         };
       }
       default:
-        return { jsonrpc: '2.0', id, error: { code: -32601, message: 'Method not found' } };
+        return {
+          jsonrpc: '2.0',
+          id,
+          error: { code: -32601, message: 'Method not found' },
+        };
     }
   } catch (err) {
     return {
       jsonrpc: '2.0',
       id,
-      error: { code: -32000, message: err instanceof Error ? err.message : String(err) },
+      error: {
+        code: -32000,
+        message: err instanceof Error ? err.message : String(err),
+      },
     };
   }
 }

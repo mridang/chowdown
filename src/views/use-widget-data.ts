@@ -7,7 +7,10 @@
  * hook reads from both so a View renders and acts correctly in either.
  */
 
-import { useApp, useHostStyleVariables } from '@modelcontextprotocol/ext-apps/react';
+import {
+  useApp,
+  useHostStyleVariables,
+} from '@modelcontextprotocol/ext-apps/react';
 import { useCallback, useEffect, useState } from 'react';
 
 interface OpenAiGlobals {
@@ -63,7 +66,10 @@ export function useWidgetData<T>(appName: string): WidgetBridge<T> {
       apply((e as CustomEvent).detail?.globals as OpenAiGlobals | undefined);
     window.addEventListener('openai:set_globals', onGlobals as EventListener);
     return () =>
-      window.removeEventListener('openai:set_globals', onGlobals as EventListener);
+      window.removeEventListener(
+        'openai:set_globals',
+        onGlobals as EventListener,
+      );
   }, []);
 
   const requestFullscreen = useCallback(async () => {

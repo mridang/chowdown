@@ -10,7 +10,10 @@ const SECRET = 'test-session-secret-value';
 
 describe('session tokens', () => {
   it('round-trips a valid session', async () => {
-    const token = await createSessionToken({ uid: 42, email: 'a@b.com' }, SECRET);
+    const token = await createSessionToken(
+      { uid: 42, email: 'a@b.com' },
+      SECRET,
+    );
     const payload = await verifySessionToken(token, SECRET);
     expect(payload?.uid).toBe(42);
     expect(payload?.email).toBe('a@b.com');
@@ -18,7 +21,10 @@ describe('session tokens', () => {
   });
 
   it('rejects a tampered payload', async () => {
-    const token = await createSessionToken({ uid: 1, email: 'x@y.com' }, SECRET);
+    const token = await createSessionToken(
+      { uid: 1, email: 'x@y.com' },
+      SECRET,
+    );
     const [, sig] = token.split('.');
     const forged = `${btoa('{"uid":999,"email":"evil@z.com","exp":9999999999}')
       .replace(/=+$/, '')
@@ -28,7 +34,10 @@ describe('session tokens', () => {
   });
 
   it('rejects the wrong secret', async () => {
-    const token = await createSessionToken({ uid: 1, email: 'x@y.com' }, SECRET);
+    const token = await createSessionToken(
+      { uid: 1, email: 'x@y.com' },
+      SECRET,
+    );
     expect(await verifySessionToken(token, 'other-secret')).toBeNull();
   });
 
@@ -42,8 +51,13 @@ describe('session tokens', () => {
 
   it('defaults expiry to the configured TTL', async () => {
     const before = Math.floor(Date.now() / 1000);
-    const token = await createSessionToken({ uid: 1, email: 'x@y.com' }, SECRET);
+    const token = await createSessionToken(
+      { uid: 1, email: 'x@y.com' },
+      SECRET,
+    );
     const payload = await verifySessionToken(token, SECRET);
-    expect(payload!.exp).toBeGreaterThanOrEqual(before + SESSION_TTL_SECONDS - 5);
+    expect(payload!.exp).toBeGreaterThanOrEqual(
+      before + SESSION_TTL_SECONDS - 5,
+    );
   });
 });

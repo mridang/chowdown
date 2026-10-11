@@ -61,10 +61,13 @@ async function importKey(keyBase64: string): Promise<CryptoKey> {
       `TOKEN_ENCRYPTION_KEY must decode to ${KEY_BYTES} bytes (256-bit); got ${raw.length}`,
     );
   }
-  return crypto.subtle.importKey('raw', bufferSource(raw), { name: 'AES-GCM' }, false, [
-    'encrypt',
-    'decrypt',
-  ]);
+  return crypto.subtle.importKey(
+    'raw',
+    bufferSource(raw),
+    { name: 'AES-GCM' },
+    false,
+    ['encrypt', 'decrypt'],
+  );
 }
 
 /**

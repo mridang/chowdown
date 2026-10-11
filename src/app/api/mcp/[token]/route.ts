@@ -19,7 +19,11 @@ export async function POST(
   const user = await getUserByMcpToken(getDatabase(), token);
   if (!user) {
     return NextResponse.json(
-      { jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Invalid MCP token' } },
+      {
+        jsonrpc: '2.0',
+        id: null,
+        error: { code: -32001, message: 'Invalid MCP token' },
+      },
       { status: 401 },
     );
   }
@@ -30,7 +34,11 @@ export async function POST(
     | null;
   if (!payload) {
     return NextResponse.json(
-      { jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } },
+      {
+        jsonrpc: '2.0',
+        id: null,
+        error: { code: -32700, message: 'Parse error' },
+      },
       { status: 400 },
     );
   }
@@ -63,7 +71,8 @@ export async function GET(
   }
   return NextResponse.json({
     name: 'chowdown',
-    description: "This is a chowdown recipe MCP endpoint. POST JSON-RPC 2.0 messages here.",
+    description:
+      'This is a chowdown recipe MCP endpoint. POST JSON-RPC 2.0 messages here.',
     protocolVersion: '2024-11-05',
   });
 }
