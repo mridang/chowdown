@@ -1,9 +1,11 @@
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser, getUserAccessToken } from '@/lib/auth/current-user';
+import { listRecipesByUser } from '@/lib/db/recipes';
 import { setRecipesFolderId } from '@/lib/db/users';
 import { ensureRecipesFolder, listRecipeFiles } from '@/lib/drive/drive-client';
 import { isUncurated, recipeDisplayName } from '@/lib/recipe/cook-text';
+import { parseRecipe } from '@/lib/recipe/cooklang';
 import {
   buildFacetView,
   facetCounts,
@@ -11,17 +13,21 @@ import {
   parseFilters,
   type SearchParams,
 } from '@/lib/recipe/facet-filter';
+import { extractMedia } from '@/lib/recipe/media';
 import { syncRecipeTags, type RecipeTags } from '@/lib/recipe/tag-index';
 import { getDatabase } from '@/lib/util';
 
-import { RecipeApp } from './_components/recipe-app';
+import { RecipeApp, type RecipeCard } from './_components/recipe-app';
+
+/** The recipe facets we surface as small chips on each grid card. */
+const CARD_FACETS = ['cuisine', 'protein', 'difficulty'] as const;
 
 /**
- * The authenticated app — a Server Component. It resolves the signed-in user,
- * lists their recipes from Drive, keeps the tag index fresh, and filters the
- * list **on the server** from the URL query string (search + facets), so the
- * filtered view is in the SSR HTML and is shareable. The interactive shell
- * (create, import, the facet controls that navigate) is a client island.
+ * The authenticated app — a Server Component. It lists the user's recipes from
+ * Drive, keeps the D1 tag index fresh, and renders a **filtered grid** on the
+ * server from the URL query string (search, facets, view mode). Each card
+ * carries its cover image and a couple of tag chips. The interactive shell
+ * (facet controls, view toggle) is a client island.
  */
 export default async function AppPage({
   searchParams,
@@ -33,14 +39,7 @@ export default async function AppPage({
     redirect('/');
   }
 
-  let items: {
-    id: string;
-    name: string;
-    display: string;
-    uncurated: boolean;
-    modifiedTime: string | null;
-    tags: RecipeTags;
-  }[] = [];
+  let items: (RecipeCard & { tags: RecipeTags })[] = [];
 
   try {
     const token = await getUserAccessToken(user);
@@ -50,18 +49,23 @@ export default async function AppPage({
       await setRecipesFolderId(getDatabase(), user.id, folderId);
     }
     const files = await listRecipeFiles(folderId, token);
-    const tagsById = await syncRecipeTags(user, files, token);
-    items = files.map((f) => ({
-      id: f.id,
-      name: f.name,
-      display: recipeDisplayName(f.name),
-      uncurated: isUncurated(f.name),
-      modifiedTime: f.modifiedTime ?? null,
-      tags: tagsById.get(f.id) ?? {},
-    }));
+    // Keep the D1 cache (source + tags) fresh, then read cover + tags from it.
+    await syncRecipeTags(user, files, token);
+    const rows = await listRecipesByUser(getDatabase(), user.id);
+    const rowById = new Map(rows.map((r) => [r.drive_file_id, r]));
+    items = files.map((f) => {
+      const row = rowById.get(f.id);
+      const parsed = row ? parseRecipe(row.source, row.name) : null;
+      return {
+        id: f.id,
+        display: recipeDisplayName(f.name),
+        uncurated: isUncurated(f.name),
+        cover: parsed ? extractMedia(parsed).cover : undefined,
+        tags: row?.tags ? (JSON.parse(row.tags) as RecipeTags) : {},
+      };
+    });
   } catch {
-    // Token expired or Drive unreachable — send them back through login so a
-    // fresh refresh token is captured.
+    // Token expired or Drive unreachable — re-auth to capture a fresh token.
     redirect('/api/auth/login');
   }
 
@@ -69,19 +73,23 @@ export default async function AppPage({
   const facets = buildFacetView(facetCounts(items), filters);
   const filtered = items.filter((it) => matchesFilters(it, filters));
 
+  const sp = await searchParams;
+  const view = sp['view'] === 'list' ? 'list' : 'grid';
+
   return (
     <RecipeApp
       userName={user.name ?? user.email}
       mcpToken={user.mcp_token}
-      recipes={filtered.map(({ id, name, display, uncurated, modifiedTime }) => ({
-        id,
-        name,
-        display,
-        uncurated,
-        modifiedTime,
+      recipes={filtered.map((it) => ({
+        id: it.id,
+        display: it.display,
+        uncurated: it.uncurated,
+        cover: it.cover,
+        chips: CARD_FACETS.flatMap((k) => it.tags[k] ?? []).slice(0, 3),
       }))}
       facets={facets}
       total={items.length}
+      view={view}
     />
   );
 }

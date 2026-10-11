@@ -1,36 +1,140 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 
 import type { FacetView } from '@/lib/recipe/facet-filter';
 
-import { AddRecipes } from './add-recipes';
 import { FilterControls } from './filter-controls';
-import { WhatToEat } from './what-to-eat';
+import { ViewToggle } from './view-toggle';
 
-/** A recipe as summarised for the list. */
-interface RecipeSummary {
+/** A recipe as shown on a grid/list card. */
+export interface RecipeCard {
   id: string;
-  name: string;
   display: string;
   uncurated: boolean;
-  modifiedTime: string | null;
+  /** Cover image URL, if the recipe has one. */
+  cover?: string;
+  /** A few tag chips (cuisine/protein/difficulty) for the card. */
+  chips?: string[];
 }
 
-/** Starter content offered when creating a new recipe. */
-const STARTER = `>> title: New Recipe
->> servings: 2
+/** A neutral cover placeholder (first letter) when a recipe has no image. */
+function CoverFallback({
+  name,
+  className,
+}: {
+  name: string;
+  className: string;
+}) {
+  return (
+    <div
+      className={`grid place-items-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 ${className}`}
+      aria-hidden="true"
+    >
+      <span className="text-2xl font-semibold">
+        {name.trim().charAt(0).toUpperCase() || '🍳'}
+      </span>
+    </div>
+  );
+}
 
-Add @your ingredient{1} to a #pan{} and cook for ~{5%minutes}.
-`;
+/** One recipe as a grid card: cover on top, name + chips below. */
+function GridCard({ recipe }: { recipe: RecipeCard }) {
+  return (
+    <Link
+      href={`/recipe/${recipe.id}`}
+      className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-sm"
+    >
+      {recipe.cover ? (
+        <img
+          src={recipe.cover}
+          alt=""
+          referrerPolicy="no-referrer"
+          loading="lazy"
+          className="h-40 w-full object-cover"
+        />
+      ) : (
+        <CoverFallback name={recipe.display} className="h-40 w-full" />
+      )}
+      <div className="flex flex-1 flex-col gap-2 p-3">
+        <div className="flex items-start gap-2">
+          <h3 className="flex-1 text-sm font-semibold text-slate-800 group-hover:text-slate-900">
+            {recipe.display}
+          </h3>
+          {recipe.uncurated ? (
+            <span className="flex-none rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-slate-600 uppercase">
+              idea
+            </span>
+          ) : null}
+        </div>
+        {recipe.chips && recipe.chips.length > 0 ? (
+          <div className="mt-auto flex flex-wrap gap-1">
+            {recipe.chips.map((c) => (
+              <span
+                key={c}
+                className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 capitalize"
+              >
+                {c}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </Link>
+  );
+}
+
+/** One recipe as a list row: thumbnail + name + chips. */
+function ListRow({ recipe }: { recipe: RecipeCard }) {
+  return (
+    <Link
+      href={`/recipe/${recipe.id}`}
+      className="group flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-2 transition hover:border-slate-300 hover:bg-slate-50"
+    >
+      {recipe.cover ? (
+        <img
+          src={recipe.cover}
+          alt=""
+          referrerPolicy="no-referrer"
+          loading="lazy"
+          className="h-12 w-12 flex-none rounded-md object-cover"
+        />
+      ) : (
+        <CoverFallback
+          name={recipe.display}
+          className="h-12 w-12 flex-none rounded-md"
+        />
+      )}
+      <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">
+        {recipe.display}
+      </span>
+      {recipe.chips && recipe.chips.length > 0 ? (
+        <span className="hidden gap-1 sm:flex">
+          {recipe.chips.map((c) => (
+            <span
+              key={c}
+              className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 capitalize"
+            >
+              {c}
+            </span>
+          ))}
+        </span>
+      ) : null}
+      {recipe.uncurated ? (
+        <span className="flex-none rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-slate-600 uppercase">
+          idea
+        </span>
+      ) : null}
+    </Link>
+  );
+}
 
 /**
- * The interactive recipe surface. Filtering now happens on the server (from the
- * URL query string) — this component renders the already-filtered list, the
- * facet/search sidebar (which navigates to re-filter), and the create/import
- * actions. Opening a recipe navigates to its server-rendered page.
+ * The authenticated app shell. Filtering and the view mode come from the URL
+ * (server-rendered), so this renders the already-filtered recipes as a grid or
+ * list of cards with cover images, plus the facet sidebar. Adding recipes is a
+ * separate page (`/recipes/add`); this is purely browse + filter.
  */
 export function RecipeApp({
   userName,
@@ -38,23 +142,15 @@ export function RecipeApp({
   recipes,
   facets,
   total,
+  view,
 }: {
   userName: string;
   mcpToken: string;
-  /** The server-filtered recipes to show. */
-  recipes: RecipeSummary[];
-  /** The facet sidebar view (counts + active state), server-computed. */
+  recipes: RecipeCard[];
   facets: FacetView[];
-  /** Total recipe count before filtering (for the empty-state wording). */
   total: number;
+  view: 'grid' | 'list';
 }) {
-  const router = useRouter();
-  const [creating, setCreating] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newContent, setNewContent] = useState(STARTER);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const mcpUrl = useMemo(
@@ -64,33 +160,6 @@ export function RecipeApp({
         : `/api/mcp/${mcpToken}`,
     [mcpToken],
   );
-
-  const create = useCallback(async () => {
-    if (!newName.trim()) {
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/recipes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName.trim(), content: newContent }),
-      });
-      if (!res.ok) {
-        throw new Error(String(res.status));
-      }
-      const created = (await res.json()) as RecipeSummary;
-      setCreating(false);
-      setNewName('');
-      setNewContent(STARTER);
-      router.push(`/recipe/${created.id}`);
-    } catch {
-      setError('Could not save the recipe.');
-    } finally {
-      setBusy(false);
-    }
-  }, [newName, newContent, router]);
 
   const copyMcp = useCallback(() => {
     void navigator.clipboard?.writeText(mcpUrl).then(() => {
@@ -109,26 +178,12 @@ export function RecipeApp({
           <span className="text-sm text-slate-400">· {userName}</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setImporting(true);
-              setCreating(false);
-            }}
+          <Link
+            href="/recipes/add"
             className="rounded-md bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-amber-700"
           >
             Add recipes
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setCreating(true);
-              setImporting(false);
-            }}
-            className="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition hover:bg-slate-50"
-          >
-            + New recipe
-          </button>
+          </Link>
           <a
             href="/api/auth/logout"
             className="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition hover:bg-slate-50"
@@ -152,83 +207,50 @@ export function RecipeApp({
         </button>
       </div>
 
-      {error ? (
-        <p className="mt-3 text-[13px] text-red-600">{error}</p>
-      ) : null}
-
-      <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-[18rem_1fr]">
+      <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-[16rem_1fr]">
         <aside>
           <FilterControls facets={facets} />
-
-          <ul className="mt-5 flex flex-col border-t border-slate-100 pt-3">
-            {recipes.length === 0 ? (
-              <li className="px-1 py-2 text-sm text-slate-400">
-                {total === 0
-                  ? 'No recipes yet — add or create your first one.'
-                  : 'No recipes match these filters.'}
-              </li>
-            ) : (
-              recipes.map((item) => (
-                <li key={item.id}>
-                  <Link
-                    href={`/recipe/${item.id}`}
-                    className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-slate-700 transition hover:bg-slate-50"
-                  >
-                    <span className="min-w-0 flex-1 truncate">{item.display}</span>
-                    {item.uncurated ? (
-                      <span className="flex-none rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-slate-600 uppercase">
-                        idea
-                      </span>
-                    ) : null}
-                  </Link>
-                </li>
-              ))
-            )}
-          </ul>
         </aside>
 
         <section className="min-w-0">
-          {importing ? (
-            <AddRecipes
-              onClose={() => setImporting(false)}
-              onSaved={() => router.refresh()}
-            />
-          ) : creating ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <h2 className="text-sm font-semibold text-slate-900">New recipe</h2>
-              <input
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="Recipe name (e.g. Pancakes)"
-                className="mt-3 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm"
-              />
-              <textarea
-                value={newContent}
-                onChange={(e) => setNewContent(e.target.value)}
-                rows={10}
-                spellCheck={false}
-                className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 font-mono text-[13px]"
-              />
-              <div className="mt-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={create}
-                  disabled={busy || !newName.trim()}
-                  className="rounded-md bg-amber-600 px-3.5 py-1.5 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
-                >
-                  {busy ? 'Saving…' : 'Save to Drive'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCreating(false)}
-                  className="rounded-md border border-slate-200 px-3.5 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-              </div>
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-sm text-slate-500">
+              {recipes.length === total
+                ? `${total} recipe${total === 1 ? '' : 's'}`
+                : `${recipes.length} of ${total}`}
+            </p>
+            <ViewToggle view={view} />
+          </div>
+
+          {recipes.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-200 py-16 text-center text-sm text-slate-400">
+              {total === 0 ? (
+                <>
+                  No recipes yet —{' '}
+                  <Link
+                    href="/recipes/add"
+                    className="font-medium text-amber-700"
+                  >
+                    add your first one
+                  </Link>
+                  .
+                </>
+              ) : (
+                'No recipes match these filters.'
+              )}
+            </div>
+          ) : view === 'grid' ? (
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+              {recipes.map((r) => (
+                <GridCard key={r.id} recipe={r} />
+              ))}
             </div>
           ) : (
-            <WhatToEat />
+            <div className="flex flex-col gap-2">
+              {recipes.map((r) => (
+                <ListRow key={r.id} recipe={r} />
+              ))}
+            </div>
           )}
         </section>
       </div>
