@@ -12,9 +12,11 @@
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser, getUserAccessToken } from '@/lib/auth/current-user';
+import { getRecipeByFileId } from '@/lib/db/recipes';
 import { tagCookSource } from '@/lib/recipe/tagging';
+import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 import { getFileContent, updateRecipeFile } from '@/lib/drive/drive-client';
-import { getEnv } from '@/lib/util';
+import { getDatabase, getEnv } from '@/lib/util';
 
 export async function POST(
   _request: Request,
@@ -33,6 +35,11 @@ export async function POST(
       return NextResponse.json({ tagged: false, tags: [] });
     }
     await updateRecipeFile(id, source, accessToken);
+    const db = getDatabase();
+    const row = await getRecipeByFileId(db, user.id, id);
+    if (row) {
+      await indexRecipeWrite(db, user.id, id, row.name, source);
+    }
     return NextResponse.json({ tagged: true, tags });
   } catch {
     return NextResponse.json({ error: 'not found' }, { status: 404 });

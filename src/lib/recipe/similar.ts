@@ -69,6 +69,40 @@ export async function ensureEmbeddings(
   return listEmbeddings(db, user.id);
 }
 
+/** A similar recipe, resolved purely from the embedding cache (no Drive). */
+export interface SimilarRecipe {
+  id: string;
+  title: string;
+}
+
+/**
+ * Rank cached embeddings by cosine similarity to one recipe's own embedding,
+ * entirely from D1 — no Drive and no model call, so the recipe page stays fast.
+ * Returns `[]` when the seed recipe has no cached embedding yet (it appears once
+ * the embeddings are built by a search/suggest pass).
+ */
+export function similarFromRows(
+  rows: EmbeddingRow[],
+  selfId: string,
+  n: number,
+): SimilarRecipe[] {
+  const self = rows.find((r) => r.drive_file_id === selfId);
+  if (!self) {
+    return [];
+  }
+  const selfVector = JSON.parse(self.vector) as number[];
+  return rows
+    .filter((r) => r.drive_file_id !== selfId)
+    .map((r) => ({
+      id: r.drive_file_id,
+      title: r.title,
+      score: cosineSimilarity(selfVector, JSON.parse(r.vector) as number[]),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, n)
+    .map(({ id, title }) => ({ id, title }));
+}
+
 /** Rank files by cosine similarity to a query vector; return the top `n` files. */
 export function topSimilar(
   rows: EmbeddingRow[],

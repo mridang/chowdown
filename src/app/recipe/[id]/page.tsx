@@ -1,24 +1,26 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
+import { cache } from 'react';
 
 import { RecipeGallery } from '@/components/recipe-gallery';
 import { RecipeView } from '@/components/recipe-view';
 import { getCurrentUser, getUserAccessToken } from '@/lib/auth/current-user';
+import { listEmbeddings } from '@/lib/db/embeddings';
 import { isFavourite } from '@/lib/db/favourites';
+import { getRecipeByFileId } from '@/lib/db/recipes';
 import { setRecipesFolderId } from '@/lib/db/users';
-import { extractNotes, type Note } from '@/lib/recipe/cook-text';
-import { extractMedia } from '@/lib/recipe/media';
 import {
   ensureRecipesFolder,
   getFileContent,
   listRecipeFiles,
-  type DriveFile,
 } from '@/lib/drive/drive-client';
-import { recipeDisplayName } from '@/lib/recipe/cook-text';
+import { extractNotes, type Note } from '@/lib/recipe/cook-text';
 import { parseRecipe, type ParsedRecipe } from '@/lib/recipe/cooklang';
+import { extractMedia } from '@/lib/recipe/media';
 import { recipeToJsonLd } from '@/lib/recipe/schema-org';
-import { ensureEmbeddings, topSimilar } from '@/lib/recipe/similar';
+import { similarFromRows } from '@/lib/recipe/similar';
+import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 import { getDatabase } from '@/lib/util';
 
 import { AddNote } from './_components/add-note';
@@ -31,78 +33,62 @@ const SITE_URL = 'https://chowdown.apps.mrida.ng';
 /** How many "find similar" recipes to surface under the method. */
 const SIMILAR_COUNT = 6;
 
+/** What `loadRecipe` resolves to. */
+interface RecipePageData {
+  userId: number;
+  recipe: ParsedRecipe;
+  notes: Note[];
+}
+
 /**
- * Resolve the signed-in user and the Drive folder id, loading the user through
- * login again if the stored token can no longer be refreshed. Returns the
- * access token and folder id both the recipe fetch and the similarity pass
- * need, so neither has to re-derive them.
+ * Load one recipe by its Drive id — **from the D1 cache first**, so a recipe
+ * click is a single indexed read with no Google token refresh and no Drive
+ * round-trip (that was the source of the multi-second loads). Only a cold cache
+ * (a recipe never seen by `/app` or the MCP) falls back to Drive once, and
+ * populates the cache so the next load is instant.
+ *
+ * Wrapped in React `cache()` so the page body and `generateMetadata` share one
+ * result per request instead of loading the recipe twice.
  */
-async function requireDriveContext(): Promise<{
-  user: Awaited<ReturnType<typeof getCurrentUser>>;
-  token: string;
-  folderId: string;
-}> {
+const loadRecipe = cache(async (id: string): Promise<RecipePageData | null> => {
   const user = await getCurrentUser();
   if (!user) {
     redirect('/');
   }
-  const token = await getUserAccessToken(user);
-  let folderId = user.recipes_folder_id;
-  if (!folderId) {
-    folderId = await ensureRecipesFolder(token);
-    await setRecipesFolderId(getDatabase(), user.id, folderId);
+  const db = getDatabase();
+
+  let row = await getRecipeByFileId(db, user.id, id);
+  if (!row) {
+    // Cold cache: read from Drive once and index it, then re-read.
+    try {
+      const token = await getUserAccessToken(user);
+      const folderId =
+        user.recipes_folder_id ?? (await ensureRecipesFolder(token));
+      if (!user.recipes_folder_id) {
+        await setRecipesFolderId(db, user.id, folderId);
+      }
+      const files = await listRecipeFiles(folderId, token);
+      const file = files.find((f) => f.id === id);
+      if (!file) {
+        return null;
+      }
+      const source = await getFileContent(file.id, token);
+      await indexRecipeWrite(db, user.id, id, file.name, source, file.modifiedTime ?? null);
+      row = await getRecipeByFileId(db, user.id, id);
+    } catch {
+      return null;
+    }
   }
-  return { user, token, folderId };
-}
-
-/** What `loadRecipe` resolves to: the parsed recipe plus its sibling files. */
-interface RecipePageData {
-  file: DriveFile;
-  recipe: ParsedRecipe;
-  notes: Note[];
-  files: DriveFile[];
-  user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
-  token: string;
-}
-
-/**
- * Load one recipe by its Drive id for the given page, returning `null` when it
- * isn't in the user's folder (so the caller can render a 404). Also hands back
- * the full file list so the similarity pass doesn't re-list Drive.
- */
-async function loadRecipe(id: string): Promise<RecipePageData | null> {
-  const { user, token, folderId } = await requireDriveContext();
-  const files = await listRecipeFiles(folderId, token);
-  const file = files.find((f) => f.id === id);
-  if (!file) {
+  if (!row) {
     return null;
   }
-  const source = await getFileContent(file.id, token);
-  return {
-    file,
-    recipe: parseRecipe(source, file.name),
-    notes: extractNotes(source),
-    files,
-    user: user!,
-    token,
-  };
-}
 
-/** Compute the "find similar" row for a recipe, server-side. */
-async function similarRecipes(data: RecipePageData): Promise<DriveFile[]> {
-  const rows = await ensureEmbeddings(data.user, data.files, data.token);
-  const self = rows.find((r) => r.drive_file_id === data.file.id);
-  if (!self) {
-    return [];
-  }
-  return topSimilar(
-    rows,
-    JSON.parse(self.vector) as number[],
-    data.files,
-    SIMILAR_COUNT,
-    data.file.id,
-  );
-}
+  return {
+    userId: user.id,
+    recipe: parseRecipe(row.source, row.name),
+    notes: extractNotes(row.source),
+  };
+});
 
 export async function generateMetadata({
   params,
@@ -116,17 +102,15 @@ export async function generateMetadata({
       return { title: `${data.recipe.title} · chowdown` };
     }
   } catch {
-    // Fall through to the default title on any Drive/auth hiccup.
+    // Fall through to the default title on any hiccup.
   }
   return { title: 'Recipe · chowdown' };
 }
 
 /**
- * The server-rendered recipe page. Everything here is resolved on the server —
- * the recipe content, the schema.org JSON-LD, and the "find similar" row — so
- * the page is a complete, shareable, structured-data document with no client
- * fetch. Interactivity (hearts, annotations) will be added as client islands
- * layered on top of this SSR shell.
+ * The server-rendered recipe page. Content, schema.org JSON-LD and the
+ * "find similar" row are all resolved from D1 (the embeddings cache powers
+ * similarity with no model call), so the page renders in a single fast pass.
  */
 export default async function RecipePage({
   params,
@@ -139,9 +123,13 @@ export default async function RecipePage({
     notFound();
   }
 
+  const db = getDatabase();
   const jsonLd = recipeToJsonLd(data.recipe, `${SITE_URL}/recipe/${id}`);
-  const similar = await similarRecipes(data);
-  const favourited = await isFavourite(getDatabase(), data.user.id, id);
+  const [embeddings, favourited] = await Promise.all([
+    listEmbeddings(db, data.userId),
+    isFavourite(db, data.userId, id),
+  ]);
+  const similar = similarFromRows(embeddings, id, SIMILAR_COUNT);
 
   return (
     <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
@@ -182,13 +170,13 @@ export default async function RecipePage({
             Find similar
           </h2>
           <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {similar.map((f) => (
-              <li key={f.id}>
+            {similar.map((s) => (
+              <li key={s.id}>
                 <Link
-                  href={`/recipe/${f.id}`}
+                  href={`/recipe/${s.id}`}
                   className="block rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                 >
-                  {recipeDisplayName(f.name)}
+                  {s.title}
                 </Link>
               </li>
             ))}

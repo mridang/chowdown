@@ -18,6 +18,7 @@ import {
   listRecipeFiles,
 } from '@/lib/drive/drive-client';
 import { isUncurated, recipeDisplayName } from '@/lib/recipe/cook-text';
+import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 import { getDatabase } from '@/lib/util';
 
 /** Resolve the user's Recipes folder id, creating/persisting it if needed. */
@@ -81,6 +82,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     body.content,
     accessToken,
   );
+  // Index into the D1 cache so the new recipe renders from D1 immediately.
+  await indexRecipeWrite(getDatabase(), user.id, created.id, created.name, body.content);
   return NextResponse.json(
     {
       id: created.id,

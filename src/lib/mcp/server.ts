@@ -35,6 +35,7 @@ import {
 import { parseRecipe } from '../recipe/cooklang';
 import { embedText } from '../recipe/embeddings';
 import { ensureEmbeddings, topSimilar } from '../recipe/similar';
+import { indexRecipeWrite } from '../recipe/tag-index';
 import { tagCookSource } from '../recipe/tagging';
 import { convertToCooklang } from '../recipe/to-cooklang';
 import { convertRecipe, isUnitSystem, type UnitSystem } from '../recipe/units';
@@ -576,6 +577,7 @@ async function callTool(
       const name =
         providedName || parseRecipe(cook, 'recipe.cook').title || 'Imported Recipe';
       const file = await createRecipeFile(folderId, name, cook, token);
+      await indexRecipeWrite(getDatabase(), user.id, file.id, file.name, cook);
       return recipeCardResult(
         file.id,
         file.name,
@@ -591,6 +593,7 @@ async function callTool(
         return { ...text('No recipe content provided.'), isError: true };
       }
       const file = await createRecipeFile(folderId, dish, content, token);
+      await indexRecipeWrite(getDatabase(), user.id, file.id, file.name, content);
       return recipeCardResult(
         file.id,
         file.name,
@@ -608,6 +611,7 @@ async function callTool(
         draft: args['draft'] ? String(args['draft']) : undefined,
       });
       const file = await createRecipeFile(folderId, filename, body, token);
+      await indexRecipeWrite(getDatabase(), user.id, file.id, file.name, body);
       return recipeCardResult(
         file.id,
         file.name,
@@ -625,6 +629,7 @@ async function callTool(
       const source = await getFileContent(file.id, token);
       const updated = appendCookingLog(source, String(args['note'] ?? ''));
       await updateRecipeFile(file.id, updated, token);
+      await indexRecipeWrite(getDatabase(), user.id, file.id, file.name, updated);
       return recipeCardResult(
         file.id,
         file.name,
@@ -666,6 +671,7 @@ async function callTool(
         );
       }
       await updateRecipeFile(file.id, updated, token);
+      await indexRecipeWrite(getDatabase(), user.id, file.id, file.name, updated);
       return recipeCardResult(
         file.id,
         file.name,
@@ -702,6 +708,7 @@ async function callTool(
       const source = await getFileContent(file.id, token);
       const updated = appendNote(source, { scope, key, text: noteText });
       await updateRecipeFile(file.id, updated, token);
+      await indexRecipeWrite(getDatabase(), user.id, file.id, file.name, updated);
       const where =
         scope === 'ingredient'
           ? ` on ${ingredient}`

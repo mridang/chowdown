@@ -12,8 +12,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getCurrentUser, getUserAccessToken } from '@/lib/auth/current-user';
+import { getRecipeByFileId } from '@/lib/db/recipes';
 import { appendNote, type Note } from '@/lib/recipe/cook-text';
+import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 import { getFileContent, updateRecipeFile } from '@/lib/drive/drive-client';
+import { getDatabase } from '@/lib/util';
 
 export async function POST(
   request: NextRequest,
@@ -52,6 +55,12 @@ export async function POST(
     const source = await getFileContent(id, accessToken);
     const updated = appendNote(source, { scope, key, text });
     await updateRecipeFile(id, updated, accessToken);
+    // Refresh the D1 cache so the recipe page reflects the note immediately.
+    const db = getDatabase();
+    const row = await getRecipeByFileId(db, user.id, id);
+    if (row) {
+      await indexRecipeWrite(db, user.id, id, row.name, updated);
+    }
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: 'not found' }, { status: 404 });

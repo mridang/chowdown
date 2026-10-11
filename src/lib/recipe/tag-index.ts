@@ -11,6 +11,7 @@
  * this is purely a tags-by-id lookup.
  */
 
+import type { Database } from '../db/client';
 import type { User } from '../db/users';
 import { listRecipesByUser, upsertRecipe } from '../db/recipes';
 import { getFileContent, type DriveFile } from '../drive/drive-client';
@@ -49,6 +50,33 @@ export function extractFacetTags(recipe: ParsedRecipe): RecipeTags {
     }
   }
   return out;
+}
+
+/**
+ * Write (or refresh) one recipe's row in the D1 cache after an app/MCP write to
+ * Drive. Keeping `source` and `tags` current here is what lets the recipe page
+ * and the `/app` grid render straight from D1 — no live Drive round-trip on the
+ * hot path. `modified_time` is left null so the next `/app` sync still does one
+ * self-healing re-read if Drive's own timestamp has moved on.
+ */
+export async function indexRecipeWrite(
+  db: Database,
+  userId: number,
+  driveFileId: string,
+  name: string,
+  source: string,
+  modifiedTime: string | null = null,
+): Promise<void> {
+  const parsed = parseRecipe(source, name);
+  await upsertRecipe(db, {
+    user_id: userId,
+    drive_file_id: driveFileId,
+    name,
+    title: parsed.title,
+    source,
+    modified_time: modifiedTime,
+    tags: JSON.stringify(extractFacetTags(parsed)),
+  });
 }
 
 /** Safely parse a stored tags JSON string back into {@link RecipeTags}. */
