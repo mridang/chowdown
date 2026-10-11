@@ -95,3 +95,21 @@ export const embeddings = sqliteTable(
     index('idx_embeddings_user').on(table.user_id),
   ],
 );
+
+/**
+ * Favourites ("hearts"): one row per (user, recipe) the user has hearted,
+ * keyed by the Drive file id. Stored here rather than in Drive so toggling a
+ * heart is instant and so recipe popularity can be aggregated from D1.
+ */
+export const favourites = sqliteTable(
+  'favourites',
+  {
+    user_id: integer('user_id').notNull(),
+    drive_file_id: text('drive_file_id').notNull(),
+    created_at: text('created_at').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.user_id, table.drive_file_id] }),
+    index('idx_favourites_user').on(table.user_id),
+  ],
+);

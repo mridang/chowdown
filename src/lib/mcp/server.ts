@@ -13,6 +13,7 @@
  */
 
 import { getUserAccessToken } from '../auth/current-user';
+import { setFavourite } from '../db/favourites';
 import { setUserUnits, type User } from '../db/users';
 import {
   createRecipeFile,
@@ -381,6 +382,22 @@ const TOOLS = [
       required: ['system'],
     },
   },
+  {
+    name: 'favourite_recipe',
+    description:
+      "Heart (favourite) a recipe, or remove the heart. Call this when the user says they love a recipe or want to favourite/unfavourite it.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        recipe: { type: 'string', description: 'Name of the recipe to heart.' },
+        favourite: {
+          type: 'boolean',
+          description: 'true to heart (default), false to remove the heart.',
+        },
+      },
+      required: ['recipe'],
+    },
+  },
 ] as const;
 
 /** Resolve a fresh Drive token and the user's Recipes folder id. */
@@ -573,6 +590,21 @@ async function callTool(
         updated,
         `Logged your note on "${recipeDisplayName(file.name)}".`,
         system,
+      );
+    }
+    case 'favourite_recipe': {
+      const files = await listRecipeFiles(folderId, token);
+      const file = matchFile(files, String(args['recipe'] ?? ''));
+      if (!file) {
+        return text(`No recipe found matching "${args['recipe']}".`);
+      }
+      const on = args['favourite'] !== false;
+      await setFavourite(getDatabase(), user.id, file.id, on);
+      const label = recipeDisplayName(file.name);
+      return text(
+        on
+          ? `Added "${label}" to your favourites.`
+          : `Removed "${label}" from your favourites.`,
       );
     }
     default:

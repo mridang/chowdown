@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { RecipeView } from '@/components/recipe-view';
 import { getCurrentUser, getUserAccessToken } from '@/lib/auth/current-user';
+import { isFavourite } from '@/lib/db/favourites';
 import { setRecipesFolderId } from '@/lib/db/users';
 import {
   ensureRecipesFolder,
@@ -16,6 +17,8 @@ import { parseRecipe, type ParsedRecipe } from '@/lib/recipe/cooklang';
 import { recipeToJsonLd } from '@/lib/recipe/schema-org';
 import { ensureEmbeddings, topSimilar } from '@/lib/recipe/similar';
 import { getDatabase } from '@/lib/util';
+
+import { HeartButton } from './_components/heart-button';
 
 /** Canonical origin — mirrors `SITE_URL` in the root layout. */
 const SITE_URL = 'https://chowdown.apps.mrida.ng';
@@ -125,6 +128,7 @@ export default async function RecipePage({
 
   const jsonLd = recipeToJsonLd(data.recipe, `${SITE_URL}/recipe/${id}`);
   const similar = await similarRecipes(data);
+  const favourited = await isFavourite(getDatabase(), data.user.id, id);
 
   return (
     <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
@@ -142,6 +146,7 @@ export default async function RecipePage({
         >
           ← All recipes
         </Link>
+        <HeartButton recipeId={id} initial={favourited} />
       </nav>
 
       <RecipeView recipe={data.recipe} />
