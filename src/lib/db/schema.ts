@@ -70,6 +70,8 @@ export const recipes = sqliteTable(
     source: text('source').notNull(),
     modified_time: text('modified_time'),
     parse_error: text('parse_error'),
+    /** Curated taxonomy tags as JSON: `{ facet: string[] }` (see taxonomy.ts). */
+    tags: text('tags'),
     first_opened_at: text('first_opened_at').notNull(),
     last_opened_at: text('last_opened_at').notNull(),
   },

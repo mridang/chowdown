@@ -4,9 +4,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 
-import { AddRecipes } from './add-recipes';
+import type { FacetView } from '@/lib/recipe/facet-filter';
 
-/** A recipe as summarised by the list API. */
+import { AddRecipes } from './add-recipes';
+import { FilterControls } from './filter-controls';
+
+/** A recipe as summarised for the list. */
 interface RecipeSummary {
   id: string;
   name: string;
@@ -23,24 +26,28 @@ Add @your ingredient{1} to a #pan{} and cook for ~{5%minutes}.
 `;
 
 /**
- * The interactive recipe surface: the user's recipe list with search on the
- * left, the rendered recipe (or the new-recipe editor) on the right. All Drive
- * work happens through the `/api/recipes` endpoints, which act as the user
- * server-side — the browser never sees a Drive token.
+ * The interactive recipe surface. Filtering now happens on the server (from the
+ * URL query string) — this component renders the already-filtered list, the
+ * facet/search sidebar (which navigates to re-filter), and the create/import
+ * actions. Opening a recipe navigates to its server-rendered page.
  */
 export function RecipeApp({
   userName,
   mcpToken,
-  initialRecipes,
+  recipes,
+  facets,
+  total,
 }: {
   userName: string;
   mcpToken: string;
-  /** Recipes loaded on the server so the list is present in the SSR HTML. */
-  initialRecipes: RecipeSummary[];
+  /** The server-filtered recipes to show. */
+  recipes: RecipeSummary[];
+  /** The facet sidebar view (counts + active state), server-computed. */
+  facets: FacetView[];
+  /** Total recipe count before filtering (for the empty-state wording). */
+  total: number;
 }) {
   const router = useRouter();
-  const [recipes, setRecipes] = useState<RecipeSummary[]>(initialRecipes);
-  const [query, setQuery] = useState('');
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
   const [newName, setNewName] = useState('');
@@ -56,20 +63,6 @@ export function RecipeApp({
         : `/api/mcp/${mcpToken}`,
     [mcpToken],
   );
-
-  const load = useCallback(async () => {
-    setError(null);
-    const res = await fetch('/api/recipes');
-    if (!res.ok) {
-      setError('Could not load your recipes.');
-      return;
-    }
-    const data = (await res.json()) as { recipes: RecipeSummary[] };
-    setRecipes(data.recipes);
-  }, []);
-
-  // No fetch-on-mount: the list is server-rendered and seeded via props, so
-  // there's no loading flash. `load()` is only used to refresh after a create.
 
   const create = useCallback(async () => {
     if (!newName.trim()) {
@@ -90,15 +83,13 @@ export function RecipeApp({
       setCreating(false);
       setNewName('');
       setNewContent(STARTER);
-      await load();
-      // Land on the new recipe's server-rendered page.
       router.push(`/recipe/${created.id}`);
     } catch {
       setError('Could not save the recipe.');
     } finally {
       setBusy(false);
     }
-  }, [newName, newContent, load, router]);
+  }, [newName, newContent, router]);
 
   const copyMcp = useCallback(() => {
     void navigator.clipboard?.writeText(mcpUrl).then(() => {
@@ -106,14 +97,6 @@ export function RecipeApp({
       setTimeout(() => setCopied(false), 1500);
     });
   }, [mcpUrl]);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) {
-      return recipes;
-    }
-    return recipes.filter((r) => r.display.toLowerCase().includes(q));
-  }, [recipes, query]);
 
   return (
     <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
@@ -174,21 +157,17 @@ export function RecipeApp({
 
       <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-[18rem_1fr]">
         <aside>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search recipes…"
-            className="w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm"
-          />
-          <ul className="mt-3 flex flex-col">
-            {filtered.length === 0 ? (
+          <FilterControls facets={facets} />
+
+          <ul className="mt-5 flex flex-col border-t border-slate-100 pt-3">
+            {recipes.length === 0 ? (
               <li className="px-1 py-2 text-sm text-slate-400">
-                {recipes.length === 0
-                  ? 'No recipes yet — create your first one.'
-                  : 'No matches.'}
+                {total === 0
+                  ? 'No recipes yet — add or create your first one.'
+                  : 'No recipes match these filters.'}
               </li>
             ) : (
-              filtered.map((item) => (
+              recipes.map((item) => (
                 <li key={item.id}>
                   <Link
                     href={`/recipe/${item.id}`}
@@ -211,7 +190,7 @@ export function RecipeApp({
           {importing ? (
             <AddRecipes
               onClose={() => setImporting(false)}
-              onSaved={() => void load()}
+              onSaved={() => router.refresh()}
             />
           ) : creating ? (
             <div className="rounded-xl border border-slate-200 bg-white p-5">
@@ -249,7 +228,7 @@ export function RecipeApp({
             </div>
           ) : (
             <p className="mt-16 text-center text-slate-400">
-              Pick a recipe, or create a new one.
+              Pick a recipe, filter by the facets on the left, or add new ones.
             </p>
           )}
         </section>

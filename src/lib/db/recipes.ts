@@ -35,6 +35,8 @@ export async function upsertRecipe(
     source: string;
     modified_time?: string | null;
     parse_error?: string | null;
+    /** Curated taxonomy tags as a JSON string (`{ facet: string[] }`). */
+    tags?: string | null;
   },
 ): Promise<void> {
   const timestamp = now();
@@ -48,6 +50,7 @@ export async function upsertRecipe(
       source: input.source,
       modified_time: input.modified_time ?? null,
       parse_error: input.parse_error ?? null,
+      tags: input.tags ?? null,
       first_opened_at: timestamp,
       last_opened_at: timestamp,
     })
@@ -59,6 +62,7 @@ export async function upsertRecipe(
         source: input.source,
         modified_time: input.modified_time ?? null,
         parse_error: input.parse_error ?? null,
+        tags: input.tags ?? null,
         last_opened_at: timestamp,
       },
     });

@@ -4,29 +4,42 @@ import { getCurrentUser, getUserAccessToken } from '@/lib/auth/current-user';
 import { setRecipesFolderId } from '@/lib/db/users';
 import { ensureRecipesFolder, listRecipeFiles } from '@/lib/drive/drive-client';
 import { isUncurated, recipeDisplayName } from '@/lib/recipe/cook-text';
+import {
+  buildFacetView,
+  facetCounts,
+  matchesFilters,
+  parseFilters,
+  type SearchParams,
+} from '@/lib/recipe/facet-filter';
+import { syncRecipeTags, type RecipeTags } from '@/lib/recipe/tag-index';
 import { getDatabase } from '@/lib/util';
 
 import { RecipeApp } from './_components/recipe-app';
 
 /**
  * The authenticated app — a Server Component. It resolves the signed-in user,
- * loads their recipe list from Drive **on the server**, and hands it to the
- * interactive surface as initial data, so the list is present in the SSR HTML
- * (no client-fetch loading flash). Interactivity (search, create, open) stays
- * in the client island.
+ * lists their recipes from Drive, keeps the tag index fresh, and filters the
+ * list **on the server** from the URL query string (search + facets), so the
+ * filtered view is in the SSR HTML and is shareable. The interactive shell
+ * (create, import, the facet controls that navigate) is a client island.
  */
-export default async function AppPage() {
+export default async function AppPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
   const user = await getCurrentUser();
   if (!user) {
     redirect('/');
   }
 
-  let initialRecipes: {
+  let items: {
     id: string;
     name: string;
     display: string;
     uncurated: boolean;
     modifiedTime: string | null;
+    tags: RecipeTags;
   }[] = [];
 
   try {
@@ -37,12 +50,14 @@ export default async function AppPage() {
       await setRecipesFolderId(getDatabase(), user.id, folderId);
     }
     const files = await listRecipeFiles(folderId, token);
-    initialRecipes = files.map((f) => ({
+    const tagsById = await syncRecipeTags(user, files, token);
+    items = files.map((f) => ({
       id: f.id,
       name: f.name,
       display: recipeDisplayName(f.name),
       uncurated: isUncurated(f.name),
       modifiedTime: f.modifiedTime ?? null,
+      tags: tagsById.get(f.id) ?? {},
     }));
   } catch {
     // Token expired or Drive unreachable — send them back through login so a
@@ -50,11 +65,23 @@ export default async function AppPage() {
     redirect('/api/auth/login');
   }
 
+  const filters = parseFilters(await searchParams);
+  const facets = buildFacetView(facetCounts(items), filters);
+  const filtered = items.filter((it) => matchesFilters(it, filters));
+
   return (
     <RecipeApp
       userName={user.name ?? user.email}
       mcpToken={user.mcp_token}
-      initialRecipes={initialRecipes}
+      recipes={filtered.map(({ id, name, display, uncurated, modifiedTime }) => ({
+        id,
+        name,
+        display,
+        uncurated,
+        modifiedTime,
+      }))}
+      facets={facets}
+      total={items.length}
     />
   );
 }
