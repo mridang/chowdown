@@ -13,6 +13,12 @@
  */
 
 import { getUserAccessToken } from '../auth/current-user';
+import {
+  deleteEmbeddingsNotIn,
+  listEmbeddings,
+  upsertEmbedding,
+  type EmbeddingRow,
+} from '../db/embeddings';
 import { setUserUnits, type User } from '../db/users';
 import {
   createRecipeFile,
@@ -31,6 +37,11 @@ import {
   uncuratedFilename,
 } from '../recipe/cook-text';
 import { parseRecipe } from '../recipe/cooklang';
+import {
+  buildEmbeddingText,
+  cosineSimilarity,
+  embedText,
+} from '../recipe/embeddings';
 import { convertToCooklang } from '../recipe/to-cooklang';
 import { convertRecipe, isUnitSystem, type UnitSystem } from '../recipe/units';
 import { getDatabase, getEnv } from '../util';
@@ -255,6 +266,34 @@ const TOOLS = [
     _meta: LIST_TOOL_META,
   },
   {
+    name: 'find_recipes',
+    description:
+      "Semantic search over the user's recipes — find recipes by what they are about, not just the name (e.g. 'something with beef that's quick', 'a vegetarian curry'). Returns the best matches.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'What the user is looking for.' },
+      },
+      required: ['query'],
+    },
+    outputSchema: RECIPE_LIST_OUTPUT_SCHEMA,
+    _meta: LIST_TOOL_META,
+  },
+  {
+    name: 'find_similar',
+    description:
+      'Find recipes similar to a given recipe (by name). Returns the most similar recipes the user has saved.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'The recipe to find similar ones to.' },
+      },
+      required: ['name'],
+    },
+    outputSchema: RECIPE_LIST_OUTPUT_SCHEMA,
+    _meta: LIST_TOOL_META,
+  },
+  {
     name: 'get_recipe',
     description: 'Get the full Cooklang source and details of one recipe by name.',
     inputSchema: {
@@ -369,6 +408,67 @@ function matchFile(files: DriveFile[], name: string): DriveFile | undefined {
   );
 }
 
+/**
+ * Ensure every recipe in the folder has a current cached embedding (embedding
+ * any that are new or changed), prune stale rows, and return all rows. Lazy:
+ * the first search embeds everything, later searches hit the cache.
+ */
+async function ensureEmbeddings(
+  user: User,
+  files: DriveFile[],
+  token: string,
+): Promise<EmbeddingRow[]> {
+  const db = getDatabase();
+  const env = getEnv();
+  const existing = await listEmbeddings(db, user.id);
+  const byId = new Map(existing.map((r) => [r.drive_file_id, r]));
+  for (const file of files) {
+    const cached = byId.get(file.id);
+    if (cached && cached.modified_time === (file.modifiedTime ?? null)) {
+      continue;
+    }
+    const source = await getFileContent(file.id, token);
+    const vector = await embedText(
+      env,
+      buildEmbeddingText(parseRecipe(source, file.name)),
+    );
+    await upsertEmbedding(db, {
+      user_id: user.id,
+      drive_file_id: file.id,
+      title: recipeDisplayName(file.name),
+      modified_time: file.modifiedTime ?? null,
+      vector: JSON.stringify(vector),
+    });
+  }
+  await deleteEmbeddingsNotIn(
+    db,
+    user.id,
+    files.map((f) => f.id),
+  );
+  return listEmbeddings(db, user.id);
+}
+
+/** Rank files by cosine similarity to a query vector; return the top `n` files. */
+function topSimilar(
+  rows: EmbeddingRow[],
+  queryVector: number[],
+  files: DriveFile[],
+  n: number,
+  excludeFileId?: string,
+): DriveFile[] {
+  const fileById = new Map(files.map((f) => [f.id, f]));
+  return rows
+    .filter((r) => r.drive_file_id !== excludeFileId)
+    .map((r) => ({
+      id: r.drive_file_id,
+      score: cosineSimilarity(queryVector, JSON.parse(r.vector) as number[]),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, n)
+    .map((s) => fileById.get(s.id))
+    .filter((f): f is DriveFile => Boolean(f));
+}
+
 /** Wrap text as an MCP tool result. */
 function text(body: string): { content: { type: 'text'; text: string }[] } {
   return { content: [{ type: 'text', text: body }] };
@@ -420,6 +520,40 @@ async function callTool(
           ? `Found ${hits.length} recipe(s) matching "${queryRaw}".`
           : `No recipes match "${queryRaw}".`,
         queryRaw,
+      );
+    }
+    case 'find_recipes': {
+      const query = String(args['query'] ?? '').trim();
+      if (!query) {
+        return { ...text('What kind of recipe are you looking for?'), isError: true };
+      }
+      const files = await listRecipeFiles(folderId, token);
+      const rows = await ensureEmbeddings(user, files, token);
+      const queryVector = await embedText(getEnv(), query);
+      const matched = topSimilar(rows, queryVector, files, 8);
+      return recipeListResult(matched, `Here are recipes matching "${query}".`, query);
+    }
+    case 'find_similar': {
+      const files = await listRecipeFiles(folderId, token);
+      const file = matchFile(files, String(args['name'] ?? ''));
+      if (!file) {
+        return text(`No recipe found matching "${args['name']}".`);
+      }
+      const rows = await ensureEmbeddings(user, files, token);
+      const self = rows.find((r) => r.drive_file_id === file.id);
+      if (!self) {
+        return text('Could not compute similarity for that recipe.');
+      }
+      const matched = topSimilar(
+        rows,
+        JSON.parse(self.vector) as number[],
+        files,
+        6,
+        file.id,
+      );
+      return recipeListResult(
+        matched,
+        `Recipes similar to "${recipeDisplayName(file.name)}".`,
       );
     }
     case 'get_recipe': {

@@ -10,7 +10,13 @@
  * in sync when adding a migration (it matches the live D1 exactly).
  */
 
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import {
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+} from 'drizzle-orm/sqlite-core';
 
 /**
  * One row per signed-in Google account. `google_sub` is Google's stable,
@@ -68,4 +74,24 @@ export const recipes = sqliteTable(
     last_opened_at: text('last_opened_at').notNull(),
   },
   (table) => [index('idx_recipes_user_id').on(table.user_id)],
+);
+
+/**
+ * Embedding cache for semantic search. One row per recipe (keyed by Drive file
+ * id), stamped with the file's `modified_time` so we only re-embed on change.
+ * `vector` is the embedding as a JSON array of floats.
+ */
+export const embeddings = sqliteTable(
+  'embeddings',
+  {
+    user_id: integer('user_id').notNull(),
+    drive_file_id: text('drive_file_id').notNull(),
+    title: text('title').notNull(),
+    modified_time: text('modified_time'),
+    vector: text('vector').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.user_id, table.drive_file_id] }),
+    index('idx_embeddings_user').on(table.user_id),
+  ],
 );
