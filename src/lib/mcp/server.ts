@@ -40,6 +40,7 @@ import { indexRecipeWrite } from '../recipe/tag-index';
 import { tagCookSource, tagCookSourceBestEffort } from '../recipe/tagging';
 import { addMissingCover, convertImport } from '../recipe/to-cooklang';
 import { importRecipe } from '../recipe/import-recipe';
+import { matchFile } from '../recipe/match';
 import { validImageUrls, withImages } from '../recipe/media';
 import { convertRecipe, isUnitSystem, type UnitSystem } from '../recipe/units';
 import { getDatabase, getEnv } from '../util';
@@ -519,15 +520,6 @@ async function driveContext(
   const token = await getUserAccessToken(user);
   const folderId = user.recipes_folder_id ?? (await ensureRecipesFolder(token));
   return { token, folderId };
-}
-
-/** Find a recipe file whose display name best matches `name` (case-insensitive). */
-function matchFile(files: DriveFile[], name: string): DriveFile | undefined {
-  const target = name.trim().toLowerCase();
-  return (
-    files.find((f) => recipeDisplayName(f.name).toLowerCase() === target) ??
-    files.find((f) => recipeDisplayName(f.name).toLowerCase().includes(target))
-  );
 }
 
 /** Wrap text as an MCP tool result. */
