@@ -190,9 +190,15 @@ describe('hasRecipeBody', () => {
   });
 
   it('is true for plain method text with no marked ingredients', () => {
-    expect(hasRecipeBody('>> title: T\n\nBoil the water, then serve.\n')).toBe(
-      true,
-    );
+    expect(
+      hasRecipeBody('>> title: T\n\nBoil the water.\n\nThen serve it hot.\n'),
+    ).toBe(true);
+  });
+
+  it('is false for a lone placeholder line', () => {
+    expect(
+      hasRecipeBody('>> title: T\n\nRecipe content is unavailable.\n'),
+    ).toBe(false);
   });
 
   it('is false for just a title and source', () => {

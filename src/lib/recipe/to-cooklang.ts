@@ -168,20 +168,23 @@ export async function addMissingCover(source: string): Promise<string> {
 }
 
 /**
- * Whether converted Cooklang actually contains a recipe: at least one
- * ingredient or one method step. The converter answers "not a recipe" (or an
- * unreadable page, like a video) with just a title and source, and saving that
- * would leave an empty recipe in the user's Drive — so import refuses it.
+ * Whether converted Cooklang actually contains a recipe: at least one marked
+ * ingredient, or at least two method steps that say something. The converter
+ * answers "not a recipe" or an unreadable page (a video, a paywall, or content
+ * the assistant could not fetch) with just a title and source — or with a lone
+ * placeholder line like "Recipe content is unavailable." — and saving that would
+ * leave an empty recipe in the user's Drive, so import refuses it.
  */
 export function hasRecipeBody(cook: string): boolean {
   try {
     const parsed = parseRecipe(cook, 'recipe.cook');
-    return (
-      parsed.ingredients.length > 0 ||
-      parsed.steps.some((step) =>
-        step.some((t) => t.kind !== 'text' || t.text.trim().length > 0),
-      )
+    if (parsed.ingredients.length > 0) {
+      return true;
+    }
+    const realSteps = parsed.steps.filter((step) =>
+      step.some((t) => t.kind !== 'text' || t.text.trim().length > 0),
     );
+    return realSteps.length >= 2;
   } catch {
     return false;
   }
