@@ -7,6 +7,7 @@ import {
   humaniseDuration,
   imageUrls,
   parseIngredientLine,
+  resolveImageRefs,
   schemaOrgToCook,
   toCookIngredient,
 } from '../../../src/lib/recipe/import-schema-org';
@@ -206,5 +207,73 @@ describe('imageUrls', () => {
         { url: 'https://a.com/ok.jpg' },
       ] as never),
     ).toEqual(['https://a.com/My%20Photo.jpg', 'https://a.com/ok.jpg']);
+  });
+});
+
+describe('image references', () => {
+  const html = (blocks: unknown[]): string =>
+    blocks
+      .map(
+        (b) =>
+          `<script type="application/ld+json">${JSON.stringify(b)}</script>`,
+      )
+      .join('');
+  const recipe = {
+    '@type': 'Recipe',
+    name: 'Ref Recipe',
+    recipeIngredient: ['1 egg'],
+    recipeInstructions: ['Boil it.'],
+  };
+
+  it('follows an @id reference to an ImageObject in the same @graph', () => {
+    const out = extractRecipeFromHtml(
+      html([
+        {
+          '@graph': [
+            {
+              '@type': 'ImageObject',
+              '@id': '#hero',
+              url: 'https://a.com/hero.jpg',
+            },
+            { ...recipe, image: { '@id': '#hero' } },
+          ],
+        },
+      ]),
+    );
+    expect(out).toContain('>> images: https://a.com/hero.jpg');
+  });
+
+  it('follows a reference to an ImageObject in a different script block', () => {
+    const out = extractRecipeFromHtml(
+      html([
+        {
+          '@type': 'ImageObject',
+          '@id': '#hero',
+          url: 'https://a.com/hero.jpg',
+        },
+        { ...recipe, image: [{ '@id': '#hero' }] },
+      ]),
+    );
+    expect(out).toContain('>> images: https://a.com/hero.jpg');
+  });
+
+  it('leaves an unresolvable reference alone without failing', () => {
+    const out = extractRecipeFromHtml(
+      html([{ ...recipe, image: { '@id': '#missing' } }]),
+    );
+    expect(out).toContain('>> title: Ref Recipe');
+    expect(out).not.toContain('images:');
+  });
+
+  it('resolveImageRefs only replaces pure reference objects', () => {
+    const byId = new Map([['#a', { '@id': '#a', url: 'https://a.com/1.jpg' }]]);
+    const kept = resolveImageRefs(
+      { image: { '@id': '#a', url: 'https://a.com/own.jpg' } },
+      byId,
+    );
+    expect(kept['image']).toEqual({
+      '@id': '#a',
+      url: 'https://a.com/own.jpg',
+    });
   });
 });

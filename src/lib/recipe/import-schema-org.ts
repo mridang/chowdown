@@ -371,6 +371,59 @@ export function extractOgImage(
   }
 }
 
+/** Collect every object that carries an `@id`, anywhere in the parsed JSON-LD. */
+function collectById(
+  root: Json,
+  into: Map<string, Record<string, Json>>,
+): void {
+  if (Array.isArray(root)) {
+    for (const item of root) {
+      collectById(item, into);
+    }
+  } else if (typeof root === 'object' && root !== null) {
+    const node = root as Record<string, Json>;
+    const id = node['@id'];
+    if (
+      typeof id === 'string' &&
+      !into.has(id) &&
+      Object.keys(node).length > 1
+    ) {
+      into.set(id, node);
+    }
+    for (const value of Object.values(node)) {
+      collectById(value, into);
+    }
+  }
+}
+
+/**
+ * Follow `{ "@id": "…" }` references in a recipe's `image`. Sites built on
+ * WordPress SEO plugins describe the photo as a separate `ImageObject` and have
+ * the Recipe point at it by id, so reading `image` directly finds nothing.
+ * References are looked up across every JSON-LD block on the page, since the
+ * Recipe and the image often live in different `<script>` tags.
+ */
+export function resolveImageRefs(
+  node: Record<string, Json>,
+  byId: Map<string, Record<string, Json>>,
+): Record<string, Json> {
+  const resolve = (value: Json): Json => {
+    if (Array.isArray(value)) {
+      return value.map(resolve);
+    }
+    if (typeof value === 'object' && value !== null) {
+      const ref = value as Record<string, Json>;
+      const id = ref['@id'];
+      if (typeof id === 'string' && Object.keys(ref).length === 1) {
+        return byId.get(id) ?? value;
+      }
+    }
+    return value;
+  };
+  const image = node['image'];
+  return image === undefined ? node : { ...node, image: resolve(image) };
+}
+
 /**
  * Pull `Recipe` JSON-LD out of a page's HTML and convert it. Returns null when
  * the page has no parseable recipe. Kept regex-based (no DOM) so it runs in the
@@ -382,17 +435,23 @@ export function extractRecipeFromHtml(
 ): string | null {
   const scriptRe =
     /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  const blocks: Json[] = [];
   let match: RegExpExecArray | null;
   while ((match = scriptRe.exec(html)) !== null) {
-    let parsed: Json;
     try {
-      parsed = JSON.parse(match[1]!.trim());
+      blocks.push(JSON.parse(match[1]!.trim()) as Json);
     } catch {
       continue;
     }
-    const node = findRecipeNode(parsed);
+  }
+  const byId = new Map<string, Record<string, Json>>();
+  for (const block of blocks) {
+    collectById(block, byId);
+  }
+  for (const block of blocks) {
+    const node = findRecipeNode(block);
     if (node) {
-      return schemaOrgToCook(node, sourceUrl);
+      return schemaOrgToCook(resolveImageRefs(node, byId), sourceUrl);
     }
   }
   return null;
