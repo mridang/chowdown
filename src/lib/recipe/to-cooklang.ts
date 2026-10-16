@@ -15,6 +15,7 @@
  */
 
 import { removeEmptyMetadata, sourceUrlOf, upsertMetadata } from './cook-text';
+import { parseRecipe } from './cooklang';
 import { fetchPage } from './fetch-page';
 import { extractOgImage, extractRecipeFromHtml } from './import-schema-org';
 
@@ -157,4 +158,24 @@ export async function addMissingCover(source: string): Promise<string> {
     (fromJsonLd && /^>>\s*images:\s*(\S+)/im.exec(fromJsonLd)?.[1]) ||
     extractOgImage(page, url);
   return image ? upsertMetadata(source, [['images', image]]) : source;
+}
+
+/**
+ * Whether converted Cooklang actually contains a recipe: at least one
+ * ingredient or one method step. The converter answers "not a recipe" (or an
+ * unreadable page, like a video) with just a title and source, and saving that
+ * would leave an empty recipe in the user's Drive — so import refuses it.
+ */
+export function hasRecipeBody(cook: string): boolean {
+  try {
+    const parsed = parseRecipe(cook, 'recipe.cook');
+    return (
+      parsed.ingredients.length > 0 ||
+      parsed.steps.some((step) =>
+        step.some((t) => t.kind !== 'text' || t.text.trim().length > 0),
+      )
+    );
+  } catch {
+    return false;
+  }
 }

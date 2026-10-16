@@ -38,7 +38,11 @@ import { embedText } from '../recipe/embeddings';
 import { ensureEmbeddings, topSimilar } from '../recipe/similar';
 import { indexRecipeWrite } from '../recipe/tag-index';
 import { tagCookSource, tagCookSourceBestEffort } from '../recipe/tagging';
-import { addMissingCover, convertImport } from '../recipe/to-cooklang';
+import {
+  addMissingCover,
+  convertImport,
+  hasRecipeBody,
+} from '../recipe/to-cooklang';
 import { convertRecipe, isUnitSystem, type UnitSystem } from '../recipe/units';
 import { getDatabase, getEnv } from '../util';
 import { html as recipeCardHtml } from '../../views/generated/recipe-card';
@@ -650,6 +654,15 @@ async function callTool(
         sourceUrl,
         name: providedName,
       });
+      if (!hasRecipeBody(converted)) {
+        return {
+          ...text(
+            "That content didn't contain a recipe (no ingredients or steps), so nothing was saved. " +
+              'Open the page, copy the actual recipe text, and call import_recipe again with it as `content`.',
+          ),
+          isError: true,
+        };
+      }
       const name =
         providedName ||
         parseRecipe(converted, 'recipe.cook').title ||

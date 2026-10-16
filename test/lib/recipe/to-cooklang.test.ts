@@ -4,6 +4,7 @@ import {
   addMissingCover,
   convertImport,
   convertToCooklang,
+  hasRecipeBody,
 } from '../../../src/lib/recipe/to-cooklang';
 
 const realFetch = global.fetch;
@@ -145,5 +146,29 @@ describe('addMissingCover', () => {
       new Response('blocked', { status: 403 })) as unknown as typeof fetch;
     const src = '>> title: T\n>> source: https://a.com/x\n\nCook.\n';
     expect(await addMissingCover(src)).toBe(src);
+  });
+});
+
+describe('hasRecipeBody', () => {
+  it('is true for a recipe with ingredients and steps', () => {
+    expect(hasRecipeBody('>> title: T\n\nMix @egg{1} in a #bowl{}.\n')).toBe(
+      true,
+    );
+  });
+
+  it('is true for plain method text with no marked ingredients', () => {
+    expect(hasRecipeBody('>> title: T\n\nBoil the water, then serve.\n')).toBe(
+      true,
+    );
+  });
+
+  it('is false for just a title and source', () => {
+    expect(
+      hasRecipeBody('>> title: Unknown\n>> source: https://a.com/v\n'),
+    ).toBe(false);
+  });
+
+  it('is false for empty content', () => {
+    expect(hasRecipeBody('')).toBe(false);
   });
 });
