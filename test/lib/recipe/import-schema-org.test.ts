@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  extractOgImage,
   extractRecipeFromHtml,
   findRecipeNode,
   humaniseDuration,
@@ -32,9 +33,9 @@ describe('parseIngredientLine', () => {
   });
 
   it('renders Cooklang tokens', () => {
-    expect(toCookIngredient({ quantity: '200', unit: 'g', name: 'flour' })).toBe(
-      '@flour{200%g}',
-    );
+    expect(
+      toCookIngredient({ quantity: '200', unit: 'g', name: 'flour' }),
+    ).toBe('@flour{200%g}');
     expect(toCookIngredient({ quantity: '2', name: 'eggs' })).toBe('@eggs{2}');
     expect(toCookIngredient({ name: 'salt to taste' })).toBe(
       '@salt to taste{}',
@@ -122,7 +123,9 @@ describe('schemaOrgToCook', () => {
     expect(out).toContain('>> prep: 15 min');
     expect(out).toContain('>> author: Asma Khan');
     expect(out).toContain('>> published: 2024-06-01');
-    expect(out).toContain('>> images: https://ex.com/a.jpg https://ex.com/b.jpg');
+    expect(out).toContain(
+      '>> images: https://ex.com/a.jpg https://ex.com/b.jpg',
+    );
     expect(out).toContain('>> video: https://ex.com/v.mp4');
   });
 
@@ -160,5 +163,34 @@ describe('extractRecipeFromHtml', () => {
   it('skips malformed json and returns null when no recipe', () => {
     const html = `<script type="application/ld+json">{ not json }</script>`;
     expect(extractRecipeFromHtml(html)).toBeNull();
+  });
+});
+
+describe('extractOgImage', () => {
+  it('reads og:image with property before content', () => {
+    const html =
+      '<meta property="og:image" content="https://a.com/p.jpg?x=1&amp;y=2">';
+    expect(extractOgImage(html)).toBe('https://a.com/p.jpg?x=1&y=2');
+  });
+
+  it('reads og:image with content before property', () => {
+    const html = '<meta content="https://a.com/p.jpg" property="og:image" />';
+    expect(extractOgImage(html)).toBe('https://a.com/p.jpg');
+  });
+
+  it('resolves a relative image against the base url', () => {
+    const html = '<meta property="og:image" content="/img/p.jpg">';
+    expect(extractOgImage(html, 'https://a.com/post/x')).toBe(
+      'https://a.com/img/p.jpg',
+    );
+  });
+
+  it('rejects non-http schemes', () => {
+    const html = '<meta property="og:image" content="javascript:alert(1)">';
+    expect(extractOgImage(html)).toBeUndefined();
+  });
+
+  it('is undefined when the page has no og:image', () => {
+    expect(extractOgImage('<html><head></head></html>')).toBeUndefined();
   });
 });

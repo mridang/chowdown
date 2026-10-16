@@ -14,7 +14,9 @@
  *      conventions are dictated here, not by the client.
  */
 
-import { extractRecipeFromHtml } from './import-schema-org';
+import { upsertMetadata } from './cook-text';
+import { fetchPage } from './fetch-page';
+import { extractOgImage, extractRecipeFromHtml } from './import-schema-org';
 
 /** The model used for conversion. Swappable; fp8-fast balances quality/latency. */
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
@@ -82,4 +84,49 @@ export async function convertToCooklang(
     throw new Error('Recipe conversion produced no output');
   }
   return `${cooklang}\n`;
+}
+
+/**
+ * Convert content handed to us by an assistant, enriching it from the source
+ * URL when we can. An assistant usually passes plain article text, which has
+ * lost the page's structured data (and so its images, times and author). When a
+ * `sourceUrl` is given we make one best-effort server-side fetch of the page:
+ *
+ *   - if the page carries `Recipe` JSON-LD, that is the better source, so use it;
+ *   - otherwise convert the assistant's content as usual and attach the page's
+ *     `og:image` as the cover if the conversion produced no images.
+ *
+ * A failed fetch (bot protection, timeout, paywall) is silent: the import
+ * proceeds with the assistant's content, just without the extras.
+ */
+export async function convertImport(
+  content: string,
+  env: CloudflareEnv,
+  opts: { sourceUrl?: string; name?: string } = {},
+): Promise<string> {
+  const direct = extractRecipeFromHtml(content, opts.sourceUrl);
+  if (direct) {
+    return direct;
+  }
+
+  let page: string | null = null;
+  if (opts.sourceUrl) {
+    try {
+      page = await fetchPage(opts.sourceUrl);
+    } catch {
+      page = null;
+    }
+  }
+
+  const fromPage = page ? extractRecipeFromHtml(page, opts.sourceUrl) : null;
+  if (fromPage) {
+    return fromPage;
+  }
+
+  const cook = await convertToCooklang(content, env, opts);
+  const image = page ? extractOgImage(page, opts.sourceUrl) : undefined;
+  if (image && !/^>>\s*images:/im.test(cook)) {
+    return upsertMetadata(cook, [['images', image]]);
+  }
+  return cook;
 }

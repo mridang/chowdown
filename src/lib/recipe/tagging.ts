@@ -104,3 +104,20 @@ export async function tagCookSource(
   }
   return { source: upsertMetadata(source, tags), tags };
 }
+
+/**
+ * Like {@link tagCookSource}, but never throws: on any model or parsing failure
+ * it returns the source untouched. Used on the import paths, where tags are a
+ * nice-to-have and a flaky model call must not stop a recipe being saved.
+ */
+export async function tagCookSourceBestEffort(
+  source: string,
+  filename: string,
+  env: CloudflareEnv,
+): Promise<string> {
+  try {
+    return (await tagCookSource(source, filename, env)).source;
+  } catch {
+    return source;
+  }
+}

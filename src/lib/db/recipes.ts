@@ -10,6 +10,7 @@
 
 import { and, eq } from 'drizzle-orm';
 
+import { normalizeSourceUrl, sourceUrlOf } from '../recipe/cook-text';
 import type { Database } from './client';
 import { recipes } from './schema';
 
@@ -86,6 +87,27 @@ export async function getRecipeByFileId(
   driveFileId: string,
 ): Promise<Recipe | undefined> {
   return db.query.recipes.findFirst({
-    where: and(eq(recipes.user_id, userId), eq(recipes.drive_file_id, driveFileId)),
+    where: and(
+      eq(recipes.user_id, userId),
+      eq(recipes.drive_file_id, driveFileId),
+    ),
+  });
+}
+
+/**
+ * Find a cached recipe the user already imported from `url` (matched on the
+ * `>> source:` line, ignoring `www.`, query strings and trailing slashes), so a
+ * re-import can return the existing recipe instead of saving a duplicate.
+ */
+export async function findRecipeBySourceUrl(
+  db: Database,
+  userId: number,
+  url: string,
+): Promise<Recipe | undefined> {
+  const want = normalizeSourceUrl(url);
+  const rows = await listRecipesByUser(db, userId);
+  return rows.find((r) => {
+    const have = sourceUrlOf(r.source);
+    return have !== undefined && normalizeSourceUrl(have) === want;
   });
 }

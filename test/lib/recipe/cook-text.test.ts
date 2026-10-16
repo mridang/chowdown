@@ -2,12 +2,17 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   appendCookingLog,
+  appendNote,
   buildStubSource,
   extractCookingLogs,
+  extractNotes,
   isUncurated,
+  normalizeSourceUrl,
   recipeDisplayName,
   sanitiseName,
+  sourceUrlOf,
   uncuratedFilename,
+  upsertMetadata,
 } from '../../../src/lib/recipe/cook-text';
 
 describe('uncurated filenames', () => {
@@ -49,9 +54,7 @@ describe('buildStubSource', () => {
   });
 
   it('preserves the original prompt verbatim as comments', () => {
-    expect(src).toContain(
-      '-- I should figure out how to make paneer ki sabji',
-    );
+    expect(src).toContain('-- I should figure out how to make paneer ki sabji');
     expect(src).toContain('-- like mom did');
   });
 
@@ -91,6 +94,140 @@ describe('cooking logs', () => {
     expect(extractCookingLogs(src)).toEqual([
       { date: '2026-01-01', note: 'first' },
       { date: '2026-02-02', note: 'second' },
+    ]);
+  });
+});
+
+describe('sourceUrlOf', () => {
+  it('reads the >> source: line', () => {
+    expect(
+      sourceUrlOf('>> title: X\n>> source: https://a.com/pasta\n\nCook.'),
+    ).toBe('https://a.com/pasta');
+  });
+
+  it('is undefined when there is no source line', () => {
+    expect(sourceUrlOf('>> title: X\n\nCook.')).toBeUndefined();
+  });
+});
+
+describe('normalizeSourceUrl', () => {
+  it('ignores www, scheme, query, fragment and trailing slash', () => {
+    const a = normalizeSourceUrl('https://www.Example.com/post/pasta/?utm=1#x');
+    expect(a).toBe('example.com/post/pasta');
+    expect(normalizeSourceUrl('http://example.com/post/pasta')).toBe(a);
+  });
+
+  it('keeps distinct paths distinct', () => {
+    expect(normalizeSourceUrl('https://a.com/x')).not.toBe(
+      normalizeSourceUrl('https://a.com/y'),
+    );
+  });
+
+  it('returns unparseable input trimmed', () => {
+    expect(normalizeSourceUrl('  not a url ')).toBe('not a url');
+  });
+});
+
+describe('upsertMetadata', () => {
+  it('rewrites an existing key in place', () => {
+    const src = '>> title: Curry\n>> cuisine: unknown\n\nCook it.\n';
+    const out = upsertMetadata(src, [['cuisine', 'Indian']]);
+    expect(out).toContain('>> cuisine: Indian');
+    expect(out).not.toContain('unknown');
+    expect(out).toContain('Cook it.');
+  });
+
+  it('inserts new keys after the metadata block, before the method', () => {
+    const src = '>> title: Curry\n\nCook it.\n';
+    const out = upsertMetadata(src, [
+      ['protein', 'chicken'],
+      ['difficulty', 'Easy'],
+    ]);
+    const lines = out.split('\n');
+    expect(lines[0]).toBe('>> title: Curry');
+    expect(lines[1]).toBe('>> protein: chicken');
+    expect(lines[2]).toBe('>> difficulty: Easy');
+    expect(out).toContain('Cook it.');
+  });
+
+  it('matches keys case-insensitively', () => {
+    const src = '>> Title: Curry\n>> Cuisine: old\n';
+    const out = upsertMetadata(src, [['cuisine', 'Thai']]);
+    expect(out).toContain('>> cuisine: Thai');
+    expect(out).not.toContain('old');
+  });
+
+  it('preserves a cooking-log comment at the end', () => {
+    const src = '>> title: Curry\n\nCook it.\n-- [cook 2026-01-01] great\n';
+    const out = upsertMetadata(src, [['cuisine', 'Indian']]);
+    expect(out).toContain('-- [cook 2026-01-01] great');
+    expect(out).toContain('>> cuisine: Indian');
+  });
+
+  it('always ends with a newline', () => {
+    const out = upsertMetadata('>> title: X', [['protein', 'egg']]);
+    expect(out.endsWith('\n')).toBe(true);
+  });
+});
+
+describe('appendNote + extractNotes', () => {
+  it('appends and reads back a general note', () => {
+    const out = appendNote('>> title: X\n\nCook it.\n', {
+      scope: 'general',
+      key: '',
+      text: 'tastes better next day',
+    });
+    expect(out).toContain('-- [note] tastes better next day');
+    expect(extractNotes(out)).toEqual([
+      { scope: 'general', key: '', text: 'tastes better next day' },
+    ]);
+  });
+
+  it('attaches a note to an ingredient', () => {
+    const out = appendNote('>> title: X\n', {
+      scope: 'ingredient',
+      key: 'avocado',
+      text: 'use 3 instead of 2',
+    });
+    expect(out).toContain('-- [note ingredient:avocado] use 3 instead of 2');
+    expect(extractNotes(out)[0]).toEqual({
+      scope: 'ingredient',
+      key: 'avocado',
+      text: 'use 3 instead of 2',
+    });
+  });
+
+  it('attaches a note to a step', () => {
+    const out = appendNote('>> title: X\n', {
+      scope: 'step',
+      key: '2',
+      text: 'marinate overnight',
+    });
+    expect(extractNotes(out)[0]).toEqual({
+      scope: 'step',
+      key: '2',
+      text: 'marinate overnight',
+    });
+  });
+
+  it('flattens multi-line note text to one comment line', () => {
+    const out = appendNote('>> title: X\n', {
+      scope: 'general',
+      key: '',
+      text: 'line one\nline two',
+    });
+    expect(out).toContain('-- [note] line one line two');
+    expect(out.match(/\[note\]/g)).toHaveLength(1);
+  });
+
+  it('does not disturb the original method or the cooking log', () => {
+    const src = '>> title: X\n\nMash it.\n-- [cook 2026-01-01] great\n';
+    const out = appendNote(src, { scope: 'general', key: '', text: 'spicy' });
+    expect(out).toContain('Mash it.');
+    expect(out).toContain('-- [cook 2026-01-01] great');
+    // The cooking-log line is not misread as a note.
+    expect(extractNotes(out)).toEqual([
+      { scope: 'general', key: '', text: 'spicy' },
     ]);
   });
 });

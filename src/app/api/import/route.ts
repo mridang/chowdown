@@ -20,7 +20,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { parseRecipe } from '@/lib/recipe/cooklang';
 import { planImport, type ImportUnit } from '@/lib/recipe/import-blob';
-import { tagCookSource } from '@/lib/recipe/tagging';
+import { fetchPage } from '@/lib/recipe/fetch-page';
+import { tagCookSourceBestEffort } from '@/lib/recipe/tagging';
 import { convertToCooklang } from '@/lib/recipe/to-cooklang';
 import { getEnv } from '@/lib/util';
 
@@ -36,24 +37,6 @@ interface ImportDraft {
   error?: string;
 }
 
-/** A browser-ish UA; some sites 403 the default fetch agent. */
-const FETCH_HEADERS = {
-  'User-Agent':
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
-    '(KHTML, like Gecko) Chrome/125.0 Safari/537.36',
-  Accept: 'text/html,application/xhtml+xml',
-};
-
-/** Fetch a page's HTML, bounded so a huge page can't blow the request up. */
-async function fetchPage(url: string): Promise<string> {
-  const res = await fetch(url, { headers: FETCH_HEADERS, redirect: 'follow' });
-  if (!res.ok) {
-    throw new Error(`fetch failed (${res.status})`);
-  }
-  const html = await res.text();
-  return html.slice(0, 200_000);
-}
-
 /** Convert one planned unit into a draft, capturing any failure as `error`. */
 async function prepareUnit(
   unit: ImportUnit,
@@ -67,7 +50,7 @@ async function prepareUnit(
           })
         : await convertToCooklang(unit.text, env);
     // Auto-tag the draft so imported recipes arrive ready to filter by facet.
-    const { source: cook } = await tagCookSource(raw, 'Imported Recipe', env);
+    const cook = await tagCookSourceBestEffort(raw, 'Imported Recipe', env);
     return {
       title: parseRecipe(cook, 'Imported Recipe').title,
       cook,

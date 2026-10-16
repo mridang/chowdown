@@ -170,6 +170,29 @@ export function upsertMetadata(
 }
 
 /**
+ * The `>> source:` URL recorded in a recipe's source, if any. Imports write the
+ * page they came from here, which is how we recognise a link we already have.
+ */
+export function sourceUrlOf(source: string): string | undefined {
+  return /^>>\s*source:\s*(\S+)/im.exec(source)?.[1];
+}
+
+/**
+ * Normalise a URL for "is this the same page?" comparison: lower-case host
+ * without `www.`, no query or fragment, no trailing slash. Returns the trimmed
+ * input unchanged if it isn't a parseable URL.
+ */
+export function normalizeSourceUrl(url: string): string {
+  try {
+    const u = new URL(url.trim());
+    const host = u.hostname.toLowerCase().replace(/^www\./, '');
+    return `${host}${u.pathname.replace(/\/+$/, '')}`;
+  } catch {
+    return url.trim();
+  }
+}
+
+/**
  * A personal annotation attached to a recipe. Notes are additive and never
  * touch the original method: they're stored as Cooklang comment lines so the
  * recipe the user imported stays verbatim, while their own amendments ("use 3

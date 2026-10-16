@@ -62,7 +62,8 @@ const KNOWN_UNITS = new Set([
 ]);
 
 /** Leading-quantity matcher: integers, decimals, simple fractions and ranges. */
-const LEADING_QUANTITY = /^(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?(?:\s*-\s*\d+)?|[½¼¾⅓⅔⅛])\s+/;
+const LEADING_QUANTITY =
+  /^(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?(?:\s*-\s*\d+)?|[½¼¾⅓⅔⅛])\s+/;
 
 /**
  * Parse one schema.org ingredient string into a quantity/unit/name. Falls back
@@ -205,7 +206,11 @@ function authorName(value: Json): string | undefined {
 
 /** Image URLs from schema.org `image` (string, ImageObject, or arrays thereof). */
 export function imageUrls(value: Json): string[] {
-  const items = Array.isArray(value) ? value : value === undefined ? [] : [value];
+  const items = Array.isArray(value)
+    ? value
+    : value === undefined
+      ? []
+      : [value];
   const urls: string[] = [];
   for (const item of items) {
     if (typeof item === 'string') {
@@ -239,7 +244,11 @@ function videoUrl(value: Json): string | undefined {
 
 /** Join `suitableForDiet` values, stripping the schema.org URL/`Diet` decorations. */
 export function dietNames(value: Json): string | undefined {
-  const items = Array.isArray(value) ? value : value === undefined ? [] : [value];
+  const items = Array.isArray(value)
+    ? value
+    : value === undefined
+      ? []
+      : [value];
   const names = items
     .filter((i): i is string => typeof i === 'string')
     .map((s) =>
@@ -274,12 +283,16 @@ export function schemaOrgToCook(
   };
 
   const servings = recipe['recipeYield'];
-  add('servings', typeof servings === 'number' ? String(servings) : firstString(servings));
+  add(
+    'servings',
+    typeof servings === 'number' ? String(servings) : firstString(servings),
+  );
 
   // Times (prep + total/cook). The LLM tagging pass later adds the Quick/Med/Long bucket.
   const prep = firstString(recipe['prepTime']);
   add('prep', prep ? humaniseDuration(prep) : undefined);
-  const total = firstString(recipe['totalTime']) ?? firstString(recipe['cookTime']);
+  const total =
+    firstString(recipe['totalTime']) ?? firstString(recipe['cookTime']);
   add('time', total ? humaniseDuration(total) : undefined);
 
   // Taxonomy that schema.org carries directly (protein/difficulty/equipment come
@@ -323,6 +336,37 @@ export function schemaOrgToCook(
     blocks.push(step);
   }
   return `${blocks.join('\n\n')}\n`;
+}
+
+/**
+ * The page's `og:image` (the share-card image), resolved against `baseUrl` and
+ * restricted to http(s). A good-enough cover for pages with no Recipe JSON-LD.
+ * Handles both attribute orders (`property` before or after `content`).
+ */
+export function extractOgImage(
+  html: string,
+  baseUrl?: string,
+): string | undefined {
+  const forward =
+    /<meta[^>]+(?:property|name)=["']og:image(?::secure_url)?["'][^>]*?content=["']([^"']+)["']/i.exec(
+      html,
+    );
+  const backward =
+    /<meta[^>]+content=["']([^"']+)["'][^>]*?(?:property|name)=["']og:image(?::secure_url)?["']/i.exec(
+      html,
+    );
+  const raw = (forward ?? backward)?.[1]?.replace(/&amp;/g, '&').trim();
+  if (!raw) {
+    return undefined;
+  }
+  try {
+    const url = new URL(raw, baseUrl);
+    return url.protocol === 'http:' || url.protocol === 'https:'
+      ? url.toString()
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
