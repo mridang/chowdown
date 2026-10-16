@@ -13,7 +13,6 @@
  */
 
 import { getUserAccessToken } from '../auth/current-user';
-import { setFavourite } from '../db/favourites';
 import { findRecipeBySourceUrl } from '../db/recipes';
 import { setUserUnits, type User } from '../db/users';
 import {
@@ -40,6 +39,7 @@ import { ensureEmbeddings, topSimilar } from '../recipe/similar';
 import { indexRecipeWrite } from '../recipe/tag-index';
 import { tagCookSource, tagCookSourceBestEffort } from '../recipe/tagging';
 import { addMissingCover, convertImport } from '../recipe/to-cooklang';
+import { setFavouriteAndTag } from '../recipe/favourite';
 import { importRecipe } from '../recipe/import-recipe';
 import { matchFile } from '../recipe/match';
 import { validImageUrls, withImages } from '../recipe/media';
@@ -775,7 +775,7 @@ async function callTool(
         return text(`No recipe found matching "${args['recipe']}".`);
       }
       const on = args['favourite'] !== false;
-      await setFavourite(getDatabase(), user.id, file.id, on);
+      await setFavouriteAndTag(user.id, file.id, on);
       const label = recipeDisplayName(file.name);
       return text(
         on

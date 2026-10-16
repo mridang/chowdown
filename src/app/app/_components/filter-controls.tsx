@@ -1,8 +1,9 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
+import { HeartIcon } from '@/components/favourite-button';
 import type { FacetView } from '@/lib/recipe/facet-filter';
 
 /**
@@ -11,17 +12,22 @@ import type { FacetView } from '@/lib/recipe/facet-filter';
  * in the URL (shareable, bookmarkable), not in client state. This island only
  * translates clicks into navigations.
  */
-export function FilterControls({ facets }: { facets: FacetView[] }) {
+export function FilterControls({
+  facets,
+  favouriteCount,
+}: {
+  facets: FacetView[];
+  favouriteCount: number;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
 
-  const [q, setQ] = useState(params.get('q') ?? '');
-
-  // Keep the box in sync if the URL changes from elsewhere (e.g. back button).
-  useEffect(() => {
-    setQ(params.get('q') ?? '');
-  }, [params]);
+  // The URL is the source of truth for the search box. `draft` only holds what
+  // is being typed before it is submitted; `null` means "show the URL's value",
+  // which keeps the box correct after back/forward without syncing in an effect.
+  const [draft, setDraft] = useState<string | null>(null);
+  const q = draft ?? params.get('q') ?? '';
 
   /** Push a new query string built from the current one plus `mutate`. */
   const navigate = useCallback(
@@ -36,6 +42,7 @@ export function FilterControls({ facets }: { facets: FacetView[] }) {
 
   const submitSearch = useCallback(
     (value: string) => {
+      setDraft(null);
       navigate((next) => {
         const v = value.trim();
         if (v) {
@@ -56,7 +63,9 @@ export function FilterControls({ facets }: { facets: FacetView[] }) {
           .split(',')
           .map((s) => s.trim())
           .filter(Boolean);
-        const has = current.some((v) => v.toLowerCase() === value.toLowerCase());
+        const has = current.some(
+          (v) => v.toLowerCase() === value.toLowerCase(),
+        );
         const updated = has
           ? current.filter((v) => v.toLowerCase() !== value.toLowerCase())
           : [...current, value];
@@ -70,11 +79,25 @@ export function FilterControls({ facets }: { facets: FacetView[] }) {
     [navigate],
   );
 
+  const favouritesOn = params.get('fav') === '1';
+
+  const toggleFavourites = useCallback(() => {
+    navigate((next) => {
+      if (next.get('fav') === '1') {
+        next.delete('fav');
+      } else {
+        next.set('fav', '1');
+      }
+    });
+  }, [navigate]);
+
   const hasActive =
-    facets.some((f) => f.values.some((v) => v.active)) || q.trim().length > 0;
+    favouritesOn ||
+    facets.some((f) => f.values.some((v) => v.active)) ||
+    q.trim().length > 0;
 
   const clearAll = useCallback(() => {
-    setQ('');
+    setDraft(null);
     router.push(pathname);
   }, [pathname, router]);
 
@@ -88,12 +111,29 @@ export function FilterControls({ facets }: { facets: FacetView[] }) {
       >
         <input
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => setDraft(e.target.value)}
           onBlur={() => submitSearch(q)}
           placeholder="Search recipes…"
           className="w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm"
         />
       </form>
+
+      <button
+        type="button"
+        onClick={toggleFavourites}
+        aria-pressed={favouritesOn}
+        className={`mt-3 flex w-full items-center justify-between rounded-md border px-3 py-1.5 text-sm font-medium transition ${
+          favouritesOn
+            ? 'border-rose-200 bg-rose-50 text-rose-700'
+            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+        }`}
+      >
+        <span className="flex items-center gap-2">
+          <HeartIcon filled={favouritesOn} />
+          Favourites
+        </span>
+        <span className="text-xs opacity-70">{favouriteCount}</span>
+      </button>
 
       {hasActive ? (
         <button
@@ -117,9 +157,7 @@ export function FilterControls({ facets }: { facets: FacetView[] }) {
                   type="button"
                   onClick={() => toggle(facet.key, v.value)}
                   className={`flex w-full items-center justify-between gap-2 rounded px-2 py-1 text-left text-sm transition hover:bg-slate-50 ${
-                    v.active
-                      ? 'font-semibold text-amber-800'
-                      : 'text-slate-600'
+                    v.active ? 'font-semibold text-amber-800' : 'text-slate-600'
                   }`}
                 >
                   <span className="flex items-center gap-2">

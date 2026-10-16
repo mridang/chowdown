@@ -42,7 +42,10 @@ export default async function AppPage({
     redirect('/');
   }
   const db = getDatabase();
-  let { user, recipes, embeddedCount } = await getAppPageRows(db, uid);
+  let { user, recipes, embeddedCount, favouriteIds } = await getAppPageRows(
+    db,
+    uid,
+  );
   if (!user || !user.refresh_token_enc) {
     // Unknown user, or Google rejected the stored login: sign in again.
     redirect(user ? '/api/auth/login' : '/');
@@ -55,7 +58,7 @@ export default async function AppPage({
     } catch {
       redirect('/api/auth/login');
     }
-    ({ recipes, embeddedCount } = await getAppPageRows(db, uid));
+    ({ recipes, embeddedCount, favouriteIds } = await getAppPageRows(db, uid));
   } else {
     // Otherwise show the cache now and refresh it from Drive afterwards, so a
     // recipe added or removed directly in Drive appears on the next view.
@@ -66,6 +69,7 @@ export default async function AppPage({
     runInBackground(backfillEmbeddings(db, getEnv(), uid, 20));
   }
 
+  const hearted = new Set(favouriteIds);
   const items: (RecipeCard & { tags: RecipeTags })[] = recipes.map((row) => {
     const parsed = parseRecipe(row.source, row.name);
     return {
@@ -73,6 +77,7 @@ export default async function AppPage({
       display: recipeDisplayName(row.name),
       uncurated: isUncurated(row.name),
       cover: extractMedia(parsed).cover,
+      favourite: hearted.has(row.drive_file_id),
       tags: row.tags ? (JSON.parse(row.tags) as RecipeTags) : {},
     };
   });
@@ -92,10 +97,12 @@ export default async function AppPage({
         display: it.display,
         uncurated: it.uncurated,
         cover: it.cover,
+        favourite: it.favourite,
         chips: CARD_FACETS.flatMap((k) => it.tags[k] ?? []).slice(0, 3),
       }))}
       facets={facets}
       total={items.length}
+      favouriteCount={items.filter((it) => it.favourite).length}
       view={view}
     />
   );

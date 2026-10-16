@@ -10,16 +10,16 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCurrentUser } from '@/lib/auth/current-user';
-import { setFavourite } from '@/lib/db/favourites';
-import { getDatabase } from '@/lib/util';
+import { getSessionUid } from '@/lib/auth/current-user';
+import { setFavouriteAndTag } from '@/lib/recipe/favourite';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
-  const user = await getCurrentUser();
-  if (!user) {
+  // Identity from the signed cookie — no database read on this path.
+  const uid = await getSessionUid();
+  if (uid === null) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
   const { id } = await params;
@@ -27,6 +27,6 @@ export async function POST(
     on?: boolean;
   } | null;
   const on = body?.on !== false; // default to hearting when unspecified
-  const favourite = await setFavourite(getDatabase(), user.id, id, on);
+  const favourite = await setFavouriteAndTag(uid, id, on);
   return NextResponse.json({ favourite });
 }

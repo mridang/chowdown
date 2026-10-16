@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { cache } from 'react';
 
+import { FavouriteButton } from '@/components/favourite-button';
 import { RecipeGallery } from '@/components/recipe-gallery';
 import { RecipeView } from '@/components/recipe-view';
 import {
@@ -26,7 +27,6 @@ import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 import { getDatabase } from '@/lib/util';
 
 import { AddNote } from './_components/add-note';
-import { HeartButton } from './_components/heart-button';
 import { TagButton } from './_components/tag-button';
 
 /** Canonical origin — mirrors `SITE_URL` in the root layout. */
@@ -160,7 +160,11 @@ export default async function RecipePage({
         </Link>
         <div className="flex items-center gap-2">
           <TagButton recipeId={id} />
-          <HeartButton recipeId={id} initial={favourited} />
+          <FavouriteButton
+            recipeId={id}
+            initial={favourited}
+            variant="labelled"
+          />
         </div>
       </nav>
 

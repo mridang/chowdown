@@ -67,6 +67,7 @@ export async function indexRecipeWrite(
   name: string,
   source: string,
   modifiedTime: string | null = null,
+  options: { embed?: boolean } = {},
 ): Promise<void> {
   const parsed = parseRecipe(source, name);
   await upsertRecipe(db, {
@@ -80,9 +81,19 @@ export async function indexRecipeWrite(
   });
   // Embed in the background so "find similar" stays current without making the
   // write (or the next page view) wait for the model.
-  runInBackground(
-    embedRecipe(db, getEnv(), userId, driveFileId, name, source, modifiedTime),
-  );
+  if (options.embed !== false) {
+    runInBackground(
+      embedRecipe(
+        db,
+        getEnv(),
+        userId,
+        driveFileId,
+        name,
+        source,
+        modifiedTime,
+      ),
+    );
+  }
 }
 
 /** Safely parse a stored tags JSON string back into {@link RecipeTags}. */

@@ -17,6 +17,8 @@ import type { RecipeTags } from './tag-index';
 /** Parsed filter state from the query string. */
 export interface FilterState {
   q: string;
+  /** Show only hearted recipes (`?fav=1`). */
+  favouritesOnly: boolean;
   /** `{ facetKey: selectedValue[] }`. */
   selected: Record<string, string[]>;
 }
@@ -43,12 +45,16 @@ export function parseFilters(params: SearchParams): FilterState {
       selected[f.key] = vals;
     }
   }
-  return { q, selected };
+  const fav = params['fav'];
+  const favouritesOnly = fav === '1' || fav === 'true';
+  return { q, favouritesOnly, selected };
 }
 
 /** A recipe as far as filtering cares: a display name and its tags. */
 export interface FilterableRecipe {
   display: string;
+  /** Whether the user has hearted it. */
+  favourite?: boolean;
   tags: RecipeTags;
 }
 
@@ -57,6 +63,9 @@ export function matchesFilters(
   recipe: FilterableRecipe,
   state: FilterState,
 ): boolean {
+  if (state.favouritesOnly && !recipe.favourite) {
+    return false;
+  }
   if (state.q) {
     const hay = `${recipe.display} ${Object.values(recipe.tags)
       .flat()

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useMemo, useState } from 'react';
 
 import { CoverImage } from '@/components/cover-image';
+import { FavouriteButton } from '@/components/favourite-button';
 import type { FacetView } from '@/lib/recipe/facet-filter';
 
 import { FilterControls } from './filter-controls';
@@ -18,6 +19,8 @@ export interface RecipeCard {
   cover?: string;
   /** A few tag chips (cuisine/protein/difficulty) for the card. */
   chips?: string[];
+  /** Whether the user has hearted it. */
+  favourite: boolean;
 }
 
 /** A neutral cover placeholder (first letter) when a recipe has no image. */
@@ -43,35 +46,91 @@ function CoverFallback({
 /** One recipe as a grid card: cover on top, name + chips below. */
 function GridCard({ recipe }: { recipe: RecipeCard }) {
   return (
-    <Link
-      href={`/recipe/${recipe.id}`}
-      prefetch
-      className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-sm"
-    >
-      {recipe.cover ? (
-        <CoverImage
-          src={recipe.cover}
-          className="h-40 w-full object-cover"
-          fallback={
-            <CoverFallback name={recipe.display} className="h-40 w-full" />
-          }
-        />
-      ) : (
-        <CoverFallback name={recipe.display} className="h-40 w-full" />
-      )}
-      <div className="flex flex-1 flex-col gap-2 p-3">
-        <div className="flex items-start gap-2">
-          <h3 className="flex-1 text-sm font-semibold text-slate-800 group-hover:text-slate-900">
-            {recipe.display}
-          </h3>
-          {recipe.uncurated ? (
-            <span className="flex-none rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-slate-600 uppercase">
-              idea
-            </span>
+    // The heart is a sibling of the link (not inside it), laid over the cover;
+    // `group` on the wrapper lets it appear when the card is hovered.
+    <div className="group relative flex">
+      <Link
+        href={`/recipe/${recipe.id}`}
+        prefetch
+        className="flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-sm"
+      >
+        {recipe.cover ? (
+          <CoverImage
+            src={recipe.cover}
+            className="h-40 w-full object-cover"
+            fallback={
+              <CoverFallback name={recipe.display} className="h-40 w-full" />
+            }
+          />
+        ) : (
+          <CoverFallback name={recipe.display} className="h-40 w-full" />
+        )}
+        <div className="flex flex-1 flex-col gap-2 p-3">
+          <div className="flex items-start gap-2">
+            <h3 className="flex-1 text-sm font-semibold text-slate-800 group-hover:text-slate-900">
+              {recipe.display}
+            </h3>
+            {recipe.uncurated ? (
+              <span className="flex-none rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-slate-600 uppercase">
+                idea
+              </span>
+            ) : null}
+          </div>
+          {recipe.chips && recipe.chips.length > 0 ? (
+            <div className="mt-auto flex flex-wrap gap-1">
+              {recipe.chips.map((c) => (
+                <span
+                  key={c}
+                  className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 capitalize"
+                >
+                  {c}
+                </span>
+              ))}
+            </div>
           ) : null}
         </div>
+      </Link>
+      <FavouriteButton
+        recipeId={recipe.id}
+        initial={recipe.favourite}
+        variant="overlay"
+        className="absolute top-2 right-2"
+      />
+    </div>
+  );
+}
+
+/** One recipe as a list row: thumbnail + name + chips. */
+function ListRow({ recipe }: { recipe: RecipeCard }) {
+  return (
+    <div className="group relative flex">
+      <Link
+        href={`/recipe/${recipe.id}`}
+        prefetch
+        className="flex flex-1 items-center gap-3 rounded-lg border border-slate-200 bg-white p-2 pr-12 transition hover:border-slate-300 hover:bg-slate-50"
+      >
+        {recipe.cover ? (
+          <CoverImage
+            src={recipe.cover}
+            className="h-12 w-12 flex-none rounded-md object-cover"
+            fallback={
+              <CoverFallback
+                name={recipe.display}
+                className="h-12 w-12 flex-none rounded-md"
+              />
+            }
+          />
+        ) : (
+          <CoverFallback
+            name={recipe.display}
+            className="h-12 w-12 flex-none rounded-md"
+          />
+        )}
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">
+          {recipe.display}
+        </span>
         {recipe.chips && recipe.chips.length > 0 ? (
-          <div className="mt-auto flex flex-wrap gap-1">
+          <span className="hidden gap-1 sm:flex">
             {recipe.chips.map((c) => (
               <span
                 key={c}
@@ -80,59 +139,21 @@ function GridCard({ recipe }: { recipe: RecipeCard }) {
                 {c}
               </span>
             ))}
-          </div>
+          </span>
         ) : null}
-      </div>
-    </Link>
-  );
-}
-
-/** One recipe as a list row: thumbnail + name + chips. */
-function ListRow({ recipe }: { recipe: RecipeCard }) {
-  return (
-    <Link
-      href={`/recipe/${recipe.id}`}
-      prefetch
-      className="group flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-2 transition hover:border-slate-300 hover:bg-slate-50"
-    >
-      {recipe.cover ? (
-        <CoverImage
-          src={recipe.cover}
-          className="h-12 w-12 flex-none rounded-md object-cover"
-          fallback={
-            <CoverFallback
-              name={recipe.display}
-              className="h-12 w-12 flex-none rounded-md"
-            />
-          }
-        />
-      ) : (
-        <CoverFallback
-          name={recipe.display}
-          className="h-12 w-12 flex-none rounded-md"
-        />
-      )}
-      <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">
-        {recipe.display}
-      </span>
-      {recipe.chips && recipe.chips.length > 0 ? (
-        <span className="hidden gap-1 sm:flex">
-          {recipe.chips.map((c) => (
-            <span
-              key={c}
-              className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 capitalize"
-            >
-              {c}
-            </span>
-          ))}
-        </span>
-      ) : null}
-      {recipe.uncurated ? (
-        <span className="flex-none rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-slate-600 uppercase">
-          idea
-        </span>
-      ) : null}
-    </Link>
+        {recipe.uncurated ? (
+          <span className="flex-none rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-slate-600 uppercase">
+            idea
+          </span>
+        ) : null}
+      </Link>
+      <FavouriteButton
+        recipeId={recipe.id}
+        initial={recipe.favourite}
+        variant="inline"
+        className="absolute top-1/2 right-2 -translate-y-1/2"
+      />
+    </div>
   );
 }
 
@@ -148,6 +169,7 @@ export function RecipeApp({
   recipes,
   facets,
   total,
+  favouriteCount,
   view,
 }: {
   userName: string;
@@ -155,6 +177,8 @@ export function RecipeApp({
   recipes: RecipeCard[];
   facets: FacetView[];
   total: number;
+  /** How many recipes are hearted (for the Favourites filter's badge). */
+  favouriteCount: number;
   view: 'grid' | 'list';
 }) {
   const [copied, setCopied] = useState(false);
@@ -215,7 +239,7 @@ export function RecipeApp({
 
       <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-[16rem_1fr]">
         <aside>
-          <FilterControls facets={facets} />
+          <FilterControls facets={facets} favouriteCount={favouriteCount} />
         </aside>
 
         <section className="min-w-0">

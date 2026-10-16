@@ -75,6 +75,8 @@ export interface AppPageRows {
   recipes: (typeof recipes.$inferSelect)[];
   /** How many recipes have an embedding (a count, not the vectors). */
   embeddedCount: number;
+  /** Drive file ids the user has hearted. */
+  favouriteIds: string[];
 }
 
 /**
@@ -85,7 +87,7 @@ export async function getAppPageRows(
   db: Database,
   userId: number,
 ): Promise<AppPageRows> {
-  const [userRows, recipeRows, countRows] = await db.batch([
+  const [userRows, recipeRows, countRows, favouriteRows] = await db.batch([
     db.select().from(users).where(eq(users.id, userId)).limit(1),
     db
       .select()
@@ -96,10 +98,15 @@ export async function getAppPageRows(
       .select({ n: count() })
       .from(embeddings)
       .where(eq(embeddings.user_id, userId)),
+    db
+      .select({ id: favourites.drive_file_id })
+      .from(favourites)
+      .where(eq(favourites.user_id, userId)),
   ]);
   return {
     user: userRows[0],
     recipes: recipeRows,
     embeddedCount: countRows[0]?.n ?? 0,
+    favouriteIds: favouriteRows.map((r) => r.id),
   };
 }

@@ -1,6 +1,10 @@
 import type { Note } from '@/lib/recipe/cook-text';
 import type { ParsedRecipe, StepToken } from '@/lib/recipe/cooklang';
+import { FAVOURITE_KEY } from '@/lib/recipe/favourite-tag';
 import { MEDIA_META_KEYS } from '@/lib/recipe/media';
+
+/** Metadata that is shown some other way (gallery, heart), not as text. */
+const HIDDEN_META_KEYS = new Set([...MEDIA_META_KEYS, FAVOURITE_KEY]);
 
 /** A small amber note chip shown beside an ingredient or step. */
 function NoteChip({ text }: { text: string }) {
@@ -66,7 +70,7 @@ export function RecipeView({
   const generalNotes = notes.filter((n) => n.scope === 'general');
   // Media (image/video URLs) renders as a gallery, not as raw metadata text.
   const metaRow = recipe.metadata.filter(
-    ([key]) => !MEDIA_META_KEYS.has(key.toLowerCase()),
+    ([key]) => !HIDDEN_META_KEYS.has(key.toLowerCase()),
   );
 
   return (
