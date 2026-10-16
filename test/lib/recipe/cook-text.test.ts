@@ -8,6 +8,7 @@ import {
   extractNotes,
   isUncurated,
   normalizeSourceUrl,
+  removeEmptyMetadata,
   recipeDisplayName,
   sanitiseName,
   sourceUrlOf,
@@ -229,5 +230,25 @@ describe('appendNote + extractNotes', () => {
     expect(extractNotes(out)).toEqual([
       { scope: 'general', key: '', text: 'spicy' },
     ]);
+  });
+});
+
+describe('removeEmptyMetadata', () => {
+  it('drops blank and placeholder metadata lines', () => {
+    const out = removeEmptyMetadata(
+      '>> title: X\n>> servings: \n>> time: unknown\n>> source: \n>> cuisine: N/A\n\nCook.',
+    );
+    expect(out).toBe('>> title: X\n\nCook.');
+  });
+
+  it('keeps real values, including numeric and ranged ones', () => {
+    const out = removeEmptyMetadata('>> servings: 4-6\n>> time: 20 minutes\n');
+    expect(out).toContain('>> servings: 4-6');
+    expect(out).toContain('>> time: 20 minutes');
+  });
+
+  it('leaves the method text alone', () => {
+    const body = 'Mix it. The result is unknown to science.\n-- note\n';
+    expect(removeEmptyMetadata(`>> title: X\n\n${body}`)).toContain(body);
   });
 });

@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-import { convertImport } from '../../../src/lib/recipe/to-cooklang';
+import {
+  addMissingCover,
+  convertImport,
+  convertToCooklang,
+} from '../../../src/lib/recipe/to-cooklang';
 
 const realFetch = global.fetch;
 
@@ -81,5 +85,65 @@ describe('convertImport', () => {
     });
     expect(cook).toContain('>> title: Page Recipe');
     expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+describe('convertToCooklang', () => {
+  it('strips blank and unknown metadata the model emits', async () => {
+    const cook = await convertToCooklang(
+      'article',
+      envWith('>> title: T\n>> servings: \n>> time: unknown\n\nMix @egg{1}.'),
+    );
+    expect(cook).toContain('>> title: T');
+    expect(cook).not.toContain('servings');
+    expect(cook).not.toContain('unknown');
+  });
+});
+
+describe('addMissingCover', () => {
+  it('leaves a recipe that already has images alone', async () => {
+    const spy = jest.fn();
+    global.fetch = spy as unknown as typeof fetch;
+    const src =
+      '>> title: T\n>> source: https://a.com/x\n>> images: https://a.com/i.jpg\n';
+    expect(await addMissingCover(src)).toBe(src);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('leaves a recipe with no source alone', async () => {
+    const spy = jest.fn();
+    global.fetch = spy as unknown as typeof fetch;
+    const src = '>> title: T\n\nCook.\n';
+    expect(await addMissingCover(src)).toBe(src);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('adds the page og:image as the cover', async () => {
+    global.fetch = (async () =>
+      new Response(
+        '<meta property="og:image" content="https://a.com/og.jpg">',
+      )) as unknown as typeof fetch;
+    const out = await addMissingCover(
+      '>> title: T\n>> source: https://a.com/x\n\nCook.\n',
+    );
+    expect(out).toContain('>> images: https://a.com/og.jpg');
+  });
+
+  it('prefers the Recipe JSON-LD image over og:image', async () => {
+    global.fetch = (async () =>
+      new Response(
+        `${jsonLdPage}<meta property="og:image" content="https://a.com/og.jpg">`,
+      )) as unknown as typeof fetch;
+    const out = await addMissingCover(
+      '>> title: T\n>> source: https://a.com/x\n\nCook.\n',
+    );
+    expect(out).toContain('>> images: https://a.com/hero.jpg');
+  });
+
+  it('returns the source unchanged when the page cannot be fetched', async () => {
+    global.fetch = (async () =>
+      new Response('blocked', { status: 403 })) as unknown as typeof fetch;
+    const src = '>> title: T\n>> source: https://a.com/x\n\nCook.\n';
+    expect(await addMissingCover(src)).toBe(src);
   });
 });

@@ -38,7 +38,7 @@ import { embedText } from '../recipe/embeddings';
 import { ensureEmbeddings, topSimilar } from '../recipe/similar';
 import { indexRecipeWrite } from '../recipe/tag-index';
 import { tagCookSource, tagCookSourceBestEffort } from '../recipe/tagging';
-import { convertImport } from '../recipe/to-cooklang';
+import { addMissingCover, convertImport } from '../recipe/to-cooklang';
 import { convertRecipe, isUnitSystem, type UnitSystem } from '../recipe/units';
 import { getDatabase, getEnv } from '../util';
 import { html as recipeCardHtml } from '../../views/generated/recipe-card';
@@ -752,12 +752,14 @@ async function callTool(
         return text(`No recipe found matching "${args['recipe']}".`);
       }
       const original = await getFileContent(file.id, token);
-      const { source: updated, tags } = await tagCookSource(
+      const { source: tagged, tags } = await tagCookSource(
         original,
         file.name,
         getEnv(),
       );
-      if (tags.length === 0) {
+      // Also backfill a missing cover from the recipe's source page.
+      const updated = await addMissingCover(tagged);
+      if (tags.length === 0 && updated === original) {
         return text(
           `Couldn't confidently tag "${recipeDisplayName(file.name)}".`,
         );

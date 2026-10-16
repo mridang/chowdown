@@ -14,6 +14,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser, getUserAccessToken } from '@/lib/auth/current-user';
 import { getRecipeByFileId } from '@/lib/db/recipes';
 import { tagCookSource } from '@/lib/recipe/tagging';
+import { addMissingCover } from '@/lib/recipe/to-cooklang';
 import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 import { getFileContent, updateRecipeFile } from '@/lib/drive/drive-client';
 import { getDatabase, getEnv } from '@/lib/util';
@@ -30,8 +31,14 @@ export async function POST(
   const accessToken = await getUserAccessToken(user);
   try {
     const original = await getFileContent(id, accessToken);
-    const { source, tags } = await tagCookSource(original, 'recipe.cook', getEnv());
-    if (tags.length === 0) {
+    const { source: tagged, tags } = await tagCookSource(
+      original,
+      'recipe.cook',
+      getEnv(),
+    );
+    // Also backfill a missing cover from the recipe's source page.
+    const source = await addMissingCover(tagged);
+    if (tags.length === 0 && source === original) {
       return NextResponse.json({ tagged: false, tags: [] });
     }
     await updateRecipeFile(id, source, accessToken);

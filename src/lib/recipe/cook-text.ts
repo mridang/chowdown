@@ -169,6 +169,26 @@ export function upsertMetadata(
   return out.endsWith('\n') ? out : `${out}\n`;
 }
 
+/** Metadata values that mean "no value" — a model's way of saying it doesn't know. */
+const EMPTY_VALUE =
+  /^(unknown|n\/a|na|none|null|undefined|-+|tbd|not specified)?$/i;
+
+/**
+ * Drop `>> key: value` metadata lines whose value is blank or a placeholder
+ * like "unknown". The conversion model sometimes emits `>> servings: ` or
+ * `>> time: unknown` for things the page never said; those would show up as
+ * junk on the recipe card, so remove them. Only the metadata lines are touched.
+ */
+export function removeEmptyMetadata(source: string): string {
+  return source
+    .split(/\r?\n/)
+    .filter((line) => {
+      const m = /^>>\s*[^:]+:\s*(.*)$/.exec(line);
+      return !m || !EMPTY_VALUE.test(m[1]!.trim());
+    })
+    .join('\n');
+}
+
 /**
  * The `>> source:` URL recorded in a recipe's source, if any. Imports write the
  * page they came from here, which is how we recognise a link we already have.

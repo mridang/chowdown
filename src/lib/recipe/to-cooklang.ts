@@ -14,7 +14,7 @@
  *      conventions are dictated here, not by the client.
  */
 
-import { upsertMetadata } from './cook-text';
+import { removeEmptyMetadata, sourceUrlOf, upsertMetadata } from './cook-text';
 import { fetchPage } from './fetch-page';
 import { extractOgImage, extractRecipeFromHtml } from './import-schema-org';
 
@@ -83,7 +83,7 @@ export async function convertToCooklang(
   if (!cooklang) {
     throw new Error('Recipe conversion produced no output');
   }
-  return `${cooklang}\n`;
+  return `${removeEmptyMetadata(cooklang)}\n`;
 }
 
 /**
@@ -129,4 +129,32 @@ export async function convertImport(
     return upsertMetadata(cook, [['images', image]]);
   }
   return cook;
+}
+
+/**
+ * Backfill a missing cover image. If the recipe has no `>> images:` but does
+ * record a `>> source:` page, make one best-effort fetch of it and attach the
+ * page's own recipe image (from JSON-LD) or its `og:image`. Returns the source
+ * unchanged when it already has images, has no source, or the page can't be
+ * fetched (bot protection, timeout) — so it is always safe to call.
+ */
+export async function addMissingCover(source: string): Promise<string> {
+  if (/^>>\s*images:/im.test(source)) {
+    return source;
+  }
+  const url = sourceUrlOf(source);
+  if (!url) {
+    return source;
+  }
+  let page: string;
+  try {
+    page = await fetchPage(url);
+  } catch {
+    return source;
+  }
+  const fromJsonLd = extractRecipeFromHtml(page, url);
+  const image =
+    (fromJsonLd && /^>>\s*images:\s*(\S+)/im.exec(fromJsonLd)?.[1]) ||
+    extractOgImage(page, url);
+  return image ? upsertMetadata(source, [['images', image]]) : source;
 }
