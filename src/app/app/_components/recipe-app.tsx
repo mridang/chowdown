@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useMemo, useState } from 'react';
 
+import { CoverImage } from '@/components/cover-image';
 import type { FacetView } from '@/lib/recipe/facet-filter';
 
 import { FilterControls } from './filter-controls';
@@ -47,12 +48,12 @@ function GridCard({ recipe }: { recipe: RecipeCard }) {
       className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-sm"
     >
       {recipe.cover ? (
-        <img
+        <CoverImage
           src={recipe.cover}
-          alt=""
-          referrerPolicy="no-referrer"
-          loading="lazy"
           className="h-40 w-full object-cover"
+          fallback={
+            <CoverFallback name={recipe.display} className="h-40 w-full" />
+          }
         />
       ) : (
         <CoverFallback name={recipe.display} className="h-40 w-full" />
@@ -93,12 +94,15 @@ function ListRow({ recipe }: { recipe: RecipeCard }) {
       className="group flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-2 transition hover:border-slate-300 hover:bg-slate-50"
     >
       {recipe.cover ? (
-        <img
+        <CoverImage
           src={recipe.cover}
-          alt=""
-          referrerPolicy="no-referrer"
-          loading="lazy"
           className="h-12 w-12 flex-none rounded-md object-cover"
+          fallback={
+            <CoverFallback
+              name={recipe.display}
+              className="h-12 w-12 flex-none rounded-md"
+            />
+          }
         />
       ) : (
         <CoverFallback

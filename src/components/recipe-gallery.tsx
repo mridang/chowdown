@@ -1,3 +1,4 @@
+import { CoverImage } from '@/components/cover-image';
 import type { RecipeMedia } from '@/lib/recipe/media';
 
 /**
@@ -14,25 +15,23 @@ export function RecipeGallery({ media }: { media: RecipeMedia }) {
   return (
     <div className="mt-6">
       {media.cover ? (
-        <img
+        <CoverImage
           src={media.cover}
           alt="Recipe"
-          referrerPolicy="no-referrer"
-          loading="lazy"
           className="max-h-96 w-full rounded-xl object-cover"
+          fallback={null}
         />
       ) : null}
 
       {media.rest.length > 0 ? (
         <div className="mt-2 flex gap-2 overflow-x-auto">
           {media.rest.map((src, i) => (
-            <img
+            <CoverImage
               key={i}
               src={src}
               alt="Recipe step"
-              referrerPolicy="no-referrer"
-              loading="lazy"
               className="h-24 w-24 flex-none rounded-lg object-cover"
+              fallback={null}
             />
           ))}
         </div>
