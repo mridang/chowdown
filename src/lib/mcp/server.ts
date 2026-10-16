@@ -31,6 +31,7 @@ import {
   extractCookingLogs,
   isUncurated,
   recipeDisplayName,
+  removeMetadata,
   uncuratedFilename,
 } from '../recipe/cook-text';
 import { parseRecipe } from '../recipe/cooklang';
@@ -479,8 +480,13 @@ const TOOLS = [
           items: { type: 'string' },
           description: 'Image URLs (http/https), cover first.',
         },
+        clear: {
+          type: 'boolean',
+          description:
+            "Set true (with an empty images list) to remove the recipe's images instead.",
+        },
       },
-      required: ['recipe', 'images'],
+      required: ['recipe'],
     },
     outputSchema: RECIPE_CARD_OUTPUT_SCHEMA,
     _meta: CARD_TOOL_META,
@@ -821,14 +827,17 @@ async function callTool(
       const urls = Array.isArray(args['images'])
         ? (args['images'] as unknown[]).map(String)
         : [];
-      if (validImageUrls(urls).length === 0) {
+      const clear = args['clear'] === true;
+      if (!clear && validImageUrls(urls).length === 0) {
         return {
           ...text('Pass at least one http(s) image URL in `images`.'),
           isError: true,
         };
       }
       const original = await getFileContent(file.id, token);
-      const updated = withImages(original, urls);
+      const updated = clear
+        ? removeMetadata(original, 'images')
+        : withImages(original, urls);
       await updateRecipeFile(file.id, updated, token);
       await indexRecipeWrite(
         getDatabase(),
@@ -841,7 +850,9 @@ async function callTool(
         file.id,
         file.name,
         updated,
-        `Set the cover for "${recipeDisplayName(file.name)}".`,
+        clear
+          ? `Removed the images from "${recipeDisplayName(file.name)}".`
+          : `Set the cover for "${recipeDisplayName(file.name)}".`,
         system,
       );
     }

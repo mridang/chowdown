@@ -9,6 +9,7 @@ import {
   isUncurated,
   normalizeSourceUrl,
   removeEmptyMetadata,
+  removeMetadata,
   recipeDisplayName,
   sanitiseName,
   sourceUrlOf,
@@ -250,5 +251,23 @@ describe('removeEmptyMetadata', () => {
   it('leaves the method text alone', () => {
     const body = 'Mix it. The result is unknown to science.\n-- note\n';
     expect(removeEmptyMetadata(`>> title: X\n\n${body}`)).toContain(body);
+  });
+});
+
+describe('removeMetadata', () => {
+  it('removes the named key case-insensitively and nothing else', () => {
+    const out = removeMetadata(
+      '>> title: T\n>> Images: https://a.com/x.jpg\n>> source: https://a.com\n\nCook.\n',
+      'images',
+    );
+    expect(out).not.toMatch(/images/i);
+    expect(out).toContain('>> title: T');
+    expect(out).toContain('>> source: https://a.com');
+    expect(out).toContain('Cook.');
+  });
+
+  it('is a no-op when the key is absent', () => {
+    const src = '>> title: T\n\nCook.\n';
+    expect(removeMetadata(src, 'images')).toBe(src);
   });
 });

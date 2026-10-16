@@ -5,6 +5,7 @@ import {
   extractRecipeFromHtml,
   findRecipeNode,
   humaniseDuration,
+  imageUrls,
   parseIngredientLine,
   schemaOrgToCook,
   toCookIngredient,
@@ -192,5 +193,18 @@ describe('extractOgImage', () => {
 
   it('is undefined when the page has no og:image', () => {
     expect(extractOgImage('<html><head></head></html>')).toBeUndefined();
+  });
+});
+
+describe('imageUrls', () => {
+  it('encodes spaces and drops placeholder and invalid urls', () => {
+    expect(
+      imageUrls([
+        'https://a.com/My Photo.jpg',
+        'https://a.com/undefined',
+        'not a url',
+        { url: 'https://a.com/ok.jpg' },
+      ] as never),
+    ).toEqual(['https://a.com/My%20Photo.jpg', 'https://a.com/ok.jpg']);
   });
 });

@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import type { ParsedRecipe } from '../../../src/lib/recipe/cooklang';
 import {
   extractMedia,
+  normalizeImageUrl,
   validImageUrls,
   withImages,
 } from '../../../src/lib/recipe/media';
@@ -92,5 +93,30 @@ describe('withImages', () => {
   it('leaves the source alone when no url is valid', () => {
     const src = '>> title: T\n>> images: https://keep.com/x.jpg\n';
     expect(withImages(src, ['not a url', 'javascript:x'])).toBe(src);
+  });
+});
+
+describe('normalizeImageUrl', () => {
+  it('percent-encodes spaces so a url survives the space-separated list', () => {
+    expect(
+      normalizeImageUrl('https://a.com/Chilli Chicken Hero 1.1.avif'),
+    ).toBe('https://a.com/Chilli%20Chicken%20Hero%201.1.avif');
+  });
+
+  it('rejects placeholder paths like /undefined', () => {
+    expect(normalizeImageUrl('https://a.com/2012/undefined')).toBeUndefined();
+    expect(normalizeImageUrl('https://a.com/null')).toBeUndefined();
+  });
+
+  it('rejects non-http schemes and relative paths', () => {
+    expect(normalizeImageUrl('javascript:alert(1)')).toBeUndefined();
+    expect(normalizeImageUrl('/img/x.jpg')).toBeUndefined();
+    expect(normalizeImageUrl('')).toBeUndefined();
+  });
+
+  it('keeps a normal url, including a query string with a comma', () => {
+    expect(normalizeImageUrl('https://a.com/p.jpg?resize=440,400')).toBe(
+      'https://a.com/p.jpg?resize=440,400',
+    );
   });
 });

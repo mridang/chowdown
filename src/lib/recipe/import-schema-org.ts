@@ -18,6 +18,8 @@
  * pure and unit-tested.
  */
 
+import { validImageUrls } from './media';
+
 /** A loose JSON value — JSON-LD arrives without a fixed shape. */
 type Json = unknown;
 
@@ -214,16 +216,16 @@ export function imageUrls(value: Json): string[] {
   const urls: string[] = [];
   for (const item of items) {
     if (typeof item === 'string') {
-      urls.push(item.trim());
+      urls.push(item);
     } else if (typeof item === 'object' && item !== null) {
       const node = item as Record<string, Json>;
       const url = node['url'] ?? node['contentUrl'];
       if (typeof url === 'string') {
-        urls.push(url.trim());
+        urls.push(url);
       }
     }
   }
-  return urls;
+  return validImageUrls(urls);
 }
 
 /** Video URL from schema.org `video` (VideoObject contentUrl/embedUrl/url). */

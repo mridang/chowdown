@@ -59,15 +59,36 @@ export function extractMedia(recipe: ParsedRecipe): RecipeMedia {
 }
 
 /**
- * Keep only the valid, distinct http(s) URLs from a list, in order. Anything
- * else (relative paths, `javascript:` URIs, junk) is dropped.
+ * Normalise one image URL, or return `undefined` if it isn't usable. Must be
+ * http(s); spaces and other unsafe characters are percent-encoded (the list is
+ * stored space-separated, so a raw space would split one URL into two); and a
+ * URL whose last path segment is a placeholder like `undefined` — what a buggy
+ * scraper produces when a page has no image — is rejected.
+ */
+export function normalizeImageUrl(raw: string): string | undefined {
+  const trimmed = raw.trim();
+  if (!trimmed || !isHttpUrl(trimmed)) {
+    return undefined;
+  }
+  const url = new URL(trimmed);
+  const last = url.pathname.split('/').filter(Boolean).pop() ?? '';
+  if (/^(undefined|null|nan|false)$/i.test(last)) {
+    return undefined;
+  }
+  return url.href;
+}
+
+/**
+ * Keep only the usable, distinct image URLs from a list, normalised and in
+ * order. Anything else (relative paths, `javascript:` URIs, placeholders) is
+ * dropped.
  */
 export function validImageUrls(urls: readonly string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const raw of urls) {
-    const url = raw.trim();
-    if (url && isHttpUrl(url) && !seen.has(url)) {
+    const url = normalizeImageUrl(raw);
+    if (url && !seen.has(url)) {
       seen.add(url);
       out.push(url);
     }

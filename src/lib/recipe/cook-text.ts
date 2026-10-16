@@ -169,6 +169,21 @@ export function upsertMetadata(
   return out.endsWith('\n') ? out : `${out}\n`;
 }
 
+/**
+ * Remove every `>> key: …` metadata line for `key` (case-insensitive), leaving
+ * the rest of the file untouched. A no-op if the key isn't present.
+ */
+export function removeMetadata(source: string, key: string): string {
+  const target = key.trim().toLowerCase();
+  return source
+    .split(/\r?\n/)
+    .filter((line) => {
+      const m = /^>>\s*([^:]+):/.exec(line);
+      return !m || m[1]!.trim().toLowerCase() !== target;
+    })
+    .join('\n');
+}
+
 /** Metadata values that mean "no value" — a model's way of saying it doesn't know. */
 const EMPTY_VALUE =
   /^(unknown|n\/a|na|none|null|undefined|-+|tbd|not specified)?$/i;
