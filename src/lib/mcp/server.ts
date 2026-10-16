@@ -38,11 +38,8 @@ import { embedText } from '../recipe/embeddings';
 import { ensureEmbeddings, topSimilar } from '../recipe/similar';
 import { indexRecipeWrite } from '../recipe/tag-index';
 import { tagCookSource, tagCookSourceBestEffort } from '../recipe/tagging';
-import {
-  addMissingCover,
-  convertImport,
-  hasRecipeBody,
-} from '../recipe/to-cooklang';
+import { addMissingCover, convertImport } from '../recipe/to-cooklang';
+import { importRecipe } from '../recipe/import-recipe';
 import { convertRecipe, isUnitSystem, type UnitSystem } from '../recipe/units';
 import { getDatabase, getEnv } from '../util';
 import { html as recipeCardHtml } from '../../views/generated/recipe-card';
@@ -632,29 +629,30 @@ async function callTool(
           isError: true,
         };
       }
-      const sourceUrl = args['url'] ? String(args['url']) : undefined;
-      const providedName = args['name'] ? String(args['name']) : undefined;
       const db = getDatabase();
-
-      // Already imported this link? Return it instead of saving a duplicate.
-      const existing = sourceUrl
-        ? await findRecipeBySourceUrl(db, user.id, sourceUrl)
-        : undefined;
-      if (existing) {
-        return recipeCardResult(
-          existing.drive_file_id,
-          existing.name,
-          existing.source,
-          `"${recipeDisplayName(existing.name)}" is already in your recipes.`,
-          system,
-        );
-      }
-
-      const converted = await convertImport(content, getEnv(), {
-        sourceUrl,
-        name: providedName,
-      });
-      if (!hasRecipeBody(converted)) {
+      const env = getEnv();
+      const outcome = await importRecipe(
+        {
+          findExisting: async (url) => {
+            const row = await findRecipeBySourceUrl(db, user.id, url);
+            return row
+              ? { id: row.drive_file_id, name: row.name, source: row.source }
+              : undefined;
+          },
+          convert: (c, opts) => convertImport(c, env, opts),
+          tag: (src, name) => tagCookSourceBestEffort(src, name, env),
+          create: (name, src) => createRecipeFile(folderId, name, src, token),
+          update: (id, src) => updateRecipeFile(id, src, token),
+          index: (id, name, src) =>
+            indexRecipeWrite(db, user.id, id, name, src),
+        },
+        {
+          content,
+          url: args['url'] ? String(args['url']) : undefined,
+          name: args['name'] ? String(args['name']) : undefined,
+        },
+      );
+      if (outcome.kind === 'refused') {
         return {
           ...text(
             "That content didn't contain a recipe (no ingredients or steps), so nothing was saved. " +
@@ -663,18 +661,18 @@ async function callTool(
           isError: true,
         };
       }
-      const name =
-        providedName ||
-        parseRecipe(converted, 'recipe.cook').title ||
-        'Imported Recipe';
-      const cook = await tagCookSourceBestEffort(converted, name, getEnv());
-      const file = await createRecipeFile(folderId, name, cook, token);
-      await indexRecipeWrite(db, user.id, file.id, file.name, cook);
+      const label = recipeDisplayName(outcome.name);
+      const message =
+        outcome.kind === 'existing'
+          ? `"${label}" is already in your recipes.`
+          : outcome.kind === 'repaired'
+            ? `Repaired "${label}" — the earlier import had no ingredients or steps.`
+            : `Imported "${label}".`;
       return recipeCardResult(
-        file.id,
-        file.name,
-        cook,
-        `Imported "${recipeDisplayName(file.name)}".`,
+        outcome.id,
+        outcome.name,
+        outcome.source,
+        message,
         system,
       );
     }
