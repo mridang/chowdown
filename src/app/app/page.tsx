@@ -1,10 +1,7 @@
 import { redirect } from 'next/navigation';
 
-import { getCurrentUser, getUserAccessToken } from '@/lib/auth/current-user';
-import { countEmbeddings } from '@/lib/db/embeddings';
-import { listRecipesByUser } from '@/lib/db/recipes';
-import { setRecipesFolderId } from '@/lib/db/users';
-import { ensureRecipesFolder, listRecipeFiles } from '@/lib/drive/drive-client';
+import { getSessionUid } from '@/lib/auth/current-user';
+import { getAppPageRows } from '@/lib/db/recipe-page';
 import { isUncurated, recipeDisplayName } from '@/lib/recipe/cook-text';
 import { parseRecipe } from '@/lib/recipe/cooklang';
 import {
@@ -15,8 +12,9 @@ import {
   type SearchParams,
 } from '@/lib/recipe/facet-filter';
 import { extractMedia } from '@/lib/recipe/media';
+import { syncFromDrive } from '@/lib/recipe/drive-sync';
 import { backfillEmbeddings } from '@/lib/recipe/embed-write';
-import { syncRecipeTags, type RecipeTags } from '@/lib/recipe/tag-index';
+import type { RecipeTags } from '@/lib/recipe/tag-index';
 import { getDatabase, getEnv, runInBackground } from '@/lib/util';
 
 import { RecipeApp, type RecipeCard } from './_components/recipe-app';
@@ -36,52 +34,53 @@ export default async function AppPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const user = await getCurrentUser();
-  if (!user) {
+  // Identity comes from the signed cookie (no database read), and the user, the
+  // cached recipes and the embedding count come back in ONE D1 round trip. No
+  // Google or Drive call sits on this path, which is what makes the grid fast.
+  const uid = await getSessionUid();
+  if (uid === null) {
     redirect('/');
   }
-
-  let items: (RecipeCard & { tags: RecipeTags })[] = [];
-
-  try {
-    const token = await getUserAccessToken(user);
-    let folderId = user.recipes_folder_id;
-    if (!folderId) {
-      folderId = await ensureRecipesFolder(token);
-      await setRecipesFolderId(getDatabase(), user.id, folderId);
-    }
-    const files = await listRecipeFiles(folderId, token);
-    // Keep the D1 cache (source + tags) fresh, then read cover + tags from it.
-    await syncRecipeTags(user, files, token);
-    const rows = await listRecipesByUser(getDatabase(), user.id);
-    // Top up any missing embeddings in the background (bounded per visit), so
-    // "find similar" fills in for every recipe without slowing this response.
-    const embedded = await countEmbeddings(getDatabase(), user.id);
-    if (embedded < rows.length) {
-      runInBackground(backfillEmbeddings(getDatabase(), getEnv(), user.id, 20));
-    }
-    const rowById = new Map(rows.map((r) => [r.drive_file_id, r]));
-    items = files.map((f) => {
-      const row = rowById.get(f.id);
-      const parsed = row ? parseRecipe(row.source, row.name) : null;
-      return {
-        id: f.id,
-        display: recipeDisplayName(f.name),
-        uncurated: isUncurated(f.name),
-        cover: parsed ? extractMedia(parsed).cover : undefined,
-        tags: row?.tags ? (JSON.parse(row.tags) as RecipeTags) : {},
-      };
-    });
-  } catch {
-    // Token expired or Drive unreachable — re-auth to capture a fresh token.
-    redirect('/api/auth/login');
+  const db = getDatabase();
+  let { user, recipes, embeddedCount } = await getAppPageRows(db, uid);
+  if (!user || !user.refresh_token_enc) {
+    // Unknown user, or Google rejected the stored login: sign in again.
+    redirect(user ? '/api/auth/login' : '/');
   }
 
-  const filters = parseFilters(await searchParams);
-  const facets = buildFacetView(facetCounts(items), filters);
-  const filtered = items.filter((it) => matchesFilters(it, filters));
+  if (recipes.length === 0) {
+    // First visit: nothing cached yet, so sync once and wait for it.
+    try {
+      await syncFromDrive(user);
+    } catch {
+      redirect('/api/auth/login');
+    }
+    ({ recipes, embeddedCount } = await getAppPageRows(db, uid));
+  } else {
+    // Otherwise show the cache now and refresh it from Drive afterwards, so a
+    // recipe added or removed directly in Drive appears on the next view.
+    runInBackground(syncFromDrive(user));
+  }
+  if (embeddedCount < recipes.length) {
+    // Top up missing embeddings (bounded per visit) so "find similar" fills in.
+    runInBackground(backfillEmbeddings(db, getEnv(), uid, 20));
+  }
+
+  const items: (RecipeCard & { tags: RecipeTags })[] = recipes.map((row) => {
+    const parsed = parseRecipe(row.source, row.name);
+    return {
+      id: row.drive_file_id,
+      display: recipeDisplayName(row.name),
+      uncurated: isUncurated(row.name),
+      cover: extractMedia(parsed).cover,
+      tags: row.tags ? (JSON.parse(row.tags) as RecipeTags) : {},
+    };
+  });
 
   const sp = await searchParams;
+  const filters = parseFilters(sp);
+  const facets = buildFacetView(facetCounts(items), filters);
+  const filtered = items.filter((it) => matchesFilters(it, filters));
   const view = sp['view'] === 'list' ? 'list' : 'grid';
 
   return (

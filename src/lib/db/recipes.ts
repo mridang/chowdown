@@ -8,7 +8,7 @@
  * upserted during sync.
  */
 
-import { and, eq } from 'drizzle-orm';
+import { and, eq, notInArray } from 'drizzle-orm';
 
 import { normalizeSourceUrl, sourceUrlOf } from '../recipe/cook-text';
 import type { Database } from './client';
@@ -110,4 +110,29 @@ export async function findRecipeBySourceUrl(
     const have = sourceUrlOf(r.source);
     return have !== undefined && normalizeSourceUrl(have) === want;
   });
+}
+
+/**
+ * Drop cached recipes whose Drive file no longer exists in the folder, so a
+ * recipe deleted in Drive disappears from the grid instead of lingering. A
+ * no-op for an empty `keepFileIds` guard: an empty folder listing clears them
+ * all, which is correct, but the caller must only pass a real listing.
+ */
+export async function deleteRecipesNotIn(
+  db: Database,
+  userId: number,
+  keepFileIds: string[],
+): Promise<void> {
+  if (keepFileIds.length === 0) {
+    await db.delete(recipes).where(eq(recipes.user_id, userId));
+    return;
+  }
+  await db
+    .delete(recipes)
+    .where(
+      and(
+        eq(recipes.user_id, userId),
+        notInArray(recipes.drive_file_id, keepFileIds),
+      ),
+    );
 }

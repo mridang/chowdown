@@ -75,7 +75,10 @@ export async function upsertUser(
 }
 
 /** Fetch a user by primary key. */
-export async function getUserById(db: Database, id: number): Promise<User | undefined> {
+export async function getUserById(
+  db: Database,
+  id: number,
+): Promise<User | undefined> {
   return db.query.users.findFirst({ where: eq(users.id, id) });
 }
 
@@ -108,5 +111,20 @@ export async function setRecipesFolderId(
   await db
     .update(users)
     .set({ recipes_folder_id: folderId, updated_at: now() })
+    .where(eq(users.id, userId));
+}
+
+/**
+ * Forget a user's stored Drive refresh token. Used when Google rejects it
+ * (expired or revoked): the next visit sees no token and sends them through
+ * login, which captures a fresh one.
+ */
+export async function clearRefreshToken(
+  db: Database,
+  userId: number,
+): Promise<void> {
+  await db
+    .update(users)
+    .set({ refresh_token_enc: null, updated_at: new Date().toISOString() })
     .where(eq(users.id, userId));
 }
