@@ -15,6 +15,7 @@
  */
 
 import { parseRecipe } from './cooklang';
+import { withImages } from './media';
 import { hasRecipeBody } from './to-cooklang';
 
 /** What an import ended up doing. */
@@ -56,7 +57,13 @@ export interface ImportDeps {
 /** Import one recipe's content, deduplicating, repairing or refusing as needed. */
 export async function importRecipe(
   deps: ImportDeps,
-  input: { content: string; url?: string; name?: string },
+  input: {
+    content: string;
+    url?: string;
+    name?: string;
+    /** Image URLs the caller saw on the page; the first is the cover. */
+    images?: string[];
+  },
 ): Promise<ImportOutcome> {
   const existing = input.url ? await deps.findExisting(input.url) : undefined;
   if (existing && hasRecipeBody(existing.source)) {
@@ -75,7 +82,11 @@ export async function importRecipe(
     input.name ||
     parseRecipe(converted, 'recipe.cook').title ||
     'Imported Recipe';
-  const source = await deps.tag(converted, name);
+  // Images the caller saw in a real browser beat anything we could fetch.
+  const withCover = input.images?.length
+    ? withImages(converted, input.images)
+    : converted;
+  const source = await deps.tag(withCover, name);
 
   if (existing) {
     await deps.update(existing.id, source);

@@ -10,6 +10,7 @@
  * malformed metadata value can never inject a bad `src`.
  */
 
+import { upsertMetadata } from './cook-text';
 import type { ParsedRecipe } from './cooklang';
 
 /** A recipe's media for display. */
@@ -55,4 +56,33 @@ export function extractMedia(recipe: ParsedRecipe): RecipeMedia {
     rest: images.slice(1),
     video,
   };
+}
+
+/**
+ * Keep only the valid, distinct http(s) URLs from a list, in order. Anything
+ * else (relative paths, `javascript:` URIs, junk) is dropped.
+ */
+export function validImageUrls(urls: readonly string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of urls) {
+    const url = raw.trim();
+    if (url && isHttpUrl(url) && !seen.has(url)) {
+      seen.add(url);
+      out.push(url);
+    }
+  }
+  return out;
+}
+
+/**
+ * Set a recipe's `>> images:` metadata (space-separated, first is the cover),
+ * replacing any existing value. Returns the source unchanged when none of the
+ * given URLs are valid, so a bad call can never blank out an existing cover.
+ */
+export function withImages(source: string, urls: readonly string[]): string {
+  const valid = validImageUrls(urls);
+  return valid.length === 0
+    ? source
+    : upsertMetadata(source, [['images', valid.join(' ')]]);
 }

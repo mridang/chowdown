@@ -1,7 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { ParsedRecipe } from '../../../src/lib/recipe/cooklang';
-import { extractMedia } from '../../../src/lib/recipe/media';
+import {
+  extractMedia,
+  validImageUrls,
+  withImages,
+} from '../../../src/lib/recipe/media';
 
 function recipe(metadata: [string, string][]): ParsedRecipe {
   return { title: 'X', metadata, ingredients: [], cookware: [], steps: [] };
@@ -10,7 +14,12 @@ function recipe(metadata: [string, string][]): ParsedRecipe {
 describe('extractMedia', () => {
   it('treats the first image as the cover and the rest as extras', () => {
     const media = extractMedia(
-      recipe([['images', 'https://a.com/1.jpg https://a.com/2.jpg https://a.com/3.jpg']]),
+      recipe([
+        [
+          'images',
+          'https://a.com/1.jpg https://a.com/2.jpg https://a.com/3.jpg',
+        ],
+      ]),
     );
     expect(media.cover).toBe('https://a.com/1.jpg');
     expect(media.rest).toEqual(['https://a.com/2.jpg', 'https://a.com/3.jpg']);
@@ -46,5 +55,42 @@ describe('extractMedia', () => {
     expect(media.cover).toBeUndefined();
     expect(media.rest).toEqual([]);
     expect(media.video).toBeUndefined();
+  });
+});
+
+describe('validImageUrls', () => {
+  it('keeps distinct http(s) urls in order and drops the rest', () => {
+    expect(
+      validImageUrls([
+        'https://a.com/1.jpg',
+        'javascript:alert(1)',
+        '/relative.jpg',
+        ' https://a.com/1.jpg ',
+        'http://b.com/2.png',
+        '',
+      ]),
+    ).toEqual(['https://a.com/1.jpg', 'http://b.com/2.png']);
+  });
+});
+
+describe('withImages', () => {
+  it('adds an images line to the metadata block', () => {
+    const out = withImages('>> title: T\n\nCook.\n', ['https://a.com/1.jpg']);
+    expect(out).toContain('>> images: https://a.com/1.jpg');
+    expect(out).toContain('Cook.');
+  });
+
+  it('replaces an existing images line and keeps the order', () => {
+    const out = withImages('>> title: T\n>> images: https://old.com/x.jpg\n', [
+      'https://a.com/1.jpg',
+      'https://a.com/2.jpg',
+    ]);
+    expect(out).toContain('>> images: https://a.com/1.jpg https://a.com/2.jpg');
+    expect(out).not.toContain('old.com');
+  });
+
+  it('leaves the source alone when no url is valid', () => {
+    const src = '>> title: T\n>> images: https://keep.com/x.jpg\n';
+    expect(withImages(src, ['not a url', 'javascript:x'])).toBe(src);
   });
 });

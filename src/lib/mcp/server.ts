@@ -40,6 +40,7 @@ import { indexRecipeWrite } from '../recipe/tag-index';
 import { tagCookSource, tagCookSourceBestEffort } from '../recipe/tagging';
 import { addMissingCover, convertImport } from '../recipe/to-cooklang';
 import { importRecipe } from '../recipe/import-recipe';
+import { validImageUrls, withImages } from '../recipe/media';
 import { convertRecipe, isUnitSystem, type UnitSystem } from '../recipe/units';
 import { getDatabase, getEnv } from '../util';
 import { html as recipeCardHtml } from '../../views/generated/recipe-card';
@@ -341,6 +342,12 @@ const TOOLS = [
           description:
             'Optional recipe name; inferred from the content if omitted.',
         },
+        images: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Image URLs from the page (the og:image or the recipe photo), cover first. Pass these whenever you can see them — the server often cannot fetch the page itself.',
+        },
       },
       required: ['content'],
     },
@@ -454,6 +461,25 @@ const TOOLS = [
         recipe: { type: 'string', description: 'Name of the recipe to tag.' },
       },
       required: ['recipe'],
+    },
+    outputSchema: RECIPE_CARD_OUTPUT_SCHEMA,
+    _meta: CARD_TOOL_META,
+  },
+  {
+    name: 'set_recipe_images',
+    description:
+      "Set the cover image (and any extra photos) of a saved recipe. Pass the image URLs you can see on the recipe's page, cover first. Use this when a recipe has no picture.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        recipe: { type: 'string', description: 'Name of the recipe.' },
+        images: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Image URLs (http/https), cover first.',
+        },
+      },
+      required: ['recipe', 'images'],
     },
     outputSchema: RECIPE_CARD_OUTPUT_SCHEMA,
     _meta: CARD_TOOL_META,
@@ -650,6 +676,9 @@ async function callTool(
           content,
           url: args['url'] ? String(args['url']) : undefined,
           name: args['name'] ? String(args['name']) : undefined,
+          images: Array.isArray(args['images'])
+            ? (args['images'] as unknown[]).map(String)
+            : undefined,
         },
       );
       if (outcome.kind === 'refused') {
@@ -788,6 +817,39 @@ async function callTool(
         file.name,
         updated,
         `Tagged "${recipeDisplayName(file.name)}".`,
+        system,
+      );
+    }
+    case 'set_recipe_images': {
+      const files = await listRecipeFiles(folderId, token);
+      const file = matchFile(files, String(args['recipe'] ?? ''));
+      if (!file) {
+        return text(`No recipe found matching "${args['recipe']}".`);
+      }
+      const urls = Array.isArray(args['images'])
+        ? (args['images'] as unknown[]).map(String)
+        : [];
+      if (validImageUrls(urls).length === 0) {
+        return {
+          ...text('Pass at least one http(s) image URL in `images`.'),
+          isError: true,
+        };
+      }
+      const original = await getFileContent(file.id, token);
+      const updated = withImages(original, urls);
+      await updateRecipeFile(file.id, updated, token);
+      await indexRecipeWrite(
+        getDatabase(),
+        user.id,
+        file.id,
+        file.name,
+        updated,
+      );
+      return recipeCardResult(
+        file.id,
+        file.name,
+        updated,
+        `Set the cover for "${recipeDisplayName(file.name)}".`,
         system,
       );
     }

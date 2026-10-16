@@ -98,4 +98,29 @@ describe('importRecipe', () => {
     await importRecipe(d, { content: 'text' });
     expect(d.calls['findExisting']).not.toHaveBeenCalled();
   });
+
+  it('applies images the caller supplied and drops invalid ones', async () => {
+    const d = deps();
+    await importRecipe(d, {
+      content: 'text',
+      images: ['https://a.com/hero.jpg', 'javascript:x'],
+    });
+    const saved = d.calls['create']!.mock.calls[0]![1] as string;
+    expect(saved).toContain('>> images: https://a.com/hero.jpg');
+    expect(saved).not.toContain('javascript');
+  });
+
+  it('adds supplied images when repairing a hollow copy', async () => {
+    const d = deps({
+      findExisting: async () => ({ id: 'old', name: 'Pasta', source: HOLLOW }),
+    });
+    await importRecipe(d, {
+      content: 'text',
+      url: 'https://a.com/pasta',
+      images: ['https://a.com/hero.jpg'],
+    });
+    expect(d.calls['update']!.mock.calls[0]![1]).toContain(
+      '>> images: https://a.com/hero.jpg',
+    );
+  });
 });
