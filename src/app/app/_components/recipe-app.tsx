@@ -169,7 +169,7 @@ export function RecipeApp({
   recipes,
   facets,
   total,
-  favouriteCount,
+  favouriteIds,
   view,
 }: {
   userName: string;
@@ -177,8 +177,8 @@ export function RecipeApp({
   recipes: RecipeCard[];
   facets: FacetView[];
   total: number;
-  /** How many recipes are hearted (for the Favourites filter's badge). */
-  favouriteCount: number;
+  /** Ids of hearted recipes (for the Favourites filter's live badge). */
+  favouriteIds: string[];
   view: 'grid' | 'list';
 }) {
   const [copied, setCopied] = useState(false);
@@ -239,7 +239,7 @@ export function RecipeApp({
 
       <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-[16rem_1fr]">
         <aside>
-          <FilterControls facets={facets} favouriteCount={favouriteCount} />
+          <FilterControls facets={facets} favouriteIds={favouriteIds} />
         </aside>
 
         <section className="min-w-0">

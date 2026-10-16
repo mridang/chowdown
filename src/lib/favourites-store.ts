@@ -11,10 +11,13 @@
 
 const overrides = new Map<string, boolean>();
 const listeners = new Set<() => void>();
+/** Bumped on every change, so React can subscribe to "anything changed". */
+let version = 0;
 
 /** Record the latest known favourite state for a recipe and notify hearts. */
 export function setFavouriteOverride(id: string, on: boolean): void {
   overrides.set(id, on);
+  version += 1;
   for (const listener of listeners) {
     listener();
   }
@@ -33,7 +36,30 @@ export function subscribeFavourites(listener: () => void): () => void {
   };
 }
 
+/** A number that changes whenever any favourite is toggled in this tab. */
+export function getFavouritesVersion(): number {
+  return version;
+}
+
+/**
+ * How many recipes are favourites right now: the server's list adjusted by any
+ * toggles made in this tab, so a counter can update instantly instead of
+ * waiting for a reload.
+ */
+export function liveFavouriteCount(serverIds: readonly string[]): number {
+  const hearted = new Set(serverIds);
+  for (const [id, on] of overrides) {
+    if (on) {
+      hearted.add(id);
+    } else {
+      hearted.delete(id);
+    }
+  }
+  return hearted.size;
+}
+
 /** Forget all overrides (used by tests). */
 export function resetFavouriteOverrides(): void {
   overrides.clear();
+  version = 0;
 }

@@ -102,7 +102,7 @@ export default async function AppPage({
       }))}
       facets={facets}
       total={items.length}
-      favouriteCount={items.filter((it) => it.favourite).length}
+      favouriteIds={items.filter((it) => it.favourite).map((it) => it.id)}
       view={view}
     />
   );

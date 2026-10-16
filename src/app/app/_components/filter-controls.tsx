@@ -1,9 +1,14 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
 
 import { HeartIcon } from '@/components/favourite-button';
+import {
+  getFavouritesVersion,
+  liveFavouriteCount,
+  subscribeFavourites,
+} from '@/lib/favourites-store';
 import type { FacetView } from '@/lib/recipe/facet-filter';
 
 /**
@@ -14,10 +19,11 @@ import type { FacetView } from '@/lib/recipe/facet-filter';
  */
 export function FilterControls({
   facets,
-  favouriteCount,
+  favouriteIds,
 }: {
   facets: FacetView[];
-  favouriteCount: number;
+  /** Ids of the recipes the server says are favourites. */
+  favouriteIds: string[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -79,6 +85,9 @@ export function FilterControls({
     [navigate],
   );
 
+  // Re-render whenever any heart is toggled, so the badge is always current.
+  useSyncExternalStore(subscribeFavourites, getFavouritesVersion, () => 0);
+  const favouriteCount = liveFavouriteCount(favouriteIds);
   const favouritesOn = params.get('fav') === '1';
 
   const toggleFavourites = useCallback(() => {

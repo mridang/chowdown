@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import {
   getFavouriteOverride,
+  getFavouritesVersion,
+  liveFavouriteCount,
   resetFavouriteOverrides,
   setFavouriteOverride,
   subscribeFavourites,
@@ -31,5 +33,43 @@ describe('favourites store', () => {
     unsubscribe();
     setFavouriteOverride('a', true);
     expect(listener).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('liveFavouriteCount', () => {
+  it('is the server count when nothing has been toggled', () => {
+    expect(liveFavouriteCount(['a', 'b'])).toBe(2);
+  });
+
+  it('counts a heart added in this tab', () => {
+    setFavouriteOverride('c', true);
+    expect(liveFavouriteCount(['a', 'b'])).toBe(3);
+  });
+
+  it('drops a heart removed in this tab', () => {
+    setFavouriteOverride('a', false);
+    expect(liveFavouriteCount(['a', 'b'])).toBe(1);
+  });
+
+  it('does not double count re-hearting an existing favourite', () => {
+    setFavouriteOverride('a', true);
+    expect(liveFavouriteCount(['a', 'b'])).toBe(2);
+  });
+
+  it('follows the latest toggle for a recipe', () => {
+    setFavouriteOverride('c', true);
+    setFavouriteOverride('c', false);
+    expect(liveFavouriteCount(['a'])).toBe(1);
+  });
+});
+
+describe('favourites version', () => {
+  it('increases with every change and resets with the store', () => {
+    expect(getFavouritesVersion()).toBe(0);
+    setFavouriteOverride('a', true);
+    setFavouriteOverride('a', false);
+    expect(getFavouritesVersion()).toBe(2);
+    resetFavouriteOverrides();
+    expect(getFavouritesVersion()).toBe(0);
   });
 });
