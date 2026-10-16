@@ -33,6 +33,21 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 /**
+ * The signed-in user's id straight from the session cookie, with **no database
+ * read**. The cookie is HMAC-signed, so a valid one can be trusted for identity;
+ * callers that only scope queries by user id (like the recipe page) can skip
+ * the `users` lookup entirely and save a network round trip to D1.
+ */
+export async function getSessionUid(): Promise<number | null> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!token) {
+    return null;
+  }
+  const payload = await verifySessionToken(token, getEnv().SESSION_SECRET);
+  return payload?.uid ?? null;
+}
+
+/**
  * Exchange a user's stored refresh token for a fresh Drive access token.
  * Throws if the user has no refresh token (they must re-authenticate) — the
  * caller treats that as "send them back through login".

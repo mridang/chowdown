@@ -6,7 +6,7 @@
  * re-embedded when it actually changes.
  */
 
-import { and, eq, notInArray } from 'drizzle-orm';
+import { and, count, eq, notInArray } from 'drizzle-orm';
 
 import type { Database } from './client';
 import { embeddings } from './schema';
@@ -19,7 +19,9 @@ export async function listEmbeddings(
   db: Database,
   userId: number,
 ): Promise<EmbeddingRow[]> {
-  return db.query.embeddings.findMany({ where: eq(embeddings.user_id, userId) });
+  return db.query.embeddings.findMany({
+    where: eq(embeddings.user_id, userId),
+  });
 }
 
 /** Insert or update a recipe's cached embedding. */
@@ -64,4 +66,48 @@ export async function deleteEmbeddingsNotIn(
         notInArray(embeddings.drive_file_id, keepFileIds),
       ),
     );
+}
+
+/** Max statements per D1 batch (kept well under D1's per-batch limit). */
+const BATCH_SIZE = 50;
+
+/**
+ * Store each recipe's precomputed similar list (`id → serialised JSON`). Only
+ * the rows passed in are touched; they are written in batches so a refresh is a
+ * handful of round trips, not one per recipe.
+ */
+export async function saveSimilarLists(
+  db: Database,
+  userId: number,
+  lists: Map<string, string>,
+): Promise<void> {
+  const statements = [...lists].map(([driveFileId, json]) =>
+    db
+      .update(embeddings)
+      .set({ similar: json })
+      .where(
+        and(
+          eq(embeddings.user_id, userId),
+          eq(embeddings.drive_file_id, driveFileId),
+        ),
+      ),
+  );
+  for (let i = 0; i < statements.length; i += BATCH_SIZE) {
+    const chunk = statements.slice(i, i + BATCH_SIZE);
+    await db.batch(
+      chunk as unknown as [(typeof chunk)[number], ...typeof chunk],
+    );
+  }
+}
+
+/** How many recipes the user has an embedding for (a count, not the vectors). */
+export async function countEmbeddings(
+  db: Database,
+  userId: number,
+): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(embeddings)
+    .where(eq(embeddings.user_id, userId));
+  return row?.n ?? 0;
 }

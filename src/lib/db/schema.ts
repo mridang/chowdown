@@ -91,6 +91,8 @@ export const embeddings = sqliteTable(
     title: text('title').notNull(),
     modified_time: text('modified_time'),
     vector: text('vector').notNull(),
+    /** Precomputed nearest recipes: JSON `[{ id, title }]` (see similar.ts). */
+    similar: text('similar'),
   },
   (table) => [
     primaryKey({ columns: [table.user_id, table.drive_file_id] }),

@@ -5,10 +5,12 @@ import { cache } from 'react';
 
 import { RecipeGallery } from '@/components/recipe-gallery';
 import { RecipeView } from '@/components/recipe-view';
-import { getCurrentUser, getUserAccessToken } from '@/lib/auth/current-user';
-import { listEmbeddings } from '@/lib/db/embeddings';
-import { isFavourite } from '@/lib/db/favourites';
-import { getRecipeByFileId } from '@/lib/db/recipes';
+import {
+  getCurrentUser,
+  getSessionUid,
+  getUserAccessToken,
+} from '@/lib/auth/current-user';
+import { getRecipePageRows } from '@/lib/db/recipe-page';
 import { setRecipesFolderId } from '@/lib/db/users';
 import {
   ensureRecipesFolder,
@@ -19,7 +21,7 @@ import { extractNotes, type Note } from '@/lib/recipe/cook-text';
 import { parseRecipe, type ParsedRecipe } from '@/lib/recipe/cooklang';
 import { extractMedia } from '@/lib/recipe/media';
 import { recipeToJsonLd } from '@/lib/recipe/schema-org';
-import { similarFromRows } from '@/lib/recipe/similar';
+import { parseSimilar, type SimilarRecipe } from '@/lib/recipe/similar';
 import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 import { getDatabase } from '@/lib/util';
 
@@ -30,37 +32,43 @@ import { TagButton } from './_components/tag-button';
 /** Canonical origin — mirrors `SITE_URL` in the root layout. */
 const SITE_URL = 'https://chowdown.apps.mrida.ng';
 
-/** How many "find similar" recipes to surface under the method. */
-const SIMILAR_COUNT = 6;
-
 /** What `loadRecipe` resolves to. */
 interface RecipePageData {
-  userId: number;
   recipe: ParsedRecipe;
   notes: Note[];
+  favourite: boolean;
+  similar: SimilarRecipe[];
 }
 
 /**
- * Load one recipe by its Drive id — **from the D1 cache first**, so a recipe
- * click is a single indexed read with no Google token refresh and no Drive
- * round-trip (that was the source of the multi-second loads). Only a cold cache
- * (a recipe never seen by `/app` or the MCP) falls back to Drive once, and
- * populates the cache so the next load is instant.
+ * Load one recipe for the page — **in a single D1 round trip**, with no Google
+ * or Drive call. The user id comes from the signed session cookie (no `users`
+ * lookup), and the recipe, favourite flag and precomputed similar list are
+ * fetched together as one batch. D1 sits in one region, so each extra query
+ * from the Worker costs a long round trip; collapsing three into one is what
+ * keeps the page fast.
+ *
+ * Only a recipe that isn't in the cache yet (never seen by `/app` or the MCP)
+ * falls back to Drive once, and is indexed so the next view is fast.
  *
  * Wrapped in React `cache()` so the page body and `generateMetadata` share one
- * result per request instead of loading the recipe twice.
+ * result per request.
  */
 const loadRecipe = cache(async (id: string): Promise<RecipePageData | null> => {
-  const user = await getCurrentUser();
-  if (!user) {
+  const uid = await getSessionUid();
+  if (uid === null) {
     redirect('/');
   }
   const db = getDatabase();
 
-  let row = await getRecipeByFileId(db, user.id, id);
-  if (!row) {
+  let rows = await getRecipePageRows(db, uid, id);
+  if (!rows.recipe) {
     // Cold cache: read from Drive once and index it, then re-read.
     try {
+      const user = await getCurrentUser();
+      if (!user) {
+        redirect('/');
+      }
       const token = await getUserAccessToken(user);
       const folderId =
         user.recipes_folder_id ?? (await ensureRecipesFolder(token));
@@ -73,20 +81,28 @@ const loadRecipe = cache(async (id: string): Promise<RecipePageData | null> => {
         return null;
       }
       const source = await getFileContent(file.id, token);
-      await indexRecipeWrite(db, user.id, id, file.name, source, file.modifiedTime ?? null);
-      row = await getRecipeByFileId(db, user.id, id);
+      await indexRecipeWrite(
+        db,
+        user.id,
+        id,
+        file.name,
+        source,
+        file.modifiedTime ?? null,
+      );
+      rows = await getRecipePageRows(db, uid, id);
     } catch {
       return null;
     }
   }
-  if (!row) {
+  if (!rows.recipe) {
     return null;
   }
 
   return {
-    userId: user.id,
-    recipe: parseRecipe(row.source, row.name),
-    notes: extractNotes(row.source),
+    recipe: parseRecipe(rows.recipe.source, rows.recipe.name),
+    notes: extractNotes(rows.recipe.source),
+    favourite: rows.favourite,
+    similar: parseSimilar(rows.similarJson),
   };
 });
 
@@ -123,13 +139,8 @@ export default async function RecipePage({
     notFound();
   }
 
-  const db = getDatabase();
   const jsonLd = recipeToJsonLd(data.recipe, `${SITE_URL}/recipe/${id}`);
-  const [embeddings, favourited] = await Promise.all([
-    listEmbeddings(db, data.userId),
-    isFavourite(db, data.userId, id),
-  ]);
-  const similar = similarFromRows(embeddings, id, SIMILAR_COUNT);
+  const { favourite: favourited, similar } = data;
 
   return (
     <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">

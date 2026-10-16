@@ -4,4 +4,10 @@
  * Public barrel for shared utilities. Import these from `@/lib/util`.
  */
 
-export { getDB, getEnv, getDatabase, appOrigin } from './runtime';
+export {
+  getDB,
+  getEnv,
+  getDatabase,
+  appOrigin,
+  runInBackground,
+} from './runtime';

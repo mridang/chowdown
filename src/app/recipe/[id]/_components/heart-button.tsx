@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
 /**
@@ -15,6 +16,7 @@ export function HeartButton({
   /** Whether the user has already hearted this recipe (server-resolved). */
   initial: boolean;
 }) {
+  const router = useRouter();
   const [on, setOn] = useState(initial);
   const [busy, setBusy] = useState(false);
 
@@ -33,12 +35,14 @@ export function HeartButton({
       }
       const data = (await res.json()) as { favourite: boolean };
       setOn(data.favourite);
+      // Drop any prefetched copy of this page so it can't show the old state.
+      router.refresh();
     } catch {
       setOn(!next); // roll back on failure
     } finally {
       setBusy(false);
     }
-  }, [on, recipeId]);
+  }, [on, recipeId, router]);
 
   return (
     <button

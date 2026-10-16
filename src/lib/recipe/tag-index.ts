@@ -15,8 +15,9 @@ import type { Database } from '../db/client';
 import type { User } from '../db/users';
 import { listRecipesByUser, upsertRecipe } from '../db/recipes';
 import { getFileContent, type DriveFile } from '../drive/drive-client';
-import { getDatabase } from '../util';
+import { getDatabase, getEnv, runInBackground } from '../util';
 import { parseRecipe, type ParsedRecipe } from './cooklang';
+import { embedRecipe } from './embed-write';
 import { canonicalValue, facet } from './taxonomy';
 
 /** A recipe's tags as `{ facetKey: canonicalValue[] }`. */
@@ -77,6 +78,11 @@ export async function indexRecipeWrite(
     modified_time: modifiedTime,
     tags: JSON.stringify(extractFacetTags(parsed)),
   });
+  // Embed in the background so "find similar" stays current without making the
+  // write (or the next page view) wait for the model.
+  runInBackground(
+    embedRecipe(db, getEnv(), userId, driveFileId, name, source, modifiedTime),
+  );
 }
 
 /** Safely parse a stored tags JSON string back into {@link RecipeTags}. */

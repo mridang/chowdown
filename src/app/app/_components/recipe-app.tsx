@@ -45,6 +45,7 @@ function GridCard({ recipe }: { recipe: RecipeCard }) {
   return (
     <Link
       href={`/recipe/${recipe.id}`}
+      prefetch
       className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-sm"
     >
       {recipe.cover ? (
@@ -91,6 +92,7 @@ function ListRow({ recipe }: { recipe: RecipeCard }) {
   return (
     <Link
       href={`/recipe/${recipe.id}`}
+      prefetch
       className="group flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-2 transition hover:border-slate-300 hover:bg-slate-50"
     >
       {recipe.cover ? (

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 
 import { getCurrentUser, getUserAccessToken } from '@/lib/auth/current-user';
+import { countEmbeddings } from '@/lib/db/embeddings';
 import { listRecipesByUser } from '@/lib/db/recipes';
 import { setRecipesFolderId } from '@/lib/db/users';
 import { ensureRecipesFolder, listRecipeFiles } from '@/lib/drive/drive-client';
@@ -14,8 +15,9 @@ import {
   type SearchParams,
 } from '@/lib/recipe/facet-filter';
 import { extractMedia } from '@/lib/recipe/media';
+import { backfillEmbeddings } from '@/lib/recipe/embed-write';
 import { syncRecipeTags, type RecipeTags } from '@/lib/recipe/tag-index';
-import { getDatabase } from '@/lib/util';
+import { getDatabase, getEnv, runInBackground } from '@/lib/util';
 
 import { RecipeApp, type RecipeCard } from './_components/recipe-app';
 
@@ -52,6 +54,12 @@ export default async function AppPage({
     // Keep the D1 cache (source + tags) fresh, then read cover + tags from it.
     await syncRecipeTags(user, files, token);
     const rows = await listRecipesByUser(getDatabase(), user.id);
+    // Top up any missing embeddings in the background (bounded per visit), so
+    // "find similar" fills in for every recipe without slowing this response.
+    const embedded = await countEmbeddings(getDatabase(), user.id);
+    if (embedded < rows.length) {
+      runInBackground(backfillEmbeddings(getDatabase(), getEnv(), user.id, 20));
+    }
     const rowById = new Map(rows.map((r) => [r.drive_file_id, r]));
     items = files.map((f) => {
       const row = rowById.get(f.id);

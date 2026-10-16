@@ -25,3 +25,20 @@ export function getDatabase(): Database {
 export function appOrigin(request: Request): string {
   return getEnv().APP_URL ?? new URL(request.url).origin;
 }
+
+/**
+ * Run work after the response has been sent, without blocking it. Failures are
+ * swallowed (logged) because background work — embedding, cache warming — must
+ * never turn a successful request into an error. Falls back to a floating
+ * promise outside a Workers request (tests, scripts).
+ */
+export function runInBackground(work: Promise<unknown>): void {
+  const guarded = work.catch((err: unknown) => {
+    console.error('background task failed', err);
+  });
+  try {
+    getCloudflareContext().ctx.waitUntil(guarded);
+  } catch {
+    // No request context: the promise already runs; nothing to extend.
+  }
+}
