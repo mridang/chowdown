@@ -57,8 +57,11 @@ export async function convertToCooklang(
   opts: { sourceUrl?: string; name?: string } = {},
 ): Promise<string> {
   // 1. Deterministic: schema.org Recipe JSON-LD, if the HTML still carries it.
+  // Only trust it when it really holds a recipe: some sites ship JSON-LD with
+  // the metadata filled in but empty ingredient/instruction lists, and the real
+  // text lives in the page body — those must fall through to the model.
   const fromSchema = extractRecipeFromHtml(content, opts.sourceUrl);
-  if (fromSchema) {
+  if (fromSchema && hasRecipeBody(fromSchema)) {
     return fromSchema;
   }
 
@@ -106,7 +109,7 @@ export async function convertImport(
   opts: { sourceUrl?: string; name?: string } = {},
 ): Promise<string> {
   const direct = extractRecipeFromHtml(content, opts.sourceUrl);
-  if (direct) {
+  if (direct && hasRecipeBody(direct)) {
     return direct;
   }
 
@@ -119,13 +122,17 @@ export async function convertImport(
     }
   }
 
+  // The page's structured data wins only if it contains a recipe; a metadata-
+  // only record (empty ingredient/instruction lists) still donates its image.
   const fromPage = page ? extractRecipeFromHtml(page, opts.sourceUrl) : null;
-  if (fromPage) {
+  if (fromPage && hasRecipeBody(fromPage)) {
     return fromPage;
   }
 
   const cook = await convertToCooklang(content, env, opts);
-  const image = page ? extractOgImage(page, opts.sourceUrl) : undefined;
+  const image =
+    /^>>\s*images:\s*(\S+)/im.exec(fromPage ?? '')?.[1] ??
+    (page ? extractOgImage(page, opts.sourceUrl) : undefined);
   if (image && !/^>>\s*images:/im.test(cook)) {
     return upsertMetadata(cook, [['images', image]]);
   }

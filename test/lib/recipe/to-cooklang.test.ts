@@ -89,6 +89,39 @@ describe('convertImport', () => {
   });
 });
 
+const metadataOnlyPage = `<html><head><script type="application/ld+json">${JSON.stringify(
+  {
+    '@type': 'Recipe',
+    name: 'Hollow Recipe',
+    image: 'https://a.com/hollow.jpg',
+    recipeIngredient: [],
+    recipeInstructions: [],
+  },
+)}</script></head></html>`;
+
+describe('structured data with no recipe in it', () => {
+  it('converts the passed content instead and keeps the page image', async () => {
+    global.fetch = (async () =>
+      new Response(metadataOnlyPage)) as unknown as typeof fetch;
+    const cook = await convertImport(
+      'Ingredients: 1 egg. Method: boil it.',
+      envWith('>> title: Real\n\nBoil @egg{1}.\n'),
+      { sourceUrl: 'https://a.com/x' },
+    );
+    expect(cook).toContain('>> title: Real');
+    expect(cook).not.toContain('Hollow Recipe');
+    expect(cook).toContain('>> images: https://a.com/hollow.jpg');
+  });
+
+  it('convertToCooklang also falls through to the model', async () => {
+    const cook = await convertToCooklang(
+      metadataOnlyPage,
+      envWith('>> title: From Model\n\nBoil @egg{1}.\n'),
+    );
+    expect(cook).toContain('>> title: From Model');
+  });
+});
+
 describe('convertToCooklang', () => {
   it('strips blank and unknown metadata the model emits', async () => {
     const cook = await convertToCooklang(
