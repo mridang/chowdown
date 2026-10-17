@@ -12,6 +12,8 @@ import {
   removeMetadata,
   recipeDisplayName,
   sanitiseName,
+  domainOf,
+  sourceDomainOf,
   sourceUrlOf,
   uncuratedFilename,
   upsertMetadata,
@@ -284,5 +286,40 @@ describe('removeMetadata', () => {
   it('is a no-op when the key is absent', () => {
     const src = '>> title: T\n\nCook.\n';
     expect(removeMetadata(src, 'images')).toBe(src);
+  });
+});
+
+describe('domainOf', () => {
+  it('lower-cases the host and drops www', () => {
+    expect(domainOf('https://www.SeriousEats.com/recipes/x?utm=1')).toBe(
+      'seriouseats.com',
+    );
+  });
+
+  it('keeps subdomains other than www', () => {
+    expect(domainOf('https://recipes.example.com/a')).toBe(
+      'recipes.example.com',
+    );
+  });
+
+  it('is undefined for anything that is not a web address', () => {
+    expect(domainOf('my gran')).toBeUndefined();
+    expect(domainOf('mailto:a@b.com')).toBeUndefined();
+    expect(domainOf('')).toBeUndefined();
+  });
+});
+
+describe('sourceDomainOf', () => {
+  it('reads the site from the source line', () => {
+    expect(
+      sourceDomainOf(
+        '>> title: X\n>> source: https://www.a.com/pasta\n\nCook.',
+      ),
+    ).toBe('a.com');
+  });
+
+  it('is undefined without a source, or with a non-web one', () => {
+    expect(sourceDomainOf('>> title: X\n\nCook.')).toBeUndefined();
+    expect(sourceDomainOf('>> source: Grandma\n\nCook.')).toBeUndefined();
   });
 });

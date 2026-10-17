@@ -212,6 +212,29 @@ export function sourceUrlOf(source: string): string | undefined {
   return /^>>\s*source:\s*(\S+)/im.exec(source)?.[1];
 }
 
+/**
+ * The site a web address belongs to: its lower-case host without `www.`.
+ * Returns undefined for anything that isn't an http(s) address, so a stray
+ * `>> source: my gran` never becomes a "site".
+ */
+export function domainOf(url: string): string | undefined {
+  try {
+    const u = new URL(url.trim());
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+      return undefined;
+    }
+    return u.hostname.toLowerCase().replace(/^www\./, '') || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The site a recipe's `>> source:` points at, if it has one. */
+export function sourceDomainOf(source: string): string | undefined {
+  const url = sourceUrlOf(source);
+  return url ? domainOf(url) : undefined;
+}
+
 /** Query parameters that only track where a click came from, never which page. */
 const TRACKING_PARAM =
   /^(utm\w*|fbclid|gclid|mc_\w+|ref|ref_src|igshid|si|feature|spm|cid)$/i;

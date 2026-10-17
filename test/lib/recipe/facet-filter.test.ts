@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  buildDomainFacet,
   buildFacetView,
   facetCounts,
   matchesFilters,
@@ -111,5 +112,61 @@ describe('favourites filter', () => {
     expect(
       withHearts.filter((r) => matchesFilters(r, parseFilters({}))),
     ).toHaveLength(3);
+  });
+});
+
+describe('source site filter', () => {
+  const sited: FilterableRecipe[] = [
+    { display: 'Soup', domain: 'a.com', tags: {} },
+    { display: 'Stew', domain: 'a.com', tags: {} },
+    { display: 'Salad', domain: 'b.com', tags: {} },
+    { display: 'Toast', tags: {} },
+  ];
+  const names = (query: Record<string, string>) =>
+    sited
+      .filter((r) => matchesFilters(r, parseFilters(query)))
+      .map((r) => r.display);
+
+  it('reads ?site= as lower-cased sites', () => {
+    expect(parseFilters({ site: 'A.com, b.com' }).domains).toEqual([
+      'a.com',
+      'b.com',
+    ]);
+    expect(parseFilters({}).domains).toEqual([]);
+  });
+
+  it('keeps only recipes from the chosen sites', () => {
+    expect(names({ site: 'a.com' })).toEqual(['Soup', 'Stew']);
+    expect(names({ site: 'a.com,b.com' })).toEqual(['Soup', 'Stew', 'Salad']);
+  });
+
+  it('drops recipes with no site when a site is chosen', () => {
+    expect(names({ site: 'b.com' })).toEqual(['Salad']);
+  });
+
+  it('matches the site in free-text search', () => {
+    expect(names({ q: 'b.com' })).toEqual(['Salad']);
+  });
+
+  it('offers only sites with several recipes, busiest first', () => {
+    const facet = buildDomainFacet(sited, parseFilters({}));
+    expect(facet?.key).toBe('site');
+    expect(facet?.values).toEqual([
+      { value: 'a.com', count: 2, active: false },
+    ]);
+  });
+
+  it('keeps a selected site listed so it can be switched off', () => {
+    const facet = buildDomainFacet(sited, parseFilters({ site: 'b.com' }));
+    expect(facet?.values.map((v) => [v.value, v.active])).toEqual([
+      ['a.com', false],
+      ['b.com', true],
+    ]);
+  });
+
+  it('is null when no site qualifies', () => {
+    expect(
+      buildDomainFacet([sited[2]!, sited[3]!], parseFilters({})),
+    ).toBeNull();
   });
 });

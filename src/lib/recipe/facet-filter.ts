@@ -21,7 +21,15 @@ export interface FilterState {
   favouritesOnly: boolean;
   /** `{ facetKey: selectedValue[] }`. */
   selected: Record<string, string[]>;
+  /** Source sites to show (`?site=a.com,b.com`), already lower-cased. */
+  domains: string[];
 }
+
+/** The query-string key (and facet key) for the source-site filter. */
+export const DOMAIN_KEY = 'site';
+
+/** A site needs at least this many recipes to be offered as a filter. */
+export const MIN_DOMAIN_RECIPES = 2;
 
 /** A query-string params bag (Next's `searchParams`, already awaited). */
 export type SearchParams = Record<string, string | string[] | undefined>;
@@ -47,7 +55,8 @@ export function parseFilters(params: SearchParams): FilterState {
   }
   const fav = params['fav'];
   const favouritesOnly = fav === '1' || fav === 'true';
-  return { q, favouritesOnly, selected };
+  const domains = paramValues(params[DOMAIN_KEY]).map((d) => d.toLowerCase());
+  return { q, favouritesOnly, selected, domains };
 }
 
 /** A recipe as far as filtering cares: a display name and its tags. */
@@ -55,6 +64,8 @@ export interface FilterableRecipe {
   display: string;
   /** Whether the user has hearted it. */
   favourite?: boolean;
+  /** The site its `>> source:` came from, e.g. `seriouseats.com`. */
+  domain?: string;
   tags: RecipeTags;
 }
 
@@ -67,12 +78,20 @@ export function matchesFilters(
     return false;
   }
   if (state.q) {
-    const hay = `${recipe.display} ${Object.values(recipe.tags)
+    const hay = `${recipe.display} ${recipe.domain ?? ''} ${Object.values(
+      recipe.tags,
+    )
       .flat()
       .join(' ')}`.toLowerCase();
     if (!hay.includes(state.q.toLowerCase())) {
       return false;
     }
+  }
+  if (
+    state.domains.length > 0 &&
+    !state.domains.includes(recipe.domain ?? '')
+  ) {
+    return false;
   }
   for (const [key, wanted] of Object.entries(state.selected)) {
     const have = (recipe.tags[key] ?? []).map((v) => v.toLowerCase());
@@ -147,4 +166,36 @@ export function buildFacetView(
     });
   }
   return views;
+}
+
+/**
+ * The "Source" facet: the sites that more than one recipe came from, busiest
+ * first. A site the user has already selected stays listed even if it has
+ * fewer recipes, so it can always be switched off. Null when there is nothing
+ * worth offering.
+ */
+export function buildDomainFacet(
+  recipes: FilterableRecipe[],
+  state: FilterState,
+): FacetView | null {
+  const counts = new Map<string, number>();
+  for (const r of recipes) {
+    if (r.domain) {
+      counts.set(r.domain, (counts.get(r.domain) ?? 0) + 1);
+    }
+  }
+  const values = [...counts.entries()]
+    .filter(
+      ([domain, count]) =>
+        count >= MIN_DOMAIN_RECIPES || state.domains.includes(domain),
+    )
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([value, count]) => ({
+      value,
+      count,
+      active: state.domains.includes(value),
+    }));
+  return values.length > 0
+    ? { key: DOMAIN_KEY, label: 'Source', values }
+    : null;
 }

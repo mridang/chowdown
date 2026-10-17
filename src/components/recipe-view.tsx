@@ -1,4 +1,6 @@
-import type { Note } from '@/lib/recipe/cook-text';
+import Link from 'next/link';
+
+import { domainOf, type Note } from '@/lib/recipe/cook-text';
 import type { ParsedRecipe, StepToken } from '@/lib/recipe/cooklang';
 import { FAVOURITE_KEY } from '@/lib/recipe/favourite-tag';
 import { MEDIA_META_KEYS } from '@/lib/recipe/media';
@@ -11,6 +13,37 @@ function NoteChip({ text }: { text: string }) {
   return (
     <span className="mt-1 block rounded-md bg-amber-50 px-2 py-1 text-[12px] text-amber-800">
       <span className="font-semibold">Note</span> {text}
+    </span>
+  );
+}
+
+/**
+ * The recipe's source: the site's name linking out to the original page, with
+ * a small "more from this site" link that appears on hover (always visible on
+ * touch screens, which have no hover) and filters the list to that site.
+ */
+function SourceValue({ value }: { value: string }) {
+  const domain = domainOf(value);
+  if (!domain) {
+    return <>{value}</>;
+  }
+  return (
+    <span className="group inline-flex items-center gap-1.5">
+      <a
+        href={value}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-amber-700 underline-offset-2 hover:underline"
+      >
+        {domain}
+      </a>
+      <Link
+        href={`/app?site=${encodeURIComponent(domain)}`}
+        title={`Find more recipes from ${domain}`}
+        className="rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-500 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 focus-visible:opacity-100 sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
+      >
+        More from {domain}
+      </Link>
     </span>
   );
 }
@@ -86,7 +119,11 @@ export function RecipeView({
               <span className="font-semibold text-slate-600 capitalize">
                 {key}
               </span>{' '}
-              {value}
+              {key.toLowerCase() === 'source' ? (
+                <SourceValue value={value} />
+              ) : (
+                value
+              )}
             </span>
           ))}
         </div>

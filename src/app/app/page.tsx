@@ -2,9 +2,14 @@ import { redirect } from 'next/navigation';
 
 import { getSessionUid } from '@/lib/auth/current-user';
 import { getAppPageRows } from '@/lib/db/recipe-page';
-import { isUncurated, recipeDisplayName } from '@/lib/recipe/cook-text';
+import {
+  isUncurated,
+  recipeDisplayName,
+  sourceDomainOf,
+} from '@/lib/recipe/cook-text';
 import { parseRecipe } from '@/lib/recipe/cooklang';
 import {
+  buildDomainFacet,
   buildFacetView,
   facetCounts,
   matchesFilters,
@@ -70,21 +75,27 @@ export default async function AppPage({
   }
 
   const hearted = new Set(favouriteIds);
-  const items: (RecipeCard & { tags: RecipeTags })[] = recipes.map((row) => {
-    const parsed = parseRecipe(row.source, row.name);
-    return {
-      id: row.drive_file_id,
-      display: recipeDisplayName(row.name),
-      uncurated: isUncurated(row.name),
-      cover: extractMedia(parsed).cover,
-      favourite: hearted.has(row.drive_file_id),
-      tags: row.tags ? (JSON.parse(row.tags) as RecipeTags) : {},
-    };
-  });
+  const items: (RecipeCard & { tags: RecipeTags; domain?: string })[] =
+    recipes.map((row) => {
+      const parsed = parseRecipe(row.source, row.name);
+      return {
+        id: row.drive_file_id,
+        display: recipeDisplayName(row.name),
+        uncurated: isUncurated(row.name),
+        cover: extractMedia(parsed).cover,
+        favourite: hearted.has(row.drive_file_id),
+        domain: sourceDomainOf(row.source),
+        tags: row.tags ? (JSON.parse(row.tags) as RecipeTags) : {},
+      };
+    });
 
   const sp = await searchParams;
   const filters = parseFilters(sp);
-  const facets = buildFacetView(facetCounts(items), filters);
+  const domainFacet = buildDomainFacet(items, filters);
+  const facets = [
+    ...buildFacetView(facetCounts(items), filters),
+    ...(domainFacet ? [domainFacet] : []),
+  ];
   const filtered = items.filter((it) => matchesFilters(it, filters));
   const view = sp['view'] === 'list' ? 'list' : 'grid';
 
