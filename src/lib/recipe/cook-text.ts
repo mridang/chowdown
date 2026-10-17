@@ -212,16 +212,28 @@ export function sourceUrlOf(source: string): string | undefined {
   return /^>>\s*source:\s*(\S+)/im.exec(source)?.[1];
 }
 
+/** Query parameters that only track where a click came from, never which page. */
+const TRACKING_PARAM =
+  /^(utm\w*|fbclid|gclid|mc_\w+|ref|ref_src|igshid|si|feature|spm|cid)$/i;
+
 /**
  * Normalise a URL for "is this the same page?" comparison: lower-case host
- * without `www.`, no query or fragment, no trailing slash. Returns the trimmed
- * input unchanged if it isn't a parseable URL.
+ * without `www.`, no fragment, no trailing slash, and no *tracking* parameters.
+ * Parameters that identify the page are kept — `watch?v=abc` and `watch?v=xyz`
+ * are different videos — and sorted so their order doesn't matter. Returns the
+ * trimmed input unchanged if it isn't a parseable URL.
  */
 export function normalizeSourceUrl(url: string): string {
   try {
     const u = new URL(url.trim());
     const host = u.hostname.toLowerCase().replace(/^www\./, '');
-    return `${host}${u.pathname.replace(/\/+$/, '')}`;
+    const kept = [...u.searchParams.entries()]
+      .filter(([key]) => !TRACKING_PARAM.test(key))
+      .sort(([a], [b]) => a.localeCompare(b));
+    const query = kept.length
+      ? `?${kept.map(([k, v]) => `${k}=${v}`).join('&')}`
+      : '';
+    return `${host}${u.pathname.replace(/\/+$/, '')}${query}`;
   } catch {
     return url.trim();
   }

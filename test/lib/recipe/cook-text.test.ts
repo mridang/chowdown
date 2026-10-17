@@ -119,6 +119,21 @@ describe('normalizeSourceUrl', () => {
     expect(normalizeSourceUrl('http://example.com/post/pasta')).toBe(a);
   });
 
+  it('keeps parameters that identify the page, so two videos differ', () => {
+    expect(normalizeSourceUrl('https://www.youtube.com/watch?v=aaa')).not.toBe(
+      normalizeSourceUrl('https://www.youtube.com/watch?v=bbb'),
+    );
+    expect(
+      normalizeSourceUrl('https://youtube.com/watch?v=aaa&si=tracker'),
+    ).toBe(normalizeSourceUrl('https://www.youtube.com/watch?v=aaa'));
+  });
+
+  it('ignores parameter order and tracking parameters', () => {
+    expect(normalizeSourceUrl('https://a.com/p?b=2&a=1&fbclid=x')).toBe(
+      normalizeSourceUrl('https://a.com/p?a=1&b=2'),
+    );
+  });
+
   it('keeps distinct paths distinct', () => {
     expect(normalizeSourceUrl('https://a.com/x')).not.toBe(
       normalizeSourceUrl('https://a.com/y'),
