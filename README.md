@@ -94,3 +94,27 @@ devbox run deploy                # opennextjs-cloudflare build && wrangler deplo
 
 The custom domain `chowdown.apps.mrida.ng` requires the `apps.mrida.ng` zone on
 the Cloudflare account.
+
+## Agent skills
+
+Skills are folders an AI agent can load to carry out a task end to end. They
+follow the open Agent Skills format (a `SKILL.md` plus helper scripts), so they
+work in Claude Code, Cowork, GitHub Copilot and other agents that read it.
+
+| Skill                                                                    | What it does                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`import-bookmarked-recipes`](skills/import-bookmarked-recipes/SKILL.md) | Finds recipe links in your browser bookmarks, imports them into chowdown through your MCP connector, fixes missing cover photos, verifies the result, and offers to remove the imported bookmarks only after you say yes. Can also run on a schedule ("periodically import my recipes"), in which case it imports but never deletes. |
+
+To install one, copy or symlink its folder into your agent's skills folder:
+
+```sh
+# Claude Code (all projects)
+ln -s "$PWD/skills/import-bookmarked-recipes" ~/.claude/skills/import-bookmarked-recipes
+
+# GitHub Copilot (this repository)
+mkdir -p .github/skills && cp -R skills/import-bookmarked-recipes .github/skills/
+```
+
+In Cowork, upload the folder (zipped) as a custom skill. The skill also needs
+your personal chowdown link added to the agent as an MCP connector; the link is
+shown at the top of the app once you sign in.
