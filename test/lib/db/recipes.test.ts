@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import type { Database } from '../../../src/lib/db/client';
 import {
+  deleteRecipeData,
   findRecipeBySourceUrl,
   type Recipe,
 } from '../../../src/lib/db/recipes';
@@ -50,5 +51,20 @@ describe('findRecipeBySourceUrl', () => {
         'https://site.com/post/a',
       ),
     ).toBeUndefined();
+  });
+});
+
+describe('deleteRecipeData', () => {
+  it('clears the recipe, its embedding and its heart in one batch', async () => {
+    const statements: unknown[] = [];
+    const db = {
+      delete: () => ({ where: () => ({}) }),
+      batch: async (list: unknown[]) => {
+        statements.push(...list);
+        return [];
+      },
+    } as unknown as Database;
+    await deleteRecipeData(db, 1, 'abc');
+    expect(statements).toHaveLength(3);
   });
 });

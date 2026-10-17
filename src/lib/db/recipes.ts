@@ -12,7 +12,7 @@ import { and, eq, notInArray } from 'drizzle-orm';
 
 import { normalizeSourceUrl, sourceUrlOf } from '../recipe/cook-text';
 import type { Database } from './client';
-import { recipes } from './schema';
+import { embeddings, favourites, recipes } from './schema';
 
 /** A full recipe row. */
 export type Recipe = typeof recipes.$inferSelect;
@@ -135,4 +135,41 @@ export async function deleteRecipesNotIn(
         notInArray(recipes.drive_file_id, keepFileIds),
       ),
     );
+}
+
+/**
+ * Forget one recipe everywhere the cache holds it — the recipe row, its
+ * embedding and the user's heart — in a single D1 round trip.
+ */
+export async function deleteRecipeData(
+  db: Database,
+  userId: number,
+  driveFileId: string,
+): Promise<void> {
+  await db.batch([
+    db
+      .delete(recipes)
+      .where(
+        and(
+          eq(recipes.user_id, userId),
+          eq(recipes.drive_file_id, driveFileId),
+        ),
+      ),
+    db
+      .delete(embeddings)
+      .where(
+        and(
+          eq(embeddings.user_id, userId),
+          eq(embeddings.drive_file_id, driveFileId),
+        ),
+      ),
+    db
+      .delete(favourites)
+      .where(
+        and(
+          eq(favourites.user_id, userId),
+          eq(favourites.drive_file_id, driveFileId),
+        ),
+      ),
+  ]);
 }

@@ -152,3 +152,29 @@ export async function updateRecipeFile(
     throw new Error(`Update file failed: ${response.status} ${await response.text()}`);
   }
 }
+
+/**
+ * Move a file to the Drive trash (not a permanent delete, so the user can still
+ * restore it from Drive for ~30 days). Returns `'missing'` if the file is
+ * already gone, so deleting twice is harmless; any other failure throws.
+ */
+export async function trashRecipeFile(
+  fileId: string,
+  accessToken: string,
+): Promise<'trashed' | 'missing'> {
+  const response = await fetch(`${DRIVE_API}/files/${fileId}?fields=id`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ trashed: true }),
+  });
+  if (response.status === 404) {
+    return 'missing';
+  }
+  if (!response.ok) {
+    throw new Error(`Trash file failed: ${response.status} ${await response.text()}`);
+  }
+  return 'trashed';
+}

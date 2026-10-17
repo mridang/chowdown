@@ -27,6 +27,7 @@ import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 import { getDatabase } from '@/lib/util';
 
 import { AddNote } from './_components/add-note';
+import { DeleteButton } from './_components/delete-button';
 import { TagButton } from './_components/tag-button';
 
 /** Canonical origin — mirrors `SITE_URL` in the root layout. */
@@ -165,6 +166,7 @@ export default async function RecipePage({
             initial={favourited}
             variant="labelled"
           />
+          <DeleteButton recipeId={id} title={data.recipe.title} />
         </div>
       </nav>
 
