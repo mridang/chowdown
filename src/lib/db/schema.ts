@@ -117,3 +117,60 @@ export const favourites = sqliteTable(
     index('idx_favourites_user').on(table.user_id),
   ],
 );
+
+/**
+ * OAuth clients (assistants allowed to ask for access). `kind` is `dcr` for a
+ * dynamically registered client or `cimd` for one resolved from a Client ID
+ * Metadata Document (cached; `fetched_at` says how fresh). `redirect_uris` is a
+ * JSON array.
+ */
+export const oauthClients = sqliteTable('oauth_clients', {
+  client_id: text('client_id').primaryKey(),
+  kind: text('kind').notNull(),
+  client_name: text('client_name').notNull(),
+  redirect_uris: text('redirect_uris').notNull(),
+  created_at: text('created_at').notNull(),
+  fetched_at: text('fetched_at'),
+});
+
+/** One user's approval of one client; revoking it revokes all its tokens. */
+export const oauthGrants = sqliteTable(
+  'oauth_grants',
+  {
+    id: text('id').primaryKey(),
+    user_id: integer('user_id').notNull(),
+    client_id: text('client_id').notNull(),
+    scope: text('scope').notNull(),
+    resource: text('resource').notNull(),
+    created_at: text('created_at').notNull(),
+    last_used_at: text('last_used_at'),
+    revoked_at: text('revoked_at'),
+  },
+  (table) => [index('idx_oauth_grants_user').on(table.user_id)],
+);
+
+/** Single-use authorization codes (hashed). `grant_id` is set once redeemed. */
+export const oauthCodes = sqliteTable('oauth_codes', {
+  code_hash: text('code_hash').primaryKey(),
+  client_id: text('client_id').notNull(),
+  user_id: integer('user_id').notNull(),
+  redirect_uri: text('redirect_uri').notNull(),
+  code_challenge: text('code_challenge').notNull(),
+  scope: text('scope').notNull(),
+  resource: text('resource').notNull(),
+  expires_at: integer('expires_at').notNull(),
+  grant_id: text('grant_id'),
+});
+
+/** Access and refresh tokens, stored only as SHA-256 hashes. */
+export const oauthTokens = sqliteTable(
+  'oauth_tokens',
+  {
+    token_hash: text('token_hash').primaryKey(),
+    kind: text('kind').notNull(),
+    grant_id: text('grant_id').notNull(),
+    expires_at: integer('expires_at').notNull(),
+    used_at: integer('used_at'),
+  },
+  (table) => [index('idx_oauth_tokens_grant').on(table.grant_id)],
+);

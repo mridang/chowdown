@@ -85,6 +85,26 @@ NEXT_PUBLIC_GOOGLE_APP_ID=123456789012   # Cloud project number
 These are inlined into the client bundle at build time, so the same values must
 be present in the deploy environment for the production build.
 
+## Connecting an assistant (MCP)
+
+chowdown is an MCP server at `https://<your-domain>/api/mcp`, protected with
+OAuth 2.1 as the [MCP authorization spec](https://modelcontextprotocol.io/specification/latest/basic/authorization)
+describes. Add that URL as a connector in ChatGPT, Claude or any MCP client, sign
+in with Google when asked, and approve. There is no secret to copy.
+
+- **Scopes:** `recipes:read` (browse and search) and `recipes:write` (add, edit,
+  tag, favourite, annotate). An assistant can be granted read only.
+- **Discovery:** `/.well-known/oauth-protected-resource/api/mcp` (RFC 9728) and
+  `/.well-known/oauth-authorization-server` (RFC 8414).
+- **Client registration:** Client ID Metadata Documents (preferred) and dynamic
+  registration (`/oauth/register`, RFC 7591). Public clients only, PKCE `S256`
+  required.
+- **Tokens:** opaque, stored hashed. Access tokens last an hour; refresh tokens
+  rotate on every use, and reusing an old one revokes the whole connection.
+- **Disconnect:** "Connected apps" in the app, or `POST /oauth/revoke`.
+- **Legacy link:** the older secret URL `/api/mcp/<token>` still works with full
+  access, but prefer the OAuth URL.
+
 ## Deploy
 
 ```sh
@@ -116,5 +136,5 @@ mkdir -p .github/skills && cp -R skills/import-bookmarked-recipes .github/skills
 ```
 
 In Cowork, upload the folder (zipped) as a custom skill. The skill also needs
-your personal chowdown link added to the agent as an MCP connector; the link is
-shown at the top of the app once you sign in.
+chowdown added to the agent as an MCP connector: use the MCP server URL shown at
+the top of the app once you sign in, then approve the connection.

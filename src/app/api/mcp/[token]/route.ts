@@ -3,13 +3,16 @@
  * `token` in the path is the user's `mcp_token`; possession of the link
  * authorizes access to that user's recipes (no separate login). Speaks JSON-RPC
  * 2.0 over HTTP: POST one message (or a batch) and get one response back.
+ *
+ * This is the legacy way to connect. New connections should use the
+ * OAuth-protected `/api/mcp`, which doesn't put a secret in the URL.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getUserByMcpToken } from '@/lib/db/users';
-import { handleMcpMessage, type JsonRpcMessage } from '@/lib/mcp/server';
-import { getDatabase } from '@/lib/util';
+import { handleMcpPost } from '@/lib/mcp/http';
+import { appOrigin, getDatabase } from '@/lib/util';
 
 export async function POST(
   request: NextRequest,
@@ -19,36 +22,17 @@ export async function POST(
   const user = await getUserByMcpToken(getDatabase(), token);
   if (!user) {
     return NextResponse.json(
-      { jsonrpc: '2.0', id: null, error: { code: -32001, message: 'Invalid MCP token' } },
+      {
+        jsonrpc: '2.0',
+        id: null,
+        error: { code: -32001, message: 'Invalid MCP token' },
+      },
       { status: 401 },
     );
   }
 
-  const payload = (await request.json().catch(() => null)) as
-    | JsonRpcMessage
-    | JsonRpcMessage[]
-    | null;
-  if (!payload) {
-    return NextResponse.json(
-      { jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } },
-      { status: 400 },
-    );
-  }
-
-  // JSON-RPC batch (array) or a single message.
-  if (Array.isArray(payload)) {
-    const responses = (
-      await Promise.all(payload.map((m) => handleMcpMessage(user, m)))
-    ).filter((r): r is object => r !== null);
-    return responses.length > 0
-      ? NextResponse.json(responses)
-      : new NextResponse(null, { status: 202 });
-  }
-
-  const response = await handleMcpMessage(user, payload);
-  return response === null
-    ? new NextResponse(null, { status: 202 })
-    : NextResponse.json(response);
+  // The secret link has always meant full access, so no scope limit.
+  return handleMcpPost(request, user, null, appOrigin(request));
 }
 
 /** A friendly GET so opening the link in a browser explains what it is. */
@@ -63,7 +47,8 @@ export async function GET(
   }
   return NextResponse.json({
     name: 'chowdown',
-    description: "This is a chowdown recipe MCP endpoint. POST JSON-RPC 2.0 messages here.",
+    description:
+      'This is a chowdown recipe MCP endpoint. POST JSON-RPC 2.0 messages here.',
     protocolVersion: '2024-11-05',
   });
 }

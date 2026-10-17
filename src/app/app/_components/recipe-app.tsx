@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useMemo, useState } from 'react';
 
 import { CoverImage } from '@/components/cover-image';
 import { FavouriteButton } from '@/components/favourite-button';
 import type { FacetView } from '@/lib/recipe/facet-filter';
 
+import { ConnectPanel } from './connect-panel';
 import { FilterControls } from './filter-controls';
 import { ViewToggle } from './view-toggle';
 
@@ -181,23 +181,6 @@ export function RecipeApp({
   favouriteIds: string[];
   view: 'grid' | 'list';
 }) {
-  const [copied, setCopied] = useState(false);
-
-  const mcpUrl = useMemo(
-    () =>
-      typeof window !== 'undefined'
-        ? `${window.location.origin}/api/mcp/${mcpToken}`
-        : `/api/mcp/${mcpToken}`,
-    [mcpToken],
-  );
-
-  const copyMcp = useCallback(() => {
-    void navigator.clipboard?.writeText(mcpUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  }, [mcpUrl]);
-
   return (
     <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -223,19 +206,7 @@ export function RecipeApp({
         </div>
       </header>
 
-      <div className="mt-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[12px] text-slate-500">
-        <span className="font-semibold text-slate-600">Your MCP link</span>
-        <code className="min-w-0 flex-1 truncate rounded bg-white px-2 py-1 text-slate-700">
-          {mcpUrl}
-        </code>
-        <button
-          type="button"
-          onClick={copyMcp}
-          className="rounded border border-slate-200 bg-white px-2 py-1 font-medium text-slate-600 hover:bg-slate-50"
-        >
-          {copied ? 'Copied' : 'Copy'}
-        </button>
-      </div>
+      <ConnectPanel mcpToken={mcpToken} />
 
       <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-[16rem_1fr]">
         <aside>

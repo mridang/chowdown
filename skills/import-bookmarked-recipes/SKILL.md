@@ -13,8 +13,10 @@ then helps tidy the bookmarks away.
 
 - **The chowdown MCP connector**, with these tools: `import_recipe`,
   `set_recipe_images`, `list_recipes`, `get_recipe`. If they are missing, stop and
-  tell the user to add their personal chowdown link (shown at the top of the
-  chowdown app) as a connector. Do not try to work around it.
+  tell the user to add chowdown as a connector: the MCP server URL shown at the
+  top of the chowdown app (`…/api/mcp`), then sign in and approve when asked.
+  The approval must include the `recipes:write` access, or imports will be
+  refused. Do not try to work around it.
 - **Python 3.8+** to run the helper scripts in `scripts/` (standard library only).
 - **Read access to the browser profile folder** (the scanner reads the browser's
   `Bookmarks` file).

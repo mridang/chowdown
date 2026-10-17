@@ -9,5 +9,6 @@ export {
   getEnv,
   getDatabase,
   appOrigin,
+  appOriginFromHeaders,
   runInBackground,
 } from './runtime';

@@ -254,7 +254,7 @@ export interface JsonRpcMessage {
 }
 
 /** The tool catalogue advertised to clients. */
-const TOOLS = [
+export const TOOLS = [
   {
     name: 'list_recipes',
     description: "List the names of all the user's saved recipes.",

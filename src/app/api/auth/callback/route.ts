@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getUserAccessToken } from '@/lib/auth/current-user';
+import { RETURN_COOKIE, safeReturnPath } from '@/lib/auth/return-to';
 import { exchangeCode, getUserInfo } from '@/lib/auth/google-oauth';
 import {
   SESSION_COOKIE,
@@ -78,7 +79,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       { uid: user.id, email: user.email },
       env.SESSION_SECRET,
     );
-    const response = NextResponse.redirect(`${origin}/app`);
+    const returnTo = safeReturnPath(request.cookies.get(RETURN_COOKIE)?.value);
+    const response = NextResponse.redirect(`${origin}${returnTo ?? '/app'}`);
+    response.cookies.delete(RETURN_COOKIE);
     response.cookies.set(SESSION_COOKIE, sessionToken, {
       httpOnly: true,
       secure,

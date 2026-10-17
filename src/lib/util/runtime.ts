@@ -27,6 +27,26 @@ export function appOrigin(request: Request): string {
 }
 
 /**
+ * Like {@link appOrigin}, for Server Components, which get request headers
+ * rather than a `Request`. Behind Cloudflare the browser-facing host and scheme
+ * arrive in `host` and `x-forwarded-proto`.
+ */
+export function appOriginFromHeaders(headers: Headers): string {
+  const configured = getEnv().APP_URL;
+  if (configured) {
+    return configured;
+  }
+  const host =
+    headers.get('x-forwarded-host') ?? headers.get('host') ?? 'localhost';
+  const proto =
+    headers.get('x-forwarded-proto') ??
+    (host.startsWith('localhost') || host.startsWith('127.')
+      ? 'http'
+      : 'https');
+  return `${proto}://${host}`;
+}
+
+/**
  * Run work after the response has been sent, without blocking it. Failures are
  * swallowed (logged) because background work — embedding, cache warming — must
  * never turn a successful request into an error. Falls back to a floating
