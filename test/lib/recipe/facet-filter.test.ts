@@ -170,3 +170,24 @@ describe('source site filter', () => {
     ).toBeNull();
   });
 });
+
+describe('accent-insensitive search', () => {
+  const list: FilterableRecipe[] = [
+    { display: 'Crème brûlée', tags: {} },
+    { display: 'Albóndigas Mexicanas', tags: { cuisine: ['Mexican'] } },
+    { display: 'Salad', tags: {} },
+  ];
+  const find = (q: string) =>
+    list
+      .filter((r) => matchesFilters(r, parseFilters({ q })))
+      .map((r) => r.display);
+
+  it('finds accented titles from plain letters, in any case', () => {
+    expect(find('creme')).toEqual(['Crème brûlée']);
+    expect(find('ALBONDIGAS')).toEqual(['Albóndigas Mexicanas']);
+  });
+
+  it('finds plain titles from accented input', () => {
+    expect(find('sálad')).toEqual(['Salad']);
+  });
+});

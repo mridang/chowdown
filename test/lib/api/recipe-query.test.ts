@@ -111,3 +111,32 @@ describe('sortRecipes', () => {
     ).toBeLessThan(0);
   });
 });
+
+describe('title ordering', () => {
+  const order = { field: 'title' as const, descending: false };
+  const ids = (titles: string[]) =>
+    sortRecipes(
+      titles.map((t, i) => recipe(String(i), t)),
+      order,
+    ).map((r) => r.title);
+
+  it('alphabetises accented titles with their base letter', () => {
+    expect(ids(['Zucchini', 'Éclair', 'Eggs', 'Apple'])).toEqual([
+      'Apple',
+      'Éclair',
+      'Eggs',
+      'Zucchini',
+    ]);
+  });
+
+  it('orders numbers by value', () => {
+    expect(ids(['Soup 10', 'Soup 2'])).toEqual(['Soup 2', 'Soup 10']);
+  });
+
+  it('keeps cursor positions consistent with that order', () => {
+    const cmp = comparePositions(order);
+    expect(
+      cmp({ key: 'Éclair', id: '1' }, { key: 'Eggs', id: '2' }),
+    ).toBeLessThan(0);
+  });
+});

@@ -13,6 +13,7 @@
  * untouched.
  */
 
+import { formatQuantityNumber } from '../intl';
 import type { ParsedIngredient, ParsedRecipe, StepToken } from './cooklang';
 
 /** Supported measurement systems. */
@@ -49,7 +50,7 @@ const VOL_TARGETS: Record<UnitSystem, [string, number][]> = {
 /** Round to `step` (e.g. 0.25) then drop trailing zeros. */
 function roundTo(value: number, step: number): string {
   const rounded = Math.round(value / step) * step;
-  return parseFloat(rounded.toFixed(2)).toString();
+  return formatQuantityNumber(rounded);
 }
 
 /** Parse the leading number of a quantity string, supporting simple fractions. */

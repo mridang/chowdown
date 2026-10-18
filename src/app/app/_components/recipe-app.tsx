@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import { CoverImage } from '@/components/cover-image';
+import { countOf } from '@/lib/intl';
 import { FavouriteButton } from '@/components/favourite-button';
 import type { FacetView } from '@/lib/recipe/facet-filter';
 
@@ -213,8 +214,8 @@ export function RecipeApp({
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm text-slate-500">
               {recipes.length === total
-                ? `${total} recipe${total === 1 ? '' : 's'}`
-                : `${recipes.length} of ${total}`}
+                ? countOf(total, 'recipe')
+                : `${recipes.length} of ${countOf(total, 'recipe')}`}
             </p>
             <ViewToggle view={view} />
           </div>

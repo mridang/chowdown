@@ -13,6 +13,7 @@ import {
   type FilterableRecipe,
   type SearchParams,
 } from '../recipe/facet-filter';
+import { compareText } from '../intl';
 import type { CursorPosition } from './pagination';
 
 /** A recipe as the query needs it. */
@@ -68,9 +69,7 @@ export function filterRecipes<T extends QueryableRecipe>(
 
 /** The sort key of a recipe. */
 function keyOf(recipe: QueryableRecipe, order: SortOrder): string {
-  return order.field === 'title'
-    ? recipe.title.toLowerCase()
-    : (recipe.modified_at ?? '');
+  return order.field === 'title' ? recipe.title : (recipe.modified_at ?? '');
 }
 
 /** Sort recipes; ties break on id so the order (and cursors) are stable. */
@@ -93,8 +92,15 @@ export function positionOf(
 export function comparePositions(
   order: SortOrder,
 ): (a: CursorPosition, b: CursorPosition) => number {
+  // Titles order the way a person would alphabetise them (accents and case
+  // ignored, numbers by value); timestamps are ISO strings, which already
+  // order correctly as plain text. Ties fall to the id so order stays stable.
+  const compareKeys =
+    order.field === 'title'
+      ? compareText
+      : (x: string, y: string) => (x < y ? -1 : x > y ? 1 : 0);
   return (a, b) => {
-    const byKey = a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+    const byKey = compareKeys(a.key, b.key);
     const base = byKey !== 0 ? byKey : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
     return order.descending ? -base : base;
   };

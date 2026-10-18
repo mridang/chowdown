@@ -7,6 +7,7 @@
  */
 
 import type { User } from '../db/users';
+import { listOr } from '../intl';
 
 /** The measurement systems a user can prefer. */
 export const MEASUREMENT_SYSTEMS = ['METRIC', 'US', 'IMPERIAL'] as const;
@@ -65,7 +66,7 @@ export function parseUserPatch(patch: Record<string, unknown>): UserPatch {
     !(MEASUREMENT_SYSTEMS as readonly unknown[]).includes(value)
   ) {
     errors.push(
-      `measurement_system: must be one of ${MEASUREMENT_SYSTEMS.join(', ')}, or null.`,
+      `measurement_system: must be ${listOr([...MEASUREMENT_SYSTEMS, 'null'])}.`,
     );
   }
   if (errors.length > 0) {

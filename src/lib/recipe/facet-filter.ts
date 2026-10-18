@@ -11,6 +11,7 @@
  * and any tag value.
  */
 
+import { foldText } from '../intl';
 import { FACETS } from './taxonomy';
 import type { RecipeTags } from './tag-index';
 
@@ -82,8 +83,9 @@ export function matchesFilters(
       recipe.tags,
     )
       .flat()
-      .join(' ')}`.toLowerCase();
-    if (!hay.includes(state.q.toLowerCase())) {
+      .join(' ')}`;
+    // Accent- and case-insensitive: "creme" finds "Crème brûlée".
+    if (!foldText(hay).includes(foldText(state.q))) {
       return false;
     }
   }

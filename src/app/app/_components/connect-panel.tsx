@@ -2,6 +2,8 @@
 
 import { useCallback, useState, useSyncExternalStore } from 'react';
 
+import { relativeTime } from '@/lib/intl';
+
 /** An app the user has connected, as the API returns it. */
 interface ConnectedApp {
   id: string;
@@ -122,7 +124,7 @@ export function ConnectPanel({ mcpToken }: { mcpToken: string }) {
                     <span className="text-slate-400">
                       · {accessLabel(app.scopes)}
                       {app.last_used_at
-                        ? ` · last used ${new Date(app.last_used_at).toLocaleDateString()}`
+                        ? ` · last used ${relativeTime(app.last_used_at)}`
                         : ''}
                     </span>
                   </span>

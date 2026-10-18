@@ -12,6 +12,7 @@
  * message and gets one JSON response.
  */
 
+import { countOf, foldText } from '../intl';
 import { getUserAccessToken } from '../auth/current-user';
 import { findRecipeBySourceUrl } from '../db/recipes';
 import { setUserUnits, type User } from '../db/users';
@@ -574,15 +575,15 @@ async function callTool(
     }
     case 'search_recipes': {
       const queryRaw = String(args['query'] ?? '');
-      const query = queryRaw.toLowerCase();
+      const query = foldText(queryRaw);
       const files = await listRecipeFiles(folderId, token);
       const hits = files.filter((f) =>
-        recipeDisplayName(f.name).toLowerCase().includes(query),
+        foldText(recipeDisplayName(f.name)).includes(query),
       );
       return recipeListResult(
         hits,
         hits.length
-          ? `Found ${hits.length} recipe(s) matching "${queryRaw}".`
+          ? `Found ${countOf(hits.length, 'recipe')} matching "${queryRaw}".`
           : `No recipes match "${queryRaw}".`,
         queryRaw,
       );

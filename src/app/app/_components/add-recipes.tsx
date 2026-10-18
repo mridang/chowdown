@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 
+import { countOf } from '@/lib/intl';
 import { problemMessage } from '@/lib/problem-message';
 
 /** A prepared, not-yet-saved recipe, from an item of POST /api/recipe-imports. */
@@ -250,8 +251,7 @@ export function AddRecipes({
       {phase === 'done' ? (
         <>
           <p className="mt-3 text-sm text-slate-700">
-            Saved {savedCount} recipe{savedCount === 1 ? '' : 's'} to your
-            Drive.
+            Saved {countOf(savedCount, 'recipe')} to your Drive.
           </p>
           <div className="mt-3">
             <button

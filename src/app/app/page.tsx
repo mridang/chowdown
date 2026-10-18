@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { getSessionUid } from '@/lib/auth/current-user';
 import { getAppPageRows } from '@/lib/db/recipe-page';
+import { compareText } from '@/lib/intl';
 import {
   isUncurated,
   recipeDisplayName,
@@ -88,6 +89,12 @@ export default async function AppPage({
         tags: row.tags ? (JSON.parse(row.tags) as RecipeTags) : {},
       };
     });
+
+  // The database orders names byte by byte, which puts "Éclair" after "Zucchini";
+  // order the grid the way a person would alphabetise it.
+  items.sort(
+    (a, b) => compareText(a.display, b.display) || a.id.localeCompare(b.id),
+  );
 
   const sp = await searchParams;
   const filters = parseFilters(sp);

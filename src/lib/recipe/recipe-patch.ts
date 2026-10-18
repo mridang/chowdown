@@ -14,6 +14,7 @@
  * cooking log are never touched.
  */
 
+import { listAnd } from '../intl';
 import { removeMetadata, upsertMetadata } from './cook-text';
 import { validImageUrls, withImages } from './media';
 import { FACETS, canonicalValue, facet } from './taxonomy';
@@ -36,7 +37,7 @@ export function applyRecipePatch(
   for (const key of Object.keys(patch)) {
     if (!EDITABLE.includes(key)) {
       errors.push(
-        `${key}: not editable here (editable: ${EDITABLE.join(', ')}).`,
+        `${key}: not editable here (editable: ${listAnd(EDITABLE)}).`,
       );
     }
   }
@@ -77,7 +78,7 @@ export function applyRecipePatch(
         const f = facet(key);
         if (!f) {
           errors.push(
-            `tags.${key}: unknown facet (known: ${FACETS.map((x) => x.key).join(', ')}).`,
+            `tags.${key}: unknown facet (known: ${listAnd(FACETS.map((x) => x.key))}).`,
           );
           continue;
         }
