@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { Logo } from './site-header';
+import { Container } from './ui/layout';
 
 /**
  * A jagged edge, like torn paper, that lets the page background cut into the
@@ -55,7 +56,7 @@ export function SiteFooter() {
     <footer className="mt-20 sm:mt-28">
       <ZigZag />
       <div className="bg-flame text-ink -mt-px">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 pt-2 pb-14 sm:px-8 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+        <Container className="grid grid-cols-1 gap-10 pt-2 pb-14 md:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div>
             <Logo />
             <p className="mt-5 max-w-xs text-base leading-relaxed">
@@ -65,7 +66,7 @@ export function SiteFooter() {
           </div>
           {COLUMNS.map((col) => (
             <div key={col.title}>
-              <h3 className="text-xs font-semibold tracking-[0.18em] uppercase">
+              <h3 className="text-label font-semibold uppercase">
                 {col.title}
               </h3>
               <ul className="mt-4 flex flex-col gap-2.5 text-[15px] font-medium">
@@ -79,13 +80,13 @@ export function SiteFooter() {
               </ul>
             </div>
           ))}
-        </div>
+        </Container>
       </div>
       <div className="bg-marigold">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-xs font-medium sm:px-8">
+        <Container className="flex flex-wrap items-center justify-between gap-2 py-4 text-xs font-medium">
           <span>© chowdown</span>
           <span>Made for cooking, not scrolling</span>
-        </div>
+        </Container>
       </div>
     </footer>
   );

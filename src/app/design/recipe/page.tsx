@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { RECIPES, RECIPE_PAGE as R } from '@/design/fixtures';
 import {
@@ -11,27 +12,10 @@ import {
   SparkIcon,
   TrashIcon,
 } from '@/design/icons';
-import { PhotoBlock, RecipeCard } from '@/design/recipe-card';
+import { PhotoBlock, RecipeCard, RecipeGrid } from '@/design/recipe-card';
 import { DesignShell } from '@/design/shell';
-
-/** A labelled action beside the title: favourite, auto-tag, delete. */
-function Action({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      className="border-ink/20 hover:border-ink inline-flex items-center gap-2 rounded-md border bg-white px-3.5 py-2 text-sm font-medium transition"
-    >
-      {children}
-      <span>{label}</span>
-    </button>
-  );
-}
+import { Button } from '@/design/ui/button';
+import { Container, Eyebrow, Heading } from '@/design/ui/layout';
 
 /** One fact in the row under the hero: a line icon, a label and a value. */
 function Fact({
@@ -39,21 +23,26 @@ function Fact({
   label,
   value,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-3.5 px-5 first:pl-0 sm:px-8">
+    <div className="flex items-center gap-3.5 sm:px-8 sm:first:pl-0">
       <span className="text-ember">{icon}</span>
       <span className="leading-tight">
-        <span className="text-ink/55 block text-[11px] font-semibold tracking-[0.16em] uppercase">
+        <span className="text-label text-ink/55 block font-semibold uppercase">
           {label}
         </span>
         <span className="block text-base font-semibold">{value}</span>
       </span>
     </div>
   );
+}
+
+/** A small tracked-caps subheading inside the ingredients column. */
+function Label({ children }: { children: ReactNode }) {
+  return <h3 className="text-label font-semibold uppercase">{children}</h3>;
 }
 
 /**
@@ -66,20 +55,20 @@ export default function DesignRecipe() {
   return (
     <DesignShell signedIn active="search">
       <section className="border-ink/10 border-b">
-        <div className="mx-auto grid max-w-[90rem] lg:grid-cols-2">
+        <div className="mx-auto grid max-w-[90rem] grid-cols-1 lg:grid-cols-2">
           <PhotoBlock
             tone="flame"
             className="aspect-[16/10] lg:order-2 lg:aspect-auto lg:min-h-[30rem]"
           />
-          <div className="px-4 py-8 sm:px-8 lg:order-1 lg:py-16 lg:pr-16 lg:pl-[max(2rem,calc((100vw-80rem)/2+2rem))]">
+          <div className="px-4 py-8 sm:px-6 lg:order-1 lg:py-16 lg:pr-16 lg:pl-[max(2rem,calc((100vw-80rem)/2+2rem))]">
             <nav className="text-ink/55 text-sm" aria-label="Breadcrumb">
               <Link
                 href="/design/search"
                 className="hover:text-ink hover:underline"
               >
                 Recipes
-              </Link>{' '}
-              /{' '}
+              </Link>
+              <span className="mx-1.5">/</span>
               <Link
                 href="/design/search"
                 className="hover:text-ink hover:underline"
@@ -87,12 +76,10 @@ export default function DesignRecipe() {
                 Mexican
               </Link>
             </nav>
-            <p className="text-ember mt-6 text-xs font-semibold tracking-[0.18em] uppercase">
-              Mexican · Chicken
-            </p>
-            <h1 className="font-display mt-3 text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+            <Eyebrow className="mt-6">Mexican · Chicken</Eyebrow>
+            <Heading as="h1" variant="h1" className="mt-3 lg:text-6xl">
               {R.title}
-            </h1>
+            </Heading>
             <p className="text-ink/75 mt-6 max-w-xl text-lg leading-relaxed">
               {R.intro}
             </p>
@@ -107,28 +94,31 @@ export default function DesignRecipe() {
               </a>
               <Link
                 href="/design/search"
-                className="border-ink/20 hover:border-ink rounded border px-2.5 py-1 text-xs font-medium transition"
+                className="rounded-control border-ink/25 hover:border-ink inline-flex h-7 items-center border px-2.5 text-xs font-medium transition"
               >
                 More from {R.site}
               </Link>
             </p>
             <div className="mt-7 flex flex-wrap gap-2.5">
-              <Action label="Favourite">
+              <Button variant="outline">
                 <HeartIcon className="h-[18px] w-[18px]" />
-              </Action>
-              <Action label="Auto-tag">
+                Favourite
+              </Button>
+              <Button variant="outline">
                 <SparkIcon className="h-[18px] w-[18px]" />
-              </Action>
-              <Action label="Delete">
+                Auto-tag
+              </Button>
+              <Button variant="outline">
                 <TrashIcon className="h-[18px] w-[18px]" />
-              </Action>
+                Delete
+              </Button>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 sm:px-8">
-        <div className="divide-ink/15 mt-10 flex flex-wrap items-center gap-y-5 sm:divide-x">
+      <Container>
+        <div className="sm:divide-ink/15 mt-10 flex flex-wrap items-center gap-x-8 gap-y-5 sm:gap-x-0 sm:divide-x">
           <Fact
             icon={<ClockIcon className="h-7 w-7" />}
             label="Time"
@@ -146,10 +136,10 @@ export default function DesignRecipe() {
           />
         </div>
 
-        <div className="mt-12 grid gap-12 md:grid-cols-[17rem_1fr] lg:grid-cols-[22rem_1fr] lg:gap-20">
+        <div className="mt-12 grid grid-cols-1 gap-12 md:grid-cols-[17rem_minmax(0,1fr)] lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-20">
           <div className="md:sticky md:top-24 md:max-h-[calc(100vh-7rem)] md:self-start md:overflow-y-auto md:pr-2">
-            <h2 className="font-display text-2xl font-semibold">Ingredients</h2>
-            <ul className="divide-ink/10 border-ink/10 mt-5 flex flex-col divide-y border-y">
+            <Heading variant="h3">Ingredients</Heading>
+            <ul className="divide-ink/10 border-ink/10 mt-5 divide-y border-y">
               {R.ingredients.map(([qty, name]) => (
                 <li key={name} className="flex gap-4 py-3 text-base">
                   <span className="w-20 shrink-0 font-semibold">{qty}</span>
@@ -157,21 +147,21 @@ export default function DesignRecipe() {
                 </li>
               ))}
             </ul>
-            <h3 className="mt-8 text-[11px] font-semibold tracking-[0.18em] uppercase">
-              You will need
-            </h3>
-            <ul className="mt-3 flex flex-col gap-2 text-[15px]">
-              {R.cookware.map((c) => (
-                <li key={c} className="flex items-center gap-2.5">
-                  <PanIcon className="text-ember h-[18px] w-[18px]" />
-                  {c}
-                </li>
-              ))}
-            </ul>
+            <div className="mt-8">
+              <Label>You will need</Label>
+              <ul className="mt-3 flex flex-col gap-2 text-[15px]">
+                {R.cookware.map((c) => (
+                  <li key={c} className="flex items-center gap-2.5">
+                    <PanIcon className="text-ember h-[18px] w-[18px]" />
+                    {c}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
           <div>
-            <h2 className="font-display text-2xl font-semibold">Method</h2>
+            <Heading variant="h3">Method</Heading>
             <ol className="mt-5 flex flex-col gap-8">
               {R.steps.map((step, i) => (
                 <li key={step} className="flex items-start gap-5">
@@ -186,21 +176,21 @@ export default function DesignRecipe() {
         </div>
 
         <hr className="border-ink/15 mt-16 border-t" />
-        <p className="text-ink/55 mt-5 text-[11px] font-semibold tracking-[0.18em] uppercase">
+        <p className="text-label text-ink/55 mt-5 font-semibold uppercase">
           {R.tags.join(' · ')}
         </p>
-      </section>
+      </Container>
 
-      <section className="mx-auto mt-16 max-w-7xl px-4 sm:px-8">
-        <h2 className="font-display text-3xl font-semibold">
-          You might also like
-        </h2>
-        <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {RECIPES.slice(3, 7).map((r) => (
-            <RecipeCard key={r.id} recipe={r} />
-          ))}
+      <Container className="mt-16">
+        <Heading>You might also like</Heading>
+        <div className="mt-6">
+          <RecipeGrid columns={4}>
+            {RECIPES.slice(3, 7).map((r) => (
+              <RecipeCard key={r.id} recipe={r} />
+            ))}
+          </RecipeGrid>
         </div>
-      </section>
+      </Container>
     </DesignShell>
   );
 }

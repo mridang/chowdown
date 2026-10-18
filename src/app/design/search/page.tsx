@@ -1,70 +1,39 @@
-import { CheckIcon, SearchIcon } from '@/design/icons';
 import { FACETS, RECIPES, SOURCES } from '@/design/fixtures';
-import { RecipeCard } from '@/design/recipe-card';
+import { RecipeCard, RecipeGrid } from '@/design/recipe-card';
 import { DesignShell } from '@/design/shell';
+import { Button } from '@/design/ui/button';
+import { CountBadge, FilterChip } from '@/design/ui/chip';
+import { SearchField, SelectField } from '@/design/ui/field';
+import { FacetGroup } from '@/design/ui/facet';
+import { Container, Eyebrow, Heading } from '@/design/ui/layout';
 
-/** One filter group: a small heading and quiet tick boxes. */
-function FacetGroup({
-  label,
-  values,
-  checked = [],
-}: {
-  label: string;
-  values: [string, number][];
-  checked?: string[];
-}) {
-  return (
-    <section className="border-ink/10 border-b pb-5">
-      <h3 className="text-[11px] font-semibold tracking-[0.18em] uppercase">
-        {label}
-      </h3>
-      <ul className="mt-3 flex flex-col gap-0.5">
-        {values.map(([value, count]) => {
-          const on = checked.includes(value);
-          return (
-            <li key={value}>
-              <button
-                type="button"
-                className="hover:bg-ink/5 flex w-full items-center justify-between gap-3 rounded px-1 py-1.5 text-left text-[15px]"
-              >
-                <span className="flex items-center gap-2.5">
-                  <span
-                    className={`grid h-4 w-4 place-items-center rounded-sm border ${
-                      on
-                        ? 'border-ink bg-ink text-white'
-                        : 'border-ink/35 bg-white'
-                    }`}
-                  >
-                    {on ? (
-                      <CheckIcon className="h-3 w-3" strokeWidth={3} />
-                    ) : null}
-                  </span>
-                  <span className={on ? 'font-semibold' : ''}>{value}</span>
-                </span>
-                <span className="text-ink/45 text-xs">{count}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
-}
-
-/** All the filters, used in the sidebar and in the phone drawer. */
+/** Every filter group; used in the desktop sidebar and the phone drawer. */
 function Filters() {
   return (
     <div className="flex flex-col gap-5">
-      {FACETS.map((f, i) => (
+      {FACETS.map((facet) => (
         <FacetGroup
-          key={f.label}
-          label={f.label}
-          values={f.values}
-          checked={i === 1 ? ['Mexican'] : []}
+          key={facet.label}
+          title={facet.label}
+          values={facet.values}
+          checked={facet.label === 'Cuisine' ? ['Mexican'] : []}
         />
       ))}
-      <FacetGroup label="Source" values={SOURCES} />
+      <FacetGroup title="Source" values={SOURCES} />
     </div>
+  );
+}
+
+/** The Favourites shortcut above the filters. */
+function FavouritesToggle() {
+  return (
+    <button
+      type="button"
+      className="rounded-control bg-marigold hover:bg-marigold/85 flex h-10 w-full items-center justify-between px-3.5 text-sm font-semibold transition"
+    >
+      Favourites
+      <span className="tabular-nums">5</span>
+    </button>
   );
 }
 
@@ -73,84 +42,70 @@ export default function DesignSearch() {
   return (
     <DesignShell signedIn active="search">
       <div className="border-ink/10 border-b">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-8 sm:py-12">
-          <p className="text-ember text-xs font-semibold tracking-[0.18em] uppercase">
-            Your collection
-          </p>
-          <h1 className="font-display mt-2 text-4xl font-semibold sm:text-5xl">
+        <Container className="py-8 sm:py-12">
+          <Eyebrow>Your collection</Eyebrow>
+          <Heading as="h1" variant="h1" className="mt-2">
             Recipes
-          </h1>
-          <label className="border-ink/20 focus-within:border-ink mt-6 flex max-w-2xl items-center gap-3 rounded-md border bg-white px-4">
-            <SearchIcon className="text-ink/60 h-5 w-5 shrink-0" />
-            <input
-              placeholder="Search by name, tag or site…"
-              className="placeholder:text-ink/45 h-12 min-w-0 flex-1 bg-transparent text-base outline-none"
-            />
-          </label>
-        </div>
+          </Heading>
+          <SearchField
+            size="lg"
+            placeholder="Search by name, tag or site…"
+            aria-label="Search recipes"
+            className="mt-6 max-w-2xl"
+          />
+        </Container>
       </div>
 
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-8 sm:px-8 md:grid-cols-[15rem_1fr] md:py-10">
+      <Container className="grid grid-cols-1 gap-8 py-8 md:grid-cols-[15rem_minmax(0,1fr)] md:gap-10 md:py-10 lg:gap-12">
         <aside className="hidden md:sticky md:top-24 md:block md:self-start">
-          <button
-            type="button"
-            className="bg-marigold mb-5 flex w-full items-center justify-between rounded-md px-3.5 py-2.5 text-sm font-semibold"
-          >
-            <span>♥ Favourites</span>
-            <span>5</span>
-          </button>
+          <div className="mb-6">
+            <FavouritesToggle />
+          </div>
           <Filters />
         </aside>
 
-        <details className="border-ink/15 rounded-md border bg-white md:hidden">
-          <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold">
+        <details className="rounded-card border-ink/15 border bg-white md:hidden">
+          <summary className="flex h-12 cursor-pointer list-none items-center justify-between px-4 text-sm font-semibold">
             Filters
-            <span className="bg-ink rounded px-2 py-0.5 text-xs text-white">
-              1
-            </span>
+            <CountBadge>1</CountBadge>
           </summary>
-          <div className="border-ink/10 border-t p-4">
+          <div className="border-ink/10 flex flex-col gap-5 border-t p-4">
+            <FavouritesToggle />
             <Filters />
           </div>
         </details>
 
-        <section>
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-ink/65 mr-2 text-sm">85 recipes</p>
-              <span className="border-ink/20 inline-flex items-center gap-1.5 rounded border bg-white px-2.5 py-1 text-xs font-medium">
-                Mexican <span aria-hidden="true">✕</span>
-              </span>
+        <section className="min-w-0">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <p className="text-ink/65 text-sm">85 recipes</p>
+              <FilterChip>Mexican</FilterChip>
               <button
                 type="button"
-                className="text-xs font-medium underline underline-offset-4"
+                className="text-sm font-medium underline underline-offset-4"
               >
                 Clear all
               </button>
             </div>
-            <label className="text-ink/65 flex items-center gap-2 text-sm">
-              Sort
-              <select className="border-ink/20 text-ink rounded-md border bg-white px-2.5 py-1.5 text-sm">
-                <option>Title A–Z</option>
-                <option>Recently changed</option>
-              </select>
-            </label>
+            <SelectField label="Sort" defaultValue="title">
+              <option value="title">Title A–Z</option>
+              <option value="recent">Recently changed</option>
+            </SelectField>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {RECIPES.map((r) => (
-              <RecipeCard key={r.id} recipe={r} />
+
+          <RecipeGrid>
+            {RECIPES.map((recipe) => (
+              <RecipeCard key={recipe.id} recipe={recipe} />
             ))}
-          </div>
+          </RecipeGrid>
+
           <div className="mt-10 flex justify-center">
-            <button
-              type="button"
-              className="border-ink hover:bg-ink rounded-md border px-6 py-3 text-sm font-semibold transition hover:text-white"
-            >
+            <Button variant="outline" size="lg">
               Load more
-            </button>
+            </Button>
           </div>
         </section>
-      </div>
+      </Container>
     </DesignShell>
   );
 }
