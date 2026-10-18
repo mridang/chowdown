@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { PHASE_DEVELOPMENT_SERVER } from 'next/constants';
 import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
 
 const nextConfig: NextConfig = {
@@ -29,6 +30,14 @@ const nextConfig: NextConfig = {
   },
 };
 
-void initOpenNextCloudflareForDev();
-
-export default nextConfig;
+/**
+ * The Cloudflare bindings (D1, AI, Images) are only emulated for `next dev`. A
+ * production build must not try: the AI binding is remote-only, so starting the
+ * emulation needs Cloudflare credentials, and a build has no use for them.
+ */
+export default function config(phase: string): NextConfig {
+  if (phase === PHASE_DEVELOPMENT_SERVER) {
+    void initOpenNextCloudflareForDev();
+  }
+  return nextConfig;
+}
