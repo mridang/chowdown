@@ -216,11 +216,25 @@ export function browseRecipes(
   ].filter(Boolean);
   const subject = what.length ? ` for ${what.join(', ')}` : '';
 
+  // Recipes that don't say how long they take can't be matched to a time limit.
+  const untimed =
+    maxMinutes === undefined
+      ? 0
+      : recipes.filter(
+          (r) =>
+            r.minutes === undefined &&
+            BROWSE_FACETS.every((key) => hasAny(r, key, wanted[key]!)),
+        ).length;
+  const untimedNote = untimed
+    ? `\n\n(${countOf(untimed, 'other recipe')} fit${untimed === 1 ? 's' : ''} the rest but ${untimed === 1 ? "doesn't" : "don't"} say how long ${untimed === 1 ? 'it takes' : 'they take'}.)`
+    : '';
+
   if (hits.length === 0) {
     return {
       message:
         `No recipes${subject}. Use list_filters to see what the collection holds` +
-        ' — or offer to import one.',
+        ' — or offer to import one.' +
+        untimedNote,
       recipes: [],
     };
   }
@@ -232,7 +246,7 @@ export function browseRecipes(
       ? ` (showing ${shown.length} of ${hits.length})`
       : '';
   return {
-    message: `${countOf(hits.length, 'recipe')}${subject}${more}:\n\n${groupedByDiet(shown)}`,
+    message: `${countOf(hits.length, 'recipe')}${subject}${more}:\n\n${groupedByDiet(shown)}${untimedNote}`,
     recipes: shown,
   };
 }
@@ -268,10 +282,14 @@ export function pantryOf(value: unknown): PantryItem[] {
 }
 
 /** What stands between the person and cooking this, in a few words. */
-function gapText(match: PantryMatch): string {
+function gapText(match: PantryMatch, listUpTo = Infinity): string {
   const parts: string[] = [];
   if (match.missing.length) {
-    parts.push(`missing ${listAnd(match.missing)}`);
+    const shown = match.missing.slice(0, listUpTo);
+    const rest = match.missing.length - shown.length;
+    parts.push(
+      `missing ${listAnd(shown)}${rest > 0 ? ` and ${rest} more` : ''}`,
+    );
   }
   for (const s of match.short) {
     parts.push(`need more ${s.name} (have ${s.have}, need ${s.need})`);
@@ -309,15 +327,13 @@ export function recipesFromIngredients(
     return { message: problem, recipes: [], isError: true };
   }
 
-  const ranked = rankMatches(
-    recipes
-      .filter((r) => hasAny(r, 'diet_type', diets))
-      .map((recipe) => ({
-        recipe,
-        match: matchRecipe(recipe.ingredients, pantry, { assumeStaples }),
-      })),
-    allowMissing,
-  );
+  const matches = recipes
+    .filter((r) => hasAny(r, 'diet_type', diets))
+    .map((recipe) => ({
+      recipe,
+      match: matchRecipe(recipe.ingredients, pantry, { assumeStaples }),
+    }));
+  const ranked = rankMatches(matches, allowMissing);
   const limit = limitOf(args['limit']);
   const canMake = ranked.canMake.slice(0, limit);
   const almost = ranked.almost.slice(0, limit);
@@ -326,14 +342,29 @@ export function recipesFromIngredients(
   );
 
   if (canMake.length === 0 && almost.length === 0) {
+    // Nothing is within reach, so show what comes closest rather than a dead end.
+    const closest = rankMatches(matches, Infinity).almost.slice(
+      0,
+      Math.min(limit, 5),
+    );
+    if (closest.length === 0) {
+      return {
+        message:
+          `Nothing in the collection uses ${have}. ` +
+          'Ask for something to cook by cuisine or eating style instead, or import a recipe that does.',
+        recipes: [],
+      };
+    }
     return {
       message:
-        `Nothing in the collection works with ${have}` +
-        (allowMissing
-          ? ` (even with up to ${countOf(allowMissing, 'item')} missing)`
-          : '') +
-        '. Try adding more of what is in the kitchen, or ask for something to cook by cuisine.',
-      recipes: [],
+        `Nothing is within ${countOf(allowMissing, 'item')} of ${have}. The closest, which need a shop:\n` +
+        closest
+          .map(
+            ({ recipe, match }) =>
+              `${line(recipe)} — ${dietOf(recipe)}; ${gapText(match, 4)}`,
+          )
+          .join('\n'),
+      recipes: closest.map((m) => m.recipe),
     };
   }
 

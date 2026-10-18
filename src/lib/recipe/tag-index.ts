@@ -51,12 +51,13 @@ export function extractFacetTags(recipe: ParsedRecipe): RecipeTags {
       }
     }
   }
-  out['diet_type'] = [
-    classifyDietType(
-      recipe.ingredients.map((i) => i.name),
-      out['protein'] ?? [],
-    ),
-  ];
+  const diet = classifyDietType(
+    recipe.ingredients.map((i) => i.name),
+    out['protein'] ?? [],
+  );
+  if (diet) {
+    out['diet_type'] = [diet];
+  }
   return out;
 }
 
@@ -73,7 +74,8 @@ export function rowTags(
     return stored;
   }
   const recipe = parsed ?? parseRecipe(row.source, row.name);
-  return { ...stored, diet_type: extractFacetTags(recipe)['diet_type']! };
+  const diet = extractFacetTags(recipe)['diet_type'];
+  return diet ? { ...stored, diet_type: diet } : stored;
 }
 
 /**

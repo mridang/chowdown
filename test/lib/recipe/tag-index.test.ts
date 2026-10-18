@@ -20,6 +20,20 @@ describe('extractFacetTags', () => {
     ).toEqual(['Non-vegetarian']);
   });
 
+  it('leaves the eating style off a recipe with no ingredients to go on', () => {
+    const tags = extractFacetTags(
+      parseRecipe('>> cuisine: Indian\n', 'Upma [uncurated].cook'),
+    );
+    expect(tags['diet_type']).toBeUndefined();
+  });
+
+  it('uses the protein tag when an uncurated recipe has no ingredients', () => {
+    const tags = extractFacetTags(
+      parseRecipe('>> protein: pork\n', 'Pork Belly Stew.cook'),
+    );
+    expect(tags['diet_type']).toEqual(['Non-vegetarian']);
+  });
+
   it('calls a recipe with only plants vegan', () => {
     const source = 'Slice @tomato{3} and add @basil{1%bunch}.\n';
     expect(
@@ -45,6 +59,11 @@ describe('rowTags', () => {
 
   it('handles a row that was never tagged', () => {
     expect(rowTags(row(null))['diet_type']).toEqual(['Non-vegetarian']);
+  });
+
+  it('leaves a row alone when there is nothing to classify it by', () => {
+    const bare = { tags: '{"cuisine":["Indian"]}', source: '', name: 'A.cook' };
+    expect(rowTags(bare)).toEqual({ cuisine: ['Indian'] });
   });
 
   it('keeps the stored eating style when there is one', () => {

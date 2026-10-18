@@ -31,7 +31,6 @@ describe('classifyDietType', () => {
     expect(classifyDietType(['chickpeas', 'tomato', 'olive oil'])).toBe(
       'Vegan',
     );
-    expect(classifyDietType([])).toBe('Vegan');
   });
 
   it('is not fooled by plant-based look-alikes', () => {
@@ -45,6 +44,42 @@ describe('classifyDietType', () => {
     expect(classifyDietType(['vegan cheese', 'plant-based chicken'])).toBe(
       'Vegan',
     );
+  });
+
+  it('leaves a recipe with no ingredients unclassified rather than vegan', () => {
+    expect(classifyDietType([])).toBeUndefined();
+    expect(classifyDietType([], ['vegetable'])).toBeUndefined();
+  });
+
+  it('knows cured and regional meats, and fish hiding in sauces', () => {
+    expect(classifyDietType(["'nduja", 'pasta'])).toBe('Non-vegetarian');
+    expect(classifyDietType(['jamón', 'melon'])).toBe('Non-vegetarian');
+    expect(classifyDietType(['pâté', 'toast'])).toBe('Non-vegetarian');
+    expect(classifyDietType(['lamb shanks', 'garlic'])).toBe('Non-vegetarian');
+    expect(classifyDietType(['rice', 'oyster sauce'])).toBe('Pescatarian');
+    expect(classifyDietType(['potatoes', 'worcestershire sauce'])).toBe(
+      'Pescatarian',
+    );
+    expect(classifyDietType(['swordfish steak'])).toBe('Non-vegetarian');
+    expect(classifyDietType(['catfish', 'cornmeal'])).toBe('Pescatarian');
+  });
+
+  it('is not fooled by words that merely contain an animal word', () => {
+    expect(classifyDietType(['celery ribs', 'carrot'])).toBe('Vegan');
+    expect(classifyDietType(['firm bean curd', 'soy sauce'])).toBe('Vegan');
+    expect(classifyDietType(['flax egg', 'oat flour'])).toBe('Vegan');
+    expect(classifyDietType(['garlic, mince', 'romano beans'])).toBe('Vegan');
+    expect(classifyDietType(['crab apples', 'sugar'])).toBe('Vegan');
+  });
+
+  it("treats 'chicken or vegetable stock' as a choice, not a meat ingredient", () => {
+    expect(classifyDietType(['chicken or vegetable stock', 'cheddar'])).toBe(
+      'Vegetarian',
+    );
+    expect(classifyDietType(['vegetable or beef broth', 'onion'])).toBe(
+      'Vegan',
+    );
+    expect(classifyDietType(['chicken stock', 'onion'])).toBe('Non-vegetarian');
   });
 
   it('lets the most restrictive ingredient win', () => {

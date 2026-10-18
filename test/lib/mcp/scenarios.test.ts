@@ -108,6 +108,16 @@ describe('browseRecipes', () => {
     expect(result.message).toContain('Vegan, Vegetarian, Pescatarian');
   });
 
+  it('says how many recipes a time limit left out for not stating a time', () => {
+    const { message } = browseRecipes(COLLECTION, {
+      cuisine: 'Indian',
+      max_minutes: 40,
+    });
+    expect(message).toContain(
+      "(1 other recipe fits the rest but doesn't say how long it takes.)",
+    );
+  });
+
   it('suggests another route when nothing matches', () => {
     const { message, recipes } = browseRecipes(COLLECTION, {
       cuisine: 'Thai',
@@ -187,6 +197,36 @@ describe('recipesFromIngredients', () => {
     expect(strict.message).not.toContain('You can make now');
   });
 
+  it('shows the closest recipes, and what to buy, when none are in reach', () => {
+    const { message, recipes } = recipesFromIngredients(COLLECTION, {
+      ingredients: ['150 g guanciale'],
+      allow_missing: 0,
+    });
+    expect(recipes.map((r) => r.name)).toEqual(['Carbonara']);
+    expect(message).toContain('Nothing is within 0 items of 150 g guanciale');
+    expect(message).toContain('Carbonara');
+    expect(message).toContain('missing spaghetti, eggs, and pecorino');
+  });
+
+  it('abbreviates a long shopping list', () => {
+    const { message } = recipesFromIngredients(
+      [
+        recipe('Big stew', { diet_type: ['Vegan'] }, [
+          ['lentils', '1 cup'],
+          ['carrot', '2'],
+          ['celery', '2'],
+          ['leek', '1'],
+          ['parsnip', '1'],
+          ['thyme', '1 tsp'],
+        ]),
+      ],
+      { ingredients: ['lentils'], allow_missing: 0 },
+    );
+    expect(message).toContain(
+      'missing carrot, celery, leek, and parsnip and 1 more',
+    );
+  });
+
   it('asks what they have when the list is empty', () => {
     const result = recipesFromIngredients(COLLECTION, { ingredients: [] });
     expect(result.isError).toBe(true);
@@ -197,9 +237,7 @@ describe('recipesFromIngredients', () => {
       ingredients: ['dragon fruit'],
     });
     expect(recipes).toEqual([]);
-    expect(message).toContain(
-      'Nothing in the collection works with dragon fruit',
-    );
+    expect(message).toContain('Nothing in the collection uses dragon fruit');
   });
 });
 
