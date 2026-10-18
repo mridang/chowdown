@@ -173,6 +173,7 @@ export default async function AppPage({
                     key={recipe.id}
                     recipe={recipe}
                     live
+                    headingLevel="h2"
                     priority={i < ABOVE_THE_FOLD}
                   />
                 ))}

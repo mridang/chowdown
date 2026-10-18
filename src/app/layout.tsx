@@ -5,13 +5,24 @@ import { ServiceWorker } from '@/components/site/service-worker';
 
 import './globals.css';
 
-/** Body face. */
-const sans = Inter({ variable: '--font-sans-face', subsets: ['latin'] });
+/**
+ * Body face. `optional` means a slow first load shows the (metrics-matched)
+ * system font instead of swapping to Inter mid-read, which keeps paragraphs from
+ * repainting late; the font is cached for every page after the first.
+ */
+const sans = Inter({
+  variable: '--font-sans-face',
+  subsets: ['latin'],
+  display: 'optional',
+  preload: false,
+});
 
 /** Display face for headings: a heavy, friendly grotesque. */
 const display = Bricolage_Grotesque({
   variable: '--font-display-face',
   subsets: ['latin'],
+  display: 'optional',
+  preload: false,
 });
 
 const TITLE = 'chowdown';

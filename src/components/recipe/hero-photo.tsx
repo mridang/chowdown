@@ -55,6 +55,8 @@ export function HeroPhoto({
           width={1280}
           height={800}
           priority={index === 0}
+          widths={[640, 960, 1280]}
+          sizes="(min-width: 1024px) 50vw, 100vw"
           fallback={<div className="absolute inset-0">{tile}</div>}
           className="absolute inset-0 h-full w-full object-cover"
         />
@@ -84,6 +86,8 @@ export function HeroPhoto({
                 src={src}
                 width={96}
                 height={96}
+                widths={[320]}
+                sizes="48px"
                 fallback={<span className="bg-ink/10 absolute inset-0" />}
                 className="absolute inset-0 h-full w-full object-cover"
               />

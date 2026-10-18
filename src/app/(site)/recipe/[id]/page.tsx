@@ -216,19 +216,20 @@ function Fact({
   label: string;
   children: ReactNode;
 }) {
+  // A definition list may only hold terms and their descriptions, so the icon
+  // sits inside the term, positioned to the left of both lines.
   return (
-    <div className="flex items-center gap-3.5">
-      <span className="rounded-control bg-sand text-ember grid h-11 w-11 shrink-0 place-items-center">
-        {icon}
-      </span>
-      <div className="min-w-0 leading-tight">
-        <dt className="text-label text-ink/65 font-semibold uppercase">
-          {label}
-        </dt>
-        <dd className="mt-0.5 text-base font-semibold break-words">
-          {children}
-        </dd>
-      </div>
+    <div className="relative min-h-11 pl-[3.625rem] leading-tight">
+      <dt className="text-label text-ink/65 font-semibold uppercase">
+        <span
+          aria-hidden="true"
+          className="rounded-control bg-sand text-ember absolute top-0 left-0 grid h-11 w-11 place-items-center"
+        >
+          {icon}
+        </span>
+        {label}
+      </dt>
+      <dd className="mt-0.5 text-base font-semibold break-words">{children}</dd>
     </div>
   );
 }

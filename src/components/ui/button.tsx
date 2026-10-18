@@ -64,8 +64,18 @@ export function ButtonLink({
   href,
   children,
 }: Look & { href: string; children: ReactNode }) {
+  const classes = buttonClass({ variant, size, className });
+  // An /api address (sign in) answers with a redirect to another site, which
+  // the client router can't follow; give it a plain link so the browser does.
+  if (href.startsWith('/api/')) {
+    return (
+      <a href={href} className={classes}>
+        {children}
+      </a>
+    );
+  }
   return (
-    <Link href={href} className={buttonClass({ variant, size, className })}>
+    <Link href={href} className={classes}>
       {children}
     </Link>
   );

@@ -2,11 +2,19 @@
 
 import { useState } from 'react';
 
+import {
+  coverSrc,
+  coverSrcSet,
+  isFetchableImageUrl,
+} from '@/lib/images/cover-proxy';
+
 /**
- * A recipe cover image that degrades gracefully. Covers are hotlinked from the
- * recipe's source site, so any of them can later break (the site goes down, the
- * file moves, or it is served over plain http). When the image fails to load we
- * render `fallback` instead of the browser's empty broken-image box.
+ * A recipe cover image that degrades gracefully. Covers belong to the recipe's
+ * source site, so they are loaded through our own `/api/cover-images` (scaled,
+ * cached, and without handing the site your cookies or referrer), at the widths
+ * in `widths` so a phone doesn't download a desktop-sized photo. Any of them can
+ * still break (the site goes down, the file moves); when the image fails to
+ * load we render `fallback` instead of the browser's empty broken-image box.
  *
  * Images load lazily by default. The one photo at the top of a page can pass
  * `priority` so it loads straight away at high priority instead, which is what
@@ -20,6 +28,8 @@ export function CoverImage({
   priority = false,
   width,
   height,
+  widths = [320, 480, 640],
+  sizes = '(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw',
 }: {
   src: string;
   className: string;
@@ -31,14 +41,21 @@ export function CoverImage({
   /** The image's intrinsic size, so the browser can reserve its space. */
   width?: number;
   height?: number;
+  /** The widths to offer the browser, in pixels. */
+  widths?: readonly number[];
+  /** How wide the image is laid out, so the browser can pick one. */
+  sizes?: string;
 }) {
   const [failed, setFailed] = useState(false);
+  const proxied = isFetchableImageUrl(src);
   if (failed) {
     return <>{fallback}</>;
   }
   return (
     <img
-      src={src}
+      src={proxied ? coverSrc(src, widths[widths.length - 1]!) : src}
+      srcSet={proxied ? coverSrcSet(src, widths) : undefined}
+      sizes={proxied ? sizes : undefined}
       alt={alt}
       width={width}
       height={height}

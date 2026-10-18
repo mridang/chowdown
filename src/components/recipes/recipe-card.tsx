@@ -89,11 +89,14 @@ export function RecipeCard({
   recipe,
   live = false,
   priority = false,
+  headingLevel = 'h3',
 }: {
   recipe: CardRecipe;
   live?: boolean;
   /** The card is above the fold: load its photo eagerly. */
   priority?: boolean;
+  /** The card title's heading level: one below the heading it sits under. */
+  headingLevel?: 'h2' | 'h3';
 }) {
   // A recipe typed in by hand has no cuisine; its source site is the next best
   // line to show, and a bare idea has neither.
@@ -118,7 +121,7 @@ export function RecipeCard({
             {kicker ? sentenceCase(kicker) : null}
           </p>
           <Heading
-            as="h3"
+            as={headingLevel}
             variant="h4"
             className="mt-1.5 line-clamp-2 min-h-[2lh] text-[1.0625rem] leading-snug"
           >
