@@ -25,7 +25,8 @@ export function newNonce(): string {
 /** The policy for one response, carrying that response's nonce. */
 export function buildCsp(nonce: string): string {
   return [
-    "default-src 'self'",
+    // Deny anything not named below; every kind of load the site needs is listed.
+    "default-src 'none'",
     // `'self'` only matters to browsers too old to know strict-dynamic.
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
     `style-src 'self' 'nonce-${nonce}'`,

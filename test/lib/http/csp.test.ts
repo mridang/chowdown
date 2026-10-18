@@ -27,8 +27,20 @@ describe('buildCsp', () => {
     expect(csp).not.toContain('unsafe-eval');
   });
 
-  it('starts from nothing but this site', () => {
-    expect(directive('default-src')).toBe("default-src 'self'");
+  it('denies by default, so only what is listed can load', () => {
+    expect(directive('default-src')).toBe("default-src 'none'");
+  });
+
+  it.each([
+    'script-src',
+    'style-src',
+    'img-src',
+    'font-src',
+    'connect-src',
+    'manifest-src',
+    'worker-src',
+  ])('names %s itself, since nothing falls back to the default', (name) => {
+    expect(directive(name)).toMatch(new RegExp(`^${name} 'self'`));
   });
 
   it('allows the Google photo and nothing else from other sites', () => {
