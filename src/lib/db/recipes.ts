@@ -8,9 +8,10 @@
  * upserted during sync.
  */
 
-import { and, eq, notInArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 
 import { normalizeSourceUrl, sourceUrlOf } from '../recipe/cook-text';
+import { chunked } from './chunk';
 import type { Database } from './client';
 import { embeddings, favourites, recipes } from './schema';
 
@@ -113,28 +114,47 @@ export async function findRecipeBySourceUrl(
 }
 
 /**
+ * The cached recipes to drop after a sync: those whose file is no longer in the
+ * folder listing (`keep`) AND that the sync did not just touch. A recipe saved
+ * while the sync was running is newer than `since` (when the sync began) and
+ * so is not in the listing it took earlier; it must not be mistaken for a file
+ * deleted in Drive.
+ */
+export function staleRecipeIds(
+  cached: { id: string; seenAt: string }[],
+  keep: ReadonlySet<string>,
+  since: string,
+): string[] {
+  return cached
+    .filter((row) => !keep.has(row.id) && row.seenAt < since)
+    .map((row) => row.id);
+}
+
+/**
  * Drop cached recipes whose Drive file no longer exists in the folder, so a
- * recipe deleted in Drive disappears from the grid instead of lingering. A
- * no-op for an empty `keepFileIds` guard: an empty folder listing clears them
- * all, which is correct, but the caller must only pass a real listing.
+ * recipe deleted in Drive disappears from the grid instead of lingering. Works
+ * out what to drop here and deletes it a few ids at a time (D1 limits the
+ * parameters in a statement), and leaves anything newer than `since` alone (see
+ * {@link staleRecipeIds}).
  */
 export async function deleteRecipesNotIn(
   db: Database,
   userId: number,
   keepFileIds: string[],
+  since: string,
 ): Promise<void> {
-  if (keepFileIds.length === 0) {
-    await db.delete(recipes).where(eq(recipes.user_id, userId));
-    return;
+  const cached = await db
+    .select({ id: recipes.drive_file_id, seenAt: recipes.last_opened_at })
+    .from(recipes)
+    .where(eq(recipes.user_id, userId));
+  const stale = staleRecipeIds(cached, new Set(keepFileIds), since);
+  for (const ids of chunked(stale)) {
+    await db
+      .delete(recipes)
+      .where(
+        and(eq(recipes.user_id, userId), inArray(recipes.drive_file_id, ids)),
+      );
   }
-  await db
-    .delete(recipes)
-    .where(
-      and(
-        eq(recipes.user_id, userId),
-        notInArray(recipes.drive_file_id, keepFileIds),
-      ),
-    );
 }
 
 /**

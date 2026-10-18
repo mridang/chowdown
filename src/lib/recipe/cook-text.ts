@@ -289,11 +289,8 @@ const NOTE_LINE = /^-- \[note(?:\s+(ingredient|step):([^\]]+))?\]\s*(.*)$/;
  * newline is ensured. The original method is never modified.
  */
 export function appendNote(source: string, note: Note): string {
-  const flat = note.text.replace(/\s*\r?\n\s*/g, ' ').trim();
-  const target =
-    note.scope === 'general' ? '' : ` ${note.scope}:${note.key.trim()}`;
   const base = source.endsWith('\n') ? source : `${source}\n`;
-  return `${base}-- [note${target}] ${flat}\n`;
+  return `${base}${noteLine(note)}\n`;
 }
 
 /** Extract all personal notes from a recipe's source, in file order. */
@@ -313,8 +310,10 @@ export function extractNotes(source: string): Note[] {
 /** The text of one note as a comment line (the format {@link appendNote} writes). */
 function noteLine(note: Note): string {
   const flat = note.text.replace(/\s*\r?\n\s*/g, ' ').trim();
-  const target =
-    note.scope === 'general' ? '' : ` ${note.scope}:${note.key.trim()}`;
+  // The key sits inside `[...]` on one line: a line break or a `]` in it would
+  // end the marker early or start a line of its own.
+  const key = note.key.replace(/[\]\s]+/g, ' ').trim();
+  const target = note.scope === 'general' ? '' : ` ${note.scope}:${key}`;
   return `-- [note${target}] ${flat}`;
 }
 

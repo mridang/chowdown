@@ -79,26 +79,41 @@ export async function ensureRecipesFolder(
   return ((await response.json()) as { id: string }).id;
 }
 
-/** List the `.cook` files directly inside a folder, newest-modified metadata included. */
+/** The most listing pages read for one folder (1000 files each). */
+const MAX_LIST_PAGES = 20;
+
+/**
+ * List the `.cook` files directly inside a folder, modification times
+ * included. Follows Drive's paging, so a folder of more than a thousand files
+ * is read in full: a listing that stopped short would look like deletions.
+ */
 export async function listRecipeFiles(
   folderId: string,
   accessToken: string,
 ): Promise<DriveFile[]> {
   const q = `'${folderId}' in parents and trashed=false`;
-  const params = new URLSearchParams({
-    q,
-    fields: 'files(id,name,modifiedTime)',
-    pageSize: '1000',
-    orderBy: 'name',
-  });
-  const data = (await (
-    await driveGet(`/files?${params}`, accessToken)
-  ).json()) as {
-    files?: DriveFile[];
-  };
-  return (data.files ?? []).filter((f) =>
-    f.name.toLowerCase().endsWith('.cook'),
-  );
+  const found: DriveFile[] = [];
+  let pageToken: string | undefined;
+  for (let page = 0; page < MAX_LIST_PAGES; page++) {
+    const params = new URLSearchParams({
+      q,
+      fields: 'nextPageToken,files(id,name,modifiedTime)',
+      pageSize: '1000',
+      orderBy: 'name',
+    });
+    if (pageToken) {
+      params.set('pageToken', pageToken);
+    }
+    const data = (await (
+      await driveGet(`/files?${params}`, accessToken)
+    ).json()) as { files?: DriveFile[]; nextPageToken?: string };
+    found.push(...(data.files ?? []));
+    pageToken = data.nextPageToken;
+    if (!pageToken) {
+      break;
+    }
+  }
+  return found.filter((f) => f.name.toLowerCase().endsWith('.cook'));
 }
 
 /** Read a file's raw text content by id. */
@@ -117,7 +132,8 @@ export async function createRecipeFile(
   accessToken: string,
 ): Promise<DriveFile> {
   const filename = name.toLowerCase().endsWith('.cook') ? name : `${name}.cook`;
-  const boundary = 'chowdown-boundary';
+  // Random, so recipe text can never contain it and cut the upload short.
+  const boundary = `chowdown-${crypto.randomUUID()}`;
   const metadata = { name: filename, mimeType: COOK_MIME, parents: [folderId] };
   const body =
     `--${boundary}\r\n` +

@@ -63,14 +63,12 @@ export async function getUserAccessToken(user: User): Promise<string> {
     throw new DriveNotConnectedError();
   }
   const env = getEnv();
+  const sealed = user.refresh_token_enc;
   let refreshToken: string;
   try {
-    refreshToken = await decryptSecret(
-      user.refresh_token_enc,
-      env.TOKEN_ENCRYPTION_KEY,
-    );
+    refreshToken = await decryptSecret(sealed, env.TOKEN_ENCRYPTION_KEY);
   } catch {
-    await clearRefreshToken(getDatabase(), user.id);
+    await clearRefreshToken(getDatabase(), user.id, sealed);
     throw new DriveNotConnectedError();
   }
   try {
@@ -82,7 +80,7 @@ export async function getUserAccessToken(user: User): Promise<string> {
     return access_token;
   } catch (error) {
     if (isAuthFailure(error)) {
-      await clearRefreshToken(getDatabase(), user.id);
+      await clearRefreshToken(getDatabase(), user.id, sealed);
       throw new DriveNotConnectedError();
     }
     throw error;

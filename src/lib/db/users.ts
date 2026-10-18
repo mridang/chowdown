@@ -7,7 +7,7 @@
  * unguessable `mcp_token` that forms the user's personal MCP link.
  */
 
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 import type { Database } from './client';
 import { users } from './schema';
@@ -129,14 +129,21 @@ export async function setRefreshToken(
 /**
  * Forget a user's stored Drive refresh token. Used when Google rejects it
  * (expired or revoked): the next visit sees no connection and offers to
- * reconnect, which captures a fresh one.
+ * reconnect, which captures a fresh one. `onlyIf` is the sealed value that
+ * failed: if the person has reconnected in the meantime, the row holds a newer
+ * token and is left alone, so a slow background task can't undo a reconnect.
  */
 export async function clearRefreshToken(
   db: Database,
   userId: number,
+  onlyIf?: string,
 ): Promise<void> {
   await db
     .update(users)
     .set({ refresh_token_enc: null, updated_at: now() })
-    .where(eq(users.id, userId));
+    .where(
+      onlyIf === undefined
+        ? eq(users.id, userId)
+        : and(eq(users.id, userId), eq(users.refresh_token_enc, onlyIf)),
+    );
 }

@@ -4,6 +4,7 @@ import type { Database } from '../../../src/lib/db/client';
 import {
   deleteRecipeData,
   findRecipeBySourceUrl,
+  staleRecipeIds,
   type Recipe,
 } from '../../../src/lib/db/recipes';
 
@@ -66,5 +67,39 @@ describe('deleteRecipeData', () => {
     } as unknown as Database;
     await deleteRecipeData(db, 1, 'abc');
     expect(statements).toHaveLength(3);
+  });
+});
+
+describe('staleRecipeIds', () => {
+  const cached = [
+    { id: 'kept', seenAt: '2026-01-01T00:00:00.000Z' },
+    { id: 'gone', seenAt: '2026-01-01T00:00:00.000Z' },
+    { id: 'saved-during-sync', seenAt: '2026-01-02T00:00:05.000Z' },
+  ];
+
+  it('drops what the listing no longer has', () => {
+    expect(
+      staleRecipeIds(
+        cached.slice(0, 2),
+        new Set(['kept']),
+        '2026-01-02T00:00:00.000Z',
+      ),
+    ).toEqual(['gone']);
+  });
+
+  it('leaves alone a recipe saved after the sync began, which the listing predates', () => {
+    expect(
+      staleRecipeIds(cached, new Set(['kept']), '2026-01-02T00:00:00.000Z'),
+    ).toEqual(['gone']);
+  });
+
+  it('drops nothing when every cached recipe is listed', () => {
+    expect(
+      staleRecipeIds(
+        cached,
+        new Set(['kept', 'gone', 'saved-during-sync']),
+        '2026-01-03T00:00:00.000Z',
+      ),
+    ).toEqual([]);
   });
 });

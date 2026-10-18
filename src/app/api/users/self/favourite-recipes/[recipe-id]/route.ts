@@ -13,6 +13,7 @@ import { requireUid } from '@/lib/api/auth';
 import { problems } from '@/lib/api/problem';
 import { recipeSummary } from '@/lib/api/recipe-resource';
 import { getRecipePageRows } from '@/lib/db/recipe-page';
+import { setFavourite } from '@/lib/db/favourites';
 import { setFavouriteAndTag } from '@/lib/recipe/favourite';
 import { getDatabase } from '@/lib/util';
 
@@ -39,6 +40,15 @@ export async function GET(
   });
 }
 
+/** Whether `id` is a well-formed Drive file id of one of this user's recipes. */
+async function ownsRecipe(userId: number, id: string): Promise<boolean> {
+  if (!/^[\w-]+$/.test(id)) {
+    return false;
+  }
+  const rows = await getRecipePageRows(getDatabase(), userId, id);
+  return Boolean(rows.recipe);
+}
+
 export async function PUT(
   request: Request,
   { params }: Context,
@@ -49,8 +59,7 @@ export async function PUT(
   }
   const id = (await params)['recipe-id'];
   // Only the user's own recipes can be favourited.
-  const rows = await getRecipePageRows(getDatabase(), auth.value, id);
-  if (!rows.recipe) {
+  if (!(await ownsRecipe(auth.value, id))) {
     return problems.notFound('recipe');
   }
   await setFavouriteAndTag(auth.value, id, true);
@@ -65,6 +74,13 @@ export async function DELETE(
   if (!auth.ok) {
     return auth.response;
   }
-  await setFavouriteAndTag(auth.value, (await params)['recipe-id'], false);
+  const id = (await params)['recipe-id'];
+  if (await ownsRecipe(auth.value, id)) {
+    await setFavouriteAndTag(auth.value, id, false);
+  } else {
+    // A heart can outlive its recipe (deleted in Drive). Removing it is always
+    // fine and touches no file, so it still succeeds.
+    await setFavourite(getDatabase(), auth.value, id, false);
+  }
   return new NextResponse(null, { status: 204 });
 }

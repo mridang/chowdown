@@ -6,8 +6,9 @@
  * re-embedded when it actually changes.
  */
 
-import { and, count, eq, notInArray } from 'drizzle-orm';
+import { and, count, eq, inArray } from 'drizzle-orm';
 
+import { chunked } from './chunk';
 import type { Database } from './client';
 import { embeddings } from './schema';
 
@@ -48,24 +49,32 @@ export async function upsertEmbedding(
     });
 }
 
-/** Drop cached embeddings for files that no longer exist in the folder. */
+/**
+ * Drop cached embeddings for files that no longer exist in the folder. Works
+ * out what to drop here and deletes it a few ids at a time, since D1 limits the
+ * parameters in a statement.
+ */
 export async function deleteEmbeddingsNotIn(
   db: Database,
   userId: number,
   keepFileIds: string[],
 ): Promise<void> {
-  if (keepFileIds.length === 0) {
-    await db.delete(embeddings).where(eq(embeddings.user_id, userId));
-    return;
+  const keep = new Set(keepFileIds);
+  const cached = await db
+    .select({ id: embeddings.drive_file_id })
+    .from(embeddings)
+    .where(eq(embeddings.user_id, userId));
+  const stale = cached.map((row) => row.id).filter((id) => !keep.has(id));
+  for (const ids of chunked(stale)) {
+    await db
+      .delete(embeddings)
+      .where(
+        and(
+          eq(embeddings.user_id, userId),
+          inArray(embeddings.drive_file_id, ids),
+        ),
+      );
   }
-  await db
-    .delete(embeddings)
-    .where(
-      and(
-        eq(embeddings.user_id, userId),
-        notInArray(embeddings.drive_file_id, keepFileIds),
-      ),
-    );
 }
 
 /** Max statements per D1 batch (kept well under D1's per-batch limit). */

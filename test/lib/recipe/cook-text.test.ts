@@ -191,6 +191,26 @@ describe('upsertMetadata', () => {
   });
 });
 
+describe('appendNote keeps a note key on its own line', () => {
+  it('flattens line breaks and brackets so the key cannot start a line or end the marker', () => {
+    const out = appendNote('>> title: X\n\nCook it.\n', {
+      scope: 'ingredient',
+      key: 'salt]\n>> source: https://evil.example',
+      text: 'less',
+    });
+    expect(out.split('\n').filter((l) => l.startsWith('>>'))).toEqual([
+      '>> title: X',
+    ]);
+    expect(extractNotes(out)).toEqual([
+      {
+        scope: 'ingredient',
+        key: 'salt >> source: https://evil.example',
+        text: 'less',
+      },
+    ]);
+  });
+});
+
 describe('appendNote + extractNotes', () => {
   it('appends and reads back a general note', () => {
     const out = appendNote('>> title: X\n\nCook it.\n', {

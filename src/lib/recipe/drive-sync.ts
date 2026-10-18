@@ -26,6 +26,9 @@ import { syncRecipeTags } from './tag-index';
  */
 export async function syncFromDrive(user: User): Promise<number> {
   const db = getDatabase();
+  // Anything saved from here on is newer than the listing we are about to take,
+  // so the prune below must leave it alone.
+  const startedAt = new Date().toISOString();
   const token = await getUserAccessToken(user);
   let folderId = user.recipes_folder_id;
   if (!folderId) {
@@ -35,7 +38,7 @@ export async function syncFromDrive(user: User): Promise<number> {
   const files = await listRecipeFiles(folderId, token);
   await syncRecipeTags(user, files, token);
   const keep = files.map((f) => f.id);
-  await deleteRecipesNotIn(db, user.id, keep);
+  await deleteRecipesNotIn(db, user.id, keep, startedAt);
   await deleteEmbeddingsNotIn(db, user.id, keep);
   return files.length;
 }

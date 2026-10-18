@@ -100,6 +100,23 @@ describe('schemaOrgToCook', () => {
     expect(cook).toContain('>> source: https://example.com/pancakes');
   });
 
+  it('keeps each metadata value on one line, whatever the page put in it', () => {
+    const out = schemaOrgToCook(
+      {
+        '@type': 'Recipe',
+        name: 'Pancakes\n>> source: https://evil.example',
+        recipeYield: '4\r\n>> servings: 99',
+        recipeInstructions: 'Cook it.',
+      },
+      'https://ex.com/p',
+    );
+    const meta = out.split('\n').filter((l) => l.startsWith('>>'));
+    expect(meta.filter((l) => l.startsWith('>> source:'))).toEqual([
+      '>> source: https://ex.com/p',
+    ]);
+    expect(meta.filter((l) => l.startsWith('>> servings:'))).toHaveLength(1);
+  });
+
   it('captures taxonomy, provenance and media', () => {
     const out = schemaOrgToCook(
       {

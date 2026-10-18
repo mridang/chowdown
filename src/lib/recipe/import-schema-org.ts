@@ -180,15 +180,20 @@ function normaliseInstructions(value: Json): string[] {
   return [];
 }
 
-/** Coerce a scalar-or-array string field to a single trimmed string. */
+/**
+ * Coerce a scalar-or-array string field to a single line of text. Whitespace,
+ * line breaks included, collapses to one space: these values become `>> key:`
+ * metadata lines, and a line break inside one (from a hostile page) would start
+ * a line of its own.
+ */
 function firstString(value: Json): string | undefined {
-  if (typeof value === 'string') {
-    return value.trim();
-  }
-  if (Array.isArray(value) && typeof value[0] === 'string') {
-    return value[0].trim();
-  }
-  return undefined;
+  const text =
+    typeof value === 'string'
+      ? value
+      : Array.isArray(value) && typeof value[0] === 'string'
+        ? value[0]
+        : undefined;
+  return text?.replace(/\s+/g, ' ').trim();
 }
 
 /** Author display name from schema.org `author` (string, object, or array). */
