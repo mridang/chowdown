@@ -3,29 +3,19 @@
  * without signing in or touching the database.
  */
 
-/** A facet value with the colour it wears on cards and chips. */
-export type Tone = 'flame' | 'marigold' | 'forest' | 'sand' | 'ink';
+import type {
+  CardRecipe,
+  DifficultyLevel,
+  Tone,
+} from '@/lib/recipe/card-data';
 
-export interface SampleRecipe {
-  id: string;
-  title: string;
-  site: string;
+export type { Tone };
+/** A demo recipe is shaped like a saved one, but always has its facts. */
+export type SampleRecipe = CardRecipe & {
   minutes: number;
   servings: number;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-  cuisine: string;
-  protein: string;
-  category: string;
-  diet: string[];
-  method: string[];
-  keywords: string[];
-  favourite: boolean;
-  tone: Tone;
-  /** A real cover image URL; without one the card shows a colour tile. */
-  cover?: string;
-  /** The recipe's Cooklang source, for the recipe page. */
-  cooklang?: string;
-}
+  difficulty: DifficultyLevel;
+};
 
 type BaseRecipe = Omit<
   SampleRecipe,
