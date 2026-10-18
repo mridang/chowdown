@@ -2,13 +2,13 @@
 
 import { useCallback, useState, useSyncExternalStore } from 'react';
 
-/** An app the user has connected, as the grants API returns it. */
+/** An app the user has connected, as the API returns it. */
 interface ConnectedApp {
-  grantId: string;
+  id: string;
   name: string;
-  scope: string[];
-  connectedAt: string;
-  lastUsedAt: string | null;
+  scopes: string[];
+  connected_at: string;
+  last_used_at?: string;
 }
 
 /** A copyable line: a label, the value in a code box, and a Copy button. */
@@ -65,11 +65,11 @@ export function ConnectPanel({ mcpToken }: { mcpToken: string }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch('/api/oauth/grants');
+      const res = await fetch('/api/users/self/connected-apps');
       if (!res.ok) {
         throw new Error(String(res.status));
       }
-      setApps(((await res.json()) as { apps: ConnectedApp[] }).apps);
+      setApps(((await res.json()) as { items: ConnectedApp[] }).items);
       setFailed(false);
     } catch {
       setFailed(true);
@@ -77,13 +77,11 @@ export function ConnectPanel({ mcpToken }: { mcpToken: string }) {
   }, []);
 
   const disconnect = useCallback(async (grantId: string) => {
-    const res = await fetch(`/api/oauth/grants/${grantId}`, {
+    const res = await fetch(`/api/users/self/connected-apps/${grantId}`, {
       method: 'DELETE',
     });
     if (res.ok) {
-      setApps(
-        (current) => current?.filter((a) => a.grantId !== grantId) ?? null,
-      );
+      setApps((current) => current?.filter((a) => a.id !== grantId) ?? null);
     }
   }, []);
 
@@ -116,21 +114,21 @@ export function ConnectPanel({ mcpToken }: { mcpToken: string }) {
             <ul className="flex flex-col gap-1">
               {apps.map((app) => (
                 <li
-                  key={app.grantId}
+                  key={app.id}
                   className="flex items-center justify-between gap-2 rounded bg-white px-2 py-1.5"
                 >
                   <span className="min-w-0 truncate text-slate-700">
                     <span className="font-medium">{app.name}</span>{' '}
                     <span className="text-slate-400">
-                      · {accessLabel(app.scope)}
-                      {app.lastUsedAt
-                        ? ` · last used ${new Date(app.lastUsedAt).toLocaleDateString()}`
+                      · {accessLabel(app.scopes)}
+                      {app.last_used_at
+                        ? ` · last used ${new Date(app.last_used_at).toLocaleDateString()}`
                         : ''}
                     </span>
                   </span>
                   <button
                     type="button"
-                    onClick={() => void disconnect(app.grantId)}
+                    onClick={() => void disconnect(app.id)}
                     className="rounded border border-slate-200 px-2 py-0.5 font-medium text-slate-600 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
                   >
                     Disconnect

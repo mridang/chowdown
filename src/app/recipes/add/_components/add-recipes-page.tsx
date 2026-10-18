@@ -33,7 +33,7 @@ function ManualEditor({ onCancel }: { onCancel: () => void }) {
       const res = await fetch('/api/recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), content }),
+        body: JSON.stringify({ name: name.trim(), cooklang: content }),
       });
       if (!res.ok) {
         throw new Error(String(res.status));

@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
-/** A prepared, not-yet-saved recipe returned by POST /api/import. */
+import { problemMessage } from '@/lib/problem-message';
+
+/** A prepared, not-yet-saved recipe, from an item of POST /api/recipe-imports. */
 interface ImportDraft {
   title: string;
   cook: string;
@@ -39,6 +41,8 @@ export function AddRecipes({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState(0);
+  /** The import the drafts came from; discarded once the wizard finishes. */
+  const importId = useRef<string | null>(null);
 
   /** Load draft `i` into the editable fields, or finish when past the end. */
   const seek = useCallback(
@@ -46,6 +50,13 @@ export function AddRecipes({
       if (i >= list.length) {
         setPhase('done');
         onSaved();
+        if (importId.current) {
+          // The drafts have been dealt with; tidy the import away.
+          void fetch(`/api/recipe-imports/${importId.current}`, {
+            method: 'DELETE',
+          });
+          importId.current = null;
+        }
         return;
       }
       setIndex(i);
@@ -63,20 +74,37 @@ export function AddRecipes({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch('/api/import', {
+      const res = await fetch('/api/recipe-imports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ input }),
       });
-      const data = (await res.json()) as { drafts?: ImportDraft[]; error?: string };
-      if (!res.ok || !data.drafts) {
-        throw new Error(data.error ?? 'Could not prepare those recipes.');
+      if (!res.ok) {
+        throw new Error(await problemMessage(res));
       }
-      setDrafts(data.drafts);
+      const created = (await res.json()) as {
+        id: string;
+        items: {
+          title: string;
+          cooklang?: string;
+          source_url?: string;
+          problem?: string;
+        }[];
+      };
+      importId.current = created.id;
+      const prepared: ImportDraft[] = created.items.map((item) => ({
+        title: item.title,
+        cook: item.cooklang ?? '',
+        source: item.source_url,
+        error: item.problem,
+      }));
+      setDrafts(prepared);
       setPhase('review');
-      seek(data.drafts, 0);
+      seek(prepared, 0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not prepare those recipes.');
+      setError(
+        err instanceof Error ? err.message : 'Could not prepare those recipes.',
+      );
     } finally {
       setBusy(false);
     }
@@ -93,21 +121,26 @@ export function AddRecipes({
       const res = await fetch('/api/recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), content: cook }),
+        body: JSON.stringify({ name: name.trim(), cooklang: cook }),
       });
       if (!res.ok) {
-        throw new Error(String(res.status));
+        throw new Error(await problemMessage(res));
       }
       setSavedCount((c) => c + 1);
       seek(drafts, index + 1);
-    } catch {
-      setError('Could not save that recipe.');
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Could not save that recipe.',
+      );
     } finally {
       setBusy(false);
     }
   }, [name, cook, drafts, index, seek]);
 
-  const skip = useCallback(() => seek(drafts, index + 1), [drafts, index, seek]);
+  const skip = useCallback(
+    () => seek(drafts, index + 1),
+    [drafts, index, seek],
+  );
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5">
@@ -138,7 +171,9 @@ export function AddRecipes({
             }
             className="mt-3 w-full rounded-md border border-slate-200 px-3 py-2 font-mono text-[13px]"
           />
-          {error ? <p className="mt-2 text-[13px] text-red-600">{error}</p> : null}
+          {error ? (
+            <p className="mt-2 text-[13px] text-red-600">{error}</p>
+          ) : null}
           <div className="mt-3">
             <button
               type="button"
@@ -184,7 +219,9 @@ export function AddRecipes({
             placeholder="Cooklang source — paste or edit the recipe here."
             className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 font-mono text-[13px]"
           />
-          {error ? <p className="mt-2 text-[13px] text-red-600">{error}</p> : null}
+          {error ? (
+            <p className="mt-2 text-[13px] text-red-600">{error}</p>
+          ) : null}
           <div className="mt-3 flex gap-2">
             <button
               type="button"
@@ -213,7 +250,8 @@ export function AddRecipes({
       {phase === 'done' ? (
         <>
           <p className="mt-3 text-sm text-slate-700">
-            Saved {savedCount} recipe{savedCount === 1 ? '' : 's'} to your Drive.
+            Saved {savedCount} recipe{savedCount === 1 ? '' : 's'} to your
+            Drive.
           </p>
           <div className="mt-3">
             <button

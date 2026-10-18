@@ -31,7 +31,7 @@ export function AddNote({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/recipes/${recipeId}/note`, {
+      const res = await fetch(`/api/recipes/${recipeId}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

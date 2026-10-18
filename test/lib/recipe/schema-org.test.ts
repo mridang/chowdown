@@ -1,7 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { ParsedRecipe } from '../../../src/lib/recipe/cooklang';
-import { recipeToJsonLd, toIsoDuration } from '../../../src/lib/recipe/schema-org';
+import {
+  recipeToJsonLd,
+  toIsoDuration,
+} from '../../../src/lib/recipe/schema-org';
 
 describe('toIsoDuration', () => {
   it('parses minutes', () => {
@@ -52,7 +55,10 @@ describe('recipeToJsonLd', () => {
     ],
   };
 
-  const ld = recipeToJsonLd(recipe, 'https://chowdown.apps.mrida.ng/recipe/abc');
+  const ld = recipeToJsonLd(
+    recipe,
+    'https://chowdown.apps.mrida.ng/recipe/abc',
+  );
 
   it('sets the schema.org context and type', () => {
     expect(ld['@context']).toBe('https://schema.org');

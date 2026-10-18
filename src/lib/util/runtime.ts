@@ -23,7 +23,12 @@ export function getDatabase(): Database {
  * no configuration).
  */
 export function appOrigin(request: Request): string {
-  return getEnv().APP_URL ?? new URL(request.url).origin;
+  try {
+    return getEnv().APP_URL ?? new URL(request.url).origin;
+  } catch {
+    // No Cloudflare context (tests, scripts): use the request's own origin.
+    return new URL(request.url).origin;
+  }
 }
 
 /**

@@ -106,16 +106,15 @@ export function FavouriteButton({
       setFavouriteOverride(recipeId, next); // optimistic
       setBusy(true);
       try {
-        const res = await fetch(`/api/recipes/${recipeId}/favourite`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ on: next }),
-        });
+        // Favouriting creates the resource, un-favouriting deletes it.
+        const res = await fetch(
+          `/api/users/self/favourite-recipes/${recipeId}`,
+          { method: next ? 'PUT' : 'DELETE' },
+        );
         if (!res.ok) {
           throw new Error(String(res.status));
         }
-        const data = (await res.json()) as { favourite: boolean };
-        setFavouriteOverride(recipeId, data.favourite);
+        setFavouriteOverride(recipeId, next);
       } catch {
         setFavouriteOverride(recipeId, !next); // roll back
       } finally {

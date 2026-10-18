@@ -18,8 +18,10 @@ export function TagButton({ recipeId }: { recipeId: string }) {
     setBusy(true);
     setNote(null);
     try {
-      const res = await fetch(`/api/recipes/${recipeId}/tag`, {
+      const res = await fetch('/rpc/tag-recipe', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipe_id: recipeId }),
       });
       if (!res.ok) {
         throw new Error(String(res.status));

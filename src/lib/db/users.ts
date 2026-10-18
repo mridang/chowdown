@@ -90,11 +90,11 @@ export async function getUserByMcpToken(
   return db.query.users.findFirst({ where: eq(users.mcp_token, token) });
 }
 
-/** Store the user's preferred measurement system ('metric' | 'us' | 'imperial'). */
+/** Store the user's preferred measurement system ('metric' | 'us' | 'imperial'), or clear it with null. */
 export async function setUserUnits(
   db: Database,
   userId: number,
-  units: string,
+  units: string | null,
 ): Promise<void> {
   await db
     .update(users)

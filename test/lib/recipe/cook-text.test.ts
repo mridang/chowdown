@@ -13,6 +13,8 @@ import {
   recipeDisplayName,
   sanitiseName,
   domainOf,
+  removeNote,
+  replaceNote,
   sourceDomainOf,
   sourceUrlOf,
   uncuratedFilename,
@@ -321,5 +323,37 @@ describe('sourceDomainOf', () => {
   it('is undefined without a source, or with a non-web one', () => {
     expect(sourceDomainOf('>> title: X\n\nCook.')).toBeUndefined();
     expect(sourceDomainOf('>> source: Grandma\n\nCook.')).toBeUndefined();
+  });
+});
+
+describe('replaceNote and removeNote', () => {
+  const src =
+    '>> title: T\n\nCook.\n-- [note] first\n-- [cook 2026-01-01] made it\n-- [note ingredient:lime] second\n';
+
+  it('replaces the nth note and leaves everything else', () => {
+    const out = replaceNote(src, 1, {
+      scope: 'step',
+      key: '2',
+      text: 'changed',
+    })!;
+    expect(out).toContain('-- [note step:2] changed');
+    expect(out).toContain('-- [note] first');
+    expect(out).toContain('-- [cook 2026-01-01] made it');
+    expect(out).not.toContain('second');
+  });
+
+  it('removes the nth note only', () => {
+    const out = removeNote(src, 0)!;
+    expect(out).not.toContain('first');
+    expect(out).toContain('second');
+    expect(out).toContain('made it');
+  });
+
+  it('returns undefined when there is no such note', () => {
+    expect(
+      replaceNote(src, 2, { scope: 'general', key: '', text: 'x' }),
+    ).toBeUndefined();
+    expect(removeNote(src, 5)).toBeUndefined();
+    expect(removeNote('>> title: T\n', 0)).toBeUndefined();
   });
 });

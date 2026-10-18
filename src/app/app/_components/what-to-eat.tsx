@@ -35,16 +35,14 @@ export function WhatToEat() {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch('/api/suggest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: trimmed }),
-      });
+      const res = await fetch(
+        `/api/recipe-suggestions?q=${encodeURIComponent(trimmed)}`,
+      );
       if (!res.ok) {
         throw new Error(String(res.status));
       }
-      const data = (await res.json()) as { results: Suggestion[] };
-      setResults(data.results);
+      const data = (await res.json()) as { items: Suggestion[] };
+      setResults(data.items);
     } catch {
       setError('Could not search just now — try again.');
     } finally {

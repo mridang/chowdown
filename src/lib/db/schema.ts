@@ -174,3 +174,22 @@ export const oauthTokens = sqliteTable(
   },
   (table) => [index('idx_oauth_tokens_grant').on(table.grant_id)],
 );
+
+/**
+ * A user's recipe import: pasted links/text turned into drafts, readable and
+ * deletable as a resource. `items` is a JSON array (see recipe_imports in the
+ * migration).
+ */
+export const recipeImports = sqliteTable(
+  'recipe_imports',
+  {
+    id: text('id').primaryKey(),
+    user_id: integer('user_id').notNull(),
+    status: text('status').notNull(),
+    items: text('items').notNull(),
+    created_at: text('created_at').notNull(),
+  },
+  (table) => [
+    index('idx_recipe_imports_user').on(table.user_id, table.created_at),
+  ],
+);

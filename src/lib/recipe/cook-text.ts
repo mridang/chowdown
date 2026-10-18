@@ -310,6 +310,50 @@ export function extractNotes(source: string): Note[] {
   return notes;
 }
 
+/** The text of one note as a comment line (the format {@link appendNote} writes). */
+function noteLine(note: Note): string {
+  const flat = note.text.replace(/\s*\r?\n\s*/g, ' ').trim();
+  const target =
+    note.scope === 'general' ? '' : ` ${note.scope}:${note.key.trim()}`;
+  return `-- [note${target}] ${flat}`;
+}
+
+/**
+ * Replace the `index`-th note (0-based, in file order) with a new one. Returns
+ * undefined if there is no such note. Everything else in the file is untouched.
+ */
+export function replaceNote(
+  source: string,
+  index: number,
+  note: Note,
+): string | undefined {
+  const lines = source.split(/\r?\n/);
+  let seen = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (NOTE_LINE.test(lines[i]!) && ++seen === index) {
+      lines[i] = noteLine(note);
+      return lines.join('\n');
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Remove the `index`-th note (0-based, in file order). Returns undefined if
+ * there is no such note. Everything else in the file is untouched.
+ */
+export function removeNote(source: string, index: number): string | undefined {
+  const lines = source.split(/\r?\n/);
+  let seen = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (NOTE_LINE.test(lines[i]!) && ++seen === index) {
+      lines.splice(i, 1);
+      return lines.join('\n');
+    }
+  }
+  return undefined;
+}
+
 /** A single dated cooking-log entry parsed back out of a `.cook` file. */
 export interface CookingLogEntry {
   date: string;

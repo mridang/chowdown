@@ -8,6 +8,7 @@ import type { FacetView } from '@/lib/recipe/facet-filter';
 
 import { ConnectPanel } from './connect-panel';
 import { FilterControls } from './filter-controls';
+import { SignOutButton } from './sign-out-button';
 import { ViewToggle } from './view-toggle';
 
 /** A recipe as shown on a grid/list card. */
@@ -197,12 +198,7 @@ export function RecipeApp({
           >
             Add recipes
           </Link>
-          <a
-            href="/api/auth/logout"
-            className="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition hover:bg-slate-50"
-          >
-            Sign out
-          </a>
+          <SignOutButton />
         </div>
       </header>
 

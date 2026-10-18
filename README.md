@@ -105,6 +105,32 @@ in with Google when asked, and approve. There is no secret to copy.
 - **Legacy link:** the older secret URL `/api/mcp/<token>` still works with full
   access, but prefer the OAuth URL.
 
+## REST API
+
+The app's data is available as a REST API under `/api`, described in
+[`openapi/chowdown.yaml`](openapi/chowdown.yaml) and designed to the
+[Zalando RESTful API guidelines](https://opensource.zalando.com/restful-api-guidelines/)
+(plural kebab-case nouns, `snake_case` JSON, RFC 9457 problem details, cursor
+pagination, JSON Merge Patch, `ETag` / `If-Match`). The one deliberate departure
+is the `/api` prefix, which is declared in the spec's `servers` entry.
+
+| Resource                                          | Methods                                     |
+| ------------------------------------------------- | ------------------------------------------- |
+| `/api/recipes`, `/api/recipes/{recipe-id}`        | list, create · read, replace, patch, delete |
+| `/api/recipes/{recipe-id}/notes[/{note-id}]`      | list, create · read, replace, delete        |
+| `/api/recipes/{recipe-id}/similar-recipes`        | list                                        |
+| `/api/recipe-suggestions?q=`                      | list                                        |
+| `/api/recipe-imports[/{import-id}]`               | list, create · read, delete                 |
+| `/api/users/self`                                 | read, patch                                 |
+| `/api/users/self/favourite-recipes[/{recipe-id}]` | list · read, put, delete                    |
+| `/api/users/self/connected-apps[/{grant-id}]`     | list · delete                               |
+| `/api/sessions/self`                              | delete (sign out)                           |
+
+Auth is the signed session cookie. Everything that is not a resource stays out
+of the API: MCP (`/api/mcp`), OAuth (`/oauth/*`, `/.well-known/*`), the Google
+sign-in redirects (`/api/auth/*`), the health check, and auto-tagging
+(`POST /rpc/tag-recipe`, a model call).
+
 ## Deploy
 
 ```sh
