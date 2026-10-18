@@ -35,26 +35,24 @@ export default [
       // Whitelist it globally so `import/no-unresolved` stays active for
       // everything else.
       'import/core-modules': ['cloudflare:workers'],
-      // The Tailwind lint plugin reads a v3 tailwind.config, but this project is
-      // on Tailwind 4, where the theme lives in `@theme` blocks in globals.css
-      // and the plugin cannot see it. These are the classes those blocks define
-      // (palette, radii, label type, display face), so they are not "custom".
-      tailwindcss: {
-        whitelist: [
-          '(?:[\\w-]+:)*[\\w-]*-?(?:ink|paper|sand|forest|live|marigold|flame|ember)(?:/\\d+)?',
-          '(?:[\\w-]+:)*rounded-(?:control|card)(?:-[\\w]+)?',
-          '(?:[\\w-]+:)*text-label',
-          '(?:[\\w-]+:)*font-display',
-        ],
-      },
     },
   },
   {
-    // The assistant-widget views are bundled into standalone HTML cards and
-    // styled by a plain CSS string (src/views/styles.ts: `wrap`, `card`, `chip`,
-    // …), not by Tailwind, so the Tailwind class checks do not apply to them.
-    files: ['src/views/**'],
-    rules: { 'tailwindcss/no-custom-classname': 'off' },
+    // The Tailwind lint plugin shipped with the preset is built for Tailwind 3:
+    // it reads a tailwind.config file, which this Tailwind 4 project does not
+    // have (the theme lives in `@theme` blocks in globals.css). It cannot see
+    // the project's colours, radii or type, so it mislabels them as unknown
+    // classes, and it re-resolves its config for every file, which took lint
+    // from 8 seconds and 1.8 GB to 55 seconds and 6 GB. On a 7 GB CI runner that
+    // stalled for hours. Class order is left to Prettier. Turn these back on
+    // when the preset moves to a Tailwind 4 build of the plugin.
+    rules: {
+      'tailwindcss/classnames-order': 'off',
+      'tailwindcss/enforces-negative-arbitrary-values': 'off',
+      'tailwindcss/enforces-shorthand': 'off',
+      'tailwindcss/no-custom-classname': 'off',
+      'tailwindcss/no-unnecessary-arbitrary-value': 'off',
+    },
   },
   {
     // Tailwind v4 drives styling through at-rules (@theme, @apply,

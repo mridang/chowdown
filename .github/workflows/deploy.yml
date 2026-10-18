@@ -17,6 +17,8 @@ jobs:
     environment:
       name: production
     runs-on: ubuntu-latest
+    # A hung step must not run to GitHub's six-hour limit on paid minutes.
+    timeout-minutes: 15
 
     steps:
       - name: Runner Common Setup
