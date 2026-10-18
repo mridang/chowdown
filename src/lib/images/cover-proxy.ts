@@ -106,62 +106,68 @@ export type CoverResult =
 export type CoverFetch = (url: string, init: RequestInit) => Promise<Response>;
 
 /**
- * Fetch one cover photo for the proxy. Cloudflare scales and re-encodes it to
- * `width` where it can (`cf.image`); where it can't, the original comes back and
- * is passed through. Only real, reasonably small raster images are accepted:
- * never SVG (which can carry script), never an HTML page.
+ * The part of Cloudflare's Images binding the proxy uses (scale an image, encode
+ * it as WebP), so tests can fake it. The binding needs no zone settings, only
+ * the `images` entry in `wrangler.jsonc`.
+ */
+export interface ImagesLike {
+  input(stream: ReadableStream<Uint8Array>): {
+    transform(options: { width: number; fit: 'scale-down' }): {
+      output(options: {
+        format: 'image/webp';
+        quality: number;
+      }): Promise<{ response(): Response }>;
+    };
+  };
+}
+
+/** Photos smaller than this are already light; scaling them gains nothing. */
+const SCALE_FROM_BYTES = 24 * 1024;
+
+/** Formats worth scaling. (A GIF may be animated, which scaling would flatten.) */
+const SCALABLE = /^image\/(jpeg|jpg|png|webp|avif)$/;
+
+/** The headers every cover we send carries. */
+function coverHeaders(type: string): HeadersInit {
+  return {
+    'Content-Type': type,
+    // A sealed, script-free image: if one were ever opened as a page, it could
+    // do nothing.
+    'Content-Security-Policy': "default-src 'none'; sandbox",
+    'Cache-Control': `public, max-age=${KEEP_SECONDS}, immutable`,
+  };
+}
+
+/**
+ * Fetch one cover photo for the proxy. Only real, reasonably small raster images
+ * are accepted: never SVG (which can carry script), never an HTML page. Where the
+ * Images binding is available the photo is scaled down to `width` and sent as
+ * WebP, typically a tenth of the original's weight; if scaling fails the
+ * original is passed through, so a photo is never lost to an optimisation.
  */
 export async function fetchCover(
   url: string,
   width: number,
-  fetcher: CoverFetch = fetch as CoverFetch,
+  deps: { fetcher?: CoverFetch; images?: ImagesLike } = {},
 ): Promise<CoverResult> {
+  const fetcher = deps.fetcher ?? (fetch as CoverFetch);
   if (!isFetchableImageUrl(url)) {
     return { ok: false, status: 400, reason: 'Not a fetchable image address.' };
   }
-  const headers = {
-    Accept: 'image/avif,image/webp,image/apng,image/*;q=0.8',
-    'User-Agent': 'chowdown-cover-proxy/1.0',
-  };
-  const attempt = (scaled: boolean) =>
-    fetcher(url, {
-      headers,
-      redirect: 'follow',
-      signal: AbortSignal.timeout(8000),
-      // Cloudflare-only options, ignored elsewhere. Scaling needs Image
-      // Transformations switched on for the zone; without it the request can
-      // fail, hence the second, plain attempt below.
-      cf: {
-        ...(scaled
-          ? {
-              image: {
-                width: snapWidth(width),
-                quality: 75,
-                fit: 'scale-down',
-                format: 'auto',
-              },
-            }
-          : {}),
-        cacheEverything: true,
-        cacheTtl: KEEP_SECONDS,
-      },
-    } as unknown as RequestInit);
   let upstream: Response;
   try {
-    upstream = await attempt(true);
-    if (!upstream.ok && upstream.status !== 404 && upstream.status !== 410) {
-      upstream = await attempt(false);
-    }
+    upstream = await fetcher(url, {
+      headers: {
+        Accept: 'image/avif,image/webp,image/apng,image/*;q=0.8',
+        'User-Agent': 'chowdown-cover-proxy/1.0',
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(8000),
+      // Cloudflare-only: keep the original at the edge, ignored elsewhere.
+      cf: { cacheEverything: true, cacheTtl: KEEP_SECONDS },
+    } as unknown as RequestInit);
   } catch {
-    try {
-      upstream = await attempt(false);
-    } catch {
-      return {
-        ok: false,
-        status: 502,
-        reason: 'The image site did not answer.',
-      };
-    }
+    return { ok: false, status: 502, reason: 'The image site did not answer.' };
   }
   if (upstream.status === 404 || upstream.status === 410) {
     return { ok: false, status: 404, reason: 'The image is gone.' };
@@ -169,25 +175,45 @@ export async function fetchCover(
   if (!upstream.ok) {
     return { ok: false, status: 502, reason: 'The image site refused.' };
   }
-  const type = (upstream.headers.get('content-type') ?? '').toLowerCase();
+  const type = (upstream.headers.get('content-type') ?? '')
+    .toLowerCase()
+    .split(';')[0]!
+    .trim();
   if (!type.startsWith('image/') || type.startsWith('image/svg')) {
     return { ok: false, status: 415, reason: 'That address is not a photo.' };
   }
-  const length = Number(upstream.headers.get('content-length') ?? 0);
-  if (length > MAX_COVER_BYTES) {
+  if (Number(upstream.headers.get('content-length') ?? 0) > MAX_COVER_BYTES) {
     return { ok: false, status: 413, reason: 'The photo is too large.' };
+  }
+  const bytes = await upstream.arrayBuffer();
+  if (bytes.byteLength > MAX_COVER_BYTES) {
+    return { ok: false, status: 413, reason: 'The photo is too large.' };
+  }
+  if (
+    deps.images &&
+    SCALABLE.test(type) &&
+    bytes.byteLength > SCALE_FROM_BYTES
+  ) {
+    try {
+      const scaled = await deps.images
+        .input(new Response(bytes).body!)
+        .transform({ width: snapWidth(width), fit: 'scale-down' })
+        .output({ format: 'image/webp', quality: 75 });
+      const response = scaled.response();
+      // Only keep the result if it is really smaller than the original.
+      const out = await response.arrayBuffer();
+      if (out.byteLength > 0 && out.byteLength < bytes.byteLength) {
+        return {
+          ok: true,
+          response: new Response(out, { headers: coverHeaders('image/webp') }),
+        };
+      }
+    } catch {
+      // Fall through to the original.
+    }
   }
   return {
     ok: true,
-    response: new Response(upstream.body, {
-      status: 200,
-      headers: {
-        'Content-Type': type.split(';')[0]!,
-        // A sealed, script-free image: if one were ever opened as a page, it
-        // could do nothing.
-        'Content-Security-Policy': "default-src 'none'; sandbox",
-        'Cache-Control': `public, max-age=${KEEP_SECONDS}, immutable`,
-      },
-    }),
+    response: new Response(bytes, { headers: coverHeaders(type) }),
   };
 }

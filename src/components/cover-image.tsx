@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { preload } from 'react-dom';
 
 import {
   coverSrc,
@@ -48,12 +49,23 @@ export function CoverImage({
 }) {
   const [failed, setFailed] = useState(false);
   const proxied = isFetchableImageUrl(src);
+  const largest = proxied ? coverSrc(src, widths[widths.length - 1]!) : src;
+  if (priority && !failed) {
+    // Tell the browser about the page's main photo in the head, before it has
+    // read as far as the <img>, so it starts downloading at once.
+    preload(largest, {
+      as: 'image',
+      imageSrcSet: proxied ? coverSrcSet(src, widths) : undefined,
+      imageSizes: proxied ? sizes : undefined,
+      fetchPriority: 'high',
+    });
+  }
   if (failed) {
     return <>{fallback}</>;
   }
   return (
     <img
-      src={proxied ? coverSrc(src, widths[widths.length - 1]!) : src}
+      src={largest}
       srcSet={proxied ? coverSrcSet(src, widths) : undefined}
       sizes={proxied ? sizes : undefined}
       alt={alt}

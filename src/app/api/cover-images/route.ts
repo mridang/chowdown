@@ -13,9 +13,19 @@ import { problems } from '@/lib/api/problem';
 import {
   fetchCover,
   isFetchableImageUrl,
+  type ImagesLike,
   snapWidth,
 } from '@/lib/images/cover-proxy';
-import { runInBackground } from '@/lib/util';
+import { getEnv, runInBackground } from '@/lib/util';
+
+/** The Images binding, where the deployment has one. */
+function imagesBinding(): ImagesLike | undefined {
+  try {
+    return (getEnv() as unknown as { IMAGES?: ImagesLike }).IMAGES;
+  } catch {
+    return undefined;
+  }
+}
 
 /** Cloudflare's per-colo cache; absent when running under plain Node. */
 function edgeCache(): Cache | undefined {
@@ -45,7 +55,7 @@ export async function GET(request: Request): Promise<Response> {
     return withBrowserCaching(hit);
   }
 
-  const result = await fetchCover(url, width);
+  const result = await fetchCover(url, width, { images: imagesBinding() });
   if (!result.ok) {
     return result.status === 404
       ? problems.notFound('cover image')

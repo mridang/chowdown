@@ -1,0 +1,90 @@
+import { describe, expect, it } from '@jest/globals';
+
+import {
+  EDGE_TTL_SECONDS,
+  edgeCacheKey,
+  isEdgeCacheable,
+  storableCopy,
+} from '../../../src/lib/http/edge-cache';
+
+const get = (path: string, headers: Record<string, string> = {}) =>
+  new Request(`https://chowdown.test${path}`, { headers });
+
+describe('isEdgeCacheable', () => {
+  it('keeps the public pages for signed-out visitors', () => {
+    expect(isEdgeCacheable(get('/'))).toBe(true);
+    expect(isEdgeCacheable(get('/privacy'))).toBe(true);
+  });
+
+  it('never serves a copy to someone with a session cookie', () => {
+    expect(
+      isEdgeCacheable(get('/', { cookie: 'a=b; chowdown_session=abc' })),
+    ).toBe(false);
+  });
+
+  it('ignores other cookies', () => {
+    expect(isEdgeCacheable(get('/', { cookie: 'theme=dark' }))).toBe(true);
+  });
+
+  it('leaves personal pages, queries, other methods and authorised calls alone', () => {
+    expect(isEdgeCacheable(get('/app'))).toBe(false);
+    expect(isEdgeCacheable(get('/recipe/abc'))).toBe(false);
+    expect(isEdgeCacheable(get('/?source=pwa'))).toBe(false);
+    expect(isEdgeCacheable(get('/', { authorization: 'Bearer x' }))).toBe(
+      false,
+    );
+    expect(
+      isEdgeCacheable(
+        new Request('https://chowdown.test/', { method: 'POST' }),
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('edgeCacheKey', () => {
+  it('differs by release, so a deploy never serves old HTML', () => {
+    const a = edgeCacheKey(get('/'), 'v1').url;
+    const b = edgeCacheKey(get('/'), 'v2').url;
+    expect(a).not.toBe(b);
+  });
+
+  it('differs by page and ignores the host', () => {
+    expect(edgeCacheKey(get('/'), 'v1').url).not.toBe(
+      edgeCacheKey(get('/privacy'), 'v1').url,
+    );
+  });
+});
+
+describe('storableCopy', () => {
+  const html = (init: ResponseInit = {}) =>
+    new Response('<p>hi</p>', {
+      headers: { 'content-type': 'text/html; charset=utf-8' },
+      ...init,
+    });
+
+  it('marks a good page public for the edge and leaves the original intact', async () => {
+    const original = html();
+    const copy = storableCopy(original)!;
+    expect(copy.headers.get('cache-control')).toBe(
+      `public, max-age=${EDGE_TTL_SECONDS}`,
+    );
+    expect(await copy.text()).toBe('<p>hi</p>');
+    expect(await original.text()).toBe('<p>hi</p>');
+  });
+
+  it('keeps nothing that is not a plain successful page', () => {
+    expect(storableCopy(html({ status: 404 }))).toBeNull();
+    expect(storableCopy(html({ status: 307 }))).toBeNull();
+    expect(
+      storableCopy(
+        new Response('x', { headers: { 'content-type': 'application/json' } }),
+      ),
+    ).toBeNull();
+  });
+
+  it('never keeps a response that sets a cookie', () => {
+    const response = html();
+    response.headers.append('set-cookie', 'chowdown_session=abc');
+    expect(storableCopy(response)).toBeNull();
+  });
+});

@@ -24,17 +24,41 @@
  */
 
 import openNextHandler from '../.open-next/worker.js';
+import {
+  edgeCacheKey,
+  isEdgeCacheable,
+  storableCopy,
+} from './lib/http/edge-cache';
 import { applyResponseHeaders } from './lib/http/headers';
 
 const handler: ExportedHandler<CloudflareEnv> = {
   /**
-   * Forwarded to OpenNext's Next.js handler, with the site's security and cache
-   * headers added to whatever comes back.
+   * Public pages come from the edge copy when there is one; everything else is
+   * forwarded to OpenNext's Next.js handler. Either way the site's security and
+   * cache headers are added to whatever goes back.
    */
   async fetch(request, env, ctx) {
+    const cache = (globalThis as { caches?: { default?: Cache } }).caches
+      ?.default;
+    const cacheable = cache !== undefined && isEdgeCacheable(request);
+    const key = cacheable
+      ? edgeCacheKey(request, env.CF_VERSION_METADATA?.id ?? 'dev')
+      : undefined;
+    if (cache && key) {
+      const hit = await cache.match(key);
+      if (hit) {
+        return applyResponseHeaders(request, hit);
+      }
+    }
     const response = await (
       openNextHandler as ExportedHandler<CloudflareEnv>
     ).fetch!(request, env, ctx);
+    if (cache && key) {
+      const copy = storableCopy(response);
+      if (copy) {
+        ctx.waitUntil(cache.put(key, copy));
+      }
+    }
     return applyResponseHeaders(request, response);
   },
 };

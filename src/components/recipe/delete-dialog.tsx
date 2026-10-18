@@ -1,10 +1,15 @@
 'use client';
 
-import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 /**
  * The confirmation that stands between a tap on "Delete recipe" and the recipe
@@ -32,6 +37,13 @@ export function DeleteDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Move focus to Cancel (the safe choice) once the dialog is showing.
+  useEffect(() => {
+    if (open) {
+      cancel.current?.focus();
+    }
+  }, [open]);
+
   const confirm = async () => {
     setBusy(true);
     setError(null);
@@ -52,7 +64,7 @@ export function DeleteDialog({
   };
 
   return (
-    <DialogPrimitive.Root
+    <Dialog
       open={open}
       // Keep the dialog up while a delete is in flight, so the request is never
       // left running unseen behind a closed dialog.
@@ -63,47 +75,44 @@ export function DeleteDialog({
         }
       }}
     >
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="bg-ink/50 fixed inset-0 z-40" />
-        <DialogPrimitive.Content
-          onOpenAutoFocus={(event) => {
-            event.preventDefault();
-            cancel.current?.focus();
-          }}
-          className="rounded-card text-ink fixed top-1/2 left-1/2 z-50 w-[min(26rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 bg-white p-6 outline-none"
-        >
-          <DialogPrimitive.Title className="font-display text-xl font-semibold">
-            Delete this recipe?
-          </DialogPrimitive.Title>
-          <DialogPrimitive.Description className="text-ink/75 mt-2 text-sm leading-relaxed">
-            <span className="text-ink font-semibold">{title}</span> will be
-            removed from chowdown and moved to the trash in your Google Drive,
-            where you can restore it for about 30 days.
-          </DialogPrimitive.Description>
-          {error ? (
-            <p role="alert" className="text-ember mt-3 text-sm font-medium">
-              {error}
-            </p>
-          ) : null}
-          <div className="mt-6 flex justify-end gap-2">
-            <Button
-              ref={cancel}
-              variant="outline"
-              disabled={busy}
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              disabled={busy}
-              onClick={() => void confirm()}
-            >
-              {busy ? 'Deleting…' : 'Delete recipe'}
-            </Button>
-          </div>
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
+      <DialogContent
+        variant="center"
+        showClose={false}
+        dismissable={!busy}
+        className="p-6"
+      >
+        <DialogTitle className="font-display text-xl font-semibold">
+          Delete this recipe?
+        </DialogTitle>
+        <DialogDescription className="text-ink/75 mt-2 text-sm leading-relaxed">
+          <span className="text-ink font-semibold">{title}</span> will be
+          removed from chowdown and moved to the trash in your Google Drive,
+          where you can restore it for about 30 days.
+        </DialogDescription>
+        {error ? (
+          <p role="alert" className="text-ember mt-3 text-sm font-medium">
+            {error}
+          </p>
+        ) : null}
+        <div className="mt-6 flex justify-end gap-2">
+          <Button
+            // Focus starts on Cancel, the safe choice.
+            ref={cancel}
+            variant="outline"
+            disabled={busy}
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            disabled={busy}
+            onClick={() => void confirm()}
+          >
+            {busy ? 'Deleting…' : 'Delete recipe'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

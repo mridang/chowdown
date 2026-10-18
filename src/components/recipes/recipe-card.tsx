@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { CoverImage } from '@/components/cover-image';
+import { IntentLink } from '@/components/ui/intent-link';
 
 import {
   ClockIcon,
@@ -55,6 +55,10 @@ export function PhotoBlock({
       {cover ? (
         <CoverImage
           src={cover}
+          // The photo box is 4:3; stating it keeps the layout still while the
+          // photo loads.
+          width={640}
+          height={480}
           fallback={tile}
           priority={priority}
           className="absolute inset-0 h-full w-full object-cover"
@@ -106,7 +110,11 @@ export function RecipeCard({
     : 'Add to favourites';
   return (
     <article className="group relative h-full">
-      <Link
+      <IntentLink
+        // Live cards fetch their page as soon as it is wanted; the landing
+        // page's demo cards go nowhere, so they fetch nothing.
+        enabled={live}
+        eager={priority}
         href={`/recipe/${recipe.id}`}
         className="rounded-card border-ink/10 group-hover:border-ink/30 focus-visible:outline-ink flex h-full flex-col overflow-hidden border bg-white transition focus-visible:outline-2 focus-visible:outline-offset-2"
       >
@@ -149,7 +157,7 @@ export function RecipeCard({
             ) : null}
           </div>
         </div>
-      </Link>
+      </IntentLink>
       {recipe.uncurated ? (
         <span className="border-ink/15 text-ink absolute top-3 left-3 rounded-full border bg-white px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase">
           Idea

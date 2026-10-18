@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 import { cn } from '@/components/ui/cn';
+import { IntentLink } from '@/components/ui/intent-link';
 
 /** The links a signed-in person sees, and the section each belongs to. */
 export const APP_NAV = [
@@ -35,9 +35,11 @@ export function HeaderNav() {
   return (
     <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
       {APP_NAV.map(({ key, label, href }) => (
-        <Link
+        <IntentLink
           key={key}
           href={href}
+          // The main destination: fetch it as soon as the header appears.
+          eager={key === 'search'}
           aria-current={active === key ? 'page' : undefined}
           className={cn(
             'rounded-control hover:bg-ink/5 flex h-10 items-center px-3 text-sm font-medium transition',
@@ -47,7 +49,7 @@ export function HeaderNav() {
           )}
         >
           {label}
-        </Link>
+        </IntentLink>
       ))}
     </nav>
   );

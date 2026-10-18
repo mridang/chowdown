@@ -1,13 +1,13 @@
 'use client';
 
-import * as ToggleGroup from '@radix-ui/react-toggle-group';
+import { useId } from 'react';
 
 import { cn } from '@/components/ui/cn';
 
 /**
- * A segmented control: one option selected at a time (units, view mode). Built
- * on Radix's toggle group, so it is a proper radio-like group for keyboards and
- * screen readers. Selecting the active option does nothing, never deselects.
+ * A segmented control: one option selected at a time (units, view mode). It is a
+ * group of native radio buttons, so arrow keys, focus and screen-reader roles are
+ * the browser's own, and there is nothing to download.
  */
 export function Segmented<T extends string>({
   value,
@@ -20,31 +20,34 @@ export function Segmented<T extends string>({
   options: { value: T; label: string }[];
   label: string;
 }) {
+  const name = useId();
   return (
-    <ToggleGroup.Root
-      type="single"
-      value={value}
+    <div
+      role="radiogroup"
       aria-label={label}
-      onValueChange={(next) => {
-        if (next) {
-          onValueChange(next as T);
-        }
-      }}
       className="rounded-control border-ink/20 inline-flex border bg-white p-0.5"
     >
       {options.map((option) => (
-        <ToggleGroup.Item
-          key={option.value}
-          value={option.value}
-          className={cn(
-            'h-8 rounded-[calc(var(--radius-control)-2px)] px-3 text-sm font-medium transition',
-            'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ink',
-            'data-[state=on]:bg-ink data-[state=on]:text-white data-[state=off]:text-ink/75 data-[state=off]:hover:bg-ink/5',
-          )}
-        >
-          {option.label}
-        </ToggleGroup.Item>
+        <label key={option.value} className="relative">
+          <input
+            type="radio"
+            name={name}
+            value={option.value}
+            checked={option.value === value}
+            onChange={() => onValueChange(option.value)}
+            className="peer sr-only"
+          />
+          <span
+            className={cn(
+              'flex h-8 cursor-pointer items-center rounded-[calc(var(--radius-control)-2px)] px-3 text-sm font-medium transition',
+              'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-ink',
+              'text-ink/75 hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-white peer-checked:hover:bg-ink',
+            )}
+          >
+            {option.label}
+          </span>
+        </label>
       ))}
-    </ToggleGroup.Root>
+    </div>
   );
 }

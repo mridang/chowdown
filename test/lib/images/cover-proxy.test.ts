@@ -70,11 +70,9 @@ describe('isFetchableImageUrl', () => {
 
 describe('fetchCover', () => {
   it('passes a photo through, sealed and cacheable', async () => {
-    const result = await fetchCover(
-      'https://a.com/x.jpg',
-      640,
-      returning(image()),
-    );
+    const result = await fetchCover('https://a.com/x.jpg', 640, {
+      fetcher: returning(image()),
+    });
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.response.headers.get('content-type')).toBe('image/jpeg');
@@ -88,38 +86,99 @@ describe('fetchCover', () => {
     }
   });
 
-  it('asks Cloudflare to scale it to the width', async () => {
-    let seen: RequestInit | undefined;
-    await fetchCover('https://a.com/x.jpg', 700, async (_url, init) => {
-      seen = init;
-      return image();
+  describe('scaling', () => {
+    const big = () =>
+      new Response(new Uint8Array(100_000), {
+        headers: { 'content-type': 'image/jpeg' },
+      });
+    const images = (
+      out: ArrayBuffer | Error,
+      seen: { width?: number } = {},
+    ) => ({
+      input: () => ({
+        transform: (t: { width: number }) => {
+          seen.width = t.width;
+          return {
+            output: async () => {
+              if (out instanceof Error) {
+                throw out;
+              }
+              return { response: () => new Response(out) };
+            },
+          };
+        },
+      }),
     });
-    expect(
-      (seen as { cf?: { image?: { width?: number } } }).cf?.image?.width,
-    ).toBe(960);
-  });
 
-  it('falls back to the original when scaling is not available', async () => {
-    const seen: (unknown | undefined)[] = [];
-    const result = await fetchCover(
-      'https://a.com/x.jpg',
-      640,
-      async (_url, init) => {
-        const cf = (init as { cf?: { image?: unknown } }).cf;
-        seen.push(cf?.image);
-        return cf?.image ? new Response('no', { status: 403 }) : image();
-      },
-    );
-    expect(result.ok).toBe(true);
-    expect(seen).toHaveLength(2);
-    expect(seen[1]).toBeUndefined();
+    it('scales a large photo to the width we asked for and sends WebP', async () => {
+      const seen: { width?: number } = {};
+      const result = await fetchCover('https://a.com/x.jpg', 700, {
+        fetcher: returning(big()),
+        images: images(new Uint8Array(9_000).buffer, seen),
+      });
+      expect(seen.width).toBe(960);
+      expect(result.ok && result.response.headers.get('content-type')).toBe(
+        'image/webp',
+      );
+      expect(
+        result.ok && (await result.response.arrayBuffer()).byteLength,
+      ).toBe(9_000);
+    });
+
+    it('sends the original when scaling fails', async () => {
+      const result = await fetchCover('https://a.com/x.jpg', 640, {
+        fetcher: returning(big()),
+        images: images(new Error('9412')),
+      });
+      expect(result.ok && result.response.headers.get('content-type')).toBe(
+        'image/jpeg',
+      );
+      expect(
+        result.ok && (await result.response.arrayBuffer()).byteLength,
+      ).toBe(100_000);
+    });
+
+    it('sends the original when scaling would not make it smaller', async () => {
+      const result = await fetchCover('https://a.com/x.jpg', 640, {
+        fetcher: returning(big()),
+        images: images(new Uint8Array(200_000).buffer),
+      });
+      expect(result.ok && result.response.headers.get('content-type')).toBe(
+        'image/jpeg',
+      );
+    });
+
+    it('leaves small photos and GIFs alone', async () => {
+      let used = false;
+      const spy = {
+        input: () => {
+          used = true;
+          throw new Error('should not be called');
+        },
+      };
+      await fetchCover('https://a.com/x.jpg', 640, {
+        fetcher: returning(image()),
+        images: spy as never,
+      });
+      await fetchCover('https://a.com/x.gif', 640, {
+        fetcher: returning(
+          new Response(new Uint8Array(100_000), {
+            headers: { 'content-type': 'image/gif' },
+          }),
+        ),
+        images: spy as never,
+      });
+      expect(used).toBe(false);
+    });
   });
 
   it('refuses an address it should not fetch, without fetching', async () => {
     let called = false;
-    const result = await fetchCover('http://127.0.0.1/x.jpg', 640, async () => {
-      called = true;
-      return image();
+    const result = await fetchCover('http://127.0.0.1/x.jpg', 640, {
+      fetcher: async () => {
+        called = true;
+        return image();
+      },
     });
     expect(result).toMatchObject({ ok: false, status: 400 });
     expect(called).toBe(false);
@@ -137,7 +196,9 @@ describe('fetchCover', () => {
     ['a refusal', new Response('', { status: 403 }), 502],
   ])('rejects %s', async (_name, response, status) => {
     expect(
-      await fetchCover('https://a.com/x', 640, returning(response)),
+      await fetchCover('https://a.com/x', 640, {
+        fetcher: returning(response),
+      }),
     ).toMatchObject({
       ok: false,
       status,
@@ -145,8 +206,10 @@ describe('fetchCover', () => {
   });
 
   it('reports a site that does not answer', async () => {
-    const result = await fetchCover('https://a.com/x.jpg', 640, async () => {
-      throw new Error('timeout');
+    const result = await fetchCover('https://a.com/x.jpg', 640, {
+      fetcher: async () => {
+        throw new Error('timeout');
+      },
     });
     expect(result).toMatchObject({ ok: false, status: 502 });
   });

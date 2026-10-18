@@ -35,6 +35,15 @@
   "ai": {
     "binding": "AI",
   },
+  // Scales recipe cover photos down (and re-encodes them as WebP) in the Worker.
+  // Free monthly allowance; see src/lib/images/cover-proxy.ts.
+  "images": {
+    "binding": "IMAGES",
+  },
+  // The release id, so cached pages are keyed to the release that made them.
+  "version_metadata": {
+    "binding": "CF_VERSION_METADATA",
+  },
   "d1_databases": [
     {
       "binding": "DB",

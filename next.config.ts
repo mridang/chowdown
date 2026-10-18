@@ -21,11 +21,11 @@ const nextConfig: NextConfig = {
     // Put the (small) stylesheet in the page itself instead of making the
     // browser fetch it before it can paint anything.
     inlineCss: true,
-    // Keep prefetched pages in the browser's client cache for a minute, so a
+    // Keep prefetched pages in the browser's client cache for three minutes, so a
     // card that has already been prefetched opens instantly with no server
     // request. Short, because recipe pages are personal (favourites, notes) and
     // router.refresh() after a change invalidates the cache anyway.
-    staleTimes: { dynamic: 60, static: 60 },
+    staleTimes: { dynamic: 180, static: 180 },
   },
 };
 

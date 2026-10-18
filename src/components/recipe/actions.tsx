@@ -11,13 +11,7 @@ import {
   TrashIcon,
 } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown';
+import { POPOVER_ITEM, Popover } from '@/components/ui/popover';
 
 import { DeleteDialog } from './delete-dialog';
 
@@ -120,35 +114,40 @@ export function MoreMenu({
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          aria-label="More actions"
-          className="rounded-control border-ink/25 hover:border-ink focus-visible:outline-ink grid h-10 w-10 place-items-center border bg-white text-xl leading-none transition outline-none focus-visible:outline-2 focus-visible:outline-offset-2"
+      <Popover
+        label="More actions"
+        button={<span aria-hidden="true">⋯</span>}
+        buttonClassName="rounded-control border-ink/25 hover:border-ink focus-visible:outline-ink grid h-10 w-10 place-items-center border bg-white text-xl leading-none transition focus-visible:outline-2 focus-visible:outline-offset-2"
+        panelClassName="print:hidden"
+      >
+        <button
+          type="button"
+          disabled={tagging}
+          onClick={() => void autoTag()}
+          className={POPOVER_ITEM}
         >
-          <span aria-hidden="true">⋯</span>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="print:hidden">
-          <DropdownMenuItem disabled={tagging} onSelect={() => void autoTag()}>
-            <SparkIcon className="text-ink/65 h-[18px] w-[18px]" />
-            Auto-tag
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            // Let the menu finish closing so it isn't in the printed page.
-            onSelect={() => setTimeout(() => window.print(), 150)}
-          >
-            <PrinterIcon className="text-ink/65 h-[18px] w-[18px]" />
-            Print
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="text-ember"
-            onSelect={() => setConfirmingDelete(true)}
-          >
-            <TrashIcon className="h-[18px] w-[18px]" />
-            Delete recipe
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          <SparkIcon className="text-ink/65 h-[18px] w-[18px]" />
+          Auto-tag
+        </button>
+        <button
+          type="button"
+          // Let the menu finish closing so it isn't in the printed page.
+          onClick={() => setTimeout(() => window.print(), 150)}
+          className={POPOVER_ITEM}
+        >
+          <PrinterIcon className="text-ink/65 h-[18px] w-[18px]" />
+          Print
+        </button>
+        <div className="bg-ink/10 my-1.5 h-px" />
+        <button
+          type="button"
+          className={`${POPOVER_ITEM} text-ember`}
+          onClick={() => setConfirmingDelete(true)}
+        >
+          <TrashIcon className="h-[18px] w-[18px]" />
+          Delete recipe
+        </button>
+      </Popover>
 
       <DeleteDialog
         recipeId={recipeId}
