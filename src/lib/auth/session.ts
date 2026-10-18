@@ -23,6 +23,13 @@ export interface SessionPayload {
   /** `users.id` primary key. */
   uid: number;
   email: string;
+  /**
+   * The Google display name and profile photo address, so the header can greet
+   * the person without a database read. Absent on sessions issued before they
+   * were added; those fall back to a lookup.
+   */
+  name?: string;
+  picture?: string;
   /** Expiry as a Unix timestamp (seconds). */
   exp: number;
 }
@@ -73,6 +80,11 @@ export async function createSessionToken(
   const full: SessionPayload = {
     uid: payload.uid,
     email: payload.email,
+    // Kept short: the whole token travels in a cookie on every request.
+    ...(payload.name ? { name: payload.name.slice(0, 80) } : {}),
+    ...(payload.picture && payload.picture.length <= 400
+      ? { picture: payload.picture }
+      : {}),
     exp: payload.exp ?? Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
   };
   const body = base64url(new TextEncoder().encode(JSON.stringify(full)));

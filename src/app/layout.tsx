@@ -1,22 +1,14 @@
 import type { Metadata, Viewport } from 'next';
-import { Fraunces, Geist, Geist_Mono } from 'next/font/google';
+import { Bricolage_Grotesque, Inter } from 'next/font/google';
 import './globals.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
+/** Body face. */
+const sans = Inter({ variable: '--font-sans-face', subsets: ['latin'] });
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
-
-/** Display face for the redesign: headings. A warm, characterful serif. */
-const display = Fraunces({
+/** Display face for headings: a heavy, friendly grotesque. */
+const display = Bricolage_Grotesque({
   variable: '--font-display-face',
   subsets: ['latin'],
-  style: ['normal', 'italic'],
 });
 
 const TITLE = 'chowdown';
@@ -49,6 +41,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  // The marigold of the header strip, so Chrome's address bar on Android and
+  // the installed app's title bar take the brand colour.
+  themeColor: '#ffb100',
 };
 
 export default function RootLayout({
@@ -59,9 +54,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${display.variable} h-full antialiased`}
+      className={`${sans.variable} ${display.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col overflow-x-hidden font-sans">
+      <body className="bg-paper text-ink flex min-h-full flex-col overflow-x-hidden font-sans">
         {children}
       </body>
     </html>

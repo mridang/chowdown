@@ -76,7 +76,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     const sessionToken = await createSessionToken(
-      { uid: user.id, email: user.email },
+      {
+        uid: user.id,
+        email: user.email,
+        name: user.name ?? undefined,
+        picture: user.picture ?? undefined,
+      },
       env.SESSION_SECRET,
     );
     const returnTo = safeReturnPath(request.cookies.get(RETURN_COOKIE)?.value);

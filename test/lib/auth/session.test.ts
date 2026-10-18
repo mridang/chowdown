@@ -47,3 +47,35 @@ describe('session tokens', () => {
     expect(payload!.exp).toBeGreaterThanOrEqual(before + SESSION_TTL_SECONDS - 5);
   });
 });
+
+describe('session profile', () => {
+  it('carries the name and photo so the header needs no database read', async () => {
+    const token = await createSessionToken(
+      {
+        uid: 1,
+        email: 'x@y.com',
+        name: 'Ada Lovelace',
+        picture: 'https://lh3.googleusercontent.com/a/abc',
+      },
+      SECRET,
+    );
+    const payload = await verifySessionToken(token, SECRET);
+    expect(payload?.name).toBe('Ada Lovelace');
+    expect(payload?.picture).toBe('https://lh3.googleusercontent.com/a/abc');
+  });
+
+  it('leaves out a photo address too long for a cookie, and still verifies', async () => {
+    const token = await createSessionToken(
+      { uid: 1, email: 'x@y.com', picture: `https://x.test/${'a'.repeat(500)}` },
+      SECRET,
+    );
+    const payload = await verifySessionToken(token, SECRET);
+    expect(payload?.picture).toBeUndefined();
+    expect(payload?.uid).toBe(1);
+  });
+
+  it('still accepts a session issued before names were added', async () => {
+    const token = await createSessionToken({ uid: 7, email: 'old@y.com' }, SECRET);
+    expect((await verifySessionToken(token, SECRET))?.name).toBeUndefined();
+  });
+});
