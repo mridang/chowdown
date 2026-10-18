@@ -32,6 +32,7 @@ export function Popover({
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
   const panelId = useId();
 
   useEffect(() => {
@@ -49,9 +50,18 @@ export function Popover({
         trigger.current?.focus();
       }
     };
+    // Choosing a link or an action inside the panel closes it.
+    const onPanelClick = (event: MouseEvent) => {
+      if ((event.target as HTMLElement).closest('a, button')) {
+        setOpen(false);
+      }
+    };
+    const panelElement = panel.current;
+    panelElement?.addEventListener('click', onPanelClick);
     document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
     return () => {
+      panelElement?.removeEventListener('click', onPanelClick);
       document.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
@@ -74,12 +84,7 @@ export function Popover({
       {open ? (
         <div
           id={panelId}
-          // Choosing a link or an action inside closes the panel.
-          onClick={(event) => {
-            if ((event.target as HTMLElement).closest('a, button')) {
-              setOpen(false);
-            }
-          }}
+          ref={panel}
           className={cn(
             'rounded-card border-ink/15 text-ink absolute top-full z-50 mt-2 min-w-56 border bg-white p-1.5',
             align === 'end' ? 'right-0' : 'left-0',
