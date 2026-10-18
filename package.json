@@ -11,7 +11,7 @@
     "start": "next start",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv",
     "cert:dev": "mkdir -p certs && openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/chowdown.dev.mrida.ng-key.pem -out certs/chowdown.dev.mrida.ng.pem -days 825 -subj '/CN=chowdown.dev.mrida.ng' -addext 'subjectAltName=DNS:chowdown.dev.mrida.ng'",
-    "deploy": "opennextjs-cloudflare build && node scripts/optimize-assets.mjs && wrangler deploy",
+    "deploy": "opennextjs-cloudflare build && wrangler deploy",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "npx eslint .",
