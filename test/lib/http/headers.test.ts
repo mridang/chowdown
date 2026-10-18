@@ -83,6 +83,28 @@ describe('applyResponseHeaders', () => {
   });
 });
 
+describe('X-Robots-Tag', () => {
+  it('keeps crawlers out of every page except the two public ones', () => {
+    for (const path of [
+      '/app',
+      '/recipe/abc',
+      '/connect',
+      '/recipes/add',
+      '/api/recipes',
+      '/oauth/authorize',
+    ]) {
+      expect(
+        applyResponseHeaders(at(path), html()).headers.get('X-Robots-Tag'),
+      ).toBe('noindex, nofollow');
+    }
+    for (const path of ['/', '/privacy']) {
+      expect(
+        applyResponseHeaders(at(path), html()).headers.get('X-Robots-Tag'),
+      ).toBeNull();
+    }
+  });
+});
+
 describe('public/_headers', () => {
   it('gives static files the same security headers as the Worker gives pages', () => {
     const file = readFileSync(

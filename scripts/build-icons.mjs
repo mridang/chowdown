@@ -52,4 +52,29 @@ await writeFile(
   path.join(root, 'src/app/icon.svg'),
   svg({ scale: 1, radius: 112 }),
 );
+/**
+ * The picture shown when a link to the site is shared (Open Graph and the
+ * Twitter large card): the brand yellow, the name, the promise, and the pan
+ * mark, with the footer's flame zigzag along the bottom.
+ */
+const SOCIAL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="${MARIGOLD}"/>
+  <path fill="${FLAME}" d="M0 630V545L330 505 520 535 800 480 1200 545V630Z"/>
+  <g transform="translate(720 70) scale(0.95)">
+    <path d="M318 214 448 130" stroke="${INK}" stroke-width="44" stroke-linecap="round" fill="none"/>
+    <circle cx="228" cy="284" r="132" fill="${INK}"/>
+    <circle cx="228" cy="284" r="56" fill="${FLAME}"/>
+  </g>
+  <text x="80" y="200" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="128" font-weight="800" fill="${INK}" letter-spacing="-3">chowdown</text>
+  <text x="84" y="275" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="${INK}" letter-spacing="7">RECIPE KEEPER</text>
+  <text x="80" y="390" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="52" font-weight="700" fill="${INK}">Your recipes. Your Drive.</text>
+  <text x="80" y="452" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="52" font-weight="700" fill="${INK}">Your rules.</text>
+</svg>`;
+
+for (const name of ['opengraph-image.png', 'twitter-image.png']) {
+  await sharp(Buffer.from(SOCIAL), { density: 144 })
+    .resize(1200, 630)
+    .png({ compressionLevel: 9 })
+    .toFile(path.join(root, 'src/app', name));
+}
 console.log('icons written');

@@ -36,10 +36,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: DEFAULT_TITLE,
   description: DESCRIPTION,
-  // Signed-out visitors only ever see the landing page and the privacy page;
-  // everything else sends them to sign in, so there is nothing private to hide
-  // from a crawler. (/api and /oauth are disallowed in robots.txt.)
-  robots: { index: true, follow: true },
+  // Private by default: almost every page is someone's own recipes, so crawlers
+  // are told to keep out. The two public pages (the home page for signed-out
+  // visitors, and privacy) opt back in on their own. robots.txt and an
+  // X-Robots-Tag header (see lib/http/headers.ts) say the same thing.
+  robots: { index: false, follow: false },
   openGraph: {
     type: 'website',
     siteName: TITLE,
@@ -52,7 +53,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: TITLE, statusBarStyle: 'default' },
   formatDetection: { telephone: false },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: DEFAULT_TITLE,
     description: DESCRIPTION,
   },

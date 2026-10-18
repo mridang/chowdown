@@ -28,6 +28,9 @@ export const SECURITY_HEADERS: Record<string, string> = {
   'Cross-Origin-Opener-Policy': 'same-origin',
 };
 
+/** The pages search engines may index. Everything else is private. */
+export const PUBLIC_PAGES: ReadonlySet<string> = new Set(['/', '/privacy']);
+
 /** Cache rules for the few responses that want something other than the default. */
 function cacheControlFor(pathname: string, response: Response): string | null {
   if (
@@ -69,7 +72,12 @@ export function applyResponseHeaders(
       headers.set(name, value);
     }
   }
-  const cache = cacheControlFor(new URL(request.url).pathname, response);
+  const { pathname } = new URL(request.url);
+  if (!PUBLIC_PAGES.has(pathname) && !headers.has('X-Robots-Tag')) {
+    // Whatever the page itself says, tell crawlers not to index or follow it.
+    headers.set('X-Robots-Tag', 'noindex, nofollow');
+  }
+  const cache = cacheControlFor(pathname, response);
   if (cache) {
     headers.set('Cache-Control', cache);
   }
