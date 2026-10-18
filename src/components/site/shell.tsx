@@ -17,7 +17,13 @@ export async function SiteShell({ children }: { children: ReactNode }) {
         Skip to content
       </a>
       <SiteHeader user={user} />
-      <main id="main" className="flex-1">
+      {/*
+        The content area is at least as tall as the screen below the header, so
+        the footer always starts below the fold. Pages swap a loading skeleton
+        for their real content, and the two differ in height: without this the
+        footer, which is huge, would jump up or down in view at every swap.
+      */}
+      <main id="main" className="min-h-[calc(100svh-4.75rem)] flex-1">
         {children}
       </main>
       <SiteFooter />
