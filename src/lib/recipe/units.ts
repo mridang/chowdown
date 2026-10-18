@@ -77,7 +77,8 @@ function formatVolume(ml: number, system: UnitSystem): string {
   for (const [unit, size] of VOL_TARGETS[system]) {
     if (ml >= size) {
       const step = unit === 'ml' ? 1 : unit === 'l' ? 0.01 : unit === 'cup' ? 0.25 : 0.5;
-      return `${roundTo(ml / size, step)} ${unit}`;
+      const amount = roundTo(ml / size, step);
+      return `${amount} ${unit === 'cup' && Number(amount) > 1 ? 'cups' : unit}`;
     }
   }
   const smallest = VOL_TARGETS[system][VOL_TARGETS[system].length - 1]!;
@@ -128,4 +129,77 @@ export function convertRecipe(recipe: ParsedRecipe, system: UnitSystem): ParsedR
     ),
   );
   return { ...recipe, ingredients, steps };
+}
+
+/** Fractions worth showing as fractions: `[value, label]`. */
+const NICE_FRACTIONS: [number, string][] = [
+  [0.125, '1/8'],
+  [0.25, '1/4'],
+  [1 / 3, '1/3'],
+  [0.5, '1/2'],
+  [2 / 3, '2/3'],
+  [0.75, '3/4'],
+];
+
+/** A number as a cook writes it: "1 1/2", "3/4", "2.4". */
+function formatAmount(value: number): string {
+  const whole = Math.floor(value + 1e-9);
+  const rest = value - whole;
+  if (rest < 0.03) {
+    return String(whole);
+  }
+  const near = NICE_FRACTIONS.find(([f]) => Math.abs(rest - f) < 0.03);
+  if (near) {
+    return whole > 0 ? `${whole} ${near[1]}` : near[1];
+  }
+  if (rest > 0.97) {
+    return String(whole + 1);
+  }
+  return formatQuantityNumber(value, 1);
+}
+
+/** One number as written in a quantity: "2", "1.5", "1/2" or "1 1/2". */
+const AMOUNT = String.raw`\d+(?:[.,]\d+)?(?:\s+\d+\s*\/\s*\d+|\s*\/\s*\d+)?`;
+const SCALABLE = new RegExp(
+  `^(${AMOUNT})(?:\\s*[-–]\\s*(${AMOUNT}))?\\s*(.*)$`,
+);
+
+/** The value of an amount like "1 1/2" or "3/4" or "2,5"; undefined if it isn't one. */
+function amountValue(text: string): number | undefined {
+  const mixed = /^(\d+)\s+(\d+)\s*\/\s*(\d+)$/.exec(text);
+  if (mixed) {
+    return Number(mixed[1]) + Number(mixed[2]) / Number(mixed[3]);
+  }
+  const frac = /^(\d+)\s*\/\s*(\d+)$/.exec(text);
+  if (frac) {
+    return Number(frac[1]) / Number(frac[2]);
+  }
+  const n = Number(text.replace(',', '.'));
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/**
+ * Scale a quantity by a factor ("2 tbsp" × 2 → "4 tbsp", "1/2 cup" × 3 →
+ * "1 1/2 cup", "3-4" × 2 → "6-8"). Quantities that are not numbers ("a pinch",
+ * "to taste") come back unchanged, and so does everything when the factor is 1.
+ */
+export function scaleQuantity(quantity: string, factor: number): string {
+  if (factor === 1 || !Number.isFinite(factor) || factor <= 0) {
+    return quantity;
+  }
+  const match = SCALABLE.exec(quantity.trim());
+  if (!match) {
+    return quantity;
+  }
+  const low = amountValue(match[1]!.trim());
+  const high = match[2] ? amountValue(match[2].trim()) : undefined;
+  if (low === undefined || (match[2] && high === undefined)) {
+    return quantity;
+  }
+  const amount =
+    high === undefined
+      ? formatAmount(low * factor)
+      : `${formatAmount(low * factor)}-${formatAmount(high * factor)}`;
+  const unit = match[3]!.trim();
+  return unit ? `${amount} ${unit}` : amount;
 }

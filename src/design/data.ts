@@ -12,6 +12,7 @@ import path from 'node:path';
 
 import { stepText } from '@/lib/api/recipe-resource';
 import { compareText } from '@/lib/intl';
+import { extractNotes, type Note } from '@/lib/recipe/cook-text';
 import { parseRecipe } from '@/lib/recipe/cooklang';
 import { extractMedia } from '@/lib/recipe/media';
 
@@ -26,6 +27,10 @@ interface LocalRecipe {
   cuisine: string;
   protein: string;
   difficulty: string;
+  category: string;
+  diet: string[];
+  method: string[];
+  keywords: string[];
   minutes: number;
   servings: number;
   favourite: boolean;
@@ -81,6 +86,10 @@ export function loadRecipes(): SampleRecipe[] {
       difficulty: difficultyOf(r.difficulty),
       cuisine: r.cuisine,
       protein: r.protein,
+      category: r.category,
+      diet: r.diet,
+      method: r.method,
+      keywords: r.keywords,
       favourite: r.favourite,
       tone: toneFor(r.id),
       cover: r.cover,
@@ -91,6 +100,8 @@ export function loadRecipes(): SampleRecipe[] {
 
 /** What the recipe screen shows. */
 export interface RecipePageData {
+  id?: string;
+  favourite: boolean;
   title: string;
   site: string;
   intro: string;
@@ -99,6 +110,11 @@ export interface RecipePageData {
   difficulty: string;
   cuisine: string;
   protein: string;
+  category: string;
+  diet: string[];
+  method: string[];
+  keywords: string[];
+  notes: Note[];
   tags: string[];
   cover?: string;
   ingredients: [string, string][];
@@ -115,6 +131,8 @@ function pageFrom(recipe: SampleRecipe): RecipePageData | undefined {
   const meta = (key: string) =>
     parsed.metadata.find(([k]) => k.toLowerCase() === key)?.[1];
   return {
+    id: recipe.id,
+    favourite: recipe.favourite,
     title: cleanTitle(parsed.title || recipe.title),
     site: recipe.site,
     intro: meta('description') ?? '',
@@ -123,6 +141,11 @@ function pageFrom(recipe: SampleRecipe): RecipePageData | undefined {
     difficulty: recipe.difficulty,
     cuisine: recipe.cuisine,
     protein: recipe.protein,
+    category: recipe.category,
+    diet: recipe.diet,
+    method: recipe.method,
+    keywords: recipe.keywords,
+    notes: extractNotes(recipe.cooklang),
     tags: [recipe.cuisine, recipe.protein, recipe.difficulty],
     cover: extractMedia(parsed).cover ?? recipe.cover,
     ingredients: parsed.ingredients.map((i) => [i.quantity, i.name]),
@@ -151,8 +174,14 @@ export function loadRecipePage(id?: string): RecipePageData {
   }
   return {
     ...RECIPE_PAGE,
+    favourite: false,
     cuisine: 'Mexican',
     protein: 'chicken',
+    category: 'Main',
+    diet: [],
+    method: ['Stovetop'],
+    keywords: [],
+    notes: [],
     tags: [...RECIPE_PAGE.tags],
   };
 }

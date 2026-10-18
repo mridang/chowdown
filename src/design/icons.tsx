@@ -157,27 +157,34 @@ export const LogoutIcon = (p: IconProps) => (
 /* Protein icons: one small drawing per protein so a card shows it at a glance. */
 export const ChickenIcon = (p: IconProps) => (
   <Icon {...p}>
-    <path d="M14.5 4c3.3-.8 6 2.2 5.2 5.4-.4 1.6-1.5 2.7-3 3.1L15 14l-4-4 1.3-1.7c.5-1.5 1.8-3.8 2.2-4.3Z" />
-    <path d="m11 13-5 5M5 17.5a1.7 1.7 0 1 0-2 2.3 1.7 1.7 0 1 0 2.3 2" />
+    <path d="M14.5 3.5c3.2 0 5.5 2.6 5.5 5.6 0 2.7-2 4.9-4.6 5.4-.9.2-1.7-.1-2.3-.7l-1.7-1.7c-.6-.6-.9-1.5-.7-2.3C10.8 7 12.2 3.5 14.5 3.5Z" />
+    <path d="m11 13-4 4" />
+    <circle cx="5.3" cy="16.9" r="1.5" />
+    <circle cx="7.1" cy="19.2" r="1.5" />
   </Icon>
 );
 export const BeefIcon = (p: IconProps) => (
   <Icon {...p}>
-    <path d="M4.5 9.5C4.5 6 8 4 12 4s7.5 2 7.5 5.5c0 5.5-3.5 10.5-8.5 10.5-3.5 0-6.5-4-6.5-10.5Z" />
-    <circle cx="13" cy="11.5" r="2.3" />
+    <path d="M4.5 10c0-3.6 3-6 7.5-6s7.5 2.4 7.5 6c0 5-3.8 10-9 10-4 0-6-4.5-6-10Z" />
+    <path d="M9.5 9c1.5-1.2 3.5-.7 4.2 1" />
+    <circle cx="14.5" cy="14.5" r="1.6" />
   </Icon>
 );
 export const PorkIcon = (p: IconProps) => (
   <Icon {...p}>
-    <circle cx="12" cy="12.5" r="8" />
-    <ellipse cx="12" cy="14.5" rx="3.2" ry="2.2" />
-    <path d="M10.8 14.5h.01M13.2 14.5h.01M6.5 6.5 8.5 9.5M17.5 6.5 15.5 9.5" />
+    <path d="m5.5 9.5-1.5-5 4.5 2M18.5 9.5l1.5-5-4.5 2" />
+    <ellipse cx="12" cy="13" rx="7.5" ry="7" />
+    <ellipse cx="12" cy="15" rx="3" ry="2.2" />
+    <path d="M10.9 15h.01M13.1 15h.01M8.8 11h.01M15.2 11h.01" />
   </Icon>
 );
 export const LambIcon = (p: IconProps) => (
   <Icon {...p}>
-    <path d="M6 15c0-5 4-9 9-9 2.8 0 4.8 1.8 4.8 4.5 0 5-3.8 8.5-8.8 8.5-3 0-5-1.6-5-4Z" />
-    <path d="M10.5 12.5c1-1.5 3-2.5 4.5-2.5M6.5 17.5 4 20M3 19a1.5 1.5 0 1 0 2.3 2" />
+    <path d="M7 17V9M12 17V7M17 17V9" />
+    <circle cx="7" cy="7.8" r="1.3" />
+    <circle cx="12" cy="5.8" r="1.3" />
+    <circle cx="17" cy="7.8" r="1.3" />
+    <path d="M5 17c0 3 14 3 14 0v-3H5z" />
   </Icon>
 );
 export const EggIcon = (p: IconProps) => (
@@ -223,4 +230,113 @@ export function ProteinIcon({
 }: IconProps & { protein: string }) {
   const Component = PROTEIN_ICONS[protein.toLowerCase()] ?? PanIcon;
   return <Component {...props} />;
+}
+
+export const GlobeIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" />
+  </Icon>
+);
+export const PlateIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 17h18M5 17a7 7 0 0 1 14 0M12 8V6M10.5 6h3" />
+  </Icon>
+);
+export const OvenIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="3.5" y="4" width="17" height="16" rx="2" />
+    <path d="M3.5 9h17M7 6.5h.01M10 6.5h.01" />
+    <rect x="7" y="12" width="10" height="5" rx="1" />
+  </Icon>
+);
+export const ShareIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 15V4M8 8l4-4 4 4M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6" />
+  </Icon>
+);
+export const PrinterIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M7 9V4h10v5M7 17H5a1 1 0 0 1-1-1v-5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5a1 1 0 0 1-1 1h-2" />
+    <rect x="7" y="14" width="10" height="6" rx="1" />
+  </Icon>
+);
+export const ExpandIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+  </Icon>
+);
+export const SlidersIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+    <circle cx="16" cy="7" r="2" />
+    <circle cx="8" cy="17" r="2" />
+  </Icon>
+);
+export const FolderIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+  </Icon>
+);
+export const ShieldIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z" />
+    <path d="m9 12 2 2 4-4" />
+  </Icon>
+);
+export const ChevronLeftIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="m15 6-6 6 6 6" />
+  </Icon>
+);
+export const ChevronRightIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="m9 6 6 6-6 6" />
+  </Icon>
+);
+export const BookIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19a2 2 0 0 0 2 2h13" />
+  </Icon>
+);
+export const NoteIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M5 4h14v12l-5 5H5zM14 21v-5h5M8 9h8M8 13h4" />
+  </Icon>
+);
+export const PlusCircleIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 8v8M8 12h8" />
+  </Icon>
+);
+
+/** The multi-colour Google "G", for the sign-in button. */
+export function GoogleIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="1em"
+      height="1em"
+      aria-hidden="true"
+      {...props}
+    >
+      <path
+        fill="#4285F4"
+        d="M21.6 12.230c0-.710-.060-1.390-.180-2.050H12v3.870h5.380a4.6 4.6 0 0 1-2 3.020v2.510h3.230c1.890-1.740 2.990-4.3 2.990-7.350Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 22c2.7 0 4.960-.900 6.610-2.420l-3.230-2.510c-.900.6-2.040.960-3.380.960-2.6 0-4.810-1.760-5.6-4.120H3.060v2.590A9.990 9.990 0 0 0 12 22Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M6.4 13.910a6 6 0 0 1 0-3.820V7.5H3.060a10 10 0 0 0 0 9z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.980c1.470 0 2.790.510 3.830 1.5l2.870-2.870C16.960 3.010 14.7 2 12 2a9.990 9.990 0 0 0-8.940 5.5l3.340 2.590C7.190 7.740 9.4 5.980 12 5.980Z"
+      />
+    </svg>
+  );
 }

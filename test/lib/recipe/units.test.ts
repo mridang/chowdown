@@ -1,6 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { convertQuantity, isUnitSystem } from '../../../src/lib/recipe/units';
+import {
+  convertQuantity,
+  isUnitSystem,
+  scaleQuantity,
+} from '../../../src/lib/recipe/units';
 
 describe('isUnitSystem', () => {
   it('accepts the three systems and rejects others', () => {
@@ -43,5 +47,44 @@ describe('convertQuantity — left untouched', () => {
     expect(convertQuantity('2', 'us')).toBe('2');
     expect(convertQuantity('2 cloves', 'metric')).toBe('2 cloves');
     expect(convertQuantity('', 'us')).toBe('');
+  });
+});
+
+describe('scaleQuantity', () => {
+  it('scales whole numbers and keeps the unit', () => {
+    expect(scaleQuantity('2 tbsp', 2)).toBe('4 tbsp');
+    expect(scaleQuantity('300 g', 0.5)).toBe('150 g');
+    expect(scaleQuantity('3', 2)).toBe('6');
+  });
+
+  it('shows fractions the way a cook writes them', () => {
+    expect(scaleQuantity('1/2 cup', 3)).toBe('1 1/2 cup');
+    expect(scaleQuantity('1 1/2 tsp', 2)).toBe('3 tsp');
+    expect(scaleQuantity('1/4 tsp', 2)).toBe('1/2 tsp');
+    expect(scaleQuantity('1 cup', 0.5)).toBe('1/2 cup');
+  });
+
+  it('scales both ends of a range', () => {
+    expect(scaleQuantity('3-4', 2)).toBe('6-8');
+    expect(scaleQuantity('8-10 strips', 0.5)).toBe('4-5 strips');
+  });
+
+  it('falls back to a decimal when there is no tidy fraction', () => {
+    expect(scaleQuantity('1 cup', 2.4)).toBe('2.4 cup');
+  });
+
+  it('leaves non-numeric quantities and a factor of 1 alone', () => {
+    expect(scaleQuantity('a pinch', 2)).toBe('a pinch');
+    expect(scaleQuantity('2 tbsp', 1)).toBe('2 tbsp');
+    expect(scaleQuantity('2 tbsp', 0)).toBe('2 tbsp');
+    expect(scaleQuantity('', 2)).toBe('');
+  });
+});
+
+describe('convertQuantity cups', () => {
+  it('says cup for exactly one and cups for more', () => {
+    expect(convertQuantity('1 L', 'us')).toBe('4.25 cups');
+    expect(convertQuantity('300 ml', 'us')).toBe('1.25 cups');
+    expect(convertQuantity('240 ml', 'us')).toBe('1 cup');
   });
 });

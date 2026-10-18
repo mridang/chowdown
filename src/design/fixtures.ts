@@ -15,6 +15,10 @@ export interface SampleRecipe {
   difficulty: 'Easy' | 'Medium' | 'Hard';
   cuisine: string;
   protein: string;
+  category: string;
+  diet: string[];
+  method: string[];
+  keywords: string[];
   favourite: boolean;
   tone: Tone;
   /** A real cover image URL; without one the card shows a colour tile. */
@@ -23,7 +27,12 @@ export interface SampleRecipe {
   cooklang?: string;
 }
 
-export const RECIPES: SampleRecipe[] = [
+type BaseRecipe = Omit<
+  SampleRecipe,
+  'category' | 'diet' | 'method' | 'keywords'
+>;
+
+const BASE: BaseRecipe[] = [
   {
     id: 'a',
     title: 'Smoky Chipotle Chicken Tacos',
@@ -121,6 +130,15 @@ export const RECIPES: SampleRecipe[] = [
     tone: 'forest',
   },
 ];
+
+/** Sample recipes used when there is no local export of real ones. */
+export const RECIPES: SampleRecipe[] = BASE.map((r) => ({
+  ...r,
+  category: 'Main',
+  diet: [],
+  method: ['Stovetop'],
+  keywords: [],
+}));
 
 /** Sidebar facets with counts. */
 export const FACETS: { label: string; values: [string, number][] }[] = [

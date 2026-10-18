@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { SiteFooter } from './site-footer';
-import { SiteHeader } from './site-header';
+import { SiteHeader, type NavKey } from './site-header';
 
 /** The signed-in sample user the sandbox shows. */
 export const SAMPLE_USER = { name: 'Mridang', email: 'mridang@example.com' };
@@ -13,7 +13,7 @@ export function DesignShell({
   children,
 }: {
   signedIn: boolean;
-  active?: 'home' | 'search' | 'favourites' | 'connect';
+  active?: NavKey;
   children: ReactNode;
 }) {
   return (

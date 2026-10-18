@@ -35,14 +35,22 @@ export function Section({
   surface = 'page',
   children,
   className,
+  id,
 }: {
   surface?: keyof typeof SURFACES;
   children: ReactNode;
   className?: string;
+  /** Lets the header's links jump to this section. */
+  id?: string;
 }) {
   return (
     <section
-      className={cn('py-12 sm:py-16 lg:py-20', SURFACES[surface], className)}
+      id={id}
+      className={cn(
+        'scroll-mt-20 py-12 sm:py-16 lg:py-20',
+        SURFACES[surface],
+        className,
+      )}
     >
       {children}
     </section>

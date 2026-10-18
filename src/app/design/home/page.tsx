@@ -2,133 +2,34 @@ import Link from 'next/link';
 
 import { ConnectBand } from '@/design/connect-band';
 import { loadRecipes } from '@/design/data';
-import type { SampleRecipe } from '@/design/fixtures';
-import { sentenceCase } from '@/design/format';
-import { ArrowIcon } from '@/design/icons';
-import { PhotoBlock, RecipeCard, RecipeGrid } from '@/design/recipe-card';
-import { DesignShell } from '@/design/shell';
-import { Button } from '@/design/ui/button';
-import { SearchField } from '@/design/ui/field';
+import { ArrowIcon, SearchIcon } from '@/design/icons';
 import {
-  Container,
-  Eyebrow,
-  Heading,
-  Section,
-  SectionHeader,
-} from '@/design/ui/layout';
+  Faq,
+  FinalCta,
+  Features,
+  HeroMock,
+  HowItWorks,
+  SignInButton,
+  Trust,
+  TrustLine,
+} from '@/design/landing';
+import { RecipeCard, RecipeGrid } from '@/design/recipe-card';
+import { DesignShell } from '@/design/shell';
+import { Button, ButtonLink } from '@/design/ui/button';
+import { SearchField } from '@/design/ui/field';
+import { Container, Eyebrow, Heading, SectionHeader } from '@/design/ui/layout';
 
-const STEPS: { n: string; title: string; body: string }[] = [
-  {
-    n: '01',
-    title: 'Save it',
-    body: 'Paste a link or type a recipe. It lands as a plain text file in your own Drive, not ours.',
-  },
-  {
-    n: '02',
-    title: 'Find it',
-    body: 'Filter by what is in the cupboard, by cuisine or site, or just describe what you feel like.',
-  },
-  {
-    n: '03',
-    title: 'Cook it',
-    body: 'Ingredients on one side, method on the other, no ads and no life stories.',
-  },
-];
-
-/** A magazine-style tile in the hero collage: a photo with its title on top. */
-function HeroTile({
-  recipe,
-  className,
-}: {
-  recipe: SampleRecipe;
-  className?: string;
-}) {
-  return (
-    <Link
-      href={`/design/recipe?id=${recipe.id}`}
-      className={`rounded-card relative block overflow-hidden ${className ?? ''}`}
-    >
-      <PhotoBlock
-        tone={recipe.tone}
-        cover={recipe.cover}
-        className="h-full w-full"
-      />
-      <div className="from-ink/80 absolute inset-x-0 bottom-0 bg-gradient-to-t to-transparent p-4 pt-16 text-white">
-        <p className="text-label font-semibold uppercase opacity-80">
-          {sentenceCase(recipe.cuisine)}
-        </p>
-        <p className="font-display mt-1 line-clamp-2 text-lg leading-tight font-semibold">
-          {recipe.title}
-        </p>
-      </div>
-    </Link>
-  );
-}
-
-/** A coloured tile that opens a slice of the collection. */
-function CollectionTile({
-  title,
-  count,
-  surface,
-  accent,
-}: {
-  title: string;
-  count: number;
-  surface: string;
-  accent: string;
-}) {
-  return (
-    <Link
-      href="/design/search"
-      className={`group rounded-card flex aspect-[5/3] flex-col justify-between p-5 transition hover:opacity-95 lg:aspect-[4/3] ${surface}`}
-    >
-      <span className={`text-label font-semibold uppercase ${accent}`}>
-        {count} recipes
-      </span>
-      <span className="flex items-end justify-between gap-3">
-        <Heading as="span" variant="h3">
-          {title}
-        </Heading>
-        <ArrowIcon className="h-5 w-5 shrink-0 transition group-hover:translate-x-1" />
-      </span>
-    </Link>
-  );
-}
-
-/** Home screen, signed out by default; add `?user=1` to see it signed in. */
-export default async function DesignHome({
-  searchParams,
-}: {
-  searchParams: Promise<{ user?: string }>;
-}) {
-  const signedIn = (await searchParams).user === '1';
+/** The signed-out visitor's home: what chowdown is, why, and a way in. */
+function Landing() {
   const recipes = loadRecipes();
-  const withPhoto = recipes.filter((r) => r.cover);
-  const favourites = recipes.filter((r) => r.favourite);
-  const quick = recipes.filter((r) => r.minutes <= 30);
-  const veggie = recipes.filter(
-    (r) => r.protein === 'vegetable' || r.protein === 'beans',
-  );
-  const slow = recipes.filter((r) => r.minutes >= 60);
-  const week = withPhoto.filter((_, i) => i % 7 === 0).slice(0, 4);
-  const hero = [
-    withPhoto[3] ?? recipes[0]!,
-    withPhoto[11] ?? recipes[1]!,
-    withPhoto[20] ?? recipes[2]!,
-  ];
-
+  const hero =
+    recipes.find((r) => r.cover && r.cooklang && r.difficulty === 'Easy') ??
+    recipes[0]!;
   return (
-    <DesignShell signedIn={signedIn} active="home">
-      <Container className="grid grid-cols-1 items-center gap-12 py-12 lg:grid-cols-[1.05fr_1fr] lg:py-20">
+    <DesignShell signedIn={false} active="home">
+      <Container className="grid grid-cols-1 items-center gap-12 py-12 lg:grid-cols-[1fr_1.05fr] lg:gap-16 lg:py-20">
         <div>
-          {signedIn ? (
-            <p className="text-label text-ember flex items-center gap-2 font-semibold uppercase">
-              <span className="bg-live h-2 w-2 rounded-full" />
-              Welcome back, Mridang
-            </p>
-          ) : (
-            <Eyebrow>Recipes you actually keep</Eyebrow>
-          )}
+          <Eyebrow>Recipes you actually keep</Eyebrow>
           <Heading as="h1" variant="display" className="mt-5">
             Your recipes.
             <br />
@@ -136,112 +37,162 @@ export default async function DesignHome({
             <br />
             Your rules.
           </Heading>
-          <p className="text-ink/70 mt-6 max-w-xl text-lg leading-relaxed">
+          <p className="text-ink/75 mt-6 max-w-xl text-lg leading-relaxed">
             chowdown keeps every recipe as a plain text file in a folder you
-            own, then makes them a pleasure to search, scale and cook from.
+            own, then makes them a pleasure to search, scale and cook from, and
+            ready for your AI assistant.
           </p>
-          <form className="mt-8 max-w-xl">
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <SignInButton />
+            <ButtonLink href="#how" variant="outline" size="lg">
+              See how it works
+            </ButtonLink>
+          </div>
+          <TrustLine />
+        </div>
+        <HeroMock recipe={hero} />
+      </Container>
+      <Features recipes={recipes} />
+      <HowItWorks />
+      <Trust />
+      <Faq />
+      <FinalCta />
+    </DesignShell>
+  );
+}
+
+/** A row of recipes with a heading and a link to see them all. */
+function Row({
+  eyebrow,
+  title,
+  href,
+  items,
+}: {
+  eyebrow: string;
+  title: string;
+  href: string;
+  items: ReturnType<typeof loadRecipes>;
+}) {
+  if (items.length === 0) {
+    return null;
+  }
+  return (
+    <section className="mt-14 sm:mt-16">
+      <SectionHeader
+        eyebrow={eyebrow}
+        title={title}
+        action={
+          <Link
+            href={href}
+            className="flex h-10 shrink-0 items-center gap-1.5 text-sm font-semibold underline underline-offset-4"
+          >
+            See all <ArrowIcon className="h-4 w-4" />
+          </Link>
+        }
+      />
+      <div className="mt-6">
+        <RecipeGrid columns={4}>
+          {items.map((r) => (
+            <RecipeCard key={r.id} recipe={r} />
+          ))}
+        </RecipeGrid>
+      </div>
+    </section>
+  );
+}
+
+/** The signed-in home: ask for ideas, jump back into your own recipes. */
+function Dashboard() {
+  const recipes = loadRecipes();
+  const withPhoto = recipes.filter((r) => r.cover);
+  const favourites = withPhoto.filter((r) => r.favourite).slice(0, 4);
+  const quick = withPhoto
+    .filter((r) => r.minutes <= 30 && r.difficulty === 'Easy')
+    .slice(0, 4);
+  const lately = withPhoto.filter((_, i) => i % 9 === 2).slice(0, 4);
+  const shortcuts: [string, string][] = [
+    ['Easy', '/design/search?difficulty=Easy'],
+    ['Up to 30 min', '/design/search?time=15,30'],
+    ['Vegetarian', '/design/search?diet=Vegetarian'],
+    ['Chicken', '/design/search?protein=chicken'],
+    ['Favourites', '/design/search?fav=1'],
+  ];
+  return (
+    <DesignShell signedIn active="home">
+      <section className="border-ink/10 border-b">
+        <Container className="py-10 sm:py-14">
+          <p className="text-label text-ember flex items-center gap-2 font-semibold uppercase">
+            <span className="bg-live h-2 w-2 rounded-full" />
+            Welcome back, Mridang
+          </p>
+          <Heading as="h1" variant="h1" className="mt-3 max-w-3xl">
+            What do you feel like cooking?
+          </Heading>
+          <form action="/design/search" className="mt-6 max-w-2xl">
             <SearchField
               size="lg"
-              placeholder="What do you feel like?"
+              name="q"
+              placeholder="Try “something light with chicken”"
               aria-label="Describe what you feel like cooking"
               action={
                 <Button size="md" className="h-10">
-                  Search <ArrowIcon className="h-4 w-4" />
+                  <SearchIcon className="h-4 w-4" />
+                  Find
                 </Button>
               }
             />
           </form>
-          <p className="text-ink/65 mt-4 text-sm">
-            {signedIn
-              ? `${recipes.length} recipes · ${favourites.length} favourites`
-              : 'Free · Sign in with Google · You keep the files'}
-          </p>
-        </div>
-
-        <div className="grid h-[22rem] grid-cols-2 grid-rows-2 gap-3 sm:h-[30rem] lg:h-[34rem]">
-          <HeroTile recipe={hero[0]!} className="row-span-2" />
-          <HeroTile recipe={hero[1]!} />
-          <HeroTile recipe={hero[2]!} />
-        </div>
-      </Container>
-
-      <Container className="pb-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <CollectionTile
-            title="Ready in 30"
-            count={quick.length}
-            surface="bg-ink text-white"
-            accent="text-marigold"
-          />
-          <CollectionTile
-            title="Vegetarian"
-            count={veggie.length}
-            surface="bg-forest text-white"
-            accent="text-marigold"
-          />
-          <CollectionTile
-            title="Slow & comforting"
-            count={slow.length}
-            surface="bg-sand text-ink"
-            accent="text-ink/70"
-          />
-          <CollectionTile
-            title="Your favourites"
-            count={favourites.length}
-            surface="bg-marigold text-ink"
-            accent="text-ink/70"
-          />
-        </div>
-      </Container>
-
-      <Section surface="white" className="mt-12 sm:mt-16">
-        <Container>
-          <SectionHeader
-            eyebrow="This week"
-            title="Worth cooking again"
-            action={
+          <div className="mt-5 flex flex-wrap gap-2">
+            {shortcuts.map(([label, href]) => (
               <Link
-                href="/design/search"
-                className="flex h-10 shrink-0 items-center gap-1.5 text-sm font-semibold underline underline-offset-4"
+                key={label}
+                href={href}
+                className="border-ink/20 hover:border-ink inline-flex h-9 items-center rounded-full border bg-white px-4 text-sm font-medium transition"
               >
-                See all <ArrowIcon className="h-4 w-4" />
+                {label}
               </Link>
-            }
-          />
-          <div className="mt-8">
-            <RecipeGrid columns={4}>
-              {week.map((r) => (
-                <RecipeCard key={r.id} recipe={r} />
-              ))}
-            </RecipeGrid>
-          </div>
-        </Container>
-      </Section>
-
-      <ConnectBand />
-
-      <Section surface="ink">
-        <Container>
-          <Eyebrow className="text-marigold">How it works</Eyebrow>
-          <Heading className="mt-2 max-w-xl">Three steps, no lock-in</Heading>
-          <div className="mt-10 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-8">
-            {STEPS.map((step) => (
-              <div key={step.n} className="border-t border-white/20 pt-6">
-                <span className="font-display text-marigold text-5xl font-semibold italic">
-                  {step.n}
-                </span>
-                <Heading as="h3" variant="h3" className="mt-4">
-                  {step.title}
-                </Heading>
-                <p className="mt-2 max-w-sm leading-relaxed text-white/70">
-                  {step.body}
-                </p>
-              </div>
             ))}
           </div>
+          <p className="text-ink/65 mt-5 text-sm">
+            {recipes.length} recipes ·{' '}
+            {recipes.filter((r) => r.favourite).length} favourites
+          </p>
         </Container>
-      </Section>
+      </section>
+
+      <Container className="pb-4">
+        <Row
+          eyebrow="Your favourites"
+          title="The ones you keep coming back to"
+          href="/design/search?fav=1"
+          items={favourites}
+        />
+        <Row
+          eyebrow="Weeknight"
+          title="Easy and quick"
+          href="/design/search?difficulty=Easy&time=15,30"
+          items={quick}
+        />
+        <Row
+          eyebrow="Your collection"
+          title="Pick something from the shelf"
+          href="/design/search"
+          items={lately}
+        />
+      </Container>
+
+      <div className="mt-16 sm:mt-20">
+        <ConnectBand />
+      </div>
     </DesignShell>
   );
+}
+
+/** Home: the landing page for visitors, the dashboard (`?user=1`) when signed in. */
+export default async function DesignHome({
+  searchParams,
+}: {
+  searchParams: Promise<{ user?: string }>;
+}) {
+  return (await searchParams).user === '1' ? <Dashboard /> : <Landing />;
 }

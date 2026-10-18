@@ -106,3 +106,37 @@ body {
 .design-root[data-body='manrope'] {
   --font-geist-sans: var(--font-manrope);
 }
+
+/* Open and close animations for Radix accordions (filters, FAQ). */
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+.animate-accordion-down {
+  animation: accordion-down 160ms ease-out;
+}
+
+.animate-accordion-up {
+  animation: accordion-up 140ms ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-accordion-down,
+  .animate-accordion-up {
+    animation: none;
+  }
+}

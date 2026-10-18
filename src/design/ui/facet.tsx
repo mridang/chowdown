@@ -1,63 +1,86 @@
-import { sentenceCase } from '../format';
-import { CheckIcon } from '../icons';
-import { cn } from './cn';
+import Link from 'next/link';
 
-/** One filter option: a tick box, the label and how many recipes match. */
-export function CheckRow({
-  label,
-  count,
-  checked = false,
+import { CheckIcon, ProteinIcon } from '../icons';
+import type { FacetData, FacetOptionData } from '../search-query';
+import { AccordionContent, AccordionItem, AccordionTrigger } from './accordion';
+import { cn } from './cn';
+import { Difficulty } from './difficulty';
+
+/** One filter option: a tick box, the label (or a meter) and how many recipes match. */
+function FacetOption({
+  facet,
+  option,
 }: {
-  label: string;
-  count: number;
-  checked?: boolean;
+  facet: FacetData;
+  option: FacetOptionData;
 }) {
   return (
-    <button
-      type="button"
+    <Link
+      href={option.href}
+      scroll={false}
       role="checkbox"
-      aria-checked={checked}
-      className="rounded-control hover:bg-ink/5 flex min-h-9 w-full items-center gap-3 px-2 text-left text-[15px] transition"
+      aria-checked={option.active}
+      className="rounded-control hover:bg-ink/5 focus-visible:outline-ink flex min-h-9 items-center gap-3 px-2 text-[15px] transition focus-visible:outline-2"
     >
       <span
         className={cn(
           'grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[4px] border transition',
-          checked ? 'border-ink bg-ink text-white' : 'border-ink/35 bg-white',
+          option.active
+            ? 'border-ink bg-ink text-white'
+            : 'border-ink/40 bg-white',
         )}
       >
-        {checked ? <CheckIcon className="h-3 w-3" strokeWidth={3} /> : null}
+        {option.active ? (
+          <CheckIcon className="h-3 w-3" strokeWidth={3} />
+        ) : null}
       </span>
-      <span className={cn('flex-1 truncate', checked && 'font-semibold')}>
-        {sentenceCase(label)}
+      <span
+        className={cn(
+          'flex flex-1 items-center gap-2 truncate',
+          option.active && 'font-semibold',
+        )}
+      >
+        {facet.key === 'difficulty' ? (
+          <Difficulty level={option.value} />
+        ) : facet.key === 'protein' ? (
+          <>
+            <ProteinIcon
+              protein={option.value}
+              className="text-ink/65 h-4 w-4"
+            />
+            {option.label}
+          </>
+        ) : (
+          option.label
+        )}
       </span>
-      <span className="text-ink/65 text-xs tabular-nums">{count}</span>
-    </button>
+      <span className="text-ink/65 text-xs tabular-nums">{option.count}</span>
+    </Link>
   );
 }
 
-/** A titled group of filter options. */
-export function FacetGroup({
-  title,
-  values,
-  checked = [],
-}: {
-  title: string;
-  values: [string, number][];
-  checked?: string[];
-}) {
+/** A collapsible filter group: the title is the toggle, the options are links. */
+export function FacetSection({ facet }: { facet: FacetData }) {
+  const active = facet.options.filter((o) => o.active).length;
   return (
-    <section className="border-ink/10 border-t pt-5 first:border-t-0 first:pt-0">
-      <h3 className="text-label px-2 font-semibold uppercase">{title}</h3>
-      <div className="mt-2 flex flex-col">
-        {values.map(([value, count]) => (
-          <CheckRow
-            key={value}
-            label={value}
-            count={count}
-            checked={checked.includes(value)}
-          />
-        ))}
-      </div>
-    </section>
+    <AccordionItem value={facet.key}>
+      <AccordionTrigger className="px-2 text-sm font-semibold">
+        <span className="flex items-center gap-2">
+          {facet.title}
+          {active > 0 ? (
+            <span className="bg-ink inline-grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-xs text-white">
+              {active}
+            </span>
+          ) : null}
+        </span>
+      </AccordionTrigger>
+      <AccordionContent>
+        <div className="flex flex-col">
+          {facet.options.map((option) => (
+            <FacetOption key={option.value} facet={facet} option={option} />
+          ))}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
   );
 }

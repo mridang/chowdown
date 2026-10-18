@@ -2,55 +2,62 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { loadRecipePage, loadRecipes } from '@/design/data';
-import { sentenceCase } from '@/design/format';
+import { sentenceCase, duration } from '@/design/format';
 import {
   ClockIcon,
-  FlameIcon,
-  HeartIcon,
+  GlobeIcon,
+  LeafIcon,
   LinkIcon,
-  PanIcon,
+  NoteIcon,
+  OvenIcon,
+  PlateIcon,
+  ProteinIcon,
   ServingsIcon,
-  SparkIcon,
-  TrashIcon,
 } from '@/design/icons';
 import { PhotoBlock, RecipeCard, RecipeGrid } from '@/design/recipe-card';
+import {
+  FavouriteToggle,
+  MoreMenu,
+  ShareButton,
+} from '@/design/recipe/actions';
+import { CookMode } from '@/design/recipe/cook-mode';
+import { IngredientsPanel } from '@/design/recipe/ingredients-panel';
 import { DesignShell } from '@/design/shell';
-import { Button } from '@/design/ui/button';
+import { Tag } from '@/design/ui/chip';
+import { Difficulty } from '@/design/ui/difficulty';
 import { Container, Eyebrow, Heading } from '@/design/ui/layout';
 
-/** One fact in the row under the hero: a line icon, a label and a value. */
+/** One fact: a line icon in a tinted square, a small label and the value. */
 function Fact({
   icon,
   label,
-  value,
+  children,
 }: {
   icon: ReactNode;
   label: string;
-  value: string;
+  children: ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3.5 sm:px-8 sm:first:pl-0">
-      <span className="text-ember">{icon}</span>
-      <span className="leading-tight">
-        <span className="text-label text-ink/65 block font-semibold uppercase">
-          {label}
-        </span>
-        <span className="block text-base font-semibold">{value}</span>
+    <div className="flex items-center gap-3.5">
+      <span className="rounded-control bg-sand text-ember grid h-11 w-11 shrink-0 place-items-center">
+        {icon}
       </span>
+      <div className="min-w-0 leading-tight">
+        <dt className="text-label text-ink/65 font-semibold uppercase">
+          {label}
+        </dt>
+        <dd className="mt-0.5 truncate text-base font-semibold">{children}</dd>
+      </div>
     </div>
   );
 }
 
-/** A small tracked-caps subheading inside the ingredients column. */
-function Label({ children }: { children: ReactNode }) {
-  return <h3 className="text-label font-semibold uppercase">{children}</h3>;
-}
-
 /**
- * Recipe screen, laid out like a printed recipe card: a split hero (title and
- * intro beside a full-bleed photo; stacked, photo first, on phones), a row of
- * facts with line icons, then a narrow ingredient column beside the numbered
- * method. The ingredients stay in view while you scroll the method.
+ * Recipe screen, laid out like a printed recipe card: a split hero (title,
+ * actions and source beside a full-bleed photo; stacked, photo first, on
+ * phones), a grid of facts with icons, then the ingredient column (with servings
+ * and unit controls) beside the numbered method, then notes and similar recipes.
+ * Cook mode opens a full-screen, one-step-at-a-time view.
  */
 export default async function DesignRecipe({
   searchParams,
@@ -59,11 +66,13 @@ export default async function DesignRecipe({
 }) {
   const { id } = await searchParams;
   const R = loadRecipePage(id);
-  const related = loadRecipes()
-    .filter((r) => r.cuisine === R.cuisine && r.title !== R.title)
-    .concat(loadRecipes())
-    .filter((r, i, all) => all.findIndex((x) => x.id === r.id) === i)
+  const all = loadRecipes();
+  const related = all
+    .filter((r) => r.cuisine === R.cuisine && r.id !== R.id)
+    .concat(all.filter((r) => r.id !== R.id))
+    .filter((r, i, list) => list.findIndex((x) => x.id === r.id) === i)
     .slice(0, 4);
+
   return (
     <DesignShell signedIn active="search">
       <section className="border-ink/10 @container border-b">
@@ -79,7 +88,7 @@ export default async function DesignRecipe({
             cover={R.cover}
             className="aspect-[16/10] lg:order-2 lg:aspect-auto lg:min-h-[32rem]"
           />
-          <div className="px-4 py-8 sm:px-6 lg:order-1 lg:py-16 lg:pr-16 lg:pl-[max(2.5rem,calc((100cqw-90rem)/2+2.5rem))]">
+          <div className="px-4 py-8 sm:px-6 lg:order-1 lg:py-14 lg:pr-16 lg:pl-[max(2.5rem,calc((100cqw-90rem)/2+2.5rem))]">
             <nav className="text-ink/65 text-sm" aria-label="Breadcrumb">
               <Link
                 href="/design/search"
@@ -89,22 +98,24 @@ export default async function DesignRecipe({
               </Link>
               <span className="mx-1.5">/</span>
               <Link
-                href="/design/search"
+                href={`/design/search?cuisine=${encodeURIComponent(R.cuisine)}`}
                 className="hover:text-ink inline-flex h-8 items-center hover:underline"
               >
                 {sentenceCase(R.cuisine)}
               </Link>
             </nav>
-            <Eyebrow className="mt-6">
-              {sentenceCase(R.cuisine)} · {sentenceCase(R.protein)}
+            <Eyebrow className="mt-5">
+              {sentenceCase(R.cuisine)} · {sentenceCase(R.category)}
             </Eyebrow>
             <Heading as="h1" variant="h1" className="mt-3 lg:text-6xl">
               {R.title}
             </Heading>
-            <p className="text-ink/75 mt-6 max-w-xl text-lg leading-relaxed">
-              {R.intro}
-            </p>
-            <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+            {R.intro ? (
+              <p className="text-ink/75 mt-5 max-w-xl text-lg leading-relaxed">
+                {R.intro}
+              </p>
+            ) : null}
+            <p className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               <span className="text-ink/65">From</span>
               <a
                 href="https://example.com"
@@ -114,71 +125,73 @@ export default async function DesignRecipe({
                 {R.site}
               </a>
               <Link
-                href="/design/search"
+                href={`/design/search?site=${encodeURIComponent(R.site)}`}
                 className="rounded-control border-ink/25 hover:border-ink inline-flex h-8 items-center border px-2.5 text-xs font-medium transition"
               >
                 More from {R.site}
               </Link>
             </p>
-            <div className="mt-7 flex flex-wrap gap-2.5">
-              <Button variant="outline">
-                <HeartIcon className="h-[18px] w-[18px]" />
-                Favourite
-              </Button>
-              <Button variant="outline">
-                <SparkIcon className="h-[18px] w-[18px]" />
-                Auto-tag
-              </Button>
-              <Button variant="outline">
-                <TrashIcon className="h-[18px] w-[18px]" />
-                Delete
-              </Button>
+            <div className="mt-7 flex flex-wrap items-center gap-2.5">
+              <CookMode title={R.title} steps={R.steps} />
+              <FavouriteToggle initial={R.favourite} />
+              <ShareButton title={R.title} />
+              <MoreMenu />
             </div>
           </div>
         </div>
       </section>
 
       <Container>
-        <div className="sm:divide-ink/15 mt-10 flex flex-wrap items-center gap-x-8 gap-y-5 sm:gap-x-0 sm:divide-x">
+        <dl className="mt-10 grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
+          <Fact icon={<ClockIcon className="h-6 w-6" />} label="Total time">
+            {duration(R.minutes)}
+          </Fact>
+          <Fact icon={<ServingsIcon className="h-6 w-6" />} label="Serves">
+            {R.servings}
+          </Fact>
           <Fact
-            icon={<ClockIcon className="h-7 w-7" />}
-            label="Time"
-            value={`${R.minutes} min`}
-          />
-          <Fact
-            icon={<FlameIcon className="h-7 w-7" />}
+            icon={
+              <Difficulty
+                level={R.difficulty}
+                showLabel={false}
+                className="scale-125"
+              />
+            }
             label="Difficulty"
-            value={R.difficulty}
-          />
+          >
+            {R.difficulty}
+          </Fact>
           <Fact
-            icon={<ServingsIcon className="h-7 w-7" />}
-            label="Serves"
-            value={String(R.servings)}
-          />
-        </div>
+            icon={<ProteinIcon protein={R.protein} className="h-6 w-6" />}
+            label="Protein"
+          >
+            {sentenceCase(R.protein)}
+          </Fact>
+          <Fact icon={<GlobeIcon className="h-6 w-6" />} label="Cuisine">
+            {sentenceCase(R.cuisine)}
+          </Fact>
+          <Fact icon={<PlateIcon className="h-6 w-6" />} label="Course">
+            {sentenceCase(R.category)}
+          </Fact>
+          {R.method.length > 0 ? (
+            <Fact icon={<OvenIcon className="h-6 w-6" />} label="Method">
+              {R.method.map(sentenceCase).join(', ')}
+            </Fact>
+          ) : null}
+          {R.diet.length > 0 ? (
+            <Fact icon={<LeafIcon className="h-6 w-6" />} label="Diet">
+              {R.diet.join(', ')}
+            </Fact>
+          ) : null}
+        </dl>
 
-        <div className="mt-12 grid grid-cols-1 gap-12 md:grid-cols-[17rem_minmax(0,1fr)] lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-20">
+        <div className="mt-12 grid grid-cols-1 gap-12 md:grid-cols-[19rem_minmax(0,1fr)] lg:grid-cols-[24rem_minmax(0,1fr)] lg:gap-20">
           <div className="md:sticky md:top-24 md:max-h-[calc(100vh-7rem)] md:self-start md:overflow-y-auto md:pr-2">
-            <Heading variant="h3">Ingredients</Heading>
-            <ul className="divide-ink/10 border-ink/10 mt-5 divide-y border-y">
-              {R.ingredients.map(([qty, name], i) => (
-                <li key={`${name}-${i}`} className="flex gap-4 py-3 text-base">
-                  <span className="w-20 shrink-0 font-semibold">{qty}</span>
-                  <span className="text-ink/85">{name}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-8">
-              <Label>You will need</Label>
-              <ul className="mt-3 flex flex-col gap-2 text-[15px]">
-                {R.cookware.map((c, i) => (
-                  <li key={`${c}-${i}`} className="flex items-center gap-2.5">
-                    <PanIcon className="text-ember h-[18px] w-[18px]" />
-                    {c}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <IngredientsPanel
+              ingredients={R.ingredients}
+              cookware={R.cookware}
+              servings={R.servings}
+            />
           </div>
 
           <div>
@@ -196,13 +209,50 @@ export default async function DesignRecipe({
                 </li>
               ))}
             </ol>
+
+            {R.notes.length > 0 ? (
+              <section className="mt-14 max-w-3xl">
+                <Heading variant="h3" className="flex items-center gap-2.5">
+                  <NoteIcon className="text-ember h-6 w-6" />
+                  Your notes
+                </Heading>
+                <ul className="mt-4 flex flex-col gap-3">
+                  {R.notes.map((note, i) => (
+                    <li
+                      key={`${i}-${note.text.slice(0, 10)}`}
+                      className="rounded-card border-ink/10 border bg-white p-4"
+                    >
+                      <p className="text-label text-ember font-semibold uppercase">
+                        {note.scope === 'general'
+                          ? 'Note'
+                          : note.scope === 'step'
+                            ? `Step ${note.key}`
+                            : sentenceCase(note.key)}
+                      </p>
+                      <p className="mt-1 leading-relaxed">{note.text}</p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
           </div>
         </div>
 
-        <hr className="border-ink/15 mt-16 border-t" />
-        <p className="text-label text-ink/65 mt-5 font-semibold uppercase">
-          {R.tags.join(' · ')}
-        </p>
+        {R.keywords.length > 0 ? (
+          <div className="border-ink/15 mt-14 flex flex-wrap items-center gap-2 border-t pt-6">
+            <span className="text-label text-ink/65 mr-2 font-semibold uppercase">
+              Tagged
+            </span>
+            {R.keywords.slice(0, 10).map((word) => (
+              <Tag
+                key={word}
+                href={`/design/search?q=${encodeURIComponent(word)}`}
+              >
+                {sentenceCase(word)}
+              </Tag>
+            ))}
+          </div>
+        ) : null}
       </Container>
 
       <Container className="mt-16">

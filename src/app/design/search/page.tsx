@@ -1,45 +1,64 @@
-import { facetsOf, loadRecipes } from '@/design/data';
+import Link from 'next/link';
+
+import { loadRecipes } from '@/design/data';
+import { FilterDrawer } from '@/design/filter-drawer';
+import { FilterPanel } from '@/design/filter-panel';
+import { HeartIcon } from '@/design/icons';
 import { RecipeCard, RecipeGrid } from '@/design/recipe-card';
+import {
+  activeFilters,
+  buildFacets,
+  hrefFor,
+  matches,
+  parseQuery,
+  SORTS,
+  sortRecipes,
+  type RawParams,
+} from '@/design/search-query';
 import { DesignShell } from '@/design/shell';
-import { Button } from '@/design/ui/button';
-import { CountBadge, FilterChip } from '@/design/ui/chip';
-import { FacetGroup } from '@/design/ui/facet';
-import { SearchField, SelectField } from '@/design/ui/field';
+import { SortSelect } from '@/design/sort-select';
+import { ButtonLink } from '@/design/ui/button';
+import { FilterChip } from '@/design/ui/chip';
+import { SearchField } from '@/design/ui/field';
 import { Container, Eyebrow, Heading } from '@/design/ui/layout';
+import { cn } from '@/design/ui/cn';
+import { countOf } from '@/lib/intl';
 
-/** The Favourites shortcut above the filters. */
-function FavouritesToggle({ count }: { count: number }) {
-  return (
-    <button
-      type="button"
-      className="rounded-control bg-marigold hover:bg-marigold/85 flex h-10 w-full items-center justify-between px-3.5 text-sm font-semibold transition"
-    >
-      Favourites
-      <span className="tabular-nums">{count}</span>
-    </button>
-  );
-}
-
-/** Search screen: filters beside the grid on desktop, behind a button on phones. */
-export default function DesignSearch() {
+/** Search screen: collapsible filters beside the grid on desktop, a drawer on phones. */
+export default async function DesignSearch({
+  searchParams,
+}: {
+  searchParams: Promise<RawParams>;
+}) {
+  const query = parseQuery(await searchParams);
   const recipes = loadRecipes();
-  const facets = facetsOf(recipes);
-  const favourites = recipes.filter((r) => r.favourite).length;
-  const shown = recipes.slice(0, 24);
+  const facets = buildFacets(recipes, query);
+  const found = sortRecipes(
+    recipes.filter((r) => matches(r, query)),
+    query.sort,
+  );
+  const shown = found.slice(0, query.limit);
+  const chips = activeFilters(query);
+  const favouriteCount = recipes.filter((r) => r.favourite).length;
 
-  const filters = (
-    <div className="flex flex-col gap-5">
-      <FacetGroup title="Protein" values={facets.protein} />
-      <FacetGroup
-        title="Cuisine"
-        values={facets.cuisine}
-        checked={[facets.cuisine[0]![0]]}
-      />
-      <FacetGroup title="Difficulty" values={facets.difficulty} />
-      {facets.sources.length > 0 ? (
-        <FacetGroup title="Source" values={facets.sources} />
-      ) : null}
-    </div>
+  const favouritesLink = (
+    <Link
+      href={hrefFor({ ...query, favourites: !query.favourites })}
+      scroll={false}
+      aria-pressed={query.favourites}
+      className={cn(
+        'flex h-10 w-full items-center justify-between rounded-control px-3.5 text-sm font-semibold transition',
+        query.favourites
+          ? 'bg-ink text-white'
+          : 'bg-marigold hover:bg-marigold/85',
+      )}
+    >
+      <span className="flex items-center gap-2">
+        <HeartIcon filled={query.favourites} className="h-4 w-4" />
+        Favourites
+      </span>
+      <span className="tabular-nums">{favouriteCount}</span>
+    </Link>
   );
 
   return (
@@ -50,63 +69,114 @@ export default function DesignSearch() {
           <Heading as="h1" variant="h1" className="mt-2">
             Recipes
           </Heading>
-          <SearchField
-            size="lg"
-            placeholder="Search by name, tag or site…"
-            aria-label="Search recipes"
-            className="mt-6 max-w-2xl"
-          />
+          <form action="/design/search" className="mt-6 max-w-2xl">
+            {query.favourites ? (
+              <input type="hidden" name="fav" value="1" />
+            ) : null}
+            {query.sort !== 'title' ? (
+              <input type="hidden" name="sort" value={query.sort} />
+            ) : null}
+            {Object.entries(query.selected).map(([key, values]) =>
+              values?.length ? (
+                <input
+                  key={key}
+                  type="hidden"
+                  name={key}
+                  value={values.join(',')}
+                />
+              ) : null,
+            )}
+            <SearchField
+              size="lg"
+              name="q"
+              defaultValue={query.q}
+              placeholder="Search by name, ingredient or site…"
+              aria-label="Search recipes"
+              action={
+                <button
+                  type="submit"
+                  className="rounded-control bg-ink hover:bg-ink/85 h-10 px-5 text-sm font-semibold text-white transition"
+                >
+                  Search
+                </button>
+              }
+            />
+          </form>
         </Container>
       </div>
 
-      <Container className="grid grid-cols-1 gap-8 py-8 md:grid-cols-[15rem_minmax(0,1fr)] md:gap-10 md:py-10 lg:gap-12">
-        <aside className="hidden md:sticky md:top-24 md:block md:self-start">
-          <div className="mb-6">
-            <FavouritesToggle count={favourites} />
-          </div>
-          {filters}
+      <Container className="grid grid-cols-1 gap-6 py-8 md:grid-cols-[16rem_minmax(0,1fr)] md:gap-10 md:py-10 lg:gap-12">
+        <aside className="hidden md:sticky md:top-24 md:block md:max-h-[calc(100vh-7rem)] md:self-start md:overflow-y-auto md:pr-1">
+          <div className="mb-4">{favouritesLink}</div>
+          <FilterPanel facets={facets} />
         </aside>
 
-        <details className="rounded-card border-ink/15 border bg-white md:hidden">
-          <summary className="flex h-12 cursor-pointer list-none items-center justify-between px-4 text-sm font-semibold">
-            Filters
-            <CountBadge>1</CountBadge>
-          </summary>
-          <div className="border-ink/10 flex flex-col gap-5 border-t p-4">
-            <FavouritesToggle count={favourites} />
-            {filters}
-          </div>
-        </details>
+        <FilterDrawer activeCount={chips.length}>
+          <div className="mb-4">{favouritesLink}</div>
+          <FilterPanel facets={facets} />
+        </FilterDrawer>
 
         <section className="min-w-0">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <p className="text-ink/65 text-sm">{recipes.length} recipes</p>
-              <FilterChip>{facets.cuisine[0]![0]}</FilterChip>
-              <button
-                type="button"
-                className="inline-flex h-8 items-center px-1 text-sm font-medium underline underline-offset-4"
-              >
-                Clear all
-              </button>
+              <p className="text-ink/65 text-sm">
+                {countOf(found.length, 'recipe')}
+              </p>
+              {chips.map((chip) => (
+                <FilterChip key={chip.label} href={chip.href}>
+                  {chip.label}
+                </FilterChip>
+              ))}
+              {chips.length > 0 || query.q ? (
+                <Link
+                  href="/design/search"
+                  className="inline-flex h-8 items-center px-1 text-sm font-medium underline underline-offset-4"
+                >
+                  Clear all
+                </Link>
+              ) : null}
             </div>
-            <SelectField label="Sort" defaultValue="title">
-              <option value="title">Title A–Z</option>
-              <option value="recent">Recently changed</option>
-            </SelectField>
+            <SortSelect
+              value={query.sort}
+              options={SORTS.map(([value, label]) => ({
+                value,
+                label,
+                href: hrefFor({ ...query, sort: value }),
+              }))}
+            />
           </div>
 
-          <RecipeGrid>
-            {shown.map((recipe) => (
-              <RecipeCard key={recipe.id} recipe={recipe} />
-            ))}
-          </RecipeGrid>
+          {shown.length > 0 ? (
+            <RecipeGrid>
+              {shown.map((recipe) => (
+                <RecipeCard key={recipe.id} recipe={recipe} />
+              ))}
+            </RecipeGrid>
+          ) : (
+            <div className="rounded-card border-ink/25 border border-dashed px-6 py-16 text-center">
+              <Heading variant="h3">Nothing matches those filters</Heading>
+              <p className="text-ink/70 mt-2">
+                Try removing one, or start over.
+              </p>
+              <div className="mt-6 flex justify-center">
+                <ButtonLink href="/design/search" variant="outline">
+                  Clear all filters
+                </ButtonLink>
+              </div>
+            </div>
+          )}
 
-          <div className="mt-10 flex justify-center">
-            <Button variant="outline" size="lg">
-              Load more
-            </Button>
-          </div>
+          {found.length > shown.length ? (
+            <div className="mt-10 flex justify-center">
+              <ButtonLink
+                href={`${hrefFor(query)}${hrefFor(query).includes('?') ? '&' : '?'}limit=${query.limit + 24}`}
+                variant="outline"
+                size="lg"
+              >
+                Show more ({found.length - shown.length} left)
+              </ButtonLink>
+            </div>
+          ) : null}
         </section>
       </Container>
     </DesignShell>
