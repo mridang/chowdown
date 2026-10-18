@@ -37,7 +37,6 @@ const APP_NAV: [string, string, NavKey][] = [
 /** Links for a visitor: they jump to sections of the landing page. */
 const VISITOR_NAV: [string, string][] = [
   ['Features', '#features'],
-  ['How it works', '#how'],
   ['FAQ', '#faq'],
 ];
 

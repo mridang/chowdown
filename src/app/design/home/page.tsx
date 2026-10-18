@@ -7,11 +7,11 @@ import {
   Faq,
   FinalCta,
   Features,
-  HeroMock,
-  HowItWorks,
+  HeroVisual,
+  Numbers,
+  PhotoStrip,
   SignInButton,
-  Trust,
-  TrustLine,
+  WorksWith,
 } from '@/design/landing';
 import { RecipeCard, RecipeGrid } from '@/design/recipe-card';
 import { DesignShell } from '@/design/shell';
@@ -22,12 +22,15 @@ import { Container, Eyebrow, Heading, SectionHeader } from '@/design/ui/layout';
 /** The signed-out visitor's home: what chowdown is, why, and a way in. */
 function Landing() {
   const recipes = loadRecipes();
+  const withPhoto = recipes.filter((r) => r.cover);
   const hero =
-    recipes.find((r) => r.cover && r.cooklang && r.difficulty === 'Easy') ??
-    recipes[0]!;
+    withPhoto.find(
+      (r) => r.cooklang && r.difficulty === 'Easy' && r.protein === 'chicken',
+    ) ?? withPhoto[0]!;
+  const strip = withPhoto.filter((_, i) => i % 11 === 5).slice(0, 6);
   return (
     <DesignShell signedIn={false} active="home">
-      <Container className="grid grid-cols-1 items-center gap-12 py-12 lg:grid-cols-[1fr_1.05fr] lg:gap-16 lg:py-20">
+      <Container className="grid grid-cols-1 items-center gap-14 py-12 lg:grid-cols-[0.95fr_1.1fr] lg:gap-16 lg:py-20">
         <div>
           <Eyebrow>Recipes you actually keep</Eyebrow>
           <Heading as="h1" variant="display" className="mt-5">
@@ -44,17 +47,19 @@ function Landing() {
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <SignInButton />
-            <ButtonLink href="#how" variant="outline" size="lg">
-              See how it works
+            <ButtonLink href="#features" variant="outline" size="lg">
+              See what it does
             </ButtonLink>
           </div>
-          <TrustLine />
+          <WorksWith />
         </div>
-        <HeroMock recipe={hero} />
+        <div className="lg:pb-10">
+          <HeroVisual recipe={hero} />
+        </div>
       </Container>
+      <PhotoStrip recipes={strip} />
+      <Numbers recipes={recipes} />
       <Features recipes={recipes} />
-      <HowItWorks />
-      <Trust />
       <Faq />
       <FinalCta />
     </DesignShell>
