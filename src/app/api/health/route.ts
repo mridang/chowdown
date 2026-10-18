@@ -4,9 +4,9 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Minimal health endpoint for uptime monitors. Reports whether the D1
- * binding is reachable from the current request context. Always 200 — the
- * viewer itself is client-side and has no hard runtime dependency on the
- * database, so a missing binding is informational, not fatal.
+ * binding is reachable from the current request context. Always 200: the
+ * monitor wants to know the Worker is up, and a missing database binding is
+ * reported in the body rather than failing the check.
  */
 export async function GET() {
   let db = false;

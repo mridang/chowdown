@@ -163,6 +163,19 @@ describe('X-Robots-Tag', () => {
       ).toBeNull();
     }
   });
+
+  it('leaves the files crawlers are meant to read unmarked', () => {
+    for (const path of [
+      '/robots.txt',
+      '/sitemap.xml',
+      '/llms.txt',
+      '/.well-known/security.txt',
+    ]) {
+      expect(
+        applyResponseHeaders(at(path), html()).headers.get('X-Robots-Tag'),
+      ).toBeNull();
+    }
+  });
 });
 
 describe('public/_headers', () => {

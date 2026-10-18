@@ -27,8 +27,10 @@ import {
  * at rest (AES-GCM, key held only as a Worker secret). It is what lets the
  * app act on the user's Drive — writing new recipes, re-reading edits —
  * without the user being present. `recipes_folder_id` is the Drive id of the
- * "Recipes" folder chowdown created in the user's Drive and shared with the
- * service account. `mcp_token` is the high-entropy secret embedded in the
+ * "Recipes" folder chowdown created in the user's Drive. Both are null until
+ * the person connects Google Drive, a separate step after signing in; if the
+ * token is later lost the folder id stays, which is how "reconnect" is told
+ * apart from "connect". `mcp_token` is the high-entropy secret embedded in the
  * user's unique MCP link (`/api/mcp/<mcp_token>`); possession of the link is
  * what authorizes access to that user's recipes.
  */

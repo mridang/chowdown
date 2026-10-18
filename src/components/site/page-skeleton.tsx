@@ -1,10 +1,9 @@
 /**
- * Shown the instant a page is chosen, while its content loads. Because this
- * boundary exists, Next can prefetch and show this shell straight away on
- * navigation instead of leaving the old page frozen until the server answers.
- * Pages with a more specific layout have their own `loading.tsx`.
+ * The grey placeholder shown while a signed-in page's content loads: a heading,
+ * a search bar and a row of cards. Used by the route-level `loading.tsx` files
+ * and wherever a page streams one part in behind a `Suspense` boundary.
  */
-export default function SiteLoading() {
+export function PageSkeleton() {
   const bar = 'rounded-control bg-ink/10';
   return (
     <div

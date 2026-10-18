@@ -12,6 +12,9 @@ export default [
       // JSONC config — comments/trailing commas trip the strict JSON
       // language the eslint-defaults preset registers for it.
       'wrangler.jsonc',
+      // The OpenAPI document is formatted by Prettier, whose flow-mapping style
+      // conflicts with the YAML plugin's; Prettier owns this file.
+      'openapi/**',
       // src/worker.ts is the wrangler entry. It imports from
       // `.open-next/worker.js` (generated post-build) and is excluded
       // from tsconfig — type-aware lint can't parse it.

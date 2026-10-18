@@ -16,12 +16,6 @@ declare global {
     GOOGLE_OAUTH_CLIENT_ID: string;
     /** OAuth web client secret (server-side only). */
     GOOGLE_OAUTH_CLIENT_SECRET: string;
-    /** GCP project id, `chowdown-mridang`. */
-    GOOGLE_PROJECT_ID: string;
-    /** Service-account email used for folder-wide reads/writes. */
-    GOOGLE_SERVICE_ACCOUNT_EMAIL: string;
-    /** Base64 of the service-account JSON key. */
-    GOOGLE_SERVICE_ACCOUNT_KEY_B64: string;
     /** 256-bit base64 key that seals stored refresh tokens (see lib/crypto). */
     TOKEN_ENCRYPTION_KEY: string;
     /** Secret that signs the session cookie. */

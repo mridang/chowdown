@@ -90,8 +90,14 @@ export function applyResponseHeaders(
   if (!headers.has('Cross-Origin-Resource-Policy')) {
     headers.set('Cross-Origin-Resource-Policy', resourcePolicyFor(pathname));
   }
-  if (!PUBLIC_PAGES.has(pathname) && !headers.has('X-Robots-Tag')) {
+  if (
+    !PUBLIC_PAGES.has(pathname) &&
+    !OPEN_FILES.test(pathname) &&
+    !headers.has('X-Robots-Tag')
+  ) {
     // Whatever the page itself says, tell crawlers not to index or follow it.
+    // (The files other sites are meant to fetch, such as the sitemap and
+    // robots.txt, are left alone: marking them noindex would only confuse.)
     headers.set('X-Robots-Tag', 'noindex, nofollow');
   }
   const cache = cacheControlFor(pathname, response);

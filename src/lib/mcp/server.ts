@@ -1,15 +1,19 @@
 /**
  * @packageDocumentation
  *
- * A minimal Model Context Protocol server over JSON-RPC 2.0, exposed per user
- * at `/api/mcp/<mcp_token>`. It lets an assistant (Claude, ChatGPT, …) work
- * with the user's recipes headlessly: list and search them, read one, capture
- * a recipe idea as an "uncurated" stub, and log a cook onto an existing recipe.
+ * A minimal Model Context Protocol server over JSON-RPC 2.0, served at
+ * `/api/mcp` (OAuth 2.1 bearer tokens; the older secret link
+ * `/api/mcp/<mcp_token>` still works). It lets an assistant (Claude, ChatGPT, …)
+ * work with the user's recipes headlessly: browse and search them, read one,
+ * add, edit, tag, favourite and annotate recipes, and set the measurement system.
  *
  * Drive access is via the user's stored refresh token, so the tools work with
- * no browser open. This is deliberately hand-rolled (no SDK) to keep the
- * Worker bundle small and the transport simple: each POST carries one JSON-RPC
- * message and gets one JSON response.
+ * no browser open; a person who hasn't connected Google Drive gets an error
+ * result that says how to (see {@link DriveNotConnectedError}). The server is
+ * deliberately hand-rolled (no SDK) to keep the Worker bundle small and the
+ * transport simple: each POST carries one JSON-RPC message (or a batch) and gets
+ * one JSON response. Both the legacy handshake revisions and the stateless
+ * 2026-07-28 one are spoken (see `protocol.ts`).
  */
 
 import { countOf, foldText } from '../intl';

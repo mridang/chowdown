@@ -3,10 +3,8 @@
  *
  * A thin Google Drive v3 REST client scoped to what chowdown needs: find or
  * create the user's "Recipes" folder, list the `.cook` files in it, read and
- * write file contents. Every call takes a bearer access token, so the same
- * code serves both auth modes — a user's `drive.file` token (for creating and
- * editing the files the app owns) and, later, the service-account token (for
- * reading everything in the shared folder).
+ * write file contents. Every call takes a bearer access token: the user's
+ * `drive.file` token, for creating and editing the files the app owns.
  *
  * Under `drive.file` the app only ever sees files it created or the user
  * opened through it, so `ensureRecipesFolder` creating the folder is what makes

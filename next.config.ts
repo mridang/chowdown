@@ -3,6 +3,8 @@ import { PHASE_DEVELOPMENT_SERVER } from 'next/constants';
 import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
 
 const nextConfig: NextConfig = {
+  // No need to tell the world which framework is serving the site.
+  poweredByHeader: false,
   async headers() {
     return [
       {

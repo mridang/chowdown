@@ -15,6 +15,14 @@ info:
     - Recipes carry an `ETag`; send it back as `If-Match` on writes.
     - `PATCH` uses JSON Merge Patch (RFC 7396).
 
+    Signing in and connecting Google Drive are separate steps. A signed-in
+    person who has not connected Drive can read the recipes cached here, but
+    anything that reads or writes their Drive files answers `409` with a
+    problem of type `/problems/drive-not-connected`.
+
+    Writes (`POST`, `PUT`, `PATCH`, `DELETE`) must come from this site's own
+    pages; a cross-site write is refused with `403`.
+
     Not part of this API: the MCP endpoint (`/api/mcp`, JSON-RPC), the OAuth
     endpoints (`/oauth/*`, `/.well-known/*`), the Google sign-in redirects
     (`/api/auth/*`) and the health check. Auto-tagging (`POST /rpc/tag-recipe`)
@@ -131,6 +139,7 @@ paths:
               schema: { $ref: '#/components/schemas/Recipe' }
         '400': { $ref: '#/components/responses/Problem' }
         '401': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/DriveNotConnected' }
         '415': { $ref: '#/components/responses/Problem' }
         '502': { $ref: '#/components/responses/Problem' }
 
@@ -183,6 +192,7 @@ paths:
               schema: { $ref: '#/components/schemas/Recipe' }
         '400': { $ref: '#/components/responses/Problem' }
         '401': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/DriveNotConnected' }
         '404': { $ref: '#/components/responses/Problem' }
         '412': { $ref: '#/components/responses/Problem' }
         '415': { $ref: '#/components/responses/Problem' }
@@ -214,6 +224,7 @@ paths:
               schema: { $ref: '#/components/schemas/Recipe' }
         '400': { $ref: '#/components/responses/Problem' }
         '401': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/DriveNotConnected' }
         '404': { $ref: '#/components/responses/Problem' }
         '412': { $ref: '#/components/responses/Problem' }
         '415': { $ref: '#/components/responses/Problem' }
@@ -227,6 +238,7 @@ paths:
         '204':
           description: Deleted.
         '401': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/DriveNotConnected' }
         '404': { $ref: '#/components/responses/Problem' }
         '502': { $ref: '#/components/responses/Problem' }
 
@@ -268,6 +280,7 @@ paths:
               schema: { $ref: '#/components/schemas/Note' }
         '400': { $ref: '#/components/responses/Problem' }
         '401': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/DriveNotConnected' }
         '404': { $ref: '#/components/responses/Problem' }
         '412': { $ref: '#/components/responses/Problem' }
         '502': { $ref: '#/components/responses/Problem' }
@@ -307,6 +320,7 @@ paths:
               schema: { $ref: '#/components/schemas/Note' }
         '400': { $ref: '#/components/responses/Problem' }
         '401': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/DriveNotConnected' }
         '404': { $ref: '#/components/responses/Problem' }
         '412': { $ref: '#/components/responses/Problem' }
         '502': { $ref: '#/components/responses/Problem' }
@@ -321,6 +335,7 @@ paths:
         '204':
           description: Deleted.
         '401': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/DriveNotConnected' }
         '404': { $ref: '#/components/responses/Problem' }
         '412': { $ref: '#/components/responses/Problem' }
         '502': { $ref: '#/components/responses/Problem' }
@@ -364,6 +379,7 @@ paths:
               schema: { $ref: '#/components/schemas/RecipeReferencePage' }
         '400': { $ref: '#/components/responses/Problem' }
         '401': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/DriveNotConnected' }
         '502': { $ref: '#/components/responses/Problem' }
 
   /recipe-imports:
@@ -636,6 +652,17 @@ components:
   responses:
     Problem:
       description: An error, as problem details.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+
+    DriveNotConnected:
+      description: |
+        The person has signed in but has not connected Google Drive (or Google
+        has stopped accepting the connection), so there is nowhere to read or
+        write recipe files. The problem `type` is `/problems/drive-not-connected`.
+        Nothing was changed. Drive is connected in the browser, from the
+        "Connect Google Drive" button; there is no API for it.
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }

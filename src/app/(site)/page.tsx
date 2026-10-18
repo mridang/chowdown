@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 
 import { Dashboard } from '@/components/home/dashboard';
 import { HomeLanding } from '@/components/landing/home-landing';
+import { PageSkeleton } from '@/components/site/page-skeleton';
 import { getShellUser } from '@/lib/auth/shell-user';
 
 /**
@@ -28,7 +30,14 @@ export default async function Home({
 }) {
   const user = await getShellUser();
   if (user) {
-    return <Dashboard user={user} />;
+    // The dashboard reads the person's recipes, so it streams in behind a
+    // placeholder. The landing page below needs no data and must be in the
+    // first HTML as it is.
+    return (
+      <Suspense fallback={<PageSkeleton />}>
+        <Dashboard user={user} />
+      </Suspense>
+    );
   }
   // `?error=auth` is where a failed Google sign-in lands.
   const signInFailed = (await searchParams)['error'] === 'auth';

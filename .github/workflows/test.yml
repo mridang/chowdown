@@ -29,6 +29,10 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      # The MCP server bundles generated widget pages that are not committed.
+      - name: Build widget views
+        run: npm run build:views
+
       - name: Run Jest
         run: npm run test
 
