@@ -136,6 +136,36 @@ function line(recipe: ScenarioRecipe): string {
   return `- ${recipe.name}${bits.length ? ` (${bits.join(', ')})` : ''}`;
 }
 
+/**
+ * Up to `limit` recipes, taken in turn from each eating style so that a short
+ * list still shows a vegan, a vegetarian and a meat dish rather than the first
+ * style filling it. Within a style they go alphabetically.
+ */
+function spread(recipes: ScenarioRecipe[], limit: number): ScenarioRecipe[] {
+  const groups = new Map<number, ScenarioRecipe[]>();
+  for (const r of [...recipes].sort((a, b) => a.name.localeCompare(b.name))) {
+    groups.set(dietRank(r), [...(groups.get(dietRank(r)) ?? []), r]);
+  }
+  const queues = [...groups.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, list]) => list);
+  const picked: ScenarioRecipe[] = [];
+  for (let round = 0; picked.length < limit; round++) {
+    let any = false;
+    for (const queue of queues) {
+      const next = queue[round];
+      if (next && picked.length < limit) {
+        picked.push(next);
+        any = true;
+      }
+    }
+    if (!any) {
+      break;
+    }
+  }
+  return picked;
+}
+
 /** Recipes grouped under their eating style, in the usual order. */
 function groupedByDiet(recipes: ScenarioRecipe[]): string {
   const sorted = [...recipes].sort(
@@ -263,12 +293,10 @@ export function browseRecipes(
       recipes: [],
     };
   }
-  const shown = hits
-    .sort((a, b) => dietRank(a) - dietRank(b) || a.name.localeCompare(b.name))
-    .slice(0, limitOf(args['limit']));
+  const shown = spread(hits, limitOf(args['limit']));
   const more =
     hits.length > shown.length
-      ? ` (showing ${shown.length} of ${hits.length}, vegan first; narrow it down to see the rest)`
+      ? ` (showing ${shown.length} of ${hits.length}, a mix of eating styles; narrow it down to see the rest)`
       : '';
   return {
     message: `${countOf(hits.length, 'recipe')}${subject}${more}:\n\n${groupedByDiet(shown)}${untimedNote}`,
@@ -385,16 +413,18 @@ function countText(shown: number, total: number): string {
 
 /** What stands between the person and cooking this, in a few words. */
 function gapText(match: PantryMatch, listUpTo = Infinity): string {
+  const brief = (name: string) =>
+    name.length > 40 ? `${name.slice(0, 39).trimEnd()}…` : name;
   const parts: string[] = [];
   if (match.missing.length) {
-    const shown = match.missing.slice(0, listUpTo);
+    const shown = match.missing.slice(0, listUpTo).map(brief);
     const rest = match.missing.length - shown.length;
     parts.push(
       `missing ${listAnd(shown)}${rest > 0 ? ` and ${rest} more` : ''}`,
     );
   }
   for (const s of match.short) {
-    parts.push(`need more ${s.name} (have ${s.have}, need ${s.need})`);
+    parts.push(`need more ${brief(s.name)} (have ${s.have}, need ${s.need})`);
   }
   return parts.join('; ');
 }
@@ -442,10 +472,11 @@ export function recipesFromIngredients(
 
   if (canMake.length === 0 && almost.length === 0) {
     // Nothing is within reach, so show what comes closest rather than a dead end.
-    const closest = rankMatches(matches, Infinity).almost.slice(
-      0,
-      Math.min(limit, 5),
-    );
+    const gap = (m: (typeof matches)[number]) =>
+      m.match.missing.length + m.match.short.length;
+    const closest = rankMatches(matches, Infinity)
+      .almost.sort((a, b) => b.match.used - a.match.used || gap(a) - gap(b))
+      .slice(0, Math.min(limit, 5));
     if (closest.length === 0) {
       return {
         message:

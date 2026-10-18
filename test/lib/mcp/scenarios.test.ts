@@ -511,3 +511,76 @@ describe('runScenarioTool', () => {
     expect(result.message).toContain('You can make now (1)');
   });
 });
+
+describe('a capped list stays representative', () => {
+  const many = ['Vegan', 'Vegetarian', 'Pescatarian', 'Non-vegetarian'].flatMap(
+    (diet) =>
+      Array.from({ length: 6 }, (_, i) =>
+        recipe(
+          `${diet} dish ${i}`,
+          { cuisine: ['Indian'], diet_type: [diet] },
+          [['x', '1']],
+        ),
+      ),
+  );
+
+  it('takes from each eating style rather than letting the first fill it', () => {
+    const { recipes, message } = browseRecipes(many, {
+      cuisine: 'Indian',
+      limit: 8,
+    });
+    const diets = recipes.map((r) => r.tags['diet_type']![0]);
+    for (const diet of [
+      'Vegan',
+      'Vegetarian',
+      'Pescatarian',
+      'Non-vegetarian',
+    ]) {
+      expect(diets.filter((d) => d === diet)).toHaveLength(2);
+    }
+    expect(message).toContain('showing 8 of 24');
+  });
+});
+
+describe('the closest recipes when none are in reach', () => {
+  it('put the ones that use most of what you have first, not the shortest recipes', () => {
+    const { recipes } = recipesFromIngredients(
+      [
+        recipe('Tiny', { diet_type: ['Vegan'] }, [
+          ['pork belly', '1'],
+          ['a', '1'],
+          ['b', '1'],
+        ]),
+        recipe('Big', { diet_type: ['Non-vegetarian'] }, [
+          ['pork belly', '1'],
+          ['kimchi', '1'],
+          ['rice', '1'],
+          ['c', '1'],
+          ['d', '1'],
+          ['e', '1'],
+          ['f', '1'],
+        ]),
+      ],
+      { ingredients: ['pork belly', 'kimchi', 'rice'], allow_missing: 0 },
+    );
+    expect(recipes.map((r) => r.name)).toEqual(['Big', 'Tiny']);
+  });
+
+  it('shorten the long, messy ingredient names scraped from the web', () => {
+    const { message } = recipesFromIngredients(
+      [
+        recipe('Messy', { diet_type: ['Vegan'] }, [
+          ['rice', '1'],
+          [
+            'low-moisture mozzarella (not fresh mozzarella), chilled and cut into slices',
+            '1',
+          ],
+        ]),
+      ],
+      { ingredients: ['rice'], allow_missing: 0 },
+    );
+    expect(message).toContain('missing low-moisture mozzarella (not fresh');
+    expect(message).toContain('…');
+    expect(message).not.toContain('chilled');
+  });
+});
