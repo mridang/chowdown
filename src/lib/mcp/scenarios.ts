@@ -12,9 +12,10 @@ import { countOf, foldText, listAnd } from '../intl';
 import type { Recipe } from '../db/recipes';
 import { parseRecipe } from '../recipe/cooklang';
 import { recipeDisplayName } from '../recipe/cook-text';
-import { DIET_TYPES } from '../recipe/diet-type';
+import { DIET_TYPES, suitableFor, type DietType } from '../recipe/diet-type';
 import { minutesOf } from '../recipe/minutes';
 import {
+  isUnitWord,
   matchRecipe,
   parsePantryItem,
   rankMatches,
@@ -79,16 +80,37 @@ function strings(value: unknown): string[] {
       ? []
       : [value];
   return list
-    .filter((v): v is string => typeof v === 'string')
-    .flatMap((v) => v.split(','))
+    .filter((v) => typeof v === 'string' || typeof v === 'number')
+    .flatMap((v) => String(v).split(','))
     .map((v) => v.trim())
     .filter(Boolean);
 }
 
+/** A number argument, also accepting a numeric string; undefined otherwise. */
+function num(value: unknown): number | undefined {
+  const n =
+    typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+  return typeof n === 'number' && Number.isFinite(n) ? n : undefined;
+}
+
 /** The result limit asked for, kept within a sensible range. */
 function limitOf(value: unknown): number {
-  const n = typeof value === 'number' ? Math.floor(value) : DEFAULT_LIMIT;
-  return Math.min(Math.max(n, 1), 50);
+  const n = num(value);
+  return Math.min(
+    Math.max(n === undefined ? DEFAULT_LIMIT : Math.floor(n), 1),
+    50,
+  );
+}
+
+/** The values that satisfy an eating-style request: vegetarian takes vegan too. */
+function dietsFor(wanted: string[]): string[] {
+  return [...new Set(wanted.flatMap((w) => suitableFor(w as DietType)))];
+}
+
+/** Where an eating style comes in the usual order; anything else goes last. */
+function dietPosition(style: string): number {
+  const index = DIET_TYPES.indexOf(style as DietType);
+  return index < 0 ? DIET_TYPES.length : index;
 }
 
 /** The position of a recipe's eating style in the usual order, for sorting. */
@@ -193,38 +215,41 @@ export function browseRecipes(
     }
     wanted[key] = values;
   }
-  const maxMinutes =
-    typeof args['max_minutes'] === 'number' ? args['max_minutes'] : undefined;
-  const query = foldText(str(args['query']));
+  // Asking for vegetarian also takes vegan dishes; every other facet is exact.
+  const matching = (key: string) =>
+    key === 'diet_type' ? dietsFor(wanted[key]!) : wanted[key]!;
+  const maxMinutes = num(args['max_minutes']);
+  const words = foldText(str(args['query'])).split(/\s+/).filter(Boolean);
   const favouritesOnly = args['favourites_only'] === true;
 
+  // Everything but the time limit, so the recipes a time limit left out for not
+  // stating a time can be counted.
+  const fitsRest = (r: ScenarioRecipe) =>
+    BROWSE_FACETS.every((key) => hasAny(r, key, matching(key))) &&
+    (!favouritesOnly || r.favourite) &&
+    words.every((w) => foldText(r.name).includes(w));
   const hits = recipes.filter(
     (r) =>
-      BROWSE_FACETS.every((key) => hasAny(r, key, wanted[key]!)) &&
+      fitsRest(r) &&
       (maxMinutes === undefined ||
-        (r.minutes !== undefined && r.minutes <= maxMinutes)) &&
-      (!favouritesOnly || r.favourite) &&
-      (!query || foldText(r.name).includes(query)),
+        (r.minutes !== undefined && r.minutes <= maxMinutes)),
   );
 
   const asked = BROWSE_FACETS.flatMap((key) => wanted[key]!);
-  const what = [
-    ...asked,
-    maxMinutes !== undefined ? `within ${maxMinutes} minutes` : '',
-    favouritesOnly ? 'favourites' : '',
-    query ? `matching "${str(args['query'])}"` : '',
+  const also = [
+    maxMinutes !== undefined ? `at most ${maxMinutes} minutes` : '',
+    favouritesOnly ? 'favourites only' : '',
+    words.length ? `named like "${str(args['query'])}"` : '',
   ].filter(Boolean);
-  const subject = what.length ? ` for ${what.join(', ')}` : '';
+  const subject =
+    (asked.length ? ` for ${asked.join(', ')}` : '') +
+    (also.length ? ` (${also.join(', ')})` : '');
 
   // Recipes that don't say how long they take can't be matched to a time limit.
   const untimed =
     maxMinutes === undefined
       ? 0
-      : recipes.filter(
-          (r) =>
-            r.minutes === undefined &&
-            BROWSE_FACETS.every((key) => hasAny(r, key, wanted[key]!)),
-        ).length;
+      : recipes.filter((r) => r.minutes === undefined && fitsRest(r)).length;
   const untimedNote = untimed
     ? `\n\n(${countOf(untimed, 'other recipe')} fit${untimed === 1 ? 's' : ''} the rest but ${untimed === 1 ? "doesn't" : "don't"} say how long ${untimed === 1 ? 'it takes' : 'they take'}.)`
     : '';
@@ -243,7 +268,7 @@ export function browseRecipes(
     .slice(0, limitOf(args['limit']));
   const more =
     hits.length > shown.length
-      ? ` (showing ${shown.length} of ${hits.length})`
+      ? ` (showing ${shown.length} of ${hits.length}, vegan first; narrow it down to see the rest)`
       : '';
   return {
     message: `${countOf(hits.length, 'recipe')}${subject}${more}:\n\n${groupedByDiet(shown)}${untimedNote}`,
@@ -251,34 +276,111 @@ export function browseRecipes(
   };
 }
 
+/** The most pantry items, and the longest item, a request may carry. */
+const MAX_PANTRY_ITEMS = 60;
+const MAX_ITEM_LENGTH = 80;
+
+/** Stands in for the "and" of a phrase that names one thing while splitting. */
+const JOINED = '\u0000';
+
+/** Phrases with an "and" in them that name one thing. */
+const ONE_THING =
+  /\b(mac and cheese|salt and pepper|bread and butter|pork and beans|fish and chips|rice and peas|half and half)\b/gi;
+
+/** A bare amount ("3", "400 g"): not an item, but the amount of the one before. */
+function isBareAmount(text: string): boolean {
+  const [amount, unit, ...rest] = text.trim().split(/\s+/);
+  return (
+    /^[\d½¼¾⅓⅔.,/]+$/.test(amount ?? '') &&
+    rest.length === 0 &&
+    (unit === undefined || isUnitWord(unit))
+  );
+}
+
+/**
+ * Split "3 tomatoes and 400 g pasta, onions" into items. Commas inside
+ * brackets and inside numbers ("1,5 kg", "1,000 g") don't split, and a bare
+ * amount after a comma ("Tomatoes, 3") goes back to the item before it.
+ */
+function splitItems(text: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let current = '';
+  const flush = () => {
+    parts.push(current);
+    current = '';
+  };
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]!;
+    if (ch === '(') {
+      depth++;
+    } else if (ch === ')') {
+      depth = Math.max(0, depth - 1);
+    }
+    const rest = text.slice(i);
+    if (depth === 0 && /^(?:[,;](?=\s|$)|&)/.test(rest)) {
+      flush();
+    } else if (
+      depth === 0 &&
+      /^\band\b/i.test(rest) &&
+      /\W|^$/.test(text[i - 1] ?? ' ')
+    ) {
+      flush();
+      i += 2;
+    } else {
+      current += ch;
+    }
+  }
+  flush();
+  const items: string[] = [];
+  for (const raw of parts.map((p) => p.trim()).filter(Boolean)) {
+    const previous = items.length - 1;
+    if (previous >= 0 && isBareAmount(raw) && !/^\d+\s*[x×]/.test(raw)) {
+      items[previous] = `${items[previous]}, ${raw}`;
+    } else {
+      items.push(raw);
+    }
+  }
+  return items;
+}
+
 /** The pantry items asked for: strings like "3 tomatoes", or {name, quantity}. */
 export function pantryOf(value: unknown): PantryItem[] {
-  const list = Array.isArray(value)
-    ? value
-    : value === undefined
-      ? []
-      : [value];
+  const list = (
+    Array.isArray(value) ? value : value === undefined ? [] : [value]
+  ).slice(0, MAX_PANTRY_ITEMS);
   const items: PantryItem[] = [];
   for (const entry of list) {
     if (typeof entry === 'string') {
       // "3 tomatoes and 400 g pasta" in one string is common from a model.
-      for (const part of entry.split(/,|\band\b|&/i)) {
-        if (part.trim()) {
-          items.push(parsePantryItem(part.trim()));
-        }
+      const text = entry
+        .slice(0, MAX_ITEM_LENGTH * 4)
+        .replace(ONE_THING, (m) => m.replace(/\s+and\s+/i, JOINED));
+      for (const part of splitItems(text)) {
+        items.push(
+          parsePantryItem(
+            part.replaceAll(JOINED, ' and ').slice(0, MAX_ITEM_LENGTH),
+          ),
+        );
       }
     } else if (entry && typeof entry === 'object') {
       const { name, quantity } = entry as Record<string, unknown>;
       if (typeof name === 'string' && name.trim()) {
+        const clean = name.trim().slice(0, MAX_ITEM_LENGTH);
         items.push(
           typeof quantity === 'string' || typeof quantity === 'number'
-            ? { name: name.trim(), quantity: String(quantity).trim() }
-            : { name: name.trim() },
+            ? { name: clean, quantity: String(quantity).trim().slice(0, 40) }
+            : { name: clean },
         );
       }
     }
   }
-  return items.filter((i) => i.name);
+  return items.filter((i) => i.name).slice(0, MAX_PANTRY_ITEMS);
+}
+
+/** "5", or "showing 5 of 30" when the list was cut short. */
+function countText(shown: number, total: number): string {
+  return shown < total ? `showing ${shown} of ${total}` : String(total);
 }
 
 /** What stands between the person and cooking this, in a few words. */
@@ -314,10 +416,7 @@ export function recipesFromIngredients(
       isError: true,
     };
   }
-  const allowMissing =
-    typeof args['allow_missing'] === 'number'
-      ? Math.max(0, Math.floor(args['allow_missing']))
-      : 2;
+  const allowMissing = Math.max(0, Math.floor(num(args['allow_missing']) ?? 2));
   const assumeStaples = args['assume_staples'] !== false;
   const { wanted: diets, problem } = facetWanted(
     'diet_type',
@@ -328,7 +427,7 @@ export function recipesFromIngredients(
   }
 
   const matches = recipes
-    .filter((r) => hasAny(r, 'diet_type', diets))
+    .filter((r) => hasAny(r, 'diet_type', dietsFor(diets)))
     .map((recipe) => ({
       recipe,
       match: matchRecipe(recipe.ingredients, pantry, { assumeStaples }),
@@ -357,7 +456,7 @@ export function recipesFromIngredients(
     }
     return {
       message:
-        `Nothing is within ${countOf(allowMissing, 'item')} of ${have}. The closest, which need a shop:\n` +
+        `Nothing can be made from ${have} as it stands. The closest, which need a shop:\n` +
         closest
           .map(
             ({ recipe, match }) =>
@@ -371,7 +470,7 @@ export function recipesFromIngredients(
   const sections: string[] = [`With ${have}:`];
   if (canMake.length) {
     sections.push(
-      `\nYou can make now (${canMake.length}):\n` +
+      `\nYou can make now (${countText(canMake.length, ranked.canMake.length)}):\n` +
         canMake
           .map(
             ({ recipe, match }) =>
@@ -382,7 +481,7 @@ export function recipesFromIngredients(
   }
   if (almost.length) {
     sections.push(
-      `\nAlmost there (${almost.length}):\n` +
+      `\nAlmost there (${countText(almost.length, ranked.almost.length)}):\n` +
         almost
           .map(
             ({ recipe, match }) =>
@@ -410,14 +509,19 @@ export function filterOverview(recipes: ScenarioRecipe[]): ScenarioResult {
         counts.set(v, (counts.get(v) ?? 0) + 1);
       }
     }
+    if (f.key === 'diet_type') {
+      const classified = [...counts.values()].reduce((a, b) => a + b, 0);
+      if (classified < recipes.length) {
+        counts.set('Unclassified', recipes.length - classified);
+      }
+    }
     if (counts.size === 0) {
       continue;
     }
     // Eating styles keep their usual order; the rest go most common first.
     const entries = [...counts].sort(([a, x], [b, y]) =>
       f.key === 'diet_type'
-        ? DIET_TYPES.indexOf(a as (typeof DIET_TYPES)[number]) -
-          DIET_TYPES.indexOf(b as (typeof DIET_TYPES)[number])
+        ? dietPosition(a) - dietPosition(b)
         : y - x || a.localeCompare(b),
     );
     lines.push(
@@ -425,4 +529,64 @@ export function filterOverview(recipes: ScenarioRecipe[]): ScenarioResult {
     );
   }
   return { message: lines.join('\n'), recipes: [] };
+}
+
+/** The names of the tools in this module. */
+export const SCENARIO_TOOLS = [
+  'browse_recipes',
+  'recipes_from_ingredients',
+  'list_filters',
+] as const;
+
+/** Where the scenario tools get their data; swapped for fakes in tests. */
+export interface ScenarioDeps {
+  /** The user's cached recipes. */
+  rows(): Promise<Recipe[]>;
+  /** The Drive file ids the user has hearted. */
+  favouriteIds(): Promise<string[]>;
+  /** Fill the cache from Drive; may throw. */
+  sync(): Promise<unknown>;
+  /** Run a promise after the response is sent. */
+  inBackground(work: Promise<unknown>): void;
+}
+
+/** A scenario tool's answer, and whether it is a plain message or a recipe list. */
+export interface ScenarioToolResult extends ScenarioResult {
+  plain: boolean;
+}
+
+/**
+ * Run one of the scenario tools. They answer from the cached recipes: if the
+ * cache is empty (the web app was never opened, or recipes were added in Drive
+ * directly) it is filled first and waited for; otherwise it is refreshed after
+ * the answer is sent so the next question sees any change.
+ */
+export async function runScenarioTool(
+  name: (typeof SCENARIO_TOOLS)[number],
+  args: Record<string, unknown>,
+  deps: ScenarioDeps,
+): Promise<ScenarioToolResult> {
+  let rows = await deps.rows();
+  if (rows.length === 0) {
+    try {
+      await deps.sync();
+      rows = await deps.rows();
+    } catch {
+      // Answer from what there is; an empty collection reads as empty.
+    }
+  } else {
+    deps.inBackground(deps.sync().catch(() => undefined));
+  }
+  const hearted = new Set(await deps.favouriteIds());
+  const recipes = rows.map((r) =>
+    toScenarioRecipe(r, hearted.has(r.drive_file_id)),
+  );
+  switch (name) {
+    case 'browse_recipes':
+      return { ...browseRecipes(recipes, args), plain: false };
+    case 'recipes_from_ingredients':
+      return { ...recipesFromIngredients(recipes, args), plain: false };
+    default:
+      return { ...filterOverview(recipes), plain: true };
+  }
 }

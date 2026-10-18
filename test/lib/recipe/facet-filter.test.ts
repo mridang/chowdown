@@ -191,3 +191,60 @@ describe('accent-insensitive search', () => {
     expect(find('sálad')).toEqual(['Salad']);
   });
 });
+
+describe('matchesFilters — free text', () => {
+  const state = (q: string) => parseFilters({ q });
+  const vegetarian: FilterableRecipe = {
+    display: 'Palak Paneer',
+    tags: { diet_type: ['Vegetarian'] },
+  };
+  const meat: FilterableRecipe = {
+    display: 'Butter Chicken',
+    tags: { diet_type: ['Non-vegetarian'] },
+  };
+
+  it('does not find non-vegetarian dishes when searching for vegetarian', () => {
+    expect(matchesFilters(vegetarian, state('vegetarian'))).toBe(true);
+    expect(matchesFilters(meat, state('vegetarian'))).toBe(false);
+  });
+
+  it('matches tag values from the start of a word', () => {
+    expect(matchesFilters(meat, state('non-veg'))).toBe(true);
+    expect(matchesFilters(meat, state('chick'))).toBe(true);
+    expect(matchesFilters(meat, state('hicken'))).toBe(true); // in the name
+  });
+
+  it('still matches anywhere in the name, ignoring accents and case', () => {
+    expect(
+      matchesFilters({ display: 'Crème brûlée', tags: {} }, state('CREME')),
+    ).toBe(true);
+  });
+});
+
+describe('buildFacetView — ordering', () => {
+  it('keeps eating styles and difficulties in their natural order', () => {
+    const views = buildFacetView(
+      {
+        diet_type: {
+          'Non-vegetarian': 3,
+          Vegan: 1,
+          Pescatarian: 2,
+          Vegetarian: 4,
+        },
+        difficulty: { Medium: 2, Hard: 1, Easy: 3 },
+        cuisine: { Thai: 1, Indian: 2 },
+      },
+      parseFilters({}),
+    );
+    const order = (key: string) =>
+      views.find((v) => v.key === key)!.values.map((v) => v.value);
+    expect(order('diet_type')).toEqual([
+      'Vegan',
+      'Vegetarian',
+      'Pescatarian',
+      'Non-vegetarian',
+    ]);
+    expect(order('difficulty')).toEqual(['Easy', 'Medium', 'Hard']);
+    expect(order('cuisine')).toEqual(['Indian', 'Thai']);
+  });
+});

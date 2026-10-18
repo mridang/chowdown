@@ -33,7 +33,7 @@ export function extractFacetTags(recipe: ParsedRecipe): RecipeTags {
   const out: RecipeTags = {};
   for (const [key, value] of recipe.metadata) {
     const f = facet(key.trim().toLowerCase());
-    if (!f || ('derived' in f && f.derived)) {
+    if (!f || f.derived) {
       continue;
     }
     const parts = value
@@ -62,20 +62,18 @@ export function extractFacetTags(recipe: ParsedRecipe): RecipeTags {
 }
 
 /**
- * A cached recipe row's tags, with the eating style filled in even for rows
- * indexed before it existed. Always use this rather than parsing `row.tags`.
+ * A cached recipe row's tags as they should be read today: worked out from its
+ * source, exactly as indexing does, so the vocabulary and the eating-style
+ * rules are always current and a corrupt or out-of-date `tags` column can't
+ * leak through. The stored column is only a cache for the sync. Always use this
+ * rather than parsing `row.tags`; pass the already-parsed recipe when you have
+ * it to save a second parse.
  */
 export function rowTags(
-  row: { tags: string | null; source: string; name: string },
+  row: { source: string; name: string },
   parsed?: ParsedRecipe,
 ): RecipeTags {
-  const stored = row.tags ? (JSON.parse(row.tags) as RecipeTags) : {};
-  if (stored['diet_type']) {
-    return stored;
-  }
-  const recipe = parsed ?? parseRecipe(row.source, row.name);
-  const diet = extractFacetTags(recipe)['diet_type'];
-  return diet ? { ...stored, diet_type: diet } : stored;
+  return extractFacetTags(parsed ?? parseRecipe(row.source, row.name));
 }
 
 /**
@@ -127,7 +125,12 @@ function parseStoredTags(json: string | null): RecipeTags | null {
     return null;
   }
   try {
-    return JSON.parse(json) as RecipeTags;
+    const parsed: unknown = JSON.parse(json);
+    return typeof parsed === 'object' &&
+      parsed !== null &&
+      !Array.isArray(parsed)
+      ? (parsed as RecipeTags)
+      : null;
   } catch {
     return null;
   }
@@ -156,7 +159,7 @@ export async function syncRecipeTags(
       cachedTags &&
       cached.modified_time === (file.modifiedTime ?? null)
     ) {
-      result.set(file.id, rowTags(cached));
+      result.set(file.id, cachedTags);
       continue;
     }
     // New, changed, or never-indexed: read and re-extract.

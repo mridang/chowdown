@@ -80,3 +80,23 @@ describe('tagCookSourceBestEffort', () => {
     expect(await tagCookSourceBestEffort(SOURCE, 'c.cook', env)).toBe(SOURCE);
   });
 });
+
+describe('the tagging prompt', () => {
+  it('does not ask the model for the eating style, which is worked out', async () => {
+    const run = jest.fn(async () => ({ response: '{}' }));
+    await suggestTags(parseRecipe(SOURCE, 'curry.cook'), {
+      AI: { run },
+    } as unknown as CloudflareEnv);
+    const calls = run.mock.calls as unknown as [
+      string,
+      { messages: { role: string; content: string }[] },
+    ][];
+    const system = calls[0]![1].messages.find(
+      (m) => m.role === 'system',
+    )!.content;
+    expect(system).not.toContain('diet_type');
+    expect(system).not.toContain('Pescatarian');
+    expect(system).toContain('- diet (choose all that apply): Gluten-free');
+    expect(system).not.toMatch(/- diet [^\n]*Vegetarian/);
+  });
+});

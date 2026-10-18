@@ -79,13 +79,21 @@ export function matchesFilters(
     return false;
   }
   if (state.q) {
-    const hay = `${recipe.display} ${recipe.domain ?? ''} ${Object.values(
-      recipe.tags,
-    )
+    // Accent- and case-insensitive: "creme" finds "Crème brûlée". The name and
+    // site match anywhere; tag values match from the start of a word, so
+    // "vegetarian" does not pull in "Non-vegetarian".
+    const q = foldText(state.q);
+    const inName = foldText(
+      `${recipe.display} ${recipe.domain ?? ''}`,
+    ).includes(q);
+    const inTags = Object.values(recipe.tags)
       .flat()
-      .join(' ')}`;
-    // Accent- and case-insensitive: "creme" finds "Crème brûlée".
-    if (!foldText(hay).includes(foldText(state.q))) {
+      .some((v) =>
+        foldText(v)
+          .split(/\s+/)
+          .some((word) => word.startsWith(q)),
+      );
+    if (!inName && !inTags) {
       return false;
     }
   }
@@ -159,7 +167,11 @@ export function buildFacetView(
       key: f.key,
       label: f.label,
       values: entries
-        .sort((a, b) => a[0].localeCompare(b[0]))
+        .sort(([a], [b]) =>
+          f.ordered
+            ? f.values!.indexOf(a) - f.values!.indexOf(b)
+            : a.localeCompare(b),
+        )
         .map(([value, count]) => ({
           value,
           count,

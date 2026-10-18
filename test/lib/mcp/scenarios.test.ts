@@ -1,10 +1,14 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
+
+import type { Recipe } from '../../../src/lib/db/recipes';
 
 import {
   browseRecipes,
   filterOverview,
   pantryOf,
   recipesFromIngredients,
+  runScenarioTool,
+  type ScenarioDeps,
   type ScenarioRecipe,
 } from '../../../src/lib/mcp/scenarios';
 
@@ -174,7 +178,13 @@ describe('recipesFromIngredients', () => {
       ingredients: ['3 tomatoes', '400 g pasta'],
       diet_type: 'Vegetarian',
     });
-    expect(recipes.map((r) => r.name)).toEqual(['Pasta bake']);
+    const names = recipes.map((r) => r.name);
+    // vegetarian also takes vegan dishes, but never the meat one
+    expect(names).toEqual(
+      expect.arrayContaining(['Tomato pasta', 'Pasta bake']),
+    );
+    expect(names).not.toContain('Carbonara');
+    expect(names).not.toContain('Butter chicken');
   });
 
   it('lists only what can be made now when no misses are allowed', () => {
@@ -203,7 +213,9 @@ describe('recipesFromIngredients', () => {
       allow_missing: 0,
     });
     expect(recipes.map((r) => r.name)).toEqual(['Carbonara']);
-    expect(message).toContain('Nothing is within 0 items of 150 g guanciale');
+    expect(message).toContain(
+      'Nothing can be made from 150 g guanciale as it stands',
+    );
     expect(message).toContain('Carbonara');
     expect(message).toContain('missing spaghetti, eggs, and pecorino');
   });
@@ -253,5 +265,249 @@ describe('filterOverview', () => {
 
   it('copes with an empty collection', () => {
     expect(filterOverview([]).message).toBe('No recipes yet.');
+  });
+});
+
+describe('browseRecipes — what the eating style and the other filters mean', () => {
+  it('lets vegetarian take vegan dishes too, but never meat', () => {
+    const names = browseRecipes(COLLECTION, {
+      diet_type: 'Vegetarian',
+    }).recipes.map((r) => r.name);
+    expect(names).toEqual(
+      expect.arrayContaining(['Chana masala', 'Palak paneer', 'Pasta bake']),
+    );
+    expect(names).not.toContain('Butter chicken');
+  });
+
+  it('lets pescatarian take vegan and vegetarian dishes, vegan only vegan', () => {
+    const fish = recipe('Fish pie', { diet_type: ['Pescatarian'] }, [
+      ['cod', '300 g'],
+    ]);
+    const all = [...COLLECTION, fish];
+    const pesc = browseRecipes(all, { diet_type: 'Pescatarian' }).recipes.map(
+      (r) => r.name,
+    );
+    expect(pesc).toEqual(
+      expect.arrayContaining(['Fish pie', 'Pasta bake', 'Mapo tofu']),
+    );
+    expect(pesc).not.toContain('Carbonara');
+    const vegan = browseRecipes(all, { diet_type: 'Vegan' }).recipes.map(
+      (r) => r.name,
+    );
+    expect(vegan).not.toContain('Pasta bake');
+  });
+
+  it('only counts untimed recipes that fit everything else', () => {
+    const { message } = browseRecipes(COLLECTION, {
+      cuisine: 'Indian',
+      max_minutes: 40,
+      query: 'zzz',
+    });
+    expect(message).not.toContain("doesn't say");
+    const fav = browseRecipes(COLLECTION, {
+      cuisine: 'Indian',
+      max_minutes: 40,
+      favourites_only: true,
+    });
+    expect(fav.message).not.toContain("doesn't say");
+  });
+
+  it('matches every word of a query, in any order', () => {
+    const names = browseRecipes(COLLECTION, {
+      query: 'chicken butter',
+    }).recipes.map((r) => r.name);
+    expect(names).toEqual(['Butter chicken']);
+  });
+
+  it('accepts numbers given as strings', () => {
+    const r = browseRecipes(COLLECTION, {
+      cuisine: 'Indian',
+      max_minutes: '40',
+      limit: '1',
+    });
+    expect(r.recipes).toHaveLength(1);
+    expect(r.message).toContain('at most 40 minutes');
+  });
+
+  it('describes the filters in plain words', () => {
+    const { message } = browseRecipes(COLLECTION, {
+      cuisine: 'Thai',
+      max_minutes: 25,
+      favourites_only: true,
+    });
+    expect(message).toContain(
+      'No recipes for Thai (at most 25 minutes, favourites only)',
+    );
+  });
+});
+
+describe('recipesFromIngredients — long lists and how items are read', () => {
+  const many = (n: number) =>
+    Array.from({ length: n }, (_, i) =>
+      recipe(`Dish ${i}`, { diet_type: ['Vegan'] }, [
+        ['tomatoes', '2'],
+        [`thing ${i}`, '1'],
+      ]),
+    );
+
+  it('says how many there really are when it cuts the list', () => {
+    const { message, recipes } = recipesFromIngredients(many(30), {
+      ingredients: ['tomatoes'],
+      limit: 5,
+    });
+    expect(message).toContain('Almost there (showing 5 of 30)');
+    expect(recipes).toHaveLength(5);
+  });
+
+  it('keeps an item that comes with an amount after the name together', () => {
+    expect(pantryOf(['Tomatoes, 3'])).toEqual([
+      { name: 'Tomatoes', quantity: '3' },
+    ]);
+    expect(pantryOf('tomatoes (chopped, canned), 2 onions')).toEqual([
+      { name: 'tomatoes (chopped, canned)' },
+      { name: 'onions', quantity: '2' },
+    ]);
+  });
+
+  it('does not split amounts or names that contain a comma or an "and"', () => {
+    expect(pantryOf(['1,5 kg potatoes'])).toEqual([
+      { name: 'potatoes', quantity: '1,5 kg' },
+    ]);
+    expect(pantryOf(['1,000 g flour'])).toEqual([
+      { name: 'flour', quantity: '1,000 g' },
+    ]);
+    expect(pantryOf(['mac and cheese'])).toEqual([{ name: 'mac and cheese' }]);
+    expect(pantryOf(['half and half, 2 eggs'])).toEqual([
+      { name: 'half and half' },
+      { name: 'eggs', quantity: '2' },
+    ]);
+  });
+
+  it('ignores a bare number as an item', () => {
+    expect(pantryOf(['3'])).toEqual([]);
+  });
+
+  it('caps how much it will read, so a huge request cannot hog the server', () => {
+    const items = pantryOf(Array.from({ length: 5000 }, (_, i) => `item ${i}`));
+    expect(items).toHaveLength(60);
+    const long = pantryOf(['x'.repeat(100_000)]);
+    expect(long[0]!.name.length).toBeLessThanOrEqual(80);
+    const started = Date.now();
+    recipesFromIngredients(many(300), {
+      ingredients: Array.from({ length: 5000 }, (_, i) => `item ${i}`),
+    });
+    expect(Date.now() - started).toBeLessThan(3000);
+  });
+});
+
+describe('filterOverview — recipes with no eating style', () => {
+  it('counts them so the totals add up', () => {
+    const { message } = filterOverview([
+      ...COLLECTION,
+      recipe('Mystery', {}, []),
+    ]);
+    expect(message).toContain(
+      'Vegan 3, Vegetarian 2, Non-vegetarian 2, Unclassified 1',
+    );
+  });
+});
+
+describe('runScenarioTool', () => {
+  const row = (id: string, name: string, source: string): Recipe =>
+    ({ drive_file_id: id, name, source, tags: null }) as Recipe;
+  const CURRY = row(
+    '1',
+    'Curry.cook',
+    '>> cuisine: Indian\n\nCook @chicken{500%g}.\n',
+  );
+  const SALAD = row(
+    '2',
+    'Salad.cook',
+    '>> cuisine: Greek\n\nSlice @tomato{3}.\n',
+  );
+
+  const deps = (rows: Recipe[], overrides: Partial<ScenarioDeps> = {}) => {
+    const sync = jest.fn(async () => 0);
+    const inBackground = jest.fn();
+    const all: ScenarioDeps = {
+      rows: async () => rows,
+      favouriteIds: async () => ['2'],
+      sync,
+      inBackground,
+      ...overrides,
+    };
+    return { all, sync, inBackground };
+  };
+
+  it('answers from the cache and refreshes it afterwards', async () => {
+    const { all, sync, inBackground } = deps([CURRY, SALAD]);
+    const result = await runScenarioTool(
+      'browse_recipes',
+      { cuisine: 'Indian' },
+      all,
+    );
+    expect(result.recipes.map((r) => r.name)).toEqual(['Curry']);
+    expect(result.plain).toBe(false);
+    expect(sync).toHaveBeenCalledTimes(1);
+    expect(inBackground).toHaveBeenCalledTimes(1);
+  });
+
+  it('fills an empty cache from Drive first, and waits for it', async () => {
+    let cached: Recipe[] = [];
+    const sync = jest.fn(async () => {
+      cached = [CURRY];
+    });
+    const { all } = deps([], { rows: async () => cached, sync });
+    const result = await runScenarioTool('browse_recipes', {}, all);
+    expect(result.recipes.map((r) => r.name)).toEqual(['Curry']);
+    expect(sync).toHaveBeenCalledTimes(1);
+  });
+
+  it('answers with an empty collection when Drive cannot be reached', async () => {
+    const { all } = deps([], {
+      sync: async () => {
+        throw new Error('Drive is down');
+      },
+    });
+    const result = await runScenarioTool('list_filters', {}, all);
+    expect(result.message).toBe('No recipes yet.');
+    expect(result.plain).toBe(true);
+  });
+
+  it('knows which recipes are favourites and works the eating style out for old rows', async () => {
+    const { all } = deps([CURRY, SALAD]);
+    const fav = await runScenarioTool(
+      'browse_recipes',
+      { favourites_only: true },
+      all,
+    );
+    expect(fav.recipes.map((r) => r.name)).toEqual(['Salad']);
+    const vegan = await runScenarioTool(
+      'browse_recipes',
+      { diet_type: 'Vegan' },
+      all,
+    );
+    expect(vegan.recipes.map((r) => r.name)).toEqual(['Salad']);
+  });
+
+  it('passes a bad argument back as an error', async () => {
+    const { all } = deps([CURRY]);
+    const result = await runScenarioTool(
+      'browse_recipes',
+      { cuisine: 'Martian' },
+      all,
+    );
+    expect(result.isError).toBe(true);
+  });
+
+  it('finds recipes from ingredients', async () => {
+    const { all } = deps([CURRY, SALAD]);
+    const result = await runScenarioTool(
+      'recipes_from_ingredients',
+      { ingredients: ['3 tomatoes'] },
+      all,
+    );
+    expect(result.recipes.map((r) => r.name)).toEqual(['Salad']);
+    expect(result.message).toContain('You can make now (1)');
   });
 });

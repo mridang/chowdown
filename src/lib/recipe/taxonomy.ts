@@ -27,10 +27,12 @@ export interface Facet {
    * its file or chosen by the tagger, so it can't be set or patched by hand.
    */
   derived?: boolean;
+  /** Values have a natural order (Easy → Hard) that lists should keep. */
+  ordered?: boolean;
 }
 
 /** The facets, in the order the filter sidebar shows them. */
-export const FACETS = [
+export const FACETS: readonly Facet[] = [
   {
     key: 'protein',
     label: 'Protein',
@@ -93,6 +95,7 @@ export const FACETS = [
     label: 'Diet',
     multi: false,
     derived: true,
+    ordered: true,
     values: ['Vegan', 'Vegetarian', 'Pescatarian', 'Non-vegetarian'],
   },
   {
@@ -113,6 +116,7 @@ export const FACETS = [
     key: 'difficulty',
     label: 'Difficulty',
     multi: false,
+    ordered: true,
     values: ['Easy', 'Medium', 'Hard'],
   },
   {
@@ -138,7 +142,7 @@ export const FACETS = [
     multi: true,
     values: null,
   },
-] as const satisfies readonly Facet[];
+];
 
 /** A facet key (`'protein' | 'cuisine' | …`). */
 export type FacetKey = (typeof FACETS)[number]['key'];
@@ -178,7 +182,7 @@ export function validateTags(
 ): [string, string][] {
   const out: [string, string][] = [];
   for (const f of FACETS) {
-    if ('derived' in f && f.derived) {
+    if (f.derived) {
       continue; // worked out from the recipe, never taken from the model
     }
     const raw = proposed[f.key];

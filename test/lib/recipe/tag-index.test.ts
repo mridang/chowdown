@@ -49,25 +49,35 @@ describe('rowTags', () => {
     name: 'Curry.cook',
   });
 
-  it('fills in the eating style for rows indexed before it existed', () => {
-    const tags = rowTags(row(JSON.stringify({ cuisine: ['Indian'] })));
-    expect(tags).toEqual({
+  it('reads tags from the recipe itself, eating style included', () => {
+    expect(rowTags(row(null))).toEqual({
       cuisine: ['Indian'],
+      protein: ['chicken'],
       diet_type: ['Non-vegetarian'],
     });
   });
 
-  it('handles a row that was never tagged', () => {
-    expect(rowTags(row(null))['diet_type']).toEqual(['Non-vegetarian']);
+  it('ignores whatever the cached column says, however stale or broken', () => {
+    const fresh = rowTags(row(null));
+    const stale = JSON.stringify({
+      diet: ['Vegan', 'Vegetarian'],
+      diet_type: ['Vegan'],
+      bogus: ['x'],
+    });
+    expect(rowTags(row(stale))).toEqual(fresh);
+    expect(rowTags(row('{not json'))).toEqual(fresh);
+    expect(rowTags(row('[1,2]'))).toEqual(fresh);
   });
 
-  it('leaves a row alone when there is nothing to classify it by', () => {
-    const bare = { tags: '{"cuisine":["Indian"]}', source: '', name: 'A.cook' };
+  it('leaves the eating style off a recipe with nothing to classify it by', () => {
+    const bare = { source: '>> cuisine: Indian\n', name: 'A.cook' };
     expect(rowTags(bare)).toEqual({ cuisine: ['Indian'] });
   });
 
-  it('keeps the stored eating style when there is one', () => {
-    const stored = JSON.stringify({ diet_type: ['Vegan'] });
-    expect(rowTags(row(stored))['diet_type']).toEqual(['Vegan']);
+  it('reuses a recipe that is already parsed', () => {
+    const parsed = parseRecipe(SOURCE, 'Curry.cook');
+    expect(rowTags({ source: '', name: 'x.cook' }, parsed)).toEqual(
+      rowTags(row(null)),
+    );
   });
 });

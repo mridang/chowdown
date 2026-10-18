@@ -187,3 +187,206 @@ describe('rankMatches', () => {
     ]);
   });
 });
+
+describe('parsePantryItem — how people write amounts', () => {
+  it.each([
+    ['1 lb. chicken', 'chicken', '1 lb'],
+    ['3x tomato', 'tomato', '3'],
+    ['200 gr rice', 'rice', '200 gr'],
+    ['3 pcs chicken', 'chicken', '3 pcs'],
+    ['1 stick butter', 'butter', '1 stick'],
+    ['1 loaf bread', 'bread', '1 loaf'],
+    ['1 head garlic', 'garlic', '1 head'],
+    ['a dozen eggs', 'eggs', '12'],
+    ['half a dozen eggs', 'eggs', '6'],
+    ['half a kilo of mince', 'mince', '0.5 kilo'],
+    ['two eggs', 'eggs', '2'],
+    ['one onion', 'onion', '1'],
+    ['1½ lbs tomatillos', 'tomatillos', '1½ lbs'],
+    ['1,5 kg potatoes', 'potatoes', '1,5 kg'],
+    ['1,000 g flour', 'flour', '1,000 g'],
+    ['2 x 400g tins of tomatoes', 'tomatoes', '800 g'],
+    ['400g pasta', 'pasta', '400 g'],
+    ['tomatoes (3)', 'tomatoes', '3'],
+    ['Tomatoes, 3', 'Tomatoes', '3'],
+    ['500ml milk', 'milk', '500 ml'],
+  ])('%s', (text, name, quantity) => {
+    expect(parsePantryItem(text)).toEqual({ name, quantity });
+  });
+
+  it('gives a plain name no amount, and a bare number no name', () => {
+    expect(parsePantryItem('garlic')).toEqual({ name: 'garlic' });
+    expect(parsePantryItem('3').name).toBe('');
+  });
+});
+
+describe('sameIngredient — what counts as the same thing', () => {
+  it.each([
+    ['milk', 'coconut milk'],
+    ['milk', 'almond milk'],
+    ['milk', 'milk chocolate'],
+    ['butter', 'peanut butter'],
+    ['butter', 'butter beans'],
+    ['potato', 'sweet potato'],
+    ['rice', 'rice paper'],
+    ['rice', 'rice wine'],
+    ['rice', 'cauliflower rice'],
+    ['corn', 'corn tortillas'],
+    ['tortilla', 'tortilla chips'],
+    ['cream', 'cream of tartar'],
+    ['cream', 'cream cheese'],
+    ['banana', 'banana leaves'],
+    ['mustard', 'mustard greens'],
+    ['tomato', 'sun-dried tomatoes'],
+    ['tomato', 'tomato paste'],
+    ['cilantro', 'ground coriander'],
+    ['coriander seeds', 'cilantro'],
+    ['onions', 'spring onions'],
+    ['scallions', 'onions'],
+    ['mince', 'ground cumin'],
+    ['mince', 'ground cinnamon'],
+    ['rice', 'rice noodles'],
+  ])('%s is not %s, either way round', (a, b) => {
+    expect(sameIngredient(a, b)).toBe(false);
+    expect(sameIngredient(b, a)).toBe(false);
+  });
+
+  it.each([
+    ['cheddar', 'cheddar cheese'],
+    ['parmesan', 'parmesan cheese'],
+    ['vanilla', 'vanilla extract'],
+    ['ramen', 'ramen noodles'],
+    ['soy sauce', 'soya sauce'],
+    ['tortillas', 'flour tortillas'],
+    ['flour tortillas', 'tortillas'],
+    ['clove', 'cloves'],
+    ['garlic clove', 'garlic cloves'],
+    ['olive', 'olives'],
+    ['radish', 'radishes'],
+    ['chili', 'chilies'],
+    ['chillies', 'chile'],
+    ['cilantro', 'coriander'],
+    ['scallions', 'green onions'],
+    ['500 g beef mince', 'ground beef'],
+    ['beef', 'ground beef'],
+  ])('%s is %s', (a, b) => {
+    expect(sameIngredient(a, b)).toBe(true);
+    expect(sameIngredient(b, a)).toBe(true);
+  });
+});
+
+describe('isStaple — by the whole name', () => {
+  it.each([
+    'salt',
+    'Kosher salt',
+    'black pepper',
+    'freshly ground black pepper',
+    'salt and pepper',
+    'salt, to taste',
+    'water',
+    'cold water',
+    'olive oil',
+    'extra-virgin olive oil',
+    'vegetable oil',
+    'ice',
+  ])('%s is', (name) => {
+    expect(isStaple(name)).toBe(true);
+  });
+
+  it.each([
+    'red bell pepper',
+    'jalapeno peppers',
+    'cayenne pepper',
+    'pepper jack',
+    'pepper flakes',
+    'salt pork',
+    'salt cod',
+    'water chestnuts',
+    'coconut water',
+    'rose water',
+    'sesame oil',
+    'tuna in oil',
+    'garlic powder',
+    'chicken',
+  ])('%s is not', (name) => {
+    expect(isStaple(name)).toBe(false);
+  });
+});
+
+describe('matchRecipe — amounts', () => {
+  const need = (name: string, quantity: string) => ({ name, quantity });
+
+  it('does not call it short when the units count different things', () => {
+    const m = matchRecipe(
+      [need('garlic', '4 cloves')],
+      [{ name: 'garlic', quantity: '1 head' }],
+    );
+    expect(m.short).toEqual([]);
+    const eggs = matchRecipe(
+      [need('eggs', '6')],
+      [{ name: 'eggs', quantity: '1 dozen' }],
+    );
+    expect(eggs.short).toEqual([]);
+  });
+
+  it('flags too few of the same counted thing', () => {
+    const m = matchRecipe(
+      [need('cloves', '3 cloves')],
+      [{ name: 'cloves', quantity: '1 clove' }],
+    );
+    expect(m.short).toHaveLength(1);
+  });
+
+  it('adds up several items of the same thing', () => {
+    const m = matchRecipe(
+      [need('eggs', '6')],
+      [
+        { name: 'eggs', quantity: '3' },
+        { name: 'eggs', quantity: '4' },
+      ],
+    );
+    expect(m.short).toEqual([]);
+    expect(m.used).toBe(2);
+  });
+
+  it('adds up a recipe that lists the same ingredient twice', () => {
+    const m = matchRecipe(
+      [need('tomatoes', '2'), need('tomatoes', '3')],
+      [{ name: 'tomatoes', quantity: '3' }],
+    );
+    expect(m.short).toEqual([{ name: 'tomatoes', have: '3', need: '5' }]);
+  });
+
+  it('prefers the item whose name is closest, and counts them all as used', () => {
+    const m = matchRecipe(
+      [need('coconut milk', '400 ml')],
+      [
+        { name: 'milk', quantity: '1 cup' },
+        { name: 'coconut milk', quantity: '400 ml' },
+      ],
+    );
+    expect(m.short).toEqual([]);
+    expect(m.covered).toEqual(['coconut milk']);
+    expect(m.used).toBe(1);
+  });
+
+  it('does not let a thousands separator turn a kilo into a gram', () => {
+    const m = matchRecipe(
+      [need('flour', '500 g')],
+      [{ name: 'flour', quantity: '1,000 g' }],
+    );
+    expect(m.short).toEqual([]);
+  });
+
+  it('does not call a recipe makeable on the strength of its peppers or oils', () => {
+    const m = matchRecipe(
+      [
+        need('red bell pepper', '2'),
+        need('salt pork', '100 g'),
+        need('rice', '1 cup'),
+      ],
+      [{ name: 'rice' }],
+    );
+    expect(m.missing).toEqual(['red bell pepper', 'salt pork']);
+  });
+});

@@ -27,13 +27,15 @@ export function isUnitSystem(value: string): value is UnitSystem {
 /** Mass units → grams. */
 const MASS_TO_G: Record<string, number> = {
   g: 1, gram: 1, grams: 1, kg: 1000, kgs: 1000, mg: 0.001,
+  kilo: 1000, kilos: 1000, kilogram: 1000, kilograms: 1000, gr: 1, gm: 1, gms: 1,
   oz: 28.3495, ounce: 28.3495, ounces: 28.3495,
   lb: 453.592, lbs: 453.592, pound: 453.592, pounds: 453.592,
 };
 
 /** Volume units → millilitres (cup/tbsp/tsp assumed US when used as a source). */
 const VOL_TO_ML: Record<string, number> = {
-  ml: 1, milliliter: 1, millilitre: 1, l: 1000, liter: 1000, litre: 1000,
+  ml: 1, milliliter: 1, millilitre: 1, milliliters: 1, millilitres: 1, l: 1000, liter: 1000, litre: 1000,
+  liters: 1000, litres: 1000, dl: 100, cl: 10, tbs: 14.7868, tbsps: 14.7868, tsps: 4.92892, qt: 946.353, pt: 473.176,
   tsp: 4.92892, teaspoon: 4.92892, teaspoons: 4.92892,
   tbsp: 14.7868, tablespoon: 14.7868, tablespoons: 14.7868,
   cup: 236.588, cups: 236.588,
@@ -164,8 +166,29 @@ const SCALABLE = new RegExp(
   `^(${AMOUNT})(?:\\s*[-–]\\s*(${AMOUNT}))?\\s*(.*)$`,
 );
 
+/** Vulgar-fraction characters and what they are worth. */
+const FRACTION_GLYPHS: Record<string, number> = {
+  '½': 1 / 2,
+  '⅓': 1 / 3,
+  '⅔': 2 / 3,
+  '¼': 1 / 4,
+  '¾': 3 / 4,
+  '⅛': 1 / 8,
+  '⅜': 3 / 8,
+  '⅝': 5 / 8,
+  '⅞': 7 / 8,
+};
+
 /** The value of an amount like "1 1/2" or "3/4" or "2,5"; undefined if it isn't one. */
 function amountValue(text: string): number | undefined {
+  // "1,000" is a thousand; "2,5" is two and a half.
+  if (/^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/.test(text)) {
+    return Number(text.replace(/,/g, ''));
+  }
+  const glyph = /^(\d+)?\s*([½⅓⅔¼¾⅛⅜⅝⅞])$/.exec(text);
+  if (glyph) {
+    return Number(glyph[1] ?? 0) + FRACTION_GLYPHS[glyph[2]!]!;
+  }
   const mixed = /^(\d+)\s+(\d+)\s*\/\s*(\d+)$/.exec(text);
   if (mixed) {
     return Number(mixed[1]) + Number(mixed[2]) / Number(mixed[3]);
@@ -219,9 +242,10 @@ export interface BaseAmount {
  * compare "400 g" with "1 lb" or "2 cups" with "500 ml".
  */
 export function toBaseAmount(quantity: string): BaseAmount | undefined {
-  const match = /^(\d+(?:[.,]\d+)?(?:\s+\d+\s*\/\s*\d+|\s*\/\s*\d+)?)\s*(.*)$/.exec(
-    quantity.trim(),
-  );
+  const match =
+    /^(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d*\s*[½⅓⅔¼¾⅛⅜⅝⅞]|\d+(?:[.,]\d+)?(?:\s+\d+\s*\/\s*\d+|\s*\/\s*\d+)?)\s*(.*)$/.exec(
+      quantity.trim(),
+    );
   if (!match) {
     return undefined;
   }

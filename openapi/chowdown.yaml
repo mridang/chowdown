@@ -76,7 +76,7 @@ paths:
         - name: diet
           in: query
           schema: { type: string }
-          description: Dietary needs such as `Gluten-free`, comma-separated.
+          description: Dietary needs such as `Gluten-free`, comma-separated. `Vegetarian` and `Vegan` moved to `diet_type`, which is worked out from the ingredients.
         - name: diet_type
           in: query
           schema:

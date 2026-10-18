@@ -60,7 +60,7 @@ describe('classifyDietType', () => {
     expect(classifyDietType(['potatoes', 'worcestershire sauce'])).toBe(
       'Pescatarian',
     );
-    expect(classifyDietType(['swordfish steak'])).toBe('Non-vegetarian');
+    expect(classifyDietType(['swordfish steak'])).toBe('Pescatarian');
     expect(classifyDietType(['catfish', 'cornmeal'])).toBe('Pescatarian');
   });
 
@@ -94,5 +94,104 @@ describe('classifyDietType', () => {
     expect(classifyDietType([], ['seafood'])).toBe('Pescatarian');
     expect(classifyDietType([], ['egg'])).toBe('Vegetarian');
     expect(classifyDietType(['rice'], ['vegetable'])).toBe('Vegan');
+  });
+});
+
+describe('classifyDietType — look-alikes and hidden animal products', () => {
+  const V = 'Vegan';
+  const VEG = 'Vegetarian';
+  const P = 'Pescatarian';
+  const N = 'Non-vegetarian';
+
+  it.each([
+    // plant-based substitutes named after the thing they replace
+    ['vegan sausages', V],
+    ['veggie meatballs', V],
+    ['vegan ham', V],
+    ['tofu chorizo', V],
+    ['mushroom bacon', V],
+    ['tempeh bacon', V],
+    ['walnut meat', V],
+    ['meat-free mince', V],
+    ['chicken-free broth', V],
+    ['no-chicken broth', V],
+    ['vegan worcestershire sauce', V],
+    ['vegan oyster sauce', V],
+    ['vegan cream cheese', V],
+    ['cashew cream cheese', V],
+    ['vegan sour cream', V],
+    ['vegan whipped cream', V],
+    ['vegan honey', V],
+    ['dairy free butter', V],
+    ['macadamia milk', V],
+    ['sunflower seed butter', V],
+    ['cacao butter', V],
+    ['cream of coconut', V],
+    ['cream of wheat', V],
+    ['vegan kimchi', V],
+    // plants and fungi with animal names
+    ['oyster mushrooms', V],
+    ['pigeon peas', V],
+    ['moringa drumsticks', V],
+    ['lamb’s lettuce', V],
+    ['beef tomatoes', V],
+    ['cauliflower steak', V],
+    ['cauliflower wings', V],
+    ['hot dog buns', V],
+    ['chicken of the woods', V],
+    ['mock duck', V],
+    ['pâte brisée', V],
+    ['duck sauce', V],
+    // animal products that are not the animal they sound like
+    ['goat cheese', VEG],
+    ["goat's milk", VEG],
+    ['quail eggs', VEG],
+    ['duck egg', VEG],
+    ['crab meat', P],
+    ['crabmeat', P],
+    ['tuna steak', P],
+    // hidden animal products
+    ['kimchi', P],
+    ['caesar dressing', P],
+    ['shellfish stock', P],
+    ['hamburger', N],
+    ['mince', N],
+    ['gammon', N],
+    ['poultry seasoning, chicken', N],
+    ['half and half', VEG],
+    ['alfredo sauce', VEG],
+    ['pepper jack cheese', VEG],
+    ['tzatziki', VEG],
+    ['hollandaise', VEG],
+    ['eggnog', VEG],
+  ])('%s → %s', (ingredient, expected) => {
+    expect(classifyDietType([ingredient])).toBe(expected);
+  });
+
+  it('treats stock alternatives however they are written', () => {
+    expect(
+      classifyDietType(['chicken stock cubes or vegetable stock cubes']),
+    ).toBe(V);
+    expect(classifyDietType(['chicken stock (or vegetable)'])).toBe(V);
+    expect(classifyDietType(['vegetable stock or chicken stock'])).toBe(V);
+    expect(classifyDietType(['chicken stock'])).toBe(N);
+    expect(classifyDietType(['chicken or vegetable stock, with chicken'])).toBe(
+      N,
+    );
+  });
+
+  it('does not take a gluten-free label as proof that the animal part is absent', () => {
+    expect(classifyDietType(['gluten-free chicken stock'])).toBe(N);
+  });
+
+  it('does not treat blank names as ingredients', () => {
+    expect(classifyDietType([''])).toBeUndefined();
+    expect(classifyDietType(['  ', ''])).toBeUndefined();
+  });
+
+  it('is fast on very long input', () => {
+    const started = Date.now();
+    classifyDietType(['vegan ' + 'cream '.repeat(50_000)]);
+    expect(Date.now() - started).toBeLessThan(500);
   });
 });

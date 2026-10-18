@@ -39,21 +39,16 @@ import { embedText } from '../recipe/embeddings';
 import { ensureEmbeddings, topSimilar } from '../recipe/similar';
 import { indexRecipeWrite } from '../recipe/tag-index';
 import { listFavouriteIds } from '../db/favourites';
-import {
-  browseRecipes,
-  filterOverview,
-  recipesFromIngredients,
-  toScenarioRecipe,
-  type ScenarioResult,
-} from './scenarios';
+import { SCENARIO_TOOLS, runScenarioTool } from './scenarios';
 import { tagCookSource, tagCookSourceBestEffort } from '../recipe/tagging';
 import { addMissingCover, convertImport } from '../recipe/to-cooklang';
 import { setFavouriteAndTag } from '../recipe/favourite';
+import { syncFromDrive } from '../recipe/drive-sync';
 import { importRecipe } from '../recipe/import-recipe';
 import { matchFile } from '../recipe/match';
 import { validImageUrls, withImages } from '../recipe/media';
 import { convertRecipe, isUnitSystem, type UnitSystem } from '../recipe/units';
-import { getDatabase, getEnv } from '../util';
+import { getDatabase, getEnv, runInBackground } from '../util';
 import { html as recipeCardHtml } from '../../views/generated/recipe-card';
 import { html as recipeListHtml } from '../../views/generated/recipe-list';
 import type { RecipeCardData, RecipeListData } from './ui-types';
@@ -285,7 +280,7 @@ export const TOOLS = [
         diet_type: {
           type: 'string',
           description:
-            "Eating style: 'Vegan', 'Vegetarian', 'Pescatarian' or 'Non-vegetarian' (comma-separate several). Vegetarian recipes contain no meat or fish; pescatarian ones contain fish but no meat.",
+            "Eating style: 'Vegan', 'Vegetarian', 'Pescatarian' or 'Non-vegetarian' (comma-separate several). Asking for Vegetarian also returns vegan dishes, and Pescatarian also returns vegan and vegetarian ones; Non-vegetarian means meat is wanted. Vegetarian dishes contain no meat or fish; pescatarian ones contain fish but no meat.",
         },
         protein: { type: 'string', description: "e.g. 'Chicken', 'Paneer'." },
         diet: {
@@ -332,7 +327,7 @@ export const TOOLS = [
         diet_type: {
           type: 'string',
           description:
-            "Only recipes of this eating style, e.g. 'Vegetarian' (comma-separate several).",
+            "Only recipes that suit this eating style, e.g. 'Vegetarian' (which also allows vegan dishes). Comma-separate several.",
         },
         limit: {
           type: 'number',
@@ -644,32 +639,21 @@ async function callTool(
     return text(`Done — I'll show recipes in ${sys} units from now on.`);
   }
 
-  // The question-shaped tools read only the D1 cache, so they skip Drive.
-  if (
-    name === 'browse_recipes' ||
-    name === 'recipes_from_ingredients' ||
-    name === 'list_filters'
-  ) {
+  // The question-shaped tools read the D1 cache, so they skip Drive.
+  const scenario = SCENARIO_TOOLS.find((t) => t === name);
+  if (scenario) {
     const db = getDatabase();
-    const [rows, hearted] = await Promise.all([
-      listRecipesByUser(db, user.id),
-      listFavouriteIds(db, user.id),
-    ]);
-    const saved = new Set(hearted);
-    const recipes = rows.map((r) =>
-      toScenarioRecipe(r, saved.has(r.drive_file_id)),
-    );
-    const result: ScenarioResult =
-      name === 'browse_recipes'
-        ? browseRecipes(recipes, args)
-        : name === 'recipes_from_ingredients'
-          ? recipesFromIngredients(recipes, args)
-          : filterOverview(recipes);
-    if (name === 'list_filters') {
-      return text(result.message);
-    }
+    const result = await runScenarioTool(scenario, args, {
+      rows: () => listRecipesByUser(db, user.id),
+      favouriteIds: () => listFavouriteIds(db, user.id),
+      sync: () => syncFromDrive(user),
+      inBackground: runInBackground,
+    });
     if (result.isError) {
       return { ...text(result.message), isError: true };
+    }
+    if (result.plain) {
+      return text(result.message);
     }
     return recipeListResult(
       result.recipes.map((r) => ({ id: r.id, name: r.filename })),

@@ -82,7 +82,7 @@ export function applyRecipePatch(
           );
           continue;
         }
-        if ('derived' in f && f.derived) {
+        if (f.derived) {
           errors.push(
             `tags.${key}: is worked out from the ingredients and can't be set.`,
           );
