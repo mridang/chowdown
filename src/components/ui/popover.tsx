@@ -5,6 +5,18 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/components/ui/cn';
 
 /**
+ * Run `close` once the click that chose a menu item has finished being handled.
+ *
+ * Closing straight away is a bug that looks like nothing happening: React has
+ * unmounted the item by the time it gets the click, so the item's own handler
+ * (Sign out, say) never runs, and a link falls back to a full page load. A
+ * timeout of zero lets the click reach the item first.
+ */
+export function closeAfterClick(close: () => void): void {
+  setTimeout(close, 0);
+}
+
+/**
  * A button that opens a small panel of links and actions (the account menu and
  * the phone navigation). It is a disclosure, not an ARIA "menu": the button says
  * whether the panel is open, and the panel is an ordinary list that Tab moves
@@ -50,10 +62,11 @@ export function Popover({
         trigger.current?.focus();
       }
     };
-    // Choosing a link or an action inside the panel closes it.
+    // Choosing a link or an action inside the panel closes it, but only once
+    // the click has finished being handled (see closeAfterClick).
     const onPanelClick = (event: MouseEvent) => {
       if ((event.target as HTMLElement).closest('a, button')) {
-        setOpen(false);
+        closeAfterClick(() => setOpen(false));
       }
     };
     const panelElement = panel.current;

@@ -5,11 +5,8 @@ import { useCallback, useState } from 'react';
 
 import {
   ChevronIcon,
-  HeartIcon,
   LogoutIcon,
   PlugIcon,
-  PlusIcon,
-  SearchIcon,
   SparkIcon,
 } from '@/components/icons';
 import { POPOVER_ITEM, Popover } from '@/components/ui/popover';
@@ -44,9 +41,9 @@ export function Avatar({ name, picture }: { name: string; picture?: string }) {
 
 /**
  * The signed-in account control. Closed, it is the person's photo and "Hi
- * Mridang"; opened, it says which account you are in and offers the account
- * links. It is a Radix menu, so it closes on outside click and Escape and works
- * from the keyboard.
+ * Mridang"; opened, it says which account you are in and offers only what the
+ * header doesn't already (connecting an assistant, installing the app) and Sign
+ * out. The recipe links live in the header itself.
  */
 export function AccountMenu({
   firstName,
@@ -91,18 +88,6 @@ export function AccountMenu({
         <span className="block truncate font-semibold">{email}</span>
       </div>
       <div className="bg-ink/10 my-1.5 h-px" />
-      <Link href="/app" className={POPOVER_ITEM}>
-        <SearchIcon className="text-ink/65 h-[18px] w-[18px]" />
-        Your recipes
-      </Link>
-      <Link href="/app?fav=1" className={POPOVER_ITEM}>
-        <HeartIcon className="text-ink/65 h-[18px] w-[18px]" />
-        Favourites
-      </Link>
-      <Link href="/recipes/add" className={POPOVER_ITEM}>
-        <PlusIcon className="text-ink/65 h-[18px] w-[18px]" />
-        Add recipes
-      </Link>
       <Link href="/connect" className={POPOVER_ITEM}>
         <PlugIcon className="text-ink/65 h-[18px] w-[18px]" />
         Connect an assistant
