@@ -1,44 +1,64 @@
-import {
-  ArrowIcon,
-  CarrotIcon,
-  HeartIcon,
-  LeafIcon,
-  PanIcon,
-  SearchIcon,
-  SparkIcon,
-} from '@/design/icons';
+import Link from 'next/link';
+
 import { RECIPES } from '@/design/fixtures';
-import { RecipeCard } from '@/design/recipe-card';
+import { ArrowIcon, SearchIcon } from '@/design/icons';
+import { PhotoBlock, RecipeCard } from '@/design/recipe-card';
 import { DesignShell } from '@/design/shell';
 
-const CATEGORIES: [string, React.ReactNode][] = [
-  ['Quick', <SparkIcon key="q" className="h-6 w-6" />],
-  ['Veggie', <LeafIcon key="v" className="h-6 w-6" />],
-  ['Comfort', <PanIcon key="c" className="h-6 w-6" />],
-  ['Favourites', <HeartIcon key="f" className="h-6 w-6" />],
-  ['Pantry', <CarrotIcon key="p" className="h-6 w-6" />],
+const COLLECTIONS: [string, string, string, string][] = [
+  ['Ready in 30', '24 recipes', 'bg-ink text-white', 'text-marigold'],
+  ['Vegetarian', '17 recipes', 'bg-leaf text-ink', 'text-ink'],
+  ['Slow & comforting', '12 recipes', 'bg-plum text-white', 'text-bubblegum'],
+  ['Your favourites', '5 recipes', 'bg-marigold text-ink', 'text-ember'],
 ];
 
-const STEPS: [string, string, string, string][] = [
+const STEPS: [string, string, string][] = [
   [
-    '1',
     'Save it',
-    'Paste a link or type a recipe. It lands as a plain text file in your Drive.',
-    'bg-leaf',
+    'Paste a link or type a recipe. It lands as a plain text file in your own Drive, not ours.',
+    '01',
   ],
   [
-    '2',
     'Find it',
-    'Search, filter by what you have, or just say what you feel like.',
-    'bg-bubblegum',
+    'Filter by what is in the cupboard, by cuisine or site, or just describe what you feel like.',
+    '02',
   ],
   [
-    '3',
     'Cook it',
-    'Big ingredients, clear steps, no ads, no life stories.',
-    'bg-plum text-white',
+    'Ingredients on one side, method on the other, no ads and no life stories.',
+    '03',
   ],
 ];
+
+/** A magazine-style tile in the hero collage. */
+function HeroTile({
+  recipe,
+  className,
+}: {
+  recipe: (typeof RECIPES)[number];
+  className: string;
+}) {
+  return (
+    <Link
+      href="/design/recipe"
+      className={`group border-ink/10 relative overflow-hidden rounded-lg border ${className}`}
+    >
+      <PhotoBlock
+        tone={recipe.tone}
+        cover={recipe.cover}
+        className="h-full w-full"
+      />
+      <div className="from-ink/70 absolute inset-x-0 bottom-0 bg-gradient-to-t to-transparent p-4 pt-12 text-white">
+        <p className="text-[10px] font-semibold tracking-[0.16em] uppercase opacity-80">
+          {recipe.cuisine}
+        </p>
+        <p className="font-display mt-1 text-lg leading-tight font-semibold">
+          {recipe.title}
+        </p>
+      </div>
+    </Link>
+  );
+}
 
 /** Home screen, signed out by default; add `?user=1` to see it signed in. */
 export default async function DesignHome({
@@ -49,107 +69,133 @@ export default async function DesignHome({
   const signedIn = (await searchParams).user === '1';
   return (
     <DesignShell signedIn={signedIn} active="home">
-      <section className="border-ink border-b">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-8 lg:grid-cols-[1.3fr_1fr] lg:py-20">
+      <section>
+        <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-12 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:py-20">
           <div>
-            <p className="border-ink bg-marigold font-display inline-block rounded-full border px-4 py-1 text-xs tracking-[0.2em] uppercase">
-              {signedIn ? 'Welcome back, Mridang' : 'Recipes you actually keep'}
+            <p className="text-ember flex items-center gap-2 text-xs font-semibold tracking-[0.18em] uppercase">
+              {signedIn ? (
+                <>
+                  <span className="bg-leaf h-2 w-2 rounded-full" />
+                  Welcome back, Mridang
+                </>
+              ) : (
+                'Recipes you actually keep'
+              )}
             </p>
-            <h1 className="font-display mt-6 text-5xl leading-[0.95] tracking-tight uppercase sm:text-7xl">
+            <h1 className="font-display mt-5 text-5xl leading-[1.04] font-semibold tracking-tight sm:text-6xl lg:text-7xl">
               Your recipes.
               <br />
-              <span className="text-flame">Your Drive.</span>
+              <em className="text-ember">Your Drive.</em>
               <br />
               Your rules.
             </h1>
-            <p className="mt-6 max-w-xl text-xl leading-snug">
+            <p className="text-ink/70 mt-6 max-w-xl text-lg leading-relaxed">
               chowdown keeps every recipe as a plain text file in a folder you
-              own, then makes them a joy to search, scale and cook from.
+              own, then makes them a pleasure to search, scale and cook from.
             </p>
-            <form className="border-ink mt-8 flex max-w-xl items-center gap-2 rounded-full border bg-white p-1.5">
-              <SearchIcon className="ml-3 h-6 w-6 shrink-0" />
-              <input
-                placeholder="What do you feel like?"
-                className="placeholder:text-ink/50 min-w-0 flex-1 bg-transparent px-2 py-2 text-lg outline-none"
-              />
+            <form className="mt-8 flex max-w-xl flex-col gap-2 sm:flex-row">
+              <label className="border-ink/20 focus-within:border-ink flex flex-1 items-center gap-3 rounded-md border bg-white px-4">
+                <SearchIcon className="text-ink/60 h-5 w-5 shrink-0" />
+                <input
+                  placeholder="What do you feel like?"
+                  className="placeholder:text-ink/45 h-12 min-w-0 flex-1 bg-transparent text-base outline-none"
+                />
+              </label>
               <button
                 type="button"
-                className="border-ink bg-flame font-display flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm tracking-wide text-white uppercase"
+                className="bg-ink hover:bg-ink/85 flex h-12 items-center justify-center gap-2 rounded-md px-6 text-sm font-semibold text-white transition"
               >
-                Find <ArrowIcon className="h-4 w-4" />
+                Search <ArrowIcon className="h-4 w-4" />
               </button>
             </form>
-            {signedIn ? null : (
-              <p className="font-display mt-4 text-xs tracking-wide uppercase">
-                Free · Sign in with Google · You keep the files
-              </p>
-            )}
+            <p className="text-ink/60 mt-4 text-sm">
+              {signedIn
+                ? '85 recipes · 32 Indian · 26 chicken · 5 favourites'
+                : 'Free · Sign in with Google · You keep the files'}
+            </p>
           </div>
-          <div className="relative hidden lg:block">
-            <div className="bg-flame rounded-2xl p-8 text-white">
-              <PanIcon className="h-24 w-24" strokeWidth={1.4} />
-              <p className="font-display mt-4 text-3xl leading-tight uppercase">
-                85 recipes ready to cook
-              </p>
-              <p className="mt-2 font-serif text-lg">
-                32 Indian · 26 chicken · 5 favourites
-              </p>
-            </div>
+
+          <div className="grid h-[22rem] grid-cols-2 grid-rows-2 gap-3 sm:h-[30rem] lg:h-[34rem]">
+            <HeroTile recipe={RECIPES[0]!} className="row-span-2" />
+            <HeroTile recipe={RECIPES[3]!} className="" />
+            <HeroTile recipe={RECIPES[1]!} className="" />
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-8">
-        <div className="flex flex-wrap gap-3">
-          {CATEGORIES.map(([label, icon]) => (
-            <a
-              key={label}
+      <section className="mx-auto max-w-7xl px-4 pb-4 sm:px-8">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {COLLECTIONS.map(([title, count, tone, accent]) => (
+            <Link
+              key={title}
               href="/design/search"
-              className="border-ink font-display hover:bg-marigold flex items-center gap-2 rounded-full border bg-white px-5 py-2.5 text-sm tracking-wide uppercase transition"
+              className={`group flex aspect-[5/3] flex-col justify-between rounded-lg p-5 transition hover:opacity-95 sm:aspect-[4/3] ${tone}`}
             >
-              {icon}
-              {label}
-            </a>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 sm:px-8">
-        <div className="flex items-end justify-between">
-          <h2 className="font-display text-3xl uppercase sm:text-4xl">
-            Cook this week
-          </h2>
-          <a
-            href="/design/search"
-            className="font-display flex items-center gap-1.5 text-sm uppercase underline underline-offset-4"
-          >
-            See all <ArrowIcon className="h-4 w-4" />
-          </a>
-        </div>
-        <div className="mt-6 grid gap-7 sm:grid-cols-2 lg:grid-cols-4">
-          {RECIPES.slice(0, 4).map((r) => (
-            <RecipeCard key={r.id} recipe={r} />
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto mt-20 max-w-7xl px-4 sm:px-8">
-        <h2 className="font-display text-3xl uppercase sm:text-4xl">
-          How it works
-        </h2>
-        <div className="mt-6 grid gap-5 md:grid-cols-3">
-          {STEPS.map(([n, title, body, tone]) => (
-            <div
-              key={n}
-              className={`border-ink rounded-2xl border p-6 ${tone}`}
-            >
-              <span className="border-ink font-display text-ink grid h-12 w-12 place-items-center rounded-full border bg-white text-2xl">
-                {n}
+              <span
+                className={`text-xs font-semibold tracking-[0.16em] uppercase ${accent}`}
+              >
+                {count}
               </span>
-              <h3 className="font-display mt-4 text-2xl uppercase">{title}</h3>
-              <p className="mt-2 text-lg leading-snug">{body}</p>
-            </div>
+              <span className="flex items-end justify-between gap-3">
+                <span className="font-display text-2xl leading-tight font-semibold sm:text-[1.7rem]">
+                  {title}
+                </span>
+                <ArrowIcon className="h-5 w-5 shrink-0 transition group-hover:translate-x-1" />
+              </span>
+            </Link>
           ))}
+        </div>
+      </section>
+
+      <section className="mt-16 bg-white py-16 sm:mt-24 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-8">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-ember text-xs font-semibold tracking-[0.18em] uppercase">
+                This week
+              </p>
+              <h2 className="font-display mt-2 text-3xl font-semibold sm:text-4xl">
+                Worth cooking again
+              </h2>
+            </div>
+            <Link
+              href="/design/search"
+              className="flex items-center gap-1.5 text-sm font-semibold underline underline-offset-4"
+            >
+              See all <ArrowIcon className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {RECIPES.slice(0, 4).map((r) => (
+              <RecipeCard key={r.id} recipe={r} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-ink text-white">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-8 sm:py-20">
+          <p className="text-marigold text-xs font-semibold tracking-[0.18em] uppercase">
+            How it works
+          </p>
+          <h2 className="font-display mt-2 max-w-xl text-3xl font-semibold sm:text-4xl">
+            Three steps, no lock-in
+          </h2>
+          <div className="mt-10 grid gap-10 md:grid-cols-3 md:gap-8">
+            {STEPS.map(([title, body, n]) => (
+              <div key={n} className="border-t border-white/20 pt-6">
+                <span className="font-display text-marigold text-5xl font-semibold italic">
+                  {n}
+                </span>
+                <h3 className="font-display mt-4 text-2xl font-semibold">
+                  {title}
+                </h3>
+                <p className="mt-2 max-w-sm leading-relaxed text-white/70">
+                  {body}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     </DesignShell>

@@ -14,8 +14,9 @@
   --color-leaf: #35b700;
   --color-plum: #a51bbe;
   --color-bubblegum: #ff7ca3;
+  /* A deeper flame for small text, which needs more contrast than the fill. */
+  --color-ember: #c23c00;
   --font-display: var(--font-display-face);
-  --font-serif: var(--font-newsreader);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -25,31 +26,4 @@
 body {
   background: var(--background);
   color: var(--foreground);
-}
-
-/* The scrolling ticker strip above the header (design sandbox). */
-@keyframes ticker {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-.animate-ticker {
-  animation: ticker 40s linear infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-ticker {
-    animation: none;
-  }
-}
-
-/* The display face is only loaded in its medium to bold weights. */
-@layer utilities {
-  .font-display {
-    font-weight: 700;
-  }
 }

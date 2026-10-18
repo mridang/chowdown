@@ -1,50 +1,36 @@
 import Link from 'next/link';
 
-import { BoltIcon, MenuIcon, SearchIcon, UserIcon } from './icons';
+import { MenuIcon, SearchIcon, UserIcon } from './icons';
 
-/** The scrolling strip above the header: marigold, flame-coloured shouting. */
-function Ticker() {
-  const items = [
-    'Your recipes, your Drive',
-    'Cook what you saved',
-    'Plain text, forever',
-    'Bring your own AI',
-  ];
-  const run = [...items, ...items, ...items, ...items];
-  return (
-    <div
-      className="border-ink bg-marigold text-flame overflow-hidden border-b py-1.5"
-      aria-hidden="true"
-    >
-      <div className="animate-ticker font-display flex w-max items-center gap-6 text-[13px] tracking-wide whitespace-nowrap uppercase">
-        {[...run, ...run].map((text, i) => (
-          <span key={i} className="flex items-center gap-6">
-            {text}
-            <BoltIcon className="h-3.5 w-3.5" />
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/** The wordmark: heavy, tilted a touch, with a small tagline underneath. */
+/** The wordmark: a heavy serif, lower case, with a small descriptor beneath. */
 export function Logo({ className = '' }: { className?: string }) {
   return (
-    <Link href="/design" className={`inline-block text-center ${className}`}>
-      <span className="font-display text-ink block text-3xl leading-none tracking-tight">
+    <Link
+      href="/design"
+      className={`text-ink inline-block leading-none ${className}`}
+      aria-label="chowdown home"
+    >
+      <span className="font-display block text-[1.7rem] font-bold tracking-tight">
         chowdown
       </span>
-      <span className="text-ink mt-1 block text-[9px] font-semibold tracking-[0.3em] uppercase">
-        ✦ recipe keeper ✦
+      <span className="mt-1 block text-[9px] font-semibold tracking-[0.28em] uppercase">
+        Recipe keeper
       </span>
     </Link>
   );
 }
 
+const NAV: [string, string, 'search' | 'favourites' | 'home'][] = [
+  ['Recipes', '/design/search', 'search'],
+  ['Favourites', '/design/search?fav=1', 'favourites'],
+  ['How it works', '/design/home', 'home'],
+];
+
 /**
- * The site header. When someone is signed in it shows who, with a green "live"
- * dot, so it is always obvious which account the recipes belong to.
+ * The site header: a thin marigold rule, then the wordmark, navigation and the
+ * account. When someone is signed in it names them, with a green dot, so it is
+ * always clear whose recipes these are. On phones the navigation folds into a
+ * menu and the account shrinks to the avatar.
  */
 export function SiteHeader({
   user,
@@ -53,58 +39,56 @@ export function SiteHeader({
   user: { name: string; email: string } | null;
   active?: 'home' | 'search' | 'favourites';
 }) {
-  const link = (href: string, label: string, key: string) => (
-    <Link
-      href={href}
-      className={`font-display text-sm tracking-wide uppercase decoration-2 underline-offset-8 hover:underline ${
-        active === key ? 'underline' : ''
-      }`}
-    >
-      {label}
-    </Link>
-  );
   return (
-    <header>
-      <Ticker />
-      <div className="border-ink bg-blush border-b">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-8">
-          <nav className="hidden items-center gap-7 md:flex">
-            {link('/design/search', 'Recipes', 'search')}
-            {link('/design/search?fav=1', 'Favourites', 'favourites')}
-            {link('/design/home', 'How it works', 'home')}
-          </nav>
-          <button
-            type="button"
-            className="border-ink grid h-11 w-11 place-items-center rounded-full border bg-white md:hidden"
-            aria-label="Menu"
-          >
-            <MenuIcon className="h-5 w-5" />
-          </button>
+    <header className="bg-blush/95 sticky top-0 z-30 backdrop-blur">
+      <div className="bg-marigold h-1.5" />
+      <div className="border-ink/10 border-b">
+        <div className="mx-auto flex h-[4.25rem] max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
+          <div className="flex items-center gap-10">
+            <Logo />
+            <nav
+              className="hidden items-center gap-1 md:flex"
+              aria-label="Main"
+            >
+              {NAV.map(([label, href, key]) => (
+                <Link
+                  key={key}
+                  href={href}
+                  aria-current={active === key ? 'page' : undefined}
+                  className={`hover:bg-ink/5 rounded-md px-3 py-2 text-sm font-medium transition ${
+                    active === key
+                      ? 'text-ink underline decoration-2 underline-offset-[10px]'
+                      : 'text-ink/70'
+                  }`}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          </div>
 
-          <Logo />
-
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/design/search"
-              className="border-ink hover:bg-marigold grid h-11 w-11 place-items-center rounded-full border bg-white transition"
+              className="text-ink hover:bg-ink/5 grid h-10 w-10 place-items-center rounded-md transition"
               aria-label="Search recipes"
             >
               <SearchIcon className="h-5 w-5" />
             </Link>
             {user ? (
               <div
-                className="border-ink flex items-center gap-2.5 rounded-full border bg-white py-1 pr-4 pl-1"
+                className="border-ink/15 flex items-center gap-2.5 rounded-md border bg-white py-1 pr-3 pl-1 sm:pr-4"
                 title={user.email}
               >
-                <span className="bg-plum font-display relative grid h-9 w-9 place-items-center rounded-full text-sm text-white">
+                <span className="bg-ink relative grid h-8 w-8 place-items-center rounded-full text-sm font-semibold text-white">
                   {user.name.slice(0, 1)}
-                  <span className="bg-leaf absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border border-white" />
+                  <span className="bg-leaf absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-white" />
                 </span>
                 <span className="hidden leading-tight sm:block">
-                  <span className="text-ink/60 block text-[10px] font-semibold tracking-wider uppercase">
+                  <span className="text-ink/55 block text-[10px] font-medium tracking-wider uppercase">
                     Signed in
                   </span>
-                  <span className="font-display block text-sm">
+                  <span className="block text-sm font-semibold">
                     {user.name}
                   </span>
                 </span>
@@ -112,12 +96,34 @@ export function SiteHeader({
             ) : (
               <Link
                 href="/design/home?user=1"
-                className="border-ink bg-flame font-display flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm tracking-wide text-white uppercase transition"
+                className="bg-ink hover:bg-ink/85 flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-white transition"
               >
                 <UserIcon className="h-4 w-4" />
                 Sign in
               </Link>
             )}
+            <details className="group relative md:hidden">
+              <summary
+                className="hover:bg-ink/5 grid h-10 w-10 cursor-pointer list-none place-items-center rounded-md"
+                aria-label="Menu"
+              >
+                <MenuIcon className="h-5 w-5" />
+              </summary>
+              <nav
+                className="border-ink/15 absolute right-0 mt-2 w-52 rounded-md border bg-white p-1.5"
+                aria-label="Mobile"
+              >
+                {NAV.map(([label, href]) => (
+                  <Link
+                    key={label}
+                    href={href}
+                    className="hover:bg-ink/5 block rounded px-3 py-2.5 text-sm font-medium"
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </nav>
+            </details>
           </div>
         </div>
       </div>

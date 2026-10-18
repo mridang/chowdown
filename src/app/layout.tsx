@@ -1,10 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import {
-  Barlow_Condensed,
-  Geist,
-  Geist_Mono,
-  Newsreader,
-} from 'next/font/google';
+import { Fraunces, Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
 const geistSans = Geist({
@@ -17,17 +12,11 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-/** Display face for the redesign: headings, buttons and labels. A clean condensed grotesque. */
-const display = Barlow_Condensed({
+/** Display face for the redesign: headings. A warm, characterful serif. */
+const display = Fraunces({
   variable: '--font-display-face',
   subsets: ['latin'],
-  weight: ['500', '600', '700'],
-});
-
-/** Text serif for the redesign: body copy, method steps and notes. */
-const newsreader = Newsreader({
-  variable: '--font-newsreader',
-  subsets: ['latin'],
+  style: ['normal', 'italic'],
 });
 
 const TITLE = 'chowdown';
@@ -70,7 +59,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${display.variable} ${newsreader.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${display.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col overflow-x-hidden font-sans">
         {children}

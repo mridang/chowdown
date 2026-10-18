@@ -2,22 +2,25 @@ import Link from 'next/link';
 
 import { CoverImage } from '@/components/cover-image';
 
-import { ClockIcon, FlameIcon, HeartIcon, PanIcon } from './icons';
 import type { SampleRecipe, Tone } from './fixtures';
+import { ClockIcon, FlameIcon, HeartIcon, PanIcon } from './icons';
 
-/** Background and ink for each tone, so tiles stay readable. */
-export const TONES: Record<Tone, string> = {
-  flame: 'bg-flame text-white',
-  marigold: 'bg-marigold text-ink',
-  leaf: 'bg-leaf text-ink',
-  plum: 'bg-plum text-white',
-  bubblegum: 'bg-bubblegum text-ink',
-  ink: 'bg-ink text-white',
+/**
+ * Soft tints for the photo placeholder, so a recipe without a cover still gets
+ * a quiet block of colour rather than a loud one.
+ */
+export const TINTS: Record<Tone, string> = {
+  flame: 'bg-flame/15 text-flame',
+  marigold: 'bg-marigold/30 text-ink',
+  leaf: 'bg-leaf/20 text-ink',
+  plum: 'bg-plum/15 text-plum',
+  bubblegum: 'bg-bubblegum/30 text-ink',
+  ink: 'bg-ink/10 text-ink',
 };
 
 /**
- * A stand-in for a recipe photo: a bold colour block with a big pan. Real
- * photos replace it when there is a cover image.
+ * A stand-in for a recipe photo. With a cover it shows the photo (falling back
+ * to the tint if the image fails to load); without one, a soft tinted block.
  */
 export function PhotoBlock({
   tone,
@@ -29,10 +32,8 @@ export function PhotoBlock({
   className?: string;
 }) {
   const tile = (
-    <div
-      className={`relative grid h-full w-full place-items-center overflow-hidden ${TONES[tone]}`}
-    >
-      <PanIcon className="h-1/3 w-1/3 opacity-30" strokeWidth={1.2} />
+    <div className={`grid h-full w-full place-items-center ${TINTS[tone]}`}>
+      <PanIcon className="h-1/4 w-1/4 opacity-40" strokeWidth={1.1} />
     </div>
   );
   return (
@@ -50,48 +51,48 @@ export function PhotoBlock({
   );
 }
 
-/** A small pill with an icon, used for time and difficulty on cards. */
-function Stat({ children, icon }: { children: string; icon: React.ReactNode }) {
-  return (
-    <span className="font-display inline-flex items-center gap-1.5 text-[11px] tracking-wide uppercase">
-      {icon}
-      {children}
-    </span>
-  );
+/** Minutes as "35 min" or "2 h 30". */
+export function duration(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+  const rest = minutes % 60;
+  return rest ? `${Math.floor(minutes / 60)} h ${rest}` : `${minutes / 60} h`;
 }
 
 /**
- * A recipe card: a flat white card with a hairline border, a heart that is
- * outlined until favourited, and the facts you decide on.
+ * A recipe card: photo, a small cuisine label, a serif title, and the two facts
+ * you decide on. Flat, with a hairline border and a heart that appears on hover
+ * (and stays when the recipe is a favourite).
  */
 export function RecipeCard({ recipe }: { recipe: SampleRecipe }) {
   return (
     <article className="group relative">
       <Link
         href="/design/recipe"
-        className="border-ink block overflow-hidden rounded-2xl border bg-white transition"
+        className="border-ink/10 group-hover:border-ink/30 block overflow-hidden rounded-lg border bg-white transition"
       >
         <PhotoBlock
           tone={recipe.tone}
           cover={recipe.cover}
-          className="border-ink aspect-[4/3] border-b"
+          className="aspect-[4/3]"
         />
-        <div className="p-4">
-          <p className="font-display text-flame text-[11px] tracking-[0.18em] uppercase">
+        <div className="p-4 sm:p-5">
+          <p className="text-ember text-[11px] font-semibold tracking-[0.16em] uppercase">
             {recipe.cuisine} · {recipe.protein}
           </p>
-          <h3 className="font-display mt-1.5 text-xl leading-tight">
+          <h3 className="font-display mt-2 text-xl leading-snug font-semibold">
             {recipe.title}
           </h3>
-          <div className="border-ink/30 mt-3 flex items-center gap-4 border-t border-dotted pt-3">
-            <Stat icon={<ClockIcon className="h-4 w-4" />}>
-              {recipe.minutes >= 60
-                ? `${Math.floor(recipe.minutes / 60)}h ${recipe.minutes % 60 || ''}`.trim()
-                : `${recipe.minutes} min`}
-            </Stat>
-            <Stat icon={<FlameIcon className="h-4 w-4" />}>
+          <div className="text-ink/65 mt-4 flex items-center gap-5 text-[13px]">
+            <span className="inline-flex items-center gap-1.5">
+              <ClockIcon className="h-4 w-4" />
+              {duration(recipe.minutes)}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <FlameIcon className="h-4 w-4" />
               {recipe.difficulty}
-            </Stat>
+            </span>
           </div>
         </div>
       </Link>
@@ -100,13 +101,13 @@ export function RecipeCard({ recipe }: { recipe: SampleRecipe }) {
         aria-label={
           recipe.favourite ? 'Remove from favourites' : 'Add to favourites'
         }
-        className={`border-ink absolute top-3 right-3 grid h-10 w-10 place-items-center rounded-full border transition ${
+        className={`border-ink/10 absolute top-3 right-3 grid h-9 w-9 place-items-center rounded-full border bg-white transition ${
           recipe.favourite
-            ? 'bg-bubblegum text-ink'
-            : 'text-ink bg-white opacity-0 group-hover:opacity-100'
+            ? 'text-flame'
+            : 'text-ink/70 focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100'
         }`}
       >
-        <HeartIcon filled={recipe.favourite} className="h-5 w-5" />
+        <HeartIcon filled={recipe.favourite} className="h-[18px] w-[18px]" />
       </button>
     </article>
   );
