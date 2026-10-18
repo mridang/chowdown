@@ -4,6 +4,7 @@ import {
   DriveNotConnectedError,
   driveAttemptOf,
   driveConnectHref,
+  isAuthFailure,
   isDriveConnected,
   wasDriveConnected,
 } from '../../../src/lib/auth/drive-access';
@@ -58,5 +59,43 @@ describe('driveAttemptOf', () => {
     expect(driveAttemptOf(undefined)).toBeUndefined();
     expect(driveAttemptOf(['error', 'denied'])).toBe('error');
     expect(driveAttemptOf([])).toBeUndefined();
+  });
+});
+
+describe('isAuthFailure', () => {
+  it('is true when Google reports an invalid or revoked grant', () => {
+    expect(
+      isAuthFailure(
+        new Error(
+          'Token refresh failed: 400 {"error":"invalid_grant","error_description":"Token has been expired or revoked."}',
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it('is false for our own misconfiguration, which must not wipe anyone’s connection', () => {
+    expect(
+      isAuthFailure(
+        new Error('Token refresh failed: 401 {"error":"invalid_client"}'),
+      ),
+    ).toBe(false);
+    expect(
+      isAuthFailure(
+        new Error('Token refresh failed: 400 {"error":"invalid_request"}'),
+      ),
+    ).toBe(false);
+  });
+
+  it('is false for transient failures that should not force a reconnect', () => {
+    expect(
+      isAuthFailure(new Error('Token refresh failed: 503 unavailable')),
+    ).toBe(false);
+    expect(isAuthFailure(new Error('fetch failed'))).toBe(false);
+    expect(isAuthFailure(new Error('Drive list failed: 500'))).toBe(false);
+  });
+
+  it('copes with non-Error values', () => {
+    expect(isAuthFailure('invalid_grant')).toBe(true);
+    expect(isAuthFailure(undefined)).toBe(false);
   });
 });

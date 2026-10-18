@@ -61,6 +61,14 @@ function refuse(refusal: ProtocolRefusal, cors: Record<string, string>) {
   });
 }
 
+/** The most messages one POST may carry. */
+const MAX_BATCH = 20;
+
+/** Whether a parsed JSON value is a plain object (not null, array or scalar). */
+export function isMessageObject(value: unknown): value is JsonRpcMessage {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 const rpcError = (code: number, message: string) => ({
   jsonrpc: '2.0',
   id: null,
@@ -89,6 +97,18 @@ export async function handleMcpPost(
     });
   }
   const messages = Array.isArray(payload) ? payload : [payload];
+  // Every message must be a JSON object, and a batch must stay a sensible size
+  // (its messages run side by side).
+  if (
+    messages.length === 0 ||
+    messages.length > MAX_BATCH ||
+    !messages.every(isMessageObject)
+  ) {
+    return NextResponse.json(rpcError(-32600, 'Invalid Request'), {
+      status: 400,
+      headers: cors,
+    });
+  }
 
   for (const message of messages) {
     const refusal = checkRequestHeaders(request.headers, message);

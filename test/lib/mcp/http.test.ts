@@ -62,6 +62,57 @@ describe('originRefusal / corsFor', () => {
   });
 });
 
+describe('handleMcpPost — malformed bodies', () => {
+  const invalid = async (body: unknown) => {
+    const res = await handleMcpPost(post(body), user, null, SELF);
+    return {
+      status: res.status,
+      code: ((await res.json()) as { error: { code: number } }).error.code,
+    };
+  };
+
+  it('answers JSON that is not an object with Invalid Request, not a crash', async () => {
+    expect(await invalid([null])).toEqual({ status: 400, code: -32600 });
+    expect(await invalid(7)).toEqual({ status: 400, code: -32600 });
+    expect(await invalid('ping')).toEqual({ status: 400, code: -32600 });
+    expect(await invalid([[]])).toEqual({ status: 400, code: -32600 });
+  });
+
+  it('refuses an empty batch and an oversized one', async () => {
+    expect(await invalid([])).toEqual({ status: 400, code: -32600 });
+    const many = Array.from({ length: 21 }, () => ({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'ping',
+    }));
+    expect(await invalid(many)).toEqual({ status: 400, code: -32600 });
+  });
+
+  it('still answers a batch within the limit', async () => {
+    const res = await handleMcpPost(
+      post([
+        { jsonrpc: '2.0', id: 1, method: 'ping' },
+        { jsonrpc: '2.0', id: 2, method: 'ping' },
+      ]),
+      user,
+      null,
+      SELF,
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toHaveLength(2);
+  });
+
+  it('gives any notification an empty 202, not an error', async () => {
+    const res = await handleMcpPost(
+      post({ jsonrpc: '2.0', method: 'notifications/cancelled' }),
+      user,
+      null,
+      SELF,
+    );
+    expect(res.status).toBe(202);
+  });
+});
+
 describe('handleMcpPost — protocol checks', () => {
   it('answers server/discover for a newest-era client', async () => {
     const res = await handleMcpPost(

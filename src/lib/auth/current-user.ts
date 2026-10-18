@@ -10,11 +10,11 @@
 
 import { cookies } from 'next/headers';
 
-import { DriveNotConnectedError } from './drive-access';
+import { DriveNotConnectedError, isAuthFailure } from './drive-access';
 import { refreshAccessToken } from './google-oauth';
 import { SESSION_COOKIE, verifySessionToken } from './session';
 import { decryptSecret } from '../crypto';
-import { getUserById, type User } from '../db/users';
+import { clearRefreshToken, getUserById, type User } from '../db/users';
 import { getDatabase, getEnv } from '../util';
 
 /**
@@ -50,23 +50,41 @@ export async function getSessionUid(): Promise<number | null> {
 
 /**
  * Exchange a user's stored refresh token for a fresh Drive access token.
- * Throws {@link DriveNotConnectedError} if the user hasn't connected Drive (or
- * Google has since rejected the login), which callers turn into "connect your
- * Google Drive".
+ *
+ * Throws {@link DriveNotConnectedError} if the user hasn't connected Drive, and
+ * also when the stored login turns out to be unusable: Google rejected it
+ * (expired or revoked) or it can't be unsealed (the key changed). In those
+ * cases the token is cleared first, so the person is offered "reconnect"
+ * everywhere rather than being stuck as "connected" with nothing working.
+ * Other failures (a network blip) are rethrown untouched.
  */
 export async function getUserAccessToken(user: User): Promise<string> {
   if (!user.refresh_token_enc) {
     throw new DriveNotConnectedError();
   }
   const env = getEnv();
-  const refreshToken = await decryptSecret(
-    user.refresh_token_enc,
-    env.TOKEN_ENCRYPTION_KEY,
-  );
-  const { access_token } = await refreshAccessToken({
-    refreshToken,
-    clientId: env.GOOGLE_OAUTH_CLIENT_ID,
-    clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
-  });
-  return access_token;
+  let refreshToken: string;
+  try {
+    refreshToken = await decryptSecret(
+      user.refresh_token_enc,
+      env.TOKEN_ENCRYPTION_KEY,
+    );
+  } catch {
+    await clearRefreshToken(getDatabase(), user.id);
+    throw new DriveNotConnectedError();
+  }
+  try {
+    const { access_token } = await refreshAccessToken({
+      refreshToken,
+      clientId: env.GOOGLE_OAUTH_CLIENT_ID,
+      clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+    });
+    return access_token;
+  } catch (error) {
+    if (isAuthFailure(error)) {
+      await clearRefreshToken(getDatabase(), user.id);
+      throw new DriveNotConnectedError();
+    }
+    throw error;
+  }
 }

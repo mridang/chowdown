@@ -8,6 +8,7 @@
  * wording and ranking can be tested without a server.
  */
 
+import { DriveNotConnectedError } from '../auth/drive-access';
 import { countOf, foldText, listAnd } from '../intl';
 import type { Recipe } from '../db/recipes';
 import { parseRecipe } from '../recipe/cooklang';
@@ -602,7 +603,11 @@ export async function runScenarioTool(
     try {
       await deps.sync();
       rows = await deps.rows();
-    } catch {
+    } catch (error) {
+      if (error instanceof DriveNotConnectedError) {
+        // Nothing to answer from, and the reason matters: say it.
+        throw error;
+      }
       // Answer from what there is; an empty collection reads as empty.
     }
   } else {

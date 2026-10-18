@@ -7,11 +7,12 @@ const nextConfig: NextConfig = {
     return [
       {
         // The approval screen must never be framed (clickjacking would let a
-        // hostile page trick someone into approving an app) or cached.
+        // hostile page trick someone into approving an app) or cached. (Its
+        // Content-Security-Policy, which also forbids framing, comes from the
+        // Worker with the rest of the site's.)
         source: '/oauth/authorize',
         headers: [
           { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
           { key: 'Cache-Control', value: 'no-store' },
           { key: 'Referrer-Policy', value: 'no-referrer' },
         ],

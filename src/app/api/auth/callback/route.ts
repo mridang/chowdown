@@ -67,7 +67,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       match: state === expectedState,
       oauthError,
     });
-    return finish('/?error=auth');
+    // Leave the cookies alone: a stray or forged request must not be able to
+    // wipe the state of a sign-in that is genuinely in flight. The label in the
+    // value is only used to pick the wording, never trusted.
+    const label = state ? purposeOf(state) : undefined;
+    return NextResponse.redirect(
+      `${origin}${label === 'drive' ? driveResultPath('error') : '/?error=auth'}`,
+    );
   }
   // Closed the Google window or pressed Cancel.
   if (!code) {
@@ -125,12 +131,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       console.error('[auth callback] drive grant carried no refresh token');
       return finish(driveResultPath('error'));
     }
-    await setRefreshToken(
-      db,
-      user.id,
-      await encryptSecret(tokens.refresh_token, env.TOKEN_ENCRYPTION_KEY),
-    );
-    // The fresh access token is used directly; no refresh round trip.
+    // The fresh access token is used directly (no refresh round trip). The
+    // folder comes first so a failure here leaves nothing half-connected.
     if (!user.recipes_folder_id) {
       await setRecipesFolderId(
         db,
@@ -138,6 +140,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         await ensureRecipesFolder(tokens.access_token),
       );
     }
+    await setRefreshToken(
+      db,
+      user.id,
+      await encryptSecret(tokens.refresh_token, env.TOKEN_ENCRYPTION_KEY),
+    );
     const response = finish(returnTo ?? '/app');
     await setSessionCookie(response, user, {
       secret: env.SESSION_SECRET,

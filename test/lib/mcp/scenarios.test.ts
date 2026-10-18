@@ -1,3 +1,4 @@
+import { DriveNotConnectedError } from '../../../src/lib/auth/drive-access';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import type { Recipe } from '../../../src/lib/db/recipes';
@@ -472,6 +473,17 @@ describe('runScenarioTool', () => {
     const result = await runScenarioTool('list_filters', {}, all);
     expect(result.message).toBe('No recipes yet.');
     expect(result.plain).toBe(true);
+  });
+
+  it('says so, rather than reporting an empty collection, when Drive is not connected', async () => {
+    const { all } = deps([], {
+      sync: async () => {
+        throw new DriveNotConnectedError();
+      },
+    });
+    await expect(runScenarioTool('list_filters', {}, all)).rejects.toThrow(
+      DriveNotConnectedError,
+    );
   });
 
   it('knows which recipes are favourites and works the eating style out for old rows', async () => {

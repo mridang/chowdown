@@ -67,14 +67,18 @@ const handler: ExportedHandler<CloudflareEnv> = {
     // is where Next.js looks for the number) and back to the browser on the
     // response, whether the page is rendered now or comes from the edge copy.
     const nonce = newNonce();
-    const csp = buildCsp(nonce);
-    const forwarded = new Request(request, {
-      headers: new Headers([
-        ...request.headers,
-        ['content-security-policy', csp],
-        ['x-nonce', nonce],
-      ]),
-    });
+    // The approval screen may not be framed by anyone, not even this site.
+    const csp = buildCsp(
+      nonce,
+      new URL(request.url).pathname === '/oauth/authorize' ? 'none' : 'self',
+    );
+    // `set`, not append: a policy or nonce header sent by the caller must be
+    // replaced, or Next.js could read the caller's nonce instead of ours and
+    // render a page (that may then be cached) whose scripts our policy refuses.
+    const forwardedHeaders = new Headers(request.headers);
+    forwardedHeaders.set('content-security-policy', csp);
+    forwardedHeaders.set('x-nonce', nonce);
+    const forwarded = new Request(request, { headers: forwardedHeaders });
     const fetched = await (openNextHandler as ExportedHandler<CloudflareEnv>)
       .fetch!(forwarded, env, ctx);
     const isHtml = (fetched.headers.get('content-type') ?? '').startsWith(

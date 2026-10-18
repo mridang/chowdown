@@ -11,10 +11,14 @@
 import { redirect } from 'next/navigation';
 
 import { getSessionUid } from '../auth/current-user';
-import { isDriveConnected, wasDriveConnected } from '../auth/drive-access';
+import {
+  DriveNotConnectedError,
+  isDriveConnected,
+  wasDriveConnected,
+} from '../auth/drive-access';
 import { getAppPageRows, type AppPageRows } from '../db/recipe-page';
 import { getDatabase, getEnv, runInBackground } from '../util';
-import { isAuthFailure, syncFromDrive } from './drive-sync';
+import { syncFromDrive } from './drive-sync';
 import { backfillEmbeddings } from './embed-write';
 
 /** Whether the person's Google Drive is connected, and how to word asking again. */
@@ -66,7 +70,7 @@ export async function loadCollection(): Promise<Collection> {
     } catch (error) {
       // A rejected login was cleared by the sync; anything else (a network
       // blip) just leaves the list empty until the next visit.
-      connected = !isAuthFailure(error);
+      connected = !(error instanceof DriveNotConnectedError);
     }
     ({ recipes, embeddedCount, favouriteIds } = await getAppPageRows(db, uid));
   } else if (connected) {

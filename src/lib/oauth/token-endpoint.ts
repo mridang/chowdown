@@ -223,7 +223,7 @@ export async function exchangeAuthorizationCode(
 export interface RefreshExchange {
   refreshToken: string;
   clientId: string;
-  /** A narrower scope than granted, optionally. */
+  /** The scope asked for, which may not exceed the grant (and does not narrow it). */
   scope: string | undefined;
 }
 
@@ -257,7 +257,6 @@ export async function exchangeRefreshToken(
     return fail('invalid_grant', 'The refresh token has expired.');
   }
 
-  let scope = grant.scope;
   if (request.scope) {
     const asked = request.scope.split(/\s+/).filter(Boolean);
     if (
@@ -270,13 +269,15 @@ export async function exchangeRefreshToken(
         'Cannot widen the scope of a refresh token.',
       );
     }
-    scope = asked;
   }
   if (!(await store.markTokenUsed(hash, now))) {
     await store.revokeGrant(grant.id);
     return fail('invalid_grant', 'The refresh token was already used.');
   }
-  return issueTokens(store, grant.id, scope, now);
+  // Tokens are not scoped one by one: whatever was asked, the new pair carries
+  // the whole grant's scope, and the response says so rather than pretending to
+  // have narrowed it.
+  return issueTokens(store, grant.id, grant.scope, now);
 }
 
 /** Who a valid access token speaks for. */

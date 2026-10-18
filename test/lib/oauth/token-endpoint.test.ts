@@ -400,7 +400,7 @@ describe('exchangeRefreshToken', () => {
     expect(result).toMatchObject({ ok: false, error: 'invalid_grant' });
   });
 
-  it('can narrow the scope but never widen it', async () => {
+  it('never widens the scope', async () => {
     const readOnly = await newCode({ scope: ['recipes:read'] });
     const first = (await redeem(readOnly)) as TokenResponse;
     expect(
@@ -408,10 +408,15 @@ describe('exchangeRefreshToken', () => {
         scope: 'recipes:read recipes:write',
       }),
     ).toMatchObject({ ok: false, error: 'invalid_scope' });
+  });
+
+  it('reports the whole grant, since tokens are not narrowed one by one', async () => {
+    const code = await newCode({ scope: ['recipes:read', 'recipes:write'] });
+    const first = (await redeem(code)) as TokenResponse;
     const second = (await refresh(first.refresh_token, {
       scope: 'recipes:read',
     })) as TokenResponse;
-    expect(second.scope).toBe('recipes:read');
+    expect(second.scope).toBe('recipes:read recipes:write');
   });
 });
 

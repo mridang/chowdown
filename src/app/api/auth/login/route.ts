@@ -41,6 +41,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const returnTo = safeReturnPath(request.nextUrl.searchParams.get('returnTo'));
   if (returnTo) {
     response.cookies.set(RETURN_COOKIE, returnTo, cookie);
+  } else {
+    // Don't let an abandoned earlier attempt send them somewhere stale.
+    response.cookies.delete(RETURN_COOKIE);
   }
   return response;
 }

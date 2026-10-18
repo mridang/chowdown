@@ -1083,6 +1083,13 @@ async function dispatch(
   message: JsonRpcMessage,
 ): Promise<object | null> {
   const id = message.id ?? null;
+  // A notification expects no reply, whatever it announces.
+  if (
+    typeof message.method === 'string' &&
+    message.method.startsWith('notifications/')
+  ) {
+    return null;
+  }
   try {
     switch (message.method) {
       case 'initialize':
@@ -1118,8 +1125,6 @@ async function dispatch(
             cacheScope: 'public',
           },
         };
-      case 'notifications/initialized':
-        return null;
       case 'ping':
         return { jsonrpc: '2.0', id, result: {} };
       case 'tools/list':
@@ -1177,12 +1182,16 @@ async function dispatch(
         };
     }
   } catch (err) {
+    // What went wrong stays in our logs: the text can carry Google's replies or
+    // database details, which should not travel on to an assistant and the
+    // service behind it.
+    console.error('[mcp] request failed:', err);
     return {
       jsonrpc: '2.0',
       id,
       error: {
         code: -32000,
-        message: err instanceof Error ? err.message : String(err),
+        message: 'Something went wrong on the server.',
       },
     };
   }

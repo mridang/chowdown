@@ -63,6 +63,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   response.cookies.set(STATE_COOKIE, state, cookie);
   if (returnTo) {
     response.cookies.set(RETURN_COOKIE, returnTo, cookie);
+  } else {
+    // Don't let an abandoned earlier attempt send them somewhere stale.
+    response.cookies.delete(RETURN_COOKIE);
   }
   return response;
 }

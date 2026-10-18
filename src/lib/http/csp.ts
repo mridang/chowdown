@@ -22,8 +22,14 @@ export function newNonce(): string {
   return btoa(binary);
 }
 
-/** The policy for one response, carrying that response's nonce. */
-export function buildCsp(nonce: string): string {
+/**
+ * The policy for one response, carrying that response's nonce. `framing` says
+ * who may put the page in a frame: this site (the default) or no one.
+ */
+export function buildCsp(
+  nonce: string,
+  framing: 'self' | 'none' = 'self',
+): string {
   return [
     // Deny anything not named below; every kind of load the site needs is listed.
     "default-src 'none'",
@@ -42,7 +48,7 @@ export function buildCsp(nonce: string): string {
     "frame-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'self'",
+    `frame-ancestors '${framing}'`,
     'upgrade-insecure-requests',
   ].join('; ');
 }

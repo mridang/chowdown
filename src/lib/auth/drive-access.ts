@@ -51,3 +51,15 @@ export function driveAttemptOf(
   const one = Array.isArray(value) ? value[0] : value;
   return one === 'denied' || one === 'error' ? one : undefined;
 }
+
+/**
+ * Whether an error means Google rejected the stored login (an expired or
+ * revoked refresh token), as opposed to a passing network or Drive hiccup or a
+ * problem on our side (a rotated client secret answers `invalid_client`, which
+ * must not wipe every person's connection). Only the former should send the
+ * person back to connect Drive again.
+ */
+export function isAuthFailure(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /invalid_grant/i.test(message);
+}
