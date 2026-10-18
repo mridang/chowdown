@@ -2,8 +2,12 @@
 
 import { useCallback, useRef, useState } from 'react';
 
+import { CloseIcon } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import { countOf } from '@/lib/intl';
 import { problemMessage } from '@/lib/problem-message';
+
+import { FormField, FormMessage, TextArea, TextInput } from './form-fields';
 
 /** A prepared, not-yet-saved recipe, from an item of POST /api/recipe-imports. */
 interface ImportDraft {
@@ -144,126 +148,147 @@ export function AddRecipes({
   );
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-900">Add recipes</h2>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-sm text-slate-400 hover:text-slate-700"
+    <section
+      aria-labelledby="add-recipes-heading"
+      className="rounded-card border-ink/10 border bg-white p-5 sm:p-8"
+    >
+      <div className="flex items-center justify-between gap-4">
+        <h2
+          id="add-recipes-heading"
+          className="font-display text-2xl font-semibold tracking-tight"
         >
+          {phase === 'input'
+            ? 'Import links or text'
+            : phase === 'review'
+              ? 'Review your recipes'
+              : 'All done'}
+        </h2>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          <CloseIcon className="h-4 w-4" />
           Close
-        </button>
+        </Button>
       </div>
 
       {phase === 'input' ? (
         <>
-          <p className="mt-2 text-[13px] text-slate-500">
+          <p className="text-ink/75 mt-2 max-w-2xl leading-relaxed">
             Paste recipe links, markdown, or plain text — mix as many as you
             like. We&apos;ll fetch each link, turn everything into Cooklang, and
             walk you through saving them one at a time.
           </p>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            rows={10}
-            placeholder={
-              'https://example.com/pasta\nhttps://example.com/curry\n\nor paste a recipe directly…'
-            }
-            className="mt-3 w-full rounded-md border border-slate-200 px-3 py-2 font-mono text-[13px]"
-          />
-          {error ? (
-            <p className="mt-2 text-[13px] text-red-600">{error}</p>
-          ) : null}
-          <div className="mt-3">
-            <button
-              type="button"
+          <div className="mt-5">
+            <FormField id="import-input" label="Links or recipe text">
+              <TextArea
+                id="import-input"
+                mono
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                rows={10}
+                placeholder={
+                  'https://example.com/pasta\nhttps://example.com/curry\n\nor paste a recipe directly…'
+                }
+              />
+            </FormField>
+          </div>
+          {error ? <FormMessage tone="error">{error}</FormMessage> : null}
+          <div className="mt-5">
+            <Button
+              size="lg"
               onClick={prepare}
               disabled={busy || !input.trim()}
-              className="rounded-md bg-amber-600 px-3.5 py-1.5 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
+              aria-busy={busy}
+              className="disabled:opacity-50"
             >
               {busy ? 'Preparing…' : 'Prepare recipes'}
-            </button>
+            </Button>
           </div>
         </>
       ) : null}
 
       {phase === 'review' ? (
         <>
-          <p className="mt-2 text-[13px] font-medium text-slate-500">
+          <p className="text-ink/75 mt-2 font-medium">
             Recipe {index + 1} of {drafts.length}
             {drafts[index]?.source ? (
               <>
                 {' · '}
-                <span className="text-slate-400">{drafts[index]!.source}</span>
+                <span className="text-ink/65 break-all">
+                  {drafts[index]!.source}
+                </span>
               </>
             ) : null}
           </p>
 
           {drafts[index]?.error ? (
-            <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-[13px] text-amber-800">
-              {drafts[index]!.error}
-            </p>
+            <FormMessage tone="note">{drafts[index]!.error}</FormMessage>
           ) : null}
 
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Recipe name"
-            className="mt-3 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm"
-          />
-          <textarea
-            value={cook}
-            onChange={(e) => setCook(e.target.value)}
-            rows={14}
-            spellCheck={false}
-            placeholder="Cooklang source — paste or edit the recipe here."
-            className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 font-mono text-[13px]"
-          />
-          {error ? (
-            <p className="mt-2 text-[13px] text-red-600">{error}</p>
-          ) : null}
-          <div className="mt-3 flex gap-2">
-            <button
-              type="button"
+          <div className="mt-5 flex flex-col gap-5">
+            <FormField id="draft-name" label="Recipe name">
+              <TextInput
+                id="draft-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Recipe name"
+              />
+            </FormField>
+            <FormField
+              id="draft-cook"
+              label="Cooklang source"
+              hint="Paste or edit the recipe here."
+            >
+              <TextArea
+                id="draft-cook"
+                mono
+                aria-describedby="draft-cook-hint"
+                value={cook}
+                onChange={(e) => setCook(e.target.value)}
+                rows={14}
+                spellCheck={false}
+                placeholder="Cooklang source — paste or edit the recipe here."
+              />
+            </FormField>
+          </div>
+          {error ? <FormMessage tone="error">{error}</FormMessage> : null}
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Button
+              size="lg"
               onClick={saveCurrent}
               disabled={busy}
-              className="rounded-md bg-amber-600 px-3.5 py-1.5 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
+              aria-busy={busy}
+              className="disabled:opacity-50"
             >
               {busy
                 ? 'Saving…'
                 : index + 1 < drafts.length
                   ? 'Save & next'
                   : 'Save & finish'}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
               onClick={skip}
               disabled={busy}
-              className="rounded-md border border-slate-200 px-3.5 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+              className="disabled:opacity-50"
             >
               Skip
-            </button>
+            </Button>
           </div>
         </>
       ) : null}
 
       {phase === 'done' ? (
         <>
-          <p className="mt-3 text-sm text-slate-700">
+          <p className="mt-3 text-lg" role="status">
             Saved {countOf(savedCount, 'recipe')} to your Drive.
           </p>
-          <div className="mt-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md bg-amber-600 px-3.5 py-1.5 text-sm font-semibold text-white transition hover:bg-amber-700"
-            >
+          <div className="mt-5">
+            <Button size="lg" onClick={onClose}>
               Done
-            </button>
+            </Button>
           </div>
         </>
       ) : null}
-    </div>
+    </section>
   );
 }

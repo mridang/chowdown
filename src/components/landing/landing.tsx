@@ -1,12 +1,18 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-import type { SampleRecipe } from '@/components/landing/demo-recipes';
-import { duration, sentenceCase } from '@/lib/format';
-import { ClockIcon, GoogleIcon, PlugIcon, ServingsIcon } from '@/components/icons';
-import { PhotoBlock, RecipeCard } from '@/components/recipes/recipe-card';
-import { FilterPanel } from '@/components/recipes/filter-panel';
-import { buildFacets, parseQuery } from '@/components/recipes/search-query';
+import type { SampleRecipe, Tone } from '@/components/landing/demo-recipes';
+import {
+  fileSlug,
+  previewLines,
+  tidyLine,
+} from '@/components/landing/cook-file';
+import {
+  ClockIcon,
+  GoogleIcon,
+  PanIcon,
+  PlugIcon,
+  ServingsIcon,
+} from '@/components/icons';
 import { MCP_URL } from '@/components/site/site-footer';
 import {
   Accordion,
@@ -18,6 +24,13 @@ import { ButtonLink } from '@/components/ui/button';
 import { cn } from '@/components/ui/cn';
 import { Difficulty } from '@/components/ui/difficulty';
 import { Container, Eyebrow, Heading, Section } from '@/components/ui/layout';
+import { duration, sentenceCase } from '@/lib/format';
+
+/**
+ * The landing page is a public, static page, so everything on it is drawn from
+ * the made-up recipes in `demo-recipes.ts`: no saved recipe of anyone's, no
+ * photo from another site, and no client script apart from the FAQ accordion.
+ */
 
 /** The Google sign-in button used throughout the landing page. */
 export function SignInButton({ size = 'lg' }: { size?: 'md' | 'lg' }) {
@@ -26,6 +39,30 @@ export function SignInButton({ size = 'lg' }: { size?: 'md' | 'lg' }) {
       <GoogleIcon className="h-5 w-5" />
       Continue with Google
     </ButtonLink>
+  );
+}
+
+/**
+ * Soft tints for a recipe's picture, so a sample recipe gets a quiet block of
+ * colour rather than a photo.
+ */
+const TINTS: Record<Tone, string> = {
+  flame: 'bg-flame/15 text-flame',
+  marigold: 'bg-marigold/30 text-ink',
+  forest: 'bg-forest/15 text-forest',
+  sand: 'bg-sand text-ink/70',
+  ink: 'bg-ink/10 text-ink',
+};
+
+/** A recipe's stand-in picture: a tinted block with a pan. The caller sets the shape. */
+function Tile({ tone, className }: { tone: Tone; className?: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn('grid place-items-center', TINTS[tone], className)}
+    >
+      <PanIcon className="h-1/4 w-1/4 opacity-40" strokeWidth={1.1} />
+    </div>
   );
 }
 
@@ -46,7 +83,7 @@ function Window({
       role="img"
       aria-label={label}
       className={cn(
-        'overflow-hidden rounded-card border border-ink/15 bg-white',
+        'rounded-card border-ink/15 overflow-hidden border bg-white',
         className,
       )}
     >
@@ -103,12 +140,6 @@ function CookLine({ line }: { line: string }) {
   );
 }
 
-/** Shorten a long line and show metadata units ("15%minutes") the way a person writes them. */
-function tidy(line: string): string {
-  const clean = line.startsWith('>>') ? line.replace('%', ' ') : line;
-  return clean.length > 92 ? `${clean.slice(0, 90)}…` : clean;
-}
-
 /** The first lines of a recipe's Cooklang file, as a text editor shows them. */
 function CookFile({
   recipe,
@@ -117,28 +148,15 @@ function CookFile({
   recipe: SampleRecipe;
   lines?: number;
 }) {
-  const text = (recipe.cooklang ?? '')
-    .split('\n')
-    .filter(
-      (l) =>
-        l.trim() &&
-        !l.startsWith('>> images') &&
-        !l.startsWith('>> keywords') &&
-        !l.startsWith('>> favourite'),
-    )
-    .slice(0, lines);
   return (
     <Window
       label="A recipe as a plain text file"
-      title={`${recipe.title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .slice(0, 28)}.cook`}
+      title={`${fileSlug(recipe.title, 28)}.cook`}
     >
       <pre className="overflow-hidden p-4 font-mono text-[12.5px] leading-relaxed whitespace-pre-wrap sm:p-5">
-        {text.map((line, i) => (
+        {previewLines(recipe.cooklang ?? '', lines).map((line, i) => (
           <span key={i} className="block">
-            <CookLine line={tidy(line)} />
+            <CookLine line={tidyLine(line)} />
           </span>
         ))}
       </pre>
@@ -150,18 +168,14 @@ function CookFile({
 function RenderedRecipe({ recipe }: { recipe: SampleRecipe }) {
   return (
     <Window label={`${recipe.title} in chowdown`}>
-      <PhotoBlock
-        tone={recipe.tone}
-        cover={recipe.cover}
-        className="aspect-[16/9]"
-      />
+      <Tile tone={recipe.tone} className="aspect-[16/9]" />
       <div className="p-5">
         <p className="text-label text-ember font-semibold uppercase">
           {sentenceCase(recipe.cuisine)} · {sentenceCase(recipe.category)}
         </p>
-        <h3 className="font-display mt-1.5 line-clamp-2 text-xl leading-tight font-semibold">
+        <p className="font-display mt-1.5 line-clamp-2 text-xl leading-tight font-semibold">
           {recipe.title}
-        </h3>
+        </p>
         <div className="text-ink/75 mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
           <span className="inline-flex items-center gap-1.5">
             <ClockIcon className="h-4 w-4" />
@@ -185,7 +199,7 @@ function RenderedRecipe({ recipe }: { recipe: SampleRecipe }) {
 export function HeroVisual({ recipe }: { recipe: SampleRecipe }) {
   return (
     <div className="relative grid grid-cols-1 gap-4 sm:grid-cols-[1.1fr_1fr] sm:items-center sm:gap-0">
-      <div className="sm:relative sm:z-10 sm:-mr-8">
+      <div className="sm:relative sm:z-10 sm:-mr-4">
         <CookFile recipe={recipe} />
       </div>
       <div className="sm:translate-y-10">
@@ -195,61 +209,58 @@ export function HeroVisual({ recipe }: { recipe: SampleRecipe }) {
   );
 }
 
-/** A strip of real recipe photos, each linking to its recipe. */
-export function PhotoStrip({ recipes }: { recipes: SampleRecipe[] }) {
+/** A row of example recipes, drawn as tinted tiles with their facts. */
+export function SampleStrip({ recipes }: { recipes: SampleRecipe[] }) {
   return (
     <Container className="pb-4">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <p className="text-ink/65 mb-4 text-sm">
+        Example recipes, to show how a collection looks.
+      </p>
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {recipes.map((r, i) => (
-          <Link
+          <li
             key={r.id}
-            href={`/recipe/${r.id}`}
             className={cn(
-              'group relative block overflow-hidden rounded-card',
-              i % 2 === 0 ? 'aspect-[4/5]' : 'aspect-[4/5] lg:mt-8',
+              'rounded-card border-ink/10 overflow-hidden border bg-white',
+              i % 2 === 1 && 'lg:mt-8',
             )}
           >
-            <PhotoBlock
-              tone={r.tone}
-              cover={r.cover}
-              className="h-full w-full transition duration-500 group-hover:scale-[1.03]"
-            />
-            <span className="from-ink/75 absolute inset-x-0 bottom-0 bg-gradient-to-t to-transparent p-3 pt-10 text-sm font-medium text-white">
-              <span className="line-clamp-2">{r.title}</span>
-            </span>
-          </Link>
+            <Tile tone={r.tone} className="aspect-[4/3]" />
+            <div className="p-3">
+              <p className="line-clamp-2 min-h-[2lh] text-sm leading-snug font-semibold">
+                {r.title}
+              </p>
+              <p className="text-ink/65 mt-2 flex items-center gap-1.5 text-[13px]">
+                <ClockIcon className="h-3.5 w-3.5" />
+                {duration(r.minutes)}
+              </p>
+            </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </Container>
   );
 }
 
-/** Three honest numbers about a real collection. */
-export function Numbers({ recipes }: { recipes: SampleRecipe[] }) {
+/** Three plain facts about how the product keeps your recipes. */
+export function Facts() {
   const figures: [string, string][] = [
-    [String(recipes.length), 'recipes in one place'],
-    [String(new Set(recipes.map((r) => r.cuisine)).size), 'cuisines'],
-    [String(new Set(recipes.map((r) => r.site)).size), 'sites they came from'],
+    ['1 folder', 'in your Google Drive holds every recipe'],
+    ['.cook', 'plain text that any editor can open'],
+    ['0 ads', 'and your recipes are never sold or shared'],
   ];
   return (
     <Container className="py-16 sm:py-20">
       <dl className="border-ink/15 grid grid-cols-1 gap-8 border-y py-10 text-center sm:grid-cols-3">
         {figures.map(([value, label]) => (
-          <div key={label}>
-            <dt className="sr-only">{label}</dt>
-            <dd>
-              <span className="font-display text-5xl font-semibold tracking-tight sm:text-6xl">
-                {value}
-              </span>
-              <span className="text-ink/70 mt-1 block">{label}</span>
-            </dd>
+          <div key={value}>
+            <dt className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+              {value}
+            </dt>
+            <dd className="text-ink/70 mt-2">{label}</dd>
           </div>
         ))}
       </dl>
-      <p className="text-ink/65 mx-auto mt-6 max-w-lg text-center text-sm">
-        The numbers from one real collection, built by pasting links over a few
-        evenings.
-      </p>
     </Container>
   );
 }
@@ -282,12 +293,22 @@ function Feature({
   );
 }
 
-const slug = (title: string) =>
-  title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 30);
+/** A small recipe card for the mock-ups: the tile, the title and the time. */
+function MiniCard({ recipe }: { recipe: SampleRecipe }) {
+  return (
+    <div className="rounded-control border-ink/10 overflow-hidden border bg-white">
+      <Tile tone={recipe.tone} className="aspect-[4/3]" />
+      <div className="px-3 py-2.5">
+        <p className="line-clamp-2 min-h-[2lh] text-sm leading-snug font-semibold">
+          {recipe.title}
+        </p>
+        <p className="text-ink/65 mt-1.5 text-xs">
+          {duration(recipe.minutes)} · {recipe.difficulty}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 /** Your Drive: the folder of files, and one open. */
 function FilesVisual({ recipes }: { recipes: SampleRecipe[] }) {
@@ -298,24 +319,21 @@ function FilesVisual({ recipes }: { recipes: SampleRecipe[] }) {
         label="A Google Drive folder of recipe files"
         title="Drive / Recipes"
       >
-        <ul className="divide-ink/10 divide-y p-2">
+        <ul className="p-2">
           {files.map((r, i) => (
             <li
               key={r.id}
               className={cn(
-                'flex items-center gap-3 rounded-control px-3 py-2.5',
+                'rounded-control flex items-center gap-3 px-3 py-2.5',
                 i === 0 && 'bg-marigold/25',
               )}
             >
-              <span className="h-8 w-8 shrink-0 overflow-hidden rounded-[6px]">
-                <PhotoBlock
-                  tone={r.tone}
-                  cover={r.cover}
-                  className="h-full w-full"
-                />
-              </span>
+              <Tile
+                tone={r.tone}
+                className="h-8 w-8 shrink-0 rounded-[6px] [&>svg]:h-1/2 [&>svg]:w-1/2"
+              />
               <span className="min-w-0 flex-1 truncate font-mono text-xs">
-                {slug(r.title)}.cook
+                {fileSlug(r.title)}.cook
               </span>
             </li>
           ))}
@@ -326,23 +344,20 @@ function FilesVisual({ recipes }: { recipes: SampleRecipe[] }) {
   );
 }
 
-/** Importing: a pasted link becomes a draft with a photo and tags. */
+/** Importing: a pasted link becomes a draft with tags. */
 function ImportVisual({ recipe }: { recipe: SampleRecipe }) {
   return (
     <Window label="Pasting a link to import a recipe" title="Add recipes">
       <div className="p-5 sm:p-6">
         <p className="text-sm font-semibold">Paste links or text</p>
         <div className="rounded-control border-ink/20 bg-paper text-ink/75 mt-2 border p-3 font-mono text-xs break-all">
-          https://{recipe.site}/{slug(recipe.title)}
+          https://{recipe.site}/{fileSlug(recipe.title)}
         </div>
         <div className="rounded-card border-ink/10 mt-5 flex items-center gap-4 border p-3">
-          <span className="rounded-control h-20 w-20 shrink-0 overflow-hidden">
-            <PhotoBlock
-              tone={recipe.tone}
-              cover={recipe.cover}
-              className="h-full w-full"
-            />
-          </span>
+          <Tile
+            tone={recipe.tone}
+            className="rounded-control h-20 w-20 shrink-0"
+          />
           <div className="min-w-0">
             <p className="text-label text-ember font-semibold uppercase">
               Draft ready to review
@@ -369,26 +384,92 @@ function ImportVisual({ recipe }: { recipe: SampleRecipe }) {
   );
 }
 
-/** Filtering: the real filter panel next to real results. */
-function FiltersVisual({ recipes }: { recipes: SampleRecipe[] }) {
-  const query = parseQuery({ difficulty: 'Easy', time: '15,30' });
-  const facets = buildFacets(recipes, query).filter((f) =>
-    ['difficulty', 'time'].includes(f.key),
+/** One filter option in the mock-up: a box, a name and how many recipes match. */
+function Option({
+  label,
+  count,
+  on,
+}: {
+  label: string;
+  count: number;
+  on?: boolean;
+}) {
+  return (
+    <li className="flex items-center gap-2.5 text-sm">
+      <span
+        className={cn(
+          'grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border',
+          on ? 'border-ink bg-ink text-white' : 'border-ink/30 bg-white',
+        )}
+      >
+        {on ? (
+          <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden="true">
+            <path
+              d="M2.5 6.5 5 9l4.5-5.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            />
+          </svg>
+        ) : null}
+      </span>
+      <span className={on ? 'font-semibold' : undefined}>{label}</span>
+      <span className="text-ink/65 ml-auto text-xs">{count}</span>
+    </li>
   );
-  const results = recipes
-    .filter((r) => r.difficulty === 'Easy' && r.minutes <= 30 && r.cover)
-    .slice(0, 2);
+}
+
+/** Filtering: a filter panel next to the recipes it leaves. */
+function FiltersVisual({ recipes }: { recipes: SampleRecipe[] }) {
+  const count = (test: (r: SampleRecipe) => boolean) =>
+    recipes.filter(test).length;
+  const results = recipes.filter(
+    (r) => r.difficulty === 'Easy' && r.minutes <= 30,
+  );
   return (
     <Window label="Filtering recipes by difficulty and time" title="Recipes">
       <div className="grid grid-cols-1 gap-6 p-5 sm:grid-cols-[13rem_1fr] sm:p-6">
-        <div className="pointer-events-none">
-          <FilterPanel facets={facets} />
+        <div className="flex flex-col gap-5">
+          <div>
+            <p className="text-label text-ink/65 font-semibold uppercase">
+              Difficulty
+            </p>
+            <ul className="mt-3 flex flex-col gap-2.5">
+              <Option
+                on
+                label="Easy"
+                count={count((r) => r.difficulty === 'Easy')}
+              />
+              <Option
+                label="Medium"
+                count={count((r) => r.difficulty === 'Medium')}
+              />
+              <Option
+                label="Hard"
+                count={count((r) => r.difficulty === 'Hard')}
+              />
+            </ul>
+          </div>
+          <div>
+            <p className="text-label text-ink/65 font-semibold uppercase">
+              Time
+            </p>
+            <ul className="mt-3 flex flex-col gap-2.5">
+              <Option
+                label="Up to 15 min"
+                count={count((r) => r.minutes <= 15)}
+              />
+              <Option
+                on
+                label="16–30 min"
+                count={count((r) => r.minutes > 15 && r.minutes <= 30)}
+              />
+            </ul>
+          </div>
         </div>
         <div className="grid grid-cols-2 content-start gap-4">
-          {results.map((r) => (
-            <div key={r.id} className="pointer-events-none">
-              <RecipeCard recipe={r} />
-            </div>
+          {results.slice(0, 2).map((r) => (
+            <MiniCard key={r.id} recipe={r} />
           ))}
         </div>
       </div>
@@ -410,14 +491,14 @@ function CookVisual({ recipe }: { recipe: SampleRecipe }) {
             {recipe.title}
           </p>
           <div className="bg-ink/10 mt-3 h-1.5 overflow-hidden rounded-full">
-            <div className="bg-flame h-full w-2/5 rounded-full" />
+            <div className="bg-flame h-full w-3/4 rounded-full" />
           </div>
           <div className="mt-8 flex gap-3">
             <span className="bg-flame text-ink grid h-9 w-9 shrink-0 place-items-center rounded-full font-semibold">
-              2
+              3
             </span>
             <p className="font-display text-[1.65rem] leading-snug font-medium">
-              Add the chicken and cook until it turns opaque.
+              Cover and simmer for 25 minutes, until the chicken pulls apart.
             </p>
           </div>
           <div className="mt-10 flex items-center justify-between">
@@ -434,39 +515,28 @@ function CookVisual({ recipe }: { recipe: SampleRecipe }) {
   );
 }
 
-/** The assistant: a chat that answers from your own recipes, with photos. */
+/** The assistant: a chat that answers from your own recipes. */
 function AiVisual({ recipes }: { recipes: SampleRecipe[] }) {
   const picks = recipes
-    .filter((r) => r.protein === 'chicken' && r.minutes <= 30 && r.cover)
+    .filter((r) => r.protein === 'chicken' && r.minutes <= 40)
     .slice(0, 2);
   return (
     <Window
       label="A chat where an assistant suggests recipes from your collection"
-      title="ChatGPT"
+      title="Your assistant"
     >
       <div className="p-5 sm:p-6">
         <div className="rounded-card bg-ink ml-auto w-fit max-w-[85%] rounded-br-sm px-4 py-3 text-sm text-white">
-          What can I make with chicken in half an hour?
+          What can I make with chicken in under 40 minutes?
         </div>
         <div className="mt-4 max-w-[92%]">
           <p className="text-sm leading-relaxed">
-            Two from your collection fit. Both are under 30 minutes:
+            {picks.length === 2 ? 'Two' : String(picks.length)} from your
+            collection fit. Both take under 40 minutes:
           </p>
           <div className="mt-3 grid grid-cols-2 gap-3">
             {picks.map((r) => (
-              <div
-                key={r.id}
-                className="rounded-control border-ink/10 overflow-hidden border"
-              >
-                <PhotoBlock
-                  tone={r.tone}
-                  cover={r.cover}
-                  className="aspect-[4/3]"
-                />
-                <p className="line-clamp-2 px-3 py-2 text-sm font-medium">
-                  {r.title}
-                </p>
-              </div>
+              <MiniCard key={r.id} recipe={r} />
             ))}
           </div>
           <p className="rounded-control bg-sand text-ink/70 mt-4 flex items-center gap-2 truncate px-3 py-2 font-mono text-xs">
@@ -481,10 +551,9 @@ function AiVisual({ recipes }: { recipes: SampleRecipe[] }) {
 
 /** The product's selling points, one picture each. */
 export function Features({ recipes }: { recipes: SampleRecipe[] }) {
-  const withPhoto = recipes.filter((r) => r.cover && r.cooklang);
   const importer =
-    withPhoto.find((r) => r.site === 'seriouseats.com') ?? withPhoto[4]!;
-  const cook = withPhoto.find((r) => r.protein === 'chicken') ?? withPhoto[0]!;
+    recipes.find((r) => r.site === 'seriouseats.com') ?? recipes[0]!;
+  const cook = recipes.find((r) => r.cooklang) ?? recipes[0]!;
   return (
     <Section id="features" surface="white">
       <Container className="flex flex-col gap-24 sm:gap-32">
@@ -493,7 +562,7 @@ export function Features({ recipes }: { recipes: SampleRecipe[] }) {
           title="Plain text, in your own Drive"
           body="Every recipe is a small readable file in a folder only you control. Open it in any editor, back it up, or take it elsewhere. There is nothing to export because nothing is locked in."
         >
-          <FilesVisual recipes={withPhoto} />
+          <FilesVisual recipes={recipes} />
         </Feature>
         <Feature
           flip
@@ -505,10 +574,10 @@ export function Features({ recipes }: { recipes: SampleRecipe[] }) {
         </Feature>
         <Feature
           eyebrow="Find dinner fast"
-          title="Filter by what you feel like doing"
-          body="Narrow by difficulty, time, protein, cuisine and diet, or just describe the evening. Easy and quick is two clicks away."
+          title="Narrow it down in a click or two"
+          body="Filter by difficulty, time, protein, cuisine and diet, and keep your favourites close. Easy and quick is two clicks away."
         >
-          <FiltersVisual recipes={withPhoto} />
+          <FiltersVisual recipes={recipes} />
         </Feature>
         <Feature
           flip
@@ -523,7 +592,7 @@ export function Features({ recipes }: { recipes: SampleRecipe[] }) {
           title="Ask your assistant about your recipes"
           body="Add one address to ChatGPT or Claude. It searches your collection, suggests dinner from what you have saved and files new recipes for you."
         >
-          <AiVisual recipes={withPhoto} />
+          <AiVisual recipes={recipes} />
         </Feature>
       </Container>
     </Section>
@@ -533,7 +602,7 @@ export function Features({ recipes }: { recipes: SampleRecipe[] }) {
 const FAQ: [string, string][] = [
   [
     'Is chowdown free?',
-    'Yes. Your recipes live in your own Google Drive, so there is nothing for us to store or charge for.',
+    'Yes. chowdown is free to use, and your recipes live in your own Google Drive.',
   ],
   [
     'What can chowdown see in my Drive?',
@@ -545,7 +614,7 @@ const FAQ: [string, string][] = [
   ],
   [
     'Which AI assistants work with it?',
-    'Any assistant that supports MCP connectors, including ChatGPT and Claude. You add one address, sign in and choose read-only or full access.',
+    'Any assistant that supports MCP connectors, including ChatGPT and Claude. You add one address, sign in with Google and approve what the assistant may do.',
   ],
 ];
 
@@ -583,7 +652,7 @@ export function FinalCta() {
         <div>
           <Heading>Start your collection today</Heading>
           <p className="text-ink/80 mt-2 text-lg">
-            Sign in with Google. Your first recipe is a minute away.
+            Sign in with Google and add your first recipe.
           </p>
         </div>
         <SignInButton />

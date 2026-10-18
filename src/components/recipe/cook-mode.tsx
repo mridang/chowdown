@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from 'react';
 
-import { ChevronLeftIcon, ChevronRightIcon, ExpandIcon } from '@/components/icons';
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ClockIcon,
+  ExpandIcon,
+} from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/components/ui/cn';
 import {
@@ -12,13 +17,69 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import type { StepToken } from '@/lib/recipe/cooklang';
+import { stepText } from '@/lib/recipe/page-view';
+
+import { useRecipeState } from './recipe-state';
+
+/**
+ * The current step in large type. Ingredients are underlined and followed by
+ * the amount for the servings and units chosen, so the number is right there at
+ * the stove; timers get a clock.
+ */
+function StepBody({ tokens }: { tokens: StepToken[] }) {
+  const { quantity } = useRecipeState();
+  return (
+    <>
+      {tokens.map((token, index) => {
+        switch (token.kind) {
+          case 'text':
+            return <span key={index}>{token.text}</span>;
+          case 'ingredient':
+            return (
+              <span key={index}>
+                <span className="decoration-marigold underline decoration-4 underline-offset-4">
+                  {token.name}
+                </span>
+                {token.quantity ? (
+                  <span className="text-ink/65 text-[0.6em] font-normal">
+                    {' '}
+                    ({quantity(token.quantity)})
+                  </span>
+                ) : null}
+              </span>
+            );
+          case 'cookware':
+            return (
+              <span key={index} className="text-forest">
+                {token.name}
+              </span>
+            );
+          case 'timer':
+            return (
+              <span key={index} className="text-ember whitespace-nowrap">
+                <ClockIcon className="mr-1 inline-block h-[0.8em] w-[0.8em] -translate-y-px" />
+                {token.label}
+              </span>
+            );
+        }
+      })}
+    </>
+  );
+}
 
 /**
  * Cook mode: a full-screen view for use at the stove. One step at a time in
  * large type, the other steps dimmed within reach, a progress bar, arrow-key
  * and button navigation, and the screen kept awake while it is open.
  */
-export function CookMode({ title, steps }: { title: string; steps: string[] }) {
+export function CookMode({
+  title,
+  steps,
+}: {
+  title: string;
+  steps: StepToken[][];
+}) {
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
 
@@ -99,7 +160,7 @@ export function CookMode({ title, steps }: { title: string; steps: string[] }) {
           <ol className="my-auto flex flex-col gap-6 py-10">
             {steps.map((step, i) => (
               <li
-                key={`${i}-${step.slice(0, 10)}`}
+                key={i}
                 aria-current={i === index ? 'step' : undefined}
                 className={cn(
                   'flex gap-5 transition-opacity',
@@ -125,7 +186,7 @@ export function CookMode({ title, steps }: { title: string; steps: string[] }) {
                       : 'text-xl text-ink/70',
                   )}
                 >
-                  {step}
+                  {i === index ? <StepBody tokens={step} /> : stepText(step)}
                 </p>
               </li>
             ))}

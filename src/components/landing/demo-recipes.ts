@@ -8,11 +8,7 @@
  * shows beside the finished recipe it produces.
  */
 
-import type {
-  CardRecipe,
-  DifficultyLevel,
-  Tone,
-} from '@/lib/recipe/card-data';
+import type { CardRecipe, DifficultyLevel, Tone } from '@/lib/recipe/card-data';
 
 export type { Tone };
 /** A demo recipe is shaped like a saved one, but always has its facts. */
@@ -136,13 +132,14 @@ const TACOS_COOKLANG = `>> title: Smoky Chipotle Chicken Tacos
 >> time: 35%minutes
 >> cuisine: Mexican
 
-Blend @chipotle peppers in adobo{2}, @tinned tomatoes{400%g}, @garlic{3%cloves} and @smoked paprika{1%tsp} until smooth.
+Blend @tinned tomatoes{400%g} and
+@chipotle peppers in adobo{2}.
 
-Soften @onion{1} in a #large lidded pan{}, then add the sauce and @chicken thighs{600%g}.
+Soften @onion{1} in a #large pan{},
+add @chicken thighs{600%g} and
+simmer for ~{25%minutes}.
 
-Cover and simmer for ~{25%minutes}, until the chicken pulls apart.
-
-Warm @corn tortillas{8} in a #dry frying pan{}, fill, and serve with @lime{1}.
+Warm @corn tortillas{8} and fill.
 `;
 
 /** The sample recipes the landing page draws. */

@@ -5,11 +5,12 @@
  *
  * D1 is in a single region, so each query from a Worker running elsewhere pays
  * a long network round trip (~170 ms each in practice). The page used to make
- * three in a row; here the recipe row, the favourite flag and the precomputed
- * similar list go out together as one batch, which D1 runs in a single call.
+ * three in a row; here the recipe row, the favourite flag, the precomputed
+ * similar list, the similar recipes themselves and the user's unit preference go
+ * out together as one batch, which D1 runs in a single call.
  */
 
-import { and, count, eq } from 'drizzle-orm';
+import { and, count, eq, sql } from 'drizzle-orm';
 
 import type { Database } from './client';
 import { embeddings, favourites, recipes, users } from './schema';
@@ -22,15 +23,35 @@ export interface RecipePageRows {
   favourite: boolean;
   /** The stored similar list as JSON text (parse with `parseSimilar`). */
   similarJson: string | null;
+  /** The cached rows of the recipes in that list (unordered). */
+  similarRecipes: (typeof recipes.$inferSelect)[];
+  /** Which of those similar recipes the user has hearted. */
+  similarFavouriteIds: string[];
+  /** The user's saved measurement system, or null when they haven't chosen. */
+  units: string | null;
 }
 
-/** Fetch the recipe, favourite state and similar list in a single D1 batch. */
+/**
+ * Fetch the recipe, favourite state, similar list (with the similar recipes'
+ * own rows) and the unit preference in a single D1 batch. The similar ids are
+ * found with a subquery over the stored JSON list, so no second round trip is
+ * needed to learn which rows to load.
+ */
 export async function getRecipePageRows(
   db: Database,
   userId: number,
   driveFileId: string,
 ): Promise<RecipePageRows> {
-  const [recipeRows, favouriteRows, similarRows] = await db.batch([
+  // The ids in this recipe's stored similar list, as a subquery.
+  const similarIds = sql`(select json_extract(j.value, '$.id') from ${embeddings}, json_each(${embeddings.similar}) as j where ${embeddings.user_id} = ${userId} and ${embeddings.drive_file_id} = ${driveFileId})`;
+  const [
+    recipeRows,
+    favouriteRows,
+    similarRows,
+    similarRecipeRows,
+    similarFavouriteRows,
+    userRows,
+  ] = await db.batch([
     db
       .select()
       .from(recipes)
@@ -61,11 +82,37 @@ export async function getRecipePageRows(
         ),
       )
       .limit(1),
+    db
+      .select()
+      .from(recipes)
+      .where(
+        and(
+          eq(recipes.user_id, userId),
+          sql`${recipes.drive_file_id} in ${similarIds}`,
+        ),
+      ),
+    db
+      .select({ id: favourites.drive_file_id })
+      .from(favourites)
+      .where(
+        and(
+          eq(favourites.user_id, userId),
+          sql`${favourites.drive_file_id} in ${similarIds}`,
+        ),
+      ),
+    db
+      .select({ units: users.units })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1),
   ]);
   return {
     recipe: recipeRows[0],
     favourite: favouriteRows.length > 0,
     similarJson: similarRows[0]?.similar ?? null,
+    similarRecipes: similarRecipeRows,
+    similarFavouriteIds: similarFavouriteRows.map((r) => r.id),
+    units: userRows[0]?.units ?? null,
   };
 }
 

@@ -2,9 +2,14 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 
-import { AddRecipes } from '@/app/(site)/app/_components/add-recipes';
+import { ChevronLeftIcon, LinkIcon, NoteIcon } from '@/components/icons';
+import { Button } from '@/components/ui/button';
+import { Container, Eyebrow, Heading } from '@/components/ui/layout';
+
+import { AddRecipes } from './add-recipes';
+import { FormField, FormMessage, TextArea, TextInput } from './form-fields';
 
 /** Starter content offered when writing a recipe by hand. */
 const STARTER = `>> title: New Recipe
@@ -47,49 +52,68 @@ function ManualEditor({ onCancel }: { onCancel: () => void }) {
   }, [name, content, router]);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
-      <h2 className="text-sm font-semibold text-slate-900">Write a recipe</h2>
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Recipe name (e.g. Pancakes)"
-        className="mt-3 w-full rounded-md border border-slate-200 px-3 py-1.5 text-sm"
-      />
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        rows={12}
-        spellCheck={false}
-        className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 font-mono text-[13px]"
-      />
-      {error ? <p className="mt-2 text-[13px] text-red-600">{error}</p> : null}
-      <div className="mt-3 flex gap-2">
-        <button
-          type="button"
+    <section
+      aria-labelledby="write-recipe-heading"
+      className="rounded-card border-ink/10 border bg-white p-5 sm:p-8"
+    >
+      <h2
+        id="write-recipe-heading"
+        className="font-display text-2xl font-semibold tracking-tight"
+      >
+        Write a recipe
+      </h2>
+      <div className="mt-5 flex flex-col gap-5">
+        <FormField id="recipe-name" label="Recipe name">
+          <TextInput
+            id="recipe-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Recipe name (e.g. Pancakes)"
+          />
+        </FormField>
+        <FormField
+          id="recipe-cook"
+          label="Cooklang"
+          hint="Mark ingredients with @, cookware with # and timers with ~."
+        >
+          <TextArea
+            id="recipe-cook"
+            mono
+            aria-describedby="recipe-cook-hint"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            rows={12}
+            spellCheck={false}
+          />
+        </FormField>
+      </div>
+      {error ? <FormMessage tone="error">{error}</FormMessage> : null}
+      <div className="mt-5 flex flex-wrap gap-3">
+        <Button
+          size="lg"
           onClick={save}
           disabled={busy || !name.trim()}
-          className="rounded-md bg-amber-600 px-3.5 py-1.5 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
+          aria-busy={busy}
+          className="disabled:opacity-50"
         >
           {busy ? 'Saving…' : 'Save to Drive'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-md border border-slate-200 px-3.5 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-        >
+        </Button>
+        <Button variant="outline" size="lg" onClick={onCancel}>
           Back
-        </button>
+        </Button>
       </div>
-    </div>
+    </section>
   );
 }
 
 /** A big mode-choice card. */
 function ChoiceCard({
+  icon,
   title,
   description,
   onClick,
 }: {
+  icon: ReactNode;
   title: string;
   description: string;
   onClick: () => void;
@@ -98,10 +122,13 @@ function ChoiceCard({
     <button
       type="button"
       onClick={onClick}
-      className="flex-1 rounded-xl border border-slate-200 bg-white p-6 text-left transition hover:border-amber-300 hover:shadow-sm"
+      className="rounded-card border-ink/10 hover:border-ink/40 focus-visible:outline-ink flex flex-1 flex-col items-start border bg-white p-6 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 sm:p-8"
     >
-      <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-      <p className="mt-1 text-sm text-slate-500">{description}</p>
+      <span className="rounded-control bg-marigold/30 grid h-11 w-11 place-items-center">
+        {icon}
+      </span>
+      <h2 className="font-display mt-5 text-xl font-semibold">{title}</h2>
+      <p className="text-ink/75 mt-2 leading-relaxed">{description}</p>
     </button>
   );
 }
@@ -116,49 +143,53 @@ export function AddRecipesPage() {
   const [mode, setMode] = useState<Mode>('choose');
 
   return (
-    <div className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6">
-      <nav className="text-sm">
+    <Container className="py-8 sm:py-12">
+      <div className="max-w-4xl">
         <Link
           href="/app"
-          className="text-slate-500 transition hover:text-slate-900"
+          className="text-ink/75 hover:text-ink focus-visible:outline-ink rounded-control -ml-1 inline-flex h-9 items-center gap-1 px-1 text-sm font-medium transition focus-visible:outline-2"
         >
-          ← All recipes
+          <ChevronLeftIcon className="h-4 w-4" />
+          All recipes
         </Link>
-      </nav>
 
-      <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">
-        Add recipes
-      </h1>
+        <Eyebrow className="mt-6">Grow your collection</Eyebrow>
+        <Heading as="h1" variant="h1" className="mt-2">
+          Add recipes
+        </Heading>
 
-      {mode === 'choose' ? (
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <ChoiceCard
-            title="Import links or text"
-            description="Paste recipe links, markdown or plain text — we fetch and convert each one, then you review and save."
-            onClick={() => setMode('import')}
-          />
-          <ChoiceCard
-            title="Write it myself"
-            description="Type a recipe by hand in Cooklang and save it straight to your Drive."
-            onClick={() => setMode('manual')}
-          />
-        </div>
-      ) : null}
+        {mode === 'choose' ? (
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+            <ChoiceCard
+              icon={<LinkIcon className="h-5 w-5" />}
+              title="Import links or text"
+              description="Paste recipe links, markdown or plain text — we fetch and convert each one, then you review and save."
+              onClick={() => setMode('import')}
+            />
+            <ChoiceCard
+              icon={<NoteIcon className="h-5 w-5" />}
+              title="Write it myself"
+              description="Type a recipe by hand in Cooklang and save it straight to your Drive."
+              onClick={() => setMode('manual')}
+            />
+          </div>
+        ) : null}
 
-      {mode === 'import' ? (
-        <div className="mt-6">
-          <AddRecipes
-            onClose={() => router.push('/app')}
-            onSaved={() => undefined}
-          />
-        </div>
-      ) : null}
+        {mode === 'import' ? (
+          <div className="mt-8">
+            <AddRecipes
+              onClose={() => router.push('/app')}
+              onSaved={() => undefined}
+            />
+          </div>
+        ) : null}
 
-      {mode === 'manual' ? (
-        <div className="mt-6">
-          <ManualEditor onCancel={() => setMode('choose')} />
-        </div>
-      ) : null}
-    </div>
+        {mode === 'manual' ? (
+          <div className="mt-8">
+            <ManualEditor onCancel={() => setMode('choose')} />
+          </div>
+        ) : null}
+      </div>
+    </Container>
   );
 }

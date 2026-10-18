@@ -59,12 +59,17 @@ export function SiteHeader({ user }: { user: ShellUser | null }) {
             <Logo />
             {user ? (
               <Suspense
-                fallback={<nav className="hidden w-48 md:block" aria-label="Main" />}
+                fallback={
+                  <nav className="hidden w-48 md:block" aria-label="Main" />
+                }
               >
                 <HeaderNav />
               </Suspense>
             ) : (
-              <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
+              <nav
+                className="hidden items-center gap-1 md:flex"
+                aria-label="Main"
+              >
                 {VISITOR_NAV.map(([label, href]) => (
                   <Link
                     key={label}
@@ -84,7 +89,7 @@ export function SiteHeader({ user }: { user: ShellUser | null }) {
                 <ButtonLink
                   href="/connect"
                   variant="accent"
-                  className="hidden sm:inline-flex"
+                  className="max-sm:hidden"
                 >
                   <SparkIcon className="h-4 w-4" />
                   Cook with AI

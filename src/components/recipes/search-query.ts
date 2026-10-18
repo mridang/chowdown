@@ -142,10 +142,14 @@ export function matches(recipe: CardRecipe, query: Query): boolean {
         recipe.site,
         recipe.cuisine,
         recipe.protein,
+        recipe.category,
         ...recipe.keywords,
       ].join(' '),
     );
-    if (!haystack.includes(foldText(query.q))) {
+    // Every word must appear somewhere, in any order, so "chicken curry" finds
+    // "Curry with chicken" as well as a title that holds the phrase.
+    const words = foldText(query.q).split(/\s+/).filter(Boolean);
+    if (!words.every((word) => haystack.includes(word))) {
       return false;
     }
   }
@@ -180,7 +184,10 @@ function byDifficulty(a: CardRecipe, b: CardRecipe): number {
 }
 
 /** Order recipes; every order falls back to title so the list never shuffles. */
-export function sortRecipes(recipes: CardRecipe[], sort: SortKey): CardRecipe[] {
+export function sortRecipes(
+  recipes: CardRecipe[],
+  sort: SortKey,
+): CardRecipe[] {
   const list = [...recipes];
   if (sort === 'time') {
     return list.sort((a, b) => byMinutes(a, b) || byTitle(a, b));
@@ -293,7 +300,8 @@ export function buildFacets(recipes: CardRecipe[], query: Query): FacetData[] {
     let entries = [...counts.entries()];
     if (key === 'site') {
       entries = entries.filter(
-        ([value, n]) => n >= SITE_MIN || (query.selected.site ?? []).includes(value),
+        ([value, n]) =>
+          n >= SITE_MIN || (query.selected.site ?? []).includes(value),
       );
     }
     const order =
@@ -309,7 +317,7 @@ export function buildFacets(recipes: CardRecipe[], query: Query): FacetData[] {
                 DIET_TYPES.indexOf(a[0] as (typeof DIET_TYPES)[number]) -
                 DIET_TYPES.indexOf(b[0] as (typeof DIET_TYPES)[number])
             : (a: [string, number], b: [string, number]) =>
-              b[1] - a[1] || a[0].localeCompare(b[0]);
+                b[1] - a[1] || a[0].localeCompare(b[0]);
     entries.sort(order);
     return {
       key,

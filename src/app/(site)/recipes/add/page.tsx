@@ -8,14 +8,15 @@ import { AddRecipesPage } from './_components/add-recipes-page';
 export const metadata: Metadata = { title: 'Add recipes · chowdown' };
 
 /**
- * The "Add recipes" page — its own route, not a panel on `/app`. Auth-gates,
- * then hands off to the client flow that lets the user choose how to add
- * recipes (import links/text, or write one by hand).
+ * The "Add recipes" page — its own route, not a panel on `/app`. Auth-gates
+ * (sending anyone signed out to sign in and then straight back here), then
+ * hands off to the client flow that lets the user choose how to add recipes
+ * (import links/text, or write one by hand).
  */
 export default async function AddRecipesRoute() {
   const user = await getCurrentUser();
   if (!user) {
-    redirect('/');
+    redirect(`/api/auth/login?returnTo=${encodeURIComponent('/recipes/add')}`);
   }
   return <AddRecipesPage />;
 }

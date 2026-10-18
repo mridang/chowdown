@@ -1,12 +1,16 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { PlusIcon } from '@/components/icons';
+import { Button } from '@/components/ui/button';
+import { SelectField } from '@/components/ui/field';
 
 /**
  * "Add a note" control on a recipe page. Lets the user attach a personal note
  * to the whole recipe or to a specific ingredient, then refreshes the server
- * component so the note shows inline. The original recipe is never changed —
+ * component so the note shows inline. The original recipe is never changed;
  * notes are additive (see appendNote).
  */
 export function AddNote({
@@ -23,6 +27,14 @@ export function AddNote({
   const [target, setTarget] = useState(''); // '' = general, else ingredient name
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const field = useRef<HTMLTextAreaElement>(null);
+
+  // The reader opened this form on purpose, so start typing straight away.
+  useEffect(() => {
+    if (open) {
+      field.current?.focus();
+    }
+  }, [open]);
 
   const save = useCallback(async () => {
     if (!text.trim()) {
@@ -55,59 +67,58 @@ export function AddNote({
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-      >
+      <Button variant="outline" onClick={() => setOpen(true)}>
+        <PlusIcon className="h-4 w-4" />
         Add a note
-      </button>
+      </Button>
     );
   }
 
   return (
-    <div className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-3">
+    <div className="rounded-card border-ink/15 w-full max-w-xl border bg-white p-4">
+      <label htmlFor="note-text" className="text-sm font-semibold">
+        Your note
+      </label>
       <textarea
+        id="note-text"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        rows={2}
-        autoFocus
+        rows={3}
+        ref={field}
         placeholder="e.g. use 3 avocados instead of 2"
-        className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+        className="rounded-control border-ink/25 focus:border-ink placeholder:text-ink/55 mt-1.5 w-full border bg-white px-3 py-2 text-base outline-none"
       />
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <label className="text-xs text-slate-500">Attach to</label>
-        <select
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <SelectField
+          label="Attach to"
           value={target}
           onChange={(e) => setTarget(e.target.value)}
-          className="rounded-md border border-slate-200 px-2 py-1 text-sm"
         >
           <option value="">the whole recipe</option>
-          {ingredients.map((name) => (
-            <option key={name} value={name}>
+          {ingredients.map((name, index) => (
+            <option key={`${name}-${index}`} value={name}>
               {name}
             </option>
           ))}
-        </select>
+        </SelectField>
         <div className="ml-auto flex gap-2">
-          <button
-            type="button"
-            onClick={save}
+          <Button
+            onClick={() => void save()}
             disabled={busy || !text.trim()}
-            className="rounded-md bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
+            className="disabled:opacity-50"
           >
             {busy ? 'Saving…' : 'Save note'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-          >
+          </Button>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
-      {error ? <p className="mt-2 text-[13px] text-red-600">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-ember mt-2 text-sm font-medium">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

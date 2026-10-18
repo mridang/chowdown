@@ -14,7 +14,10 @@ export const APP_NAV = [
 export type NavKey = (typeof APP_NAV)[number]['key'] | 'connect' | 'home';
 
 /** Which section the current address is in. */
-export function activeSection(pathname: string, favourites: boolean): NavKey | undefined {
+export function activeSection(
+  pathname: string,
+  favourites: boolean,
+): NavKey | undefined {
   if (pathname === '/app' || pathname.startsWith('/recipe')) {
     return favourites && pathname === '/app' ? 'favourites' : 'search';
   }

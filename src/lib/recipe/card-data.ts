@@ -8,7 +8,12 @@
  */
 
 import type { Recipe } from '../db/recipes';
-import { domainOf, recipeDisplayName, sourceUrlOf } from './cook-text';
+import {
+  domainOf,
+  isUncurated,
+  recipeDisplayName,
+  sourceUrlOf,
+} from './cook-text';
 import { parseRecipe } from './cooklang';
 import { extractMedia } from './media';
 import { minutesOf } from './minutes';
@@ -39,6 +44,8 @@ export interface CardRecipe {
   method: string[];
   keywords: string[];
   favourite: boolean;
+  /** A stub the assistant or user jotted down but never curated (shown as an "idea"). */
+  uncurated?: boolean;
   tone: Tone;
   /** A cover photo address; without one the card shows a colour tile. */
   cover?: string;
@@ -88,7 +95,9 @@ export function toCardRecipe(
   const url = sourceUrlOf(row.source);
   return {
     id: row.drive_file_id,
-    title: cleanTitle(parsed.title || recipeDisplayName(row.name)),
+    // A recipe with no title of its own is named after its file, minus the
+    // `.cook` and `[uncurated]` bits.
+    title: cleanTitle(recipeDisplayName(parsed.title || row.name)),
     site: (url && domainOf(url)) || '',
     minutes: minutesOf(meta('time')),
     servings: Number.isFinite(servings) && servings > 0 ? servings : undefined,
@@ -101,6 +110,7 @@ export function toCardRecipe(
     method: tags['method'] ?? [],
     keywords: tags['keywords'] ?? [],
     favourite,
+    ...(isUncurated(row.name) ? { uncurated: true } : {}),
     tone: toneFor(row.drive_file_id),
     cover: extractMedia(parsed).cover,
     ...(options.withSource ? { cooklang: row.source } : {}),

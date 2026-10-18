@@ -3,7 +3,14 @@
 import Link from 'next/link';
 import { useCallback, useState } from 'react';
 
-import { ChevronIcon, HeartIcon, LogoutIcon, PlugIcon, SearchIcon } from '@/components/icons';
+import {
+  ChevronIcon,
+  HeartIcon,
+  LogoutIcon,
+  PlugIcon,
+  SearchIcon,
+  SparkIcon,
+} from '@/components/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +19,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown';
+
+import { useInstallPrompt } from './use-install-prompt';
 
 /**
  * The person's Google photo, or their initial when there is none or it fails to
@@ -23,7 +32,6 @@ export function Avatar({ name, picture }: { name: string; picture?: string }) {
   return (
     <span className="bg-ink relative grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full text-sm font-semibold text-white">
       {picture && !failed ? (
-        // eslint-disable-next-line @next/next/no-img-element -- a third-party avatar, already sized
         <img
           src={picture}
           alt=""
@@ -58,6 +66,7 @@ export function AccountMenu({
   picture?: string;
 }) {
   const [busy, setBusy] = useState(false);
+  const { install } = useInstallPrompt();
   const signOut = useCallback(async () => {
     setBusy(true);
     try {
@@ -74,7 +83,9 @@ export function AccountMenu({
           Hi {firstName}
         </span>
         <ChevronIcon className="text-ink/65 hidden h-4 w-4 transition group-data-[state=open]:rotate-180 sm:block" />
-        <span className="sr-only sm:hidden">Account menu, signed in as {firstName}</span>
+        <span className="sr-only sm:hidden">
+          Account menu, signed in as {firstName}
+        </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-64">
         <DropdownMenuLabel>
@@ -100,6 +111,12 @@ export function AccountMenu({
             Connect an assistant
           </Link>
         </DropdownMenuItem>
+        {install ? (
+          <DropdownMenuItem onSelect={() => void install()}>
+            <SparkIcon className="text-ink/65 h-[18px] w-[18px]" />
+            Install app
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled={busy} onSelect={() => void signOut()}>
           <LogoutIcon className="text-ink/65 h-[18px] w-[18px]" />
