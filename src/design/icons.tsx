@@ -136,3 +136,91 @@ export const CloseIcon = (p: IconProps) => (
     <path d="M6 6l12 12M18 6 6 18" />
   </Icon>
 );
+
+export const PlugIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4" />
+  </Icon>
+);
+export const CopyIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="9" y="9" width="11" height="11" rx="2" />
+    <path d="M5 15V6a2 2 0 0 1 2-2h9" />
+  </Icon>
+);
+export const LogoutIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9" />
+  </Icon>
+);
+
+/* Protein icons: one small drawing per protein so a card shows it at a glance. */
+export const ChickenIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M14.5 4c3.3-.8 6 2.2 5.2 5.4-.4 1.6-1.5 2.7-3 3.1L15 14l-4-4 1.3-1.7c.5-1.5 1.8-3.8 2.2-4.3Z" />
+    <path d="m11 13-5 5M5 17.5a1.7 1.7 0 1 0-2 2.3 1.7 1.7 0 1 0 2.3 2" />
+  </Icon>
+);
+export const BeefIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4.5 9.5C4.5 6 8 4 12 4s7.5 2 7.5 5.5c0 5.5-3.5 10.5-8.5 10.5-3.5 0-6.5-4-6.5-10.5Z" />
+    <circle cx="13" cy="11.5" r="2.3" />
+  </Icon>
+);
+export const PorkIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12.5" r="8" />
+    <ellipse cx="12" cy="14.5" rx="3.2" ry="2.2" />
+    <path d="M10.8 14.5h.01M13.2 14.5h.01M6.5 6.5 8.5 9.5M17.5 6.5 15.5 9.5" />
+  </Icon>
+);
+export const LambIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M6 15c0-5 4-9 9-9 2.8 0 4.8 1.8 4.8 4.5 0 5-3.8 8.5-8.8 8.5-3 0-5-1.6-5-4Z" />
+    <path d="M10.5 12.5c1-1.5 3-2.5 4.5-2.5M6.5 17.5 4 20M3 19a1.5 1.5 0 1 0 2.3 2" />
+  </Icon>
+);
+export const EggIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 3c4 0 6.5 5.5 6.5 9.5a6.5 6.5 0 0 1-13 0C5.5 8.5 8 3 12 3Z" />
+  </Icon>
+);
+export const BeansIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M6.5 7.5c2-3 7.5-3 8.5.5s-1 6.5-4 8.5-6.5 1.5-6.5-1.5c0-2.8.5-5 2-7.5Z" />
+    <path d="M17 12c1.8.5 3 2 2.5 4s-2.5 3.5-4.5 3.5" />
+  </Icon>
+);
+export const FishIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3 12c3-5 9-6 13-3l5-2v10l-5-2c-4 3-10 2-13-3Z" />
+    <circle cx="8.5" cy="11" r=".6" fill="currentColor" />
+  </Icon>
+);
+export const CubeIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="m4 8 8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8" />
+  </Icon>
+);
+
+const PROTEIN_ICONS: Record<string, (p: IconProps) => React.ReactElement> = {
+  chicken: ChickenIcon,
+  beef: BeefIcon,
+  pork: PorkIcon,
+  lamb: LambIcon,
+  egg: EggIcon,
+  beans: BeansIcon,
+  seafood: FishIcon,
+  tofu: CubeIcon,
+  paneer: CubeIcon,
+  vegetable: CarrotIcon,
+};
+
+/** The icon for a protein ("chicken", "beef"…), or a plate for anything else. */
+export function ProteinIcon({
+  protein,
+  ...props
+}: IconProps & { protein: string }) {
+  const Component = PROTEIN_ICONS[protein.toLowerCase()] ?? PanIcon;
+  return <Component {...props} />;
+}

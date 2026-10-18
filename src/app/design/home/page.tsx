@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { ConnectBand } from '@/design/connect-band';
 import { RECIPES } from '@/design/fixtures';
 import { sentenceCase } from '@/design/format';
 import { ArrowIcon } from '@/design/icons';
@@ -198,6 +199,8 @@ export default async function DesignHome({
           </div>
         </Container>
       </Section>
+
+      <ConnectBand />
 
       <Section surface="ink">
         <Container>

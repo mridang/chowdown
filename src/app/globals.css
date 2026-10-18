@@ -5,6 +5,12 @@
   --foreground: #2b2118;
 }
 
+/* Non-inline, so a page can override the radii with a data attribute. */
+@theme {
+  --radius-control: 0.5rem;
+  --radius-card: 0.875rem;
+}
+
 @theme inline {
   /* Bold palette for the redesign (see src/design). Named by what they are. */
   --color-blush: #ffedea;
@@ -19,8 +25,6 @@
   --font-display: var(--font-display-face);
 
   /* Shape and type tokens: every component draws from these. */
-  --radius-control: 0.375rem;
-  --radius-card: 0.5rem;
   --text-label: 0.6875rem;
   --text-label--line-height: 1rem;
   --text-label--letter-spacing: 0.16em;
@@ -33,4 +37,35 @@
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* Design sandbox switches (see src/design/design-root.tsx). */
+.design-root[data-radius='sharp'] {
+  --radius-control: 0.125rem;
+  --radius-card: 0.25rem;
+}
+
+.design-root[data-radius='round'] {
+  --radius-control: 0.75rem;
+  --radius-card: 1.25rem;
+}
+
+.design-root[data-font='newsreader'] {
+  --font-display-face: var(--font-newsreader);
+}
+
+.design-root[data-font='playfair'] {
+  --font-display-face: var(--font-playfair);
+}
+
+.design-root[data-font='source-serif'] {
+  --font-display-face: var(--font-source-serif);
+}
+
+.design-root[data-font='dm-serif'] {
+  --font-display-face: var(--font-dm-serif);
+}
+
+.design-root[data-font='geist'] {
+  --font-display-face: var(--font-geist-sans);
 }

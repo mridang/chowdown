@@ -1,6 +1,14 @@
 import Link from 'next/link';
 
-import { MenuIcon, SearchIcon, UserIcon } from './icons';
+import {
+  ChevronIcon,
+  HeartIcon,
+  LogoutIcon,
+  MenuIcon,
+  PlugIcon,
+  SearchIcon,
+  UserIcon,
+} from './icons';
 import { ButtonLink } from './ui/button';
 import { cn } from './ui/cn';
 import { Container } from './ui/layout';
@@ -23,32 +31,84 @@ export function Logo({ className }: { className?: string }) {
   );
 }
 
-type NavKey = 'search' | 'favourites' | 'home';
+type NavKey = 'search' | 'favourites' | 'connect';
 
 const NAV: [string, string, NavKey][] = [
   ['Recipes', '/design/search', 'search'],
   ['Favourites', '/design/search?fav=1', 'favourites'],
-  ['How it works', '/design/home', 'home'],
+  ['Connect AI', '/design/connect', 'connect'],
 ];
 
-/** The signed-in account: avatar with a live dot, and (on wider screens) the name. */
-function UserBadge({ name, email }: { name: string; email: string }) {
+/** A row in the account menu. */
+function MenuLink({
+  href,
+  icon,
+  children,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <div
-      className="rounded-control border-ink/15 flex h-10 items-center gap-2.5 border bg-white pr-1 pl-1 sm:pr-4"
-      title={email}
+    <Link
+      href={href}
+      className="rounded-control hover:bg-ink/5 flex h-10 items-center gap-3 px-3 text-sm font-medium transition"
     >
-      <span className="bg-ink relative grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-semibold text-white">
-        {name.slice(0, 1)}
-        <span className="bg-leaf absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-white" />
-      </span>
-      <span className="hidden leading-tight sm:block">
-        <span className="text-ink/55 block text-[10px] font-medium tracking-wider uppercase">
-          Signed in
+      <span className="text-ink/60">{icon}</span>
+      {children}
+    </Link>
+  );
+}
+
+/**
+ * The account control. Closed, it is just an avatar (with a green dot while
+ * signed in) and the first name; opened, it says which account you are in and
+ * holds the account links. There is no "Signed in" label cluttering the bar.
+ */
+function AccountMenu({ name, email }: { name: string; email: string }) {
+  return (
+    <details className="group relative">
+      <summary className="rounded-control hover:bg-ink/5 flex h-10 cursor-pointer list-none items-center gap-2 pr-2 pl-1 transition sm:pr-3">
+        <span className="bg-ink relative grid h-8 w-8 place-items-center rounded-full text-sm font-semibold text-white">
+          {name.slice(0, 1)}
+          <span className="border-blush bg-leaf absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2" />
         </span>
-        <span className="block text-sm font-semibold">{name}</span>
-      </span>
-    </div>
+        <span className="hidden text-sm font-semibold sm:block">{name}</span>
+        <ChevronIcon className="text-ink/55 hidden h-4 w-4 transition group-open:rotate-180 sm:block" />
+      </summary>
+      <div className="rounded-card border-ink/15 absolute right-0 mt-2 w-64 border bg-white p-2">
+        <div className="px-3 py-2.5">
+          <p className="text-ink/55 text-xs">Signed in as</p>
+          <p className="truncate text-sm font-semibold">{email}</p>
+        </div>
+        <div className="border-ink/10 my-1 border-t" />
+        <MenuLink
+          href="/design/search"
+          icon={<SearchIcon className="h-[18px] w-[18px]" />}
+        >
+          Your recipes
+        </MenuLink>
+        <MenuLink
+          href="/design/search?fav=1"
+          icon={<HeartIcon className="h-[18px] w-[18px]" />}
+        >
+          Favourites
+        </MenuLink>
+        <MenuLink
+          href="/design/connect"
+          icon={<PlugIcon className="h-[18px] w-[18px]" />}
+        >
+          Connect an assistant
+        </MenuLink>
+        <div className="border-ink/10 my-1 border-t" />
+        <MenuLink
+          href="/design/home"
+          icon={<LogoutIcon className="h-[18px] w-[18px]" />}
+        >
+          Sign out
+        </MenuLink>
+      </div>
+    </details>
   );
 }
 
@@ -62,7 +122,7 @@ export function SiteHeader({
   active,
 }: {
   user: { name: string; email: string } | null;
-  active?: NavKey;
+  active?: NavKey | 'home';
 }) {
   return (
     <header className="bg-blush/95 sticky top-0 z-30 backdrop-blur">
@@ -81,19 +141,22 @@ export function SiteHeader({
                   href={href}
                   aria-current={active === key ? 'page' : undefined}
                   className={cn(
-                    'rounded-control px-3 py-2 text-sm font-medium transition hover:bg-ink/5',
+                    'flex h-10 items-center gap-1.5 rounded-control px-3 text-sm font-medium transition hover:bg-ink/5',
                     active === key
                       ? 'text-ink underline decoration-2 underline-offset-[10px]'
                       : 'text-ink/70',
                   )}
                 >
+                  {key === 'connect' ? (
+                    <PlugIcon className="text-ember h-4 w-4" />
+                  ) : null}
                   {label}
                 </Link>
               ))}
             </nav>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Link
               href="/design/search"
               aria-label="Search recipes"
@@ -102,7 +165,7 @@ export function SiteHeader({
               <SearchIcon className="h-5 w-5" />
             </Link>
             {user ? (
-              <UserBadge name={user.name} email={user.email} />
+              <AccountMenu name={user.name} email={user.email} />
             ) : (
               <ButtonLink href="/design/home?user=1">
                 <UserIcon className="h-4 w-4" />

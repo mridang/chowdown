@@ -6,6 +6,7 @@ export default function DesignIndex() {
     ['/design/home', 'Home', 'Signed out and signed in (?user=1)'],
     ['/design/search', 'Search', 'Sidebar filters and the recipe grid'],
     ['/design/recipe', 'Recipe', 'Photo, facts, ingredients, method'],
+    ['/design/connect', 'Connect', 'Add chowdown to an AI assistant'],
   ];
   return (
     <main className="mx-auto max-w-2xl p-10 font-serif">

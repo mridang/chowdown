@@ -5,7 +5,7 @@ import { CoverImage } from '@/components/cover-image';
 
 import type { SampleRecipe, Tone } from './fixtures';
 import { duration, sentenceCase } from './format';
-import { ClockIcon, FlameIcon, HeartIcon, PanIcon } from './icons';
+import { ClockIcon, FlameIcon, HeartIcon, PanIcon, ProteinIcon } from './icons';
 import { cn } from './ui/cn';
 import { Heading } from './ui/layout';
 
@@ -82,19 +82,30 @@ export function RecipeCard({ recipe }: { recipe: SampleRecipe }) {
           cover={recipe.cover}
           className="aspect-[4/3] w-full shrink-0"
         />
-        <div className="flex flex-1 flex-col p-4 sm:p-5">
-          <p className="text-label text-ember truncate font-semibold uppercase">
-            {sentenceCase(recipe.cuisine)} · {sentenceCase(recipe.protein)}
+        <div className="flex flex-1 flex-col p-4">
+          <p className="text-ember truncate text-[10px] font-semibold tracking-[0.14em] uppercase">
+            {sentenceCase(recipe.cuisine)}
           </p>
-          <Heading as="h3" variant="h4" className="mt-2 line-clamp-2 min-h-14">
+          <Heading
+            as="h3"
+            variant="h4"
+            className="mt-1.5 line-clamp-2 min-h-[2.75rem] text-[1.0625rem] leading-snug"
+          >
             {recipe.title}
           </Heading>
-          <div className="mt-auto flex items-center gap-5 pt-4">
+          <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-3.5">
             <Fact icon={<ClockIcon className="h-4 w-4" />}>
               {duration(recipe.minutes)}
             </Fact>
             <Fact icon={<FlameIcon className="h-4 w-4" />}>
               {recipe.difficulty}
+            </Fact>
+            <Fact
+              icon={
+                <ProteinIcon protein={recipe.protein} className="h-4 w-4" />
+              }
+            >
+              {sentenceCase(recipe.protein)}
             </Fact>
           </div>
         </div>

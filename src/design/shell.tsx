@@ -13,7 +13,7 @@ export function DesignShell({
   children,
 }: {
   signedIn: boolean;
-  active?: 'home' | 'search' | 'favourites';
+  active?: 'home' | 'search' | 'favourites' | 'connect';
   children: ReactNode;
 }) {
   return (
