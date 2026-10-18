@@ -203,3 +203,38 @@ export function scaleQuantity(quantity: string, factor: number): string {
   const unit = match[3]!.trim();
   return unit ? `${amount} ${unit}` : amount;
 }
+
+/** How much of something, in a base unit, so two quantities can be compared. */
+export interface BaseAmount {
+  dimension: 'mass' | 'volume' | 'count';
+  /** Grams, millilitres, or a plain count. */
+  amount: number;
+  /** For a count: what is being counted ("cloves", "cans"), if anything. */
+  unit?: string;
+}
+
+/**
+ * A quantity ("400 g", "2 cups", "3", "2 cloves") as an amount in grams,
+ * millilitres or a count, or undefined when it has no number. Lets callers
+ * compare "400 g" with "1 lb" or "2 cups" with "500 ml".
+ */
+export function toBaseAmount(quantity: string): BaseAmount | undefined {
+  const match = /^(\d+(?:[.,]\d+)?(?:\s+\d+\s*\/\s*\d+|\s*\/\s*\d+)?)\s*(.*)$/.exec(
+    quantity.trim(),
+  );
+  if (!match) {
+    return undefined;
+  }
+  const value = amountValue(match[1]!.trim());
+  if (value === undefined) {
+    return undefined;
+  }
+  const unit = match[2]!.trim().toLowerCase().replace(/\./g, '').replace('fl oz', 'floz');
+  if (unit in MASS_TO_G) {
+    return { dimension: 'mass', amount: value * MASS_TO_G[unit]! };
+  }
+  if (unit in VOL_TO_ML) {
+    return { dimension: 'volume', amount: value * VOL_TO_ML[unit]! };
+  }
+  return unit ? { dimension: 'count', amount: value, unit } : { dimension: 'count', amount: value };
+}

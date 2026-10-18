@@ -14,7 +14,7 @@
 
 import { countOf, foldText } from '../intl';
 import { getUserAccessToken } from '../auth/current-user';
-import { findRecipeBySourceUrl } from '../db/recipes';
+import { findRecipeBySourceUrl, listRecipesByUser } from '../db/recipes';
 import { setUserUnits, type User } from '../db/users';
 import {
   createRecipeFile,
@@ -38,6 +38,14 @@ import { parseRecipe } from '../recipe/cooklang';
 import { embedText } from '../recipe/embeddings';
 import { ensureEmbeddings, topSimilar } from '../recipe/similar';
 import { indexRecipeWrite } from '../recipe/tag-index';
+import { listFavouriteIds } from '../db/favourites';
+import {
+  browseRecipes,
+  filterOverview,
+  recipesFromIngredients,
+  toScenarioRecipe,
+  type ScenarioResult,
+} from './scenarios';
 import { tagCookSource, tagCookSourceBestEffort } from '../recipe/tagging';
 import { addMissingCover, convertImport } from '../recipe/to-cooklang';
 import { setFavouriteAndTag } from '../recipe/favourite';
@@ -262,6 +270,85 @@ export const TOOLS = [
     inputSchema: { type: 'object', properties: {} },
     outputSchema: RECIPE_LIST_OUTPUT_SCHEMA,
     _meta: LIST_TOOL_META,
+  },
+  {
+    name: 'browse_recipes',
+    description:
+      "Browse the user's saved recipes by what they feel like cooking: cuisine ('I feel like Indian'), eating style (vegan, vegetarian, pescatarian, non-vegetarian), protein, dietary needs, category, method, difficulty or time. Every filter is optional and they combine. Results come back grouped by eating style. Use list_filters first if unsure which values exist.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        cuisine: {
+          type: 'string',
+          description: "e.g. 'Indian', 'Chinese' (comma-separate several).",
+        },
+        diet_type: {
+          type: 'string',
+          description:
+            "Eating style: 'Vegan', 'Vegetarian', 'Pescatarian' or 'Non-vegetarian' (comma-separate several). Vegetarian recipes contain no meat or fish; pescatarian ones contain fish but no meat.",
+        },
+        protein: { type: 'string', description: "e.g. 'Chicken', 'Paneer'." },
+        diet: {
+          type: 'string',
+          description: "Dietary needs, e.g. 'Gluten-free', 'Dairy-free'.",
+        },
+        category: { type: 'string', description: "e.g. 'Main', 'Dessert'." },
+        method: { type: 'string', description: "e.g. 'Baked', 'Grilled'." },
+        difficulty: { type: 'string', description: 'Easy, Medium or Hard.' },
+        max_minutes: {
+          type: 'number',
+          description: 'Only recipes that take at most this long.',
+        },
+        favourites_only: { type: 'boolean' },
+        query: { type: 'string', description: 'Text to match in the name.' },
+        limit: { type: 'number', description: 'Most results (default 12).' },
+      },
+    },
+    outputSchema: RECIPE_LIST_OUTPUT_SCHEMA,
+    _meta: LIST_TOOL_META,
+  },
+  {
+    name: 'recipes_from_ingredients',
+    description:
+      "Find recipes the user can cook with what they have in the kitchen ('I have 3 tomatoes and 400 g of pasta — what can I make?'). Returns recipes they can make now, and ones that are only a couple of ingredients short, saying exactly what is missing or needs more of. Salt, pepper, water and cooking oil are assumed to be in the kitchen.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        ingredients: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            "What they have, with amounts when known, e.g. ['3 tomatoes', '400 g pasta', 'garlic'].",
+        },
+        allow_missing: {
+          type: 'number',
+          description:
+            'How many ingredients a recipe may lack to still be listed as almost there (default 2; 0 for only what can be made now).',
+        },
+        assume_staples: {
+          type: 'boolean',
+          description: 'Assume salt, pepper, water and oil (default true).',
+        },
+        diet_type: {
+          type: 'string',
+          description:
+            "Only recipes of this eating style, e.g. 'Vegetarian' (comma-separate several).",
+        },
+        limit: {
+          type: 'number',
+          description: 'Most results per list (default 12).',
+        },
+      },
+      required: ['ingredients'],
+    },
+    outputSchema: RECIPE_LIST_OUTPUT_SCHEMA,
+    _meta: LIST_TOOL_META,
+  },
+  {
+    name: 'list_filters',
+    description:
+      "List what the user's collection holds by cuisine, eating style (vegan / vegetarian / pescatarian / non-vegetarian), protein, category, difficulty and so on, with counts. Use it to see what browse_recipes can filter on.",
+    inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'search_recipes',
@@ -555,6 +642,39 @@ async function callTool(
     }
     await setUserUnits(getDatabase(), user.id, sys);
     return text(`Done — I'll show recipes in ${sys} units from now on.`);
+  }
+
+  // The question-shaped tools read only the D1 cache, so they skip Drive.
+  if (
+    name === 'browse_recipes' ||
+    name === 'recipes_from_ingredients' ||
+    name === 'list_filters'
+  ) {
+    const db = getDatabase();
+    const [rows, hearted] = await Promise.all([
+      listRecipesByUser(db, user.id),
+      listFavouriteIds(db, user.id),
+    ]);
+    const saved = new Set(hearted);
+    const recipes = rows.map((r) =>
+      toScenarioRecipe(r, saved.has(r.drive_file_id)),
+    );
+    const result: ScenarioResult =
+      name === 'browse_recipes'
+        ? browseRecipes(recipes, args)
+        : name === 'recipes_from_ingredients'
+          ? recipesFromIngredients(recipes, args)
+          : filterOverview(recipes);
+    if (name === 'list_filters') {
+      return text(result.message);
+    }
+    if (result.isError) {
+      return { ...text(result.message), isError: true };
+    }
+    return recipeListResult(
+      result.recipes.map((r) => ({ id: r.id, name: r.filename })),
+      result.message,
+    );
   }
 
   const { token, folderId } = await driveContext(user);
@@ -938,7 +1058,12 @@ export async function handleMcpMessage(
               "and pass the page's RAW text or HTML as `content` — do NOT convert it to Cooklang " +
               'yourself; chowdown does the Cooklang conversion so the format stays consistent. Use ' +
               'add_recipe only for a recipe the user dictates directly as Cooklang, capture_idea for a ' +
-              'vague wish with no full recipe yet, and log_cooking to record notes about a cook.',
+              'vague wish with no full recipe yet, and log_cooking to record notes about a cook. ' +
+              "When the user says what they feel like eating ('I feel like cooking Indian today', " +
+              "'something vegetarian', 'a quick pescatarian dinner') use browse_recipes; when they say " +
+              "what they have ('I have 3 tomatoes and 400 g of pasta') use recipes_from_ingredients and " +
+              'tell them what is missing from the near misses; list_filters shows what the collection holds. ' +
+              'Every recipe is classed vegan, vegetarian, pescatarian or non-vegetarian.',
           },
         };
       case 'notifications/initialized':

@@ -21,13 +21,15 @@ const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
 /** Build the system prompt describing the closed vocabulary, once per call. */
 function systemPrompt(): string {
-  const lines = FACETS.map((f) => {
-    if (f.values === null) {
-      return `- ${f.key}: up to 5 short free-form keywords (lowercase).`;
-    }
-    const card = f.multi ? 'choose all that apply' : 'choose exactly one';
-    return `- ${f.key} (${card}): ${f.values.join(', ')}.`;
-  });
+  const lines = FACETS.filter((f) => !('derived' in f && f.derived)).map(
+    (f) => {
+      if (f.values === null) {
+        return `- ${f.key}: up to 5 short free-form keywords (lowercase).`;
+      }
+      const card = f.multi ? 'choose all that apply' : 'choose exactly one';
+      return `- ${f.key} (${card}): ${f.values.join(', ')}.`;
+    },
+  );
   return [
     'You tag recipes for a recipe app. Classify the recipe into these facets,',
     'using ONLY the listed values (except keywords, which are free-form).',

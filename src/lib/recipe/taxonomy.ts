@@ -22,6 +22,11 @@ export interface Facet {
   values: readonly string[] | null;
   /** Whether a recipe can carry several values for this facet. */
   multi: boolean;
+  /**
+   * Worked out from the recipe itself (see diet-type.ts) rather than written in
+   * its file or chosen by the tagger, so it can't be set or patched by hand.
+   */
+  derived?: boolean;
 }
 
 /** The facets, in the order the filter sidebar shows them. */
@@ -84,12 +89,17 @@ export const FACETS = [
     ],
   },
   {
-    key: 'diet',
+    key: 'diet_type',
     label: 'Diet',
+    multi: false,
+    derived: true,
+    values: ['Vegan', 'Vegetarian', 'Pescatarian', 'Non-vegetarian'],
+  },
+  {
+    key: 'diet',
+    label: 'Dietary needs',
     multi: true,
     values: [
-      'Vegetarian',
-      'Vegan',
       'Gluten-free',
       'Dairy-free',
       'Nut-free',
@@ -168,6 +178,9 @@ export function validateTags(
 ): [string, string][] {
   const out: [string, string][] = [];
   for (const f of FACETS) {
+    if ('derived' in f && f.derived) {
+      continue; // worked out from the recipe, never taken from the model
+    }
     const raw = proposed[f.key];
     if (raw === undefined || raw === null) {
       continue;

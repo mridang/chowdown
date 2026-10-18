@@ -18,6 +18,12 @@ const errors = (patch: Record<string, unknown>) => {
 };
 
 describe('applyRecipePatch', () => {
+  it('refuses to set the eating style, which is worked out from the ingredients', () => {
+    expect(errors({ tags: { diet_type: ['Vegan'] } })).toEqual([
+      "tags.diet_type: is worked out from the ingredients and can't be set.",
+    ]);
+  });
+
   it('changes the title and leaves the method and notes alone', () => {
     const out = ok({ title: '  New   name ' });
     expect(out).toContain('>> title: New name');

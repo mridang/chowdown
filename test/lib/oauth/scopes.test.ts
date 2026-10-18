@@ -45,6 +45,7 @@ describe('scopeForTool', () => {
   it('needs only read for viewing tools', () => {
     expect(scopeForTool('get_recipe')).toBe(SCOPE_READ);
     expect(scopeForTool('search_recipes')).toBe(SCOPE_READ);
+    expect(scopeForTool('recipes_from_ingredients')).toBe(SCOPE_READ);
   });
 
   it('needs write for anything that changes data, including unknown tools', () => {

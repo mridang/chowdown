@@ -13,10 +13,13 @@ describe('MCP tool scopes', () => {
       (t) => scopeForTool(t.name) === SCOPE_READ,
     ).map((t) => t.name);
     expect(readTools.sort()).toEqual([
+      'browse_recipes',
       'find_recipes',
       'find_similar',
       'get_recipe',
+      'list_filters',
       'list_recipes',
+      'recipes_from_ingredients',
       'search_recipes',
     ]);
   });

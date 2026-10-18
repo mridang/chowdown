@@ -4,6 +4,7 @@ import {
   convertQuantity,
   isUnitSystem,
   scaleQuantity,
+  toBaseAmount,
 } from '../../../src/lib/recipe/units';
 
 describe('isUnitSystem', () => {
@@ -86,5 +87,36 @@ describe('convertQuantity cups', () => {
     expect(convertQuantity('1 L', 'us')).toBe('4.25 cups');
     expect(convertQuantity('300 ml', 'us')).toBe('1.25 cups');
     expect(convertQuantity('240 ml', 'us')).toBe('1 cup');
+  });
+});
+
+describe('toBaseAmount', () => {
+  it('turns mass and volume into grams and millilitres', () => {
+    expect(toBaseAmount('400 g')).toEqual({ dimension: 'mass', amount: 400 });
+    expect(toBaseAmount('1 kg')).toEqual({ dimension: 'mass', amount: 1000 });
+    expect(toBaseAmount('2 cups')?.dimension).toBe('volume');
+    expect(toBaseAmount('500 ml')).toEqual({
+      dimension: 'volume',
+      amount: 500,
+    });
+  });
+
+  it('treats a bare number or an unknown unit as a count', () => {
+    expect(toBaseAmount('3')).toEqual({ dimension: 'count', amount: 3 });
+    expect(toBaseAmount('2 cloves')).toEqual({
+      dimension: 'count',
+      amount: 2,
+      unit: 'cloves',
+    });
+  });
+
+  it('reads fractions and mixed numbers', () => {
+    expect(toBaseAmount('1/2 cup')?.amount).toBeCloseTo(118.294, 2);
+    expect(toBaseAmount('1 1/2')?.amount).toBe(1.5);
+  });
+
+  it('is undefined with no number', () => {
+    expect(toBaseAmount('a pinch')).toBeUndefined();
+    expect(toBaseAmount('')).toBeUndefined();
   });
 });

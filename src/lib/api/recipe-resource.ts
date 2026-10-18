@@ -14,7 +14,7 @@ import {
 } from '../recipe/cook-text';
 import { parseRecipe, type StepToken } from '../recipe/cooklang';
 import { extractMedia } from '../recipe/media';
-import type { RecipeTags } from '../recipe/tag-index';
+import { rowTags, type RecipeTags } from '../recipe/tag-index';
 
 /** What list endpoints return for each recipe. */
 export interface RecipeSummary {
@@ -62,7 +62,7 @@ export function recipeSummary(row: Recipe, favourite: boolean): RecipeSummary {
   const summary: RecipeSummary = {
     id: row.drive_file_id,
     title: row.title || recipeDisplayName(row.name),
-    tags: row.tags ? (JSON.parse(row.tags) as RecipeTags) : {},
+    tags: rowTags(row, parsed),
     favourite,
     uncurated: isUncurated(row.name),
   };

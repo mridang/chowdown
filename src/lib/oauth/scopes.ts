@@ -23,6 +23,9 @@ const READ_ONLY_TOOLS = new Set([
   'find_recipes',
   'find_similar',
   'get_recipe',
+  'browse_recipes',
+  'recipes_from_ingredients',
+  'list_filters',
 ]);
 
 /**

@@ -18,6 +18,7 @@ import { getFileContent, type DriveFile } from '../drive/drive-client';
 import { getDatabase, getEnv, runInBackground } from '../util';
 import { parseRecipe, type ParsedRecipe } from './cooklang';
 import { embedRecipe } from './embed-write';
+import { classifyDietType } from './diet-type';
 import { canonicalValue, facet } from './taxonomy';
 
 /** A recipe's tags as `{ facetKey: canonicalValue[] }`. */
@@ -32,7 +33,7 @@ export function extractFacetTags(recipe: ParsedRecipe): RecipeTags {
   const out: RecipeTags = {};
   for (const [key, value] of recipe.metadata) {
     const f = facet(key.trim().toLowerCase());
-    if (!f) {
+    if (!f || ('derived' in f && f.derived)) {
       continue;
     }
     const parts = value
@@ -50,7 +51,29 @@ export function extractFacetTags(recipe: ParsedRecipe): RecipeTags {
       }
     }
   }
+  out['diet_type'] = [
+    classifyDietType(
+      recipe.ingredients.map((i) => i.name),
+      out['protein'] ?? [],
+    ),
+  ];
   return out;
+}
+
+/**
+ * A cached recipe row's tags, with the eating style filled in even for rows
+ * indexed before it existed. Always use this rather than parsing `row.tags`.
+ */
+export function rowTags(
+  row: { tags: string | null; source: string; name: string },
+  parsed?: ParsedRecipe,
+): RecipeTags {
+  const stored = row.tags ? (JSON.parse(row.tags) as RecipeTags) : {};
+  if (stored['diet_type']) {
+    return stored;
+  }
+  const recipe = parsed ?? parseRecipe(row.source, row.name);
+  return { ...stored, diet_type: extractFacetTags(recipe)['diet_type']! };
 }
 
 /**
@@ -131,7 +154,7 @@ export async function syncRecipeTags(
       cachedTags &&
       cached.modified_time === (file.modifiedTime ?? null)
     ) {
-      result.set(file.id, cachedTags);
+      result.set(file.id, rowTags(cached));
       continue;
     }
     // New, changed, or never-indexed: read and re-extract.

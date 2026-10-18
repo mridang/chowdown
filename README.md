@@ -94,6 +94,13 @@ in with Google when asked, and approve. There is no secret to copy.
 
 - **Scopes:** `recipes:read` (browse and search) and `recipes:write` (add, edit,
   tag, favourite, annotate). An assistant can be granted read only.
+- **Asking what to cook:** `browse_recipes` ("I feel like cooking Indian",
+  "something vegetarian under 30 minutes"), `recipes_from_ingredients` ("I have 3
+  tomatoes and 400 g of pasta" returns what can be cooked now and what is a
+  couple of ingredients short) and `list_filters`. Every recipe is classed as
+  vegan, vegetarian, pescatarian or non-vegetarian from its ingredients, so
+  results can be grouped and filtered by diet; existing recipes get this without
+  being re-tagged.
 - **Discovery:** `/.well-known/oauth-protected-resource/api/mcp` (RFC 9728) and
   `/.well-known/oauth-authorization-server` (RFC 8414).
 - **Client registration:** Client ID Metadata Documents (preferred) and dynamic

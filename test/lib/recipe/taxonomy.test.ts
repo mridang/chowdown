@@ -29,6 +29,20 @@ describe('facet', () => {
   });
 });
 
+describe('derived facets', () => {
+  it('marks the eating style as worked out, not chosen', () => {
+    expect(facet('diet_type')).toMatchObject({
+      derived: true,
+      values: ['Vegan', 'Vegetarian', 'Pescatarian', 'Non-vegetarian'],
+    });
+  });
+  it('never takes the eating style from the tagger', () => {
+    expect(validateTags({ diet_type: 'Vegan', cuisine: 'Indian' })).toEqual([
+      ['cuisine', 'Indian'],
+    ]);
+  });
+});
+
 describe('validateTags', () => {
   it('keeps vocabulary values and drops the rest', () => {
     const pairs = validateTags({

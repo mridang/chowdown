@@ -20,7 +20,7 @@ import {
 import { extractMedia } from '@/lib/recipe/media';
 import { syncFromDrive } from '@/lib/recipe/drive-sync';
 import { backfillEmbeddings } from '@/lib/recipe/embed-write';
-import type { RecipeTags } from '@/lib/recipe/tag-index';
+import { rowTags, type RecipeTags } from '@/lib/recipe/tag-index';
 import { getDatabase, getEnv, runInBackground } from '@/lib/util';
 
 import { RecipeApp, type RecipeCard } from './_components/recipe-app';
@@ -86,7 +86,7 @@ export default async function AppPage({
         cover: extractMedia(parsed).cover,
         favourite: hearted.has(row.drive_file_id),
         domain: sourceDomainOf(row.source),
-        tags: row.tags ? (JSON.parse(row.tags) as RecipeTags) : {},
+        tags: rowTags(row, parsed),
       };
     });
 
