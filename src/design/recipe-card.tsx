@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import { CoverImage } from '@/components/cover-image';
+
 import { ClockIcon, FlameIcon, HeartIcon, PanIcon } from './icons';
 import type { SampleRecipe, Tone } from './fixtures';
 
@@ -19,16 +21,31 @@ export const TONES: Record<Tone, string> = {
  */
 export function PhotoBlock({
   tone,
+  cover,
   className = '',
 }: {
   tone: Tone;
+  cover?: string;
   className?: string;
 }) {
-  return (
+  const tile = (
     <div
-      className={`relative grid place-items-center overflow-hidden ${TONES[tone]} ${className}`}
+      className={`relative grid h-full w-full place-items-center overflow-hidden ${TONES[tone]}`}
     >
       <PanIcon className="h-1/3 w-1/3 opacity-30" strokeWidth={1.2} />
+    </div>
+  );
+  return (
+    <div className={`relative overflow-hidden ${className}`}>
+      {cover ? (
+        <CoverImage
+          src={cover}
+          fallback={tile}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ) : (
+        <div className="absolute inset-0">{tile}</div>
+      )}
     </div>
   );
 }
@@ -44,19 +61,20 @@ function Stat({ children, icon }: { children: string; icon: React.ReactNode }) {
 }
 
 /**
- * A recipe card: chunky border, hard offset shadow that "presses" on hover, a
- * heart that is outlined until favourited, and the facts you decide on.
+ * A recipe card: a flat white card with a hairline border, a heart that is
+ * outlined until favourited, and the facts you decide on.
  */
 export function RecipeCard({ recipe }: { recipe: SampleRecipe }) {
   return (
     <article className="group relative">
       <Link
         href="/design/recipe"
-        className="border-ink block overflow-hidden rounded-2xl border-2 bg-white shadow-[5px_5px_0_0_var(--color-ink)] transition group-hover:translate-x-0.5 group-hover:translate-y-0.5 group-hover:shadow-[3px_3px_0_0_var(--color-ink)]"
+        className="border-ink block overflow-hidden rounded-2xl border bg-white transition"
       >
         <PhotoBlock
           tone={recipe.tone}
-          className="border-ink aspect-[4/3] border-b-2"
+          cover={recipe.cover}
+          className="border-ink aspect-[4/3] border-b"
         />
         <div className="p-4">
           <p className="font-display text-flame text-[11px] tracking-[0.18em] uppercase">
@@ -65,7 +83,7 @@ export function RecipeCard({ recipe }: { recipe: SampleRecipe }) {
           <h3 className="font-display mt-1.5 text-xl leading-tight">
             {recipe.title}
           </h3>
-          <div className="border-ink/30 mt-3 flex items-center gap-4 border-t-2 border-dotted pt-3">
+          <div className="border-ink/30 mt-3 flex items-center gap-4 border-t border-dotted pt-3">
             <Stat icon={<ClockIcon className="h-4 w-4" />}>
               {recipe.minutes >= 60
                 ? `${Math.floor(recipe.minutes / 60)}h ${recipe.minutes % 60 || ''}`.trim()
@@ -82,7 +100,7 @@ export function RecipeCard({ recipe }: { recipe: SampleRecipe }) {
         aria-label={
           recipe.favourite ? 'Remove from favourites' : 'Add to favourites'
         }
-        className={`border-ink absolute top-3 right-3 grid h-10 w-10 place-items-center rounded-full border-2 transition ${
+        className={`border-ink absolute top-3 right-3 grid h-10 w-10 place-items-center rounded-full border transition ${
           recipe.favourite
             ? 'bg-bubblegum text-ink'
             : 'text-ink bg-white opacity-0 group-hover:opacity-100'

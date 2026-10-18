@@ -49,10 +49,10 @@ export default async function DesignHome({
   const signedIn = (await searchParams).user === '1';
   return (
     <DesignShell signedIn={signedIn} active="home">
-      <section className="border-ink border-b-2">
+      <section className="border-ink border-b">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-8 lg:grid-cols-[1.3fr_1fr] lg:py-20">
           <div>
-            <p className="border-ink bg-marigold font-display inline-block -rotate-1 rounded-full border-2 px-4 py-1 text-xs tracking-[0.2em] uppercase">
+            <p className="border-ink bg-marigold font-display inline-block rounded-full border px-4 py-1 text-xs tracking-[0.2em] uppercase">
               {signedIn ? 'Welcome back, Mridang' : 'Recipes you actually keep'}
             </p>
             <h1 className="font-display mt-6 text-5xl leading-[0.95] tracking-tight uppercase sm:text-7xl">
@@ -66,7 +66,7 @@ export default async function DesignHome({
               chowdown keeps every recipe as a plain text file in a folder you
               own, then makes them a joy to search, scale and cook from.
             </p>
-            <form className="border-ink mt-8 flex max-w-xl items-center gap-2 rounded-full border-2 bg-white p-1.5 shadow-[5px_5px_0_0_var(--color-ink)]">
+            <form className="border-ink mt-8 flex max-w-xl items-center gap-2 rounded-full border bg-white p-1.5">
               <SearchIcon className="ml-3 h-6 w-6 shrink-0" />
               <input
                 placeholder="What do you feel like?"
@@ -74,7 +74,7 @@ export default async function DesignHome({
               />
               <button
                 type="button"
-                className="border-ink bg-flame font-display flex items-center gap-2 rounded-full border-2 px-5 py-2.5 text-sm tracking-wide text-white uppercase"
+                className="border-ink bg-flame font-display flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm tracking-wide text-white uppercase"
               >
                 Find <ArrowIcon className="h-4 w-4" />
               </button>
@@ -86,8 +86,7 @@ export default async function DesignHome({
             )}
           </div>
           <div className="relative hidden lg:block">
-            <div className="border-ink bg-marigold absolute inset-0 rotate-3 rounded-[2rem] border-2" />
-            <div className="border-ink bg-flame relative -rotate-2 rounded-[2rem] border-2 p-8 text-white shadow-[8px_8px_0_0_var(--color-ink)]">
+            <div className="bg-flame rounded-2xl p-8 text-white">
               <PanIcon className="h-24 w-24" strokeWidth={1.4} />
               <p className="font-display mt-4 text-3xl leading-tight uppercase">
                 85 recipes ready to cook
@@ -106,7 +105,7 @@ export default async function DesignHome({
             <a
               key={label}
               href="/design/search"
-              className="border-ink font-display hover:bg-marigold flex items-center gap-2 rounded-full border-2 bg-white px-5 py-2.5 text-sm tracking-wide uppercase transition"
+              className="border-ink font-display hover:bg-marigold flex items-center gap-2 rounded-full border bg-white px-5 py-2.5 text-sm tracking-wide uppercase transition"
             >
               {icon}
               {label}
@@ -142,9 +141,9 @@ export default async function DesignHome({
           {STEPS.map(([n, title, body, tone]) => (
             <div
               key={n}
-              className={`border-ink rounded-2xl border-2 p-6 shadow-[5px_5px_0_0_var(--color-ink)] ${tone}`}
+              className={`border-ink rounded-2xl border p-6 ${tone}`}
             >
-              <span className="border-ink font-display text-ink grid h-12 w-12 place-items-center rounded-full border-2 bg-white text-2xl">
+              <span className="border-ink font-display text-ink grid h-12 w-12 place-items-center rounded-full border bg-white text-2xl">
                 {n}
               </span>
               <h3 className="font-display mt-4 text-2xl uppercase">{title}</h3>

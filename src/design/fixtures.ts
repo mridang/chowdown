@@ -17,6 +17,8 @@ export interface SampleRecipe {
   protein: string;
   favourite: boolean;
   tone: Tone;
+  /** A real cover image URL; without one the card shows a colour tile. */
+  cover?: string;
 }
 
 export const RECIPES: SampleRecipe[] = [

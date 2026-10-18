@@ -14,7 +14,7 @@
   --color-leaf: #35b700;
   --color-plum: #a51bbe;
   --color-bubblegum: #ff7ca3;
-  --font-display: var(--font-bogle);
+  --font-display: var(--font-display-face);
   --font-serif: var(--font-newsreader);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -44,5 +44,12 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .animate-ticker {
     animation: none;
+  }
+}
+
+/* The display face is only loaded in its medium to bold weights. */
+@layer utilities {
+  .font-display {
+    font-weight: 700;
   }
 }

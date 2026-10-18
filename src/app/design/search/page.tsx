@@ -14,7 +14,7 @@ function FacetGroup({
   checked?: string[];
 }) {
   return (
-    <section className="border-ink/15 border-b-2 pb-5">
+    <section className="border-ink/15 border-b pb-5">
       <h3 className="font-display text-sm tracking-[0.15em] uppercase">
         {label}
       </h3>
@@ -29,7 +29,7 @@ function FacetGroup({
               >
                 <span className="flex items-center gap-2.5">
                   <span
-                    className={`border-ink grid h-5 w-5 place-items-center rounded-md border-2 ${
+                    className={`border-ink grid h-5 w-5 place-items-center rounded-md border ${
                       on ? 'bg-flame text-white' : 'bg-white'
                     }`}
                   >
@@ -55,12 +55,12 @@ function FacetGroup({
 export default function DesignSearch() {
   return (
     <DesignShell signedIn active="search">
-      <div className="border-ink bg-marigold border-b-2">
+      <div className="border-ink bg-marigold border-b">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-8">
           <h1 className="font-display text-4xl uppercase sm:text-5xl">
             Recipes
           </h1>
-          <div className="border-ink mt-5 flex max-w-2xl items-center gap-2 rounded-full border-2 bg-white p-1.5 shadow-[4px_4px_0_0_var(--color-ink)]">
+          <div className="border-ink mt-5 flex max-w-2xl items-center gap-2 rounded-full border bg-white p-1.5">
             <SearchIcon className="ml-3 h-6 w-6 shrink-0" />
             <input
               defaultValue=""
@@ -75,7 +75,7 @@ export default function DesignSearch() {
         <aside className="flex flex-col gap-5 md:sticky md:top-6 md:self-start">
           <button
             type="button"
-            className="border-ink bg-bubblegum font-display flex items-center justify-between rounded-xl border-2 px-4 py-2.5 text-sm tracking-wide uppercase"
+            className="border-ink bg-bubblegum font-display flex items-center justify-between rounded-xl border px-4 py-2.5 text-sm tracking-wide uppercase"
           >
             <span>♥ Favourites</span>
             <span>5</span>
@@ -97,7 +97,7 @@ export default function DesignSearch() {
               85 recipes
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="border-ink bg-flame font-display inline-flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-xs text-white uppercase">
+              <span className="border-ink bg-flame font-display inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs text-white uppercase">
                 Mexican ✕
               </span>
               <button

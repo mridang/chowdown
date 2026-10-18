@@ -81,7 +81,7 @@ export function SiteFooter() {
           ))}
         </div>
       </div>
-      <div className="border-ink bg-marigold border-t-2">
+      <div className="border-ink bg-marigold border-t">
         <div className="font-display mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-xs tracking-wide uppercase sm:px-8">
           <span>© chowdown</span>
           <span>Made for cooking, not scrolling</span>

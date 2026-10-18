@@ -29,7 +29,7 @@ function RoundButton({
       type="button"
       aria-label={label}
       title={label}
-      className={`border-ink hover:bg-marigold grid h-11 w-11 place-items-center rounded-full border-2 transition ${tone}`}
+      className={`border-ink hover:bg-marigold grid h-11 w-11 place-items-center rounded-full border transition ${tone}`}
     >
       {children}
     </button>
@@ -56,7 +56,7 @@ function Fact({ icon, children }: { icon: React.ReactNode; children: string }) {
 export default function DesignRecipe() {
   return (
     <DesignShell signedIn active="search">
-      <section className="border-ink border-b-2">
+      <section className="border-ink border-b">
         <div className="mx-auto grid max-w-[90rem] lg:grid-cols-2">
           <div className="px-4 py-10 sm:px-8 lg:py-16 lg:pr-16 lg:pl-[max(2rem,calc((100vw-80rem)/2+2rem))]">
             <nav className="text-ink/60 text-sm" aria-label="Breadcrumb">
@@ -96,7 +96,7 @@ export default function DesignRecipe() {
               </a>
               <Link
                 href="/design/search"
-                className="border-ink font-display hover:bg-marigold rounded-full border-2 px-3 py-0.5 text-[11px] tracking-wide uppercase transition"
+                className="border-ink font-display hover:bg-marigold rounded-full border px-3 py-0.5 text-[11px] tracking-wide uppercase transition"
               >
                 More from {R.site}
               </Link>
@@ -107,13 +107,13 @@ export default function DesignRecipe() {
           </div>
           <PhotoBlock
             tone="flame"
-            className="lg:border-ink min-h-72 lg:min-h-[28rem] lg:border-l-2"
+            className="lg:border-ink min-h-72 lg:min-h-[28rem] lg:border-l"
           />
         </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 sm:px-8">
-        <div className="divide-flame/60 mt-12 flex flex-wrap items-center divide-x-2">
+        <div className="divide-flame/60 mt-12 flex flex-wrap items-center divide-x">
           <Fact
             icon={<ClockIcon className="h-8 w-8" />}
           >{`${R.minutes} min`}</Fact>
@@ -124,7 +124,7 @@ export default function DesignRecipe() {
         </div>
 
         <div className="mt-14 grid gap-14 md:grid-cols-[18rem_1fr] lg:grid-cols-[22rem_1fr]">
-          <div>
+          <div className="md:sticky md:top-6 md:max-h-[calc(100vh-3rem)] md:self-start md:overflow-y-auto md:pr-2">
             <h2 className="font-display text-flame text-2xl tracking-wide uppercase">
               Ingredients
             </h2>
@@ -171,7 +171,7 @@ export default function DesignRecipe() {
           </div>
         </div>
 
-        <hr className="border-flame/40 mt-16 border-t-2" />
+        <hr className="border-flame/40 mt-16 border-t" />
         <p className="font-display text-ink/60 mt-6 text-sm tracking-[0.15em] uppercase">
           {R.tags.join(', ')}
         </p>

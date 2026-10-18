@@ -1,5 +1,10 @@
 import type { Metadata, Viewport } from 'next';
-import { BBH_Bogle, Geist, Geist_Mono, Newsreader } from 'next/font/google';
+import {
+  Barlow_Condensed,
+  Geist,
+  Geist_Mono,
+  Newsreader,
+} from 'next/font/google';
 import './globals.css';
 
 const geistSans = Geist({
@@ -12,11 +17,11 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-/** Display face for the bold redesign: headings, buttons and badges. */
-const bogle = BBH_Bogle({
-  variable: '--font-bogle',
+/** Display face for the redesign: headings, buttons and labels. A clean condensed grotesque. */
+const display = Barlow_Condensed({
+  variable: '--font-display-face',
   subsets: ['latin'],
-  weight: '400',
+  weight: ['500', '600', '700'],
 });
 
 /** Text serif for the redesign: body copy, method steps and notes. */
@@ -65,7 +70,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${bogle.variable} ${newsreader.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${display.variable} ${newsreader.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col overflow-x-hidden font-sans">
         {children}
