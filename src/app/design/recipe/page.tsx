@@ -54,13 +54,19 @@ function Label({ children }: { children: ReactNode }) {
 export default function DesignRecipe() {
   return (
     <DesignShell signedIn active="search">
-      <section className="border-ink/10 border-b">
-        <div className="mx-auto grid max-w-[90rem] grid-cols-1 lg:grid-cols-2">
+      <section className="border-ink/10 @container border-b">
+        {/*
+          The text column must start exactly where the page container does, so
+          the title, the facts and the ingredients share one left edge. The photo
+          bleeds to the right edge, so the container gutter is rebuilt here from
+          the section width (cqw) rather than nested.
+        */}
+        <div className="grid grid-cols-1 lg:grid-cols-2">
           <PhotoBlock
             tone="flame"
-            className="aspect-[16/10] lg:order-2 lg:aspect-auto lg:min-h-[30rem]"
+            className="aspect-[16/10] lg:order-2 lg:aspect-auto lg:min-h-[32rem]"
           />
-          <div className="px-4 py-8 sm:px-6 lg:order-1 lg:py-16 lg:pr-16 lg:pl-[max(2rem,calc((100vw-80rem)/2+2rem))]">
+          <div className="px-4 py-8 sm:px-6 lg:order-1 lg:py-16 lg:pr-16 lg:pl-[max(2.5rem,calc((100cqw-90rem)/2+2.5rem))]">
             <nav className="text-ink/55 text-sm" aria-label="Breadcrumb">
               <Link
                 href="/design/search"
@@ -162,7 +168,7 @@ export default function DesignRecipe() {
 
           <div>
             <Heading variant="h3">Method</Heading>
-            <ol className="mt-5 flex flex-col gap-8">
+            <ol className="mt-5 flex max-w-3xl flex-col gap-8">
               {R.steps.map((step, i) => (
                 <li key={step} className="flex items-start gap-5">
                   <span className="bg-flame grid h-9 w-9 shrink-0 place-items-center rounded-full text-base font-semibold text-white">

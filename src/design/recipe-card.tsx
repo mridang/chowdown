@@ -130,7 +130,9 @@ export function RecipeGrid({
     <div
       className={cn(
         'grid gap-5 sm:grid-cols-2 sm:gap-6',
-        columns === 4 ? 'lg:grid-cols-4' : 'xl:grid-cols-3',
+        columns === 4
+          ? 'lg:grid-cols-4'
+          : 'xl:grid-cols-3 min-[1700px]:grid-cols-4',
       )}
     >
       {children}
