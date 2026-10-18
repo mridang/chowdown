@@ -29,7 +29,19 @@ import {
   isEdgeCacheable,
   storableCopy,
 } from './lib/http/edge-cache';
-import { applyResponseHeaders } from './lib/http/headers';
+import { addSecurityHeaders, applyResponseHeaders } from './lib/http/headers';
+import { isBuiltAsset, precompressedUrl, brotliResponse } from './lib/http/precompressed';
+import { parsePreloadList, preloadLinkHeader } from './lib/http/preload';
+
+/** The scripts every page needs, read once from the build's `preload.json`. */
+let preloadHeader: Promise<string> | undefined;
+function preloadFor(env: CloudflareEnv): Promise<string> {
+  preloadHeader ??= env.ASSETS.fetch('https://assets.invalid/preload.json')
+    .then((r) => (r.ok ? r.text() : '[]'))
+    .then((text) => preloadLinkHeader(parsePreloadList(text)))
+    .catch(() => '');
+  return preloadHeader;
+}
 
 const handler: ExportedHandler<CloudflareEnv> = {
   /**
@@ -38,6 +50,23 @@ const handler: ExportedHandler<CloudflareEnv> = {
    * cache headers are added to whatever goes back.
    */
   async fetch(request, env, ctx) {
+    // Built files: serve scripts and styles from their strongly compressed copy
+    // where the browser takes brotli, otherwise the plain file. (wrangler.jsonc
+    // sends these paths to the Worker first.)
+    if (new URL(request.url).pathname.startsWith('/_next/static/')) {
+      const copyUrl = isBuiltAsset(request) ? precompressedUrl(request) : null;
+      if (copyUrl) {
+        const copy = await env.ASSETS.fetch(copyUrl.toString());
+        const reply = brotliResponse(request, copy);
+        if (reply) {
+          // Add the headers in place: rebuilding the Response would lose its
+          // "already encoded" mark and have the runtime compress it again.
+          addSecurityHeaders(reply.headers);
+          return reply;
+        }
+      }
+      return applyResponseHeaders(request, await env.ASSETS.fetch(request));
+    }
     const cache = (globalThis as { caches?: { default?: Cache } }).caches
       ?.default;
     const cacheable = cache !== undefined && isEdgeCacheable(request);
@@ -59,7 +88,17 @@ const handler: ExportedHandler<CloudflareEnv> = {
         ctx.waitUntil(cache.put(key, copy));
       }
     }
-    return applyResponseHeaders(request, response);
+    const html = (response.headers.get('content-type') ?? '').startsWith(
+      'text/html',
+    );
+    const preload = html ? await preloadFor(env) : '';
+    if (!preload) {
+      return applyResponseHeaders(request, response);
+    }
+    // Cloudflare repeats a preload Link header as an Early Hint on later visits.
+    const withLink = new Response(response.body, response);
+    withLink.headers.append('Link', preload);
+    return applyResponseHeaders(request, withLink);
   },
 };
 

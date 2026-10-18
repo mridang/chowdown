@@ -28,6 +28,15 @@ export const SECURITY_HEADERS: Record<string, string> = {
   'Cross-Origin-Opener-Policy': 'same-origin',
 };
 
+/** Add the security headers to a header set, leaving any already there alone. */
+export function addSecurityHeaders(headers: Headers): void {
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+    if (!headers.has(name)) {
+      headers.set(name, value);
+    }
+  }
+}
+
 /** Cache rules for the few responses that want something other than the default. */
 function cacheControlFor(pathname: string, response: Response): string | null {
   if (
@@ -64,11 +73,7 @@ export function applyResponseHeaders(
     return response;
   }
   const headers = new Headers(response.headers);
-  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
-    if (!headers.has(name)) {
-      headers.set(name, value);
-    }
-  }
+  addSecurityHeaders(headers);
   const cache = cacheControlFor(new URL(request.url).pathname, response);
   if (cache) {
     headers.set('Cache-Control', cache);

@@ -28,6 +28,10 @@
   "assets": {
     "binding": "ASSETS",
     "directory": ".open-next/assets",
+    // Built files go through the Worker so it can answer scripts and styles with
+    // their brotli copies (see src/lib/http/precompressed.ts). All other static
+    // files are still served without waking the Worker.
+    "run_worker_first": ["/_next/static/*"],
   },
   // Workers AI — used server-side to convert fetched recipe content into
   // Cooklang under our control (the client passes raw page text/HTML, never
