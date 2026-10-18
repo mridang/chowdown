@@ -9,19 +9,21 @@
 @theme {
   --radius-control: 0.5rem;
   --radius-card: 0.875rem;
+
+  /* Palette. These can be swapped per page with data-palette (design sandbox). */
+  --color-paper: #fbf8f2;
+  --color-sand: #f0e9dc;
+  --color-forest: #1f4b3b;
+  --color-ink: #15120e;
+  --color-live: #1fa35c;
 }
 
 @theme inline {
-  /* Bold palette for the redesign (see src/design). Named by what they are. */
-  --color-blush: #ffedea;
+  /* The two brand colours that never change: the footer orange and yellow. */
   --color-marigold: #ffb100;
   --color-flame: #ff4e00;
-  --color-ink: #0d0d0d;
-  --color-leaf: #35b700;
-  --color-plum: #a51bbe;
-  --color-bubblegum: #ff7ca3;
   /* A deeper flame for small text, which needs more contrast than the fill. */
-  --color-ember: #c23c00;
+  --color-ember: #b33700;
   --font-display: var(--font-display-face);
 
   /* Shape and type tokens: every component draws from these. */
@@ -40,6 +42,19 @@ body {
 }
 
 /* Design sandbox switches (see src/design/design-root.tsx). */
+.design-root[data-palette='stone'] {
+  --color-paper: #f5f5f2;
+  --color-sand: #e7e7e1;
+  --color-forest: #263a4a;
+  --color-ink: #121417;
+}
+
+.design-root[data-palette='butter'] {
+  --color-paper: #fffaf0;
+  --color-sand: #fbe9bf;
+  --color-forest: #3b2a1c;
+  --color-ink: #1b130c;
+}
 .design-root[data-radius='sharp'] {
   --radius-control: 0.125rem;
   --radius-card: 0.25rem;
@@ -50,22 +65,44 @@ body {
   --radius-card: 1.25rem;
 }
 
-.design-root[data-font='newsreader'] {
+.design-root[data-display='newsreader'] {
   --font-display-face: var(--font-newsreader);
 }
 
-.design-root[data-font='playfair'] {
+.design-root[data-display='playfair'] {
   --font-display-face: var(--font-playfair);
 }
 
-.design-root[data-font='source-serif'] {
-  --font-display-face: var(--font-source-serif);
-}
-
-.design-root[data-font='dm-serif'] {
+.design-root[data-display='dm-serif'] {
   --font-display-face: var(--font-dm-serif);
 }
 
-.design-root[data-font='geist'] {
-  --font-display-face: var(--font-geist-sans);
+.design-root[data-display='instrument'] {
+  --font-display-face: var(--font-instrument);
+}
+
+.design-root[data-display='bricolage'] {
+  --font-display-face: var(--font-bricolage);
+}
+
+.design-root[data-display='space'] {
+  --font-display-face: var(--font-space);
+}
+
+/* Faces that only come in a regular weight must not be faux-bolded. */
+.design-root[data-display='dm-serif'] .font-display,
+.design-root[data-display='instrument'] .font-display {
+  font-weight: 400;
+}
+
+.design-root[data-body='inter'] {
+  --font-geist-sans: var(--font-inter);
+}
+
+.design-root[data-body='dm-sans'] {
+  --font-geist-sans: var(--font-dm-sans);
+}
+
+.design-root[data-body='manrope'] {
+  --font-geist-sans: var(--font-manrope);
 }

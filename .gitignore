@@ -52,3 +52,4 @@ next-env.d.ts
 
 # Generated MCP Apps View bundles (built by scripts/build-views.mjs)
 /src/views/generated/
+src/design/*.local.json

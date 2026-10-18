@@ -4,7 +4,7 @@
  */
 
 /** A facet value with the colour it wears on cards and chips. */
-export type Tone = 'flame' | 'marigold' | 'leaf' | 'plum' | 'bubblegum' | 'ink';
+export type Tone = 'flame' | 'marigold' | 'forest' | 'sand' | 'ink';
 
 export interface SampleRecipe {
   id: string;
@@ -19,6 +19,8 @@ export interface SampleRecipe {
   tone: Tone;
   /** A real cover image URL; without one the card shows a colour tile. */
   cover?: string;
+  /** The recipe's Cooklang source, for the recipe page. */
+  cooklang?: string;
 }
 
 export const RECIPES: SampleRecipe[] = [
@@ -56,7 +58,7 @@ export const RECIPES: SampleRecipe[] = [
     cuisine: 'German',
     protein: 'beef',
     favourite: false,
-    tone: 'plum',
+    tone: 'sand',
   },
   {
     id: 'd',
@@ -68,7 +70,7 @@ export const RECIPES: SampleRecipe[] = [
     cuisine: 'Thai',
     protein: 'chicken',
     favourite: true,
-    tone: 'leaf',
+    tone: 'forest',
   },
   {
     id: 'e',
@@ -80,7 +82,7 @@ export const RECIPES: SampleRecipe[] = [
     cuisine: 'Mexican',
     protein: 'beef',
     favourite: false,
-    tone: 'bubblegum',
+    tone: 'flame',
   },
   {
     id: 'f',
@@ -116,7 +118,7 @@ export const RECIPES: SampleRecipe[] = [
     cuisine: 'American',
     protein: 'vegetable',
     favourite: true,
-    tone: 'leaf',
+    tone: 'forest',
   },
 ];
 

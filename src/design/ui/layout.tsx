@@ -25,9 +25,9 @@ export function Container({
 }
 
 const SURFACES = {
-  page: 'bg-blush text-ink',
+  page: 'bg-paper text-ink',
   white: 'bg-white text-ink',
-  ink: 'bg-ink text-white',
+  ink: 'bg-forest text-white',
 } as const;
 
 /** A full-width band of one surface colour, with consistent vertical rhythm. */

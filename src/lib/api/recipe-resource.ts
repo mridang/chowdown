@@ -39,7 +39,7 @@ export interface RecipeResource extends RecipeSummary {
 }
 
 /** A method step as plain text. */
-function stepText(tokens: StepToken[]): string {
+export function stepText(tokens: StepToken[]): string {
   return tokens
     .map((t) => {
       switch (t.kind) {

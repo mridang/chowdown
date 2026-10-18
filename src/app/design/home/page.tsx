@@ -1,7 +1,8 @@
 import Link from 'next/link';
 
 import { ConnectBand } from '@/design/connect-band';
-import { RECIPES } from '@/design/fixtures';
+import { loadRecipes } from '@/design/data';
+import type { SampleRecipe } from '@/design/fixtures';
 import { sentenceCase } from '@/design/format';
 import { ArrowIcon } from '@/design/icons';
 import { PhotoBlock, RecipeCard, RecipeGrid } from '@/design/recipe-card';
@@ -15,38 +16,6 @@ import {
   Section,
   SectionHeader,
 } from '@/design/ui/layout';
-
-const COLLECTIONS: {
-  title: string;
-  count: string;
-  surface: string;
-  accent: string;
-}[] = [
-  {
-    title: 'Ready in 30',
-    count: '24 recipes',
-    surface: 'bg-ink text-white',
-    accent: 'text-marigold',
-  },
-  {
-    title: 'Vegetarian',
-    count: '17 recipes',
-    surface: 'bg-leaf text-ink',
-    accent: 'text-ink/70',
-  },
-  {
-    title: 'Slow & comforting',
-    count: '12 recipes',
-    surface: 'bg-plum text-white',
-    accent: 'text-bubblegum',
-  },
-  {
-    title: 'Your favourites',
-    count: '5 recipes',
-    surface: 'bg-marigold text-ink',
-    accent: 'text-ink/70',
-  },
-];
 
 const STEPS: { n: string; title: string; body: string }[] = [
   {
@@ -71,27 +40,57 @@ function HeroTile({
   recipe,
   className,
 }: {
-  recipe: (typeof RECIPES)[number];
+  recipe: SampleRecipe;
   className?: string;
 }) {
   return (
     <Link
-      href="/design/recipe"
-      className={`rounded-card border-ink/10 relative block overflow-hidden border ${className ?? ''}`}
+      href={`/design/recipe?id=${recipe.id}`}
+      className={`rounded-card relative block overflow-hidden ${className ?? ''}`}
     >
       <PhotoBlock
         tone={recipe.tone}
         cover={recipe.cover}
         className="h-full w-full"
       />
-      <div className="from-ink/75 absolute inset-x-0 bottom-0 bg-gradient-to-t to-transparent p-4 pt-14 text-white">
+      <div className="from-ink/80 absolute inset-x-0 bottom-0 bg-gradient-to-t to-transparent p-4 pt-16 text-white">
         <p className="text-label font-semibold uppercase opacity-80">
           {sentenceCase(recipe.cuisine)}
         </p>
-        <p className="font-display mt-1 text-lg leading-tight font-semibold">
+        <p className="font-display mt-1 line-clamp-2 text-lg leading-tight font-semibold">
           {recipe.title}
         </p>
       </div>
+    </Link>
+  );
+}
+
+/** A coloured tile that opens a slice of the collection. */
+function CollectionTile({
+  title,
+  count,
+  surface,
+  accent,
+}: {
+  title: string;
+  count: number;
+  surface: string;
+  accent: string;
+}) {
+  return (
+    <Link
+      href="/design/search"
+      className={`group rounded-card flex aspect-[5/3] flex-col justify-between p-5 transition hover:opacity-95 lg:aspect-[4/3] ${surface}`}
+    >
+      <span className={`text-label font-semibold uppercase ${accent}`}>
+        {count} recipes
+      </span>
+      <span className="flex items-end justify-between gap-3">
+        <Heading as="span" variant="h3">
+          {title}
+        </Heading>
+        <ArrowIcon className="h-5 w-5 shrink-0 transition group-hover:translate-x-1" />
+      </span>
     </Link>
   );
 }
@@ -103,13 +102,28 @@ export default async function DesignHome({
   searchParams: Promise<{ user?: string }>;
 }) {
   const signedIn = (await searchParams).user === '1';
+  const recipes = loadRecipes();
+  const withPhoto = recipes.filter((r) => r.cover);
+  const favourites = recipes.filter((r) => r.favourite);
+  const quick = recipes.filter((r) => r.minutes <= 30);
+  const veggie = recipes.filter(
+    (r) => r.protein === 'vegetable' || r.protein === 'beans',
+  );
+  const slow = recipes.filter((r) => r.minutes >= 60);
+  const week = withPhoto.filter((_, i) => i % 7 === 0).slice(0, 4);
+  const hero = [
+    withPhoto[3] ?? recipes[0]!,
+    withPhoto[11] ?? recipes[1]!,
+    withPhoto[20] ?? recipes[2]!,
+  ];
+
   return (
     <DesignShell signedIn={signedIn} active="home">
       <Container className="grid grid-cols-1 items-center gap-12 py-12 lg:grid-cols-[1.05fr_1fr] lg:py-20">
         <div>
           {signedIn ? (
             <p className="text-label text-ember flex items-center gap-2 font-semibold uppercase">
-              <span className="bg-leaf h-2 w-2 rounded-full" />
+              <span className="bg-live h-2 w-2 rounded-full" />
               Welcome back, Mridang
             </p>
           ) : (
@@ -138,41 +152,46 @@ export default async function DesignHome({
               }
             />
           </form>
-          <p className="text-ink/60 mt-4 text-sm">
+          <p className="text-ink/65 mt-4 text-sm">
             {signedIn
-              ? '85 recipes · 32 Indian · 26 chicken · 5 favourites'
+              ? `${recipes.length} recipes · ${favourites.length} favourites`
               : 'Free · Sign in with Google · You keep the files'}
           </p>
         </div>
 
         <div className="grid h-[22rem] grid-cols-2 grid-rows-2 gap-3 sm:h-[30rem] lg:h-[34rem]">
-          <HeroTile recipe={RECIPES[0]!} className="row-span-2" />
-          <HeroTile recipe={RECIPES[3]!} />
-          <HeroTile recipe={RECIPES[1]!} />
+          <HeroTile recipe={hero[0]!} className="row-span-2" />
+          <HeroTile recipe={hero[1]!} />
+          <HeroTile recipe={hero[2]!} />
         </div>
       </Container>
 
       <Container className="pb-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {COLLECTIONS.map((c) => (
-            <Link
-              key={c.title}
-              href="/design/search"
-              className={`group rounded-card flex aspect-[5/3] flex-col justify-between p-5 transition hover:opacity-95 lg:aspect-[4/3] ${c.surface}`}
-            >
-              <span
-                className={`text-label font-semibold uppercase ${c.accent}`}
-              >
-                {c.count}
-              </span>
-              <span className="flex items-end justify-between gap-3">
-                <Heading as="span" variant="h3">
-                  {c.title}
-                </Heading>
-                <ArrowIcon className="h-5 w-5 shrink-0 transition group-hover:translate-x-1" />
-              </span>
-            </Link>
-          ))}
+          <CollectionTile
+            title="Ready in 30"
+            count={quick.length}
+            surface="bg-ink text-white"
+            accent="text-marigold"
+          />
+          <CollectionTile
+            title="Vegetarian"
+            count={veggie.length}
+            surface="bg-forest text-white"
+            accent="text-marigold"
+          />
+          <CollectionTile
+            title="Slow & comforting"
+            count={slow.length}
+            surface="bg-sand text-ink"
+            accent="text-ink/70"
+          />
+          <CollectionTile
+            title="Your favourites"
+            count={favourites.length}
+            surface="bg-marigold text-ink"
+            accent="text-ink/70"
+          />
         </div>
       </Container>
 
@@ -192,7 +211,7 @@ export default async function DesignHome({
           />
           <div className="mt-8">
             <RecipeGrid columns={4}>
-              {RECIPES.slice(0, 4).map((r) => (
+              {week.map((r) => (
                 <RecipeCard key={r.id} recipe={r} />
               ))}
             </RecipeGrid>

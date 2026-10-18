@@ -24,7 +24,7 @@ export function Logo({ className }: { className?: string }) {
       <span className="font-display block text-[1.7rem] font-bold tracking-tight">
         chowdown
       </span>
-      <span className="mt-1 block text-[9px] font-semibold tracking-[0.28em] uppercase">
+      <span className="mt-1 block text-[10px] font-semibold tracking-[0.24em] uppercase">
         Recipe keeper
       </span>
     </Link>
@@ -54,7 +54,7 @@ function MenuLink({
       href={href}
       className="rounded-control hover:bg-ink/5 flex h-10 items-center gap-3 px-3 text-sm font-medium transition"
     >
-      <span className="text-ink/60">{icon}</span>
+      <span className="text-ink/65">{icon}</span>
       {children}
     </Link>
   );
@@ -71,14 +71,14 @@ function AccountMenu({ name, email }: { name: string; email: string }) {
       <summary className="rounded-control hover:bg-ink/5 flex h-10 cursor-pointer list-none items-center gap-2 pr-2 pl-1 transition sm:pr-3">
         <span className="bg-ink relative grid h-8 w-8 place-items-center rounded-full text-sm font-semibold text-white">
           {name.slice(0, 1)}
-          <span className="border-blush bg-leaf absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2" />
+          <span className="border-paper bg-live absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2" />
         </span>
         <span className="hidden text-sm font-semibold sm:block">{name}</span>
-        <ChevronIcon className="text-ink/55 hidden h-4 w-4 transition group-open:rotate-180 sm:block" />
+        <ChevronIcon className="text-ink/65 hidden h-4 w-4 transition group-open:rotate-180 sm:block" />
       </summary>
       <div className="rounded-card border-ink/15 absolute right-0 mt-2 w-64 border bg-white p-2">
         <div className="px-3 py-2.5">
-          <p className="text-ink/55 text-xs">Signed in as</p>
+          <p className="text-ink/65 text-xs">Signed in as</p>
           <p className="truncate text-sm font-semibold">{email}</p>
         </div>
         <div className="border-ink/10 my-1 border-t" />
@@ -125,7 +125,7 @@ export function SiteHeader({
   active?: NavKey | 'home';
 }) {
   return (
-    <header className="bg-blush/95 sticky top-0 z-30 backdrop-blur">
+    <header className="bg-paper/95 sticky top-0 z-30 backdrop-blur">
       <div className="bg-marigold h-1.5" />
       <div className="border-ink/10 border-b">
         <Container className="flex h-[4.25rem] items-center justify-between gap-4">

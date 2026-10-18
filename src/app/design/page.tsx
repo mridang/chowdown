@@ -17,7 +17,7 @@ export default function DesignIndex() {
             <Link href={href} className="font-display text-xl underline">
               {name}
             </Link>{' '}
-            <span className="text-ink/60">{note}</span>
+            <span className="text-ink/65">{note}</span>
           </li>
         ))}
       </ul>

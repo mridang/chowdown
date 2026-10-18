@@ -2,16 +2,15 @@ import Link from 'next/link';
 
 import { PanIcon, SparkIcon } from './icons';
 import { Logo } from './site-header';
-import { CopyField } from './ui/copy-field';
 import { Container } from './ui/layout';
 
-/** The address assistants connect to. */
+/** The address assistants connect to (used by the connect page and home CTA). */
 export const MCP_URL = 'https://chowdown.apps.mrida.ng/api/mcp';
 
 /**
  * The jagged edge above the footer: one flame-orange polygon whose top edge
- * climbs and falls in broad peaks, tall enough to read as a landscape. It
- * scales with the width (the ratio stays 1512:240).
+ * climbs and falls in broad peaks. It scales with the width (the ratio stays
+ * 1512:240).
  */
 function ZigZag() {
   return (
@@ -29,26 +28,26 @@ function ZigZag() {
   );
 }
 
-const LINKS: [string, string][][] = [
-  [
-    ['Contact', '/design/home'],
-    ['Cooklang', 'https://cooklang.org'],
-    ['Privacy', '/privacy'],
-    ['Terms', '/design/home'],
-  ],
-  [
-    ['Recipes', '/design/search'],
-    ['Favourites', '/design/search?fav=1'],
-    ['Connect AI', '/design/connect'],
-    ['How it works', '/design/home'],
-  ],
+/** Only pages anyone can open belong in the footer: no account or app links. */
+const COLUMNS: { title: string; links: [string, string][] }[] = [
+  {
+    title: 'Explore',
+    links: [
+      ['Recipes', '/design/search'],
+      ['How it works', '/design/home'],
+    ],
+  },
+  {
+    title: 'About',
+    links: [['Privacy', '/privacy']],
+  },
 ];
 
 /**
- * The footer, built like Gran Luchito's: a tall zigzag edge, then a flame block
- * with the black wordmark and a call to action on the left, two columns of small
- * caps links in the middle and a column on the right, then a thin marigold strip
- * with the small print. The call to action here is the MCP address.
+ * The footer, after Gran Luchito's: a tall zigzag edge, a flame block with the
+ * black wordmark and a line about the product, a few plain links, and a thin
+ * marigold strip with the small print. It stays short on purpose: account,
+ * sign-out and connection links live in the header and on their own pages.
  */
 export function SiteFooter() {
   return (
@@ -63,63 +62,31 @@ export function SiteFooter() {
       />
       <ZigZag />
       <div className="bg-flame text-ink -mt-px">
-        <Container className="grid grid-cols-1 gap-12 pt-2 pb-14 md:grid-cols-[1.3fr_auto_1fr] md:gap-16 md:pb-16">
+        <Container className="flex flex-col gap-10 pt-2 pb-14 sm:flex-row sm:items-start sm:justify-between md:pb-16">
           <div>
             <Logo className="origin-left scale-125" />
-            <h2 className="font-display mt-10 text-3xl font-semibold uppercase">
-              Cook with your AI
-            </h2>
-            <p className="mt-2 max-w-md text-[15px] leading-relaxed">
-              Add chowdown to ChatGPT or Claude with one address. Sign in,
-              approve, and ask for dinner ideas from recipes you already trust.
+            <p className="mt-8 max-w-sm text-base leading-relaxed">
+              Recipes kept as plain text in your own Google Drive. Yours to
+              cook, to keep and to take anywhere.
             </p>
-            <div className="mt-5 max-w-md">
-              <CopyField
-                value={MCP_URL}
-                label="MCP server address"
-                tone="onFlame"
-              />
-            </div>
           </div>
-
-          <div className="flex gap-12 md:gap-14">
-            {LINKS.map((column, i) => (
-              <ul
-                key={i}
-                className="flex flex-col gap-3 text-sm font-semibold uppercase"
-              >
-                {column.map(([label, href]) => (
-                  <li key={label}>
-                    <Link href={href} className="hover:underline">
-                      {label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+          <div className="flex gap-16">
+            {COLUMNS.map((column) => (
+              <div key={column.title}>
+                <h2 className="text-label font-semibold uppercase">
+                  {column.title}
+                </h2>
+                <ul className="mt-4 flex flex-col gap-3 text-sm font-semibold">
+                  {column.links.map(([label, href]) => (
+                    <li key={label}>
+                      <Link href={href} className="hover:underline">
+                        {label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </div>
-
-          <div className="md:justify-self-end">
-            <h2 className="font-display text-3xl font-semibold uppercase">
-              Your kitchen
-            </h2>
-            <ul className="mt-4 flex flex-col gap-3 text-sm font-semibold uppercase">
-              <li>
-                <Link href="/design/connect" className="hover:underline">
-                  Connected apps
-                </Link>
-              </li>
-              <li>
-                <Link href="/design/search" className="hover:underline">
-                  Add a recipe
-                </Link>
-              </li>
-              <li>
-                <Link href="/design/home" className="hover:underline">
-                  Sign out
-                </Link>
-              </li>
-            </ul>
           </div>
         </Container>
       </div>
@@ -128,7 +95,6 @@ export function SiteFooter() {
           <span>
             © 2026 chowdown. Your recipes stay in your own Google Drive.
           </span>
-          <span className="text-ink/70">Made with Cooklang</span>
         </Container>
       </div>
     </footer>

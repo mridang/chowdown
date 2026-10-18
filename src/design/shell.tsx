@@ -17,7 +17,7 @@ export function DesignShell({
   children: ReactNode;
 }) {
   return (
-    <div className="bg-blush text-ink min-h-screen font-sans antialiased">
+    <div className="bg-paper text-ink min-h-screen font-sans antialiased">
       <SiteHeader user={signedIn ? SAMPLE_USER : null} active={active} />
       <main>{children}</main>
       <SiteFooter />

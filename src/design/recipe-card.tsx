@@ -16,9 +16,8 @@ import { Heading } from './ui/layout';
 const TINTS: Record<Tone, string> = {
   flame: 'bg-flame/15 text-flame',
   marigold: 'bg-marigold/30 text-ink',
-  leaf: 'bg-leaf/20 text-ink',
-  plum: 'bg-plum/15 text-plum',
-  bubblegum: 'bg-bubblegum/30 text-ink',
+  forest: 'bg-forest/15 text-forest',
+  sand: 'bg-sand text-ink/70',
   ink: 'bg-ink/10 text-ink',
 };
 
@@ -74,7 +73,7 @@ export function RecipeCard({ recipe }: { recipe: SampleRecipe }) {
   return (
     <article className="group relative h-full">
       <Link
-        href="/design/recipe"
+        href={`/design/recipe?id=${recipe.id}`}
         className="rounded-card border-ink/10 group-hover:border-ink/30 flex h-full flex-col overflow-hidden border bg-white transition"
       >
         <PhotoBlock
@@ -89,7 +88,7 @@ export function RecipeCard({ recipe }: { recipe: SampleRecipe }) {
           <Heading
             as="h3"
             variant="h4"
-            className="mt-1.5 line-clamp-2 min-h-[2.75rem] text-[1.0625rem] leading-snug"
+            className="mt-1.5 line-clamp-2 min-h-[2lh] text-[1.0625rem] leading-snug"
           >
             {recipe.title}
           </Heading>

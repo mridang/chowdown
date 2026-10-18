@@ -4,13 +4,27 @@ import { useState, type ReactNode } from 'react';
 
 import { cn } from './ui/cn';
 
-const FONTS: [string, string][] = [
-  ['fraunces', 'Fraunces'],
-  ['newsreader', 'Newsreader'],
-  ['source-serif', 'Source Serif'],
-  ['playfair', 'Playfair'],
-  ['dm-serif', 'DM Serif'],
-  ['geist', 'Geist (sans)'],
+/** Each pairing is a display face for headings plus a text face for the rest. */
+const PAIRINGS: { id: string; name: string; display: string; body: string }[] =
+  [
+    { id: 'modern', name: 'Modern', display: 'bricolage', body: 'inter' },
+    {
+      id: 'editorial',
+      name: 'Editorial',
+      display: 'newsreader',
+      body: 'inter',
+    },
+    { id: 'elegant', name: 'Elegant', display: 'instrument', body: 'inter' },
+    { id: 'clean', name: 'Clean', display: 'space', body: 'inter' },
+    { id: 'friendly', name: 'Friendly', display: 'dm-serif', body: 'dm-sans' },
+    { id: 'classic', name: 'Classic', display: 'playfair', body: 'dm-sans' },
+    { id: 'warm', name: 'Warm', display: 'fraunces', body: 'manrope' },
+  ];
+
+const PALETTES: [string, string][] = [
+  ['paper', 'Paper'],
+  ['stone', 'Stone'],
+  ['butter', 'Butter'],
 ];
 
 const RADII: [string, string][] = [
@@ -19,7 +33,7 @@ const RADII: [string, string][] = [
   ['round', 'Round'],
 ];
 
-/** One row of radio-style buttons in the control panel. */
+/** One row of toggle buttons in the control panel. */
 function Choice({
   label,
   options,
@@ -33,7 +47,7 @@ function Choice({
 }) {
   return (
     <fieldset>
-      <legend className="mb-1.5 text-[10px] font-semibold tracking-[0.16em] text-white/60 uppercase">
+      <legend className="mb-1.5 text-[10px] font-semibold tracking-[0.16em] text-white/70 uppercase">
         {label}
       </legend>
       <div className="flex flex-wrap gap-1">
@@ -59,10 +73,10 @@ function Choice({
 }
 
 /**
- * Wraps every sandbox page and lets you flip the display font and corner radius
- * live from a small panel, to compare looks without rebuilding. The choice
- * lives in state on this layout component, so it carries across the sandbox
- * pages as you navigate.
+ * Wraps every sandbox page and lets you flip the font pairing, colour palette
+ * and corner radius live from a small panel, to compare looks without
+ * rebuilding. The choice lives in state on this layout component, so it carries
+ * across the sandbox pages as you navigate.
  */
 export function DesignRoot({
   children,
@@ -71,25 +85,35 @@ export function DesignRoot({
   children: ReactNode;
   fontClassNames: string;
 }) {
-  const [font, setFont] = useState('newsreader');
+  const [pairing, setPairing] = useState('modern');
+  const [palette, setPalette] = useState('paper');
   const [radius, setRadius] = useState('soft');
   const [open, setOpen] = useState(false);
+  const chosen = PAIRINGS.find((p) => p.id === pairing) ?? PAIRINGS[0]!;
 
   return (
     <div
       className={cn('design-root', fontClassNames)}
-      data-font={font}
+      data-display={chosen.display}
+      data-body={chosen.body}
+      data-palette={palette}
       data-radius={radius}
     >
       {children}
       <div className="fixed right-4 bottom-4 z-50 text-white">
         {open ? (
-          <div className="rounded-card bg-ink flex w-64 flex-col gap-4 p-4">
+          <div className="rounded-card bg-ink flex w-72 flex-col gap-4 p-4">
             <Choice
-              label="Display font"
-              options={FONTS}
-              value={font}
-              onChange={setFont}
+              label="Fonts"
+              options={PAIRINGS.map((p) => [p.id, p.name])}
+              value={pairing}
+              onChange={setPairing}
+            />
+            <Choice
+              label="Palette"
+              options={PALETTES}
+              value={palette}
+              onChange={setPalette}
             />
             <Choice
               label="Corners"
@@ -100,7 +124,7 @@ export function DesignRoot({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="self-start text-xs text-white/60 underline"
+              className="self-start text-xs text-white/70 underline"
             >
               Hide
             </button>

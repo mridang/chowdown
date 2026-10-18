@@ -30,7 +30,7 @@ export function CheckRow({
       <span className={cn('flex-1 truncate', checked && 'font-semibold')}>
         {sentenceCase(label)}
       </span>
-      <span className="text-ink/50 text-xs tabular-nums">{count}</span>
+      <span className="text-ink/65 text-xs tabular-nums">{count}</span>
     </button>
   );
 }

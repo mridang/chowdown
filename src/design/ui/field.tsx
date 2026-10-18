@@ -29,7 +29,7 @@ export function SearchField({
         className,
       )}
     >
-      <SearchIcon className="text-ink/55 h-5 w-5 shrink-0" />
+      <SearchIcon className="text-ink/65 h-5 w-5 shrink-0" />
       <input
         type="search"
         className="placeholder:text-ink/45 h-full min-w-0 flex-1 bg-transparent text-base outline-none"
@@ -59,7 +59,7 @@ export function SelectField({
         >
           {children}
         </select>
-        <ChevronIcon className="text-ink/60 pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
+        <ChevronIcon className="text-ink/65 pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
       </span>
     </label>
   );

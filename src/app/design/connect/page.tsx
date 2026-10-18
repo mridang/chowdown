@@ -66,7 +66,7 @@ export default function DesignConnect() {
             <ol className="mt-5 flex flex-col gap-4">
               {a.steps.map((step, i) => (
                 <li key={step} className="flex items-start gap-4">
-                  <span className="bg-flame grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-semibold text-white">
+                  <span className="bg-flame text-ink grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-semibold">
                     {i + 1}
                   </span>
                   <p className="pt-0.5 leading-relaxed">{step}</p>
@@ -83,14 +83,14 @@ export default function DesignConnect() {
           <ul className="divide-ink/10 border-ink/10 mt-5 divide-y border-y">
             {ACCESS.map(([title, body]) => (
               <li key={title} className="flex items-start gap-3 py-4">
-                <CheckIcon className="text-leaf mt-0.5 h-5 w-5 shrink-0" />
+                <CheckIcon className="text-live mt-0.5 h-5 w-5 shrink-0" />
                 <p>
                   <span className="font-semibold">{title}.</span> {body}
                 </p>
               </li>
             ))}
           </ul>
-          <p className="text-ink/60 mt-4 text-sm">
+          <p className="text-ink/65 mt-4 text-sm">
             You choose at the approval screen, and you can disconnect any app
             below at any time.
           </p>
@@ -110,7 +110,7 @@ export default function DesignConnect() {
                   </span>
                   <p className="leading-tight">
                     <span className="block font-semibold">{app.name}</span>
-                    <span className="text-ink/60 block text-sm">
+                    <span className="text-ink/65 block text-sm">
                       {app.access} · {app.last}
                     </span>
                   </p>
