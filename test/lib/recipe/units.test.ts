@@ -116,7 +116,10 @@ describe('toBaseAmount', () => {
   });
 
   it('reads thousands separators and fraction glyphs', () => {
-    expect(toBaseAmount('1,000 g')).toEqual({ dimension: 'mass', amount: 1000 });
+    expect(toBaseAmount('1,000 g')).toEqual({
+      dimension: 'mass',
+      amount: 1000,
+    });
     expect(toBaseAmount('2,5 kg')).toEqual({ dimension: 'mass', amount: 2500 });
     expect(toBaseAmount('1½ cups')?.amount).toBeCloseTo(354.88, 1);
     expect(toBaseAmount('½ tsp')?.dimension).toBe('volume');

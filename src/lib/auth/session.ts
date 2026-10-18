@@ -40,7 +40,10 @@ function base64url(bytes: Uint8Array): string {
   for (const b of bytes) {
     binary += String.fromCharCode(b);
   }
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }
 
 /** Decode URL-safe base64 back to bytes. */
@@ -90,7 +93,11 @@ export async function createSessionToken(
   const body = base64url(new TextEncoder().encode(JSON.stringify(full)));
   const key = await hmacKey(secret);
   const sig = new Uint8Array(
-    await crypto.subtle.sign('HMAC', key, bufferSource(new TextEncoder().encode(body))),
+    await crypto.subtle.sign(
+      'HMAC',
+      key,
+      bufferSource(new TextEncoder().encode(body)),
+    ),
   );
   return `${body}.${base64url(sig)}`;
 }
@@ -130,7 +137,10 @@ export async function verifySessionToken(
   } catch {
     return null;
   }
-  if (typeof payload.exp !== 'number' || payload.exp < Math.floor(Date.now() / 1000)) {
+  if (
+    typeof payload.exp !== 'number' ||
+    payload.exp < Math.floor(Date.now() / 1000)
+  ) {
     return null;
   }
   return payload;

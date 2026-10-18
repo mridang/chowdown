@@ -597,7 +597,12 @@ components:
       name: sort
       in: query
       description: '`title` or `modified_at`, optionally prefixed with `+` (default) or `-`.'
-      schema: { type: string, default: '+title', pattern: '^[+-]?(title|modified_at)$' }
+      schema:
+        {
+          type: string,
+          default: '+title',
+          pattern: '^[+-]?(title|modified_at)$',
+        }
     cursor:
       name: cursor
       in: query
@@ -640,7 +645,11 @@ components:
       type: object
       required: [type, title, status]
       properties:
-        type: { type: string, description: 'A relative URI naming the kind of problem.' }
+        type:
+          {
+            type: string,
+            description: 'A relative URI naming the kind of problem.',
+          }
         title: { type: string }
         status: { type: integer }
         detail: { type: string }
@@ -666,7 +675,8 @@ components:
         cover_url: { type: string, format: uri }
         tags: { $ref: '#/components/schemas/Tags' }
         favourite: { type: boolean, readOnly: true }
-        uncurated: { type: boolean, description: 'A captured idea with no method yet.' }
+        uncurated:
+          { type: boolean, description: 'A captured idea with no method yet.' }
         modified_at: { type: string, format: date-time }
 
     Recipe:
@@ -798,8 +808,10 @@ components:
         source_url: { type: string, format: uri }
         title: { type: string }
         status: { type: string, enum: [DRAFT, FAILED] }
-        cooklang: { type: string, description: 'The draft, for a `DRAFT` item.' }
-        problem: { type: string, description: 'Why it failed, for a `FAILED` item.' }
+        cooklang:
+          { type: string, description: 'The draft, for a `DRAFT` item.' }
+        problem:
+          { type: string, description: 'Why it failed, for a `FAILED` item.' }
 
     RecipeImport:
       type: object

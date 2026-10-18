@@ -42,7 +42,9 @@ function normKey(key: string): string {
 }
 
 /** Build a case-/separator-insensitive lookup over the recipe's metadata. */
-function metaLookup(recipe: ParsedRecipe): (keys: string[]) => string | undefined {
+function metaLookup(
+  recipe: ParsedRecipe,
+): (keys: string[]) => string | undefined {
   const map = new Map<string, string>();
   for (const [k, v] of recipe.metadata) {
     if (v && v.trim()) {
@@ -103,7 +105,10 @@ function splitList(value: string): string[] {
  * @param recipe - The parsed Cooklang recipe.
  * @param url - The canonical URL of this recipe's page (for `url`).
  */
-export function recipeToJsonLd(recipe: ParsedRecipe, url?: string): RecipeJsonLd {
+export function recipeToJsonLd(
+  recipe: ParsedRecipe,
+  url?: string,
+): RecipeJsonLd {
   const get = metaLookup(recipe);
 
   const ld: RecipeJsonLd = {
@@ -171,7 +176,12 @@ export function recipeToJsonLd(recipe: ParsedRecipe, url?: string): RecipeJsonLd
   const author = get(['author', 'by']);
   if (author) ld.author = { '@type': 'Person', name: author };
 
-  const published = get(['date published', 'datepublished', 'published', 'date']);
+  const published = get([
+    'date published',
+    'datepublished',
+    'published',
+    'date',
+  ]);
   if (published) ld.datePublished = published;
 
   const source = get(['source', 'source url', 'sourceurl', 'url', 'original']);

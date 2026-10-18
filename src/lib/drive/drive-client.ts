@@ -29,15 +29,14 @@ export interface DriveFile {
 }
 
 /** GET against the Drive API with a bearer token; throws on a non-2xx. */
-async function driveGet(
-  path: string,
-  accessToken: string,
-): Promise<Response> {
+async function driveGet(path: string, accessToken: string): Promise<Response> {
   const response = await fetch(`${DRIVE_API}${path}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!response.ok) {
-    throw new Error(`Drive GET ${path} -> ${response.status} ${await response.text()}`);
+    throw new Error(
+      `Drive GET ${path} -> ${response.status} ${await response.text()}`,
+    );
   }
   return response;
 }
@@ -47,10 +46,18 @@ async function driveGet(
  * folder id. Only folders this app created are visible under `drive.file`, so
  * a hit here is always *our* folder, never an unrelated one the user owns.
  */
-export async function ensureRecipesFolder(accessToken: string): Promise<string> {
+export async function ensureRecipesFolder(
+  accessToken: string,
+): Promise<string> {
   const q = `name='${RECIPES_FOLDER_NAME}' and mimeType='${FOLDER_MIME}' and trashed=false`;
-  const params = new URLSearchParams({ q, fields: 'files(id,name)', spaces: 'drive' });
-  const found = (await (await driveGet(`/files?${params}`, accessToken)).json()) as {
+  const params = new URLSearchParams({
+    q,
+    fields: 'files(id,name)',
+    spaces: 'drive',
+  });
+  const found = (await (
+    await driveGet(`/files?${params}`, accessToken)
+  ).json()) as {
     files?: DriveFile[];
   };
   if (found.files && found.files.length > 0) {
@@ -65,7 +72,9 @@ export async function ensureRecipesFolder(accessToken: string): Promise<string> 
     body: JSON.stringify({ name: RECIPES_FOLDER_NAME, mimeType: FOLDER_MIME }),
   });
   if (!response.ok) {
-    throw new Error(`Create folder failed: ${response.status} ${await response.text()}`);
+    throw new Error(
+      `Create folder failed: ${response.status} ${await response.text()}`,
+    );
   }
   return ((await response.json()) as { id: string }).id;
 }
@@ -82,10 +91,14 @@ export async function listRecipeFiles(
     pageSize: '1000',
     orderBy: 'name',
   });
-  const data = (await (await driveGet(`/files?${params}`, accessToken)).json()) as {
+  const data = (await (
+    await driveGet(`/files?${params}`, accessToken)
+  ).json()) as {
     files?: DriveFile[];
   };
-  return (data.files ?? []).filter((f) => f.name.toLowerCase().endsWith('.cook'));
+  return (data.files ?? []).filter((f) =>
+    f.name.toLowerCase().endsWith('.cook'),
+  );
 }
 
 /** Read a file's raw text content by id. */
@@ -126,7 +139,9 @@ export async function createRecipeFile(
     },
   );
   if (!response.ok) {
-    throw new Error(`Create file failed: ${response.status} ${await response.text()}`);
+    throw new Error(
+      `Create file failed: ${response.status} ${await response.text()}`,
+    );
   }
   return (await response.json()) as DriveFile;
 }
@@ -149,7 +164,9 @@ export async function updateRecipeFile(
     },
   );
   if (!response.ok) {
-    throw new Error(`Update file failed: ${response.status} ${await response.text()}`);
+    throw new Error(
+      `Update file failed: ${response.status} ${await response.text()}`,
+    );
   }
 }
 
@@ -174,7 +191,9 @@ export async function trashRecipeFile(
     return 'missing';
   }
   if (!response.ok) {
-    throw new Error(`Trash file failed: ${response.status} ${await response.text()}`);
+    throw new Error(
+      `Trash file failed: ${response.status} ${await response.text()}`,
+    );
   }
   return 'trashed';
 }

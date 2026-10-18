@@ -12,7 +12,9 @@ import { STYLES } from './styles';
 import { useWidgetData } from './use-widget-data';
 
 function RecipeListApp() {
-  const { data, sendFollowUp } = useWidgetData<RecipeListData>('chowdown-recipe-list');
+  const { data, sendFollowUp } = useWidgetData<RecipeListData>(
+    'chowdown-recipe-list',
+  );
 
   if (!data) {
     return (

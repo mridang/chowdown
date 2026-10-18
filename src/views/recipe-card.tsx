@@ -77,7 +77,9 @@ function InlineCard({
                 {ing.name}
               </span>
             ))}
-            {extra > 0 ? <span className="chip more">+{extra} more</span> : null}
+            {extra > 0 ? (
+              <span className="chip more">+{extra} more</span>
+            ) : null}
           </div>
         ) : null}
         <div className="actions">
@@ -158,8 +160,11 @@ function FullRecipe({ recipe }: { recipe: RecipeCardData }) {
 }
 
 function RecipeCardApp() {
-  const { data: recipe, fullscreen, requestFullscreen } =
-    useWidgetData<RecipeCardData>('chowdown-recipe-card');
+  const {
+    data: recipe,
+    fullscreen,
+    requestFullscreen,
+  } = useWidgetData<RecipeCardData>('chowdown-recipe-card');
 
   if (!recipe) {
     return (

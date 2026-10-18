@@ -50,9 +50,8 @@ const handler: ExportedHandler<CloudflareEnv> = {
         return applyResponseHeaders(request, hit);
       }
     }
-    const response = await (
-      openNextHandler as ExportedHandler<CloudflareEnv>
-    ).fetch!(request, env, ctx);
+    const response = await (openNextHandler as ExportedHandler<CloudflareEnv>)
+      .fetch!(request, env, ctx);
     if (cache && key) {
       const copy = storableCopy(response);
       if (copy) {

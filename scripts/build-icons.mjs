@@ -46,7 +46,10 @@ async function png(name, size, options) {
 
 await png('public/icons/icon-192.png', 192, { scale: 1, radius: 0 });
 await png('public/icons/icon-512.png', 512, { scale: 1, radius: 0 });
-await png('public/icons/icon-maskable-512.png', 512, { scale: 0.72, radius: 0 });
+await png('public/icons/icon-maskable-512.png', 512, {
+  scale: 0.72,
+  radius: 0,
+});
 await png('src/app/apple-icon.png', 180, { scale: 0.86, radius: 0 });
 await writeFile(
   path.join(root, 'src/app/icon.svg'),
