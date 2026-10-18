@@ -14,6 +14,7 @@ import { requireUid, requireUser } from '@/lib/api/auth';
 import { isObject, readJson } from '@/lib/api/json';
 import { noteResource, parseNoteInput } from '@/lib/api/note-resource';
 import { absoluteUrl, pageBody } from '@/lib/api/pagination';
+import { driveFailure } from '@/lib/api/drive-failure';
 import { problems } from '@/lib/api/problem';
 import { getRecipeByFileId } from '@/lib/db/recipes';
 import { appendNote, extractNotes } from '@/lib/recipe/cook-text';
@@ -92,8 +93,9 @@ export async function POST(
         ETag: outcome.etag,
       },
     });
-  } catch {
-    return problems.upstream(
+  } catch (error) {
+    return driveFailure(
+      error,
       'Google Drive could not save the note. Nothing was changed.',
     );
   }

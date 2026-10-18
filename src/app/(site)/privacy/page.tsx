@@ -80,7 +80,7 @@ export default function PrivacyPage() {
           Privacy Policy
         </Heading>
         <p className="text-ink/70 mt-3 text-sm">
-          Last updated: 11 October 2026
+          Last updated: 18 October 2026
         </p>
 
         <div className="text-ink/85 mt-8 space-y-9 text-lg leading-relaxed">
@@ -95,10 +95,11 @@ export default function PrivacyPage() {
             <ul className="space-y-2">
               <Item>
                 Your Google account’s basic identity (name, email, profile
-                picture) — to sign you in.
+                picture) — to sign you in. This is all signing in asks for.
               </Item>
               <Item>
-                Google Drive, using the{' '}
+                Only if you choose to connect it, as a separate step after
+                signing in: Google Drive, using the{' '}
                 <code className="font-mono text-base">drive.file</code> scope
                 only. This grants access{' '}
                 <strong>
@@ -113,8 +114,9 @@ export default function PrivacyPage() {
             <ul className="space-y-2">
               <Item>Your name, email and Google account id.</Item>
               <Item>
-                A Google refresh token, <strong>encrypted at rest</strong>, so
-                the app can sync your recipes when you’re away.
+                Once you connect Google Drive, a Google refresh token,{' '}
+                <strong>encrypted at rest</strong>, so the app can sync your
+                recipes when you’re away.
               </Item>
               <Item>
                 A cached copy of your recipe files, to make the app and your MCP

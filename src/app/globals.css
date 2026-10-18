@@ -39,11 +39,10 @@ body {
  * the Content Security Policy refuses inline styles.
  */
 @media print {
-  body > header,
   header,
   footer,
   a[href='#main'] {
-    display: none !important;
+    display: none;
   }
 
   body {

@@ -20,6 +20,30 @@ describe('session tokens', () => {
     expect(payload?.exp).toBeGreaterThan(Math.floor(Date.now() / 1000));
   });
 
+  it('carries whether Google Drive was connected, and omits it when unknown', async () => {
+    const connected = await verifySessionToken(
+      await createSessionToken(
+        { uid: 1, email: 'a@b.com', drive: true },
+        SECRET,
+      ),
+      SECRET,
+    );
+    expect(connected?.drive).toBe(true);
+    const not = await verifySessionToken(
+      await createSessionToken(
+        { uid: 1, email: 'a@b.com', drive: false },
+        SECRET,
+      ),
+      SECRET,
+    );
+    expect(not?.drive).toBe(false);
+    const unknown = await verifySessionToken(
+      await createSessionToken({ uid: 1, email: 'a@b.com' }, SECRET),
+      SECRET,
+    );
+    expect(unknown).not.toHaveProperty('drive');
+  });
+
   it('rejects a tampered payload', async () => {
     const token = await createSessionToken(
       { uid: 1, email: 'x@y.com' },

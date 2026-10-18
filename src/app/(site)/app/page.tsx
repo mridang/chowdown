@@ -2,6 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { EmptyCollection } from '@/components/recipes/empty-collection';
+import {
+  DriveConnectNotice,
+  DriveConnectPanel,
+} from '@/components/site/drive-connect';
 import { FavouritesLink } from '@/components/recipes/favourites-link';
 import { FilterDrawer } from '@/components/recipes/filter-drawer';
 import { FilterPanel } from '@/components/recipes/filter-panel';
@@ -23,6 +27,7 @@ import { FilterChip } from '@/components/ui/chip';
 import { SearchField } from '@/components/ui/field';
 import { PlusIcon } from '@/components/icons';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
+import { driveAttemptOf } from '@/lib/auth/drive-access';
 import { countOf } from '@/lib/intl';
 import { toCardRecipe } from '@/lib/recipe/card-data';
 import { loadCollection } from '@/lib/recipe/load-collection';
@@ -48,13 +53,16 @@ export default async function AppPage({
 }: {
   searchParams: Promise<RawParams>;
 }) {
-  const { recipes: rows, favouriteIds } = await loadCollection();
+  const { recipes: rows, favouriteIds, drive } = await loadCollection();
+  const params = await searchParams;
+  // `?drive=denied|error` is where a failed attempt to connect Drive lands.
+  const attempt = driveAttemptOf(params['drive']);
   const hearted = new Set(favouriteIds);
   const recipes = rows.map((row) =>
     toCardRecipe(row, hearted.has(row.drive_file_id)),
   );
 
-  const query = parseQuery(await searchParams);
+  const query = parseQuery(params);
   const facets = buildFacets(recipes, query);
   const found = sortRecipes(
     recipes.filter((r) => matches(r, query)),
@@ -128,92 +136,106 @@ export default async function AppPage({
 
       {recipes.length === 0 ? (
         <Container className="py-10">
-          <EmptyCollection />
+          {drive.connected ? (
+            <EmptyCollection />
+          ) : (
+            <DriveConnectPanel reconnect={drive.reconnect} attempt={attempt} />
+          )}
         </Container>
       ) : (
-        <Container className="grid grid-cols-1 gap-6 py-8 md:grid-cols-[16rem_minmax(0,1fr)] md:gap-10 md:py-10 lg:gap-12">
-          <aside
-            aria-label="Filters"
-            className="hidden md:sticky md:top-24 md:block md:max-h-[calc(100vh-7rem)] md:self-start md:overflow-y-auto md:pr-1"
-          >
-            <div className="mb-4">{favouritesLink}</div>
-            <FilterPanel facets={facets} />
-          </aside>
-
-          <FilterDrawer activeCount={chips.length}>
-            <div className="mb-4">{favouritesLink}</div>
-            <FilterPanel facets={facets} />
-          </FilterDrawer>
-
-          <section aria-label="Results" className="min-w-0">
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <p className="text-ink/65 text-sm" aria-live="polite">
-                  {countOf(found.length, 'recipe')}
-                </p>
-                {chips.map((chip) => (
-                  <FilterChip key={chip.href} href={chip.href}>
-                    {chip.label}
-                  </FilterChip>
-                ))}
-                {chips.length > 0 || query.q ? (
-                  <Link
-                    href="/app"
-                    className="inline-flex h-8 items-center px-1 text-sm font-medium underline underline-offset-4"
-                  >
-                    Clear all
-                  </Link>
-                ) : null}
-              </div>
-              <SortSelect
-                value={query.sort}
-                options={SORTS.map(([value, label]) => ({
-                  value,
-                  label,
-                  href: hrefFor({ ...query, sort: value }),
-                }))}
+        <>
+          {drive.connected ? null : (
+            <Container className="pt-8">
+              <DriveConnectNotice
+                reconnect={drive.reconnect}
+                attempt={attempt}
               />
-            </div>
+            </Container>
+          )}
+          <Container className="grid grid-cols-1 gap-6 py-8 md:grid-cols-[16rem_minmax(0,1fr)] md:gap-10 md:py-10 lg:gap-12">
+            <aside
+              aria-label="Filters"
+              className="hidden md:sticky md:top-24 md:block md:max-h-[calc(100vh-7rem)] md:self-start md:overflow-y-auto md:pr-1"
+            >
+              <div className="mb-4">{favouritesLink}</div>
+              <FilterPanel facets={facets} />
+            </aside>
 
-            {shown.length > 0 ? (
-              <RecipeGrid>
-                {shown.map((recipe, i) => (
-                  <RecipeCard
-                    key={recipe.id}
-                    recipe={recipe}
-                    live
-                    headingLevel="h2"
-                    priority={i < ABOVE_THE_FOLD}
-                  />
-                ))}
-              </RecipeGrid>
-            ) : (
-              <div className="rounded-card border-ink/25 border border-dashed px-6 py-16 text-center">
-                <Heading variant="h3">Nothing matches those filters</Heading>
-                <p className="text-ink/70 mt-2">
-                  Try removing one, or start over.
-                </p>
-                <div className="mt-6 flex justify-center">
-                  <ButtonLink href="/app" variant="outline">
-                    Clear all filters
-                  </ButtonLink>
+            <FilterDrawer activeCount={chips.length}>
+              <div className="mb-4">{favouritesLink}</div>
+              <FilterPanel facets={facets} />
+            </FilterDrawer>
+
+            <section aria-label="Results" className="min-w-0">
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <p className="text-ink/65 text-sm" aria-live="polite">
+                    {countOf(found.length, 'recipe')}
+                  </p>
+                  {chips.map((chip) => (
+                    <FilterChip key={chip.href} href={chip.href}>
+                      {chip.label}
+                    </FilterChip>
+                  ))}
+                  {chips.length > 0 || query.q ? (
+                    <Link
+                      href="/app"
+                      className="inline-flex h-8 items-center px-1 text-sm font-medium underline underline-offset-4"
+                    >
+                      Clear all
+                    </Link>
+                  ) : null}
                 </div>
+                <SortSelect
+                  value={query.sort}
+                  options={SORTS.map(([value, label]) => ({
+                    value,
+                    label,
+                    href: hrefFor({ ...query, sort: value }),
+                  }))}
+                />
               </div>
-            )}
 
-            {found.length > shown.length ? (
-              <div className="mt-10 flex justify-center">
-                <Link
-                  href={moreHref(query)}
-                  scroll={false}
-                  className={buttonClass({ variant: 'outline', size: 'lg' })}
-                >
-                  Show more ({found.length - shown.length} left)
-                </Link>
-              </div>
-            ) : null}
-          </section>
-        </Container>
+              {shown.length > 0 ? (
+                <RecipeGrid>
+                  {shown.map((recipe, i) => (
+                    <RecipeCard
+                      key={recipe.id}
+                      recipe={recipe}
+                      live
+                      headingLevel="h2"
+                      priority={i < ABOVE_THE_FOLD}
+                    />
+                  ))}
+                </RecipeGrid>
+              ) : (
+                <div className="rounded-card border-ink/25 border border-dashed px-6 py-16 text-center">
+                  <Heading variant="h3">Nothing matches those filters</Heading>
+                  <p className="text-ink/70 mt-2">
+                    Try removing one, or start over.
+                  </p>
+                  <div className="mt-6 flex justify-center">
+                    <ButtonLink href="/app" variant="outline">
+                      Clear all filters
+                    </ButtonLink>
+                  </div>
+                </div>
+              )}
+
+              {found.length > shown.length ? (
+                <div className="mt-10 flex justify-center">
+                  <Link
+                    href={moreHref(query)}
+                    scroll={false}
+                    className={buttonClass({ variant: 'outline', size: 'lg' })}
+                  >
+                    Show more ({found.length - shown.length} left)
+                  </Link>
+                </div>
+              ) : null}
+            </section>
+          </Container>
+        </>
       )}
     </>
   );

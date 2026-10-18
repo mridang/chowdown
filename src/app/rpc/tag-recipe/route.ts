@@ -12,6 +12,7 @@ import { NextResponse } from 'next/server';
 
 import { requireUser } from '@/lib/api/auth';
 import { isObject, readJson } from '@/lib/api/json';
+import { driveFailure } from '@/lib/api/drive-failure';
 import { problems } from '@/lib/api/problem';
 import { getUserAccessToken } from '@/lib/auth/current-user';
 import { getRecipeByFileId } from '@/lib/db/recipes';
@@ -55,8 +56,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     await updateRecipeFile(id, source, token);
     await indexRecipeWrite(db, user.id, id, row.name, source);
     return NextResponse.json({ tagged: true, tags });
-  } catch {
-    return problems.upstream(
+  } catch (error) {
+    return driveFailure(
+      error,
       'The recipe could not be tagged. Nothing was changed.',
     );
   }

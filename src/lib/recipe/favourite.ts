@@ -9,6 +9,7 @@
  */
 
 import { getUserAccessToken } from '../auth/current-user';
+import { isDriveConnected } from '../auth/drive-access';
 import { setFavourite } from '../db/favourites';
 import { getRecipeByFileId } from '../db/recipes';
 import { getUserById } from '../db/users';
@@ -25,7 +26,9 @@ async function writeFavouriteTag(
 ): Promise<void> {
   const db = getDatabase();
   const user = await getUserById(db, userId);
-  if (!user) {
+  if (!user || !isDriveConnected(user)) {
+    // Without Drive the heart lives in the app only; the file marker is added
+    // once the person has connected it and hearts the recipe again.
     return;
   }
   const token = await getUserAccessToken(user);

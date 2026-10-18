@@ -28,3 +28,12 @@ export function safeReturnPath(
   }
   return value;
 }
+
+/**
+ * Where a failed Drive connection lands: the recipe list, which explains what
+ * happened and offers to try again. The reason is a fixed word, never anything
+ * Google sent back.
+ */
+export function driveResultPath(result: 'denied' | 'error'): string {
+  return `/app?drive=${result}`;
+}

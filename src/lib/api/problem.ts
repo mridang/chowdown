@@ -75,6 +75,15 @@ export const problems = {
       'The resource changed since you last read it. Fetch it again and retry.',
     ),
 
+  /** The request needs Google Drive and the person hasn't connected it. */
+  driveNotConnected: () =>
+    problem(
+      409,
+      '/problems/drive-not-connected',
+      'Google Drive is not connected',
+      'Connect your Google Drive in chowdown first, then try again.',
+    ),
+
   /** Drive (or another upstream) failed; nothing was changed. */
   upstream: (detail: string) =>
     problem(502, '/problems/upstream-failure', 'Upstream failure', detail),

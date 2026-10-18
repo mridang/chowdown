@@ -16,6 +16,7 @@ import { getUserAccessToken } from '@/lib/auth/current-user';
 import { requireUid, requireUser } from '@/lib/api/auth';
 import { isObject, readJson } from '@/lib/api/json';
 import { absoluteUrl } from '@/lib/api/pagination';
+import { driveFailure } from '@/lib/api/drive-failure';
 import { problems } from '@/lib/api/problem';
 import { sendRecipe } from '@/lib/api/recipe-response';
 import { listRecipes } from '@/lib/api/recipe-list';
@@ -92,8 +93,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     const token = await getUserAccessToken(user);
     const folderId = await recipesFolderFor(user, token);
     created = await createRecipeFile(folderId, name.trim(), cooklang, token);
-  } catch {
-    return problems.upstream(
+  } catch (error) {
+    return driveFailure(
+      error,
       'Google Drive could not save the recipe. Nothing was changed.',
     );
   }

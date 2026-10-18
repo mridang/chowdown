@@ -311,6 +311,13 @@ export const PlusCircleIcon = (p: IconProps) => (
   </Icon>
 );
 
+/** Google Drive: the triangle of three sloped sides, in the line style of the rest. */
+export const DriveIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M8 3h8l6 10.5-4 7H6l-4-7zM8 3l6 10.5h8M14 13.500l-4 7M2 13.500h12" />
+  </Icon>
+);
+
 /** The multi-colour Google "G", for the sign-in button. */
 export function GoogleIcon(props: IconProps) {
   return (

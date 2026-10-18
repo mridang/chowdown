@@ -2,9 +2,9 @@
  * @packageDocumentation
  *
  * Repository for the `users` table: the per-account record created on first
- * Google sign-in. Holds identity, the sealed Drive refresh token, the id of
- * the app-managed Recipes folder, and the unguessable `mcp_token` that forms
- * the user's personal MCP link.
+ * Google sign-in. Holds identity, the sealed Drive refresh token (present only
+ * once Drive is connected), the id of the app-managed Recipes folder, and the
+ * unguessable `mcp_token` that forms the user's personal MCP link.
  */
 
 import { eq } from 'drizzle-orm';
@@ -114,10 +114,22 @@ export async function setRecipesFolderId(
     .where(eq(users.id, userId));
 }
 
+/** Store the sealed Drive refresh token that connecting Drive produced. */
+export async function setRefreshToken(
+  db: Database,
+  userId: number,
+  refreshTokenEnc: string,
+): Promise<void> {
+  await db
+    .update(users)
+    .set({ refresh_token_enc: refreshTokenEnc, updated_at: now() })
+    .where(eq(users.id, userId));
+}
+
 /**
  * Forget a user's stored Drive refresh token. Used when Google rejects it
- * (expired or revoked): the next visit sees no token and sends them through
- * login, which captures a fresh one.
+ * (expired or revoked): the next visit sees no connection and offers to
+ * reconnect, which captures a fresh one.
  */
 export async function clearRefreshToken(
   db: Database,
@@ -125,6 +137,6 @@ export async function clearRefreshToken(
 ): Promise<void> {
   await db
     .update(users)
-    .set({ refresh_token_enc: null, updated_at: new Date().toISOString() })
+    .set({ refresh_token_enc: null, updated_at: now() })
     .where(eq(users.id, userId));
 }

@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 
-import { GoogleIcon, PlusIcon, SparkIcon } from '@/components/icons';
+import { DriveIcon, GoogleIcon, PlusIcon, SparkIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
 import { cn } from '@/components/ui/cn';
 import { Container } from '@/components/ui/layout';
+import { driveConnectHref } from '@/lib/auth/drive-access';
 import type { ShellUser } from '@/lib/auth/shell-user';
 
 import { AccountMenu } from './account-menu';
@@ -42,9 +43,21 @@ const APP_MENU: [string, string][] = [
   ['Cook with AI', '/connect'],
 ];
 
+/** The phone menu's links: the app ones, plus connecting Drive until that is done. */
+function menuLinks(user: ShellUser | null): [string, string][] {
+  if (!user) {
+    return VISITOR_NAV;
+  }
+  return user.driveConnected
+    ? APP_MENU
+    : [...APP_MENU, ['Connect Google Drive', driveConnectHref()]];
+}
+
 /**
  * The site header. Signed in: the main app links, a "Cook with AI" call to
  * action and the account menu ("Hi Mridang" beside the person's Google photo).
+ * Until Google Drive is connected, "Connect Google Drive" takes the place of
+ * "Add recipe" (there is nowhere to save one yet) and disappears once it is.
  * Signed out: links to the landing page's sections and a Sign in button. On
  * phones the links fold into a menu.
  */
@@ -85,14 +98,25 @@ export function SiteHeader({ user }: { user: ShellUser | null }) {
           <div className="flex items-center gap-1 sm:gap-2">
             {user ? (
               <>
-                <ButtonLink
-                  href="/recipes/add"
-                  variant="outline"
-                  className="max-md:hidden"
-                >
-                  <PlusIcon className="h-4 w-4" />
-                  Add recipe
-                </ButtonLink>
+                {user.driveConnected ? (
+                  <ButtonLink
+                    href="/recipes/add"
+                    variant="outline"
+                    className="max-md:hidden"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    Add recipe
+                  </ButtonLink>
+                ) : (
+                  <ButtonLink
+                    href={driveConnectHref()}
+                    variant="outline"
+                    className="max-md:hidden"
+                  >
+                    <DriveIcon className="h-4 w-4" />
+                    Connect Google Drive
+                  </ButtonLink>
+                )}
                 <ButtonLink
                   href="/connect"
                   variant="accent"
@@ -106,6 +130,7 @@ export function SiteHeader({ user }: { user: ShellUser | null }) {
                   name={user.name}
                   email={user.email}
                   picture={user.picture}
+                  driveConnected={user.driveConnected}
                 />
               </>
             ) : (
@@ -114,7 +139,7 @@ export function SiteHeader({ user }: { user: ShellUser | null }) {
                 Sign in
               </ButtonLink>
             )}
-            <MobileNav links={user ? APP_MENU : VISITOR_NAV} />
+            <MobileNav links={menuLinks(user)} />
           </div>
         </Container>
       </div>

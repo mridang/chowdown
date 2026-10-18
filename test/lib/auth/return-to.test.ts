@@ -1,6 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { safeReturnPath } from '../../../src/lib/auth/return-to';
+import {
+  driveResultPath,
+  safeReturnPath,
+} from '../../../src/lib/auth/return-to';
 
 describe('safeReturnPath', () => {
   it('allows a path on this site, with its query', () => {
@@ -22,5 +25,16 @@ describe('safeReturnPath', () => {
     expect(safeReturnPath('')).toBeUndefined();
     expect(safeReturnPath(null)).toBeUndefined();
     expect(safeReturnPath(undefined)).toBeUndefined();
+  });
+});
+
+describe('driveResultPath', () => {
+  it('lands on the recipe list with a fixed reason', () => {
+    expect(driveResultPath('denied')).toBe('/app?drive=denied');
+    expect(driveResultPath('error')).toBe('/app?drive=error');
+  });
+
+  it('is itself a path safeReturnPath accepts', () => {
+    expect(safeReturnPath(driveResultPath('denied'))).toBe('/app?drive=denied');
   });
 });

@@ -6,7 +6,9 @@ import { BarePage } from '@/components/landing/bare-page';
 import { CheckIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Eyebrow, Heading } from '@/components/ui/layout';
+import { DriveConnectPanel } from '@/components/site/drive-connect';
 import { getCurrentUser } from '@/lib/auth/current-user';
+import { isDriveConnected, wasDriveConnected } from '@/lib/auth/drive-access';
 import { resolveClient } from '@/lib/db/oauth';
 import {
   redirectWith,
@@ -93,14 +95,27 @@ export default async function AuthorizePage({
   }
 
   const user = await getCurrentUser();
+  const query = new URLSearchParams(
+    Object.entries(params).filter(
+      (entry): entry is [string, string] => entry[1] !== undefined,
+    ),
+  ).toString();
+  const here = `/oauth/authorize?${query}`;
   if (!user) {
-    const query = new URLSearchParams(
-      Object.entries(params).filter(
-        (entry): entry is [string, string] => entry[1] !== undefined,
-      ),
-    ).toString();
-    redirect(
-      `/api/auth/login?returnTo=${encodeURIComponent(`/oauth/authorize?${query}`)}`,
+    redirect(`/api/auth/login?returnTo=${encodeURIComponent(here)}`);
+  }
+  if (!isDriveConnected(user)) {
+    // An assistant has nothing to reach until the recipes' Drive is connected;
+    // connect it first, then come straight back to this approval.
+    return (
+      <BarePage>
+        <div className="mx-auto w-full max-w-lg px-4 py-10 sm:py-16">
+          <DriveConnectPanel
+            reconnect={wasDriveConnected(user)}
+            returnTo={here}
+          />
+        </div>
+      </BarePage>
     );
   }
 

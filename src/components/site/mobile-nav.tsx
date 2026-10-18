@@ -16,11 +16,19 @@ export function MobileNav({ links }: { links: [string, string][] }) {
         panelClassName="w-56"
       >
         <nav aria-label="Menu">
-          {links.map(([label, href]) => (
-            <Link key={label} href={href} className={POPOVER_ITEM}>
-              {label}
-            </Link>
-          ))}
+          {links.map(([label, href]) =>
+            // An /api address answers with a redirect to another site, which the
+            // client router can't follow, so it gets a plain link.
+            href.startsWith('/api/') ? (
+              <a key={label} href={href} className={POPOVER_ITEM}>
+                {label}
+              </a>
+            ) : (
+              <Link key={label} href={href} className={POPOVER_ITEM}>
+                {label}
+              </Link>
+            ),
+          )}
         </nav>
       </Popover>
     </div>

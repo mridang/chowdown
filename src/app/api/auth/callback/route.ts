@@ -1,27 +1,43 @@
 /**
- * OAuth callback. Validates the `state`, exchanges the code for tokens, loads
- * the user's identity, upserts the user (sealing the refresh token), ensures
- * their app-managed "Recipes" folder exists, issues the session cookie, and
- * sends them to `/app`. Any failure sends them home with an error flag rather
- * than leaking details.
+ * Google's way back into the app, for both asks.
+ *
+ * Signing in: validates the `state`, exchanges the code, loads the identity,
+ * upserts the user, issues the session cookie and sends them on (to `/app`
+ * unless they came from somewhere specific). No Drive access is involved.
+ *
+ * Connecting Drive: the same checks, for someone already signed in. It confirms
+ * the Google account that approved is the signed-in one, that Drive was
+ * actually granted (Google lets people untick it), seals the refresh token,
+ * makes sure the app-managed "Recipes" folder exists and refreshes the session.
+ *
+ * Any failure sends them back with a fixed flag rather than leaking details.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getUserAccessToken } from '@/lib/auth/current-user';
-import { RETURN_COOKIE, safeReturnPath } from '@/lib/auth/return-to';
-import { exchangeCode, getUserInfo } from '@/lib/auth/google-oauth';
 import {
-  SESSION_COOKIE,
-  SESSION_TTL_SECONDS,
-  createSessionToken,
-} from '@/lib/auth/session';
+  exchangeCode,
+  getUserInfo,
+  grantedDrive,
+  type AuthPurpose,
+} from '@/lib/auth/google-oauth';
+import { purposeOf, STATE_COOKIE } from '@/lib/auth/oauth-state';
+import {
+  driveResultPath,
+  RETURN_COOKIE,
+  safeReturnPath,
+} from '@/lib/auth/return-to';
+import { SESSION_COOKIE, verifySessionToken } from '@/lib/auth/session';
+import { setSessionCookie } from '@/lib/auth/session-cookie';
 import { encryptSecret } from '@/lib/crypto';
-import { setRecipesFolderId, upsertUser } from '@/lib/db/users';
+import {
+  getUserById,
+  setRecipesFolderId,
+  setRefreshToken,
+  upsertUser,
+} from '@/lib/db/users';
 import { ensureRecipesFolder } from '@/lib/drive/drive-client';
 import { appOrigin, getDatabase, getEnv } from '@/lib/util';
-
-const STATE_COOKIE = 'chowdown_oauth_state';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const env = getEnv();
@@ -31,76 +47,111 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
   const expectedState = request.cookies.get(STATE_COOKIE)?.value;
+  const purpose: AuthPurpose | undefined = state ? purposeOf(state) : undefined;
+  const returnTo = safeReturnPath(request.cookies.get(RETURN_COOKIE)?.value);
+  const oauthError = url.searchParams.get('error');
+
+  /** Back to where they were going, with the one-time cookies cleared. */
+  const finish = (path: string): NextResponse => {
+    const response = NextResponse.redirect(`${origin}${path}`);
+    response.cookies.delete(RETURN_COOKIE);
+    response.cookies.delete(STATE_COOKIE);
+    return response;
+  };
 
   // Validate the round-trip before trusting the code.
-  if (!code || !state || !expectedState || state !== expectedState) {
+  if (!state || !expectedState || state !== expectedState || !purpose) {
     console.error('[auth callback] state check failed', {
-      hasCode: Boolean(code),
       hasState: Boolean(state),
       hasExpected: Boolean(expectedState),
       match: state === expectedState,
-      oauthError: url.searchParams.get('error'),
+      oauthError,
     });
-    return NextResponse.redirect(`${origin}/?error=auth`);
+    return finish('/?error=auth');
+  }
+  // Closed the Google window or pressed Cancel.
+  if (!code) {
+    console.error('[auth callback] no code', { purpose, oauthError });
+    return finish(
+      purpose === 'drive' ? driveResultPath('denied') : '/?error=auth',
+    );
   }
 
+  const redirectUri = `${origin}/api/auth/callback`;
   try {
     const tokens = await exchangeCode({
       code,
       clientId: env.GOOGLE_OAUTH_CLIENT_ID,
       clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
-      redirectUri: `${origin}/api/auth/callback`,
+      redirectUri,
     });
     const info = await getUserInfo(tokens.access_token);
-
     const db = getDatabase();
-    const refreshEnc = tokens.refresh_token
-      ? await encryptSecret(tokens.refresh_token, env.TOKEN_ENCRYPTION_KEY)
-      : undefined;
-    const user = await upsertUser(db, {
-      google_sub: info.sub,
-      email: info.email,
-      name: info.name,
-      picture: info.picture,
-      refresh_token_enc: refreshEnc,
-    });
 
-    // Create the Recipes folder on first sign-in (uses the fresh access token
-    // directly rather than a refresh round-trip).
-    if (!user.recipes_folder_id) {
-      const folderId = await ensureRecipesFolder(tokens.access_token);
-      await setRecipesFolderId(db, user.id, folderId);
-    } else if (!tokens.refresh_token) {
-      // Returning user on a silent grant: make sure we can still mint tokens.
-      await getUserAccessToken(user);
+    if (purpose === 'signin') {
+      const user = await upsertUser(db, {
+        google_sub: info.sub,
+        email: info.email,
+        name: info.name,
+        picture: info.picture,
+      });
+      const response = finish(returnTo ?? '/app');
+      await setSessionCookie(response, user, {
+        secret: env.SESSION_SECRET,
+        secure,
+      });
+      return response;
     }
 
-    const sessionToken = await createSessionToken(
-      {
-        uid: user.id,
-        email: user.email,
-        name: user.name ?? undefined,
-        picture: user.picture ?? undefined,
-      },
+    // Connecting Drive: only for the person who is signed in, and only if the
+    // Google account that just approved is theirs.
+    const session = await verifySessionToken(
+      request.cookies.get(SESSION_COOKIE)?.value ?? '',
       env.SESSION_SECRET,
     );
-    const returnTo = safeReturnPath(request.cookies.get(RETURN_COOKIE)?.value);
-    const response = NextResponse.redirect(`${origin}${returnTo ?? '/app'}`);
-    response.cookies.delete(RETURN_COOKIE);
-    response.cookies.set(SESSION_COOKIE, sessionToken, {
-      httpOnly: true,
+    const user = session ? await getUserById(db, session.uid) : undefined;
+    if (!user) {
+      return finish('/?error=auth');
+    }
+    if (info.sub !== user.google_sub) {
+      console.error('[auth callback] drive grant from a different account');
+      return finish(driveResultPath('error'));
+    }
+    if (!grantedDrive(tokens.scope)) {
+      // They unticked the Drive permission.
+      return finish(driveResultPath('denied'));
+    }
+    if (!tokens.refresh_token) {
+      console.error('[auth callback] drive grant carried no refresh token');
+      return finish(driveResultPath('error'));
+    }
+    await setRefreshToken(
+      db,
+      user.id,
+      await encryptSecret(tokens.refresh_token, env.TOKEN_ENCRYPTION_KEY),
+    );
+    // The fresh access token is used directly; no refresh round trip.
+    if (!user.recipes_folder_id) {
+      await setRecipesFolderId(
+        db,
+        user.id,
+        await ensureRecipesFolder(tokens.access_token),
+      );
+    }
+    const response = finish(returnTo ?? '/app');
+    await setSessionCookie(response, user, {
+      secret: env.SESSION_SECRET,
       secure,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: SESSION_TTL_SECONDS,
+      drive: true,
     });
-    response.cookies.delete(STATE_COOKIE);
     return response;
   } catch (err) {
     console.error(
       '[auth callback] failed:',
       err instanceof Error ? `${err.name}: ${err.message}` : String(err),
     );
-    return NextResponse.redirect(`${origin}/?error=auth`);
+    return finish(
+      purpose === 'drive' ? driveResultPath('error') : '/?error=auth',
+    );
   }
 }

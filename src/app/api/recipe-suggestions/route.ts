@@ -10,6 +10,7 @@ import { NextResponse } from 'next/server';
 
 import { requireUser } from '@/lib/api/auth';
 import { pageBody, parseLimit } from '@/lib/api/pagination';
+import { driveFailure } from '@/lib/api/drive-failure';
 import { problems } from '@/lib/api/problem';
 import { getUserAccessToken } from '@/lib/auth/current-user';
 import { listRecipeFiles } from '@/lib/drive/drive-client';
@@ -55,7 +56,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       ),
       { headers: { 'Cache-Control': 'private, no-cache' } },
     );
-  } catch {
-    return problems.upstream('Suggestions are unavailable right now.');
+  } catch (error) {
+    return driveFailure(error, 'Suggestions are unavailable right now.');
   }
 }

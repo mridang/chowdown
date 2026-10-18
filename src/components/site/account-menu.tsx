@@ -4,12 +4,16 @@ import Link from 'next/link';
 import { useCallback, useState } from 'react';
 
 import {
+  CheckIcon,
   ChevronIcon,
+  DriveIcon,
   LogoutIcon,
   PlugIcon,
   SparkIcon,
 } from '@/components/icons';
+import { cn } from '@/components/ui/cn';
 import { POPOVER_ITEM, Popover } from '@/components/ui/popover';
+import { driveConnectHref } from '@/lib/auth/drive-access';
 
 import { useInstallPrompt } from './use-install-prompt';
 
@@ -43,18 +47,21 @@ export function Avatar({ name, picture }: { name: string; picture?: string }) {
  * The signed-in account control. Closed, it is the person's photo and "Hi
  * Mridang"; opened, it says which account you are in and offers only what the
  * header doesn't already (connecting an assistant, installing the app) and Sign
- * out. The recipe links live in the header itself.
+ * out. The recipe links live in the header itself. Google Drive shows here as
+ * an action until it is connected, then as a greyed-out "connected" line.
  */
 export function AccountMenu({
   firstName,
   name,
   email,
   picture,
+  driveConnected,
 }: {
   firstName: string;
   name: string;
   email: string;
   picture?: string;
+  driveConnected: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const { install } = useInstallPrompt();
@@ -92,6 +99,21 @@ export function AccountMenu({
         <PlugIcon className="text-ink/65 h-[18px] w-[18px]" />
         Connect an assistant
       </Link>
+      {driveConnected ? (
+        <button
+          type="button"
+          disabled
+          className={cn(POPOVER_ITEM, 'cursor-default hover:bg-transparent')}
+        >
+          <CheckIcon className="text-forest h-[18px] w-[18px]" />
+          Google Drive connected
+        </button>
+      ) : (
+        <a href={driveConnectHref()} className={POPOVER_ITEM}>
+          <DriveIcon className="text-ink/65 h-[18px] w-[18px]" />
+          Connect Google Drive
+        </a>
+      )}
       {install ? (
         <button
           type="button"

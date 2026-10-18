@@ -14,6 +14,7 @@
 
 import { countOf, foldText } from '../intl';
 import { getUserAccessToken } from '../auth/current-user';
+import { DriveNotConnectedError } from '../auth/drive-access';
 import { findRecipeBySourceUrl, listRecipesByUser } from '../db/recipes';
 import { setUserUnits, type User } from '../db/users';
 import {
@@ -49,6 +50,7 @@ import { tagCookSource, tagCookSourceBestEffort } from '../recipe/tagging';
 import { addMissingCover, convertImport } from '../recipe/to-cooklang';
 import { setFavouriteAndTag } from '../recipe/favourite';
 import { syncFromDrive } from '../recipe/drive-sync';
+import { SITE_URL } from '../site';
 import { importRecipe } from '../recipe/import-recipe';
 import { matchFile } from '../recipe/match';
 import { validImageUrls, withImages } from '../recipe/media';
@@ -618,6 +620,30 @@ function text(body: string): { content: { type: 'text'; text: string }[] } {
   return { content: [{ type: 'text', text: body }] };
 }
 
+/**
+ * Run a `tools/call`. Someone who has signed in but not yet connected their
+ * Google Drive has no recipes for the assistant to reach; say so in words the
+ * assistant can pass on, instead of a protocol error.
+ */
+async function callToolOrExplain(
+  user: User,
+  params: Record<string, unknown> | undefined,
+): Promise<object> {
+  try {
+    return await callTool(user, params);
+  } catch (error) {
+    if (error instanceof DriveNotConnectedError) {
+      return {
+        ...text(
+          `Google Drive isn't connected to chowdown yet, so there are no recipes to reach. Ask the user to open ${SITE_URL}/app, choose "Connect Google Drive", and then try again.`,
+        ),
+        isError: true,
+      };
+    }
+    throw error;
+  }
+}
+
 /** Execute a `tools/call`. */
 async function callTool(
   user: User,
@@ -1102,7 +1128,7 @@ async function dispatch(
         return {
           jsonrpc: '2.0',
           id,
-          result: await callTool(user, message.params),
+          result: await callToolOrExplain(user, message.params),
         };
       case 'resources/list':
         return {

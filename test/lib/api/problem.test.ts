@@ -52,3 +52,14 @@ describe('problems', () => {
     expect(body.errors).toEqual(['name: required.']);
   });
 });
+
+describe('problems.driveNotConnected', () => {
+  it('is a 409 that tells the client to connect Drive', async () => {
+    const res = problems.driveNotConnected();
+    expect(res.status).toBe(409);
+    expect(res.headers.get('content-type')).toBe('application/problem+json');
+    const body = (await res.json()) as { type: string; detail: string };
+    expect(body.type).toBe('/problems/drive-not-connected');
+    expect(body.detail).toContain('Connect your Google Drive');
+  });
+});

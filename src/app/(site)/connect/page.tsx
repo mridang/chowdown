@@ -3,7 +3,9 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { ChevronIcon } from '@/components/icons';
+import { DriveConnectNotice } from '@/components/site/drive-connect';
 import { getCurrentUser } from '@/lib/auth/current-user';
+import { isDriveConnected, wasDriveConnected } from '@/lib/auth/drive-access';
 import { mcpUrl, secretMcpUrl } from '@/lib/connected-apps';
 import { appOriginFromHeaders } from '@/lib/util';
 import { CopyField } from '@/components/ui/copy-field';
@@ -57,7 +59,8 @@ const ACCESS: [string, string][] = [
 /**
  * "Cook with AI": how to connect an assistant, what it is allowed to do, which
  * assistants are connected (with a way to disconnect them) and, tucked away,
- * the older secret link. Only for signed-in people; anyone else is sent to sign
+ * the older secret link. Someone who hasn't connected Google Drive yet is told,
+ * since an assistant has no recipes to reach until they do. Only for signed-in people; anyone else is sent to sign
  * in and brought straight back here. The addresses use the origin the page is
  * served from, so they are right in every environment.
  */
@@ -70,6 +73,14 @@ export default async function ConnectPage() {
 
   return (
     <>
+      {isDriveConnected(user) ? null : (
+        <Container className="pt-8">
+          <DriveConnectNotice
+            reconnect={wasDriveConnected(user)}
+            returnTo="/connect"
+          />
+        </Container>
+      )}
       <div className="border-ink/10 border-b">
         <Container className="py-10 sm:py-14">
           <Eyebrow>Connect an assistant</Eyebrow>

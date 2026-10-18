@@ -2,6 +2,10 @@ import Link from 'next/link';
 
 import { ArrowIcon, PlusIcon, SearchIcon } from '@/components/icons';
 import { ConnectBand } from '@/components/site/connect-band';
+import {
+  DriveConnectNotice,
+  DriveConnectPanel,
+} from '@/components/site/drive-connect';
 import { EmptyCollection } from '@/components/recipes/empty-collection';
 import { RecipeCard, RecipeGrid } from '@/components/recipes/recipe-card';
 import {
@@ -81,10 +85,11 @@ function Row({
 /**
  * The signed-in home: ask for ideas, jump back into your own recipes. It reads
  * the user's cached recipes itself (one D1 round trip, with the same sign-in
- * redirects and Drive refresh as the recipe list) and shows a few rows of them.
+ * redirects and Drive refresh as the recipe list) and shows a few rows of them,
+ * or the offer to connect Google Drive when that hasn't been done.
  */
 export async function Dashboard({ user }: { user: ShellUser }) {
-  const { recipes: rows, favouriteIds } = await loadCollection();
+  const { recipes: rows, favouriteIds, drive } = await loadCollection();
   const hearted = new Set(favouriteIds);
   const recipes = rows.map((row) =>
     toCardRecipe(row, hearted.has(row.drive_file_id)),
@@ -152,12 +157,21 @@ export async function Dashboard({ user }: { user: ShellUser }) {
       </section>
 
       <Container className="pb-4">
-        {recipes.length === 0 ? (
+        {!drive.connected && recipes.length === 0 ? (
+          <div className="mt-14">
+            <DriveConnectPanel reconnect={drive.reconnect} returnTo="/" />
+          </div>
+        ) : recipes.length === 0 ? (
           <div className="mt-14">
             <EmptyCollection />
           </div>
         ) : (
           <>
+            {drive.connected ? null : (
+              <div className="mt-10">
+                <DriveConnectNotice reconnect={drive.reconnect} returnTo="/" />
+              </div>
+            )}
             <Row
               eyebrow="Your favourites"
               title="The ones you keep coming back to"

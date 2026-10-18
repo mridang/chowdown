@@ -4,12 +4,13 @@
  * Server-side helpers to resolve the signed-in user and obtain a fresh Drive
  * access token for them. Used by Server Components (the `/app` auth gate) and
  * by the recipe API routes. Identity comes from the signed session cookie;
- * Drive access comes from the sealed refresh token in the database, exchanged
- * for a short-lived access token on demand.
+ * Drive access, once the person has connected it, comes from the sealed refresh
+ * token in the database, exchanged for a short-lived access token on demand.
  */
 
 import { cookies } from 'next/headers';
 
+import { DriveNotConnectedError } from './drive-access';
 import { refreshAccessToken } from './google-oauth';
 import { SESSION_COOKIE, verifySessionToken } from './session';
 import { decryptSecret } from '../crypto';
@@ -49,12 +50,13 @@ export async function getSessionUid(): Promise<number | null> {
 
 /**
  * Exchange a user's stored refresh token for a fresh Drive access token.
- * Throws if the user has no refresh token (they must re-authenticate) — the
- * caller treats that as "send them back through login".
+ * Throws {@link DriveNotConnectedError} if the user hasn't connected Drive (or
+ * Google has since rejected the login), which callers turn into "connect your
+ * Google Drive".
  */
 export async function getUserAccessToken(user: User): Promise<string> {
   if (!user.refresh_token_enc) {
-    throw new Error('No refresh token for user; re-authentication required');
+    throw new DriveNotConnectedError();
   }
   const env = getEnv();
   const refreshToken = await decryptSecret(

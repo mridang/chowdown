@@ -17,6 +17,7 @@ import {
   noteResource,
   parseNoteInput,
 } from '@/lib/api/note-resource';
+import { driveFailure } from '@/lib/api/drive-failure';
 import { problems } from '@/lib/api/problem';
 import { getRecipeByFileId } from '@/lib/db/recipes';
 import { extractNotes, removeNote, replaceNote } from '@/lib/recipe/cook-text';
@@ -94,8 +95,9 @@ export async function PUT(
     return NextResponse.json(noteResource(input.note, index), {
       headers: { ETag: outcome.etag },
     });
-  } catch {
-    return problems.upstream(
+  } catch (error) {
+    return driveFailure(
+      error,
       'Google Drive could not save the note. Nothing was changed.',
     );
   }
@@ -139,8 +141,9 @@ export async function DELETE(
       status: 204,
       headers: { ETag: outcome.etag },
     });
-  } catch {
-    return problems.upstream(
+  } catch (error) {
+    return driveFailure(
+      error,
       'Google Drive could not save the change. Nothing was changed.',
     );
   }

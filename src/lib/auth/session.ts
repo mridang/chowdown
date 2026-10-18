@@ -30,6 +30,13 @@ export interface SessionPayload {
    */
   name?: string;
   picture?: string;
+  /**
+   * Whether Google Drive was connected when the session was issued, so the
+   * header can offer "Connect Google Drive" without a database read. A hint for
+   * the header only: pages that need Drive check the database. Absent on
+   * sessions issued before it was added; those fall back to a lookup.
+   */
+  drive?: boolean;
   /** Expiry as a Unix timestamp (seconds). */
   exp: number;
 }
@@ -88,6 +95,7 @@ export async function createSessionToken(
     ...(payload.picture && payload.picture.length <= 400
       ? { picture: payload.picture }
       : {}),
+    ...(payload.drive !== undefined ? { drive: payload.drive } : {}),
     exp: payload.exp ?? Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
   };
   const body = base64url(new TextEncoder().encode(JSON.stringify(full)));
