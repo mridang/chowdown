@@ -3,8 +3,7 @@
  *
  * The HTTP side of the MCP endpoints: read a JSON-RPC message (or batch), check
  * the caller's scopes cover it, hand it to the MCP server, and write the reply.
- * Shared by the OAuth-protected `/api/mcp` and the legacy secret-link
- * `/api/mcp/<token>`, which differ only in how they identify the user.
+ * Used by the OAuth-protected `/api/mcp`.
  */
 
 import { NextResponse } from 'next/server';
@@ -76,13 +75,12 @@ const rpcError = (code: number, message: string) => ({
 });
 
 /**
- * Handle one POST of JSON-RPC. `scopes` is what the caller may do; `null`
- * means unrestricted (the legacy link, which has always been full access).
+ * Handle one POST of JSON-RPC. `scopes` is what the caller was granted.
  */
 export async function handleMcpPost(
   request: Request,
   user: User,
-  scopes: string[] | null,
+  scopes: string[],
   origin: string,
 ): Promise<NextResponse> {
   const cors = corsFor(request);
@@ -117,25 +115,23 @@ export async function handleMcpPost(
     }
   }
 
-  if (scopes !== null) {
-    const missing = messages
-      .map((m) => scopeForMessage(m))
-      .find((needed) => !hasScope(scopes, needed));
-    if (missing) {
-      return NextResponse.json(
-        rpcError(-32001, `Requires the ${missing} scope`),
-        {
-          status: 403,
-          headers: {
-            ...cors,
-            'WWW-Authenticate': wwwAuthenticate(origin, {
-              error: 'insufficient_scope',
-              scope: missing,
-            }),
-          },
+  const missing = messages
+    .map((m) => scopeForMessage(m))
+    .find((needed) => !hasScope(scopes, needed));
+  if (missing) {
+    return NextResponse.json(
+      rpcError(-32001, `Requires the ${missing} scope`),
+      {
+        status: 403,
+        headers: {
+          ...cors,
+          'WWW-Authenticate': wwwAuthenticate(origin, {
+            error: 'insufficient_scope',
+            scope: missing,
+          }),
         },
-      );
-    }
+      },
+    );
   }
 
   if (Array.isArray(payload)) {

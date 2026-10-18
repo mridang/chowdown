@@ -2,11 +2,10 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { ChevronIcon } from '@/components/icons';
 import { DriveConnectNotice } from '@/components/site/drive-connect';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { isDriveConnected, wasDriveConnected } from '@/lib/auth/drive-access';
-import { mcpUrl, secretMcpUrl } from '@/lib/connected-apps';
+import { mcpUrl } from '@/lib/connected-apps';
 import { appOriginFromHeaders } from '@/lib/util';
 import { CopyField } from '@/components/ui/copy-field';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
@@ -58,8 +57,7 @@ const ACCESS: [string, string][] = [
 
 /**
  * "Cook with AI": how to connect an assistant, what it is allowed to do, which
- * assistants are connected (with a way to disconnect them) and, tucked away,
- * the older secret link. Someone who hasn't connected Google Drive yet is told,
+ * assistants are connected (with a way to disconnect them). Someone who hasn't connected Google Drive yet is told,
  * since an assistant has no recipes to reach until they do. Only for signed-in people; anyone else is sent to sign
  * in and brought straight back here. The addresses use the origin the page is
  * served from, so they are right in every environment.
@@ -150,25 +148,6 @@ export default async function ConnectPage() {
           <Heading variant="h3">Connected apps</Heading>
           <ConnectedApps />
         </section>
-      </Container>
-
-      <Container className="pt-12">
-        <details className="group rounded-card border-ink/10 border bg-white p-5 sm:p-6">
-          <summary className="focus-visible:outline-ink flex cursor-pointer items-center gap-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-4">
-            Older secret link
-            <ChevronIcon className="text-ink/65 h-4 w-4 transition group-open:rotate-180" />
-          </summary>
-          <p className="text-ink/75 mt-3 max-w-2xl leading-relaxed">
-            This is the older way to connect. Anyone with this link can use your
-            recipes, so prefer the address above and keep this one to yourself.
-          </p>
-          <div className="mt-4 max-w-2xl">
-            <CopyField
-              value={secretMcpUrl(origin, user.mcp_token)}
-              label="Secret link"
-            />
-          </div>
-        </details>
       </Container>
     </>
   );

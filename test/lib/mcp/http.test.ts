@@ -7,6 +7,7 @@ import {
   originRefusal,
 } from '../../../src/lib/mcp/http';
 
+const ALL_SCOPES = ['recipes:read', 'recipes:write'];
 const SELF = 'https://chowdown.test';
 const META = 'io.modelcontextprotocol/protocolVersion';
 
@@ -62,9 +63,40 @@ describe('originRefusal / corsFor', () => {
   });
 });
 
+describe('handleMcpPost — scopes', () => {
+  const write = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'tools/call',
+    params: { name: 'set_measurement_system', arguments: { system: 'metric' } },
+  };
+
+  it('refuses a write tool to a token that may only read, and says which scope is missing', async () => {
+    const res = await handleMcpPost(post(write), user, ['recipes:read'], SELF);
+    expect(res.status).toBe(403);
+    expect(res.headers.get('www-authenticate')).toContain('insufficient_scope');
+    expect(res.headers.get('www-authenticate')).toContain('recipes:write');
+  });
+
+  it('refuses a whole batch if any message in it needs a scope the token lacks', async () => {
+    const res = await handleMcpPost(
+      post([{ jsonrpc: '2.0', id: 2, method: 'ping' }, write]),
+      user,
+      ['recipes:read'],
+      SELF,
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it('treats a token with no scopes as able to do nothing', async () => {
+    const res = await handleMcpPost(post(write), user, [], SELF);
+    expect(res.status).toBe(403);
+  });
+});
+
 describe('handleMcpPost — malformed bodies', () => {
   const invalid = async (body: unknown) => {
-    const res = await handleMcpPost(post(body), user, null, SELF);
+    const res = await handleMcpPost(post(body), user, ALL_SCOPES, SELF);
     return {
       status: res.status,
       code: ((await res.json()) as { error: { code: number } }).error.code,
@@ -95,7 +127,7 @@ describe('handleMcpPost — malformed bodies', () => {
         { jsonrpc: '2.0', id: 2, method: 'ping' },
       ]),
       user,
-      null,
+      ALL_SCOPES,
       SELF,
     );
     expect(res.status).toBe(200);
@@ -106,7 +138,7 @@ describe('handleMcpPost — malformed bodies', () => {
     const res = await handleMcpPost(
       post({ jsonrpc: '2.0', method: 'notifications/cancelled' }),
       user,
-      null,
+      ALL_SCOPES,
       SELF,
     );
     expect(res.status).toBe(202);
@@ -118,7 +150,7 @@ describe('handleMcpPost — protocol checks', () => {
     const res = await handleMcpPost(
       post(modern('server/discover'), modernHeaders('server/discover')),
       user,
-      null,
+      ALL_SCOPES,
       SELF,
     );
     expect(res.status).toBe(200);
@@ -132,7 +164,7 @@ describe('handleMcpPost — protocol checks', () => {
     const res = await handleMcpPost(
       post(modern('tools/list'), modernHeaders('ping')),
       user,
-      null,
+      ALL_SCOPES,
       SELF,
     );
     expect(res.status).toBe(400);
@@ -148,7 +180,7 @@ describe('handleMcpPost — protocol checks', () => {
         { 'mcp-protocol-version': '1999-01-01' },
       ),
       user,
-      null,
+      ALL_SCOPES,
       SELF,
     );
     expect(res.status).toBe(400);
@@ -163,7 +195,7 @@ describe('handleMcpPost — protocol checks', () => {
     const newest = await handleMcpPost(
       post(modern('nope/nope'), modernHeaders('nope/nope')),
       user,
-      null,
+      ALL_SCOPES,
       SELF,
     );
     expect(newest.status).toBe(404);
@@ -173,7 +205,7 @@ describe('handleMcpPost — protocol checks', () => {
     const older = await handleMcpPost(
       post({ jsonrpc: '2.0', id: 1, method: 'nope/nope' }),
       user,
-      null,
+      ALL_SCOPES,
       SELF,
     );
     expect(older.status).toBe(200);
@@ -188,7 +220,7 @@ describe('handleMcpPost — protocol checks', () => {
         params: { protocolVersion: '2025-06-18', capabilities: {} },
       }),
       user,
-      null,
+      ALL_SCOPES,
       SELF,
     );
     const body = (await res.json()) as { result: { protocolVersion: string } };
@@ -199,7 +231,7 @@ describe('handleMcpPost — protocol checks', () => {
     const newest = await handleMcpPost(
       post(modern('ping'), modernHeaders('ping')),
       user,
-      null,
+      ALL_SCOPES,
       SELF,
     );
     expect(
@@ -210,7 +242,7 @@ describe('handleMcpPost — protocol checks', () => {
     const older = await handleMcpPost(
       post({ jsonrpc: '2.0', id: 2, method: 'ping' }),
       user,
-      null,
+      ALL_SCOPES,
       SELF,
     );
     expect(

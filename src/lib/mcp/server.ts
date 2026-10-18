@@ -2,8 +2,7 @@
  * @packageDocumentation
  *
  * A minimal Model Context Protocol server over JSON-RPC 2.0, served at
- * `/api/mcp` (OAuth 2.1 bearer tokens; the older secret link
- * `/api/mcp/<mcp_token>` still works). It lets an assistant (Claude, ChatGPT, …)
+ * `/api/mcp` (OAuth 2.1 bearer tokens). It lets an assistant (Claude, ChatGPT, …)
  * work with the user's recipes headlessly: browse and search them, read one,
  * add, edit, tag, favourite and annotate recipes, and set the measurement system.
  *

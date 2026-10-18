@@ -30,9 +30,7 @@ import {
  * "Recipes" folder chowdown created in the user's Drive. Both are null until
  * the person connects Google Drive, a separate step after signing in; if the
  * token is later lost the folder id stays, which is how "reconnect" is told
- * apart from "connect". `mcp_token` is the high-entropy secret embedded in the
- * user's unique MCP link (`/api/mcp/<mcp_token>`); possession of the link is
- * what authorizes access to that user's recipes.
+ * apart from "connect".
  */
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -44,7 +42,6 @@ export const users = sqliteTable('users', {
   recipes_folder_id: text('recipes_folder_id'),
   /** Preferred measurement system: 'metric' | 'us' | 'imperial' | null. */
   units: text('units'),
-  mcp_token: text('mcp_token').notNull().unique(),
   created_at: text('created_at').notNull(),
   updated_at: text('updated_at').notNull(),
 });

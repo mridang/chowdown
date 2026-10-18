@@ -3,8 +3,7 @@
  *
  * Repository for the `users` table: the per-account record created on first
  * Google sign-in. Holds identity, the sealed Drive refresh token (present only
- * once Drive is connected), the id of the app-managed Recipes folder, and the
- * unguessable `mcp_token` that forms the user's personal MCP link.
+ * once Drive is connected) and the id of the app-managed Recipes folder.
  */
 
 import { and, eq } from 'drizzle-orm';
@@ -20,16 +19,9 @@ function now(): string {
   return new Date().toISOString();
 }
 
-/** Generate a high-entropy, URL-safe token (32 bytes, hex) for the MCP link. */
-export function generateMcpToken(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 /**
  * Insert the user on first sign-in, or refresh their identity fields on
- * return. `google_sub` is the stable key. The `mcp_token` is minted once and
- * preserved across logins; the refresh token is only overwritten when a new
+ * return. `google_sub` is the stable key. The refresh token is only overwritten when a new
  * one is supplied (Google omits it on silent re-grants).
  */
 export async function upsertUser(
@@ -65,7 +57,6 @@ export async function upsertUser(
       name: input.name ?? null,
       picture: input.picture ?? null,
       refresh_token_enc: input.refresh_token_enc ?? null,
-      mcp_token: generateMcpToken(),
       created_at: timestamp,
       updated_at: timestamp,
     })
@@ -80,14 +71,6 @@ export async function getUserById(
   id: number,
 ): Promise<User | undefined> {
   return db.query.users.findFirst({ where: eq(users.id, id) });
-}
-
-/** Fetch a user by their MCP token (the key the MCP endpoint authenticates on). */
-export async function getUserByMcpToken(
-  db: Database,
-  token: string,
-): Promise<User | undefined> {
-  return db.query.users.findFirst({ where: eq(users.mcp_token, token) });
 }
 
 /** Store the user's preferred measurement system ('metric' | 'us' | 'imperial'), or clear it with null. */

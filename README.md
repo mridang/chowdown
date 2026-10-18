@@ -126,8 +126,6 @@ told so instead of being shown an empty collection.
 - **Tokens:** opaque, stored hashed. Access tokens last an hour; refresh tokens
   rotate on every use, and reusing an old one revokes the whole connection.
 - **Disconnect:** "Connected apps" in the app, or `POST /oauth/revoke`.
-- **Legacy link:** the older secret URL `/api/mcp/<token>` still works with full
-  access, but prefer the OAuth URL.
 
 ## REST API
 
