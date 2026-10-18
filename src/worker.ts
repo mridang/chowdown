@@ -29,7 +29,7 @@ import {
   isEdgeCacheable,
   storableCopy,
 } from './lib/http/edge-cache';
-import { buildCsp, newNonce } from './lib/http/csp';
+import { buildCsp, forwardedHeaders, newNonce } from './lib/http/csp';
 import { applyResponseHeaders } from './lib/http/headers';
 
 /** The response with one more header (responses from the app are read-only). */
@@ -72,13 +72,9 @@ const handler: ExportedHandler<CloudflareEnv> = {
       nonce,
       new URL(request.url).pathname === '/oauth/authorize' ? 'none' : 'self',
     );
-    // `set`, not append: a policy or nonce header sent by the caller must be
-    // replaced, or Next.js could read the caller's nonce instead of ours and
-    // render a page (that may then be cached) whose scripts our policy refuses.
-    const forwardedHeaders = new Headers(request.headers);
-    forwardedHeaders.set('content-security-policy', csp);
-    forwardedHeaders.set('x-nonce', nonce);
-    const forwarded = new Request(request, { headers: forwardedHeaders });
+    const forwarded = new Request(request, {
+      headers: forwardedHeaders(request.headers, csp, nonce),
+    });
     const fetched = await (openNextHandler as ExportedHandler<CloudflareEnv>)
       .fetch!(forwarded, env, ctx);
     const isHtml = (fetched.headers.get('content-type') ?? '').startsWith(

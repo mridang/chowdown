@@ -24,7 +24,13 @@ import {
 export async function setSessionCookie(
   response: NextResponse,
   user: User,
-  options: { secret: string; secure: boolean; drive?: boolean },
+  options: {
+    secret: string;
+    secure: boolean;
+    drive?: boolean;
+    /** Keep this expiry (Unix seconds) instead of starting a new 30 days. */
+    exp?: number;
+  },
 ): Promise<void> {
   const token = await createSessionToken(
     {
@@ -33,6 +39,7 @@ export async function setSessionCookie(
       name: user.name ?? undefined,
       picture: user.picture ?? undefined,
       drive: options.drive ?? isDriveConnected(user),
+      exp: options.exp,
     },
     options.secret,
   );

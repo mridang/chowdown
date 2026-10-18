@@ -7,7 +7,7 @@
  * clients that edit or delete should send the recipe's `ETag` as `If-Match`.
  */
 
-import type { Note } from '../recipe/cook-text';
+import { flatNoteKey, type Note } from '../recipe/cook-text';
 
 /** A note as the API shows it. */
 export interface NoteResource {
@@ -69,6 +69,13 @@ export function parseNoteInput(body: Record<string, unknown>): NoteInput {
   if (step !== undefined && (!Number.isInteger(step) || (step as number) < 1)) {
     errors.push('step: must be a whole number from 1.');
   }
+  if (
+    typeof ingredient === 'string' &&
+    ingredient.trim() &&
+    !flatNoteKey(ingredient)
+  ) {
+    errors.push('ingredient: must contain a name.');
+  }
   if (ingredient !== undefined && step !== undefined) {
     errors.push('ingredient and step cannot both be set.');
   }
@@ -78,7 +85,11 @@ export function parseNoteInput(body: Record<string, unknown>): NoteInput {
   if (typeof ingredient === 'string') {
     return {
       ok: true,
-      note: { scope: 'ingredient', key: ingredient.trim(), text: text.trim() },
+      note: {
+        scope: 'ingredient',
+        key: flatNoteKey(ingredient),
+        text: text.trim(),
+      },
     };
   }
   if (typeof step === 'number') {

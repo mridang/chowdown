@@ -6,11 +6,11 @@
  * re-embedded when it actually changes.
  */
 
-import { and, count, eq, inArray } from 'drizzle-orm';
+import { and, count, eq, inArray, sql } from 'drizzle-orm';
 
 import { chunked } from './chunk';
 import type { Database } from './client';
-import { embeddings } from './schema';
+import { embeddings, recipes } from './schema';
 
 /** A cached embedding row. */
 export type EmbeddingRow = typeof embeddings.$inferSelect;
@@ -75,6 +75,25 @@ export async function deleteEmbeddingsNotIn(
         ),
       );
   }
+}
+
+/**
+ * Drop cached embeddings whose recipe is no longer cached. Safe to run beside a
+ * save: a recipe written during a sync has its row (and so keeps its
+ * embedding), whatever the folder listing taken earlier said.
+ */
+export async function deleteOrphanEmbeddings(
+  db: Database,
+  userId: number,
+): Promise<void> {
+  await db
+    .delete(embeddings)
+    .where(
+      and(
+        eq(embeddings.user_id, userId),
+        sql`${embeddings.drive_file_id} not in (select ${recipes.drive_file_id} from ${recipes} where ${recipes.user_id} = ${userId})`,
+      ),
+    );
 }
 
 /** Max statements per D1 batch (kept well under D1's per-batch limit). */

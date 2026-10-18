@@ -8,7 +8,7 @@
  */
 
 import { getUserAccessToken } from '../auth/current-user';
-import { deleteEmbeddingsNotIn } from '../db/embeddings';
+import { deleteOrphanEmbeddings } from '../db/embeddings';
 import { deleteRecipesNotIn } from '../db/recipes';
 import { setRecipesFolderId, type User } from '../db/users';
 import { ensureRecipesFolder, listRecipeFiles } from '../drive/drive-client';
@@ -39,6 +39,6 @@ export async function syncFromDrive(user: User): Promise<number> {
   await syncRecipeTags(user, files, token);
   const keep = files.map((f) => f.id);
   await deleteRecipesNotIn(db, user.id, keep, startedAt);
-  await deleteEmbeddingsNotIn(db, user.id, keep);
+  await deleteOrphanEmbeddings(db, user.id);
   return files.length;
 }

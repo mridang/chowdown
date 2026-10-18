@@ -57,3 +57,21 @@ export function buildCsp(
 export function nonceOf(csp: string): string | undefined {
   return /'nonce-([^']+)'/.exec(csp)?.[1];
 }
+
+/**
+ * The headers to forward to the app: the caller's own, with the policy and the
+ * nonce set to ours. `set`, not append: a policy or nonce header sent by the
+ * caller must be replaced, or Next.js could read the caller's nonce instead of
+ * ours and render a page (that may then be cached) whose scripts our policy
+ * refuses.
+ */
+export function forwardedHeaders(
+  incoming: Headers,
+  csp: string,
+  nonce: string,
+): Headers {
+  const headers = new Headers(incoming);
+  headers.set('content-security-policy', csp);
+  headers.set('x-nonce', nonce);
+  return headers;
+}

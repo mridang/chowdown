@@ -307,12 +307,21 @@ export function extractNotes(source: string): Note[] {
   return notes;
 }
 
+/**
+ * A note's ingredient key as it can be written: one line, with no `]`, since it
+ * sits inside `[...]`. May come out empty (a key of only brackets), which can't
+ * be written at all.
+ */
+export function flatNoteKey(key: string): string {
+  return key.replace(/[\]\s]+/g, ' ').trim();
+}
+
 /** The text of one note as a comment line (the format {@link appendNote} writes). */
 function noteLine(note: Note): string {
   const flat = note.text.replace(/\s*\r?\n\s*/g, ' ').trim();
-  // The key sits inside `[...]` on one line: a line break or a `]` in it would
-  // end the marker early or start a line of its own.
-  const key = note.key.replace(/[\]\s]+/g, ' ').trim();
+  // A line break or a `]` in the key would end the marker early or start a
+  // line of its own.
+  const key = flatNoteKey(note.key);
   const target = note.scope === 'general' ? '' : ` ${note.scope}:${key}`;
   return `-- [note${target}] ${flat}`;
 }

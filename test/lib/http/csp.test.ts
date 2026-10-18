@@ -1,6 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { buildCsp, newNonce, nonceOf } from '../../../src/lib/http/csp';
+import {
+  buildCsp,
+  forwardedHeaders,
+  newNonce,
+  nonceOf,
+} from '../../../src/lib/http/csp';
 
 describe('newNonce', () => {
   it('is base64 of 16 bytes, and different every time', () => {
@@ -78,5 +83,27 @@ describe('nonceOf', () => {
   it('reads the nonce back out of a policy, which is how Next.js finds it', () => {
     expect(nonceOf(buildCsp('xyz=='))).toBe('xyz==');
     expect(nonceOf("default-src 'self'")).toBeUndefined();
+  });
+});
+
+describe('forwardedHeaders', () => {
+  it('replaces a policy and nonce sent by the caller instead of adding to them', () => {
+    const incoming = new Headers({
+      'content-security-policy': "script-src 'nonce-ATTACKER'",
+      'x-nonce': 'ATTACKER',
+      accept: 'text/html',
+    });
+    const csp = buildCsp('REAL');
+    const forwarded = forwardedHeaders(incoming, csp, 'REAL');
+    expect(forwarded.get('content-security-policy')).toBe(csp);
+    expect(nonceOf(forwarded.get('content-security-policy')!)).toBe('REAL');
+    expect(forwarded.get('x-nonce')).toBe('REAL');
+    expect(forwarded.get('accept')).toBe('text/html');
+  });
+
+  it('leaves the caller’s own headers object alone', () => {
+    const incoming = new Headers({ accept: 'text/html' });
+    forwardedHeaders(incoming, 'x', 'y');
+    expect(incoming.has('content-security-policy')).toBe(false);
   });
 });

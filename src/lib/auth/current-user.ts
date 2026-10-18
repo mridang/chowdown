@@ -10,7 +10,8 @@
 
 import { cookies } from 'next/headers';
 
-import { DriveNotConnectedError, isAuthFailure } from './drive-access';
+import { accessTokenFor } from './access-token';
+import { DriveNotConnectedError } from './drive-access';
 import { refreshAccessToken } from './google-oauth';
 import {
   SESSION_COOKIE,
@@ -58,40 +59,25 @@ export async function getSessionUid(): Promise<number | null> {
 }
 
 /**
- * Exchange a user's stored refresh token for a fresh Drive access token.
- *
- * Throws {@link DriveNotConnectedError} if the user hasn't connected Drive, and
- * also when the stored login turns out to be unusable: Google rejected it
- * (expired or revoked) or it can't be unsealed (the key changed). In those
- * cases the token is cleared first, so the person is offered "reconnect"
- * everywhere rather than being stuck as "connected" with nothing working.
- * Other failures (a network blip) are rethrown untouched.
+ * Exchange a user's stored refresh token for a fresh Drive access token. Throws
+ * {@link DriveNotConnectedError} if Drive isn't connected or the stored login
+ * is no longer usable (see {@link accessTokenFor} for exactly when).
  */
 export async function getUserAccessToken(user: User): Promise<string> {
   if (!user.refresh_token_enc) {
     throw new DriveNotConnectedError();
   }
   const env = getEnv();
-  const sealed = user.refresh_token_enc;
-  let refreshToken: string;
-  try {
-    refreshToken = await decryptSecret(sealed, env.TOKEN_ENCRYPTION_KEY);
-  } catch {
-    await clearRefreshToken(getDatabase(), user.id, sealed);
-    throw new DriveNotConnectedError();
-  }
-  try {
-    const { access_token } = await refreshAccessToken({
-      refreshToken,
-      clientId: env.GOOGLE_OAUTH_CLIENT_ID,
-      clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
-    });
-    return access_token;
-  } catch (error) {
-    if (isAuthFailure(error)) {
-      await clearRefreshToken(getDatabase(), user.id, sealed);
-      throw new DriveNotConnectedError();
-    }
-    throw error;
-  }
+  return accessTokenFor(user.refresh_token_enc, {
+    decrypt: (sealed) => decryptSecret(sealed, env.TOKEN_ENCRYPTION_KEY),
+    refresh: async (refreshToken) =>
+      (
+        await refreshAccessToken({
+          refreshToken,
+          clientId: env.GOOGLE_OAUTH_CLIENT_ID,
+          clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+        })
+      ).access_token,
+    forget: (sealed) => clearRefreshToken(getDatabase(), user.id, sealed),
+  });
 }

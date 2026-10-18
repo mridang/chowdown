@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCurrentUser } from '@/lib/auth/current-user';
+import { getCurrentUser, getSession } from '@/lib/auth/current-user';
 import { safeReturnPath } from '@/lib/auth/return-to';
 import { setSessionCookie } from '@/lib/auth/session-cookie';
 import { appOrigin, getEnv } from '@/lib/util';
@@ -23,6 +23,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   await setSessionCookie(response, user, {
     secret: getEnv().SESSION_SECRET,
     secure: origin.startsWith('https'),
+    // Correcting the hint must not lengthen the session: a copied cookie
+    // could otherwise be kept alive for ever by calling this route.
+    exp: (await getSession())?.exp,
   });
   return response;
 }

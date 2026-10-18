@@ -150,6 +150,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       secret: env.SESSION_SECRET,
       secure,
       drive: true,
+      exp: session?.exp,
     });
     return response;
   } catch (err) {

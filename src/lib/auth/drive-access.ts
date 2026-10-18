@@ -34,11 +34,25 @@ export function wasDriveConnected(user: {
   return Boolean(user.recipes_folder_id);
 }
 
-/** The address that starts connecting Drive, coming back to `returnTo` after. */
-export function driveConnectHref(returnTo?: string): string {
-  return returnTo
-    ? `/api/auth/drive?returnTo=${encodeURIComponent(returnTo)}`
-    : '/api/auth/drive';
+/**
+ * The address that starts connecting Drive, coming back to `returnTo` after.
+ * `force` is for a page that already knows Drive is not usable: it makes the
+ * route go to Google even if a stored login is on record (one that can no
+ * longer be unsealed would otherwise be taken for a working connection).
+ */
+export function driveConnectHref(
+  returnTo?: string,
+  options: { force?: boolean } = {},
+): string {
+  const query = new URLSearchParams();
+  if (returnTo) {
+    query.set('returnTo', returnTo);
+  }
+  if (options.force) {
+    query.set('force', '1');
+  }
+  const text = query.toString();
+  return text ? `/api/auth/drive?${text}` : '/api/auth/drive';
 }
 
 /** Why the last attempt to connect didn't take, from the address it came back to. */
@@ -62,4 +76,16 @@ export function driveAttemptOf(
 export function isAuthFailure(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return /invalid_grant/i.test(message);
+}
+
+/**
+ * Whether the session cookie's Drive hint disagrees with the database, so the
+ * cookie should be reissued. A cookie from before the hint existed (undefined)
+ * counts as out of date: reissuing it once saves a database read on every page.
+ */
+export function sessionHintStale(
+  hint: boolean | undefined,
+  connected: boolean,
+): boolean {
+  return hint !== connected;
 }

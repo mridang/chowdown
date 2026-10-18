@@ -4,12 +4,13 @@
  * and a refresh token, for the account that is already signed in. Someone not
  * signed in is sent to sign in first and brought straight back here. Someone
  * already connected (say on another device, so this browser's header is out of
- * date) is not sent to Google at all: their session is refreshed and they go on.
+ * date) is not sent to Google at all: their session is refreshed and they go on
+ * (unless `?force=1`, from a page that has found the stored login unusable).
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCurrentUser } from '@/lib/auth/current-user';
+import { getCurrentUser, getSession } from '@/lib/auth/current-user';
 import { isDriveConnected } from '@/lib/auth/drive-access';
 import { buildAuthUrl } from '@/lib/auth/google-oauth';
 import {
@@ -34,11 +35,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  if (isDriveConnected(user)) {
+  const force = request.nextUrl.searchParams.get('force') === '1';
+  if (isDriveConnected(user) && !force) {
     const response = NextResponse.redirect(`${origin}${returnTo ?? '/app'}`);
     await setSessionCookie(response, user, {
       secret: env.SESSION_SECRET,
       secure: origin.startsWith('https'),
+      // Same lifetime as before: this only corrects the hint.
+      exp: (await getSession())?.exp,
     });
     return response;
   }

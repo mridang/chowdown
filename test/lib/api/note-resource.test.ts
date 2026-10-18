@@ -48,6 +48,19 @@ describe('noteIndex', () => {
 });
 
 describe('parseNoteInput', () => {
+  it('keeps an ingredient name to one line without brackets, and refuses one that is only brackets', () => {
+    expect(
+      parseNoteInput({ text: 'x', ingredient: 'salt]\n>> source: y' }),
+    ).toEqual({
+      ok: true,
+      note: { scope: 'ingredient', key: 'salt >> source: y', text: 'x' },
+    });
+    expect(parseNoteInput({ text: 'x', ingredient: ' ] ] ' })).toMatchObject({
+      ok: false,
+      errors: ['ingredient: must contain a name.'],
+    });
+  });
+
   it('reads a general, ingredient or step note', () => {
     expect(parseNoteInput({ text: ' hi ' })).toEqual({
       ok: true,

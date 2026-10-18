@@ -6,6 +6,7 @@ import {
   driveConnectHref,
   isAuthFailure,
   isDriveConnected,
+  sessionHintStale,
   wasDriveConnected,
 } from '../../../src/lib/auth/drive-access';
 
@@ -38,6 +39,15 @@ describe('driveConnectHref', () => {
     expect(driveConnectHref()).toBe('/api/auth/drive');
     expect(driveConnectHref('/recipes/add')).toBe(
       '/api/auth/drive?returnTo=%2Frecipes%2Fadd',
+    );
+  });
+
+  it('can insist on going to Google even when a login is on record', () => {
+    expect(driveConnectHref('/app', { force: true })).toBe(
+      '/api/auth/drive?returnTo=%2Fapp&force=1',
+    );
+    expect(driveConnectHref(undefined, { force: true })).toBe(
+      '/api/auth/drive?force=1',
     );
   });
 
@@ -97,5 +107,22 @@ describe('isAuthFailure', () => {
   it('copes with non-Error values', () => {
     expect(isAuthFailure('invalid_grant')).toBe(true);
     expect(isAuthFailure(undefined)).toBe(false);
+  });
+});
+
+describe('sessionHintStale', () => {
+  it('is stale when the cookie disagrees with the database', () => {
+    expect(sessionHintStale(true, false)).toBe(true);
+    expect(sessionHintStale(false, true)).toBe(true);
+  });
+
+  it('is fresh when they agree', () => {
+    expect(sessionHintStale(true, true)).toBe(false);
+    expect(sessionHintStale(false, false)).toBe(false);
+  });
+
+  it('treats a cookie from before the hint existed as stale, to reissue it once', () => {
+    expect(sessionHintStale(undefined, true)).toBe(true);
+    expect(sessionHintStale(undefined, false)).toBe(true);
   });
 });

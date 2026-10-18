@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { TOOLS } from '../../../src/lib/mcp/server';
+import type { User } from '../../../src/lib/db/users';
+import { TOOLS, handleMcpMessage } from '../../../src/lib/mcp/server';
 import {
   SCOPE_READ,
   SCOPE_WRITE,
@@ -38,5 +39,38 @@ describe('MCP tool scopes', () => {
       ]),
     );
     expect(scopeForTool('a_tool_added_next_year')).toBe(SCOPE_WRITE);
+  });
+});
+
+describe('handleMcpMessage without Google Drive', () => {
+  const noDrive = { id: 1, refresh_token_enc: null } as User;
+
+  it('tells the assistant how to fix it, as a tool error, when Drive is not connected', async () => {
+    const reply = (await handleMcpMessage(noDrive, {
+      jsonrpc: '2.0',
+      id: 3,
+      method: 'tools/call',
+      params: { name: 'get_recipe', arguments: { recipe: 'pancakes' } },
+    })) as {
+      result: { isError: boolean; content: { text: string }[] };
+      error?: unknown;
+    };
+    expect(reply.error).toBeUndefined();
+    expect(reply.result.isError).toBe(true);
+    expect(reply.result.content[0]!.text).toContain('Connect Google Drive');
+    expect(reply.result.content[0]!.text).toContain(
+      'https://chowdown.apps.mrida.ng',
+    );
+  });
+
+  it('gives no reply to any notification', async () => {
+    for (const method of [
+      'notifications/initialized',
+      'notifications/cancelled',
+    ]) {
+      expect(
+        await handleMcpMessage(noDrive, { jsonrpc: '2.0', method }),
+      ).toBeNull();
+    }
   });
 });

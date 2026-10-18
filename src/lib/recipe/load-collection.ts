@@ -14,6 +14,7 @@ import { getSession } from '../auth/current-user';
 import {
   DriveNotConnectedError,
   isDriveConnected,
+  sessionHintStale,
   wasDriveConnected,
 } from '../auth/drive-access';
 import { getAppPageRows, type AppPageRows } from '../db/recipe-page';
@@ -89,10 +90,11 @@ export async function loadCollection(
     // Top up missing embeddings (bounded per visit) so "find similar" fills in.
     runInBackground(backfillEmbeddings(db, getEnv(), uid, 20));
   }
-  if (session.drive !== undefined && session.drive !== connected) {
+  if (sessionHintStale(session.drive, connected)) {
     // The header's idea of the Drive connection (kept in the session) is out of
-    // date, say Google revoked it or it was made on another device. A cookie can
-    // only be changed by a route, so go through one and come straight back.
+    // date: Google revoked it, it was made on another device, or the cookie
+    // predates the hint. A cookie can only be changed by a route, so go through
+    // one and come straight back.
     redirect(`/api/auth/refresh?returnTo=${encodeURIComponent(returnTo)}`);
   }
   return {

@@ -33,7 +33,7 @@ function ConnectButton({
   size,
 }: Pick<DriveConnectProps, 'reconnect' | 'returnTo'> & { size?: 'md' | 'lg' }) {
   return (
-    <ButtonLink href={driveConnectHref(returnTo)} size={size}>
+    <ButtonLink href={driveConnectHref(returnTo, { force: true })} size={size}>
       <DriveIcon className="h-5 w-5" />
       {reconnect ? 'Reconnect Google Drive' : 'Connect Google Drive'}
     </ButtonLink>
