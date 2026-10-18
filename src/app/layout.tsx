@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { BBH_Bogle, Geist, Geist_Mono, Newsreader } from 'next/font/google';
 import './globals.css';
 
 const geistSans = Geist({
@@ -9,6 +9,19 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
+  subsets: ['latin'],
+});
+
+/** Display face for the bold redesign: headings, buttons and badges. */
+const bogle = BBH_Bogle({
+  variable: '--font-bogle',
+  subsets: ['latin'],
+  weight: '400',
+});
+
+/** Text serif for the redesign: body copy, method steps and notes. */
+const newsreader = Newsreader({
+  variable: '--font-newsreader',
   subsets: ['latin'],
 });
 
@@ -52,7 +65,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${bogle.variable} ${newsreader.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col overflow-x-hidden font-sans">
         {children}
