@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque, Inter } from 'next/font/google';
+
+import { ServiceWorker } from '@/components/site/service-worker';
+
 import './globals.css';
 
 /** Body face. */
@@ -12,28 +15,34 @@ const display = Bricolage_Grotesque({
 });
 
 const TITLE = 'chowdown';
+const DEFAULT_TITLE = 'chowdown: your recipes, kept in your own Google Drive';
 const DESCRIPTION =
-  'A viewer for Cooklang (.cook) recipe files opened straight from Google ' +
-  'Drive — ingredients, cookware and method with inline highlights.';
+  'Keep every recipe as a plain text file in your own Google Drive, then ' +
+  'search, scale and cook from them, and ask your AI assistant what to make.';
 const SITE_URL = 'https://chowdown.apps.mrida.ng';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: TITLE,
+  title: DEFAULT_TITLE,
   description: DESCRIPTION,
-  // Keep the site out of search indexes, but social scrapers ignore this
-  // and still read the OpenGraph tags below, so share cards keep working.
-  robots: { index: false, follow: false },
+  // Signed-out visitors only ever see the landing page and the privacy page;
+  // everything else sends them to sign in, so there is nothing private to hide
+  // from a crawler. (/api and /oauth are disallowed in robots.txt.)
+  robots: { index: true, follow: true },
   openGraph: {
     type: 'website',
     siteName: TITLE,
-    title: TITLE,
+    title: DEFAULT_TITLE,
     description: DESCRIPTION,
     url: SITE_URL,
   },
+  applicationName: TITLE,
+  // iOS: open from the home screen without Safari's chrome, in the brand colour.
+  appleWebApp: { capable: true, title: TITLE, statusBarStyle: 'default' },
+  formatDetection: { telephone: false },
   twitter: {
     card: 'summary',
-    title: TITLE,
+    title: DEFAULT_TITLE,
     description: DESCRIPTION,
   },
 };
@@ -58,6 +67,7 @@ export default function RootLayout({
     >
       <body className="bg-paper text-ink flex min-h-full flex-col overflow-x-hidden font-sans">
         {children}
+        <ServiceWorker />
       </body>
     </html>
   );

@@ -1,16 +1,19 @@
 /**
  * @packageDocumentation
  *
- * The recipe list's query language for the design sandbox, in URL form so every
- * filter is a link: `?protein=chicken,beef&time=quick&diet=Vegetarian&sort=time`.
- * Several values for one filter mean "any of"; different filters combine with
- * "and". This mirrors how the real app's filters work.
+ * The recipe list's query language, in URL form so every filter is a link:
+ * `?protein=chicken,beef&time=15,30&diet_type=Vegetarian&sort=time`. Several
+ * values for one filter mean "any of"; different filters combine with "and".
+ *
+ * Recipes can lack facts (many saved pages have no time, difficulty or protein).
+ * A missing fact is never counted, offered or matched as a value: such a recipe
+ * simply has no value for that filter, and sorts after the ones that do.
  */
 
-import { foldText } from '@/lib/intl';
-
-import type { SampleRecipe } from '@/components/landing/demo-recipes';
-import { sentenceCase } from '@/lib/format';
+import type { CardRecipe } from '../../lib/recipe/card-data';
+import { DIET_TYPES } from '../../lib/recipe/diet-type';
+import { sentenceCase } from '../../lib/format';
+import { compareText, foldText } from '../../lib/intl';
 
 /** The query-string bag Next gives a page. */
 export type RawParams = Record<string, string | string[] | undefined>;
@@ -22,6 +25,7 @@ export const FACET_KEYS = [
   'protein',
   'cuisine',
   'category',
+  'diet_type',
   'diet',
   'method',
   'site',
@@ -64,7 +68,11 @@ export function timeBucket(minutes: number): string {
 
 const DIFFICULTY_ORDER = ['Easy', 'Medium', 'Hard'];
 
-const PAGE_SIZE = 24;
+/** How many recipes the list shows at a time; Show more adds this many. */
+export const PAGE_SIZE = 24;
+
+/** A source site needs at least this many recipes to be offered as a filter. */
+const SITE_MIN = 2;
 
 function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -93,30 +101,37 @@ export function parseQuery(params: RawParams): Query {
   };
 }
 
-/** The values a recipe has for a filter. */
-export function valuesOf(recipe: SampleRecipe, key: FacetKey): string[] {
-  switch (key) {
-    case 'difficulty':
-      return [recipe.difficulty];
-    case 'time':
-      return [timeBucket(recipe.minutes)];
-    case 'protein':
-      return [recipe.protein];
-    case 'cuisine':
-      return [recipe.cuisine];
-    case 'category':
-      return [recipe.category];
-    case 'diet':
-      return recipe.diet;
-    case 'method':
-      return recipe.method;
-    case 'site':
-      return [recipe.site];
-  }
+/** The values a recipe has for a filter; a fact it lacks gives none. */
+export function valuesOf(recipe: CardRecipe, key: FacetKey): string[] {
+  const values = ((): (string | undefined)[] => {
+    switch (key) {
+      case 'difficulty':
+        return [recipe.difficulty];
+      case 'time':
+        return [
+          recipe.minutes === undefined ? undefined : timeBucket(recipe.minutes),
+        ];
+      case 'protein':
+        return [recipe.protein];
+      case 'cuisine':
+        return [recipe.cuisine];
+      case 'category':
+        return [recipe.category];
+      case 'diet_type':
+        return [recipe.dietType];
+      case 'diet':
+        return recipe.diet;
+      case 'method':
+        return recipe.method;
+      case 'site':
+        return [recipe.site];
+    }
+  })();
+  return values.filter((v): v is string => Boolean(v));
 }
 
 /** Whether a recipe passes every part of the query. */
-export function matches(recipe: SampleRecipe, query: Query): boolean {
+export function matches(recipe: CardRecipe, query: Query): boolean {
   if (query.favourites && !recipe.favourite) {
     return false;
   }
@@ -136,30 +151,46 @@ export function matches(recipe: SampleRecipe, query: Query): boolean {
   }
   for (const key of FACET_KEYS) {
     const wanted = query.selected[key];
-    if (wanted && !valuesOf(recipe, key).some((v) => wanted.includes(v))) {
-      return false;
+    if (wanted && wanted.length > 0) {
+      // Compared without regard to case, so a hand-typed `?protein=Chicken` works.
+      const have = valuesOf(recipe, key).map((v) => v.toLowerCase());
+      if (!wanted.some((v) => have.includes(v.toLowerCase()))) {
+        return false;
+      }
     }
   }
   return true;
 }
 
-/** Order recipes. */
-export function sortRecipes(
-  recipes: SampleRecipe[],
-  sort: SortKey,
-): SampleRecipe[] {
+/** Title order, the way a person would alphabetise it; ties fall back to the id. */
+function byTitle(a: CardRecipe, b: CardRecipe): number {
+  return compareText(a.title, b.title) || a.id.localeCompare(b.id);
+}
+
+/** Smaller first, with a missing number after every real one. */
+function byMinutes(a: CardRecipe, b: CardRecipe): number {
+  return (a.minutes ?? Infinity) - (b.minutes ?? Infinity) || 0;
+}
+
+/** Easy before Hard, with an unrated recipe after every rated one. */
+function byDifficulty(a: CardRecipe, b: CardRecipe): number {
+  const rank = (r: CardRecipe) =>
+    r.difficulty ? DIFFICULTY_ORDER.indexOf(r.difficulty) : Infinity;
+  return rank(a) - rank(b) || 0;
+}
+
+/** Order recipes; every order falls back to title so the list never shuffles. */
+export function sortRecipes(recipes: CardRecipe[], sort: SortKey): CardRecipe[] {
   const list = [...recipes];
   if (sort === 'time') {
-    return list.sort((a, b) => a.minutes - b.minutes);
+    return list.sort((a, b) => byMinutes(a, b) || byTitle(a, b));
   }
   if (sort === 'easy') {
     return list.sort(
-      (a, b) =>
-        DIFFICULTY_ORDER.indexOf(a.difficulty) -
-          DIFFICULTY_ORDER.indexOf(b.difficulty) || a.minutes - b.minutes,
+      (a, b) => byDifficulty(a, b) || byMinutes(a, b) || byTitle(a, b),
     );
   }
-  return list; // already sorted by title
+  return list.sort(byTitle);
 }
 
 /** The URL for a query, leaving out anything at its default. */
@@ -182,6 +213,13 @@ export function hrefFor(query: Query): string {
   }
   const qs = params.toString();
   return qs ? `/app?${qs}` : '/app';
+}
+
+/** The URL that shows the next page of the same results. */
+export function moreHref(query: Query): string {
+  const base = hrefFor(query);
+  const sep = base.includes('?') ? '&' : '?';
+  return `${base}${sep}limit=${query.limit + PAGE_SIZE}`;
 }
 
 /** The query with one value of one filter switched on or off. */
@@ -207,7 +245,9 @@ export function activeFilters(query: Query): { label: string; href: string }[] {
       const label =
         key === 'time'
           ? (TIME_BUCKETS.find(([v]) => v === value)?.[1] ?? value)
-          : sentenceCase(value);
+          : key === 'site'
+            ? value
+            : sentenceCase(value);
       chips.push({ label, href: hrefFor(toggled(query, key, value)) });
     }
   }
@@ -235,16 +275,14 @@ const TITLES: Record<FacetKey, string> = {
   protein: 'Protein',
   cuisine: 'Cuisine',
   category: 'Course',
-  diet: 'Diet',
+  diet_type: 'Diet',
+  diet: 'Dietary needs',
   method: 'Method',
   site: 'Source',
 };
 
 /** Build every filter's options, with counts over the whole collection. */
-export function buildFacets(
-  recipes: SampleRecipe[],
-  query: Query,
-): FacetData[] {
+export function buildFacets(recipes: CardRecipe[], query: Query): FacetData[] {
   return FACET_KEYS.map((key) => {
     const counts = new Map<string, number>();
     for (const recipe of recipes) {
@@ -255,7 +293,7 @@ export function buildFacets(
     let entries = [...counts.entries()];
     if (key === 'site') {
       entries = entries.filter(
-        ([value, n]) => n >= 2 || (query.selected.site ?? []).includes(value),
+        ([value, n]) => n >= SITE_MIN || (query.selected.site ?? []).includes(value),
       );
     }
     const order =
@@ -266,7 +304,11 @@ export function buildFacets(
           ? (a: [string, number], b: [string, number]) =>
               TIME_BUCKETS.findIndex(([v]) => v === a[0]) -
               TIME_BUCKETS.findIndex(([v]) => v === b[0])
-          : (a: [string, number], b: [string, number]) =>
+          : key === 'diet_type'
+            ? (a: [string, number], b: [string, number]) =>
+                DIET_TYPES.indexOf(a[0] as (typeof DIET_TYPES)[number]) -
+                DIET_TYPES.indexOf(b[0] as (typeof DIET_TYPES)[number])
+            : (a: [string, number], b: [string, number]) =>
               b[1] - a[1] || a[0].localeCompare(b[0]);
     entries.sort(order);
     return {

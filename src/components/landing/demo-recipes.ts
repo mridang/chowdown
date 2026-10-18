@@ -1,6 +1,11 @@
 /**
- * Sample data for the design sandbox, so every screen can be built and judged
- * without signing in or touching the database.
+ * @packageDocumentation
+ *
+ * Made-up recipes for the public landing page. A visitor has not signed in, so
+ * the page must never show the owner's saved recipes or hotlink photos from
+ * other sites; these eight stand in for a collection, drawn as soft colour
+ * tiles with no images. The first carries its Cooklang source, which the page
+ * shows beside the finished recipe it produces.
  */
 
 import type {
@@ -121,84 +126,31 @@ const BASE: BaseRecipe[] = [
   },
 ];
 
-/** Sample recipes used when there is no local export of real ones. */
-export const RECIPES: SampleRecipe[] = BASE.map((r) => ({
+/**
+ * The Cooklang source of the first sample recipe. It is the real syntax
+ * (`@ingredient{amount%unit}`, `#cookware{}`, `~{time%unit}`), and its numbers
+ * match the recipe's own facts: four servings, 35 minutes.
+ */
+const TACOS_COOKLANG = `>> title: Smoky Chipotle Chicken Tacos
+>> servings: 4
+>> time: 35%minutes
+>> cuisine: Mexican
+
+Blend @chipotle peppers in adobo{2}, @tinned tomatoes{400%g}, @garlic{3%cloves} and @smoked paprika{1%tsp} until smooth.
+
+Soften @onion{1} in a #large lidded pan{}, then add the sauce and @chicken thighs{600%g}.
+
+Cover and simmer for ~{25%minutes}, until the chicken pulls apart.
+
+Warm @corn tortillas{8} in a #dry frying pan{}, fill, and serve with @lime{1}.
+`;
+
+/** The sample recipes the landing page draws. */
+export const RECIPES: SampleRecipe[] = BASE.map((r, i) => ({
   ...r,
   category: 'Main',
   diet: [],
   method: ['Stovetop'],
   keywords: [],
+  ...(i === 0 ? { cooklang: TACOS_COOKLANG } : {}),
 }));
-
-/** Sidebar facets with counts. */
-export const FACETS: { label: string; values: [string, number][] }[] = [
-  {
-    label: 'Protein',
-    values: [
-      ['beans', 5],
-      ['beef', 9],
-      ['chicken', 26],
-      ['egg', 10],
-      ['lamb', 10],
-      ['pork', 18],
-      ['vegetable', 7],
-    ],
-  },
-  {
-    label: 'Cuisine',
-    values: [
-      ['American', 12],
-      ['Indian', 32],
-      ['Italian', 8],
-      ['Mexican', 10],
-      ['Thai', 5],
-    ],
-  },
-  {
-    label: 'Difficulty',
-    values: [
-      ['Easy', 41],
-      ['Medium', 33],
-      ['Hard', 11],
-    ],
-  },
-];
-
-export const SOURCES: [string, number][] = [
-  ['thewoksoflife.com', 8],
-  ['seriouseats.com', 7],
-  ['banglarrannaghor.com', 4],
-  ['eatwell101.com', 3],
-];
-
-/** The full recipe page sample. */
-export const RECIPE_PAGE = {
-  title: 'Smoky Chipotle Chicken Tacos',
-  site: 'seriouseats.com',
-  intro:
-    'Chicken thighs braised in a smoky chipotle and tomato sauce, shredded and piled into warm corn tortillas. Make the sauce a day ahead and dinner takes ten minutes.',
-  minutes: 35,
-  servings: 4,
-  difficulty: 'Easy',
-  tags: ['Mexican', 'Chicken', 'Easy', 'Dinner', 'Weeknight'],
-  ingredients: [
-    ['600 g', 'chicken thighs, skinless'],
-    ['2', 'chipotle peppers in adobo'],
-    ['400 g', 'tinned tomatoes'],
-    ['1', 'small onion, sliced'],
-    ['3 cloves', 'garlic'],
-    ['1 tsp', 'smoked paprika'],
-    ['8', 'corn tortillas'],
-    ['1', 'lime, in wedges'],
-    ['', 'coriander and sour cream, to serve'],
-  ] as [string, string][],
-  cookware: ['Large lidded pan', 'Blender', 'Dry frying pan'],
-  steps: [
-    'Blend the chipotles, tomatoes, garlic and paprika until smooth.',
-    'Soften the onion in a little oil in a large lidded pan, then add the sauce and the chicken thighs.',
-    'Cover and simmer gently for 25 minutes, until the chicken pulls apart with a fork.',
-    'Shred the chicken in the sauce and season well with salt and a squeeze of lime.',
-    'Warm the tortillas in a dry pan for 30 seconds a side.',
-    'Fill with chicken, top with coriander and sour cream, and serve with lime wedges.',
-  ],
-};
