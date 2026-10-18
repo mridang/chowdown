@@ -5,6 +5,7 @@ import path from 'node:path';
 import {
   SECURITY_HEADERS,
   applyResponseHeaders,
+  resourcePolicyFor,
 } from '../../../src/lib/http/headers';
 
 const at = (pathname: string) =>
@@ -80,6 +81,65 @@ describe('applyResponseHeaders', () => {
     );
     expect(out.status).toBe(307);
     expect(out.headers.get('Location')).toBe('https://chowdown.test/app');
+  });
+});
+
+describe('Cross-Origin-Resource-Policy', () => {
+  it('keeps pages and data to this site', () => {
+    for (const path of [
+      '/',
+      '/app',
+      '/recipe/abc',
+      '/api/recipes',
+      '/connect',
+    ]) {
+      expect(resourcePolicyFor(path)).toBe('same-site');
+    }
+  });
+
+  it('opens the files other sites embed or fetch on purpose', () => {
+    for (const path of [
+      '/opengraph-image.png',
+      '/twitter-image.png',
+      '/icon.svg',
+      '/apple-icon.png',
+      '/manifest.webmanifest',
+      '/robots.txt',
+      '/sitemap.xml',
+      '/llms.txt',
+      '/icons/icon-192.png',
+      '/.well-known/security.txt',
+      '/.well-known/oauth-authorization-server',
+    ]) {
+      expect(resourcePolicyFor(path)).toBe('cross-origin');
+    }
+  });
+
+  it('is sent on every response, and a route may set its own', () => {
+    expect(
+      applyResponseHeaders(at('/app'), html()).headers.get(
+        'Cross-Origin-Resource-Policy',
+      ),
+    ).toBe('same-site');
+    expect(
+      applyResponseHeaders(at('/icon.svg'), html()).headers.get(
+        'Cross-Origin-Resource-Policy',
+      ),
+    ).toBe('cross-origin');
+    expect(
+      applyResponseHeaders(
+        at('/app'),
+        html({ 'Cross-Origin-Resource-Policy': 'same-origin' }),
+      ).headers.get('Cross-Origin-Resource-Policy'),
+    ).toBe('same-origin');
+  });
+});
+
+describe('Strict-Transport-Security', () => {
+  it('lasts two years, covers subdomains and asks to be preloaded', () => {
+    expect(SECURITY_HEADERS['Strict-Transport-Security']).toBe(
+      'max-age=63072000; includeSubDomains; preload',
+    );
   });
 });
 

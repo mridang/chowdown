@@ -39,6 +39,11 @@ import { embedText } from '../recipe/embeddings';
 import { ensureEmbeddings, topSimilar } from '../recipe/similar';
 import { indexRecipeWrite } from '../recipe/tag-index';
 import { listFavouriteIds } from '../db/favourites';
+import {
+  SUPPORTED_VERSIONS,
+  isModernRequest,
+  negotiateLegacyVersion,
+} from './protocol';
 import { SCENARIO_TOOLS, runScenarioTool } from './scenarios';
 import { tagCookSource, tagCookSourceBestEffort } from '../recipe/tagging';
 import { addMissingCover, convertImport } from '../recipe/to-cooklang';
@@ -245,9 +250,6 @@ function recipeListResult(
     _meta: { 'openai/outputTemplate': LIST_RESOURCE_URI },
   };
 }
-
-/** MCP protocol revision this server implements. */
-const PROTOCOL_VERSION = '2024-11-05';
 
 /** A JSON-RPC 2.0 request/notification. */
 export interface JsonRpcMessage {
@@ -1015,12 +1017,42 @@ async function callTool(
   }
 }
 
+/** What an assistant should know before using the tools. */
+const INSTRUCTIONS =
+  "chowdown stores the user's cooking recipes as Cooklang files in their Google Drive. " +
+  'IMPORTANT: this server never fetches URLs or browses the web. When the user gives a ' +
+  'recipe link or web page, YOU open and read that page yourself, then call import_recipe ' +
+  "and pass the page's RAW text or HTML as `content` — do NOT convert it to Cooklang " +
+  'yourself; chowdown does the Cooklang conversion so the format stays consistent. Use ' +
+  'add_recipe only for a recipe the user dictates directly as Cooklang, capture_idea for a ' +
+  'vague wish with no full recipe yet, and log_cooking to record notes about a cook. ' +
+  "When the user says what they feel like eating ('I feel like cooking Indian today', " +
+  "'something vegetarian', 'a quick pescatarian dinner') use browse_recipes; when they say " +
+  "what they have ('I have 3 tomatoes and 400 g of pasta') use recipes_from_ingredients and " +
+  'tell them what is missing from the near misses; list_filters shows what the collection holds. ' +
+  'Every recipe is classed vegan, vegetarian, pescatarian or non-vegetarian.';
+
 /**
  * Handle one JSON-RPC message. Returns the response object, or null for
  * notifications (which get an empty 202 from the route). Errors in a tool are
  * returned as a JSON-RPC error so the client surfaces them cleanly.
  */
 export async function handleMcpMessage(
+  user: User,
+  message: JsonRpcMessage,
+): Promise<object | null> {
+  const response = await dispatch(user, message);
+  // In the newest revision every successful result says it is complete.
+  const result = (response as { result?: Record<string, unknown> } | null)
+    ?.result;
+  if (result && isModernRequest(message) && !('resultType' in result)) {
+    result['resultType'] = 'complete';
+  }
+  return response;
+}
+
+/** Route one message to what handles it. */
+async function dispatch(
   user: User,
   message: JsonRpcMessage,
 ): Promise<object | null> {
@@ -1032,22 +1064,32 @@ export async function handleMcpMessage(
           jsonrpc: '2.0',
           id,
           result: {
-            protocolVersion: PROTOCOL_VERSION,
+            protocolVersion: negotiateLegacyVersion(
+              message.params?.['protocolVersion'],
+            ),
             capabilities: { tools: {}, resources: {} },
             serverInfo: { name: 'chowdown', version: '0.1.0' },
-            instructions:
-              "chowdown stores the user's cooking recipes as Cooklang files in their Google Drive. " +
-              'IMPORTANT: this server never fetches URLs or browses the web. When the user gives a ' +
-              'recipe link or web page, YOU open and read that page yourself, then call import_recipe ' +
-              "and pass the page's RAW text or HTML as `content` — do NOT convert it to Cooklang " +
-              'yourself; chowdown does the Cooklang conversion so the format stays consistent. Use ' +
-              'add_recipe only for a recipe the user dictates directly as Cooklang, capture_idea for a ' +
-              'vague wish with no full recipe yet, and log_cooking to record notes about a cook. ' +
-              "When the user says what they feel like eating ('I feel like cooking Indian today', " +
-              "'something vegetarian', 'a quick pescatarian dinner') use browse_recipes; when they say " +
-              "what they have ('I have 3 tomatoes and 400 g of pasta') use recipes_from_ingredients and " +
-              'tell them what is missing from the near misses; list_filters shows what the collection holds. ' +
-              'Every recipe is classed vegan, vegetarian, pescatarian or non-vegetarian.',
+            instructions: INSTRUCTIONS,
+          },
+        };
+      case 'server/discover':
+        // The newest revision's way to learn what a server is, with no handshake.
+        return {
+          jsonrpc: '2.0',
+          id,
+          result: {
+            resultType: 'complete',
+            supportedVersions: SUPPORTED_VERSIONS,
+            capabilities: { tools: {}, resources: {} },
+            _meta: {
+              'io.modelcontextprotocol/serverInfo': {
+                name: 'chowdown',
+                version: '0.1.0',
+              },
+            },
+            instructions: INSTRUCTIONS,
+            ttlMs: 3_600_000,
+            cacheScope: 'public',
           },
         };
       case 'notifications/initialized':

@@ -29,7 +29,19 @@ import {
   isEdgeCacheable,
   storableCopy,
 } from './lib/http/edge-cache';
+import { buildCsp, newNonce } from './lib/http/csp';
 import { applyResponseHeaders } from './lib/http/headers';
+
+/** The response with one more header (responses from the app are read-only). */
+function withHeader(response: Response, name: string, value: string): Response {
+  const headers = new Headers(response.headers);
+  headers.set(name, value);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
 
 const handler: ExportedHandler<CloudflareEnv> = {
   /**
@@ -50,8 +62,28 @@ const handler: ExportedHandler<CloudflareEnv> = {
         return applyResponseHeaders(request, hit);
       }
     }
-    const response = await (openNextHandler as ExportedHandler<CloudflareEnv>)
-      .fetch!(request, env, ctx);
+    // Each page gets its own Content Security Policy, with a one-time number the
+    // app puts on its scripts. The policy goes to the app on the request (that
+    // is where Next.js looks for the number) and back to the browser on the
+    // response, whether the page is rendered now or comes from the edge copy.
+    const nonce = newNonce();
+    const csp = buildCsp(nonce);
+    const forwarded = new Request(request, {
+      headers: new Headers([
+        ...request.headers,
+        ['content-security-policy', csp],
+        ['x-nonce', nonce],
+      ]),
+    });
+    const fetched = await (openNextHandler as ExportedHandler<CloudflareEnv>)
+      .fetch!(forwarded, env, ctx);
+    const isHtml = (fetched.headers.get('content-type') ?? '').startsWith(
+      'text/html',
+    );
+    const response =
+      isHtml && !fetched.headers.has('content-security-policy')
+        ? withHeader(fetched, 'Content-Security-Policy', csp)
+        : fetched;
     if (cache && key) {
       const copy = storableCopy(response);
       if (copy) {

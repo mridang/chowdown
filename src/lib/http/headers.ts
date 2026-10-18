@@ -15,7 +15,7 @@ export const SECURITY_HEADERS: Record<string, string> = {
   // Send other sites only our origin, and nothing at all on a downgrade.
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   // Talk to HTTPS only, for two years, on this host and its subdomains.
-  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains',
+  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
   // Nothing here needs the camera, microphone, location or payments.
   'Permissions-Policy':
     'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
@@ -30,6 +30,20 @@ export const SECURITY_HEADERS: Record<string, string> = {
 
 /** The pages search engines may index. Everything else is private. */
 export const PUBLIC_PAGES: ReadonlySet<string> = new Set(['/', '/privacy']);
+
+/**
+ * Which other sites may load a file as a picture, script or style. Our pages
+ * and data are for this site only (`same-site`); the few files other sites
+ * embed or fetch on purpose (the social card, the icons, the manifest and the
+ * plain-text files at the root) are open to all.
+ */
+const OPEN_FILES =
+  /^\/(opengraph-image\.png|twitter-image\.png|icon\.svg|apple-icon\.png|manifest\.webmanifest|robots\.txt|sitemap\.xml|llms\.txt|\.well-known\/.*|icons\/.*)$/;
+
+/** The `Cross-Origin-Resource-Policy` for a path. */
+export function resourcePolicyFor(pathname: string): string {
+  return OPEN_FILES.test(pathname) ? 'cross-origin' : 'same-site';
+}
 
 /** Cache rules for the few responses that want something other than the default. */
 function cacheControlFor(pathname: string, response: Response): string | null {
@@ -73,6 +87,9 @@ export function applyResponseHeaders(
     }
   }
   const { pathname } = new URL(request.url);
+  if (!headers.has('Cross-Origin-Resource-Policy')) {
+    headers.set('Cross-Origin-Resource-Policy', resourcePolicyFor(pathname));
+  }
   if (!PUBLIC_PAGES.has(pathname) && !headers.has('X-Robots-Tag')) {
     // Whatever the page itself says, tell crawlers not to index or follow it.
     headers.set('X-Robots-Tag', 'noindex, nofollow');

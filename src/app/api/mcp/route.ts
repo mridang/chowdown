@@ -4,21 +4,25 @@
  * call it with `Authorization: Bearer <access token>`. Without a valid token it
  * answers 401 with a `WWW-Authenticate` challenge pointing at those documents.
  *
- *   POST /api/mcp  — JSON-RPC 2.0 (one message or a batch)
+ *   POST /api/mcp  — JSON-RPC 2.0 (one message, or a batch for older clients)
  */
 
 import { NextResponse } from 'next/server';
 
 import { getUserById } from '@/lib/db/users';
 import { createOAuthStore } from '@/lib/db/oauth';
-import { handleMcpPost } from '@/lib/mcp/http';
-import { CORS_HEADERS, bearerToken, preflight } from '@/lib/oauth/http';
+import { corsFor, handleMcpPost, originRefusal } from '@/lib/mcp/http';
+import { bearerToken } from '@/lib/oauth/http';
 import { resourceUri, wwwAuthenticate } from '@/lib/oauth/metadata';
 import { authenticateAccessToken } from '@/lib/oauth/token-endpoint';
 import { appOrigin, getDatabase } from '@/lib/util';
 
 /** The 401 that starts the sign-in flow (or reports a bad token). */
-function challenge(origin: string, invalid: boolean): NextResponse {
+function challenge(
+  origin: string,
+  invalid: boolean,
+  cors: Record<string, string>,
+): NextResponse {
   return NextResponse.json(
     {
       jsonrpc: '2.0',
@@ -28,7 +32,7 @@ function challenge(origin: string, invalid: boolean): NextResponse {
     {
       status: 401,
       headers: {
-        ...CORS_HEADERS,
+        ...cors,
         'WWW-Authenticate': wwwAuthenticate(
           origin,
           invalid ? { error: 'invalid_token' } : {},
@@ -57,26 +61,41 @@ async function authenticate(request: Request, origin: string) {
 
 export async function POST(request: Request): Promise<NextResponse> {
   const origin = appOrigin(request);
+  const refused = originRefusal(request, origin);
+  if (refused) {
+    return refused;
+  }
   const auth = await authenticate(request, origin);
   if (!auth.token || !auth.identity || !auth.user) {
-    return challenge(origin, auth.token);
+    return challenge(origin, auth.token, corsFor(request));
   }
   return handleMcpPost(request, auth.user, auth.identity.scope, origin);
 }
 
-/** There is no server-initiated stream; clients fall back to POST only. */
-export async function GET(request: Request): Promise<NextResponse> {
+/** There is no server-initiated stream (nor any session to end): 405. */
+async function notAllowed(request: Request): Promise<NextResponse> {
   const origin = appOrigin(request);
+  const refused = originRefusal(request, origin);
+  if (refused) {
+    return refused;
+  }
   const auth = await authenticate(request, origin);
   if (!auth.token || !auth.identity || !auth.user) {
-    return challenge(origin, auth.token);
+    return challenge(origin, auth.token, corsFor(request));
   }
   return new NextResponse(null, {
     status: 405,
-    headers: { ...CORS_HEADERS, Allow: 'POST, OPTIONS' },
+    headers: { ...corsFor(request), Allow: 'POST, OPTIONS' },
   });
 }
 
-export function OPTIONS() {
-  return preflight();
+export const GET = notAllowed;
+export const DELETE = notAllowed;
+
+export function OPTIONS(request: Request): NextResponse {
+  const refused = originRefusal(request, appOrigin(request));
+  return (
+    refused ??
+    new NextResponse(null, { status: 204, headers: corsFor(request) })
+  );
 }

@@ -11,6 +11,7 @@ import {
 } from '@/components/landing/landing';
 import { ButtonLink } from '@/components/ui/button';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
+import { jsonLdText, landingJsonLd } from '@/lib/seo';
 
 /**
  * The signed-out home: what chowdown is, why, and a way in. A static server
@@ -21,6 +22,11 @@ export function HomeLanding() {
   const hero = RECIPES[0]!;
   return (
     <>
+      {/* Structured data for search engines and assistants (never executed). */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdText(landingJsonLd()) }}
+      />
       <Container className="grid grid-cols-1 items-center gap-14 py-12 lg:grid-cols-[0.95fr_1.1fr] lg:gap-16 lg:py-20">
         <div>
           <Eyebrow>Recipes you actually keep</Eyebrow>

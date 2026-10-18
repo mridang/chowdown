@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque, Inter } from 'next/font/google';
 
 import { ServiceWorker } from '@/components/site/service-worker';
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from '@/lib/site';
 
 import './globals.css';
 
@@ -25,12 +26,9 @@ const display = Bricolage_Grotesque({
   preload: false,
 });
 
-const TITLE = 'chowdown';
-const DEFAULT_TITLE = 'chowdown: your recipes, kept in your own Google Drive';
-const DESCRIPTION =
-  'Keep every recipe as a plain text file in your own Google Drive, then ' +
-  'search, scale and cook from them, and ask your AI assistant what to make.';
-const SITE_URL = 'https://chowdown.apps.mrida.ng';
+const TITLE = SITE_NAME;
+const DEFAULT_TITLE = SITE_TITLE;
+const DESCRIPTION = SITE_DESCRIPTION;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

@@ -144,17 +144,27 @@ export function CookMode({
               buttons.
             </DialogDescription>
           </div>
+          {/*
+            One segment per step, filled up to the current one. (Segments rather
+            than a bar whose width is set inline, which the Content Security
+            Policy would refuse.)
+          */}
           <div
-            className="bg-ink/10 mt-4 h-1.5 overflow-hidden rounded-full"
+            className="mt-4 flex gap-1"
             role="progressbar"
             aria-valuemin={1}
             aria-valuemax={steps.length}
             aria-valuenow={index + 1}
           >
-            <div
-              className="bg-flame h-full rounded-full transition-all"
-              style={{ width: `${((index + 1) / steps.length) * 100}%` }}
-            />
+            {steps.map((_, i) => (
+              <div
+                key={i}
+                className={cn(
+                  'h-1.5 flex-1 rounded-full transition-colors',
+                  i <= index ? 'bg-flame' : 'bg-ink/10',
+                )}
+              />
+            ))}
           </div>
 
           <ol className="my-auto flex flex-col gap-6 py-10">

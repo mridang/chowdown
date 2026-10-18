@@ -1,5 +1,7 @@
 import type { MetadataRoute } from 'next';
 
+import { SITE_URL } from '@/lib/site';
+
 /**
  * Crawlers may read the landing page and the privacy page; everything else is
  * somebody's own recipes or an account endpoint, so they are asked to stay out.
@@ -22,5 +24,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   };
 }

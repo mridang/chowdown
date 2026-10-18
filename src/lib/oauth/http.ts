@@ -13,7 +13,7 @@ export const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers':
-    'Authorization, Content-Type, Mcp-Session-Id, Mcp-Protocol-Version',
+    'Authorization, Content-Type, Accept, Mcp-Session-Id, Mcp-Protocol-Version, Mcp-Method, Mcp-Name',
   'Access-Control-Expose-Headers': 'WWW-Authenticate',
   'Access-Control-Max-Age': '86400',
 };

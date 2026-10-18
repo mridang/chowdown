@@ -32,3 +32,21 @@ body {
   background: var(--color-paper);
   color: var(--color-ink);
 }
+
+/*
+ * Printing: the site header and footer have no place on paper (a printed recipe
+ * is just the recipe). This lives here, not in a <style> on the page, because
+ * the Content Security Policy refuses inline styles.
+ */
+@media print {
+  body > header,
+  header,
+  footer,
+  a[href='#main'] {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+  }
+}

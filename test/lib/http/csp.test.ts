@@ -1,0 +1,64 @@
+import { describe, expect, it } from '@jest/globals';
+
+import { buildCsp, newNonce, nonceOf } from '../../../src/lib/http/csp';
+
+describe('newNonce', () => {
+  it('is base64 of 16 bytes, and different every time', () => {
+    const a = newNonce();
+    expect(Buffer.from(a, 'base64')).toHaveLength(16);
+    expect(a).toMatch(/^[A-Za-z0-9+/]+=*$/);
+    expect(newNonce()).not.toBe(a);
+  });
+});
+
+describe('buildCsp', () => {
+  const csp = buildCsp('abc123==');
+  const directive = (name: string) =>
+    csp.split('; ').find((d) => d.startsWith(`${name} `));
+
+  it('lets only scripts that carry the nonce run, and the ones they load', () => {
+    expect(directive('script-src')).toBe(
+      "script-src 'self' 'nonce-abc123==' 'strict-dynamic'",
+    );
+  });
+
+  it('never allows inline script or eval', () => {
+    expect(csp).not.toContain('unsafe-inline');
+    expect(csp).not.toContain('unsafe-eval');
+  });
+
+  it('starts from nothing but this site', () => {
+    expect(directive('default-src')).toBe("default-src 'self'");
+  });
+
+  it('allows the Google photo and nothing else from other sites', () => {
+    expect(directive('img-src')).toBe(
+      "img-src 'self' data: https://lh3.googleusercontent.com",
+    );
+    expect(directive('connect-src')).toBe("connect-src 'self'");
+    expect(directive('font-src')).toBe("font-src 'self'");
+  });
+
+  it('forbids plugins, frames, media and a rewritten <base>', () => {
+    expect(directive('object-src')).toBe("object-src 'none'");
+    expect(directive('frame-src')).toBe("frame-src 'none'");
+    expect(directive('media-src')).toBe("media-src 'none'");
+    expect(directive('base-uri')).toBe("base-uri 'self'");
+  });
+
+  it('only lets this site frame it, and forces https', () => {
+    expect(directive('frame-ancestors')).toBe("frame-ancestors 'self'");
+    expect(csp).toContain('upgrade-insecure-requests');
+  });
+
+  it('puts the nonce on styles as well', () => {
+    expect(directive('style-src')).toBe("style-src 'self' 'nonce-abc123=='");
+  });
+});
+
+describe('nonceOf', () => {
+  it('reads the nonce back out of a policy, which is how Next.js finds it', () => {
+    expect(nonceOf(buildCsp('xyz=='))).toBe('xyz==');
+    expect(nonceOf("default-src 'self'")).toBeUndefined();
+  });
+});

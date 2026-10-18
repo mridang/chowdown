@@ -11,13 +11,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getUserByMcpToken } from '@/lib/db/users';
-import { handleMcpPost } from '@/lib/mcp/http';
+import { handleMcpPost, originRefusal } from '@/lib/mcp/http';
+import { SUPPORTED_VERSIONS } from '@/lib/mcp/protocol';
 import { appOrigin, getDatabase } from '@/lib/util';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> },
 ): Promise<NextResponse> {
+  const refused = originRefusal(request, appOrigin(request));
+  if (refused) {
+    return refused;
+  }
   const { token } = await params;
   const user = await getUserByMcpToken(getDatabase(), token);
   if (!user) {
@@ -49,6 +54,6 @@ export async function GET(
     name: 'chowdown',
     description:
       'This is a chowdown recipe MCP endpoint. POST JSON-RPC 2.0 messages here.',
-    protocolVersion: '2024-11-05',
+    protocolVersions: SUPPORTED_VERSIONS,
   });
 }

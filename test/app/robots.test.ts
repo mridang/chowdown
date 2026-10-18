@@ -24,4 +24,8 @@ describe('robots.txt', () => {
       expect(rule.disallow).toContain(path);
     }
   });
+
+  it('points crawlers at the sitemap', () => {
+    expect(robots().sitemap).toBe('https://chowdown.apps.mrida.ng/sitemap.xml');
+  });
 });

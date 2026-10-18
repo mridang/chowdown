@@ -280,15 +280,6 @@ function first(tags: RecipeTags, key: string): string | undefined {
 }
 
 /**
- * Print: the page's own header, footer and skip link belong to the site shell,
- * so they are hidden here (and only on this page) when the recipe is printed.
- */
-const PRINT_CSS = `@media print {
-  header, footer, a[href="#main"] { display: none !important; }
-  body { background: #fff; }
-}`;
-
-/**
  * The server-rendered recipe page, laid out like a printed recipe card: a split
  * hero (title, actions and source beside the photo; stacked, photo first, on
  * phones), a grid of the facts the recipe actually has, then the ingredient
@@ -364,7 +355,6 @@ export default async function RecipePage({
         // JSON.stringify output is safe to inline; no user-controlled markup.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <style>{PRINT_CSS}</style>
 
       <section className="border-ink/10 @container border-b print:border-0">
         {/*
