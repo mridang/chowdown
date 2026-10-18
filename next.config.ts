@@ -18,6 +18,9 @@ const nextConfig: NextConfig = {
     ];
   },
   experimental: {
+    // Put the (small) stylesheet in the page itself instead of making the
+    // browser fetch it before it can paint anything.
+    inlineCss: true,
     // Keep prefetched pages in the browser's client cache for a minute, so a
     // card that has already been prefetched opens instantly with no server
     // request. Short, because recipe pages are personal (favourites, notes) and

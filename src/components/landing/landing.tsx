@@ -627,9 +627,9 @@ export function Faq() {
           <Eyebrow>Questions</Eyebrow>
           <Heading className="mt-3">Good to know</Heading>
         </div>
-        <Accordion type="single" collapsible className="border-ink/10 border-t">
-          {FAQ.map(([question, answer], i) => (
-            <AccordionItem key={question} value={`item-${i}`}>
+        <Accordion className="border-ink/10 border-t">
+          {FAQ.map(([question, answer]) => (
+            <AccordionItem key={question} name="faq">
               <AccordionTrigger className="py-1 text-lg font-semibold">
                 {question}
               </AccordionTrigger>

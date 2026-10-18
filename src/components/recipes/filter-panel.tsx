@@ -8,21 +8,17 @@ import type { FacetData } from '@/components/recipes/search-query';
  * the rest start closed so the list stays short.
  */
 export function FilterPanel({ facets }: { facets: FacetData[] }) {
-  const open = facets
-    .filter(
-      (f) =>
-        ['difficulty', 'time', 'protein', 'diet_type'].includes(f.key) ||
-        f.options.some((o) => o.active),
-    )
-    .map((f) => f.key);
+  const startsOpen = (facet: FacetData) =>
+    ['difficulty', 'time', 'protein', 'diet_type'].includes(facet.key) ||
+    facet.options.some((o) => o.active);
   return (
-    <Accordion
-      type="multiple"
-      defaultValue={open}
-      className="border-ink/10 border-t"
-    >
+    <Accordion className="border-ink/10 border-t">
       {facets.map((facet) => (
-        <FacetSection key={facet.key} facet={facet} />
+        <FacetSection
+          key={facet.key}
+          facet={facet}
+          defaultOpen={startsOpen(facet)}
+        />
       ))}
     </Accordion>
   );

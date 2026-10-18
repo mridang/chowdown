@@ -21,6 +21,7 @@ import { SortSelect } from '@/components/recipes/sort-select';
 import { buttonClass, ButtonLink } from '@/components/ui/button';
 import { FilterChip } from '@/components/ui/chip';
 import { SearchField } from '@/components/ui/field';
+import { PlusIcon } from '@/components/icons';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 import { countOf } from '@/lib/intl';
 import { toCardRecipe } from '@/lib/recipe/card-data';
@@ -76,10 +77,18 @@ export default async function AppPage({
     <>
       <div className="border-ink/10 border-b">
         <Container className="py-8 sm:py-12">
-          <Eyebrow>Your collection</Eyebrow>
-          <Heading as="h1" variant="h1" className="mt-2">
-            Recipes
-          </Heading>
+          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+            <div>
+              <Eyebrow>Your collection</Eyebrow>
+              <Heading as="h1" variant="h1" className="mt-2">
+                Recipes
+              </Heading>
+            </div>
+            <ButtonLink href="/recipes/add" size="lg">
+              <PlusIcon className="h-5 w-5" />
+              Add recipe
+            </ButtonLink>
+          </div>
           <form action="/app" role="search" className="mt-6 max-w-2xl">
             {/* Searching keeps the filters and order already chosen. */}
             {query.favourites ? (

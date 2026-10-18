@@ -1,8 +1,15 @@
 import Link from 'next/link';
 
 import { CheckIcon, ProteinIcon } from '@/components/icons';
-import type { FacetData, FacetOptionData } from '@/components/recipes/search-query';
-import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import type {
+  FacetData,
+  FacetOptionData,
+} from '@/components/recipes/search-query';
+import {
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { cn } from '@/components/ui/cn';
 import { Difficulty } from '@/components/ui/difficulty';
 
@@ -60,10 +67,16 @@ function FacetOption({
 }
 
 /** A collapsible filter group: the title is the toggle, the options are links. */
-export function FacetSection({ facet }: { facet: FacetData }) {
+export function FacetSection({
+  facet,
+  defaultOpen = false,
+}: {
+  facet: FacetData;
+  defaultOpen?: boolean;
+}) {
   const active = facet.options.filter((o) => o.active).length;
   return (
-    <AccordionItem value={facet.key}>
+    <AccordionItem open={defaultOpen}>
       <AccordionTrigger className="px-2 text-sm font-semibold">
         <span className="flex items-center gap-2">
           {facet.title}

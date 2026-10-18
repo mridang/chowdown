@@ -19,7 +19,6 @@ export function BarePage({ children }: { children: ReactNode }) {
           <Container className="flex h-[4.25rem] items-center">
             <Link
               href="/"
-              aria-label="chowdown home"
               className="font-display text-ink focus-visible:outline-ink rounded-control text-[1.7rem] leading-none font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4"
             >
               chowdown

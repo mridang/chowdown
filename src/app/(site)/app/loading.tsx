@@ -1,0 +1,35 @@
+/**
+ * The recipe list's shell, shown while the list itself loads: the heading, the
+ * search box and a grid of card-shaped blocks, so nothing jumps when it arrives.
+ */
+export default function AppLoading() {
+  const bar = 'rounded-control bg-ink/10';
+  return (
+    <div
+      className="animate-pulse motion-reduce:animate-none"
+      role="status"
+      aria-busy="true"
+    >
+      <span className="sr-only">Loading your recipes</span>
+      <div className="border-ink/10 border-b">
+        <div className="mx-auto w-full max-w-[90rem] px-4 py-8 sm:px-6 sm:py-12 lg:px-10">
+          <div className={`${bar} h-4 w-32`} />
+          <div className={`${bar} mt-3 h-12 w-48`} />
+          <div className={`${bar} mt-6 h-14 w-full max-w-2xl`} />
+        </div>
+      </div>
+      <div className="mx-auto grid w-full max-w-[90rem] grid-cols-1 gap-6 px-4 py-8 sm:px-6 md:grid-cols-[16rem_minmax(0,1fr)] md:gap-10 lg:px-10">
+        <div className="hidden md:block">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} className={`${bar} mb-3 h-10 w-full`} />
+          ))}
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3 min-[1700px]:grid-cols-4">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="bg-ink/5 rounded-card h-80" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

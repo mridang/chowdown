@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { ArrowIcon, SearchIcon } from '@/components/icons';
+import { ArrowIcon, PlusIcon, SearchIcon } from '@/components/icons';
 import { ConnectBand } from '@/components/site/connect-band';
 import { EmptyCollection } from '@/components/recipes/empty-collection';
 import { RecipeCard, RecipeGrid } from '@/components/recipes/recipe-card';
@@ -134,6 +134,13 @@ export async function Dashboard({ user }: { user: ShellUser }) {
                 {label}
               </Link>
             ))}
+            <Link
+              href="/recipes/add"
+              className="bg-ink hover:bg-ink/85 focus-visible:outline-ink inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white transition focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Add recipe
+            </Link>
           </div>
           {recipes.length > 0 ? (
             <p className="text-ink/65 mt-5 text-sm">

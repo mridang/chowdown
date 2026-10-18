@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 
-import { GoogleIcon, SparkIcon } from '@/components/icons';
+import { GoogleIcon, PlusIcon, SparkIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
 import { cn } from '@/components/ui/cn';
 import { Container } from '@/components/ui/layout';
@@ -17,7 +17,6 @@ export function Logo({ className }: { className?: string }) {
     <Link
       href="/"
       className={cn('text-ink inline-block leading-none', className)}
-      aria-label="chowdown home"
     >
       <span className="font-display block text-[1.7rem] font-bold tracking-tight">
         chowdown
@@ -86,6 +85,14 @@ export function SiteHeader({ user }: { user: ShellUser | null }) {
           <div className="flex items-center gap-1 sm:gap-2">
             {user ? (
               <>
+                <ButtonLink
+                  href="/recipes/add"
+                  variant="outline"
+                  className="max-md:hidden"
+                >
+                  <PlusIcon className="h-4 w-4" />
+                  Add recipe
+                </ButtonLink>
                 <ButtonLink
                   href="/connect"
                   variant="accent"

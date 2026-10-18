@@ -8,17 +8,11 @@ import {
   HeartIcon,
   LogoutIcon,
   PlugIcon,
+  PlusIcon,
   SearchIcon,
   SparkIcon,
 } from '@/components/icons';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown';
+import { POPOVER_ITEM, Popover } from '@/components/ui/popover';
 
 import { useInstallPrompt } from './use-install-prompt';
 
@@ -76,53 +70,63 @@ export function AccountMenu({
     }
   }, []);
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="group rounded-control hover:bg-ink/5 focus-visible:outline-ink data-[state=open]:bg-ink/5 flex h-10 items-center gap-2 pr-2 pl-1 transition outline-none focus-visible:outline-2 sm:pr-3">
-        <Avatar name={name} picture={picture} />
-        <span className="hidden text-sm font-semibold sm:block">
-          Hi {firstName}
-        </span>
-        <ChevronIcon className="text-ink/65 hidden h-4 w-4 transition group-data-[state=open]:rotate-180 sm:block" />
-        <span className="sr-only sm:hidden">
-          Account menu, signed in as {firstName}
-        </span>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-64">
-        <DropdownMenuLabel>
-          <span className="text-ink/65 block text-xs">Signed in as</span>
-          <span className="block truncate font-semibold">{email}</span>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/app">
-            <SearchIcon className="text-ink/65 h-[18px] w-[18px]" />
-            Your recipes
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/app?fav=1">
-            <HeartIcon className="text-ink/65 h-[18px] w-[18px]" />
-            Favourites
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/connect">
-            <PlugIcon className="text-ink/65 h-[18px] w-[18px]" />
-            Connect an assistant
-          </Link>
-        </DropdownMenuItem>
-        {install ? (
-          <DropdownMenuItem onSelect={() => void install()}>
-            <SparkIcon className="text-ink/65 h-[18px] w-[18px]" />
-            Install app
-          </DropdownMenuItem>
-        ) : null}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem disabled={busy} onSelect={() => void signOut()}>
-          <LogoutIcon className="text-ink/65 h-[18px] w-[18px]" />
-          Sign out
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Popover
+      button={
+        <>
+          <Avatar name={name} picture={picture} />
+          <span className="hidden text-sm font-semibold sm:block">
+            Hi {firstName}
+          </span>
+          <ChevronIcon className="text-ink/65 hidden h-4 w-4 transition group-data-[state=open]:rotate-180 sm:block" />
+          <span className="sr-only sm:hidden">
+            Account menu, signed in as {firstName}
+          </span>
+        </>
+      }
+      buttonClassName="group rounded-control hover:bg-ink/5 focus-visible:outline-ink data-[state=open]:bg-ink/5 flex h-10 items-center gap-2 pr-2 pl-1 transition focus-visible:outline-2 sm:pr-3"
+      panelClassName="w-64"
+    >
+      <div className="px-3 py-2 text-sm">
+        <span className="text-ink/65 block text-xs">Signed in as</span>
+        <span className="block truncate font-semibold">{email}</span>
+      </div>
+      <div className="bg-ink/10 my-1.5 h-px" />
+      <Link href="/app" className={POPOVER_ITEM}>
+        <SearchIcon className="text-ink/65 h-[18px] w-[18px]" />
+        Your recipes
+      </Link>
+      <Link href="/app?fav=1" className={POPOVER_ITEM}>
+        <HeartIcon className="text-ink/65 h-[18px] w-[18px]" />
+        Favourites
+      </Link>
+      <Link href="/recipes/add" className={POPOVER_ITEM}>
+        <PlusIcon className="text-ink/65 h-[18px] w-[18px]" />
+        Add recipes
+      </Link>
+      <Link href="/connect" className={POPOVER_ITEM}>
+        <PlugIcon className="text-ink/65 h-[18px] w-[18px]" />
+        Connect an assistant
+      </Link>
+      {install ? (
+        <button
+          type="button"
+          onClick={() => void install()}
+          className={POPOVER_ITEM}
+        >
+          <SparkIcon className="text-ink/65 h-[18px] w-[18px]" />
+          Install app
+        </button>
+      ) : null}
+      <div className="bg-ink/10 my-1.5 h-px" />
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => void signOut()}
+        className={POPOVER_ITEM}
+      >
+        <LogoutIcon className="text-ink/65 h-[18px] w-[18px]" />
+        Sign out
+      </button>
+    </Popover>
   );
 }
