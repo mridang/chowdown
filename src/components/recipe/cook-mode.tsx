@@ -89,13 +89,20 @@ export function CookMode({
       return;
     }
     let lock: WakeLockSentinel | undefined;
+    let cancelled = false;
     navigator.wakeLock
       .request('screen')
       .then((sentinel) => {
-        lock = sentinel;
+        if (cancelled) {
+          // Cook mode closed before the lock was granted: give it straight back.
+          void sentinel.release();
+        } else {
+          lock = sentinel;
+        }
       })
       .catch(() => undefined);
     return () => {
+      cancelled = true;
       void lock?.release();
     };
   }, [open]);
@@ -152,6 +159,7 @@ export function CookMode({
           <div
             className="mt-4 flex gap-1"
             role="progressbar"
+            aria-label="Step"
             aria-valuemin={1}
             aria-valuemax={steps.length}
             aria-valuenow={index + 1}

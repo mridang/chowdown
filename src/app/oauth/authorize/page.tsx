@@ -111,6 +111,7 @@ export default async function AuthorizePage({
       <BarePage>
         <div className="mx-auto w-full max-w-lg px-4 py-10 sm:py-16">
           <DriveConnectPanel
+            heading="h1"
             reconnect={wasDriveConnected(user)}
             returnTo={here}
           />

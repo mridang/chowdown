@@ -18,10 +18,23 @@ import { jsonLdText, landingJsonLd } from '@/lib/seo';
  * component made only of made-up sample recipes, so it is safe to show anyone
  * and costs no data fetching or client script beyond the FAQ.
  */
-export function HomeLanding() {
+export function HomeLanding({
+  signInFailed = false,
+}: {
+  /** Google sign-in just failed and sent them back here. */
+  signInFailed?: boolean;
+}) {
   const hero = RECIPES[0]!;
   return (
     <>
+      {signInFailed ? (
+        <Container className="pt-6">
+          <p className="rounded-card bg-sand px-5 py-4 text-sm leading-relaxed">
+            Signing in with Google didn’t work. Nothing was changed, so please
+            try again.
+          </p>
+        </Container>
+      ) : null}
       {/* Structured data for search engines and assistants (never executed). */}
       <script
         type="application/ld+json"
@@ -48,6 +61,10 @@ export function HomeLanding() {
               See what it does
             </ButtonLink>
           </div>
+          <p className="text-ink/65 mt-4 max-w-xl text-sm">
+            Signing in shares only your name, email and photo. Connecting your
+            Google Drive is a separate step, once you are in.
+          </p>
           <WorksWith />
         </div>
         <div className="lg:pb-10">

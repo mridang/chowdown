@@ -11,6 +11,7 @@ import {
   TrashIcon,
 } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { problemError, problemText } from '@/lib/problem-message';
 import { POPOVER_ITEM, Popover } from '@/components/ui/popover';
 
 import { DeleteDialog } from './delete-dialog';
@@ -96,7 +97,7 @@ export function MoreMenu({
         body: JSON.stringify({ recipe_id: recipeId }),
       });
       if (!res.ok) {
-        throw new Error(String(res.status));
+        throw await problemError(res);
       }
       const data = (await res.json()) as { tagged: boolean };
       if (data.tagged) {
@@ -105,8 +106,8 @@ export function MoreMenu({
       } else {
         say("Couldn't tag this one.");
       }
-    } catch {
-      say('Tagging failed.');
+    } catch (error) {
+      say(problemText(error, 'Tagging failed.'));
     } finally {
       setTagging(false);
     }

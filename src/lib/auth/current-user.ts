@@ -12,7 +12,11 @@ import { cookies } from 'next/headers';
 
 import { DriveNotConnectedError, isAuthFailure } from './drive-access';
 import { refreshAccessToken } from './google-oauth';
-import { SESSION_COOKIE, verifySessionToken } from './session';
+import {
+  SESSION_COOKIE,
+  verifySessionToken,
+  type SessionPayload,
+} from './session';
 import { decryptSecret } from '../crypto';
 import { clearRefreshToken, getUserById, type User } from '../db/users';
 import { getDatabase, getEnv } from '../util';
@@ -34,18 +38,23 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 /**
- * The signed-in user's id straight from the session cookie, with **no database
+ * The signed session claims straight from the cookie, with **no database
  * read**. The cookie is HMAC-signed, so a valid one can be trusted for identity;
  * callers that only scope queries by user id (like the recipe page) can skip
- * the `users` lookup entirely and save a network round trip to D1.
+ * the `users` lookup entirely and save a network round trip to D1. The `drive`
+ * claim is only a hint for the header: check the database before relying on it.
  */
-export async function getSessionUid(): Promise<number | null> {
+export async function getSession(): Promise<SessionPayload | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) {
     return null;
   }
-  const payload = await verifySessionToken(token, getEnv().SESSION_SECRET);
-  return payload?.uid ?? null;
+  return verifySessionToken(token, getEnv().SESSION_SECRET);
+}
+
+/** The signed-in user's id from the session cookie alone (see {@link getSession}). */
+export async function getSessionUid(): Promise<number | null> {
+  return (await getSession())?.uid ?? null;
 }
 
 /**

@@ -7,6 +7,7 @@ import { useCallback, useState, type ReactNode } from 'react';
 import { ChevronLeftIcon, LinkIcon, NoteIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
+import { problemError, problemText } from '@/lib/problem-message';
 
 import { AddRecipes } from './add-recipes';
 import { FormField, FormMessage, TextArea, TextInput } from './form-fields';
@@ -41,12 +42,14 @@ function ManualEditor({ onCancel }: { onCancel: () => void }) {
         body: JSON.stringify({ name: name.trim(), cooklang: content }),
       });
       if (!res.ok) {
-        throw new Error(String(res.status));
+        throw await problemError(res);
       }
       const created = (await res.json()) as { id: string };
       router.push(`/recipe/${created.id}`);
-    } catch {
-      setError('Could not save the recipe.');
+      // ...and the list the router remembers should include it too.
+      router.refresh();
+    } catch (error) {
+      setError(problemText(error, 'Could not save the recipe.'));
       setBusy(false);
     }
   }, [name, content, router]);
@@ -127,8 +130,12 @@ function ChoiceCard({
       <span className="rounded-control bg-marigold/30 grid h-11 w-11 place-items-center">
         {icon}
       </span>
-      <h2 className="font-display mt-5 text-xl font-semibold">{title}</h2>
-      <p className="text-ink/75 mt-2 leading-relaxed">{description}</p>
+      <span className="font-display mt-5 block text-xl font-semibold">
+        {title}
+      </span>
+      <span className="text-ink/75 mt-2 block leading-relaxed">
+        {description}
+      </span>
     </button>
   );
 }
@@ -179,7 +186,9 @@ export function AddRecipesPage() {
           <div className="mt-8">
             <AddRecipes
               onClose={() => router.push('/app')}
-              onSaved={() => undefined}
+              // The list is cached by the router for a few minutes; make it
+              // look again so the new recipes are in it when we get there.
+              onSaved={() => router.refresh()}
             />
           </div>
         ) : null}

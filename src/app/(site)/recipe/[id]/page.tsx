@@ -34,6 +34,10 @@ import {
   getSessionUid,
   getUserAccessToken,
 } from '@/lib/auth/current-user';
+import {
+  DriveNotConnectedError,
+  isDriveConnected,
+} from '@/lib/auth/drive-access';
 import { getRecipePageRows } from '@/lib/db/recipe-page';
 import { setRecipesFolderId } from '@/lib/db/users';
 import {
@@ -73,12 +77,11 @@ import {
   rowTags,
   type RecipeTags,
 } from '@/lib/recipe/tag-index';
+import { jsonLdText } from '@/lib/seo';
+import { SITE_URL } from '@/lib/site';
 import { getDatabase } from '@/lib/util';
 
 import { AddNote } from './_components/add-note';
-
-/** Canonical origin — mirrors `SITE_URL` in the root layout. */
-const SITE_URL = 'https://chowdown.apps.mrida.ng';
 
 /** How many "you might also like" recipes the page shows (one full row). */
 const ALSO_LIKE_COUNT = 4;
@@ -125,12 +128,18 @@ const loadRecipe = cache(async (id: string): Promise<RecipePageData | null> => {
 
   let rows = await getRecipePageRows(db, uid, id);
   if (!rows.recipe) {
-    // Cold cache: read from Drive once and index it, then re-read.
+    // Cold cache: read from Drive once and index it, then re-read. (The
+    // redirects sit outside the try, which would otherwise swallow them.)
+    const user = await getCurrentUser();
+    if (!user) {
+      redirect('/');
+    }
+    if (!isDriveConnected(user)) {
+      // Nothing cached and no Drive to look in: the list explains how to connect.
+      redirect('/app');
+    }
+    let lapsed = false;
     try {
-      const user = await getCurrentUser();
-      if (!user) {
-        redirect('/');
-      }
       const token = await getUserAccessToken(user);
       const folderId =
         user.recipes_folder_id ?? (await ensureRecipesFolder(token));
@@ -152,8 +161,15 @@ const loadRecipe = cache(async (id: string): Promise<RecipePageData | null> => {
         file.modifiedTime ?? null,
       );
       rows = await getRecipePageRows(db, uid, id);
-    } catch {
-      return null;
+    } catch (error) {
+      if (!(error instanceof DriveNotConnectedError)) {
+        return null;
+      }
+      lapsed = true;
+    }
+    if (lapsed) {
+      // Google stopped accepting the login while we looked.
+      redirect('/app');
     }
   }
   if (!rows.recipe) {
@@ -352,8 +368,9 @@ export default async function RecipePage({
       {/* Structured data for search engines and recipe scrapers. */}
       <script
         type="application/ld+json"
-        // JSON.stringify output is safe to inline; no user-controlled markup.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        // Recipe text comes from files and imports, so `<` is escaped: a
+        // "</script>" in a title must not be able to end this tag.
+        dangerouslySetInnerHTML={{ __html: jsonLdText(jsonLd) }}
       />
 
       <section className="border-ink/10 @container border-b print:border-0">

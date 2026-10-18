@@ -26,6 +26,7 @@ export default async function AddRecipesRoute() {
     return (
       <Container className="py-12">
         <DriveConnectPanel
+          heading="h1"
           reconnect={wasDriveConnected(user)}
           returnTo="/recipes/add"
         />

@@ -20,3 +20,24 @@ export async function problemMessage(res: Response): Promise<string> {
     return `Request failed (${res.status}).`;
   }
 }
+
+/** An API refusal, carrying the sentence to show the user. */
+export class ProblemError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ProblemError';
+  }
+}
+
+/** The error to throw for a failed API response, to be shown with {@link problemText}. */
+export async function problemError(res: Response): Promise<ProblemError> {
+  return new ProblemError(await problemMessage(res));
+}
+
+/**
+ * What to show for a caught error: the API's own words if it refused, otherwise
+ * `fallback` (a network failure's "Failed to fetch" helps nobody).
+ */
+export function problemText(error: unknown, fallback: string): string {
+  return error instanceof ProblemError ? error.message : fallback;
+}

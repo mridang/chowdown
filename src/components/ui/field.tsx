@@ -32,7 +32,7 @@ export function SearchField({
       <SearchIcon className="text-ink/65 h-5 w-5 shrink-0" />
       <input
         type="search"
-        className="placeholder:text-ink/45 h-full min-w-0 flex-1 bg-transparent text-base outline-none"
+        className="placeholder:text-ink/65 h-full min-w-0 flex-1 bg-transparent text-base outline-none"
         {...props}
       />
       {action}

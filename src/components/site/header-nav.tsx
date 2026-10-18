@@ -11,14 +11,14 @@ export const APP_NAV = [
   { key: 'favourites', label: 'Favourites', href: '/app?fav=1' },
 ] as const;
 
-export type NavKey = (typeof APP_NAV)[number]['key'] | 'connect' | 'home';
+export type NavKey = (typeof APP_NAV)[number]['key'] | 'connect';
 
 /** Which section the current address is in. */
 export function activeSection(
   pathname: string,
   favourites: boolean,
 ): NavKey | undefined {
-  if (pathname === '/app' || pathname.startsWith('/recipe')) {
+  if (pathname === '/app' || pathname.startsWith('/recipe/')) {
     return favourites && pathname === '/app' ? 'favourites' : 'search';
   }
   if (pathname.startsWith('/connect')) {

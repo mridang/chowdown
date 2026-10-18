@@ -33,8 +33,8 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
   {
     title: 'Explore',
     links: [
-      ['Recipes', '/app'],
       ['How it works', '/#features'],
+      ['Questions', '/#faq'],
     ],
   },
   {

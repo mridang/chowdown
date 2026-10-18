@@ -31,6 +31,7 @@ export function buttonClass({
   return cn(
     'inline-flex shrink-0 items-center justify-center rounded-control font-semibold whitespace-nowrap transition',
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink',
+    'disabled:cursor-not-allowed disabled:opacity-50',
     VARIANTS[variant],
     SIZES[size],
     className,
@@ -56,6 +57,15 @@ export function Button({
   );
 }
 
+/**
+ * Whether an address is one of our API routes. Those answer with a redirect to
+ * another site (Google), which the client router can't follow, so a link to one
+ * must be a plain `<a>` that the browser follows itself.
+ */
+export function isApiHref(href: string): boolean {
+  return href.startsWith('/api/');
+}
+
 /** A link that looks like a button. */
 export function ButtonLink({
   variant,
@@ -65,9 +75,7 @@ export function ButtonLink({
   children,
 }: Look & { href: string; children: ReactNode }) {
   const classes = buttonClass({ variant, size, className });
-  // An /api address (sign in) answers with a redirect to another site, which
-  // the client router can't follow; give it a plain link so the browser does.
-  if (href.startsWith('/api/')) {
+  if (isApiHref(href)) {
     return (
       <a href={href} className={classes}>
         {children}
@@ -96,6 +104,7 @@ export function IconButton({
       className={cn(
         'grid h-10 w-10 place-items-center rounded-control text-ink transition hover:bg-ink/5',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink',
+        'disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}
       {...props}

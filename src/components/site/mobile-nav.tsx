@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import { MenuIcon } from '@/components/icons';
+import { isApiHref } from '@/components/ui/button';
 import { POPOVER_ITEM, Popover } from '@/components/ui/popover';
 
 /** The phone navigation: a menu button that opens the main links. */
@@ -17,9 +18,7 @@ export function MobileNav({ links }: { links: [string, string][] }) {
       >
         <nav aria-label="Menu">
           {links.map(([label, href]) =>
-            // An /api address answers with a redirect to another site, which the
-            // client router can't follow, so it gets a plain link.
-            href.startsWith('/api/') ? (
+            isApiHref(href) ? (
               <a key={label} href={href} className={POPOVER_ITEM}>
                 {label}
               </a>

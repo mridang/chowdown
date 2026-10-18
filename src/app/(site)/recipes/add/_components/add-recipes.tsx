@@ -28,7 +28,7 @@ type Phase = 'input' | 'review' | 'done';
  *  2. **review** — the user steps through the drafts one at a time, editing the
  *     name and Cooklang, and saves each to Drive before moving to the next.
  *
- * Saving reuses POST /api/recipes; `onSaved` lets the parent refresh its list.
+ * Saving reuses POST /api/recipes; `onSaved` runs after each recipe is saved, so the parent can refresh its list.
  */
 export function AddRecipes({
   onClose,
@@ -50,27 +50,23 @@ export function AddRecipes({
   const importId = useRef<string | null>(null);
 
   /** Load draft `i` into the editable fields, or finish when past the end. */
-  const seek = useCallback(
-    (list: ImportDraft[], i: number) => {
-      if (i >= list.length) {
-        setPhase('done');
-        onSaved();
-        if (importId.current) {
-          // The drafts have been dealt with; tidy the import away.
-          void fetch(`/api/recipe-imports/${importId.current}`, {
-            method: 'DELETE',
-          });
-          importId.current = null;
-        }
-        return;
+  const seek = useCallback((list: ImportDraft[], i: number) => {
+    if (i >= list.length) {
+      setPhase('done');
+      if (importId.current) {
+        // The drafts have been dealt with; tidy the import away.
+        void fetch(`/api/recipe-imports/${importId.current}`, {
+          method: 'DELETE',
+        });
+        importId.current = null;
       }
-      setIndex(i);
-      setName(list[i]!.title);
-      setCook(list[i]!.cook);
-      setError(null);
-    },
-    [onSaved],
-  );
+      return;
+    }
+    setIndex(i);
+    setName(list[i]!.title);
+    setCook(list[i]!.cook);
+    setError(null);
+  }, []);
 
   const prepare = useCallback(async () => {
     if (!input.trim()) {
@@ -132,6 +128,8 @@ export function AddRecipes({
         throw new Error(await problemMessage(res));
       }
       setSavedCount((c) => c + 1);
+      // Each saved recipe changes the list, even if they stop part-way through.
+      onSaved();
       seek(drafts, index + 1);
     } catch (err) {
       setError(
@@ -140,7 +138,7 @@ export function AddRecipes({
     } finally {
       setBusy(false);
     }
-  }, [name, cook, drafts, index, seek]);
+  }, [name, cook, drafts, index, seek, onSaved]);
 
   const skip = useCallback(
     () => seek(drafts, index + 1),

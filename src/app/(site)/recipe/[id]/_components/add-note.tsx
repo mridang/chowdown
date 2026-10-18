@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { PlusIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { SelectField } from '@/components/ui/field';
+import { problemError, problemText } from '@/lib/problem-message';
 
 /**
  * "Add a note" control on a recipe page. Lets the user attach a personal note
@@ -52,14 +53,14 @@ export function AddNote({
         }),
       });
       if (!res.ok) {
-        throw new Error(String(res.status));
+        throw await problemError(res);
       }
       setText('');
       setTarget('');
       setOpen(false);
       router.refresh();
-    } catch {
-      setError('Could not save the note.');
+    } catch (error) {
+      setError(problemText(error, 'Could not save the note.'));
     } finally {
       setBusy(false);
     }
@@ -86,7 +87,7 @@ export function AddNote({
         rows={3}
         ref={field}
         placeholder="e.g. use 3 avocados instead of 2"
-        className="rounded-control border-ink/25 focus:border-ink placeholder:text-ink/55 mt-1.5 w-full border bg-white px-3 py-2 text-base outline-none"
+        className="rounded-control border-ink/25 focus:border-ink placeholder:text-ink/65 mt-1.5 w-full border bg-white px-3 py-2 text-base outline-none"
       />
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <SelectField

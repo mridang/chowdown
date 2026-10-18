@@ -21,7 +21,16 @@ export async function generateMetadata(): Promise<Metadata> {
  * The home page: a welcome and a way back into the recipes for someone signed
  * in, the pitch and a sign-in button for everyone else.
  */
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const user = await getShellUser();
-  return user ? <Dashboard user={user} /> : <HomeLanding />;
+  if (user) {
+    return <Dashboard user={user} />;
+  }
+  // `?error=auth` is where a failed Google sign-in lands.
+  const signInFailed = (await searchParams)['error'] === 'auth';
+  return <HomeLanding signInFailed={signInFailed} />;
 }

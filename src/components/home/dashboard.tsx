@@ -5,6 +5,7 @@ import { ConnectBand } from '@/components/site/connect-band';
 import {
   DriveConnectNotice,
   DriveConnectPanel,
+  DriveUnreachable,
 } from '@/components/site/drive-connect';
 import { EmptyCollection } from '@/components/recipes/empty-collection';
 import { RecipeCard, RecipeGrid } from '@/components/recipes/recipe-card';
@@ -89,7 +90,7 @@ function Row({
  * or the offer to connect Google Drive when that hasn't been done.
  */
 export async function Dashboard({ user }: { user: ShellUser }) {
-  const { recipes: rows, favouriteIds, drive } = await loadCollection();
+  const { recipes: rows, favouriteIds, drive } = await loadCollection('/');
   const hearted = new Set(favouriteIds);
   const recipes = rows.map((row) =>
     toCardRecipe(row, hearted.has(row.drive_file_id)),
@@ -103,6 +104,8 @@ export async function Dashboard({ user }: { user: ShellUser }) {
   const shown = new Set([...favourites, ...quick].map((r) => r.id));
   const shelf = fromTheShelf(recipes, todaySeed(), shown);
   const favouriteCount = recipes.filter((r) => r.favourite).length;
+  // With no recipes and no Drive there is nothing to search or add to yet.
+  const needsDrive = !drive.connected && recipes.length === 0;
 
   return (
     <>
@@ -115,38 +118,42 @@ export async function Dashboard({ user }: { user: ShellUser }) {
           <Heading as="h1" variant="h1" className="mt-3 max-w-3xl">
             What do you feel like cooking?
           </Heading>
-          <form action="/app" role="search" className="mt-6 max-w-2xl">
-            <SearchField
-              size="lg"
-              name="q"
-              placeholder="Try “chicken curry”"
-              aria-label="Describe what you feel like cooking"
-              action={
-                <Button type="submit" size="md" className="h-10">
-                  <SearchIcon className="h-4 w-4" />
-                  Find
-                </Button>
-              }
-            />
-          </form>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {SHORTCUTS.map(([label, href]) => (
-              <Link
-                key={label}
-                href={href}
-                className="border-ink/20 hover:border-ink focus-visible:outline-ink inline-flex h-9 items-center rounded-full border bg-white px-4 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2"
-              >
-                {label}
-              </Link>
-            ))}
-            <Link
-              href="/recipes/add"
-              className="bg-ink hover:bg-ink/85 focus-visible:outline-ink inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white transition focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
-              <PlusIcon className="h-4 w-4" />
-              Add recipe
-            </Link>
-          </div>
+          {needsDrive ? null : (
+            <>
+              <form action="/app" role="search" className="mt-6 max-w-2xl">
+                <SearchField
+                  size="lg"
+                  name="q"
+                  placeholder="Try “chicken curry”"
+                  aria-label="Describe what you feel like cooking"
+                  action={
+                    <Button type="submit" size="md" className="h-10">
+                      <SearchIcon className="h-4 w-4" />
+                      Find
+                    </Button>
+                  }
+                />
+              </form>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {SHORTCUTS.map(([label, href]) => (
+                  <Link
+                    key={label}
+                    href={href}
+                    className="border-ink/20 hover:border-ink focus-visible:outline-ink inline-flex h-9 items-center rounded-full border bg-white px-4 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2"
+                  >
+                    {label}
+                  </Link>
+                ))}
+                <Link
+                  href="/recipes/add"
+                  className="bg-ink hover:bg-ink/85 focus-visible:outline-ink inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white transition focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  <PlusIcon className="h-4 w-4" />
+                  Add recipe
+                </Link>
+              </div>
+            </>
+          )}
           {recipes.length > 0 ? (
             <p className="text-ink/65 mt-5 text-sm">
               {countOf(recipes.length, 'recipe')} ·{' '}
@@ -157,13 +164,13 @@ export async function Dashboard({ user }: { user: ShellUser }) {
       </section>
 
       <Container className="pb-4">
-        {!drive.connected && recipes.length === 0 ? (
+        {needsDrive ? (
           <div className="mt-14">
             <DriveConnectPanel reconnect={drive.reconnect} returnTo="/" />
           </div>
         ) : recipes.length === 0 ? (
           <div className="mt-14">
-            <EmptyCollection />
+            {drive.unreachable ? <DriveUnreachable /> : <EmptyCollection />}
           </div>
         ) : (
           <>

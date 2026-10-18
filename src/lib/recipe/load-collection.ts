@@ -10,7 +10,7 @@
 
 import { redirect } from 'next/navigation';
 
-import { getSessionUid } from '../auth/current-user';
+import { getSession } from '../auth/current-user';
 import {
   DriveNotConnectedError,
   isDriveConnected,
@@ -26,6 +26,8 @@ export interface DriveStatus {
   connected: boolean;
   /** Not connected now, but was: Google stopped accepting the login. */
   reconnect: boolean;
+  /** Connected, but Drive could not be reached just now (so an empty list is not the truth). */
+  unreachable: boolean;
 }
 
 /** What the pages need: the cached recipe rows and which of them are hearted. */
@@ -47,11 +49,14 @@ export interface Collection {
  * it) gets whatever is cached and a `drive` status the page turns into an offer
  * to connect; nothing is synced for them.
  */
-export async function loadCollection(): Promise<Collection> {
-  const uid = await getSessionUid();
-  if (uid === null) {
+export async function loadCollection(
+  returnTo: string = '/app',
+): Promise<Collection> {
+  const session = await getSession();
+  if (!session) {
     redirect('/');
   }
+  const uid = session.uid;
   const db = getDatabase();
   let { user, recipes, embeddedCount, favouriteIds } = await getAppPageRows(
     db,
@@ -63,6 +68,7 @@ export async function loadCollection(): Promise<Collection> {
   }
 
   let connected = isDriveConnected(user);
+  let unreachable = false;
   if (connected && recipes.length === 0) {
     // First visit: nothing cached yet, so sync once and wait for it.
     try {
@@ -71,6 +77,7 @@ export async function loadCollection(): Promise<Collection> {
       // A rejected login was cleared by the sync; anything else (a network
       // blip) just leaves the list empty until the next visit.
       connected = !(error instanceof DriveNotConnectedError);
+      unreachable = connected;
     }
     ({ recipes, embeddedCount, favouriteIds } = await getAppPageRows(db, uid));
   } else if (connected) {
@@ -82,9 +89,19 @@ export async function loadCollection(): Promise<Collection> {
     // Top up missing embeddings (bounded per visit) so "find similar" fills in.
     runInBackground(backfillEmbeddings(db, getEnv(), uid, 20));
   }
+  if (session.drive !== undefined && session.drive !== connected) {
+    // The header's idea of the Drive connection (kept in the session) is out of
+    // date, say Google revoked it or it was made on another device. A cookie can
+    // only be changed by a route, so go through one and come straight back.
+    redirect(`/api/auth/refresh?returnTo=${encodeURIComponent(returnTo)}`);
+  }
   return {
     recipes,
     favouriteIds,
-    drive: { connected, reconnect: !connected && wasDriveConnected(user) },
+    drive: {
+      connected,
+      reconnect: !connected && wasDriveConnected(user),
+      unreachable: unreachable && recipes.length === 0,
+    },
   };
 }

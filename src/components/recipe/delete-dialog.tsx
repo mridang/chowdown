@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { problemError, problemText } from '@/lib/problem-message';
 import {
   Dialog,
   DialogContent,
@@ -50,14 +51,16 @@ export function DeleteDialog({
     try {
       const res = await fetch(`/api/recipes/${recipeId}`, { method: 'DELETE' });
       if (!res.ok) {
-        throw new Error(String(res.status));
+        throw await problemError(res);
       }
       onOpenChange(false);
       // Drop cached pages so the deleted recipe disappears from the list.
       router.push('/app');
       router.refresh();
-    } catch {
-      setError("Couldn't delete this recipe. Nothing was changed.");
+    } catch (error) {
+      setError(
+        problemText(error, "Couldn't delete this recipe. Nothing was changed."),
+      );
     } finally {
       setBusy(false);
     }

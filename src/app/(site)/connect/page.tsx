@@ -78,6 +78,7 @@ export default async function ConnectPage() {
           <DriveConnectNotice
             reconnect={wasDriveConnected(user)}
             returnTo="/connect"
+            message="An assistant has no recipes to reach until your Drive is connected."
           />
         </Container>
       )}

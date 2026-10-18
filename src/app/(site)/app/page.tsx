@@ -5,6 +5,7 @@ import { EmptyCollection } from '@/components/recipes/empty-collection';
 import {
   DriveConnectNotice,
   DriveConnectPanel,
+  DriveUnreachable,
 } from '@/components/site/drive-connect';
 import { FavouritesLink } from '@/components/recipes/favourites-link';
 import { FilterDrawer } from '@/components/recipes/filter-drawer';
@@ -35,6 +36,12 @@ import { loadCollection } from '@/lib/recipe/load-collection';
 /** How many cards are likely on screen at first, and so load their photos eagerly. */
 const ABOVE_THE_FOLD = 3;
 
+export const metadata: Metadata = {
+  title: 'Your recipes · chowdown',
+  description:
+    'Search, filter and sort every recipe in your own Google Drive collection.',
+};
+
 /**
  * The recipe list — a Server Component. It reads the user's cached recipes
  * (keeping the cache fresh from Drive behind the scenes), then filters, sorts
@@ -42,12 +49,6 @@ const ABOVE_THE_FOLD = 3;
  * sort and "Show more" is a plain link. Collapsible filters sit beside the grid
  * on desktop and open from a button in a drawer on phones.
  */
-export const metadata: Metadata = {
-  title: 'Your recipes · chowdown',
-  description:
-    'Search, filter and sort every recipe in your own Google Drive collection.',
-};
-
 export default async function AppPage({
   searchParams,
 }: {
@@ -136,7 +137,9 @@ export default async function AppPage({
 
       {recipes.length === 0 ? (
         <Container className="py-10">
-          {drive.connected ? (
+          {drive.unreachable ? (
+            <DriveUnreachable />
+          ) : drive.connected ? (
             <EmptyCollection />
           ) : (
             <DriveConnectPanel reconnect={drive.reconnect} attempt={attempt} />

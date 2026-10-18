@@ -20,6 +20,12 @@ interface DriveConnectProps {
   attempt?: DriveAttempt;
 }
 
+/** The panel can stand in for a whole page, which then needs its own `h1`. */
+type PanelProps = DriveConnectProps & { heading?: 'h1' | 'h2' };
+
+/** The notice's own line, for pages where "saved copies" doesn't apply. */
+type NoticeProps = DriveConnectProps & { message?: string };
+
 /** The button that starts connecting. */
 function ConnectButton({
   reconnect,
@@ -44,11 +50,12 @@ export function DriveConnectPanel({
   reconnect,
   returnTo,
   attempt,
-}: DriveConnectProps) {
+  heading = 'h2',
+}: PanelProps) {
   return (
     <div className="rounded-card border-ink/10 mx-auto max-w-2xl border bg-white px-6 py-12 text-center sm:px-10">
       <Eyebrow>{reconnect ? 'Connection lost' : 'One more step'}</Eyebrow>
-      <Heading as="h2" variant="h3" className="mt-2">
+      <Heading as={heading} variant="h3" className="mt-2">
         {reconnect
           ? 'Reconnect your Google Drive'
           : 'Connect your Google Drive'}
@@ -63,10 +70,7 @@ export function DriveConnectPanel({
         your Drive.
       </p>
       {attempt ? (
-        <p
-          role="alert"
-          className="rounded-control bg-sand text-ink/80 mx-auto mt-5 max-w-xl px-4 py-3 text-sm leading-relaxed"
-        >
+        <p className="rounded-control bg-sand text-ink/80 mx-auto mt-5 max-w-xl px-4 py-3 text-sm leading-relaxed">
           {ATTEMPT_MESSAGE[attempt]}
         </p>
       ) : null}
@@ -85,7 +89,8 @@ export function DriveConnectNotice({
   reconnect,
   returnTo,
   attempt,
-}: DriveConnectProps) {
+  message = 'Recipes shown here are saved copies. Connect your Drive to sync, add and edit them.',
+}: NoticeProps) {
   return (
     <div className="rounded-card bg-sand flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -95,12 +100,27 @@ export function DriveConnectNotice({
             : 'Google Drive is not connected'}
         </p>
         <p className="text-ink/75 mt-0.5 text-sm leading-relaxed">
-          {attempt
-            ? ATTEMPT_MESSAGE[attempt]
-            : 'Recipes shown here are saved copies. Connect your Drive to sync, add and edit them.'}
+          {attempt ? ATTEMPT_MESSAGE[attempt] : message}
         </p>
       </div>
       <ConnectButton reconnect={reconnect} returnTo={returnTo} />
+    </div>
+  );
+}
+
+/**
+ * What stands in for the recipes when Google Drive is connected but could not
+ * be reached just now (and nothing is cached yet): not "no recipes", which
+ * would be untrue.
+ */
+export function DriveUnreachable() {
+  return (
+    <div className="rounded-card border-ink/25 border border-dashed px-6 py-16 text-center">
+      <Heading variant="h3">Couldn’t reach Google Drive</Heading>
+      <p className="text-ink/70 mx-auto mt-2 max-w-md">
+        Your recipes are safe in your Drive. Reload the page in a moment to try
+        again.
+      </p>
     </div>
   );
 }

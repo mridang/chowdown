@@ -32,7 +32,26 @@ export default [
       // Whitelist it globally so `import/no-unresolved` stays active for
       // everything else.
       'import/core-modules': ['cloudflare:workers'],
+      // The Tailwind lint plugin reads a v3 tailwind.config, but this project is
+      // on Tailwind 4, where the theme lives in `@theme` blocks in globals.css
+      // and the plugin cannot see it. These are the classes those blocks define
+      // (palette, radii, label type, display face), so they are not "custom".
+      tailwindcss: {
+        whitelist: [
+          '(?:[\\w-]+:)*[\\w-]*-?(?:ink|paper|sand|forest|live|marigold|flame|ember)(?:/\\d+)?',
+          '(?:[\\w-]+:)*rounded-(?:control|card)(?:-[\\w]+)?',
+          '(?:[\\w-]+:)*text-label',
+          '(?:[\\w-]+:)*font-display',
+        ],
+      },
     },
+  },
+  {
+    // The assistant-widget views are bundled into standalone HTML cards and
+    // styled by a plain CSS string (src/views/styles.ts: `wrap`, `card`, `chip`,
+    // …), not by Tailwind, so the Tailwind class checks do not apply to them.
+    files: ['src/views/**'],
+    rules: { 'tailwindcss/no-custom-classname': 'off' },
   },
   {
     // Tailwind v4 drives styling through at-rules (@theme, @apply,

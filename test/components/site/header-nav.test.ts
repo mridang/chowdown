@@ -16,6 +16,10 @@ describe('activeSection', () => {
     expect(activeSection('/recipe/abc', true)).toBe('search');
   });
 
+  it('does not mistake the add-recipes page (/recipes/add) for a recipe', () => {
+    expect(activeSection('/recipes/add', false)).toBeUndefined();
+  });
+
   it('knows the connect page, and leaves other pages unmarked', () => {
     expect(activeSection('/connect', false)).toBe('connect');
     expect(activeSection('/privacy', false)).toBeUndefined();

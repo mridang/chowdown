@@ -24,7 +24,7 @@ export default function AppLoading() {
             <div key={i} className={`${bar} mb-3 h-10 w-full`} />
           ))}
         </div>
-        <div className="grid gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3 min-[1700px]:grid-cols-4">
+        <div className="grid gap-5 min-[1700px]:grid-cols-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3">
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="bg-ink/5 rounded-card h-80" />
           ))}
