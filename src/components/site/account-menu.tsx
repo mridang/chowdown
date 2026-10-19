@@ -6,8 +6,8 @@ import { useState, type ReactElement } from 'react';
 import {
   ChevronIcon,
   LogoutIcon,
-  PlugIcon,
-  SparkIcon,
+  Html5Icon,
+  McpIcon,
   TrashIcon,
 } from '@/components/icons';
 import {
@@ -119,7 +119,7 @@ export function AccountMenu({
         <PopoverLabel caption="Signed in as">{email}</PopoverLabel>
         <PopoverSeparator />
         <Link href="/connect" className={POPOVER_ITEM}>
-          <PlugIcon size="menu" className="text-subtle" />
+          <McpIcon size="menu" />
           Connect an assistant
         </Link>
         <MenuLink {...drive} icon="drive" />
@@ -129,7 +129,7 @@ export function AccountMenu({
             onClick={() => void install()}
             className={POPOVER_ITEM}
           >
-            <SparkIcon size="menu" className="text-subtle" />
+            <Html5Icon size="menu" />
             Install app
           </button>
         ) : null}

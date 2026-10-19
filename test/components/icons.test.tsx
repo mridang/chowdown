@@ -4,7 +4,9 @@ import {
   ClockIcon,
   DriveIcon,
   GoogleIcon,
+  Html5Icon,
   HeartIcon,
+  McpIcon,
   PlayIcon,
   ProteinIcon,
   SparklesIcon,
@@ -78,6 +80,24 @@ describe('icons', () => {
       '#2684fc',
       '#ffba00',
     ]) {
+      expect(out).toContain(`fill="${colour}"`);
+    }
+    expect(out).not.toContain('currentColor');
+  });
+
+  it('draws MCP as its three blue loops, sized like the others', () => {
+    const out = html(<McpIcon size="menu" />);
+    expect(out).toContain('aria-hidden="true"');
+    for (const colour of ['#0253cf', '#2783ff', '#3eadff']) {
+      expect(out).toContain(`stroke="${colour}"`);
+    }
+    expect(out).not.toContain('currentColor');
+  });
+
+  it('draws the web app as the HTML5 shield in its own colours', () => {
+    const out = html(<Html5Icon size="menu" />);
+    expect(out).toContain('aria-hidden="true"');
+    for (const colour of ['#e44d26', '#f16529', '#fff']) {
       expect(out).toContain(`fill="${colour}"`);
     }
     expect(out).not.toContain('currentColor');

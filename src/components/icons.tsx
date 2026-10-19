@@ -481,3 +481,72 @@ export function GoogleIcon({ size, className, ...props }: IconProps) {
     </svg>
   );
 }
+
+/**
+ * The Model Context Protocol logo: three interlinked loops in shades of blue,
+ * in their own colours (they do not follow `currentColor`). Use it only on
+ * something that connects an AI assistant over MCP.
+ */
+export function McpIcon({
+  size,
+  className,
+  ...props
+}: IconProps): React.ReactElement {
+  return (
+    <svg
+      viewBox="0 0 300 300"
+      width="1em"
+      height="1em"
+      fill="none"
+      strokeWidth="27.5513"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={iconClass(size, className)}
+      {...props}
+    >
+      <path
+        stroke="#0253cf"
+        d="M27.923 144.253L143.347 27.9604C159.228 11.8725 185.466 11.7575 201.462 27.7305C217.573 43.5886 217.688 69.7889 201.692 85.7619L116.073 172.062"
+      />
+      <path
+        stroke="#2783ff"
+        d="M171.771 57.7246L86.1527 144.025C70.2719 160.113 70.3869 186.198 86.3829 202.056C102.494 217.914 128.617 217.799 144.498 201.826L230.116 115.526"
+      />
+      <path
+        stroke="#3eadff"
+        d="M116.188 172.065L201.807 85.765C217.688 69.6771 243.926 69.5622 259.922 85.5352C276.033 101.393 276.148 127.594 260.152 143.567L148.41 256.067L178.331 285.6"
+      />
+    </svg>
+  );
+}
+
+/**
+ * The HTML5 shield, in its own colours, standing for the web app itself. Use
+ * it only on the entry that installs chowdown as an app (a progressive web
+ * app).
+ */
+export function Html5Icon({
+  size,
+  className,
+  ...props
+}: IconProps): React.ReactElement {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      width="1em"
+      height="1em"
+      fill="none"
+      aria-hidden="true"
+      className={iconClass(size, className)}
+      {...props}
+    >
+      <path d="M6 28L4 3H28L26 28L16 31L6 28Z" fill="#e44d26" />
+      <path d="M26 5H16V29.5L24 27L26 5Z" fill="#f16529" />
+      <path
+        d="M9.5 17.5L8.5 8H24L23.5 11H11.5L12 14.5H23L22 24L16 26L10 24L9.5 19H12.5L13 21.5L16 22.5L19 21.5L19.5 17.5H9.5Z"
+        fill="#fff"
+      />
+    </svg>
+  );
+}
