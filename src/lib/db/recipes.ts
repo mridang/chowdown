@@ -18,6 +18,7 @@ import { embeddings, favourites, recipes } from './schema';
 /** A full recipe row. */
 export type Recipe = typeof recipes.$inferSelect;
 
+/** Current time as an ISO-8601 string (the format every timestamp column uses). */
 function now(): string {
   return new Date().toISOString();
 }
@@ -29,7 +30,7 @@ function now(): string {
  */
 export async function upsertRecipe(
   db: Database,
-  input: {
+  input: Readonly<{
     user_id: number;
     drive_file_id: string;
     name: string;
@@ -39,7 +40,7 @@ export async function upsertRecipe(
     parse_error?: string | null;
     /** Curated taxonomy tags as a JSON string (`{ facet: string[] }`). */
     tags?: string | null;
-  },
+  }>,
 ): Promise<void> {
   const timestamp = now();
   await db
@@ -74,7 +75,7 @@ export async function upsertRecipe(
 export async function listRecipesByUser(
   db: Database,
   userId: number,
-): Promise<Recipe[]> {
+): Promise<readonly Recipe[]> {
   return db.query.recipes.findMany({
     where: eq(recipes.user_id, userId),
     orderBy: (r, { asc }) => [asc(r.name)],
@@ -121,10 +122,10 @@ export async function findRecipeBySourceUrl(
  * deleted in Drive.
  */
 export function staleRecipeIds(
-  cached: { id: string; seenAt: string }[],
+  cached: readonly Readonly<{ id: string; seenAt: string }>[],
   keep: ReadonlySet<string>,
   since: string,
-): string[] {
+): readonly string[] {
   return cached
     .filter((row) => !keep.has(row.id) && row.seenAt < since)
     .map((row) => row.id);
@@ -140,7 +141,7 @@ export function staleRecipeIds(
 export async function deleteRecipesNotIn(
   db: Database,
   userId: number,
-  keepFileIds: string[],
+  keepFileIds: readonly string[],
   since: string,
 ): Promise<void> {
   const cached = await db

@@ -16,8 +16,8 @@ import type { ParsedRecipe } from '../recipe/cooklang';
 
 /** One dated cooking-log entry surfaced in the card/fullscreen view. */
 export interface RecipeLogEntry {
-  date: string;
-  note: string;
+  readonly date: string;
+  readonly note: string;
 }
 
 /**
@@ -29,20 +29,20 @@ export interface RecipeLogEntry {
  */
 export interface RecipeCardData extends ParsedRecipe {
   /** Drive file id — lets the View call tools (e.g. log_cooking) for this recipe. */
-  id: string;
+  readonly id: string;
   /** True when this is an uncurated idea stub (shows an "idea" badge). */
-  uncurated: boolean;
+  readonly uncurated: boolean;
   /** Source URL, when the recipe was imported from one. */
-  source?: string;
+  readonly source?: string;
   /** Dated cooking-log entries parsed from the `.cook` file. */
-  logs: RecipeLogEntry[];
+  readonly logs: readonly RecipeLogEntry[];
 }
 
 /** A single entry in the recipe-list view. */
 export interface RecipeListItem {
-  id: string;
-  title: string;
-  uncurated: boolean;
+  readonly id: string;
+  readonly title: string;
+  readonly uncurated: boolean;
 }
 
 /**
@@ -50,7 +50,7 @@ export interface RecipeListItem {
  * as `structuredContent` for the list/grid View.
  */
 export interface RecipeListData {
-  recipes: RecipeListItem[];
+  readonly recipes: readonly RecipeListItem[];
   /** The search query, when this came from `search_recipes`. */
-  query?: string;
+  readonly query?: string;
 }

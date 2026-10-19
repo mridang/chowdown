@@ -22,6 +22,14 @@ import { tagCookSource } from '@/lib/recipe/tagging';
 import { addMissingCover } from '@/lib/recipe/to-cooklang';
 import { getDatabase, getEnv } from '@/lib/util';
 
+/**
+ * `POST /rpc/tag-recipe`: classify one of the user's recipes and write the tags
+ * (and a missing cover) onto its file. Answers 200 with `{ tagged, tags }`
+ * (`tagged: false` when nothing could be confidently tagged, in which case
+ * nothing is written), 400 for a missing `recipe_id`, 404 for a recipe the user
+ * does not have. Needs a signed-in user: 401, and 409 or 502 when Drive is not
+ * connected or fails.
+ */
 export async function POST(request: Request): Promise<NextResponse> {
   const auth = await requireUser(request);
   if (!auth.ok) {

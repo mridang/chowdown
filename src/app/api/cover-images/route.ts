@@ -8,68 +8,48 @@
  * the web. Answers come from the edge cache when they can.
  */
 
-import { getSessionUid } from '@/lib/auth/current-user';
 import { problems } from '@/lib/api/problem';
+import { getSessionUid } from '@/lib/auth/current-user';
+import { edgeCache } from '@/lib/http/edge-cache';
 import {
-  fetchCover,
-  isFetchableImageUrl,
-  type ImagesLike,
+  isImagesBinding,
   snapWidth,
+  type ImagesLike,
 } from '@/lib/images/cover-proxy';
+import { serveCover } from '@/lib/images/cover-service';
 import { getEnv, runInBackground } from '@/lib/util';
+
+/** The width used when a request does not name a usable one. */
+const DEFAULT_WIDTH = 640;
 
 /** The Images binding, where the deployment has one. */
 function imagesBinding(): ImagesLike | undefined {
   try {
-    return (getEnv() as unknown as { IMAGES?: ImagesLike }).IMAGES;
+    const binding: unknown = Reflect.get(getEnv(), 'IMAGES');
+    return isImagesBinding(binding) ? binding : undefined;
   } catch {
     return undefined;
   }
 }
 
-/** Cloudflare's per-colo cache; absent when running under plain Node. */
-function edgeCache(): Cache | undefined {
-  return (globalThis as { caches?: { default?: Cache } }).caches?.default;
-}
-
+/**
+ * `GET /api/cover-images?url=…&w=…`: the photo at `url`, scaled to the nearest
+ * allowed width and kept at the edge. Answers 200 with the image, 400 for an
+ * address that is not a public image, 404 when the photo is gone, 502 when its
+ * site fails. Needs a signed-in user: 401 without a session.
+ */
 export async function GET(request: Request): Promise<Response> {
   if ((await getSessionUid()) === null) {
     return problems.unauthorized();
   }
   const params = new URL(request.url).searchParams;
-  const url = params.get('url') ?? '';
-  const width = snapWidth(Number(params.get('w')) || 640);
-  if (!isFetchableImageUrl(url)) {
-    return problems.badRequest('url: must be a public http(s) image address.');
-  }
-
-  // The edge cache is shared across people, which is fine: the photo is public.
-  // Its key leaves out cookies, so everyone who opens a recipe warms it for
-  // everyone.
-  const cache = edgeCache();
-  const key = new Request(
-    `https://covers.chowdown.invalid/${width}/${encodeURIComponent(url)}`,
+  return serveCover(
+    params.get('url') ?? '',
+    snapWidth(Number(params.get('w')) || DEFAULT_WIDTH),
+    {
+      cache: edgeCache(),
+      images: imagesBinding(),
+      background: runInBackground,
+    },
   );
-  const hit = await cache?.match(key);
-  if (hit) {
-    return withBrowserCaching(hit);
-  }
-
-  const result = await fetchCover(url, width, { images: imagesBinding() });
-  if (!result.ok) {
-    return result.status === 404
-      ? problems.notFound('cover image')
-      : problems.upstream(result.reason);
-  }
-  if (cache) {
-    runInBackground(cache.put(key, result.response.clone()));
-  }
-  return withBrowserCaching(result.response);
-}
-
-/** The same image, but kept only by the browser (the edge already has its copy). */
-function withBrowserCaching(response: Response): Response {
-  const headers = new Headers(response.headers);
-  headers.set('Cache-Control', 'private, max-age=604800, immutable');
-  return new Response(response.body, { status: 200, headers });
 }

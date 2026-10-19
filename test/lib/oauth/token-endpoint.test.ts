@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
+import { MemoryStore } from './memory-store';
 import { s256 } from '../../../src/lib/oauth/pkce';
 import { hashSecret } from '../../../src/lib/oauth/secrets';
 import {
@@ -11,88 +12,13 @@ import {
   issueAuthorizationCode,
   revokeToken,
   type CodeRecord,
-  type GrantRecord,
   type OAuthFailure,
-  type OAuthStore,
-  type TokenRecord,
   type TokenResponse,
 } from '../../../src/lib/oauth/token-endpoint';
 
 const RESOURCE = 'https://chowdown.example/api/mcp';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 const NOW = 1_000_000;
-
-/** An in-memory store with the same atomic-claim behaviour as D1. */
-class MemoryStore implements OAuthStore {
-  codes = new Map<string, CodeRecord>();
-  grants = new Map<string, GrantRecord>();
-  tokens = new Map<
-    string,
-    {
-      kind: 'access' | 'refresh';
-      grantId: string;
-      expiresAt: number;
-      usedAt: number | null;
-    }
-  >();
-  touched: string[] = [];
-
-  async saveCode(hash: string, code: CodeRecord) {
-    this.codes.set(hash, code);
-  }
-  async findCode(hash: string) {
-    return this.codes.get(hash);
-  }
-  async claimCode(hash: string, grantId: string) {
-    const code = this.codes.get(hash);
-    if (!code || code.grantId) {
-      return false;
-    }
-    code.grantId = grantId;
-    return true;
-  }
-  async createGrant(grant: Omit<GrantRecord, 'revoked' | 'lastUsedAt'>) {
-    this.grants.set(grant.id, { ...grant, revoked: false, lastUsedAt: null });
-  }
-  async revokeGrant(grantId: string) {
-    const grant = this.grants.get(grantId);
-    if (grant) {
-      grant.revoked = true;
-    }
-  }
-  async saveTokens(
-    tokens: {
-      hash: string;
-      kind: 'access' | 'refresh';
-      grantId: string;
-      expiresAt: number;
-    }[],
-  ) {
-    for (const t of tokens) {
-      this.tokens.set(t.hash, { ...t, usedAt: null });
-    }
-  }
-  async findToken(hash: string): Promise<TokenRecord | undefined> {
-    const token = this.tokens.get(hash);
-    const grant = token && this.grants.get(token.grantId);
-    return token && grant ? { ...token, grant } : undefined;
-  }
-  async markTokenUsed(hash: string, now: number) {
-    const token = this.tokens.get(hash);
-    if (!token || token.usedAt !== null) {
-      return false;
-    }
-    token.usedAt = now;
-    return true;
-  }
-  async touchGrant(grantId: string, now: number) {
-    this.touched.push(grantId);
-    const grant = this.grants.get(grantId);
-    if (grant) {
-      grant.lastUsedAt = now;
-    }
-  }
-}
 
 const isFailure = (r: TokenResponse | OAuthFailure): r is OAuthFailure =>
   'ok' in r;

@@ -14,6 +14,9 @@
  * needs a session, because the server keeps no state between requests.
  */
 
+import { base64ToBytes } from '../util/base64';
+import { parseUrl } from '../util/url';
+
 /** The newest revision, which has no handshake and no sessions. */
 export const MODERN_VERSION = '2026-07-28';
 
@@ -31,9 +34,11 @@ export const SUPPORTED_VERSIONS: readonly string[] = [
   ...LEGACY_VERSIONS,
 ];
 
-/** JSON-RPC error codes this module produces. */
+/** JSON-RPC error code: a request header disagrees with the request body. */
 export const ERROR_HEADER_MISMATCH = -32020;
+/** JSON-RPC error code: the protocol version asked for is not one we speak. */
 export const ERROR_UNSUPPORTED_VERSION = -32022;
+/** JSON-RPC error code: no such method. */
 export const ERROR_METHOD_NOT_FOUND = -32601;
 
 /**
@@ -53,10 +58,12 @@ const META_VERSION = 'io.modelcontextprotocol/protocolVersion';
 
 /** A JSON-RPC message as far as protocol checks care. */
 export interface ProtocolMessage {
-  jsonrpc?: string;
-  id?: number | string | null;
-  method?: string;
-  params?: Record<string, unknown> & { _meta?: Record<string, unknown> };
+  readonly jsonrpc?: string;
+  readonly id?: number | string | null;
+  readonly method?: string;
+  readonly params?: Readonly<Record<string, unknown>> & {
+    readonly _meta?: Readonly<Record<string, unknown>>;
+  };
 }
 
 /** The protocol version a request declares in its `_meta`, if it does. */
@@ -72,14 +79,19 @@ export function isModernRequest(message: ProtocolMessage): boolean {
 
 /** A refusal to send as an HTTP error with a JSON-RPC body. */
 export interface ProtocolRefusal {
-  status: 400 | 403 | 404;
-  body: {
-    jsonrpc: '2.0';
-    id: null;
-    error: { code: number; message: string; data?: unknown };
+  readonly status: 400 | 403 | 404;
+  readonly body: {
+    readonly jsonrpc: '2.0';
+    readonly id: null;
+    readonly error: {
+      readonly code: number;
+      readonly message: string;
+      readonly data?: unknown;
+    };
   };
 }
 
+/** Build a refusal: the HTTP status, plus a JSON-RPC error body (with `data` when there is any). */
 function refusal(
   status: ProtocolRefusal['status'],
   code: number,
@@ -102,10 +114,7 @@ function unsupportedVersion(requested: string): ProtocolRefusal {
     400,
     ERROR_UNSUPPORTED_VERSION,
     'Unsupported protocol version',
-    {
-      supported: SUPPORTED_VERSIONS,
-      requested,
-    },
+    { supported: SUPPORTED_VERSIONS, requested },
   );
 }
 
@@ -184,13 +193,12 @@ export function decodeHeaderValue(value: string | null): string | undefined {
   if (value === null) {
     return undefined;
   }
-  const match = /^=\?base64\?(.*)\?=$/.exec(value);
-  if (!match) {
+  const encoded = /^=\?base64\?(.*)\?=$/.exec(value)?.[1];
+  if (encoded === undefined) {
     return value;
   }
   try {
-    const bytes = Uint8Array.from(atob(match[1]!), (c) => c.charCodeAt(0));
-    return new TextDecoder().decode(bytes);
+    return new TextDecoder().decode(base64ToBytes(encoded));
   } catch {
     return undefined;
   }
@@ -207,7 +215,7 @@ export function methodNotFound(): ProtocolRefusal {
  * Inspector. More can be added with the `MCP_ALLOWED_ORIGINS` setting (a
  * comma-separated list of origins).
  */
-const ALLOWED_HOSTS = [
+const ALLOWED_HOSTS: readonly string[] = [
   'claude.ai',
   'claude.com',
   'chatgpt.com',
@@ -230,10 +238,8 @@ export function isAllowedOrigin(
   if (origin === null || origin === selfOrigin) {
     return true;
   }
-  let url: URL;
-  try {
-    url = new URL(origin);
-  } catch {
+  const url = parseUrl(origin);
+  if (!url) {
     return false;
   }
   const host = url.hostname.toLowerCase();

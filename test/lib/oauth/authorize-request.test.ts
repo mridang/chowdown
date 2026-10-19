@@ -1,6 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  AUTHORIZE_FIELDS,
+  authorizeParamsFrom,
   redirectWith,
   validateAuthorizeRequest,
   type AuthorizeParams,
@@ -133,5 +135,32 @@ describe('redirectWith', () => {
     expect(redirectWith('claude://auth/cb', { code: 'abc' })).toContain(
       'code=abc',
     );
+  });
+});
+
+describe('authorizeParamsFrom', () => {
+  it('keeps the authorization parameters that are text, and nothing else', () => {
+    const form = new FormData();
+    form.append('client_id', 'c');
+    form.append('scope', 'recipes:read');
+    form.append('decision', 'approve');
+    form.append('resource', new Blob(['x']), 'x.txt');
+    expect(authorizeParamsFrom(form)).toEqual({
+      client_id: 'c',
+      scope: 'recipes:read',
+    });
+  });
+
+  it('knows exactly the parameters of an authorization request', () => {
+    expect([...AUTHORIZE_FIELDS]).toEqual([
+      'client_id',
+      'redirect_uri',
+      'response_type',
+      'state',
+      'code_challenge',
+      'code_challenge_method',
+      'scope',
+      'resource',
+    ]);
   });
 });

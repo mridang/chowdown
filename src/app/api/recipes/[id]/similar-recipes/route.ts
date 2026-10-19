@@ -10,13 +10,20 @@ import { NextResponse } from 'next/server';
 import { requireUid } from '@/lib/api/auth';
 import { pageBody } from '@/lib/api/pagination';
 import { problems } from '@/lib/api/problem';
+import type { IdContext } from '@/lib/api/route-context';
 import { getRecipePageRows } from '@/lib/db/recipe-page';
 import { parseSimilar } from '@/lib/recipe/similar';
 import { getDatabase } from '@/lib/util';
 
+/**
+ * `GET /api/recipes/:id/similar-recipes`: the recipes closest in meaning to
+ * this one, as `{ id, title }` entries. Answers 200 with a page (empty if the
+ * list has not been computed yet), 404 for a recipe the user does not have,
+ * 401 when nobody is signed in.
+ */
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: IdContext,
 ): Promise<NextResponse> {
   const auth = await requireUid(request);
   if (!auth.ok) {

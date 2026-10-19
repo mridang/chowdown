@@ -28,8 +28,8 @@ function crossSite(request: Request): boolean {
 
 /** Success carries the caller; failure carries the response to send back. */
 export type Auth<T> =
-  | { ok: true; value: T }
-  | { ok: false; response: NextResponse };
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly response: NextResponse };
 
 /**
  * The caller's user id, from the signed cookie alone (no database read).

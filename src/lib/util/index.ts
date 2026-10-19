@@ -6,6 +6,7 @@
 
 export {
   getDB,
+  isDatabaseBound,
   getEnv,
   getDatabase,
   appOrigin,

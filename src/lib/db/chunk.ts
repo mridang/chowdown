@@ -12,10 +12,8 @@ export const ID_CHUNK = 50;
 export function chunked<T>(
   items: readonly T[],
   size: number = ID_CHUNK,
-): T[][] {
-  const pieces: T[][] = [];
-  for (let i = 0; i < items.length; i += size) {
-    pieces.push(items.slice(i, i + size));
-  }
-  return pieces;
+): readonly (readonly T[])[] {
+  return Array.from({ length: Math.ceil(items.length / size) }, (_, piece) =>
+    items.slice(piece * size, (piece + 1) * size),
+  );
 }

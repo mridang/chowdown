@@ -1,7 +1,8 @@
-import { describe, expect, it } from '@jest/globals';
+import { afterEach, describe, expect, it } from '@jest/globals';
 
 import {
   EDGE_TTL_SECONDS,
+  edgeCache,
   edgeCacheKey,
   isEdgeCacheable,
   storableCopy,
@@ -86,5 +87,28 @@ describe('storableCopy', () => {
     const response = html();
     response.headers.append('set-cookie', 'chowdown_session=abc');
     expect(storableCopy(response)).toBeNull();
+  });
+});
+
+describe('edgeCache', () => {
+  const original = Reflect.get(globalThis, 'caches');
+  afterEach(() => {
+    Reflect.set(globalThis, 'caches', original);
+  });
+
+  it('is absent where there is no Workers cache (plain Node)', () => {
+    Reflect.set(globalThis, 'caches', undefined);
+    expect(edgeCache()).toBeUndefined();
+  });
+
+  it('is the default cache when the runtime has one', () => {
+    const fake = { match: async () => undefined, put: async () => undefined };
+    Reflect.set(globalThis, 'caches', { default: fake });
+    expect(edgeCache()).toBe(fake);
+  });
+
+  it('ignores something that is not a cache', () => {
+    Reflect.set(globalThis, 'caches', { default: {} });
+    expect(edgeCache()).toBeUndefined();
   });
 });

@@ -8,7 +8,7 @@
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from './site';
 
 /** The landing page's structured data: the organisation, the site and the app. */
-export function landingJsonLd(): Record<string, unknown> {
+export function landingJsonLd(): Readonly<Record<string, unknown>> {
   return {
     '@context': 'https://schema.org',
     '@graph': [

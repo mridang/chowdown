@@ -19,7 +19,7 @@ export type EmbeddingRow = typeof embeddings.$inferSelect;
 export async function listEmbeddings(
   db: Database,
   userId: number,
-): Promise<EmbeddingRow[]> {
+): Promise<readonly EmbeddingRow[]> {
   return db.query.embeddings.findMany({
     where: eq(embeddings.user_id, userId),
   });
@@ -28,13 +28,13 @@ export async function listEmbeddings(
 /** Insert or update a recipe's cached embedding. */
 export async function upsertEmbedding(
   db: Database,
-  input: {
+  input: Readonly<{
     user_id: number;
     drive_file_id: string;
     title: string;
     modified_time: string | null;
     vector: string;
-  },
+  }>,
 ): Promise<void> {
   await db
     .insert(embeddings)
@@ -57,7 +57,7 @@ export async function upsertEmbedding(
 export async function deleteEmbeddingsNotIn(
   db: Database,
   userId: number,
-  keepFileIds: string[],
+  keepFileIds: readonly string[],
 ): Promise<void> {
   const keep = new Set(keepFileIds);
   const cached = await db
@@ -107,7 +107,7 @@ const BATCH_SIZE = 50;
 export async function saveSimilarLists(
   db: Database,
   userId: number,
-  lists: Map<string, string>,
+  lists: ReadonlyMap<string, string>,
 ): Promise<void> {
   const statements = [...lists].map(([driveFileId, json]) =>
     db
@@ -120,11 +120,11 @@ export async function saveSimilarLists(
         ),
       ),
   );
-  for (let i = 0; i < statements.length; i += BATCH_SIZE) {
-    const chunk = statements.slice(i, i + BATCH_SIZE);
-    await db.batch(
-      chunk as unknown as [(typeof chunk)[number], ...typeof chunk],
-    );
+  for (const [first, ...rest] of chunked(statements, BATCH_SIZE)) {
+    // `batch` wants at least one statement; a chunk always has one.
+    if (first) {
+      await db.batch([first, ...rest]);
+    }
   }
 }
 

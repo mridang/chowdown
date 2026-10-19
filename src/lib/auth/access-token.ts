@@ -12,11 +12,11 @@ import { DriveNotConnectedError, isAuthFailure } from './drive-access';
 /** What the exchange needs from the outside world. */
 export interface AccessTokenDeps {
   /** Unseal the stored refresh token. Throws if it can't be unsealed. */
-  decrypt(sealed: string): Promise<string>;
+  readonly decrypt: (sealed: string) => Promise<string>;
   /** Trade a refresh token for an access token. Throws Google's refusal. */
-  refresh(refreshToken: string): Promise<string>;
+  readonly refresh: (refreshToken: string) => Promise<string>;
   /** Forget the stored token, but only if it is still `sealed`. */
-  forget(sealed: string): Promise<void>;
+  readonly forget: (sealed: string) => Promise<void>;
 }
 
 /**
@@ -38,12 +38,9 @@ export async function accessTokenFor(
   if (!sealed) {
     throw new DriveNotConnectedError();
   }
-  let refreshToken: string;
-  try {
-    refreshToken = await deps.decrypt(sealed);
-  } catch {
+  const refreshToken = await deps.decrypt(sealed).catch(() => {
     throw new DriveNotConnectedError();
-  }
+  });
   try {
     return await deps.refresh(refreshToken);
   } catch (error) {

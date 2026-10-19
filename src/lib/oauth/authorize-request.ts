@@ -13,34 +13,60 @@ import { isWellFormedChallenge } from './pkce';
 import { isOurResource, resourceUri } from './metadata';
 import { redirectUriMatches } from './redirect-uri';
 import { normaliseScope } from './scopes';
+import { withQueryParams } from '../util/url';
 
 /** A validated authorization request. */
 export interface AuthorizeRequest {
-  client: OAuthClient;
-  redirectUri: string;
-  state: string | undefined;
-  codeChallenge: string;
-  scope: string[];
-  resource: string;
+  readonly client: OAuthClient;
+  readonly redirectUri: string;
+  readonly state: string | undefined;
+  readonly codeChallenge: string;
+  readonly scope: readonly string[];
+  readonly resource: string;
 }
 
 /** The result of validating one. */
 export type AuthorizeCheck =
-  | { ok: true; request: AuthorizeRequest }
+  | { readonly ok: true; readonly request: AuthorizeRequest }
   | {
-      ok: false;
+      readonly ok: false;
       /** OAuth error code. */
-      error: string;
-      description: string;
+      readonly error: string;
+      readonly description: string;
       /**
        * Where to send the error. Absent when the client or redirect URI could
        * not be trusted, in which case the error is shown to the user instead.
        */
-      redirect?: { uri: string; state: string | undefined };
+      readonly redirect?: {
+        readonly uri: string;
+        readonly state: string | undefined;
+      };
     };
 
+/** The names of the parameters of an authorization request, in the order they are passed along. */
+export const AUTHORIZE_FIELDS = [
+  'client_id',
+  'redirect_uri',
+  'response_type',
+  'state',
+  'code_challenge',
+  'code_challenge_method',
+  'scope',
+  'resource',
+] as const;
+
 /** The query/form parameters we read. */
-export type AuthorizeParams = Record<string, string | undefined>;
+export type AuthorizeParams = Readonly<Record<string, string | undefined>>;
+
+/** The authorization parameters present in a submitted form (text fields only; files and unknown fields are ignored). */
+export function authorizeParamsFrom(form: FormData): AuthorizeParams {
+  return Object.fromEntries(
+    AUTHORIZE_FIELDS.flatMap((name): [string, string][] => {
+      const value = form.get(name);
+      return typeof value === 'string' ? [[name, value]] : [];
+    }),
+  );
+}
 
 /**
  * Check an authorization request against the client registry.
@@ -141,13 +167,13 @@ export async function validateAuthorizeRequest(
 /** Add parameters to a redirect URI, keeping any query it already has. */
 export function redirectWith(
   uri: string,
-  params: Record<string, string | undefined>,
+  params: Readonly<Record<string, string | undefined>>,
 ): string {
-  const url = new URL(uri);
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined) {
-      url.searchParams.set(key, value);
-    }
-  }
-  return url.toString();
+  // Parameters with no value are left out rather than sent empty.
+  const given = Object.fromEntries(
+    Object.entries(params).flatMap(([key, value]): [string, string][] =>
+      value === undefined ? [] : [[key, value]],
+    ),
+  );
+  return withQueryParams(uri, given);
 }

@@ -7,17 +7,27 @@
  * changes a recipe, the user's settings or their notes). Write implies read.
  */
 
+/** May browse, search and view recipes. */
 export const SCOPE_READ = 'recipes:read';
+/** May change recipes, the user's settings and their notes (implies read). */
 export const SCOPE_WRITE = 'recipes:write';
 
 /** Every scope the server understands. */
-export const SUPPORTED_SCOPES = [SCOPE_READ, SCOPE_WRITE];
+export const SUPPORTED_SCOPES = [SCOPE_READ, SCOPE_WRITE] as const;
+
+/** One of {@link SUPPORTED_SCOPES}. */
+export type Scope = (typeof SUPPORTED_SCOPES)[number];
+
+/** Whether a string names one of the scopes the server understands. */
+export function isSupportedScope(scope: string): scope is Scope {
+  return (SUPPORTED_SCOPES as readonly string[]).includes(scope);
+}
 
 /**
  * Tools that only read. Anything not listed here is treated as a write, so a
  * newly added tool is protected by default until someone classifies it.
  */
-const READ_ONLY_TOOLS = new Set([
+const READ_ONLY_TOOLS: ReadonlySet<string> = new Set([
   'list_recipes',
   'search_recipes',
   'find_recipes',
@@ -34,7 +44,9 @@ const READ_ONLY_TOOLS = new Set([
  * yields an empty list, which the caller reports as `invalid_scope`. Unknown
  * scopes mixed with known ones are dropped rather than failing the request.
  */
-export function normaliseScope(requested: string | undefined | null): string[] {
+export function normaliseScope(
+  requested: string | undefined | null,
+): readonly Scope[] {
   const asked = (requested ?? '').split(/\s+/).filter(Boolean);
   if (asked.length === 0) {
     return [...SUPPORTED_SCOPES];
@@ -43,7 +55,7 @@ export function normaliseScope(requested: string | undefined | null): string[] {
 }
 
 /** Whether the granted scopes cover `needed` (write covers read). */
-export function hasScope(granted: string[], needed: string): boolean {
+export function hasScope(granted: readonly string[], needed: string): boolean {
   if (granted.includes(needed)) {
     return true;
   }
@@ -51,14 +63,14 @@ export function hasScope(granted: string[], needed: string): boolean {
 }
 
 /** The scope one MCP tool needs. */
-export function scopeForTool(name: string): string {
+export function scopeForTool(name: string): Scope {
   return READ_ONLY_TOOLS.has(name) ? SCOPE_READ : SCOPE_WRITE;
 }
 
 /** A JSON-RPC message as far as scope checking cares. */
 export interface ScopedMessage {
-  method?: string;
-  params?: Record<string, unknown>;
+  readonly method?: string;
+  readonly params?: Readonly<Record<string, unknown>>;
 }
 
 /**
@@ -66,7 +78,7 @@ export interface ScopedMessage {
  * every other method (handshake, listing tools, reading UI resources) only
  * needs a valid token, which means at least read.
  */
-export function scopeForMessage(message: ScopedMessage): string {
+export function scopeForMessage(message: ScopedMessage): Scope {
   if (message.method === 'tools/call') {
     const name = message.params?.['name'];
     return typeof name === 'string' ? scopeForTool(name) : SCOPE_WRITE;

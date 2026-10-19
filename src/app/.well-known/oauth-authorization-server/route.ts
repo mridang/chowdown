@@ -7,10 +7,15 @@ import { noStoreJson, preflight } from '@/lib/oauth/http';
 import { authorizationServerMetadata } from '@/lib/oauth/metadata';
 import { appOrigin } from '@/lib/util';
 
-export async function GET(request: Request) {
+/**
+ * `GET /.well-known/oauth-authorization-server`: the discovery document for
+ * this site's authorization server. Public, never cached. Answers 200.
+ */
+export function GET(request: Request) {
   return noStoreJson(authorizationServerMetadata(appOrigin(request)));
 }
 
+/** `OPTIONS /.well-known/oauth-authorization-server`: the CORS preflight. Answers 204. */
 export function OPTIONS() {
   return preflight();
 }

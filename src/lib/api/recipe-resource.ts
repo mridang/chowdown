@@ -18,28 +18,31 @@ import { rowTags, type RecipeTags } from '../recipe/tag-index';
 
 /** What list endpoints return for each recipe. */
 export interface RecipeSummary {
-  id: string;
-  title: string;
-  source_url?: string;
-  cover_url?: string;
-  tags: RecipeTags;
-  favourite: boolean;
-  uncurated: boolean;
-  modified_at?: string;
+  readonly id: string;
+  readonly title: string;
+  readonly source_url?: string;
+  readonly cover_url?: string;
+  readonly tags: RecipeTags;
+  readonly favourite: boolean;
+  readonly uncurated: boolean;
+  readonly modified_at?: string;
 }
 
 /** The full recipe. */
 export interface RecipeResource extends RecipeSummary {
-  images: string[];
+  readonly images: readonly string[];
   /** The recipe as Cooklang text — the one writable representation. */
-  cooklang: string;
-  ingredients: { name: string; quantity?: string }[];
-  cookware: string[];
-  steps: string[];
+  readonly cooklang: string;
+  readonly ingredients: readonly {
+    readonly name: string;
+    readonly quantity?: string;
+  }[];
+  readonly cookware: readonly string[];
+  readonly steps: readonly string[];
 }
 
 /** A method step as plain text. */
-export function stepText(tokens: StepToken[]): string {
+export function stepText(tokens: readonly StepToken[]): string {
   return tokens
     .map((t) => {
       switch (t.kind) {
@@ -57,32 +60,29 @@ export function stepText(tokens: StepToken[]): string {
 }
 
 /** The summary of a cached recipe row. */
-export function recipeSummary(row: Recipe, favourite: boolean): RecipeSummary {
+export function recipeSummary(
+  row: Readonly<Recipe>,
+  favourite: boolean,
+): RecipeSummary {
   const parsed = parseRecipe(row.source, row.name);
-  const summary: RecipeSummary = {
+  const sourceUrl = sourceUrlOf(row.source);
+  const cover = extractMedia(parsed).cover;
+  return {
     id: row.drive_file_id,
     title: row.title || recipeDisplayName(row.name),
     tags: rowTags(row, parsed),
     favourite,
     uncurated: isUncurated(row.name),
+    // Absent values are left out of the document altogether.
+    ...(sourceUrl ? { source_url: sourceUrl } : {}),
+    ...(cover ? { cover_url: cover } : {}),
+    ...(row.modified_time ? { modified_at: row.modified_time } : {}),
   };
-  const sourceUrl = sourceUrlOf(row.source);
-  if (sourceUrl) {
-    summary.source_url = sourceUrl;
-  }
-  const cover = extractMedia(parsed).cover;
-  if (cover) {
-    summary.cover_url = cover;
-  }
-  if (row.modified_time) {
-    summary.modified_at = row.modified_time;
-  }
-  return summary;
 }
 
 /** The full recipe for a cached row. */
 export function recipeResource(
-  row: Recipe,
+  row: Readonly<Recipe>,
   favourite: boolean,
 ): RecipeResource {
   const parsed = parseRecipe(row.source, row.name);

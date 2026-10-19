@@ -11,21 +11,26 @@
 import { NextResponse } from 'next/server';
 
 import { requireUid, requireUser } from '@/lib/api/auth';
-import { isObject, readJson } from '@/lib/api/json';
+import { driveFailure } from '@/lib/api/drive-failure';
+import { readJsonObject } from '@/lib/api/json';
+import { settleMutation } from '@/lib/api/mutation-response';
 import { noteResource, parseNoteInput } from '@/lib/api/note-resource';
 import { absoluteUrl, pageBody } from '@/lib/api/pagination';
-import { driveFailure } from '@/lib/api/drive-failure';
 import { problems } from '@/lib/api/problem';
+import type { IdContext } from '@/lib/api/route-context';
 import { getRecipeByFileId } from '@/lib/db/recipes';
 import { appendNote, extractNotes } from '@/lib/recipe/cook-text';
 import { mutateRecipeForUser } from '@/lib/recipe/mutate-recipe-live';
 import { getDatabase } from '@/lib/util';
 
-type Context = { params: Promise<{ id: string }> };
-
+/**
+ * `GET /api/recipes/:id/notes`: the recipe's notes, in order, numbered from 1.
+ * Answers 200 with a page of notes, 404 for a recipe the user does not have,
+ * 401 when nobody is signed in.
+ */
 export async function GET(
   request: Request,
-  { params }: Context,
+  { params }: IdContext,
 ): Promise<NextResponse> {
   const auth = await requireUid(request);
   if (!auth.ok) {
@@ -45,20 +50,27 @@ export async function GET(
   );
 }
 
+/**
+ * `POST /api/recipes/:id/notes`: add a note (`{ text }`, plus `ingredient` or
+ * `step` to attach it). Answers 201 with the note, its `Location` and the
+ * recipe's new `ETag`. Needs a signed-in user: 401, 400 for a bad note, 404 for
+ * an unknown recipe, 412 when `If-Match` is stale, and 409 or 502 when Drive is
+ * not connected or fails.
+ */
 export async function POST(
   request: Request,
-  { params }: Context,
+  { params }: IdContext,
 ): Promise<NextResponse> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;
   }
-  const body = await readJson(request);
+  const body = await readJsonObject(
+    request,
+    'The request body must be a JSON object.',
+  );
   if (!body.ok) {
     return body.response;
-  }
-  if (!isObject(body.value)) {
-    return problems.badRequest('The request body must be a JSON object.');
   }
   const input = parseNoteInput(body.value);
   if (!input.ok) {
@@ -76,21 +88,19 @@ export async function POST(
         value: extractNotes(current).length,
       }),
     );
-    if (outcome.kind === 'not-found') {
-      return problems.notFound('recipe');
+    const settled = settleMutation(outcome, {
+      missing: 'recipe',
+      invalid: 'The note is not valid.',
+    });
+    if (!settled.ok) {
+      return settled.response;
     }
-    if (outcome.kind === 'precondition-failed') {
-      return problems.preconditionFailed();
-    }
-    if (outcome.kind === 'invalid') {
-      return problems.badRequest('The note is not valid.', outcome.errors);
-    }
-    const note = noteResource(input.note, outcome.value);
+    const note = noteResource(input.note, settled.done.value);
     return NextResponse.json(note, {
       status: 201,
       headers: {
         Location: absoluteUrl(request, `/api/recipes/${id}/notes/${note.id}`),
-        ETag: outcome.etag,
+        ETag: settled.done.etag,
       },
     });
   } catch (error) {

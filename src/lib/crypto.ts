@@ -14,40 +14,13 @@
  * production and under Jest with no polyfill.
  */
 
+import { base64ToBytes, bufferSource, bytesToBase64 } from './util/base64';
+
 /** Length of the AES-GCM initialisation vector, in bytes (96 bits — the standard). */
 const IV_BYTES = 12;
 
 /** Required raw key length in bytes (256-bit AES). */
 const KEY_BYTES = 32;
-
-/** Encode raw bytes as base64 — works identically in Workers and Node. */
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
-  }
-  return btoa(binary);
-}
-
-/** Decode a base64 string back into raw bytes. */
-function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
-
-/**
- * Re-wrap bytes as an ArrayBuffer-backed view. Web Crypto's `BufferSource`
- * requires an `ArrayBuffer` (not the wider `ArrayBufferLike`, which includes
- * `SharedArrayBuffer`), and `TextEncoder`/views can be typed as the latter, so
- * copying through the array-like constructor guarantees the exact type.
- */
-function bufferSource(bytes: Uint8Array): BufferSource {
-  return new Uint8Array(bytes);
-}
 
 /**
  * Import the base64 master key into a non-extractable `CryptoKey`. The key is
@@ -98,10 +71,7 @@ export async function encryptSecret(
       bufferSource(new TextEncoder().encode(plaintext)),
     ),
   );
-  const packed = new Uint8Array(iv.length + ciphertext.length);
-  packed.set(iv, 0);
-  packed.set(ciphertext, iv.length);
-  return bytesToBase64(packed);
+  return bytesToBase64(new Uint8Array([...iv, ...ciphertext]));
 }
 
 /**

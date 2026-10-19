@@ -9,14 +9,17 @@ import { NextResponse } from 'next/server';
 
 import { requireUid } from '@/lib/api/auth';
 import { problems } from '@/lib/api/problem';
+import type { IdContext } from '@/lib/api/route-context';
 import { deleteRecipeImport, getRecipeImport } from '@/lib/db/recipe-imports';
 import { getDatabase } from '@/lib/util';
 
-type Context = { params: Promise<{ id: string }> };
-
+/**
+ * `GET /api/recipe-imports/:id`: the import with all its drafts. Answers 200,
+ * 404 for an import the user does not have, 401 when nobody is signed in.
+ */
 export async function GET(
   request: Request,
-  { params }: Context,
+  { params }: IdContext,
 ): Promise<NextResponse> {
   const auth = await requireUid(request);
   if (!auth.ok) {
@@ -34,9 +37,13 @@ export async function GET(
     : problems.notFound('recipe import');
 }
 
+/**
+ * `DELETE /api/recipe-imports/:id`: discard the import. Answers 204, 404 for an
+ * import the user does not have, 401 when nobody is signed in.
+ */
 export async function DELETE(
   request: Request,
-  { params }: Context,
+  { params }: IdContext,
 ): Promise<NextResponse> {
   const auth = await requireUid(request);
   if (!auth.ok) {

@@ -6,6 +6,8 @@
  * page becomes an open redirect.
  */
 
+import type { DriveAttempt } from './drive-access';
+
 /** Short-lived cookie holding the path to return to after Google sign-in. */
 export const RETURN_COOKIE = 'chowdown_return_to';
 
@@ -34,6 +36,6 @@ export function safeReturnPath(
  * happened and offers to try again. The reason is a fixed word, never anything
  * Google sent back.
  */
-export function driveResultPath(result: 'denied' | 'error'): string {
+export function driveResultPath(result: DriveAttempt): string {
   return `/app?drive=${result}`;
 }

@@ -12,24 +12,39 @@
 
 import { NextResponse } from 'next/server';
 
-import { getUserAccessToken } from '@/lib/auth/current-user';
 import { requireUid, requireUser } from '@/lib/api/auth';
-import { isObject, readJson } from '@/lib/api/json';
-import { absoluteUrl } from '@/lib/api/pagination';
 import { driveFailure } from '@/lib/api/drive-failure';
+import { readJsonObject } from '@/lib/api/json';
+import { absoluteUrl } from '@/lib/api/pagination';
 import { problems } from '@/lib/api/problem';
-import { sendRecipe } from '@/lib/api/recipe-response';
+import { parseNewRecipe } from '@/lib/api/recipe-input';
 import { listRecipes } from '@/lib/api/recipe-list';
+import { sendRecipe } from '@/lib/api/recipe-response';
+import { getUserAccessToken } from '@/lib/auth/current-user';
+import type { User } from '@/lib/db/users';
 import { findRecipeBySourceUrl } from '@/lib/db/recipes';
-import { createRecipeFile } from '@/lib/drive/drive-client';
+import { createRecipeFile, type DriveFile } from '@/lib/drive/drive-client';
 import { recipesFolderFor } from '@/lib/drive/recipes-folder';
 import { sourceUrlOf } from '@/lib/recipe/cook-text';
 import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 import { getDatabase } from '@/lib/util';
 
-/** Largest Cooklang body accepted. */
-const MAX_COOKLANG_BYTES = 200_000;
+/** Save a new recipe file in the user's Recipes folder in Drive. */
+async function createInDrive(
+  user: Readonly<User>,
+  name: string,
+  cooklang: string,
+): Promise<DriveFile> {
+  const token = await getUserAccessToken(user);
+  const folderId = await recipesFolderFor(user, token);
+  return createRecipeFile(folderId, name, cooklang, token);
+}
 
+/**
+ * `GET /api/recipes`: one page of the signed-in user's recipes, filtered and
+ * sorted by the query string. Answers 200 with the page, or 401 when nobody is
+ * signed in.
+ */
 export async function GET(request: Request): Promise<NextResponse> {
   const auth = await requireUid(request);
   if (!auth.ok) {
@@ -38,72 +53,60 @@ export async function GET(request: Request): Promise<NextResponse> {
   return listRecipes(request, auth.value);
 }
 
+/**
+ * `POST /api/recipes`: create a recipe from `{ name, cooklang }`. Answers 201
+ * with the new recipe and its `Location`, or 200 with the existing recipe (and
+ * a `Content-Location`) when its source URL is already saved. Needs a signed-in
+ * user with Drive connected: 401 without a session, 400 for a bad body, 409
+ * when Drive is not connected, 502 when Drive fails.
+ */
 export async function POST(request: Request): Promise<NextResponse> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;
   }
   const user = auth.value;
-  const body = await readJson(request);
+  const body = await readJsonObject(
+    request,
+    'The request body must be a JSON object.',
+  );
   if (!body.ok) {
     return body.response;
   }
-  if (!isObject(body.value)) {
-    return problems.badRequest('The request body must be a JSON object.');
-  }
-  const { name, cooklang } = body.value;
-  const errors: string[] = [];
-  if (typeof name !== 'string' || !name.trim() || name.length > 200) {
-    errors.push('name: required, up to 200 characters.');
-  }
-  if (typeof cooklang !== 'string' || !cooklang.trim()) {
-    errors.push('cooklang: required.');
-  } else if (cooklang.length > MAX_COOKLANG_BYTES) {
-    errors.push('cooklang: too large.');
-  }
-  if (
-    errors.length > 0 ||
-    typeof name !== 'string' ||
-    typeof cooklang !== 'string'
-  ) {
-    return problems.badRequest('The recipe is not valid.', errors);
+  const input = parseNewRecipe(body.value);
+  if (!input.ok) {
+    return problems.badRequest('The recipe is not valid.', input.errors);
   }
 
   const db = getDatabase();
-  const sourceUrl = sourceUrlOf(cooklang);
-  if (sourceUrl) {
-    const existing = await findRecipeBySourceUrl(db, user.id, sourceUrl);
-    if (existing) {
-      const response = await sendRecipe(
+  const sourceUrl = sourceUrlOf(input.cooklang);
+  const existing = sourceUrl
+    ? await findRecipeBySourceUrl(db, user.id, sourceUrl)
+    : undefined;
+  if (existing) {
+    return sendRecipe(request, user.id, existing.drive_file_id, 200, {
+      'Content-Location': absoluteUrl(
         request,
-        user.id,
-        existing.drive_file_id,
-        200,
-      );
-      response.headers.set(
-        'Content-Location',
-        absoluteUrl(request, `/api/recipes/${existing.drive_file_id}`),
-      );
-      return response;
-    }
+        `/api/recipes/${existing.drive_file_id}`,
+      ),
+    });
   }
 
-  let created;
-  try {
-    const token = await getUserAccessToken(user);
-    const folderId = await recipesFolderFor(user, token);
-    created = await createRecipeFile(folderId, name.trim(), cooklang, token);
-  } catch (error) {
-    return driveFailure(
+  const created = await createInDrive(
+    user,
+    input.name.trim(),
+    input.cooklang,
+  ).catch((error: unknown) =>
+    driveFailure(
       error,
       'Google Drive could not save the recipe. Nothing was changed.',
-    );
-  }
-  await indexRecipeWrite(db, user.id, created.id, created.name, cooklang);
-  const response = await sendRecipe(request, user.id, created.id, 201);
-  response.headers.set(
-    'Location',
-    absoluteUrl(request, `/api/recipes/${created.id}`),
+    ),
   );
-  return response;
+  if (created instanceof NextResponse) {
+    return created;
+  }
+  await indexRecipeWrite(db, user.id, created.id, created.name, input.cooklang);
+  return sendRecipe(request, user.id, created.id, 201, {
+    Location: absoluteUrl(request, `/api/recipes/${created.id}`),
+  });
 }

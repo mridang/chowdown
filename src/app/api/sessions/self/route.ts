@@ -7,11 +7,16 @@
 
 import { NextResponse } from 'next/server';
 
+import { problems } from '@/lib/api/problem';
 import { SESSION_COOKIE } from '@/lib/auth/session';
 import { isSameOriginPost } from '@/lib/oauth/csrf';
-import { problems } from '@/lib/api/problem';
 import { appOrigin } from '@/lib/util';
 
+/**
+ * `DELETE /api/sessions/self`: sign out by clearing the session cookie. Answers
+ * 204, or 403 when the request came from another site (so a stranger's page
+ * cannot sign people out).
+ */
 export async function DELETE(request: Request): Promise<NextResponse> {
   // Signing someone out from another site is a nuisance attack; refuse it.
   if (!isSameOriginPost(request.headers, appOrigin(request))) {

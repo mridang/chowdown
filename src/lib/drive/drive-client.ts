@@ -11,9 +11,13 @@
  * the whole folder listable with the user's own token.
  */
 
+/** Base address of the Drive metadata API. */
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
+/** Base address of the Drive upload API. */
 const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
+/** The media type Drive gives folders. */
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
+/** The media type recipe files are stored under (Drive has no Cooklang type). */
 const COOK_MIME = 'text/plain';
 
 /** Name of the app-managed folder created in each user's Drive. */
@@ -21,9 +25,45 @@ export const RECIPES_FOLDER_NAME = 'Recipes';
 
 /** A Drive file as chowdown cares about it. */
 export interface DriveFile {
-  id: string;
-  name: string;
-  modifiedTime?: string;
+  readonly id: string;
+  readonly name: string;
+  readonly modifiedTime?: string;
+}
+
+/**
+ * Whether `id` looks like a Drive file id: letters, digits, `_` and `-` only.
+ * Checked before an id from a URL is used in a query.
+ */
+export function isDriveFileId(id: string): boolean {
+  return /^[\w-]+$/.test(id);
+}
+
+/** Whether a value is a file entry Drive returned (it has an id and a name). */
+function isDriveFile(value: unknown): value is DriveFile {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof Reflect.get(value, 'id') === 'string' &&
+    typeof Reflect.get(value, 'name') === 'string'
+  );
+}
+
+/** The well-formed file entries of a Drive listing answer (anything else is skipped). */
+function filesOf(listing: unknown): readonly DriveFile[] {
+  const files: unknown =
+    typeof listing === 'object' && listing !== null
+      ? Reflect.get(listing, 'files')
+      : undefined;
+  return Array.isArray(files) ? files.filter(isDriveFile) : [];
+}
+
+/** The token for the next page of a Drive listing answer, if there is one. */
+function nextPageTokenOf(listing: unknown): string | undefined {
+  const token: unknown =
+    typeof listing === 'object' && listing !== null
+      ? Reflect.get(listing, 'nextPageToken')
+      : undefined;
+  return typeof token === 'string' && token ? token : undefined;
 }
 
 /** GET against the Drive API with a bearer token; throws on a non-2xx. */
@@ -53,13 +93,12 @@ export async function ensureRecipesFolder(
     fields: 'files(id,name)',
     spaces: 'drive',
   });
-  const found = (await (
-    await driveGet(`/files?${params}`, accessToken)
-  ).json()) as {
-    files?: DriveFile[];
-  };
-  if (found.files && found.files.length > 0) {
-    return found.files[0]!.id;
+  const found = filesOf(
+    await (await driveGet(`/files?${params}`, accessToken)).json(),
+  );
+  const existing = found.at(0);
+  if (existing) {
+    return existing.id;
   }
   const response = await fetch(`${DRIVE_API}/files?fields=id`, {
     method: 'POST',
@@ -74,7 +113,15 @@ export async function ensureRecipesFolder(
       `Create folder failed: ${response.status} ${await response.text()}`,
     );
   }
-  return ((await response.json()) as { id: string }).id;
+  const created: unknown = await response.json();
+  const id =
+    typeof created === 'object' && created !== null
+      ? Reflect.get(created, 'id')
+      : undefined;
+  if (typeof id !== 'string') {
+    throw new Error('Create folder failed: no folder id in the answer');
+  }
+  return id;
 }
 
 /** The most listing pages read for one folder (1000 files each). */
@@ -88,30 +135,38 @@ const MAX_LIST_PAGES = 20;
 export async function listRecipeFiles(
   folderId: string,
   accessToken: string,
-): Promise<DriveFile[]> {
-  const q = `'${folderId}' in parents and trashed=false`;
-  const found: DriveFile[] = [];
-  let pageToken: string | undefined;
-  for (let page = 0; page < MAX_LIST_PAGES; page++) {
-    const params = new URLSearchParams({
-      q,
-      fields: 'nextPageToken,files(id,name,modifiedTime)',
-      pageSize: '1000',
-      orderBy: 'name',
-    });
-    if (pageToken) {
-      params.set('pageToken', pageToken);
-    }
-    const data = (await (
-      await driveGet(`/files?${params}`, accessToken)
-    ).json()) as { files?: DriveFile[]; nextPageToken?: string };
-    found.push(...(data.files ?? []));
-    pageToken = data.nextPageToken;
-    if (!pageToken) {
-      break;
-    }
-  }
+): Promise<readonly DriveFile[]> {
+  const found = await listPages(
+    `'${folderId}' in parents and trashed=false`,
+    accessToken,
+  );
   return found.filter((f) => f.name.toLowerCase().endsWith('.cook'));
+}
+
+/**
+ * Every file matching the Drive query `q`, reading page after page (up to
+ * {@link MAX_LIST_PAGES}) until Drive says there are no more.
+ */
+async function listPages(
+  q: string,
+  accessToken: string,
+  pageToken?: string,
+  page = 0,
+): Promise<readonly DriveFile[]> {
+  const params = new URLSearchParams({
+    q,
+    fields: 'nextPageToken,files(id,name,modifiedTime)',
+    pageSize: '1000',
+    orderBy: 'name',
+    ...(pageToken ? { pageToken } : {}),
+  });
+  const data: unknown = await (
+    await driveGet(`/files?${params}`, accessToken)
+  ).json();
+  const next = nextPageTokenOf(data);
+  return next && page + 1 < MAX_LIST_PAGES
+    ? [...filesOf(data), ...(await listPages(q, accessToken, next, page + 1))]
+    : filesOf(data);
 }
 
 /** Read a file's raw text content by id. */
@@ -157,7 +212,11 @@ export async function createRecipeFile(
       `Create file failed: ${response.status} ${await response.text()}`,
     );
   }
-  return (await response.json()) as DriveFile;
+  const created: unknown = await response.json();
+  if (!isDriveFile(created)) {
+    throw new Error('Create file failed: no file in the answer');
+  }
+  return created;
 }
 
 /** Overwrite a file's content via a media upload (PATCH). */

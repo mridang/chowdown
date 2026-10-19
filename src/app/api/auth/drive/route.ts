@@ -12,19 +12,23 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getCurrentUser, getSession } from '@/lib/auth/current-user';
 import { isDriveConnected } from '@/lib/auth/drive-access';
+import { startFlowCookies } from '@/lib/auth/flow-cookies';
 import { buildAuthUrl } from '@/lib/auth/google-oauth';
-import {
-  newState,
-  STATE_COOKIE,
-  STATE_TTL_SECONDS,
-} from '@/lib/auth/oauth-state';
-import { RETURN_COOKIE, safeReturnPath } from '@/lib/auth/return-to';
+import { newState } from '@/lib/auth/oauth-state';
+import { safeReturnPath } from '@/lib/auth/return-to';
 import { setSessionCookie } from '@/lib/auth/session-cookie';
 import { appOrigin, getEnv } from '@/lib/util';
 
+/**
+ * `GET /api/auth/drive`: connect Google Drive for the signed-in person.
+ * Answers a redirect: to sign-in first when nobody is signed in, straight on
+ * (with a corrected session cookie) when Drive is already connected, or to
+ * Google's consent screen otherwise.
+ */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const env = getEnv();
   const origin = appOrigin(request);
+  const secure = origin.startsWith('https');
   const returnTo = safeReturnPath(request.nextUrl.searchParams.get('returnTo'));
 
   const user = await getCurrentUser();
@@ -40,7 +44,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const response = NextResponse.redirect(`${origin}${returnTo ?? '/app'}`);
     await setSessionCookie(response, user, {
       secret: env.SESSION_SECRET,
-      secure: origin.startsWith('https'),
+      secure,
       // Same lifetime as before: this only corrects the hint.
       exp: (await getSession())?.exp,
     });
@@ -57,19 +61,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       loginHint: user.email,
     }),
   );
-  const cookie = {
-    httpOnly: true,
-    secure: origin.startsWith('https'),
-    sameSite: 'lax',
-    path: '/',
-    maxAge: STATE_TTL_SECONDS,
-  } as const;
-  response.cookies.set(STATE_COOKIE, state, cookie);
-  if (returnTo) {
-    response.cookies.set(RETURN_COOKIE, returnTo, cookie);
-  } else {
-    // Don't let an abandoned earlier attempt send them somewhere stale.
-    response.cookies.delete(RETURN_COOKIE);
-  }
+  startFlowCookies(response, { state, returnTo, secure });
   return response;
 }

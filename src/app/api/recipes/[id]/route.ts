@@ -14,41 +14,41 @@
 import { NextResponse } from 'next/server';
 
 import { requireUid, requireUser } from '@/lib/api/auth';
-import { isObject, readJson } from '@/lib/api/json';
 import { driveFailure } from '@/lib/api/drive-failure';
+import { readJson, readJsonObject } from '@/lib/api/json';
+import { settleMutation } from '@/lib/api/mutation-response';
 import { problems } from '@/lib/api/problem';
+import { parseReplacementCooklang } from '@/lib/api/recipe-input';
 import { sendRecipe } from '@/lib/api/recipe-response';
+import type { IdContext } from '@/lib/api/route-context';
 import { deleteRecipeForUser } from '@/lib/recipe/delete-recipe';
+import type { MutateOutcome } from '@/lib/recipe/mutate-recipe';
 import { mutateRecipeForUser } from '@/lib/recipe/mutate-recipe-live';
 import { applyRecipePatch } from '@/lib/recipe/recipe-patch';
-import type { MutateOutcome } from '@/lib/recipe/mutate-recipe';
 
-type Context = { params: Promise<{ id: string }> };
-
-const MAX_COOKLANG_BYTES = 200_000;
-
-/** Turn a mutation outcome into the response to send. */
+/** Turn a mutation outcome into the response to send: a refusal, or the recipe as it now stands. */
 async function respond(
   request: Request,
   userId: number,
   id: string,
   outcome: MutateOutcome<null>,
 ): Promise<NextResponse> {
-  switch (outcome.kind) {
-    case 'not-found':
-      return problems.notFound('recipe');
-    case 'precondition-failed':
-      return problems.preconditionFailed();
-    case 'invalid':
-      return problems.badRequest('The change is not valid.', outcome.errors);
-    case 'done':
-      return sendRecipe(request, userId, id, 200);
-  }
+  const settled = settleMutation(outcome, {
+    missing: 'recipe',
+    invalid: 'The change is not valid.',
+  });
+  return settled.ok ? sendRecipe(request, userId, id, 200) : settled.response;
 }
 
+/**
+ * `GET /api/recipes/:id`: the recipe as JSON, Cooklang text or JSON-LD,
+ * whichever `Accept` asks for, with its `ETag`. Answers 304 when
+ * `If-None-Match` matches, 404 for a recipe the user does not have, 401 when
+ * nobody is signed in.
+ */
 export async function GET(
   request: Request,
-  { params }: Context,
+  { params }: IdContext,
 ): Promise<NextResponse> {
   const auth = await requireUid(request);
   if (!auth.ok) {
@@ -57,9 +57,15 @@ export async function GET(
   return sendRecipe(request, auth.value, (await params).id);
 }
 
+/**
+ * `PUT /api/recipes/:id`: replace the recipe's Cooklang text with `{ cooklang }`.
+ * Answers 200 with the recipe. Needs a signed-in user: 401, 400 for a bad
+ * body, 404 for an unknown recipe, 412 when `If-Match` is stale, and 409 or
+ * 502 when Drive is not connected or fails.
+ */
 export async function PUT(
   request: Request,
-  { params }: Context,
+  { params }: IdContext,
 ): Promise<NextResponse> {
   const auth = await requireUser(request);
   if (!auth.ok) {
@@ -69,12 +75,8 @@ export async function PUT(
   if (!body.ok) {
     return body.response;
   }
-  const cooklang = isObject(body.value) ? body.value['cooklang'] : undefined;
-  if (
-    typeof cooklang !== 'string' ||
-    !cooklang.trim() ||
-    cooklang.length > MAX_COOKLANG_BYTES
-  ) {
+  const cooklang = parseReplacementCooklang(body.value);
+  if (cooklang === undefined) {
     return problems.badRequest('The recipe is not valid.', [
       'cooklang: required.',
     ]);
@@ -96,20 +98,27 @@ export async function PUT(
   }
 }
 
+/**
+ * `PATCH /api/recipes/:id`: edit the recipe's title, images or tags with a JSON
+ * Merge Patch. Answers 200 with the recipe. Needs a signed-in user: 401, 400
+ * for a patch that is not valid, 404 for an unknown recipe, 412 when
+ * `If-Match` is stale, and 409 or 502 when Drive is not connected or fails.
+ */
 export async function PATCH(
   request: Request,
-  { params }: Context,
+  { params }: IdContext,
 ): Promise<NextResponse> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;
   }
-  const body = await readJson(request, ['application/merge-patch+json']);
+  const body = await readJsonObject(
+    request,
+    'The patch must be a JSON object.',
+    ['application/merge-patch+json'],
+  );
   if (!body.ok) {
     return body.response;
-  }
-  if (!isObject(body.value)) {
-    return problems.badRequest('The patch must be a JSON object.');
   }
   const patch = body.value;
   const { id } = await params;
@@ -134,9 +143,14 @@ export async function PATCH(
   }
 }
 
+/**
+ * `DELETE /api/recipes/:id`: delete the recipe; its Drive file goes to the
+ * trash. Answers 204, or 404 for a recipe the user does not have. Needs a
+ * signed-in user: 401, and 409 or 502 when Drive is not connected or fails.
+ */
 export async function DELETE(
   request: Request,
-  { params }: Context,
+  { params }: IdContext,
 ): Promise<NextResponse> {
   const auth = await requireUser(request);
   if (!auth.ok) {

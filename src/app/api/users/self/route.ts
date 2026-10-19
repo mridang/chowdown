@@ -8,12 +8,16 @@
 import { NextResponse } from 'next/server';
 
 import { requireUser } from '@/lib/api/auth';
-import { isObject, readJson } from '@/lib/api/json';
+import { readJsonObject } from '@/lib/api/json';
 import { problems } from '@/lib/api/problem';
 import { parseUserPatch, userResource } from '@/lib/api/user-resource';
 import { getUserById, setUserUnits } from '@/lib/db/users';
 import { getDatabase } from '@/lib/util';
 
+/**
+ * `GET /api/users/self`: the signed-in user's profile (id, email, name,
+ * picture, measurement system). Answers 200, or 401 when nobody is signed in.
+ */
 export async function GET(request: Request): Promise<NextResponse> {
   const auth = await requireUser(request);
   if (!auth.ok) {
@@ -24,17 +28,24 @@ export async function GET(request: Request): Promise<NextResponse> {
   });
 }
 
+/**
+ * `PATCH /api/users/self`: change the measurement system with a JSON Merge
+ * Patch (`{ "measurement_system": "US" }`, or `null` to clear it). Answers 200
+ * with the updated profile, 400 for a patch that is not valid (identity fields
+ * cannot be edited), 401 when nobody is signed in.
+ */
 export async function PATCH(request: Request): Promise<NextResponse> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;
   }
-  const body = await readJson(request, ['application/merge-patch+json']);
+  const body = await readJsonObject(
+    request,
+    'The patch must be a JSON object.',
+    ['application/merge-patch+json'],
+  );
   if (!body.ok) {
     return body.response;
-  }
-  if (!isObject(body.value)) {
-    return problems.badRequest('The patch must be a JSON object.');
   }
   const patch = parseUserPatch(body.value);
   if (!patch.ok) {

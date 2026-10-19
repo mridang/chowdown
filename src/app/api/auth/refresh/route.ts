@@ -12,6 +12,11 @@ import { safeReturnPath } from '@/lib/auth/return-to';
 import { setSessionCookie } from '@/lib/auth/session-cookie';
 import { appOrigin, getEnv } from '@/lib/util';
 
+/**
+ * `GET /api/auth/refresh`: reissue the session cookie from the database and
+ * send the person on to the safe `?returnTo=` path (or `/app`). Answers a
+ * redirect; someone who is not signed in goes to the home page.
+ */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const origin = appOrigin(request);
   const user = await getCurrentUser();

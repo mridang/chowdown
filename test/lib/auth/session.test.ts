@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { bytesToBase64Url } from '../../../src/lib/util/base64';
 import {
   SESSION_TTL_SECONDS,
   createSessionToken,
@@ -122,5 +123,56 @@ describe('session profile', () => {
       SECRET,
     );
     expect((await verifySessionToken(token, SECRET))?.name).toBeUndefined();
+  });
+});
+
+describe('a correctly signed token with the wrong contents', () => {
+  /** Sign `body` (base64url) the way a session token is signed. */
+  async function signed(text: string): Promise<string> {
+    const body = bytesToBase64Url(new TextEncoder().encode(text));
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(SECRET),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    );
+    const sig = new Uint8Array(
+      await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body)),
+    );
+    return `${body}.${bytesToBase64Url(sig)}`;
+  }
+
+  it('is refused when the body is not JSON', async () => {
+    expect(
+      await verifySessionToken(await signed('not json'), SECRET),
+    ).toBeNull();
+  });
+
+  it('is refused when the body is not an object', async () => {
+    for (const text of ['null', '3', '"x"', '[]']) {
+      expect(await verifySessionToken(await signed(text), SECRET)).toBeNull();
+    }
+  });
+
+  it('is refused when it has no expiry', async () => {
+    expect(
+      await verifySessionToken(await signed('{"uid":1}'), SECRET),
+    ).toBeNull();
+  });
+
+  it('is accepted once it has an expiry in the future', async () => {
+    const exp = Math.floor(Date.now() / 1000) + 60;
+    expect(
+      await verifySessionToken(await signed(`{"uid":1,"exp":${exp}}`), SECRET),
+    ).toMatchObject({ uid: 1 });
+  });
+});
+
+describe('a malformed token', () => {
+  it('is refused without a dot, or with an empty signature or a non-base64 one', async () => {
+    for (const token of ['', 'abc', '.abc', 'abc.', 'abc.!!!']) {
+      expect(await verifySessionToken(token, SECRET)).toBeNull();
+    }
   });
 });

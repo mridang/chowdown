@@ -9,7 +9,7 @@
 import { NextResponse } from 'next/server';
 
 /** CORS for endpoints a browser-based client may call. */
-export const CORS_HEADERS: Record<string, string> = {
+export const CORS_HEADERS: Readonly<Record<string, string>> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers':
@@ -27,7 +27,7 @@ export function preflight(): NextResponse {
 export function noStoreJson(
   body: unknown,
   status = 200,
-  extra: Record<string, string> = {},
+  extra: Readonly<Record<string, string>> = {},
 ): NextResponse {
   return NextResponse.json(body, {
     status,
@@ -40,7 +40,7 @@ export function oauthError(
   error: string,
   description: string,
   status = 400,
-  extra: Record<string, string> = {},
+  extra: Readonly<Record<string, string>> = {},
 ): NextResponse {
   return noStoreJson({ error, error_description: description }, status, extra);
 }

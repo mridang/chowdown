@@ -63,7 +63,9 @@ export async function getSessionUid(): Promise<number | null> {
  * {@link DriveNotConnectedError} if Drive isn't connected or the stored login
  * is no longer usable (see {@link accessTokenFor} for exactly when).
  */
-export async function getUserAccessToken(user: User): Promise<string> {
+export async function getUserAccessToken(
+  user: Readonly<User>,
+): Promise<string> {
   if (!user.refresh_token_enc) {
     throw new DriveNotConnectedError();
   }

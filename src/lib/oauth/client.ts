@@ -14,14 +14,16 @@
  */
 
 import { isAcceptableRedirectUri } from './redirect-uri';
-import { base64url } from './pkce';
+import { bytesToBase64Url } from '../util/base64';
+import { parseUrl } from '../util/url';
 
 /** A client as the authorization server uses it. */
 export interface OAuthClient {
-  clientId: string;
-  name: string;
-  redirectUris: string[];
-  kind: 'dcr' | 'cimd';
+  readonly clientId: string;
+  readonly name: string;
+  readonly redirectUris: readonly string[];
+  /** How the client became known: `dcr` registered itself, `cimd` published a metadata document. */
+  readonly kind: 'dcr' | 'cimd';
 }
 
 /** Largest metadata document we will read. */
@@ -35,13 +37,9 @@ const MAX_NAME_LENGTH = 100;
 
 /** Whether a `client_id` is a metadata-document URL rather than a plain id. */
 export function isMetadataDocumentUrl(clientId: string): boolean {
-  let url: URL;
-  try {
-    url = new URL(clientId);
-  } catch {
-    return false;
-  }
+  const url = parseUrl(clientId);
   return (
+    url !== undefined &&
     url.protocol === 'https:' &&
     url.pathname.length > 1 &&
     !url.hash &&
@@ -57,27 +55,40 @@ export function isMetadataDocumentUrl(clientId: string): boolean {
   );
 }
 
+/** A client's display name: trimmed, capped, with a fallback when it gave none. */
 function cleanName(name: unknown, fallback: string): string {
   const text = typeof name === 'string' ? name.trim() : '';
   return (text || fallback).slice(0, MAX_NAME_LENGTH);
 }
 
-function redirectList(value: unknown): string[] | undefined {
-  if (!Array.isArray(value) || value.length === 0 || value.length > 20) {
-    return undefined;
-  }
-  if (
-    !value.every((u) => typeof u === 'string' && isAcceptableRedirectUri(u))
-  ) {
-    return undefined;
-  }
-  return value as string[];
+/** Whether a value is a JSON object (or array) whose members can be looked up by name. */
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === 'object' && value !== null;
+}
+
+/** Whether every member of a list is a redirect address we would accept. */
+function isRedirectList(value: unknown): value is readonly string[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.length <= 20 &&
+    value.every((u) => typeof u === 'string' && isAcceptableRedirectUri(u))
+  );
+}
+
+/** The redirect addresses to use: 1 to 20 acceptable ones, or undefined. */
+function redirectList(value: unknown): readonly string[] | undefined {
+  return isRedirectList(value) ? value : undefined;
 }
 
 /** The result of validating client metadata. */
 export type ClientParse =
-  | { ok: true; client: OAuthClient }
-  | { ok: false; error: string; description: string };
+  | { readonly ok: true; readonly client: OAuthClient }
+  | {
+      readonly ok: false;
+      readonly error: string;
+      readonly description: string;
+    };
 
 /**
  * Validate a fetched Client ID Metadata Document. The `client_id` inside must
@@ -92,10 +103,10 @@ export function parseClientMetadataDocument(
     error: 'invalid_client',
     description,
   });
-  if (typeof document !== 'object' || document === null) {
+  if (!isRecord(document)) {
     return bad('The client metadata document is not a JSON object.');
   }
-  const doc = document as Record<string, unknown>;
+  const doc = document;
   if (doc['client_id'] !== url) {
     return bad('The document client_id does not match the URL it came from.');
   }
@@ -137,14 +148,12 @@ export async function fetchClientMetadata(
   if (!isMetadataDocumentUrl(url)) {
     return bad('The client_id is not a usable metadata document URL.');
   }
-  let response: Response;
-  try {
-    response = await fetchImpl(url, {
-      redirect: 'manual',
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-  } catch {
+  const response = await fetchImpl(url, {
+    redirect: 'manual',
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  }).catch(() => undefined);
+  if (!response) {
     return bad('The client metadata document could not be fetched.');
   }
   if (!response.ok) {
@@ -156,34 +165,80 @@ export async function fetchClientMetadata(
   if (text.length > MAX_DOCUMENT_BYTES) {
     return bad('The client metadata document is too large.');
   }
-  let json: unknown;
+  const json = parseJson(text);
+  return json.ok
+    ? parseClientMetadataDocument(json.value, url)
+    : bad('The client metadata document is not valid JSON.');
+}
+
+/** JSON text parsed without throwing: the value, or a note that it wasn't JSON. */
+function parseJson(
+  text: string,
+): { readonly ok: true; readonly value: unknown } | { readonly ok: false } {
   try {
-    json = JSON.parse(text);
+    return { ok: true, value: JSON.parse(text) };
   } catch {
-    return bad('The client metadata document is not valid JSON.');
+    return { ok: false };
   }
-  return parseClientMetadataDocument(json, url);
 }
 
 /** The outcome of a dynamic registration request. */
 export type Registration =
-  | { ok: true; client: OAuthClient }
+  | { readonly ok: true; readonly client: OAuthClient }
   | {
-      ok: false;
-      error: 'invalid_redirect_uri' | 'invalid_client_metadata';
-      description: string;
+      readonly ok: false;
+      readonly error: 'invalid_redirect_uri' | 'invalid_client_metadata';
+      readonly description: string;
     };
+
+/** Registration bodies are tiny; anything bigger is refused unread. */
+export const MAX_REGISTRATION_BYTES = 8_000;
+
+/** Read the text of an RFC 7591 registration request: size, then JSON, then the rules of {@link parseRegistration}. */
+export function parseRegistrationText(text: string): Registration {
+  if (text.length > MAX_REGISTRATION_BYTES) {
+    return {
+      ok: false,
+      error: 'invalid_client_metadata',
+      description: 'The request is too large.',
+    };
+  }
+  const body = parseJson(text);
+  return body.ok
+    ? parseRegistration(body.value)
+    : {
+        ok: false,
+        error: 'invalid_client_metadata',
+        description: 'The request is not valid JSON.',
+      };
+}
+
+/** The RFC 7591 answer for a client that has just registered (`issuedAt` in Unix seconds). */
+export function registrationResponse(
+  client: Readonly<OAuthClient>,
+  issuedAt: number,
+): Readonly<Record<string, unknown>> {
+  return {
+    client_id: client.clientId,
+    client_name: client.name,
+    redirect_uris: client.redirectUris,
+    grant_types: ['authorization_code', 'refresh_token'],
+    response_types: ['code'],
+    token_endpoint_auth_method: 'none',
+    client_id_issued_at: issuedAt,
+  };
+}
 
 /** Validate an RFC 7591 registration request and mint a client id. */
 export function parseRegistration(body: unknown): Registration {
-  if (typeof body !== 'object' || body === null) {
+  if (!isRecord(body)) {
     return {
       ok: false,
       error: 'invalid_client_metadata',
       description: 'The request body must be a JSON object.',
     };
   }
-  const data = body as Record<string, unknown>;
+  const data = body;
   const redirectUris = redirectList(data['redirect_uris']);
   if (!redirectUris) {
     return {
@@ -215,7 +270,7 @@ export function parseRegistration(body: unknown): Registration {
         'Only the authorization_code and refresh_token grants are supported.',
     };
   }
-  const id = base64url(crypto.getRandomValues(new Uint8Array(18)));
+  const id = bytesToBase64Url(crypto.getRandomValues(new Uint8Array(18)));
   return {
     ok: true,
     client: {

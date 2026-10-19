@@ -8,42 +8,34 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+import { startFlowCookies } from '@/lib/auth/flow-cookies';
 import { buildAuthUrl } from '@/lib/auth/google-oauth';
-import {
-  newState,
-  STATE_COOKIE,
-  STATE_TTL_SECONDS,
-} from '@/lib/auth/oauth-state';
-import { RETURN_COOKIE, safeReturnPath } from '@/lib/auth/return-to';
+import { newState } from '@/lib/auth/oauth-state';
+import { safeReturnPath } from '@/lib/auth/return-to';
 import { appOrigin, getEnv } from '@/lib/util';
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  const env = getEnv();
+/**
+ * `GET /api/auth/login`: send the browser to Google to sign in. Open to
+ * everyone. Answers a redirect to Google's consent screen, with the one-time
+ * `state` and the safe `?returnTo=` path (if any) kept in short-lived cookies.
+ */
+export function GET(request: NextRequest): NextResponse {
   const origin = appOrigin(request);
   const state = newState('signin');
-  const url = buildAuthUrl({
-    clientId: env.GOOGLE_OAUTH_CLIENT_ID,
-    redirectUri: `${origin}/api/auth/callback`,
-    state,
-    purpose: 'signin',
-  });
-  const response = NextResponse.redirect(url);
-  const cookie = {
-    httpOnly: true,
-    secure: origin.startsWith('https'),
-    sameSite: 'lax',
-    path: '/',
-    maxAge: STATE_TTL_SECONDS,
-  } as const;
-  response.cookies.set(STATE_COOKIE, state, cookie);
+  const response = NextResponse.redirect(
+    buildAuthUrl({
+      clientId: getEnv().GOOGLE_OAUTH_CLIENT_ID,
+      redirectUri: `${origin}/api/auth/callback`,
+      state,
+      purpose: 'signin',
+    }),
+  );
   // Remember where to land afterwards (e.g. back on an assistant's approval
   // screen), but only if it is a path on this site.
-  const returnTo = safeReturnPath(request.nextUrl.searchParams.get('returnTo'));
-  if (returnTo) {
-    response.cookies.set(RETURN_COOKIE, returnTo, cookie);
-  } else {
-    // Don't let an abandoned earlier attempt send them somewhere stale.
-    response.cookies.delete(RETURN_COOKIE);
-  }
+  startFlowCookies(response, {
+    state,
+    returnTo: safeReturnPath(request.nextUrl.searchParams.get('returnTo')),
+    secure: origin.startsWith('https'),
+  });
   return response;
 }

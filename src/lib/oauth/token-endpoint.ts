@@ -22,10 +22,11 @@ import {
   hashSecret,
   newSecret,
 } from './secrets';
-import { SUPPORTED_SCOPES } from './scopes';
+import { isSupportedScope } from './scopes';
 
 /** Access tokens live an hour; refresh tokens thirty days, renewed on use. */
 export const ACCESS_TTL_SECONDS = 60 * 60;
+/** How long a refresh token lasts, in seconds (30 days). */
 export const REFRESH_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 /** Authorization codes are good for ten minutes at most. */
@@ -33,34 +34,34 @@ export const CODE_TTL_SECONDS = 60 * 10;
 
 /** A stored authorization code. */
 export interface CodeRecord {
-  clientId: string;
-  userId: number;
-  redirectUri: string;
-  codeChallenge: string;
-  scope: string[];
-  resource: string;
-  expiresAt: number;
+  readonly clientId: string;
+  readonly userId: number;
+  readonly redirectUri: string;
+  readonly codeChallenge: string;
+  readonly scope: readonly string[];
+  readonly resource: string;
+  readonly expiresAt: number;
   /** Set once the code has been redeemed. */
-  grantId: string | null;
+  readonly grantId: string | null;
 }
 
 /** A user's approval of a client. */
 export interface GrantRecord {
-  id: string;
-  userId: number;
-  clientId: string;
-  scope: string[];
-  resource: string;
-  revoked: boolean;
-  lastUsedAt: number | null;
+  readonly id: string;
+  readonly userId: number;
+  readonly clientId: string;
+  readonly scope: readonly string[];
+  readonly resource: string;
+  readonly revoked: boolean;
+  readonly lastUsedAt: number | null;
 }
 
 /** A stored token with its grant. */
 export interface TokenRecord {
-  kind: 'access' | 'refresh';
-  expiresAt: number;
-  usedAt: number | null;
-  grant: GrantRecord;
+  readonly kind: 'access' | 'refresh';
+  readonly expiresAt: number;
+  readonly usedAt: number | null;
+  readonly grant: GrantRecord;
 }
 
 /** Everything the token logic needs from storage. */
@@ -74,11 +75,11 @@ export interface OAuthStore {
   ): Promise<void>;
   revokeGrant(grantId: string): Promise<void>;
   saveTokens(
-    tokens: {
-      hash: string;
-      kind: 'access' | 'refresh';
-      grantId: string;
-      expiresAt: number;
+    tokens: readonly {
+      readonly hash: string;
+      readonly kind: 'access' | 'refresh';
+      readonly grantId: string;
+      readonly expiresAt: number;
     }[],
   ): Promise<void>;
   findToken(hash: string): Promise<TokenRecord | undefined>;
@@ -89,9 +90,9 @@ export interface OAuthStore {
 
 /** An OAuth error response. */
 export interface OAuthFailure {
-  ok: false;
-  error: string;
-  description: string;
+  readonly ok: false;
+  readonly error: string;
+  readonly description: string;
 }
 
 /** A successful token response body. */
@@ -100,9 +101,10 @@ export interface TokenResponse {
   token_type: 'Bearer';
   expires_in: number;
   refresh_token: string;
-  scope: string;
+  readonly scope: string;
 }
 
+/** A failed exchange, with the OAuth error code and a sentence for the client. */
 const fail = (error: string, description: string): OAuthFailure => ({
   ok: false,
   error,
@@ -128,7 +130,7 @@ export async function issueAuthorizationCode(
 async function issueTokens(
   store: OAuthStore,
   grantId: string,
-  scope: string[],
+  scope: readonly string[],
   now: number,
 ): Promise<TokenResponse> {
   const access = newSecret(ACCESS_PREFIX);
@@ -158,12 +160,12 @@ async function issueTokens(
 
 /** The parameters of an `authorization_code` token request. */
 export interface CodeExchange {
-  code: string;
-  clientId: string;
-  redirectUri: string | undefined;
-  codeVerifier: string | undefined;
+  readonly code: string;
+  readonly clientId: string;
+  readonly redirectUri: string | undefined;
+  readonly codeVerifier: string | undefined;
   /** The `resource` in the request, if sent. */
-  resource: string | undefined;
+  readonly resource: string | undefined;
 }
 
 /** Redeem an authorization code for tokens. */
@@ -221,10 +223,10 @@ export async function exchangeAuthorizationCode(
 
 /** The parameters of a `refresh_token` request. */
 export interface RefreshExchange {
-  refreshToken: string;
-  clientId: string;
+  readonly refreshToken: string;
+  readonly clientId: string;
   /** The scope asked for, which may not exceed the grant (and does not narrow it). */
-  scope: string | undefined;
+  readonly scope: string | undefined;
 }
 
 /** Exchange a refresh token for a new pair, rotating the refresh token. */
@@ -259,11 +261,7 @@ export async function exchangeRefreshToken(
 
   if (request.scope) {
     const asked = request.scope.split(/\s+/).filter(Boolean);
-    if (
-      !asked.every(
-        (s) => grant.scope.includes(s) && SUPPORTED_SCOPES.includes(s),
-      )
-    ) {
+    if (!asked.every((s) => grant.scope.includes(s) && isSupportedScope(s))) {
       return fail(
         'invalid_scope',
         'Cannot widen the scope of a refresh token.',
@@ -282,9 +280,9 @@ export async function exchangeRefreshToken(
 
 /** Who a valid access token speaks for. */
 export interface AccessIdentity {
-  userId: number;
-  scope: string[];
-  grantId: string;
+  readonly userId: number;
+  readonly scope: readonly string[];
+  readonly grantId: string;
 }
 
 /** How often to record that a grant is in use (saves a write per request). */

@@ -9,7 +9,7 @@
  */
 
 /** Security headers for every response. */
-export const SECURITY_HEADERS: Record<string, string> = {
+export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
   // Never let a browser guess a different content type for a response.
   'X-Content-Type-Options': 'nosniff',
   // Send other sites only our origin, and nothing at all on a downgrade.
@@ -44,6 +44,26 @@ const OPEN_FILES =
 export function resourcePolicyFor(pathname: string): string {
   return OPEN_FILES.test(pathname) ? 'cross-origin' : 'same-site';
 }
+
+/** One response header: its name and value. */
+type HeaderPair = [string, string];
+
+/**
+ * A copy of `headers` with each of `replacements` set, replacing any header of
+ * the same name. The original is left as it was (a `Response` from the app is
+ * read-only anyway).
+ */
+export function replacingHeaders(
+  headers: Headers,
+  replacements: Readonly<Record<string, string>>,
+): Headers {
+  const names = new Set(Object.keys(replacements).map((n) => n.toLowerCase()));
+  const kept: HeaderPair[] = [...headers].filter(([name]) => !names.has(name));
+  return new Headers([...kept, ...Object.entries(replacements)]);
+}
+
+/** Tells crawlers not to index a page or follow its links. */
+const NOINDEX: HeaderPair = ['X-Robots-Tag', 'noindex, nofollow'];
 
 /** Cache rules for the few responses that want something other than the default. */
 function cacheControlFor(pathname: string, response: Response): string | null {
@@ -80,33 +100,28 @@ export function applyResponseHeaders(
   if (response.status === 101 || response.webSocket) {
     return response;
   }
-  const headers = new Headers(response.headers);
-  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
-    if (!headers.has(name)) {
-      headers.set(name, value);
-    }
-  }
   const { pathname } = new URL(request.url);
-  if (!headers.has('Cross-Origin-Resource-Policy')) {
-    headers.set('Cross-Origin-Resource-Policy', resourcePolicyFor(pathname));
-  }
-  if (
-    !PUBLIC_PAGES.has(pathname) &&
-    !OPEN_FILES.test(pathname) &&
-    !headers.has('X-Robots-Tag')
-  ) {
+  const present = response.headers;
+  const leftAlone = PUBLIC_PAGES.has(pathname) || OPEN_FILES.test(pathname);
+  const candidates: HeaderPair[] = [
+    ...Object.entries(SECURITY_HEADERS),
+    ['Cross-Origin-Resource-Policy', resourcePolicyFor(pathname)],
     // Whatever the page itself says, tell crawlers not to index or follow it.
     // (The files other sites are meant to fetch, such as the sitemap and
     // robots.txt, are left alone: marking them noindex would only confuse.)
-    headers.set('X-Robots-Tag', 'noindex, nofollow');
-  }
+    ...(leftAlone ? [] : [NOINDEX]),
+  ];
+  // Added only where the response has not set its own.
+  const defaults = candidates.filter(([name]) => !present.has(name));
+  // A cache rule from here replaces whatever the response said.
   const cache = cacheControlFor(pathname, response);
-  if (cache) {
-    headers.set('Cache-Control', cache);
-  }
+  const replacing: HeaderPair[] = cache ? [['Cache-Control', cache]] : [];
+  const kept: HeaderPair[] = [...present].filter(
+    ([name]) => replacing.length === 0 || name !== 'cache-control',
+  );
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
-    headers,
+    headers: new Headers([...kept, ...defaults, ...replacing]),
   });
 }

@@ -12,14 +12,12 @@
  * may be framed, embedded or sent anywhere but this site.
  */
 
+import { bytesToBase64 } from '../util/base64';
+import { replacingHeaders } from './headers';
+
 /** A fresh, unguessable nonce: 16 random bytes, base64. */
 export function newNonce(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  let binary = '';
-  for (const b of bytes) {
-    binary += String.fromCharCode(b);
-  }
-  return btoa(binary);
+  return bytesToBase64(crypto.getRandomValues(new Uint8Array(16)));
 }
 
 /**
@@ -70,8 +68,8 @@ export function forwardedHeaders(
   csp: string,
   nonce: string,
 ): Headers {
-  const headers = new Headers(incoming);
-  headers.set('content-security-policy', csp);
-  headers.set('x-nonce', nonce);
-  return headers;
+  return replacingHeaders(incoming, {
+    'content-security-policy': csp,
+    'x-nonce': nonce,
+  });
 }

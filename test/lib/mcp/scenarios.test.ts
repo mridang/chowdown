@@ -6,7 +6,6 @@ import type { Recipe } from '../../../src/lib/db/recipes';
 import {
   browseRecipes,
   filterOverview,
-  pantryOf,
   recipesFromIngredients,
   runScenarioTool,
   type ScenarioDeps,
@@ -136,22 +135,6 @@ describe('browseRecipes', () => {
     const { recipes, message } = browseRecipes(COLLECTION, { limit: 2 });
     expect(recipes).toHaveLength(2);
     expect(message).toContain('showing 2 of 7');
-  });
-});
-
-describe('pantryOf', () => {
-  it('reads strings, lists in one string, and objects', () => {
-    expect(
-      pantryOf(['3 tomatoes and 400 g pasta', { name: 'garlic', quantity: 2 }]),
-    ).toEqual([
-      { name: 'tomatoes', quantity: '3' },
-      { name: 'pasta', quantity: '400 g' },
-      { name: 'garlic', quantity: '2' },
-    ]);
-  });
-
-  it('ignores junk', () => {
-    expect(pantryOf([1, null, { name: '' }, '  '])).toEqual([]);
   });
 });
 
@@ -360,39 +343,7 @@ describe('recipesFromIngredients — long lists and how items are read', () => {
     expect(recipes).toHaveLength(5);
   });
 
-  it('keeps an item that comes with an amount after the name together', () => {
-    expect(pantryOf(['Tomatoes, 3'])).toEqual([
-      { name: 'Tomatoes', quantity: '3' },
-    ]);
-    expect(pantryOf('tomatoes (chopped, canned), 2 onions')).toEqual([
-      { name: 'tomatoes (chopped, canned)' },
-      { name: 'onions', quantity: '2' },
-    ]);
-  });
-
-  it('does not split amounts or names that contain a comma or an "and"', () => {
-    expect(pantryOf(['1,5 kg potatoes'])).toEqual([
-      { name: 'potatoes', quantity: '1,5 kg' },
-    ]);
-    expect(pantryOf(['1,000 g flour'])).toEqual([
-      { name: 'flour', quantity: '1,000 g' },
-    ]);
-    expect(pantryOf(['mac and cheese'])).toEqual([{ name: 'mac and cheese' }]);
-    expect(pantryOf(['half and half, 2 eggs'])).toEqual([
-      { name: 'half and half' },
-      { name: 'eggs', quantity: '2' },
-    ]);
-  });
-
-  it('ignores a bare number as an item', () => {
-    expect(pantryOf(['3'])).toEqual([]);
-  });
-
-  it('caps how much it will read, so a huge request cannot hog the server', () => {
-    const items = pantryOf(Array.from({ length: 5000 }, (_, i) => `item ${i}`));
-    expect(items).toHaveLength(60);
-    const long = pantryOf(['x'.repeat(100_000)]);
-    expect(long[0]!.name.length).toBeLessThanOrEqual(80);
+  it('stays quick on a huge request', () => {
     const started = Date.now();
     recipesFromIngredients(many(300), {
       ingredients: Array.from({ length: 5000 }, (_, i) => `item ${i}`),

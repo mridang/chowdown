@@ -5,6 +5,7 @@ import {
   corsFor,
   handleMcpPost,
   originRefusal,
+  unauthorizedResponse,
 } from '../../../src/lib/mcp/http';
 
 const ALL_SCOPES = ['recipes:read', 'recipes:write'];
@@ -248,5 +249,36 @@ describe('handleMcpPost — protocol checks', () => {
     expect(
       ((await older.json()) as { result: Record<string, unknown> }).result,
     ).not.toHaveProperty('resultType');
+  });
+});
+
+describe('unauthorizedResponse', () => {
+  it('starts the sign-in flow when there was no token', async () => {
+    const res = unauthorizedResponse(SELF, false, {});
+    expect(res.status).toBe(401);
+    const challenge = res.headers.get('www-authenticate') ?? '';
+    expect(challenge).toContain(
+      `resource_metadata="${SELF}/.well-known/oauth-protected-resource/api/mcp"`,
+    );
+    expect(challenge).not.toContain('invalid_token');
+    expect(await res.json()).toMatchObject({
+      error: { code: -32001, message: 'Authorization required' },
+    });
+  });
+
+  it('says the token was bad when one was sent', () => {
+    const res = unauthorizedResponse(SELF, true, {});
+    expect(res.headers.get('www-authenticate')).toContain(
+      'error="invalid_token"',
+    );
+  });
+
+  it('carries the CORS headers it is given', () => {
+    const res = unauthorizedResponse(SELF, false, {
+      'Access-Control-Allow-Origin': 'https://claude.ai',
+    });
+    expect(res.headers.get('access-control-allow-origin')).toBe(
+      'https://claude.ai',
+    );
   });
 });

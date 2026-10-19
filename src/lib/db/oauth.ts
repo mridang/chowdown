@@ -20,17 +20,30 @@ import { oauthClients, oauthCodes, oauthGrants, oauthTokens } from './schema';
 /** How long a fetched client metadata document is trusted before refetching. */
 const CIMD_TTL_MS = 60 * 60 * 1000;
 
-const iso = (seconds: number) => new Date(seconds * 1000).toISOString();
-const seconds = (isoString: string | null) =>
+/** Unix seconds as the ISO-8601 text the timestamp columns hold. */
+const iso = (seconds: number): string => new Date(seconds * 1000).toISOString();
+
+/** The inverse of {@link iso}: a stored timestamp as Unix seconds, or null when it is unset. */
+const seconds = (isoString: string | null): number | null =>
   isoString === null ? null : Math.floor(Date.parse(isoString) / 1000);
 
+/** A row of the `oauth_clients` table. */
 type ClientRow = typeof oauthClients.$inferSelect;
 
-function toClient(row: ClientRow): OAuthClient {
+/** The redirect addresses stored as JSON text in a client row. */
+function redirectUrisOf(json: string): readonly string[] {
+  const parsed: unknown = JSON.parse(json);
+  return Array.isArray(parsed)
+    ? parsed.filter((uri): uri is string => typeof uri === 'string')
+    : [];
+}
+
+/** The client a registry row stands for. */
+function toClient(row: Readonly<ClientRow>): OAuthClient {
   return {
     clientId: row.client_id,
     name: row.client_name,
-    redirectUris: JSON.parse(row.redirect_uris) as string[],
+    redirectUris: redirectUrisOf(row.redirect_uris),
     kind: row.kind === 'cimd' ? 'cimd' : 'dcr',
   };
 }
@@ -38,7 +51,7 @@ function toClient(row: ClientRow): OAuthClient {
 /** Save (or refresh) a client in the registry. */
 export async function saveClient(
   db: Database,
-  client: OAuthClient,
+  client: Readonly<OAuthClient>,
 ): Promise<void> {
   const now = new Date().toISOString();
   const values = {
@@ -215,18 +228,18 @@ export function createOAuthStore(db: Database): OAuthStore {
 
 /** An approved application as the user sees it in the app. */
 export interface ConnectedApp {
-  grantId: string;
-  name: string;
-  scope: string[];
-  connectedAt: string;
-  lastUsedAt: string | null;
+  readonly grantId: string;
+  readonly name: string;
+  readonly scope: readonly string[];
+  readonly connectedAt: string;
+  readonly lastUsedAt: string | null;
 }
 
 /** The applications a user has approved and not revoked, newest first. */
 export async function listConnectedApps(
   db: Database,
   userId: number,
-): Promise<ConnectedApp[]> {
+): Promise<readonly ConnectedApp[]> {
   const rows = await db
     .select({ grant: oauthGrants, name: oauthClients.client_name })
     .from(oauthGrants)

@@ -12,7 +12,7 @@ import { ensureRecipesFolder } from './drive-client';
 
 /** The id of the user's Recipes folder, creating and recording it if needed. */
 export async function recipesFolderFor(
-  user: User,
+  user: Readonly<User>,
   accessToken: string,
 ): Promise<string> {
   if (user.recipes_folder_id) {

@@ -11,24 +11,32 @@
 import { NextResponse } from 'next/server';
 
 import { requireUid, requireUser } from '@/lib/api/auth';
-import { isObject, readJson } from '@/lib/api/json';
+import { driveFailure } from '@/lib/api/drive-failure';
+import { readJsonObject } from '@/lib/api/json';
+import { settleMutation } from '@/lib/api/mutation-response';
 import {
   noteIndex,
   noteResource,
   parseNoteInput,
 } from '@/lib/api/note-resource';
-import { driveFailure } from '@/lib/api/drive-failure';
 import { problems } from '@/lib/api/problem';
 import { getRecipeByFileId } from '@/lib/db/recipes';
 import { extractNotes, removeNote, replaceNote } from '@/lib/recipe/cook-text';
 import { mutateRecipeForUser } from '@/lib/recipe/mutate-recipe-live';
 import { getDatabase } from '@/lib/util';
 
-type Context = { params: Promise<{ id: string; 'note-id': string }> };
+/** The context Next.js hands these handlers: the recipe id and the note's position. */
+interface NoteContext {
+  readonly params: Promise<{ readonly id: string; readonly 'note-id': string }>;
+}
 
+/**
+ * `GET /api/recipes/:id/notes/:note-id`: one note. Answers 200 with the note,
+ * 404 when the recipe or the note does not exist, 401 when nobody is signed in.
+ */
 export async function GET(
   request: Request,
-  { params }: Context,
+  { params }: NoteContext,
 ): Promise<NextResponse> {
   const auth = await requireUid(request);
   if (!auth.ok) {
@@ -47,20 +55,27 @@ export async function GET(
   });
 }
 
+/**
+ * `PUT /api/recipes/:id/notes/:note-id`: replace the note with a new one
+ * (`{ text }`, plus `ingredient` or `step`). Answers 200 with the note and the
+ * recipe's new `ETag`. Needs a signed-in user: 401, 400 for a bad note, 404
+ * when the recipe or note does not exist, 412 when `If-Match` is stale, and
+ * 409 or 502 when Drive is not connected or fails.
+ */
 export async function PUT(
   request: Request,
-  { params }: Context,
+  { params }: NoteContext,
 ): Promise<NextResponse> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;
   }
-  const body = await readJson(request);
+  const body = await readJsonObject(
+    request,
+    'The request body must be a JSON object.',
+  );
   if (!body.ok) {
     return body.response;
-  }
-  if (!isObject(body.value)) {
-    return problems.badRequest('The request body must be a JSON object.');
   }
   const input = parseNoteInput(body.value);
   if (!input.ok) {
@@ -83,18 +98,15 @@ export async function PUT(
           : { ok: true, source: updated, value: null };
       },
     );
-    if (outcome.kind === 'not-found') {
-      return problems.notFound('note');
-    }
-    if (outcome.kind === 'precondition-failed') {
-      return problems.preconditionFailed();
-    }
-    if (outcome.kind === 'invalid') {
-      return problems.badRequest('The note is not valid.', outcome.errors);
-    }
-    return NextResponse.json(noteResource(input.note, index), {
-      headers: { ETag: outcome.etag },
+    const settled = settleMutation(outcome, {
+      missing: 'note',
+      invalid: 'The note is not valid.',
     });
+    return settled.ok
+      ? NextResponse.json(noteResource(input.note, index), {
+          headers: { ETag: settled.done.etag },
+        })
+      : settled.response;
   } catch (error) {
     return driveFailure(
       error,
@@ -103,9 +115,15 @@ export async function PUT(
   }
 }
 
+/**
+ * `DELETE /api/recipes/:id/notes/:note-id`: remove the note. Answers 204 with
+ * the recipe's new `ETag`. Needs a signed-in user: 401, 404 when the recipe or
+ * note does not exist, 412 when `If-Match` is stale, and 409 or 502 when Drive
+ * is not connected or fails.
+ */
 export async function DELETE(
   request: Request,
-  { params }: Context,
+  { params }: NoteContext,
 ): Promise<NextResponse> {
   const auth = await requireUser(request);
   if (!auth.ok) {
@@ -128,19 +146,16 @@ export async function DELETE(
           : { ok: true, source: updated, value: null };
       },
     );
-    if (outcome.kind === 'not-found') {
-      return problems.notFound('note');
-    }
-    if (outcome.kind === 'precondition-failed') {
-      return problems.preconditionFailed();
-    }
-    if (outcome.kind === 'invalid') {
-      return problems.badRequest('The change is not valid.', outcome.errors);
-    }
-    return new NextResponse(null, {
-      status: 204,
-      headers: { ETag: outcome.etag },
+    const settled = settleMutation(outcome, {
+      missing: 'note',
+      invalid: 'The change is not valid.',
     });
+    return settled.ok
+      ? new NextResponse(null, {
+          status: 204,
+          headers: { ETag: settled.done.etag },
+        })
+      : settled.response;
   } catch (error) {
     return driveFailure(
       error,

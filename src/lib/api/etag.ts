@@ -20,6 +20,9 @@ export async function entityTag(text: string): Promise<string> {
   return `"${hex}"`;
 }
 
+/** The ways one recipe can be sent: JSON, Cooklang text, or schema.org JSON-LD. */
+export type RecipeRepresentation = 'json' | 'cooklang' | 'ld';
+
 /**
  * Different representations of one recipe (JSON, Cooklang text, JSON-LD) are
  * different entities, so each needs its own tag or a cache could mistake one for
@@ -27,7 +30,7 @@ export async function entityTag(text: string): Promise<string> {
  */
 export function representationTag(
   base: string,
-  kind: 'json' | 'cooklang' | 'ld',
+  kind: RecipeRepresentation,
 ): string {
   return kind === 'json' ? base : `${base.slice(0, -1)}-${kind}"`;
 }
@@ -38,7 +41,7 @@ function baseTag(tag: string): string {
 }
 
 /** The tags in an `If-Match` / `If-None-Match` header (weak markers ignored). */
-function tagsIn(header: string): string[] {
+function tagsIn(header: string): readonly string[] {
   return header
     .split(',')
     .map((t) => t.trim().replace(/^W\//, ''))

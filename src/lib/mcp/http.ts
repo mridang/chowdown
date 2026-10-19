@@ -44,8 +44,37 @@ export function originRefusal(
   );
 }
 
+/**
+ * The 401 that starts the sign-in flow (no token) or reports a bad one
+ * (`invalidToken`). Its `WWW-Authenticate` points the assistant at the
+ * discovery documents.
+ */
+export function unauthorizedResponse(
+  origin: string,
+  invalidToken: boolean,
+  cors: Readonly<Record<string, string>>,
+): NextResponse {
+  return NextResponse.json(
+    {
+      jsonrpc: '2.0',
+      id: null,
+      error: { code: -32001, message: 'Authorization required' },
+    },
+    {
+      status: 401,
+      headers: {
+        ...cors,
+        'WWW-Authenticate': wwwAuthenticate(
+          origin,
+          invalidToken ? { error: 'invalid_token' } : {},
+        ),
+      },
+    },
+  );
+}
+
 /** CORS headers for an endpoint that checks origins: echo the caller's, not "*". */
-export function corsFor(request: Request): Record<string, string> {
+export function corsFor(request: Request): Readonly<Record<string, string>> {
   const origin = request.headers.get('origin');
   return origin
     ? { ...CORS_HEADERS, 'Access-Control-Allow-Origin': origin, Vary: 'Origin' }
@@ -53,7 +82,10 @@ export function corsFor(request: Request): Record<string, string> {
 }
 
 /** A protocol refusal as an HTTP response. */
-function refuse(refusal: ProtocolRefusal, cors: Record<string, string>) {
+function refuse(
+  refusal: ProtocolRefusal,
+  cors: Readonly<Record<string, string>>,
+): NextResponse {
   return NextResponse.json(refusal.body, {
     status: refusal.status,
     headers: cors,
@@ -68,33 +100,49 @@ export function isMessageObject(value: unknown): value is JsonRpcMessage {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-const rpcError = (code: number, message: string) => ({
+/** A JSON-RPC error body that answers no particular request. */
+const rpcError = (
+  code: number,
+  message: string,
+): {
+  readonly jsonrpc: '2.0';
+  readonly id: null;
+  readonly error: { readonly code: number; readonly message: string };
+} => ({
   jsonrpc: '2.0',
   id: null,
   error: { code, message },
 });
+
+/** A 400 with a JSON-RPC error body. */
+function badRequest(
+  code: number,
+  message: string,
+  cors: Readonly<Record<string, string>>,
+): NextResponse {
+  return NextResponse.json(rpcError(code, message), {
+    status: 400,
+    headers: cors,
+  });
+}
 
 /**
  * Handle one POST of JSON-RPC. `scopes` is what the caller was granted.
  */
 export async function handleMcpPost(
   request: Request,
-  user: User,
-  scopes: string[],
+  user: Readonly<User>,
+  scopes: readonly string[],
   origin: string,
 ): Promise<NextResponse> {
   const cors = corsFor(request);
-  const payload = (await request.json().catch(() => null)) as
-    | JsonRpcMessage
-    | JsonRpcMessage[]
-    | null;
+  const payload: unknown = await request.json().catch(() => null);
   if (!payload) {
-    return NextResponse.json(rpcError(-32700, 'Parse error'), {
-      status: 400,
-      headers: cors,
-    });
+    return badRequest(-32700, 'Parse error', cors);
   }
-  const messages = Array.isArray(payload) ? payload : [payload];
+  const messages: readonly unknown[] = Array.isArray(payload)
+    ? payload
+    : [payload];
   // Every message must be a JSON object, and a batch must stay a sensible size
   // (its messages run side by side).
   if (
@@ -102,17 +150,14 @@ export async function handleMcpPost(
     messages.length > MAX_BATCH ||
     !messages.every(isMessageObject)
   ) {
-    return NextResponse.json(rpcError(-32600, 'Invalid Request'), {
-      status: 400,
-      headers: cors,
-    });
+    return badRequest(-32600, 'Invalid Request', cors);
   }
 
-  for (const message of messages) {
-    const refusal = checkRequestHeaders(request.headers, message);
-    if (refusal) {
-      return refuse(refusal, cors);
-    }
+  const refusal = messages
+    .map((message) => checkRequestHeaders(request.headers, message))
+    .find((found) => found !== null);
+  if (refusal) {
+    return refuse(refusal, cors);
   }
 
   const missing = messages
@@ -134,23 +179,27 @@ export async function handleMcpPost(
     );
   }
 
+  const replies = await Promise.all(
+    messages.map((m) => handleMcpMessage(user, m)),
+  );
   if (Array.isArray(payload)) {
-    const responses = (
-      await Promise.all(payload.map((m) => handleMcpMessage(user, m)))
-    ).filter((r): r is object => r !== null);
-    return responses.length > 0
-      ? NextResponse.json(responses, { headers: cors })
+    const answered = replies.filter((r) => r !== null);
+    return answered.length > 0
+      ? NextResponse.json(answered, { headers: cors })
       : new NextResponse(null, { status: 202, headers: cors });
   }
-  const response = await handleMcpMessage(user, payload);
-  if (response === null) {
+  const [reply] = replies;
+  const [message] = messages;
+  if (!reply) {
     return new NextResponse(null, { status: 202, headers: cors });
   }
   // The newest revision wants an unknown method as a 404, not a plain 200.
   const unknownMethod =
-    isModernRequest(payload) &&
-    (response as { error?: { code?: number } }).error?.code === -32601;
-  return NextResponse.json(response, {
+    message !== undefined &&
+    isModernRequest(message) &&
+    'error' in reply &&
+    reply.error.code === -32601;
+  return NextResponse.json(reply, {
     status: unknownMethod ? 404 : 200,
     headers: cors,
   });

@@ -24,18 +24,29 @@ import {
 import { recipeSummary, type RecipeSummary } from './recipe-resource';
 
 /**
+ * The query with each forced parameter set to its forced value, replacing
+ * whatever the client sent for it.
+ */
+function withForced(
+  query: URLSearchParams,
+  forced: Readonly<Record<string, string>>,
+): URLSearchParams {
+  return new URLSearchParams([
+    ...[...query].filter(([key]) => !Object.hasOwn(forced, key)),
+    ...Object.entries(forced),
+  ]);
+}
+
+/**
  * One page of the user's recipes. `forced` adds filters the caller always wants
  * (the favourites collection forces `favourite=true`).
  */
 export async function listRecipes(
   request: Request,
   userId: number,
-  forced: Record<string, string> = {},
+  forced: Readonly<Record<string, string>> = {},
 ): Promise<NextResponse> {
-  const query = new URL(request.url).searchParams;
-  for (const [key, value] of Object.entries(forced)) {
-    query.set(key, value);
-  }
+  const query = withForced(new URL(request.url).searchParams, forced);
   const limit = parseLimit(query.get('limit'));
   if (typeof limit !== 'number') {
     return limit;
@@ -54,21 +65,21 @@ export async function listRecipes(
 
   const { recipes, favouriteIds } = await getAppPageRows(getDatabase(), userId);
   const hearted = new Set(favouriteIds);
-  const rows: (QueryableRecipe & { summary: RecipeSummary })[] = recipes.map(
-    (row) => {
-      const summary = recipeSummary(row, hearted.has(row.drive_file_id));
-      return {
-        id: summary.id,
-        title: summary.title,
-        modified_at: summary.modified_at,
-        display: summary.title,
-        favourite: summary.favourite,
-        domain: sourceDomainOf(row.source),
-        tags: summary.tags,
-        summary,
-      };
-    },
-  );
+  const rows: readonly (QueryableRecipe & {
+    readonly summary: RecipeSummary;
+  })[] = recipes.map((row) => {
+    const summary = recipeSummary(row, hearted.has(row.drive_file_id));
+    return {
+      id: summary.id,
+      title: summary.title,
+      modified_at: summary.modified_at,
+      display: summary.title,
+      favourite: summary.favourite,
+      domain: sourceDomainOf(row.source),
+      tags: summary.tags,
+      summary,
+    };
+  });
 
   const sorted = sortRecipes(filterRecipes(rows, query), order);
   const page = sliceAfter(

@@ -7,12 +7,25 @@
  * and long, a plain fast hash is enough (no salt or slow KDF needed).
  */
 
-import { base64url } from './pkce';
+import { bytesToBase64Url } from '../util/base64';
+
+/** The readable prefix on an authorization code. */
+export const CODE_PREFIX = 'cdn_code';
+/** The readable prefix on an access token. */
+export const ACCESS_PREFIX = 'cdn_at';
+/** The readable prefix on a refresh token. */
+export const REFRESH_PREFIX = 'cdn_rt';
+
+/** The kinds of secret there are, by prefix. */
+export type SecretPrefix =
+  | typeof CODE_PREFIX
+  | typeof ACCESS_PREFIX
+  | typeof REFRESH_PREFIX;
 
 /** A new random secret such as `cdn_at_Qk3…`. */
-export function newSecret(prefix: string): string {
+export function newSecret(prefix: SecretPrefix): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return `${prefix}_${base64url(bytes)}`;
+  return `${prefix}_${bytesToBase64Url(bytes)}`;
 }
 
 /** The hex SHA-256 of a secret — what the database stores and looks up. */
@@ -25,7 +38,3 @@ export async function hashSecret(secret: string): Promise<string> {
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }
-
-export const CODE_PREFIX = 'cdn_code';
-export const ACCESS_PREFIX = 'cdn_at';
-export const REFRESH_PREFIX = 'cdn_rt';

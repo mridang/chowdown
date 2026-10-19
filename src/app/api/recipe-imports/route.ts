@@ -13,7 +13,7 @@
 import { NextResponse } from 'next/server';
 
 import { requireUid } from '@/lib/api/auth';
-import { isObject, readJson } from '@/lib/api/json';
+import { readJson } from '@/lib/api/json';
 import {
   absoluteUrl,
   decodeCursor,
@@ -22,13 +22,22 @@ import {
   sliceAfter,
 } from '@/lib/api/pagination';
 import { problems } from '@/lib/api/problem';
+import {
+  compareImportPositions,
+  importPosition,
+  importSummary,
+  parseImportInput,
+} from '@/lib/api/recipe-import-resource';
 import { createRecipeImport, listRecipeImports } from '@/lib/db/recipe-imports';
 import { prepareImport } from '@/lib/recipe/prepare-import';
 import { getDatabase, getEnv } from '@/lib/util';
 
-/** Largest pasted blob accepted. */
-const MAX_INPUT = 100_000;
-
+/**
+ * `POST /api/recipe-imports`: read the links and recipe text in `{ input }`
+ * and make drafts of them. Answers 201 with the import and its `Location`, or
+ * 400 for a missing or oversized `input` or when nothing in it looks like a
+ * link or a recipe. Needs a signed-in user: 401 without a session.
+ */
 export async function POST(request: Request): Promise<NextResponse> {
   const auth = await requireUid(request);
   if (!auth.ok) {
@@ -38,19 +47,12 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!body.ok) {
     return body.response;
   }
-  const input = isObject(body.value) ? body.value['input'] : undefined;
-  if (typeof input !== 'string' || !input.trim()) {
-    return problems.badRequest('The import is not valid.', [
-      'input: required.',
-    ]);
-  }
-  if (input.length > MAX_INPUT) {
-    return problems.badRequest('The import is not valid.', [
-      'input: too large.',
-    ]);
+  const input = parseImportInput(body.value);
+  if (!input.ok) {
+    return problems.badRequest('The import is not valid.', input.errors);
   }
 
-  const items = await prepareImport(input.trim(), getEnv());
+  const items = await prepareImport(input.input, getEnv());
   if (items.length === 0) {
     return problems.badRequest(
       'No links or recipe text found in what you pasted.',
@@ -65,6 +67,11 @@ export async function POST(request: Request): Promise<NextResponse> {
   });
 }
 
+/**
+ * `GET /api/recipe-imports`: the user's imports, newest first, as summaries
+ * (no drafts). Answers 200 with a page, 400 for a bad `limit` or `cursor`, 401
+ * when nobody is signed in.
+ */
 export async function GET(request: Request): Promise<NextResponse> {
   const auth = await requireUid(request);
   if (!auth.ok) {
@@ -85,23 +92,13 @@ export async function GET(request: Request): Promise<NextResponse> {
   const all = await listRecipeImports(getDatabase(), auth.value);
   const page = sliceAfter(
     all,
-    (i) => ({ key: i.created_at, id: i.id }),
-    (a, b) =>
-      a.key === b.key ? a.id.localeCompare(b.id) : b.key.localeCompare(a.key),
+    importPosition,
+    compareImportPositions,
     after,
     limit,
   );
   return NextResponse.json(
-    pageBody(
-      request,
-      page.items.map((i) => ({
-        id: i.id,
-        status: i.status,
-        created_at: i.created_at,
-        item_count: i.items.length,
-      })),
-      page.next,
-    ),
+    pageBody(request, page.items.map(importSummary), page.next),
     { headers: { 'Cache-Control': 'private, no-cache' } },
   );
 }

@@ -30,7 +30,7 @@ export async function isFavourite(
 export async function listFavouriteIds(
   db: Database,
   userId: number,
-): Promise<string[]> {
+): Promise<readonly string[]> {
   const rows = await db.query.favourites.findMany({
     where: eq(favourites.user_id, userId),
   });

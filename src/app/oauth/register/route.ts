@@ -7,46 +7,32 @@
  */
 
 import { saveClient } from '@/lib/db/oauth';
+import {
+  parseRegistrationText,
+  registrationResponse,
+} from '@/lib/oauth/client';
 import { noStoreJson, oauthError, preflight } from '@/lib/oauth/http';
-import { parseRegistration } from '@/lib/oauth/client';
 import { getDatabase } from '@/lib/util';
 
-/** Registration bodies are tiny; refuse anything big. */
-const MAX_BODY_BYTES = 8_000;
-
+/**
+ * `POST /oauth/register`: register a public client from a JSON body. Anyone
+ * may call it. Answers 201 with the new `client_id` and its details, or 400
+ * with an OAuth error for a body that is too large, not JSON, or not an
+ * acceptable client.
+ */
 export async function POST(request: Request) {
-  const text = await request.text();
-  if (text.length > MAX_BODY_BYTES) {
-    return oauthError('invalid_client_metadata', 'The request is too large.');
-  }
-  let body: unknown;
-  try {
-    body = JSON.parse(text);
-  } catch {
-    return oauthError(
-      'invalid_client_metadata',
-      'The request is not valid JSON.',
-    );
-  }
-  const result = parseRegistration(body);
+  const result = parseRegistrationText(await request.text());
   if (!result.ok) {
     return oauthError(result.error, result.description);
   }
   await saveClient(getDatabase(), result.client);
   return noStoreJson(
-    {
-      client_id: result.client.clientId,
-      client_name: result.client.name,
-      redirect_uris: result.client.redirectUris,
-      grant_types: ['authorization_code', 'refresh_token'],
-      response_types: ['code'],
-      token_endpoint_auth_method: 'none',
-      client_id_issued_at: Math.floor(Date.now() / 1000),
-    },
+    registrationResponse(result.client, Math.floor(Date.now() / 1000)),
     201,
   );
 }
 
+/** `OPTIONS /oauth/register`: the CORS preflight for browser-based assistants. Answers 204. */
 export function OPTIONS() {
   return preflight();
 }

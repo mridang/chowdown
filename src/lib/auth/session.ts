@@ -12,6 +12,12 @@
  * cookie.
  */
 
+import {
+  base64UrlToBytes,
+  bufferSource,
+  bytesToBase64Url,
+} from '../util/base64';
+
 /** Name of the session cookie. */
 export const SESSION_COOKIE = 'chowdown_session';
 
@@ -21,54 +27,27 @@ export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 /** The claims carried in the session token. */
 export interface SessionPayload {
   /** `users.id` primary key. */
-  uid: number;
-  email: string;
+  readonly uid: number;
+  readonly email: string;
   /**
    * The Google display name and profile photo address, so the header can greet
    * the person without a database read. Absent on sessions issued before they
    * were added; those fall back to a lookup.
    */
-  name?: string;
-  picture?: string;
+  readonly name?: string;
+  readonly picture?: string;
   /**
    * Whether Google Drive was connected when the session was issued, so the
    * header can offer "Connect Google Drive" without a database read. A hint for
    * the header only: pages that need Drive check the database. Absent on
    * sessions issued before it was added; those fall back to a lookup.
    */
-  drive?: boolean;
+  readonly drive?: boolean;
   /** Expiry as a Unix timestamp (seconds). */
-  exp: number;
+  readonly exp: number;
 }
 
-/** URL-safe base64 without padding. */
-function base64url(bytes: Uint8Array): string {
-  let binary = '';
-  for (const b of bytes) {
-    binary += String.fromCharCode(b);
-  }
-  return btoa(binary)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-}
-
-/** Decode URL-safe base64 back to bytes. */
-function fromBase64url(text: string): Uint8Array {
-  const padded = text.replace(/-/g, '+').replace(/_/g, '/');
-  const binary = atob(padded + '==='.slice((padded.length + 3) % 4));
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
-
-/** Re-wrap bytes as an ArrayBuffer-backed `BufferSource` for Web Crypto (see lib/crypto). */
-function bufferSource(bytes: Uint8Array): BufferSource {
-  return new Uint8Array(bytes);
-}
-
+/** The HMAC-SHA-256 key for a session secret, usable for signing and verifying. */
 async function hmacKey(secret: string): Promise<CryptoKey> {
   return crypto.subtle.importKey(
     'raw',
@@ -84,7 +63,7 @@ async function hmacKey(secret: string): Promise<CryptoKey> {
  * {@link SESSION_TTL_SECONDS} but can be supplied (e.g. in tests).
  */
 export async function createSessionToken(
-  payload: Omit<SessionPayload, 'exp'> & { exp?: number },
+  payload: Omit<SessionPayload, 'exp'> & { readonly exp?: number },
   secret: string,
 ): Promise<string> {
   const full: SessionPayload = {
@@ -98,7 +77,7 @@ export async function createSessionToken(
     ...(payload.drive !== undefined ? { drive: payload.drive } : {}),
     exp: payload.exp ?? Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
   };
-  const body = base64url(new TextEncoder().encode(JSON.stringify(full)));
+  const body = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(full)));
   const key = await hmacKey(secret);
   const sig = new Uint8Array(
     await crypto.subtle.sign(
@@ -107,7 +86,7 @@ export async function createSessionToken(
       bufferSource(new TextEncoder().encode(body)),
     ),
   );
-  return `${body}.${base64url(sig)}`;
+  return `${body}.${bytesToBase64Url(sig)}`;
 }
 
 /**
@@ -125,31 +104,52 @@ export async function verifySessionToken(
   const body = token.slice(0, dot);
   const sig = token.slice(dot + 1);
   const key = await hmacKey(secret);
-  let ok = false;
-  try {
-    ok = await crypto.subtle.verify(
-      'HMAC',
-      key,
-      bufferSource(fromBase64url(sig)),
-      bufferSource(new TextEncoder().encode(body)),
-    );
-  } catch {
+  if (!(await signatureValid(key, body, sig))) {
     return null;
   }
-  if (!ok) {
-    return null;
-  }
-  let payload: SessionPayload;
-  try {
-    payload = JSON.parse(new TextDecoder().decode(fromBase64url(body)));
-  } catch {
-    return null;
-  }
-  if (
-    typeof payload.exp !== 'number' ||
-    payload.exp < Math.floor(Date.now() / 1000)
-  ) {
+  const payload = parsePayload(body);
+  if (!payload || payload.exp < Math.floor(Date.now() / 1000)) {
     return null;
   }
   return payload;
+}
+
+/** Whether `sig` (URL-safe base64) is the HMAC of `body` under `key`; malformed signatures are simply invalid. */
+async function signatureValid(
+  key: CryptoKey,
+  body: string,
+  sig: string,
+): Promise<boolean> {
+  try {
+    return await crypto.subtle.verify(
+      'HMAC',
+      key,
+      bufferSource(base64UrlToBytes(sig)),
+      bufferSource(new TextEncoder().encode(body)),
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** The claims inside a token body, or null if it isn't JSON of the right shape. */
+function parsePayload(body: string): SessionPayload | null {
+  try {
+    const parsed: unknown = JSON.parse(
+      new TextDecoder().decode(base64UrlToBytes(body)),
+    );
+    return isSessionPayload(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Whether a parsed value carries the claims every session token we issue has. */
+function isSessionPayload(value: unknown): value is SessionPayload {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'exp' in value &&
+    typeof value.exp === 'number'
+  );
 }

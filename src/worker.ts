@@ -25,24 +25,24 @@
 
 import openNextHandler from '../.open-next/worker.js';
 import {
+  edgeCache,
   edgeCacheKey,
   isEdgeCacheable,
   storableCopy,
 } from './lib/http/edge-cache';
 import { buildCsp, forwardedHeaders, newNonce } from './lib/http/csp';
-import { applyResponseHeaders } from './lib/http/headers';
+import { applyResponseHeaders, replacingHeaders } from './lib/http/headers';
 
 /** The response with one more header (responses from the app are read-only). */
 function withHeader(response: Response, name: string, value: string): Response {
-  const headers = new Headers(response.headers);
-  headers.set(name, value);
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
-    headers,
+    headers: replacingHeaders(response.headers, { [name]: value }),
   });
 }
 
+/** The Worker itself: forwards each request to the app and adds the site's headers. */
 const handler: ExportedHandler<CloudflareEnv> = {
   /**
    * Public pages come from the edge copy when there is one; everything else is
@@ -50,8 +50,7 @@ const handler: ExportedHandler<CloudflareEnv> = {
    * cache headers are added to whatever goes back.
    */
   async fetch(request, env, ctx) {
-    const cache = (globalThis as { caches?: { default?: Cache } }).caches
-      ?.default;
+    const cache = edgeCache();
     const cacheable = cache !== undefined && isEdgeCacheable(request);
     const key = cacheable
       ? edgeCacheKey(request, env.CF_VERSION_METADATA?.id ?? 'dev')
@@ -75,8 +74,11 @@ const handler: ExportedHandler<CloudflareEnv> = {
     const forwarded = new Request(request, {
       headers: forwardedHeaders(request.headers, csp, nonce),
     });
-    const fetched = await (openNextHandler as ExportedHandler<CloudflareEnv>)
-      .fetch!(forwarded, env, ctx);
+    const app = openNextHandler as ExportedHandler<CloudflareEnv>;
+    if (!app.fetch) {
+      throw new Error('The OpenNext worker has no fetch handler.');
+    }
+    const fetched = await app.fetch(forwarded, env, ctx);
     const isHtml = (fetched.headers.get('content-type') ?? '').startsWith(
       'text/html',
     );

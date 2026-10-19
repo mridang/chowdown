@@ -10,18 +10,20 @@
  * addresses, deciding which addresses are safe to fetch, and fetching one.
  */
 
+import { parseUrl } from '../util/url';
+
+/** The largest width a page may ask for, in pixels. */
+const LARGEST_WIDTH = 1280;
+
 /** The widths (in pixels) a page may ask for; anything else snaps to the nearest. */
-export const COVER_WIDTHS = [320, 480, 640, 960, 1280] as const;
+export const COVER_WIDTHS = [320, 480, 640, 960, LARGEST_WIDTH] as const;
 
 /** The most a cover photo may weigh before we refuse it. */
 export const MAX_COVER_BYTES = 10 * 1024 * 1024;
 
 /** The nearest allowed width at or above `width` (the largest if none is). */
 export function snapWidth(width: number): number {
-  return (
-    COVER_WIDTHS.find((w) => w >= width) ??
-    COVER_WIDTHS[COVER_WIDTHS.length - 1]!
-  );
+  return COVER_WIDTHS.find((w) => w >= width) ?? LARGEST_WIDTH;
 }
 
 /** Our address for a cover photo at one width. */
@@ -43,7 +45,7 @@ function isPrivateIPv4(host: string): boolean {
   if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n))) {
     return false;
   }
-  const [a, b] = parts as [number, number, number, number];
+  const [a = NaN, b = NaN] = parts;
   return (
     a === 0 ||
     a === 10 ||
@@ -63,10 +65,8 @@ function isPrivateIPv4(host: string): boolean {
  * at anything inside a network.
  */
 export function isFetchableImageUrl(value: string): boolean {
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
+  const url = parseUrl(value);
+  if (!url) {
     return false;
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
@@ -99,11 +99,26 @@ const KEEP_SECONDS = 7 * 24 * 60 * 60;
 
 /** What fetching a cover gave: the image to send on, or why not. */
 export type CoverResult =
-  | { ok: true; response: Response }
-  | { ok: false; status: 400 | 404 | 413 | 415 | 502; reason: string };
+  | { readonly ok: true; readonly response: Response }
+  | {
+      readonly ok: false;
+      readonly status: 400 | 404 | 413 | 415 | 502;
+      readonly reason: string;
+    };
+
+/** Request options plus Cloudflare's `cf` extension, which other runtimes ignore. */
+export type CoverRequestInit = RequestInit & {
+  readonly cf?: {
+    readonly cacheEverything: boolean;
+    readonly cacheTtl: number;
+  };
+};
 
 /** The fetch function, narrowed to what the proxy needs, so tests can fake it. */
-export type CoverFetch = (url: string, init: RequestInit) => Promise<Response>;
+export type CoverFetch = (
+  url: string,
+  init: CoverRequestInit,
+) => Promise<Response>;
 
 /**
  * The part of Cloudflare's Images binding the proxy uses (scale an image, encode
@@ -112,13 +127,21 @@ export type CoverFetch = (url: string, init: RequestInit) => Promise<Response>;
  */
 export interface ImagesLike {
   input(stream: ReadableStream<Uint8Array>): {
-    transform(options: { width: number; fit: 'scale-down' }): {
-      output(options: {
-        format: 'image/webp';
-        quality: number;
-      }): Promise<{ response(): Response }>;
+    transform(options: Readonly<{ width: number; fit: 'scale-down' }>): {
+      output(
+        options: Readonly<{ format: 'image/webp'; quality: number }>,
+      ): Promise<{ response(): Response }>;
     };
   };
+}
+
+/** Whether a value is usable as the Images binding: it can take an image as input. */
+export function isImagesBinding(value: unknown): value is ImagesLike {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof Reflect.get(value, 'input') === 'function'
+  );
 }
 
 /** Photos smaller than this are already light; scaling them gains nothing. */
@@ -138,6 +161,49 @@ function coverHeaders(type: string): HeadersInit {
   };
 }
 
+/** The real `fetch`, as the proxy's narrowed type. */
+const defaultFetch: CoverFetch = (url, init) => fetch(url, init);
+
+/** The outcome of `work`, or undefined if it threw: a failed step is an answer here, not a crash. */
+async function attempt<T>(work: () => Promise<T>): Promise<T | undefined> {
+  try {
+    return await work();
+  } catch {
+    return undefined;
+  }
+}
+
+/** A refusal to send a photo, with the status to answer and a sentence saying why. */
+function refusal(
+  status: Extract<CoverResult, { ok: false }>['status'],
+  reason: string,
+): CoverResult {
+  return { ok: false, status, reason };
+}
+
+/**
+ * The photo scaled down to `width` and encoded as WebP, or undefined when
+ * scaling fails or would not make it any smaller. The original is then sent
+ * as it is, so a photo is never lost to an optimisation.
+ */
+async function scaledCopy(
+  images: ImagesLike,
+  bytes: ArrayBuffer,
+  width: number,
+): Promise<ArrayBuffer | undefined> {
+  const scaled = await attempt(async () => {
+    const output = await images
+      .input(new Blob([bytes]).stream())
+      .transform({ width: snapWidth(width), fit: 'scale-down' })
+      .output({ format: 'image/webp', quality: 75 });
+    return output.response().arrayBuffer();
+  });
+  // Only keep the result if it is really smaller than the original.
+  return scaled && scaled.byteLength > 0 && scaled.byteLength < bytes.byteLength
+    ? scaled
+    : undefined;
+}
+
 /**
  * Fetch one cover photo for the proxy. Only real, reasonably small raster images
  * are accepted: never SVG (which can carry script), never an HTML page. Where the
@@ -148,15 +214,14 @@ function coverHeaders(type: string): HeadersInit {
 export async function fetchCover(
   url: string,
   width: number,
-  deps: { fetcher?: CoverFetch; images?: ImagesLike } = {},
+  deps: Readonly<{ fetcher?: CoverFetch; images?: ImagesLike }> = {},
 ): Promise<CoverResult> {
-  const fetcher = deps.fetcher ?? (fetch as CoverFetch);
+  const fetcher = deps.fetcher ?? defaultFetch;
   if (!isFetchableImageUrl(url)) {
-    return { ok: false, status: 400, reason: 'Not a fetchable image address.' };
+    return refusal(400, 'Not a fetchable image address.');
   }
-  let upstream: Response;
-  try {
-    upstream = await fetcher(url, {
+  const upstream = await attempt(() =>
+    fetcher(url, {
       headers: {
         Accept: 'image/avif,image/webp,image/apng,image/*;q=0.8',
         'User-Agent': 'chowdown-cover-proxy/1.0',
@@ -165,55 +230,39 @@ export async function fetchCover(
       signal: AbortSignal.timeout(8000),
       // Cloudflare-only: keep the original at the edge, ignored elsewhere.
       cf: { cacheEverything: true, cacheTtl: KEEP_SECONDS },
-    } as unknown as RequestInit);
-  } catch {
-    return { ok: false, status: 502, reason: 'The image site did not answer.' };
+    }),
+  );
+  if (!upstream) {
+    return refusal(502, 'The image site did not answer.');
   }
   if (upstream.status === 404 || upstream.status === 410) {
-    return { ok: false, status: 404, reason: 'The image is gone.' };
+    return refusal(404, 'The image is gone.');
   }
   if (!upstream.ok) {
-    return { ok: false, status: 502, reason: 'The image site refused.' };
+    return refusal(502, 'The image site refused.');
   }
-  const type = (upstream.headers.get('content-type') ?? '')
+  const [essence = ''] = (upstream.headers.get('content-type') ?? '')
     .toLowerCase()
-    .split(';')[0]!
-    .trim();
+    .split(';');
+  const type = essence.trim();
   if (!type.startsWith('image/') || type.startsWith('image/svg')) {
-    return { ok: false, status: 415, reason: 'That address is not a photo.' };
+    return refusal(415, 'That address is not a photo.');
   }
   if (Number(upstream.headers.get('content-length') ?? 0) > MAX_COVER_BYTES) {
-    return { ok: false, status: 413, reason: 'The photo is too large.' };
+    return refusal(413, 'The photo is too large.');
   }
   const bytes = await upstream.arrayBuffer();
   if (bytes.byteLength > MAX_COVER_BYTES) {
-    return { ok: false, status: 413, reason: 'The photo is too large.' };
+    return refusal(413, 'The photo is too large.');
   }
-  if (
-    deps.images &&
-    SCALABLE.test(type) &&
-    bytes.byteLength > SCALE_FROM_BYTES
-  ) {
-    try {
-      const scaled = await deps.images
-        .input(new Response(bytes).body!)
-        .transform({ width: snapWidth(width), fit: 'scale-down' })
-        .output({ format: 'image/webp', quality: 75 });
-      const response = scaled.response();
-      // Only keep the result if it is really smaller than the original.
-      const out = await response.arrayBuffer();
-      if (out.byteLength > 0 && out.byteLength < bytes.byteLength) {
-        return {
-          ok: true,
-          response: new Response(out, { headers: coverHeaders('image/webp') }),
-        };
-      }
-    } catch {
-      // Fall through to the original.
-    }
-  }
+  const scaled =
+    deps.images && SCALABLE.test(type) && bytes.byteLength > SCALE_FROM_BYTES
+      ? await scaledCopy(deps.images, bytes, width)
+      : undefined;
   return {
     ok: true,
-    response: new Response(bytes, { headers: coverHeaders(type) }),
+    response: new Response(scaled ?? bytes, {
+      headers: coverHeaders(scaled ? 'image/webp' : type),
+    }),
   };
 }

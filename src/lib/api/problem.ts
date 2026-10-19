@@ -12,12 +12,12 @@ import { NextResponse } from 'next/server';
 
 /** The members of a problem document. */
 export interface ProblemBody {
-  type: string;
-  title: string;
-  status: number;
-  detail?: string;
+  readonly type: string;
+  readonly title: string;
+  readonly status: number;
+  readonly detail?: string;
   /** Extension member: per-field validation messages. */
-  errors?: string[];
+  readonly errors?: readonly string[];
 }
 
 /** Build a problem response. */
@@ -26,15 +26,20 @@ export function problem(
   type: string,
   title: string,
   detail?: string,
-  extra: { errors?: string[]; headers?: Record<string, string> } = {},
+  extra: {
+    readonly errors?: readonly string[];
+    readonly headers?: Readonly<Record<string, string>>;
+  } = {},
 ): NextResponse {
-  const body: ProblemBody = { type, title, status };
-  if (detail) {
-    body.detail = detail;
-  }
-  if (extra.errors && extra.errors.length > 0) {
-    body.errors = extra.errors;
-  }
+  const body: ProblemBody = {
+    type,
+    title,
+    status,
+    ...(detail ? { detail } : {}),
+    ...(extra.errors && extra.errors.length > 0
+      ? { errors: extra.errors }
+      : {}),
+  };
   return NextResponse.json(body, {
     status,
     headers: {
@@ -56,7 +61,7 @@ export const problems = {
   notFound: (what: string) =>
     problem(404, '/problems/not-found', 'Not found', `No such ${what}.`),
 
-  badRequest: (detail: string, errors?: string[]) =>
+  badRequest: (detail: string, errors?: readonly string[]) =>
     problem(400, '/problems/bad-request', 'Bad request', detail, { errors }),
 
   unsupportedMediaType: (expected: string) =>

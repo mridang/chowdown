@@ -26,28 +26,25 @@ function now(): string {
  */
 export async function upsertUser(
   db: Database,
-  input: {
+  input: Readonly<{
     google_sub: string;
     email: string;
     name?: string;
     picture?: string;
     refresh_token_enc?: string;
-  },
+  }>,
 ): Promise<User> {
   const timestamp = now();
+  // Only what was supplied is overwritten on return visits.
   const update: Partial<typeof users.$inferInsert> = {
     email: input.email,
     updated_at: timestamp,
+    ...(input.name !== undefined ? { name: input.name } : {}),
+    ...(input.picture !== undefined ? { picture: input.picture } : {}),
+    ...(input.refresh_token_enc !== undefined
+      ? { refresh_token_enc: input.refresh_token_enc }
+      : {}),
   };
-  if (input.name !== undefined) {
-    update.name = input.name;
-  }
-  if (input.picture !== undefined) {
-    update.picture = input.picture;
-  }
-  if (input.refresh_token_enc !== undefined) {
-    update.refresh_token_enc = input.refresh_token_enc;
-  }
 
   const [row] = await db
     .insert(users)
@@ -62,7 +59,10 @@ export async function upsertUser(
     })
     .onConflictDoUpdate({ target: users.google_sub, set: update })
     .returning();
-  return row!;
+  if (!row) {
+    throw new Error('Saving the user returned no row');
+  }
+  return row;
 }
 
 /** Fetch a user by primary key. */

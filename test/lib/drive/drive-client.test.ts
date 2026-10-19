@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import {
   createRecipeFile,
+  isDriveFileId,
   listRecipeFiles,
   trashRecipeFile,
 } from '../../../src/lib/drive/drive-client';
@@ -113,5 +114,17 @@ describe('createRecipeFile', () => {
     expect(boundary).not.toBe('chowdown-boundary');
     const body = init.body as string;
     expect(body.split(`--${boundary}`)).toHaveLength(4);
+  });
+});
+
+describe('isDriveFileId', () => {
+  it('accepts the characters Drive ids are made of', () => {
+    expect(isDriveFileId('1AbC_-xyz9')).toBe(true);
+  });
+
+  it('refuses anything that could change a query', () => {
+    for (const id of ['', 'a b', "a'b", 'a/b', 'a.cook', '../x']) {
+      expect(isDriveFileId(id)).toBe(false);
+    }
   });
 });

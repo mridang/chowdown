@@ -6,17 +6,7 @@
  * authorization code is useless on its own.
  */
 
-/** URL-safe base64 without padding. */
-export function base64url(bytes: Uint8Array): string {
-  let binary = '';
-  for (const b of bytes) {
-    binary += String.fromCharCode(b);
-  }
-  return btoa(binary)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-}
+import { bytesToBase64Url } from '../util/base64';
 
 /** The `S256` code challenge for a verifier. */
 export async function s256(verifier: string): Promise<string> {
@@ -24,7 +14,7 @@ export async function s256(verifier: string): Promise<string> {
     'SHA-256',
     new TextEncoder().encode(verifier),
   );
-  return base64url(new Uint8Array(digest));
+  return bytesToBase64Url(new Uint8Array(digest));
 }
 
 /** A verifier is 43–128 characters from the unreserved set (RFC 7636 §4.1). */
@@ -43,10 +33,10 @@ export async function verifyPkce(
     return false;
   }
   // Compare every character so timing doesn't reveal how much matched.
-  let diff = 0;
-  for (let i = 0; i < computed.length; i++) {
-    diff |= computed.charCodeAt(i) ^ challenge.charCodeAt(i);
-  }
+  const diff = Array.from(
+    { length: computed.length },
+    (_, i) => computed.charCodeAt(i) ^ challenge.charCodeAt(i),
+  ).reduce((all, one) => all | one, 0);
   return diff === 0;
 }
 

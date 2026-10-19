@@ -89,6 +89,22 @@ describe('pageBody', () => {
     });
   });
 
+  it('replaces a cursor already in the query where it stood, dropping repeats', () => {
+    const paged = new Request(
+      'http://localhost:3000/recipes?a=1&cursor=old&b=2&cursor=older',
+    );
+    const body = pageBody(paged, [1], { key: 'k', id: 'i' });
+    const next = new URL(body.next!);
+    expect([...next.searchParams.keys()]).toEqual(['a', 'cursor', 'b']);
+    expect(decodeCursor(next.searchParams.get('cursor')!)).toEqual({
+      key: 'k',
+      id: 'i',
+    });
+    expect(body.self).toBe(
+      'http://localhost:3000/recipes?a=1&cursor=old&b=2&cursor=older',
+    );
+  });
+
   it('leaves next out on the last page', () => {
     expect(pageBody(request, [1]).next).toBeUndefined();
   });

@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import {
   getFavouriteOverride,
-  getFavouritesVersion,
   liveFavouriteCount,
   resetFavouriteOverrides,
   setFavouriteOverride,
@@ -56,20 +55,18 @@ describe('liveFavouriteCount', () => {
     expect(liveFavouriteCount(['a', 'b'])).toBe(2);
   });
 
+  it('ignores an un-heart of a recipe the server never listed', () => {
+    setFavouriteOverride('z', false);
+    expect(liveFavouriteCount(['a', 'b'])).toBe(2);
+  });
+
+  it('counts a repeated server id once', () => {
+    expect(liveFavouriteCount(['a', 'a', 'b'])).toBe(2);
+  });
+
   it('follows the latest toggle for a recipe', () => {
     setFavouriteOverride('c', true);
     setFavouriteOverride('c', false);
     expect(liveFavouriteCount(['a'])).toBe(1);
-  });
-});
-
-describe('favourites version', () => {
-  it('increases with every change and resets with the store', () => {
-    expect(getFavouritesVersion()).toBe(0);
-    setFavouriteOverride('a', true);
-    setFavouriteOverride('a', false);
-    expect(getFavouritesVersion()).toBe(2);
-    resetFavouriteOverrides();
-    expect(getFavouritesVersion()).toBe(0);
   });
 });

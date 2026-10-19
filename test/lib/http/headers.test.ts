@@ -5,6 +5,7 @@ import path from 'node:path';
 import {
   SECURITY_HEADERS,
   applyResponseHeaders,
+  replacingHeaders,
   resourcePolicyFor,
 } from '../../../src/lib/http/headers';
 
@@ -187,5 +188,31 @@ describe('public/_headers', () => {
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
       expect(file).toContain(`${name}: ${value}`);
     }
+  });
+});
+
+describe('replacingHeaders', () => {
+  it('sets new headers and replaces ones of the same name, in any case', () => {
+    const original = new Headers({ 'X-A': '1', 'Content-Type': 'text/html' });
+    const changed = replacingHeaders(original, { 'x-a': '2', 'X-B': '3' });
+    expect(changed.get('x-a')).toBe('2');
+    expect(changed.get('x-b')).toBe('3');
+    expect(changed.get('content-type')).toBe('text/html');
+  });
+
+  it('leaves the original headers as they were', () => {
+    const original = new Headers({ 'X-A': '1' });
+    replacingHeaders(original, { 'X-A': '2' });
+    expect(original.get('x-a')).toBe('1');
+  });
+
+  it('keeps every cookie', () => {
+    const original = new Headers();
+    original.append('Set-Cookie', 'a=1');
+    original.append('Set-Cookie', 'b=2');
+    expect(replacingHeaders(original, { 'X-A': '1' }).getSetCookie()).toEqual([
+      'a=1',
+      'b=2',
+    ]);
   });
 });

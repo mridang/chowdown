@@ -7,74 +7,33 @@
 
 import { createOAuthStore } from '@/lib/db/oauth';
 import { noStoreJson, oauthError, preflight } from '@/lib/oauth/http';
-import { isOurResource } from '@/lib/oauth/metadata';
-import {
-  exchangeAuthorizationCode,
-  exchangeRefreshToken,
-} from '@/lib/oauth/token-endpoint';
+import { handleTokenRequest } from '@/lib/oauth/token-request';
 import { appOrigin, getDatabase } from '@/lib/util';
 
-const field = (form: FormData, name: string): string | undefined => {
-  const value = form.get(name);
-  return typeof value === 'string' && value !== '' ? value : undefined;
-};
-
+/**
+ * `POST /oauth/token`: trade an authorization code (`grant_type=
+ * authorization_code`) or a refresh token (`grant_type=refresh_token`) for a
+ * new access and refresh token. Anyone may call it; the code, verifier and
+ * client decide whether it works. Answers 200 with the tokens (never cached),
+ * 401 for a missing `client_id`, and 400 with an OAuth error for anything else.
+ */
 export async function POST(request: Request) {
   const form = await request.formData().catch(() => null);
   if (!form) {
     return oauthError('invalid_request', 'Send the request as a form.');
   }
-  const clientId = field(form, 'client_id');
-  if (!clientId) {
-    return oauthError('invalid_client', 'The request has no client_id.', 401);
-  }
-
-  const store = createOAuthStore(getDatabase());
-  const origin = appOrigin(request);
-  const now = Math.floor(Date.now() / 1000);
-  const grantType = field(form, 'grant_type');
-
-  let result;
-  if (grantType === 'authorization_code') {
-    const code = field(form, 'code');
-    if (!code) {
-      return oauthError('invalid_request', 'The request has no code.');
-    }
-    result = await exchangeAuthorizationCode(
-      store,
-      {
-        code,
-        clientId,
-        redirectUri: field(form, 'redirect_uri'),
-        codeVerifier: field(form, 'code_verifier'),
-        resource: field(form, 'resource'),
-      },
-      (resource) => isOurResource(resource, origin),
-      now,
-    );
-  } else if (grantType === 'refresh_token') {
-    const refreshToken = field(form, 'refresh_token');
-    if (!refreshToken) {
-      return oauthError('invalid_request', 'The request has no refresh_token.');
-    }
-    result = await exchangeRefreshToken(
-      store,
-      { refreshToken, clientId, scope: field(form, 'scope') },
-      now,
-    );
-  } else {
-    return oauthError(
-      'unsupported_grant_type',
-      'Use authorization_code or refresh_token.',
-    );
-  }
-
-  if ('ok' in result) {
-    return oauthError(result.error, result.description);
-  }
-  return noStoreJson(result);
+  const result = await handleTokenRequest(
+    form,
+    createOAuthStore(getDatabase()),
+    appOrigin(request),
+    Math.floor(Date.now() / 1000),
+  );
+  return result.ok
+    ? noStoreJson(result.tokens)
+    : oauthError(result.error, result.description, result.status);
 }
 
+/** `OPTIONS /oauth/token`: the CORS preflight for browser-based assistants. Answers 204. */
 export function OPTIONS() {
   return preflight();
 }

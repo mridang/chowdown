@@ -9,10 +9,16 @@ import { noStoreJson, preflight } from '@/lib/oauth/http';
 import { protectedResourceMetadata } from '@/lib/oauth/metadata';
 import { appOrigin } from '@/lib/util';
 
-export async function GET(request: Request) {
+/**
+ * `GET /.well-known/oauth-protected-resource[/api/mcp]`: the discovery document
+ * for the MCP endpoint, naming this site as its own authorization server.
+ * Public, never cached. Answers 200.
+ */
+export function GET(request: Request) {
   return noStoreJson(protectedResourceMetadata(appOrigin(request)));
 }
 
+/** `OPTIONS /.well-known/oauth-protected-resource[/api/mcp]`: the CORS preflight. Answers 204. */
 export function OPTIONS() {
   return preflight();
 }

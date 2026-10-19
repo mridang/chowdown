@@ -55,10 +55,16 @@ describe('parseUserPatch', () => {
     });
   });
 
+  it('has nothing to store when the patch does not mention the system', () => {
+    expect(parseUserPatch({})).toEqual({ ok: true, units: null });
+  });
+
   it('refuses unknown values and read-only fields', () => {
     expect(parseUserPatch({ measurement_system: 'metric' }).ok).toBe(false);
     const result = parseUserPatch({ email: 'x@y.com' });
-    expect(result.ok).toBe(false);
-    expect((result as { errors: string[] }).errors[0]).toContain('email');
+    expect(result).toEqual({
+      ok: false,
+      errors: [expect.stringContaining('email')],
+    });
   });
 });

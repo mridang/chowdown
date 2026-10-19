@@ -9,8 +9,8 @@
 import { NextResponse } from 'next/server';
 
 import { requireUser } from '@/lib/api/auth';
-import { pageBody, parseLimit } from '@/lib/api/pagination';
 import { driveFailure } from '@/lib/api/drive-failure';
+import { pageBody, parseLimit } from '@/lib/api/pagination';
 import { problems } from '@/lib/api/problem';
 import { getUserAccessToken } from '@/lib/auth/current-user';
 import { listRecipeFiles } from '@/lib/drive/drive-client';
@@ -20,6 +20,15 @@ import { embedText } from '@/lib/recipe/embeddings';
 import { ensureEmbeddings, topSimilar } from '@/lib/recipe/similar';
 import { getEnv } from '@/lib/util';
 
+/** How many suggestions to give when the client does not say. */
+const DEFAULT_SUGGESTIONS = 8;
+
+/**
+ * `GET /api/recipe-suggestions?q=…&limit=…`: the user's recipes closest in
+ * meaning to the text in `q`, best first, as `{ id, title }` entries. Answers
+ * 200 with a page, 400 for a missing `q` or a bad `limit`. Needs a signed-in
+ * user: 401, and 502 or 409 when Drive or the model is unavailable.
+ */
 export async function GET(request: Request): Promise<NextResponse> {
   const auth = await requireUser(request);
   if (!auth.ok) {
@@ -30,7 +39,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   if (!q) {
     return problems.badRequest('q is required.');
   }
-  const limit = parseLimit(query.get('limit'), 8);
+  const limit = parseLimit(query.get('limit'), DEFAULT_SUGGESTIONS);
   if (typeof limit !== 'number') {
     return limit;
   }

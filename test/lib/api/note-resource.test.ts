@@ -78,10 +78,14 @@ describe('parseNoteInput', () => {
 
   it('reports each problem', () => {
     const result = parseNoteInput({ text: '', ingredient: 'a', step: 0 });
-    expect(result.ok).toBe(false);
-    expect((result as { errors: string[] }).errors.join(' ')).toMatch(
-      /text.*step.*both/s,
-    );
+    expect(result).toEqual({
+      ok: false,
+      errors: expect.arrayContaining([
+        expect.stringContaining('text'),
+        expect.stringContaining('step'),
+        expect.stringContaining('both'),
+      ]),
+    });
   });
 
   it('refuses a very long note and a fractional step', () => {

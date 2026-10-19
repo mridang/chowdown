@@ -12,17 +12,23 @@ import { getRecipePageRows } from '../db/recipe-page';
 import { recipeToJsonLd } from '../recipe/schema-org';
 import { parseRecipe } from '../recipe/cooklang';
 import { getDatabase } from '../util';
-import { entityTag, ifNoneMatchHit, representationTag } from './etag';
+import {
+  entityTag,
+  ifNoneMatchHit,
+  representationTag,
+  type RecipeRepresentation,
+} from './etag';
 import { problems } from './problem';
 import { absoluteUrl } from './pagination';
 import { recipeResource } from './recipe-resource';
 
-/** The representations a recipe can be requested in. */
+/** The media type of a recipe's Cooklang source. */
 export const COOKLANG_TYPE = 'text/x-cooklang';
+/** The media type of a recipe as schema.org JSON-LD. */
 export const JSON_LD_TYPE = 'application/ld+json';
 
 /** Which representation an `Accept` header asks for (JSON by default). */
-export function wantedType(accept: string | null): 'json' | 'cooklang' | 'ld' {
+export function wantedType(accept: string | null): RecipeRepresentation {
   const header = (accept ?? '').toLowerCase();
   if (header.includes(COOKLANG_TYPE)) {
     return 'cooklang';
@@ -35,13 +41,15 @@ export function wantedType(accept: string | null): 'json' | 'cooklang' | 'ld' {
 
 /**
  * Read a recipe and send it. `status` is 200 normally, or 201 for a fresh
- * creation. Honours `If-None-Match` (304) on plain reads.
+ * creation. Honours `If-None-Match` (304) on plain reads. `extraHeaders` are
+ * added to whichever answer goes out (say, a `Location` for a new recipe).
  */
 export async function sendRecipe(
   request: Request,
   userId: number,
   id: string,
   status = 200,
+  extraHeaders: Readonly<Record<string, string>> = {},
 ): Promise<NextResponse> {
   const rows = await getRecipePageRows(getDatabase(), userId, id);
   if (!rows.recipe) {
@@ -49,10 +57,11 @@ export async function sendRecipe(
   }
   const kind = wantedType(request.headers.get('accept'));
   const etag = representationTag(await entityTag(rows.recipe.source), kind);
-  const headers: Record<string, string> = {
+  const headers: Readonly<Record<string, string>> = {
     ETag: etag,
     Vary: 'Accept',
     'Cache-Control': 'private, no-cache',
+    ...extraHeaders,
   };
   if (
     request.method === 'GET' &&

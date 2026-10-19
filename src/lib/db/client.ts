@@ -1,9 +1,11 @@
-import { drizzle } from 'drizzle-orm/d1';
+import { drizzle, type DrizzleD1Database } from 'drizzle-orm/d1';
 
 import * as schema from './schema';
 
 /** A Drizzle client bound to a D1 database, typed against {@link schema}. */
-export type Database = ReturnType<typeof createDatabase>;
+export type Database = DrizzleD1Database<typeof schema> & {
+  $client: D1Database;
+};
 
 /**
  * Wrap a raw D1 binding in a typed Drizzle client. Repositories take a
@@ -12,6 +14,6 @@ export type Database = ReturnType<typeof createDatabase>;
  *
  * @public
  */
-export function createDatabase(d1: D1Database) {
+export function createDatabase(d1: D1Database): Database {
   return drizzle(d1, { schema });
 }

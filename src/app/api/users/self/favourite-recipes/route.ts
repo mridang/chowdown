@@ -11,6 +11,11 @@ import { NextResponse } from 'next/server';
 import { requireUid } from '@/lib/api/auth';
 import { listRecipes } from '@/lib/api/recipe-list';
 
+/**
+ * `GET /api/users/self/favourite-recipes`: one page of the recipes the user has
+ * hearted, filtered and sorted by the query string. Answers 200 with the page,
+ * or 401 when nobody is signed in.
+ */
 export async function GET(request: Request): Promise<NextResponse> {
   const auth = await requireUid(request);
   if (!auth.ok) {

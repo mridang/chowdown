@@ -7,6 +7,19 @@ export function getDB(): D1Database {
   return getCloudflareContext().env.DB;
 }
 
+/**
+ * Whether the D1 binding can be reached from the current request context.
+ * False (not an error) when there is no Cloudflare context or no binding, so
+ * health checks can report it.
+ */
+export function isDatabaseBound(): boolean {
+  try {
+    return Boolean(getDB());
+  } catch {
+    return false;
+  }
+}
+
 /** The full Cloudflare environment (bindings + secrets) — typed via env.d.ts. */
 export function getEnv(): CloudflareEnv {
   return getCloudflareContext().env;

@@ -23,14 +23,14 @@ import {
  */
 export async function setSessionCookie(
   response: NextResponse,
-  user: User,
-  options: {
+  user: Readonly<User>,
+  options: Readonly<{
     secret: string;
     secure: boolean;
     drive?: boolean;
     /** Keep this expiry (Unix seconds) instead of starting a new 30 days. */
     exp?: number;
-  },
+  }>,
 ): Promise<void> {
   const token = await createSessionToken(
     {

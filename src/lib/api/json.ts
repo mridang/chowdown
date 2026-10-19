@@ -12,8 +12,8 @@ import { problems } from './problem';
 
 /** A parsed body, or the problem response to send. */
 export type Body =
-  | { ok: true; value: unknown }
-  | { ok: false; response: NextResponse };
+  | { readonly ok: true; readonly value: unknown }
+  | { readonly ok: false; readonly response: NextResponse };
 
 /**
  * Read the request body as JSON. `mediaTypes` lists the acceptable
@@ -21,13 +21,12 @@ export type Body =
  */
 export async function readJson(
   request: Request,
-  mediaTypes: string[] = [],
+  mediaTypes: readonly string[] = [],
 ): Promise<Body> {
   const accepted = ['application/json', ...mediaTypes];
-  const type = (request.headers.get('content-type') ?? '')
-    .split(';')[0]!
-    .trim()
-    .toLowerCase();
+  // Only the media type matters; parameters such as `charset` are ignored.
+  const [essence = ''] = (request.headers.get('content-type') ?? '').split(';');
+  const type = essence.trim().toLowerCase();
   if (!accepted.includes(type)) {
     return {
       ok: false,
@@ -44,7 +43,35 @@ export async function readJson(
   }
 }
 
+/** A parsed JSON object, or the problem response to send. */
+export type ObjectBody =
+  | {
+      readonly ok: true;
+      readonly value: Readonly<Record<string, unknown>>;
+    }
+  | { readonly ok: false; readonly response: NextResponse };
+
+/**
+ * Read the request body as a JSON object. `notObject` is the sentence for a
+ * body that is JSON but not an object ("The patch must be a JSON object.").
+ */
+export async function readJsonObject(
+  request: Request,
+  notObject: string,
+  mediaTypes: readonly string[] = [],
+): Promise<ObjectBody> {
+  const body = await readJson(request, mediaTypes);
+  if (!body.ok) {
+    return body;
+  }
+  return isObject(body.value)
+    ? { ok: true, value: body.value }
+    : { ok: false, response: problems.badRequest(notObject) };
+}
+
 /** Whether a parsed body is a plain JSON object. */
-export function isObject(value: unknown): value is Record<string, unknown> {
+export function isObject(
+  value: unknown,
+): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

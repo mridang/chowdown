@@ -18,20 +18,57 @@ import { SESSION_COOKIE, verifySessionToken } from './session';
 /** What the header shows about the signed-in person. */
 export interface ShellUser {
   /** Their first name, for "Hi Mridang". */
-  firstName: string;
+  readonly firstName: string;
   /** Their full name, if Google gave one. */
-  name: string;
-  email: string;
+  readonly name: string;
+  readonly email: string;
   /** Their Google profile photo, if any. */
-  picture?: string;
+  readonly picture?: string;
   /** Whether they have connected Google Drive (a hint; pages check for real). */
-  driveConnected: boolean;
+  readonly driveConnected: boolean;
 }
 
 /** The first word of a name, or the part of an email before the "@". */
-export function firstNameOf(name: string | null | undefined, email: string) {
+export function firstNameOf(
+  name: string | null | undefined,
+  email: string,
+): string {
   const first = (name ?? '').trim().split(/\s+/)[0];
   return first || email.split('@')[0] || email;
+}
+
+/** What the session token says about the person's profile, any of which may be missing. */
+interface Profile {
+  readonly name?: string;
+  readonly picture?: string;
+  readonly drive?: boolean;
+}
+
+/**
+ * Fill the gaps in a profile from the database. A session issued before
+ * names, photos and the Drive flag were stored in it lacks some of them; one
+ * lookup supplies what is missing. If the lookup fails the profile is used
+ * as it is: the header can do without a photo, and offers the connection if
+ * unsure.
+ */
+async function completeProfile(
+  profile: Profile,
+  uid: number,
+): Promise<Profile> {
+  const { name, picture, drive } = profile;
+  if (drive !== undefined && (name !== undefined || picture !== undefined)) {
+    return profile;
+  }
+  try {
+    const user = await getUserById(getDatabase(), uid);
+    return {
+      name: name ?? user?.name ?? undefined,
+      picture: picture ?? user?.picture ?? undefined,
+      drive: drive ?? (user ? isDriveConnected(user) : false),
+    };
+  } catch {
+    return profile;
+  }
 }
 
 /** The signed-in person for the header, or null when signed out. */
@@ -44,17 +81,7 @@ export const getShellUser = cache(async (): Promise<ShellUser | null> => {
   if (!payload) {
     return null;
   }
-  let { name, picture, drive } = payload;
-  if (drive === undefined || (name === undefined && picture === undefined)) {
-    try {
-      const user = await getUserById(getDatabase(), payload.uid);
-      name = name ?? user?.name ?? undefined;
-      picture = picture ?? user?.picture ?? undefined;
-      drive = drive ?? (user ? isDriveConnected(user) : false);
-    } catch {
-      // The header can do without a photo, and offers the connection if unsure.
-    }
-  }
+  const { name, picture, drive } = await completeProfile(payload, payload.uid);
   return {
     firstName: firstNameOf(name, payload.email),
     name: name ?? payload.email,

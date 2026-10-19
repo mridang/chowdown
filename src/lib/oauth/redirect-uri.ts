@@ -6,6 +6,8 @@
  * use URIs it registered, compared exactly (loopback addresses excepted).
  */
 
+import { parseUrl } from '../util/url';
+
 /** Schemes that can run script or read files; never a valid redirect target. */
 const FORBIDDEN_SCHEMES = new Set([
   'javascript:',
@@ -20,21 +22,13 @@ const FORBIDDEN_SCHEMES = new Set([
 /** Hosts that mean "this machine", where native apps pick a free port. */
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 
-function parse(uri: string): URL | undefined {
-  try {
-    return new URL(uri);
-  } catch {
-    return undefined;
-  }
-}
-
 /**
  * Whether a client may register this redirect URI: https anywhere, plain http
  * only to loopback, and private-use schemes (a desktop app's own `app://`).
  * Fragments are never allowed.
  */
 export function isAcceptableRedirectUri(uri: string): boolean {
-  const url = parse(uri);
+  const url = parseUrl(uri);
   if (!url || url.hash || url.username || url.password) {
     return false;
   }
@@ -54,12 +48,12 @@ export function isAcceptableRedirectUri(uri: string): boolean {
  */
 export function redirectUriMatches(
   requested: string,
-  registered: string[],
+  registered: readonly string[],
 ): boolean {
   if (registered.includes(requested)) {
     return true;
   }
-  const want = parse(requested);
+  const want = parseUrl(requested);
   if (
     !want ||
     want.protocol !== 'http:' ||
@@ -68,7 +62,7 @@ export function redirectUriMatches(
     return false;
   }
   return registered.some((r) => {
-    const have = parse(r);
+    const have = parseUrl(r);
     return (
       have !== undefined &&
       have.protocol === 'http:' &&

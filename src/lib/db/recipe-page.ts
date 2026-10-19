@@ -18,17 +18,17 @@ import { embeddings, favourites, recipes, users } from './schema';
 /** What the recipe page reads for one recipe. */
 export interface RecipePageRows {
   /** The cached recipe, or `undefined` when it isn't in the cache yet. */
-  recipe: typeof recipes.$inferSelect | undefined;
+  readonly recipe: typeof recipes.$inferSelect | undefined;
   /** Whether the user has hearted it. */
-  favourite: boolean;
+  readonly favourite: boolean;
   /** The stored similar list as JSON text (parse with `parseSimilar`). */
-  similarJson: string | null;
+  readonly similarJson: string | null;
   /** The cached rows of the recipes in that list (unordered). */
-  similarRecipes: (typeof recipes.$inferSelect)[];
+  readonly similarRecipes: readonly (typeof recipes.$inferSelect)[];
   /** Which of those similar recipes the user has hearted. */
-  similarFavouriteIds: string[];
+  readonly similarFavouriteIds: readonly string[];
   /** The user's saved measurement system, or null when they haven't chosen. */
-  units: string | null;
+  readonly units: string | null;
 }
 
 /**
@@ -118,12 +118,12 @@ export async function getRecipePageRows(
 
 /** What the `/app` grid reads for a user, fetched in one round trip. */
 export interface AppPageRows {
-  user: typeof users.$inferSelect | undefined;
-  recipes: (typeof recipes.$inferSelect)[];
+  readonly user: typeof users.$inferSelect | undefined;
+  readonly recipes: readonly (typeof recipes.$inferSelect)[];
   /** How many recipes have an embedding (a count, not the vectors). */
-  embeddedCount: number;
+  readonly embeddedCount: number;
   /** Drive file ids the user has hearted. */
-  favouriteIds: string[];
+  readonly favouriteIds: readonly string[];
 }
 
 /**

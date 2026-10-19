@@ -6,6 +6,10 @@
 
 import { securityTxt } from '@/lib/security-txt';
 
+/**
+ * `GET /.well-known/security.txt`: where to report a security problem, as
+ * plain text whose expiry date is always ahead of today. Public. Answers 200.
+ */
 export function GET(): Response {
   return new Response(securityTxt(new Date()), {
     headers: {

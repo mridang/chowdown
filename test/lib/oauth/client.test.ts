@@ -4,7 +4,10 @@ import {
   fetchClientMetadata,
   isMetadataDocumentUrl,
   parseClientMetadataDocument,
+  MAX_REGISTRATION_BYTES,
   parseRegistration,
+  parseRegistrationText,
+  registrationResponse,
 } from '../../../src/lib/oauth/client';
 
 const URL_ID = 'https://chatgpt.com/oauth/client.json';
@@ -180,5 +183,68 @@ describe('parseRegistration', () => {
   it('rejects a body that is not an object', () => {
     expect(parseRegistration('x').ok).toBe(false);
     expect(parseRegistration(null).ok).toBe(false);
+  });
+});
+
+describe('parseRegistrationText', () => {
+  const text = JSON.stringify({
+    client_name: 'Assistant',
+    redirect_uris: ['https://app.example/cb'],
+  });
+
+  it('registers a valid request', () => {
+    expect(parseRegistrationText(text)).toMatchObject({
+      ok: true,
+      client: { name: 'Assistant', kind: 'dcr' },
+    });
+  });
+
+  it('refuses a body that is too large before looking at it', () => {
+    expect(
+      parseRegistrationText('x'.repeat(MAX_REGISTRATION_BYTES + 1)),
+    ).toEqual({
+      ok: false,
+      error: 'invalid_client_metadata',
+      description: 'The request is too large.',
+    });
+  });
+
+  it('refuses text that is not JSON', () => {
+    expect(parseRegistrationText('{nope')).toEqual({
+      ok: false,
+      error: 'invalid_client_metadata',
+      description: 'The request is not valid JSON.',
+    });
+  });
+
+  it('passes on the reasons a client is refused', () => {
+    expect(parseRegistrationText('{}')).toMatchObject({
+      ok: false,
+      error: 'invalid_redirect_uri',
+    });
+  });
+});
+
+describe('registrationResponse', () => {
+  it('echoes the client and says how it may be used', () => {
+    expect(
+      registrationResponse(
+        {
+          clientId: 'dcr_x',
+          name: 'X',
+          redirectUris: ['https://app.example/cb'],
+          kind: 'dcr',
+        },
+        1234,
+      ),
+    ).toEqual({
+      client_id: 'dcr_x',
+      client_name: 'X',
+      redirect_uris: ['https://app.example/cb'],
+      grant_types: ['authorization_code', 'refresh_token'],
+      response_types: ['code'],
+      token_endpoint_auth_method: 'none',
+      client_id_issued_at: 1234,
+    });
   });
 });

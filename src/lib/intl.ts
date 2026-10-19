@@ -56,7 +56,17 @@ export function countOf(n: number, one: string, many = `${one}s`): string {
   return `${counts.format(n)} ${plurals.select(n) === 'one' ? one : many}`;
 }
 
-const decimals = new Map<number, Intl.NumberFormat>();
+/** A formatter that keeps at most `maxFractionDigits` decimal places. */
+const decimalFormat = (maxFractionDigits: number): Intl.NumberFormat =>
+  new Intl.NumberFormat(LOCALE, {
+    maximumFractionDigits: maxFractionDigits,
+    useGrouping: false,
+  });
+
+/** Formatters built once for the precisions in common use (0 to 6 places). */
+const COMMON_DECIMALS = Array.from({ length: 7 }, (_, places) =>
+  decimalFormat(places),
+);
 
 /**
  * A plain decimal for a quantity: at most `maxFractionDigits` places, no
@@ -66,21 +76,16 @@ export function formatQuantityNumber(
   value: number,
   maxFractionDigits = 2,
 ): string {
-  let format = decimals.get(maxFractionDigits);
-  if (!format) {
-    format = new Intl.NumberFormat(LOCALE, {
-      maximumFractionDigits: maxFractionDigits,
-      useGrouping: false,
-    });
-    decimals.set(maxFractionDigits, format);
-  }
+  const format =
+    COMMON_DECIMALS[maxFractionDigits] ?? decimalFormat(maxFractionDigits);
   return format.format(value);
 }
 
+/** Says a gap in time in words ("yesterday", "in 2 hours"). */
 const relative = new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto' });
 
 /** Seconds in each unit, largest first, for choosing how to say an age. */
-const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+const UNITS: readonly (readonly [Intl.RelativeTimeFormatUnit, number])[] = [
   ['year', 365 * 24 * 3600],
   ['month', 30 * 24 * 3600],
   ['week', 7 * 24 * 3600],
@@ -107,10 +112,12 @@ export function relativeTime(
   return relative.format(0, 'second');
 }
 
+/** Joins items with "and". */
 const andList = new Intl.ListFormat(LOCALE, {
   style: 'long',
   type: 'conjunction',
 });
+/** Joins items with "or". */
 const orList = new Intl.ListFormat(LOCALE, {
   style: 'long',
   type: 'disjunction',

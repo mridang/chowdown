@@ -12,16 +12,34 @@ import { NextResponse } from 'next/server';
 import { requireUid } from '@/lib/api/auth';
 import { problems } from '@/lib/api/problem';
 import { recipeSummary } from '@/lib/api/recipe-resource';
-import { getRecipePageRows } from '@/lib/db/recipe-page';
 import { setFavourite } from '@/lib/db/favourites';
+import { getRecipePageRows } from '@/lib/db/recipe-page';
+import { isDriveFileId } from '@/lib/drive/drive-client';
 import { setFavouriteAndTag } from '@/lib/recipe/favourite';
 import { getDatabase } from '@/lib/util';
 
-type Context = { params: Promise<{ 'recipe-id': string }> };
+/** The context Next.js hands these handlers: the recipe's id. */
+interface RecipeContext {
+  readonly params: Promise<{ readonly 'recipe-id': string }>;
+}
 
+/** Whether `id` is a well-formed Drive file id of one of this user's recipes. */
+async function ownsRecipe(userId: number, id: string): Promise<boolean> {
+  if (!isDriveFileId(id)) {
+    return false;
+  }
+  const rows = await getRecipePageRows(getDatabase(), userId, id);
+  return Boolean(rows.recipe);
+}
+
+/**
+ * `GET /api/users/self/favourite-recipes/:recipe-id`: the recipe's summary, if
+ * the user has hearted it. Answers 200, 404 when it is not one of their
+ * favourites, 401 when nobody is signed in.
+ */
 export async function GET(
   request: Request,
-  { params }: Context,
+  { params }: RecipeContext,
 ): Promise<NextResponse> {
   const auth = await requireUid(request);
   if (!auth.ok) {
@@ -40,18 +58,14 @@ export async function GET(
   });
 }
 
-/** Whether `id` is a well-formed Drive file id of one of this user's recipes. */
-async function ownsRecipe(userId: number, id: string): Promise<boolean> {
-  if (!/^[\w-]+$/.test(id)) {
-    return false;
-  }
-  const rows = await getRecipePageRows(getDatabase(), userId, id);
-  return Boolean(rows.recipe);
-}
-
+/**
+ * `PUT /api/users/self/favourite-recipes/:recipe-id`: heart a recipe. Hearting
+ * twice is fine. Answers 204, 404 for a recipe the user does not have, 401
+ * when nobody is signed in.
+ */
 export async function PUT(
   request: Request,
-  { params }: Context,
+  { params }: RecipeContext,
 ): Promise<NextResponse> {
   const auth = await requireUid(request);
   if (!auth.ok) {
@@ -66,9 +80,14 @@ export async function PUT(
   return new NextResponse(null, { status: 204 });
 }
 
+/**
+ * `DELETE /api/users/self/favourite-recipes/:recipe-id`: remove the heart.
+ * Removing one that is not there is fine, even for a recipe that no longer
+ * exists. Answers 204, or 401 when nobody is signed in.
+ */
 export async function DELETE(
   request: Request,
-  { params }: Context,
+  { params }: RecipeContext,
 ): Promise<NextResponse> {
   const auth = await requireUid(request);
   if (!auth.ok) {

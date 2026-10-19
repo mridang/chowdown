@@ -10,16 +10,17 @@
 
 /** Thrown when something needs Drive and the person hasn't connected it. */
 export class DriveNotConnectedError extends Error {
+  override readonly name = 'DriveNotConnectedError';
+
   constructor() {
     super('Google Drive is not connected');
-    this.name = 'DriveNotConnectedError';
   }
 }
 
 /** Whether the person has a Drive connection (a stored refresh token). */
-export function isDriveConnected(user: {
-  refresh_token_enc: string | null;
-}): boolean {
+export function isDriveConnected(
+  user: Readonly<{ refresh_token_enc: string | null }>,
+): boolean {
   return Boolean(user.refresh_token_enc);
 }
 
@@ -28,9 +29,9 @@ export function isDriveConnected(user: {
  * on record, so Google must have stopped accepting the stored login (or they
  * removed chowdown). The wording then says "reconnect" rather than "connect".
  */
-export function wasDriveConnected(user: {
-  recipes_folder_id: string | null;
-}): boolean {
+export function wasDriveConnected(
+  user: Readonly<{ recipes_folder_id: string | null }>,
+): boolean {
   return Boolean(user.recipes_folder_id);
 }
 
@@ -42,16 +43,12 @@ export function wasDriveConnected(user: {
  */
 export function driveConnectHref(
   returnTo?: string,
-  options: { force?: boolean } = {},
+  options: Readonly<{ force?: boolean }> = {},
 ): string {
-  const query = new URLSearchParams();
-  if (returnTo) {
-    query.set('returnTo', returnTo);
-  }
-  if (options.force) {
-    query.set('force', '1');
-  }
-  const text = query.toString();
+  const text = new URLSearchParams([
+    ...(returnTo ? [['returnTo', returnTo]] : []),
+    ...(options.force ? [['force', '1']] : []),
+  ]).toString();
   return text ? `/api/auth/drive?${text}` : '/api/auth/drive';
 }
 
@@ -60,9 +57,9 @@ export type DriveAttempt = 'denied' | 'error';
 
 /** Reads `?drive=` off a page's query string, ignoring anything unexpected. */
 export function driveAttemptOf(
-  value: string | string[] | undefined,
+  value: string | readonly string[] | undefined,
 ): DriveAttempt | undefined {
-  const one = Array.isArray(value) ? value[0] : value;
+  const one = typeof value === 'string' ? value : value?.[0];
   return one === 'denied' || one === 'error' ? one : undefined;
 }
 

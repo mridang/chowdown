@@ -10,6 +10,7 @@
  */
 
 import { SESSION_COOKIE } from '../auth/session';
+import { replacingHeaders } from './headers';
 
 /** The public pages worth keeping at the edge. */
 export const EDGE_CACHED_PATHS: ReadonlySet<string> = new Set([
@@ -58,7 +59,31 @@ export function storableCopy(response: Response): Response | null {
   ) {
     return null;
   }
-  const copy = new Response(response.clone().body, response);
-  copy.headers.set('Cache-Control', `public, max-age=${EDGE_TTL_SECONDS}`);
-  return copy;
+  return new Response(response.clone().body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: replacingHeaders(response.headers, {
+      'Cache-Control': `public, max-age=${EDGE_TTL_SECONDS}`,
+    }),
+  });
+}
+
+/** Whether a value can be used as the edge cache: it answers `match` and `put`. */
+function isCache(value: unknown): value is Cache {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof Reflect.get(value, 'match') === 'function' &&
+    typeof Reflect.get(value, 'put') === 'function'
+  );
+}
+
+/** Cloudflare's per-colo cache; absent when running under plain Node. */
+export function edgeCache(): Cache | undefined {
+  const store: unknown = Reflect.get(globalThis, 'caches');
+  const cache: unknown =
+    typeof store === 'object' && store !== null
+      ? Reflect.get(store, 'default')
+      : undefined;
+  return isCache(cache) ? cache : undefined;
 }

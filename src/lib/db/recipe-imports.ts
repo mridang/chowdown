@@ -13,26 +13,36 @@ import { recipeImports } from './schema';
 
 /** An import as stored. */
 export interface RecipeImport {
-  id: string;
-  status: 'COMPLETED';
-  created_at: string;
-  items: ImportItem[];
+  readonly id: string;
+  readonly status: 'COMPLETED';
+  readonly created_at: string;
+  readonly items: readonly ImportItem[];
 }
 
+/** A row of the `recipe_imports` table. */
 type Row = typeof recipeImports.$inferSelect;
 
-const toImport = (row: Row): RecipeImport => ({
-  id: row.id,
-  status: 'COMPLETED',
-  created_at: row.created_at,
-  items: JSON.parse(row.items) as ImportItem[],
-});
+/** The drafts stored in a row's `items` column (written by {@link createRecipeImport}). */
+function itemsOf(json: string): readonly ImportItem[] {
+  const parsed: unknown = JSON.parse(json);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+/** The import a stored row stands for. */
+function toImport(row: Readonly<Row>): RecipeImport {
+  return {
+    id: row.id,
+    status: 'COMPLETED',
+    created_at: row.created_at,
+    items: itemsOf(row.items),
+  };
+}
 
 /** Store a finished import. */
 export async function createRecipeImport(
   db: Database,
   userId: number,
-  items: ImportItem[],
+  items: readonly ImportItem[],
 ): Promise<RecipeImport> {
   const row = {
     id: crypto.randomUUID(),
@@ -61,7 +71,7 @@ export async function getRecipeImport(
 export async function listRecipeImports(
   db: Database,
   userId: number,
-): Promise<RecipeImport[]> {
+): Promise<readonly RecipeImport[]> {
   const rows = await db
     .select()
     .from(recipeImports)
