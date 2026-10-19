@@ -108,7 +108,7 @@ export function RecipeHero({
             <TextLink
               href={video}
               external
-              look="strong"
+              variant="strong"
               className="mt-1 inline-flex h-8 items-center gap-1.5 text-sm print:hidden"
             >
               <PlayIcon size="sm" />

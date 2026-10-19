@@ -1,3 +1,4 @@
+import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import type { Database } from '../../../src/lib/db/client';
@@ -9,8 +10,6 @@ import {
 
 const db = {} as Database;
 
-/** What a mocked collaborator looks like to `expect`, without dragging the database's deep types into the comparison. */
-type Calls = jest.Mock<(...args: readonly unknown[]) => Promise<unknown>>;
 const env = {} as CloudflareEnv;
 
 /** A cached recipe row, as far as embedding needs it. */
@@ -50,20 +49,20 @@ describe('embedRecipe', () => {
       'mt',
       deps,
     );
-    expect(deps.save as unknown as Calls).toHaveBeenCalledWith(db, {
+    expect(asCalls(deps.save)).toHaveBeenCalledWith(db, {
       user_id: 1,
       drive_file_id: 'f1',
       title: 'Curry',
       modified_time: 'mt',
       vector: '[0.5,0.25]',
     });
-    expect(deps.refreshLists as unknown as Calls).toHaveBeenCalledWith(db, 1);
+    expect(asCalls(deps.refreshLists)).toHaveBeenCalledWith(db, 1);
   });
 
   it('leaves the modified time empty when none is known', async () => {
     const deps = fakes([]);
     await embedRecipe(db, env, 1, 'f1', 'A.cook', 'x', undefined, deps);
-    expect(deps.save as unknown as Calls).toHaveBeenCalledWith(
+    expect(asCalls(deps.save)).toHaveBeenCalledWith(
       db,
       expect.objectContaining({ modified_time: null }),
     );
@@ -79,7 +78,7 @@ describe('embedRecipe', () => {
     await expect(
       embedRecipe(db, env, 1, 'f1', 'A.cook', 'x', null, deps),
     ).rejects.toThrow('model down');
-    expect(deps.refreshLists as unknown as Calls).not.toHaveBeenCalled();
+    expect(asCalls(deps.refreshLists)).not.toHaveBeenCalled();
   });
 });
 
@@ -91,13 +90,13 @@ describe('backfillEmbeddings', () => {
       ([, row]) => (row as { drive_file_id: string }).drive_file_id,
     );
     expect(saved).toEqual(['a', 'c']);
-    expect(deps.refreshLists as unknown as Calls).toHaveBeenCalledTimes(1);
+    expect(asCalls(deps.refreshLists)).toHaveBeenCalledTimes(1);
   });
 
   it('is bounded by the limit', async () => {
     const deps = fakes([recipe('a'), recipe('b'), recipe('c')]);
     expect(await backfillEmbeddings(db, env, 1, 2, deps)).toBe(2);
-    expect(deps.save as unknown as Calls).toHaveBeenCalledTimes(2);
+    expect(asCalls(deps.save)).toHaveBeenCalledTimes(2);
   });
 
   it('skips recipes that could not be parsed', async () => {
@@ -108,7 +107,7 @@ describe('backfillEmbeddings', () => {
   it('does nothing, not even refreshing, when all are embedded', async () => {
     const deps = fakes([recipe('a')], ['a']);
     expect(await backfillEmbeddings(db, env, 1, 20, deps)).toBe(0);
-    expect(deps.save as unknown as Calls).not.toHaveBeenCalled();
-    expect(deps.refreshLists as unknown as Calls).not.toHaveBeenCalled();
+    expect(asCalls(deps.save)).not.toHaveBeenCalled();
+    expect(asCalls(deps.refreshLists)).not.toHaveBeenCalled();
   });
 });

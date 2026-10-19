@@ -12,7 +12,7 @@ export function CookVisual({
       <div
         role="img"
         aria-label="Cook mode on a phone, showing one large step"
-        className="border-ink/20 w-[min(21rem,100%)] rounded-[2.25rem] border bg-white p-3"
+        className="border-field w-[min(21rem,100%)] rounded-[2.25rem] border bg-white p-3"
       >
         <div className="bg-paper rounded-[1.6rem] p-5">
           <p className="text-subtle truncate text-xs font-semibold">

@@ -87,7 +87,7 @@ export function AddNote({
   }
 
   return (
-    <div className="rounded-card border-ink/15 w-full max-w-xl border bg-white p-4">
+    <div className="rounded-card border-line w-full max-w-xl border bg-white p-4">
       <FormField id="note-text" label="Your note">
         <TextArea
           id="note-text"

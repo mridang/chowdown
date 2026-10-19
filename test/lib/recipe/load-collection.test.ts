@@ -1,3 +1,4 @@
+import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { DriveNotConnectedError } from '../../../src/lib/auth/drive-access';
@@ -10,9 +11,6 @@ import {
 } from '../../../src/lib/recipe/load-collection';
 
 const db = {} as Database;
-
-/** What a mocked collaborator looks like to `expect`, without dragging the database's deep types into the comparison. */
-type Calls = jest.Mock<(...args: readonly unknown[]) => Promise<unknown>>;
 
 /** Thrown by the fake redirect so a test can see where it went. */
 class Redirected extends Error {
@@ -111,7 +109,7 @@ describe('loadCollection', () => {
   it('tops up missing embeddings in the background, a few at a time', async () => {
     const { deps, background } = fakes([rows({ recipes: 3, embedded: 1 })]);
     await loadCollection('/app', deps);
-    expect(deps.backfill as unknown as Calls).toHaveBeenCalledWith(db, 1, 20);
+    expect(asCalls(deps.backfill)).toHaveBeenCalledWith(db, 1, 20);
     expect(background).toHaveLength(2);
   });
 

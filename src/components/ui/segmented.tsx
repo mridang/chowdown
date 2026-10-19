@@ -28,7 +28,7 @@ export function Segmented<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className="rounded-control border-ink/20 inline-flex border bg-white p-0.5"
+      className="rounded-control border-field inline-flex border bg-white p-0.5"
     >
       {options.map((option) => (
         <label key={option.value} className="relative">

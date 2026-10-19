@@ -74,7 +74,7 @@ export function IngredientsPanel({
         ) : null}
       </div>
 
-      <div className="rounded-control border-ink/15 mt-4 flex items-center justify-between border bg-white px-3 py-2">
+      <div className="rounded-control border-line mt-4 flex items-center justify-between border bg-white px-3 py-2">
         <span className="text-muted text-sm" id="servings-label">
           Servings
         </span>
@@ -177,7 +177,7 @@ export function IngredientsPanel({
             {cookware.map((item, index) => (
               <li
                 key={`${item}-${index}`}
-                className="border-ink/20 inline-flex h-8 items-center gap-2 rounded-full border bg-white px-3 text-sm"
+                className="border-field inline-flex h-8 items-center gap-2 rounded-full border bg-white px-3 text-sm"
               >
                 <PanIcon size="sm" className="text-ember" />
                 {item}

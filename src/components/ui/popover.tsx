@@ -111,7 +111,7 @@ export function Popover({
           id={panelId}
           ref={panel}
           className={cn(
-            'rounded-card border-ink/15 text-ink absolute top-full right-0 z-50 mt-2 min-w-56 border bg-white p-1.5',
+            'rounded-card border-line text-ink absolute top-full right-0 z-50 mt-2 min-w-56 border bg-white p-1.5',
             panelClassName,
           )}
         >

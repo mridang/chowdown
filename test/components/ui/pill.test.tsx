@@ -12,7 +12,7 @@ describe('PillLink', () => {
 
   it('is an outline by default and a solid pill that stands out on request', () => {
     expect(classOf(html(<PillLink href="/">x</PillLink>), 'a')).toContain(
-      'border-ink/20',
+      'border-field',
     );
     const solid = classOf(
       html(

@@ -1,3 +1,4 @@
+import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import type { Database } from '../../../src/lib/db/client';
@@ -8,9 +9,6 @@ import {
 } from '../../../src/lib/recipe/favourite';
 
 const db = {} as Database;
-
-/** What a mocked collaborator looks like to `expect`, without dragging the database's deep types into the comparison. */
-type Calls = jest.Mock<(...args: readonly unknown[]) => Promise<unknown>>;
 
 /** A user with or without a Drive connection. */
 const user = (token: string | null) =>
@@ -49,16 +47,11 @@ describe('setFavouriteAndTag', () => {
   it('answers from the table straight away and mirrors the marker later', async () => {
     const { deps, settle } = fakes();
     expect(await setFavouriteAndTag(3, 'f1', true, deps)).toBe(true);
-    expect(deps.saveHeart as unknown as Calls).toHaveBeenCalledWith(
-      db,
-      3,
-      'f1',
-      true,
-    );
+    expect(asCalls(deps.saveHeart)).toHaveBeenCalledWith(db, 3, 'f1', true);
     // The file is only touched by the queued background work.
     expect(deps.writeFile).not.toHaveBeenCalled();
     await settle();
-    expect(deps.writeFile).toHaveBeenCalledWith(
+    expect(asCalls(deps.writeFile)).toHaveBeenCalledWith(
       'f1',
       expect.stringContaining('>> favourite: true'),
       'tok',
@@ -69,7 +62,7 @@ describe('setFavouriteAndTag', () => {
     const { deps, settle } = fakes();
     await setFavouriteAndTag(3, 'f1', true, deps);
     await settle();
-    expect(deps.index as unknown as Calls).toHaveBeenCalledWith(
+    expect(asCalls(deps.index)).toHaveBeenCalledWith(
       db,
       3,
       'f1',
@@ -84,7 +77,7 @@ describe('setFavouriteAndTag', () => {
     });
     expect(await setFavouriteAndTag(3, 'f1', false, deps)).toBe(false);
     await settle();
-    expect(deps.writeFile).toHaveBeenCalledWith(
+    expect(asCalls(deps.writeFile)).toHaveBeenCalledWith(
       'f1',
       '>> title: A\n\nCook.\n',
       'tok',
@@ -96,7 +89,7 @@ describe('setFavouriteAndTag', () => {
     await setFavouriteAndTag(3, 'f1', true, deps);
     await settle();
     expect(deps.writeFile).not.toHaveBeenCalled();
-    expect(deps.index as unknown as Calls).not.toHaveBeenCalled();
+    expect(asCalls(deps.index)).not.toHaveBeenCalled();
   });
 
   it('keeps the heart in the app only for someone without Drive', async () => {
@@ -119,6 +112,6 @@ describe('setFavouriteAndTag', () => {
     await setFavouriteAndTag(3, 'f1', true, deps);
     await settle();
     expect(deps.writeFile).toHaveBeenCalled();
-    expect(deps.index as unknown as Calls).not.toHaveBeenCalled();
+    expect(asCalls(deps.index)).not.toHaveBeenCalled();
   });
 });

@@ -28,7 +28,7 @@ export function SourceLine({
         <TextLink
           href={url}
           external
-          look="strong"
+          variant="strong"
           className="inline-flex h-8 items-center gap-1.5"
         >
           <LinkIcon size="sm" />

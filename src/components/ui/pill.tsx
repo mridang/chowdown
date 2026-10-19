@@ -6,8 +6,8 @@ import { cn } from '@/components/ui/cn';
 /** The border, fill and weight of each kind of pill. */
 const VARIANTS = {
   /** An outlined pill with the weight of the text around it, for tags. */
-  plain: 'border border-ink/20 bg-white hover:border-ink',
-  outline: 'border border-ink/20 bg-white font-medium hover:border-ink',
+  plain: 'border border-field bg-white hover:border-ink',
+  outline: 'border border-field bg-white font-medium hover:border-ink',
   solid: 'bg-ink font-semibold text-white hover:bg-ink/85',
 } as const;
 

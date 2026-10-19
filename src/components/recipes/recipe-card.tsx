@@ -129,7 +129,7 @@ export function RecipeCard({
         </div>
       </IntentLink>
       {recipe.uncurated ? (
-        <span className="border-ink/15 text-ink absolute top-3 left-3 rounded-full border bg-white px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase">
+        <span className="border-line text-ink absolute top-3 left-3 rounded-full border bg-white px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase">
           Idea
         </span>
       ) : null}

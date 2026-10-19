@@ -36,31 +36,39 @@ export function getDatabase(): Database {
  * no configuration).
  */
 export function appOrigin(request: Request): string {
+  return configuredOrigin() ?? new URL(request.url).origin;
+}
+
+/** The `APP_URL` setting, or `undefined` when it is not set or there is no Cloudflare context (tests, scripts). */
+function configuredOrigin(): string | undefined {
   try {
-    return getEnv().APP_URL ?? new URL(request.url).origin;
+    return getEnv().APP_URL;
   } catch {
-    // No Cloudflare context (tests, scripts): use the request's own origin.
-    return new URL(request.url).origin;
+    return undefined;
   }
 }
 
 /**
  * Like {@link appOrigin}, for Server Components, which get request headers
- * rather than a `Request`. Behind Cloudflare the browser-facing host and scheme
- * arrive in `host` and `x-forwarded-proto`.
+ * rather than a `Request`. The host is the request's own `Host` header, which
+ * Cloudflare sets to the address the browser used; `x-forwarded-host` is
+ * deliberately NOT read, because anyone can send it and the answer is shown to
+ * people as "the address to add to your assistant". The scheme comes from
+ * `x-forwarded-proto` only when it says `http` or `https`.
  */
 export function appOriginFromHeaders(headers: Headers): string {
-  const configured = getEnv().APP_URL;
+  const configured = configuredOrigin();
   if (configured) {
     return configured;
   }
-  const host =
-    headers.get('x-forwarded-host') ?? headers.get('host') ?? 'localhost';
+  const host = headers.get('host') ?? 'localhost';
+  const forwarded = headers.get('x-forwarded-proto');
   const proto =
-    headers.get('x-forwarded-proto') ??
-    (host.startsWith('localhost') || host.startsWith('127.')
-      ? 'http'
-      : 'https');
+    forwarded === 'http' || forwarded === 'https'
+      ? forwarded
+      : host.startsWith('localhost') || host.startsWith('127.')
+        ? 'http'
+        : 'https';
   return `${proto}://${host}`;
 }
 

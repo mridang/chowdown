@@ -1,3 +1,4 @@
+import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import type { EmbeddingRow } from '../../../src/lib/db/embeddings';
@@ -123,9 +124,6 @@ describe('topSimilar', () => {
   });
 });
 
-/** What a mocked collaborator looks like to `expect`, without dragging the database's deep types into the comparison. */
-type Calls = jest.Mock<(...args: readonly unknown[]) => Promise<unknown>>;
-
 describe('ensureEmbeddings', () => {
   const db = {} as Database;
   const user = { id: 2 } as unknown as User;
@@ -159,15 +157,15 @@ describe('ensureEmbeddings', () => {
       'tok',
       deps,
     );
-    expect(deps.readFile).toHaveBeenCalledWith('n', 'tok');
-    expect(deps.save as unknown as Calls).toHaveBeenCalledWith(db, {
+    expect(asCalls(deps.readFile)).toHaveBeenCalledWith('n', 'tok');
+    expect(asCalls(deps.save)).toHaveBeenCalledWith(db, {
       user_id: 2,
       drive_file_id: 'n',
       title: 'New',
       modified_time: 'm2',
       vector: '[0.25,0.75]',
     });
-    expect(deps.refreshLists as unknown as Calls).toHaveBeenCalledWith(db, 2);
+    expect(asCalls(deps.refreshLists)).toHaveBeenCalledWith(db, 2);
   });
 
   it('leaves a current vector alone and does not refresh anything', async () => {
@@ -179,9 +177,9 @@ describe('ensureEmbeddings', () => {
       deps,
     );
     expect(deps.readFile).not.toHaveBeenCalled();
-    expect(deps.save as unknown as Calls).not.toHaveBeenCalled();
-    expect(deps.refreshLists as unknown as Calls).not.toHaveBeenCalled();
-    expect(deps.prune as unknown as Calls).toHaveBeenCalledWith(db, 2, ['a']);
+    expect(asCalls(deps.save)).not.toHaveBeenCalled();
+    expect(asCalls(deps.refreshLists)).not.toHaveBeenCalled();
+    expect(asCalls(deps.prune)).toHaveBeenCalledWith(db, 2, ['a']);
   });
 
   it('adopts Drive timestamp for a vector made at write time, without re-embedding', async () => {
@@ -193,14 +191,14 @@ describe('ensureEmbeddings', () => {
       deps,
     );
     expect(deps.embed).not.toHaveBeenCalled();
-    expect(deps.save as unknown as Calls).toHaveBeenCalledWith(db, {
+    expect(asCalls(deps.save)).toHaveBeenCalledWith(db, {
       user_id: 2,
       drive_file_id: 'a',
       title: 'Title a',
       modified_time: 'm9',
       vector: JSON.stringify([1, 0]),
     });
-    expect(deps.refreshLists as unknown as Calls).not.toHaveBeenCalled();
+    expect(asCalls(deps.refreshLists)).not.toHaveBeenCalled();
   });
 
   it('re-embeds a file Drive says has changed', async () => {
@@ -212,7 +210,7 @@ describe('ensureEmbeddings', () => {
       deps,
     );
     expect(deps.embed).toHaveBeenCalledTimes(1);
-    expect(deps.refreshLists as unknown as Calls).toHaveBeenCalledTimes(1);
+    expect(asCalls(deps.refreshLists)).toHaveBeenCalledTimes(1);
   });
 
   it('refreshes the lists when a recipe has left the folder', async () => {
@@ -223,8 +221,8 @@ describe('ensureEmbeddings', () => {
       'tok',
       deps,
     );
-    expect(deps.prune as unknown as Calls).toHaveBeenCalledWith(db, 2, ['a']);
-    expect(deps.refreshLists as unknown as Calls).toHaveBeenCalledTimes(1);
+    expect(asCalls(deps.prune)).toHaveBeenCalledWith(db, 2, ['a']);
+    expect(asCalls(deps.refreshLists)).toHaveBeenCalledTimes(1);
   });
 
   it('returns the rows as they stand after the update', async () => {

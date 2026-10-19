@@ -379,10 +379,17 @@ describe('replaceNote and removeNote', () => {
 });
 
 describe('upsertMetadata with repeated keys', () => {
-  it('rewrites only the first line for a key and leaves later repeats alone', () => {
+  it('rewrites the first line for a key and drops later repeats, so a stale one cannot shadow it', () => {
     const source = '>> time: 10\n>> time: 20\n\nCook.\n';
     expect(upsertMetadata(source, [['time', '5']])).toBe(
-      '>> time: 5\n>> time: 20\n\nCook.\n',
+      '>> time: 5\n\nCook.\n',
+    );
+  });
+
+  it('leaves repeats of a key it was not asked to set alone', () => {
+    const source = '>> tag: a\n>> tag: b\n>> time: 10\n\nCook.\n';
+    expect(upsertMetadata(source, [['time', '5']])).toBe(
+      '>> tag: a\n>> tag: b\n>> time: 5\n\nCook.\n',
     );
   });
 

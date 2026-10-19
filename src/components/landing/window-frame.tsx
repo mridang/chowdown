@@ -29,7 +29,7 @@ export function WindowFrame({
       role="img"
       aria-label={label}
       className={cn(
-        'rounded-card border-ink/15 overflow-hidden border bg-white',
+        'rounded-card border-line overflow-hidden border bg-white',
         className,
       )}
     >

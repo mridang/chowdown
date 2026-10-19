@@ -114,7 +114,10 @@ export default function PrivacyPage(): ReactElement {
           <LegalSection title="Deleting your data">
             <p>
               Remove chowdown’s access at{' '}
-              <TextLink href="https://myaccount.google.com/permissions">
+              <TextLink
+                href="https://myaccount.google.com/permissions"
+                external
+              >
                 your Google account permissions
               </TextLink>
               , and email us to delete your stored record. Your{' '}

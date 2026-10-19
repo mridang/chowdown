@@ -30,7 +30,7 @@ describe('TextLink', () => {
     expect(
       classOf(
         html(
-          <TextLink href="/" look="strong">
+          <TextLink href="/" variant="strong">
             x
           </TextLink>,
         ),

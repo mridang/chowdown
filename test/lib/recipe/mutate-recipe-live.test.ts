@@ -1,3 +1,4 @@
+import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import type { Database } from '../../../src/lib/db/client';
@@ -52,8 +53,12 @@ describe('mutateRecipeForUser', () => {
     const deps = fakes({ a: 'one\n' });
     const out = await mutateRecipeForUser(user, 'a', null, append, deps);
     expect(out).toMatchObject({ kind: 'done', source: 'one\nmore\n' });
-    expect(deps.writeFile).toHaveBeenCalledWith('a', 'one\nmore\n', 'tok');
-    expect(deps.index).toHaveBeenCalledWith(
+    expect(asCalls(deps.writeFile)).toHaveBeenCalledWith(
+      'a',
+      'one\nmore\n',
+      'tok',
+    );
+    expect(asCalls(deps.index)).toHaveBeenCalledWith(
       db,
       4,
       'a',
@@ -112,6 +117,12 @@ describe('mutateRecipeForUser', () => {
         ++lookups === 1 ? { name: 'a.cook' } : undefined,
     });
     await mutateRecipeForUser(user, 'a', null, append, deps);
-    expect(deps.index).toHaveBeenCalledWith(db, 4, 'a', 'a', 'one\nmore\n');
+    expect(asCalls(deps.index)).toHaveBeenCalledWith(
+      db,
+      4,
+      'a',
+      'a',
+      'one\nmore\n',
+    );
   });
 });

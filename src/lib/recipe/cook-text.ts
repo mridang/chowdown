@@ -137,21 +137,23 @@ export function upsertMetadata(
     const key = /^>>\s*([^:]+):\s*(.*)$/.exec(line)?.[1]?.trim().toLowerCase();
     return key !== undefined && byLowerKey.has(key) ? key : undefined;
   });
-  // Only the first line for a key is rewritten; later repeats are left as they
-  // were. Reversing means the first index is the one the Map keeps.
+  // The first line for a key is the one rewritten; later repeats are dropped,
+  // so a stale duplicate cannot shadow the value just set. Reversing means the
+  // first index is the one the Map keeps.
   const firstLineOfKey = new Map(
     keyOfLine
       .flatMap((key, i) => (key === undefined ? [] : [[key, i] as const]))
       .toReversed(),
   );
 
-  // Rewrite existing metadata lines in place.
-  const rewritten = lines.map((line, i) => {
+  // Rewrite the first metadata line for each key in place, and drop its repeats.
+  const rewritten = lines.flatMap((line, i) => {
     const key = keyOfLine[i];
     const entry = key === undefined ? undefined : byLowerKey.get(key);
-    return entry && key !== undefined && firstLineOfKey.get(key) === i
-      ? `>> ${entry.k}: ${entry.v}`
-      : line;
+    if (!entry || key === undefined) {
+      return [line];
+    }
+    return firstLineOfKey.get(key) === i ? [`>> ${entry.k}: ${entry.v}`] : [];
   });
 
   // Insert the keys that weren't already present.

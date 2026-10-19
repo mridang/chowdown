@@ -28,7 +28,7 @@ export function FilterDrawer({
 }>): ReactElement {
   return (
     <Dialog>
-      <DialogTrigger className="rounded-control border-ink/20 flex h-11 w-full items-center justify-between border bg-white px-4 text-sm font-semibold outline-none md:hidden focus-ring-flush">
+      <DialogTrigger className="rounded-control border-field flex h-11 w-full items-center justify-between border bg-white px-4 text-sm font-semibold outline-none md:hidden focus-ring-flush">
         <span className="flex items-center gap-2">
           <SlidersIcon size="menu" />
           Filters

@@ -2,6 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import {
   appOrigin,
+  appOriginFromHeaders,
   isDatabaseBound,
   runInBackground,
 } from '../../../src/lib/util/runtime';
@@ -38,5 +39,46 @@ describe('without a Cloudflare context (tests, scripts)', () => {
       expect.any(Error),
     );
     log.mockRestore();
+  });
+});
+
+describe('appOriginFromHeaders', () => {
+  it('uses the Host the browser used, and https unless told http', () => {
+    expect(
+      appOriginFromHeaders(new Headers({ host: 'chowdown.apps.mrida.ng' })),
+    ).toBe('https://chowdown.apps.mrida.ng');
+    expect(
+      appOriginFromHeaders(
+        new Headers({ host: 'chowdown.test', 'x-forwarded-proto': 'http' }),
+      ),
+    ).toBe('http://chowdown.test');
+  });
+
+  it('is http on localhost, where there is no TLS', () => {
+    expect(appOriginFromHeaders(new Headers({ host: 'localhost:3737' }))).toBe(
+      'http://localhost:3737',
+    );
+  });
+
+  it('ignores a forwarded host that anyone could have sent', () => {
+    expect(
+      appOriginFromHeaders(
+        new Headers({
+          host: 'chowdown.apps.mrida.ng',
+          'x-forwarded-host': 'evil.example',
+        }),
+      ),
+    ).toBe('https://chowdown.apps.mrida.ng');
+  });
+
+  it('ignores a forwarded scheme that is not http or https', () => {
+    expect(
+      appOriginFromHeaders(
+        new Headers({
+          host: 'chowdown.apps.mrida.ng',
+          'x-forwarded-proto': 'javascript',
+        }),
+      ),
+    ).toBe('https://chowdown.apps.mrida.ng');
   });
 });
