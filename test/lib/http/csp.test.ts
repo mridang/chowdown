@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   buildCsp,
+  buildReportOnlyCsp,
   cspSurfaceFor,
   forwardedHeaders,
   newNonce,
@@ -129,5 +130,22 @@ describe('cspSurfaceFor', () => {
     ]) {
       expect(cspSurfaceFor(pathname)).toBe('site');
     }
+  });
+});
+
+describe('reporting', () => {
+  it('points every policy at the report group and address', () => {
+    for (const surface of ['site', 'approval'] as const) {
+      const csp = buildCsp('abc', surface);
+      expect(csp).toContain('report-to csp-endpoint');
+      expect(csp).toContain('report-uri /api/csp-reports');
+    }
+  });
+
+  it('builds a Trusted Types policy that only reports', () => {
+    const policy = buildReportOnlyCsp();
+    expect(policy).toContain("require-trusted-types-for 'script'");
+    expect(policy).toContain('report-to csp-endpoint');
+    expect(policy).not.toContain('default-src');
   });
 });

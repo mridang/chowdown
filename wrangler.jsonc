@@ -124,6 +124,12 @@
       "namespace_id": "7110",
       "simple": { "limit": 120, "period": 60 },
     },
+    // browser reports (what the CSP blocked), per address: a broken page can send many
+    {
+      "name": "RL_REPORTS",
+      "namespace_id": "7113",
+      "simple": { "limit": 60, "period": 60 },
+    },
     // pages, per address
     {
       "name": "RL_SITE",

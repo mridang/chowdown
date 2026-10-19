@@ -273,3 +273,15 @@ describe('replacingHeaders', () => {
     ]);
   });
 });
+
+describe('applyResponseHeaders — reporting', () => {
+  it('tells the browser where the policies send their reports, on every response', () => {
+    for (const pathname of ['/', '/app', '/api/recipes', '/oauth/authorize']) {
+      expect(
+        applyResponseHeaders(at(pathname), html()).headers.get(
+          'reporting-endpoints',
+        ),
+      ).toBe('csp-endpoint="/api/csp-reports"');
+    }
+  });
+});

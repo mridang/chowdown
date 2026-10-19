@@ -36,7 +36,9 @@ describe('classify', () => {
   it.each<[string, string, EdgeClass | undefined]>([
     ['GET', '/_next/static/chunks/a.js', undefined],
     ['GET', '/icons/icon-192.png', undefined],
+    ['GET', '/screenshots/library-wide.png', undefined],
     ['POST', '/api/mcp', 'mcp'],
+    ['POST', '/api/csp-reports', 'reports'],
     ['POST', '/oauth/token', 'token'],
     ['POST', '/oauth/register', 'register'],
     ['GET', '/oauth/authorize', 'auth'],

@@ -25,6 +25,7 @@
 
 import { SESSION_COOKIE } from '../auth/session';
 import { clientSubject } from './client-address';
+import { CSP_REPORT_PATH } from './reporting';
 
 /** One Workers Rate Limiting binding: `limit` says whether `key` may go ahead. */
 export interface RateLimitBinding {
@@ -45,6 +46,7 @@ export type EdgeClass =
   | 'cover'
   | 'api'
   | 'discovery'
+  | 'reports'
   | 'site';
 
 /** Who a class counts. */
@@ -81,6 +83,7 @@ export const EDGE_CLASSES: Readonly<Record<EdgeClass, ClassSpec>> = {
   cover: { binding: 'RL_COVER', counted: 'person', periodSeconds: 60 },
   api: { binding: 'RL_API', counted: 'person', periodSeconds: 60 },
   discovery: { binding: 'RL_DISCOVERY', counted: 'address', periodSeconds: 60 },
+  reports: { binding: 'RL_REPORTS', counted: 'address', periodSeconds: 60 },
   site: { binding: 'RL_SITE', counted: 'address', periodSeconds: 60 },
 };
 
@@ -91,7 +94,12 @@ export const OVERALL_BINDING = 'RL_ADDRESS';
 export type EdgeLimitEnv = Readonly<Record<string, unknown>>;
 
 /** Paths served as static files: nothing to protect, and a page loads dozens of them. */
-const STATIC_PREFIXES: readonly string[] = ['/_next/', '/icons/', '/recipes/'];
+const STATIC_PREFIXES: readonly string[] = [
+  '/_next/',
+  '/icons/',
+  '/screenshots/',
+  '/recipes/',
+];
 
 /** The files at the root that are read by crawlers and installers and cost nothing to serve. */
 const DISCOVERY_PATHS: ReadonlySet<string> = new Set([
@@ -114,6 +122,9 @@ export function classify(
   }
   if (pathname === '/api/mcp') {
     return 'mcp';
+  }
+  if (pathname === CSP_REPORT_PATH) {
+    return 'reports';
   }
   if (pathname === '/oauth/token') {
     return 'token';
@@ -247,6 +258,7 @@ function styleFor(edgeClass: EdgeClass): RefusalStyle {
       return 'problem';
     case 'auth':
     case 'discovery':
+    case 'reports':
     case 'site':
       return 'text';
   }

@@ -14,6 +14,7 @@
 
 import { bytesToBase64 } from '../util/base64';
 import { replacingHeaders } from './headers';
+import { CSP_REPORT_DIRECTIVES } from './reporting';
 
 /** A fresh, unguessable nonce: 16 random bytes, base64. */
 export function newNonce(): string {
@@ -58,7 +59,22 @@ export function buildCsp(nonce: string, surface: CspSurface = 'site'): string {
     ...(approval ? [] : ["form-action 'self'"]),
     `frame-ancestors '${approval ? 'none' : 'self'}'`,
     'upgrade-insecure-requests',
+    ...CSP_REPORT_DIRECTIVES,
   ].join('; ');
+}
+
+/**
+ * A policy that only reports, never blocks, sent next to the real one: Trusted
+ * Types for scripts. With it a browser says whenever code hands a plain string
+ * to something that runs it as script (`eval`, `innerHTML` on a script,
+ * `script.src = …`), which is where injected code usually gets in. Nothing is
+ * refused, so nothing can break; the reports show whether the site (and the
+ * framework under it) could one day enforce it.
+ */
+export function buildReportOnlyCsp(): string {
+  return ["require-trusted-types-for 'script'", ...CSP_REPORT_DIRECTIVES].join(
+    '; ',
+  );
 }
 
 /**

@@ -8,6 +8,8 @@
  * test keeps the two in step).
  */
 
+import { REPORTING_ENDPOINTS } from './reporting';
+
 /** Security headers for every response. */
 export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
   // Never let a browser guess a different content type for a response.
@@ -132,6 +134,8 @@ export function applyResponseHeaders(
       ],
     ),
     ['Cross-Origin-Resource-Policy', resourcePolicyFor(pathname)],
+    // Tells the browser where the policies' `report-to csp-endpoint` reports go.
+    ['Reporting-Endpoints', REPORTING_ENDPOINTS],
     // Whatever the page itself says, tell crawlers not to index or follow it.
     // (The files other sites are meant to fetch, such as the sitemap and
     // robots.txt, are left alone: marking them noindex would only confuse.)
