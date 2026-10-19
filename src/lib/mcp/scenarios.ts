@@ -23,7 +23,14 @@ import {
 import { FACETS, facet } from '../recipe/taxonomy';
 import { rowTags, type RecipeTags } from '../recipe/tag-index';
 import { pantryOf } from './pantry-input';
-import { limitArg, numberArg, stringArg, stringListArg } from './tool-args';
+import {
+  limitArg,
+  numberArg,
+  offsetArg,
+  stringArg,
+  stringListArg,
+} from './tool-args';
+import { pastTheEnd, plainTitle, rangeText } from './tool-text';
 
 /** A cached recipe, parsed once, with what the scenario tools look at. */
 export interface ScenarioRecipe {
@@ -97,14 +104,19 @@ function byName(a: ScenarioRecipe, b: ScenarioRecipe): number {
   return a.name.localeCompare(b.name);
 }
 
-/** One recipe as a line of text: name, plus the details worth scanning. */
+/**
+ * One recipe as a line of text: name, plus the details worth scanning and the id
+ * a later call (`get_recipe`, or reading the recipe resource) can use to ask for
+ * exactly this one, since names are not unique.
+ */
 function line(recipe: ScenarioRecipe): string {
   const bits = [
     recipe.tags['cuisine']?.join('/'),
     recipe.minutes ? `${recipe.minutes} min` : undefined,
     recipe.tags['difficulty']?.[0],
+    `id: ${recipe.id}`,
   ].filter(Boolean);
-  return `- ${recipe.name}${bits.length ? ` (${bits.join(', ')})` : ''}`;
+  return `- ${plainTitle(recipe.name)} (${bits.join(', ')})`;
 }
 
 /**
@@ -186,15 +198,20 @@ function hasAny(
   return wanted.some((w) => have.includes(foldText(w)));
 }
 
-/** The facets the browse tool takes, as tool-argument names. */
+/**
+ * The facets the browse tool takes: the tool argument that carries each, and the
+ * taxonomy facet it filters on. They differ for one: dietary needs such as
+ * gluten-free are asked for as `dietary_needs` (so the name does not read as a
+ * near twin of `diet_type`, the eating style) but live in the facet `diet`.
+ */
 const BROWSE_FACETS = [
-  'cuisine',
-  'protein',
-  'diet_type',
-  'diet',
-  'category',
-  'method',
-  'difficulty',
+  { arg: 'cuisine', facet: 'cuisine' },
+  { arg: 'protein', facet: 'protein' },
+  { arg: 'diet_type', facet: 'diet_type' },
+  { arg: 'dietary_needs', facet: 'diet' },
+  { arg: 'category', facet: 'category' },
+  { arg: 'method', facet: 'method' },
+  { arg: 'difficulty', facet: 'difficulty' },
 ] as const;
 
 /** A note on how many recipes a time limit left out for not stating a time. */
@@ -215,7 +232,7 @@ export function browseRecipes(
   args: Readonly<Record<string, unknown>>,
 ): ScenarioResult {
   const checked = BROWSE_FACETS.map(
-    (key) => [key, facetWanted(key, args[key])] as const,
+    ({ arg, facet: key }) => [key, facetWanted(key, args[arg])] as const,
   );
   const problem = checked.map(([, result]) => result.problem).find(Boolean);
   if (problem) {
@@ -237,7 +254,7 @@ export function browseRecipes(
   // Everything but the time limit, so the recipes a time limit left out for not
   // stating a time can be counted.
   const fitsRest = (r: ScenarioRecipe): boolean =>
-    BROWSE_FACETS.every((key) => hasAny(r, key, matching(key))) &&
+    BROWSE_FACETS.every(({ facet: key }) => hasAny(r, key, matching(key))) &&
     (!favouritesOnly || r.favourite) &&
     words.every((w) => foldText(r.name).includes(w));
   const hits = recipes.filter(
@@ -247,7 +264,9 @@ export function browseRecipes(
         (r.minutes !== undefined && r.minutes <= maxMinutes)),
   );
 
-  const asked = BROWSE_FACETS.flatMap((key) => wanted.get(key) ?? []);
+  const asked = BROWSE_FACETS.flatMap(
+    ({ facet: key }) => wanted.get(key) ?? [],
+  );
   const also = [
     maxMinutes !== undefined ? `at most ${maxMinutes} minutes` : '',
     favouritesOnly ? 'favourites only' : '',
@@ -273,10 +292,21 @@ export function browseRecipes(
       recipes: [],
     };
   }
-  const shown = spread(hits, limitArg(args['limit']));
+  // The round-robin order does not depend on how many are asked for, so taking
+  // the first `offset + limit` and dropping the first `offset` gives pages that
+  // follow one another without gaps or repeats.
+  const offset = offsetArg(args['offset']);
+  const shown = spread(hits, offset + limitArg(args['limit'])).slice(offset);
+  if (shown.length === 0) {
+    return {
+      message: pastTheEnd(hits.length, offset, 'matching recipe') + note,
+      recipes: [],
+    };
+  }
+  const next = offset + shown.length;
   const more =
-    hits.length > shown.length
-      ? ` (showing ${shown.length} of ${hits.length}, a mix of eating styles; narrow it down to see the rest)`
+    offset > 0 || hits.length > shown.length
+      ? ` (showing ${shownOf(hits.length, offset, shown.length)}, a mix of eating styles${next < hits.length ? `; call again with offset=${next} for the next page` : ''})`
       : '';
   return {
     message: `${countOf(hits.length, 'recipe')}${subject}${more}:\n\n${groupedByDiet(shown)}${note}`,
@@ -284,9 +314,21 @@ export function browseRecipes(
   };
 }
 
-/** "5", or "showing 5 of 30" when the list was cut short. */
-function countText(shown: number, total: number): string {
-  return shown < total ? `showing ${shown} of ${total}` : String(total);
+/**
+ * How much of a list is shown: "5 of 30" for the first page, "13-24 of 30" for a
+ * later one.
+ */
+function shownOf(total: number, offset: number, shown: number): string {
+  return offset === 0
+    ? `${shown} of ${total}`
+    : rangeText(total, offset, shown);
+}
+
+/** "5", or "showing 5 of 30" (or "showing 13-24 of 30") when the list was cut short. */
+function countText(shown: number, total: number, offset: number): string {
+  return shown < total || offset > 0
+    ? `showing ${shownOf(total, offset, shown)}`
+    : String(total);
 }
 
 /** A long ingredient name shortened to fit a line. */
@@ -369,13 +411,21 @@ export function recipesFromIngredients(
     }));
   const ranked = rankMatches(matches, allowMissing);
   const limit = limitArg(args['limit']);
-  const canMake = ranked.canMake.slice(0, limit);
-  const almost = ranked.almost.slice(0, limit);
+  const offset = offsetArg(args['offset']);
+  const canMake = ranked.canMake.slice(offset, offset + limit);
+  const almost = ranked.almost.slice(offset, offset + limit);
   const have = listAnd(
     pantry.map((p) => (p.quantity ? `${p.quantity} ${p.name}` : p.name)),
   );
+  const reachable = ranked.canMake.length + ranked.almost.length;
 
-  if (canMake.length === 0 && almost.length === 0) {
+  if (reachable > 0 && canMake.length === 0 && almost.length === 0) {
+    return {
+      message: `With ${have}: ${pastTheEnd(Math.max(ranked.canMake.length, ranked.almost.length), offset, 'recipe')}`,
+      recipes: [],
+    };
+  }
+  if (reachable === 0) {
     // Nothing is within reach, so show what comes closest rather than a dead end.
     const closest = closestMatches(matches, limit);
     if (closest.length === 0) {
@@ -403,7 +453,7 @@ export function recipesFromIngredients(
     `With ${have}:`,
     ...(canMake.length
       ? [
-          `\nYou can make now (${countText(canMake.length, ranked.canMake.length)}):\n` +
+          `\nYou can make now (${countText(canMake.length, ranked.canMake.length, offset)}):\n` +
             canMake
               .map(
                 ({ recipe, match }) =>
@@ -414,7 +464,7 @@ export function recipesFromIngredients(
       : []),
     ...(almost.length
       ? [
-          `\nAlmost there (${countText(almost.length, ranked.almost.length)}):\n` +
+          `\nAlmost there (${countText(almost.length, ranked.almost.length, offset)}):\n` +
             almost
               .map(
                 ({ recipe, match }) =>
@@ -424,8 +474,13 @@ export function recipesFromIngredients(
         ]
       : []),
   ];
+  const furthest = Math.max(ranked.canMake.length, ranked.almost.length);
   return {
-    message: sections.join('\n'),
+    message:
+      sections.join('\n') +
+      (offset + limit < furthest
+        ? `\n\nThere are more: call again with offset=${offset + limit} for the next page of each list.`
+        : ''),
     recipes: [...canMake, ...almost].map((m) => m.recipe),
   };
 }

@@ -36,6 +36,7 @@ const noop = () => undefined;
 function screen(
   state: ViewState<RecipeListData>,
   list: ListState = INITIAL_LIST_STATE,
+  layout: Readonly<{ expanded?: boolean; closeHint?: boolean }> = {},
 ): string {
   return html(
     <RecipeListScreen
@@ -43,9 +44,25 @@ function screen(
       list={list}
       onOpen={noop}
       onCloseDetail={noop}
+      expanded={layout.expanded ?? false}
+      onExpand={noop}
+      onCollapse={noop}
+      onFilter={noop}
+      closeHint={layout.closeHint ?? false}
       onOpenLink={undefined}
     />,
   );
+}
+
+/** A list of `n` recipes with distinct names. */
+function recipes(n: number): RecipeListData {
+  return {
+    recipes: Array.from({ length: n }, (_, i) => ({
+      id: `id${i + 1}`,
+      title: `Recipe ${i + 1}`,
+      uncurated: false,
+    })),
+  };
 }
 
 describe('RecipeListScreen', () => {
@@ -124,6 +141,99 @@ describe('RecipeListScreen', () => {
     );
     expect(failed).toContain('No recipe found.');
     expect(failed).toContain('Back');
+  });
+});
+
+describe('RecipeListScreen at scale', () => {
+  it('draws eight tiles inline and offers every recipe behind a button', () => {
+    const out = screen({ phase: 'ready', data: recipes(12) });
+    expect(out.match(/class="tile"/g)).toHaveLength(8);
+    expect(out).toContain('Show all 12 recipes');
+    expect(out).not.toContain('Recipe 9<');
+    expect(out).not.toContain('Back');
+  });
+
+  it('offers nothing to expand when the list fits', () => {
+    const out = screen({ phase: 'ready', data: recipes(8) });
+    expect(out.match(/class="tile"/g)).toHaveLength(8);
+    expect(out).not.toContain('Show all');
+  });
+
+  it('draws every recipe when expanded, with a way back and a filter box', () => {
+    const out = screen(
+      { phase: 'ready', data: recipes(12) },
+      INITIAL_LIST_STATE,
+      { expanded: true },
+    );
+    expect(out.match(/class="tile"/g)).toHaveLength(12);
+    expect(out).toContain('Back');
+    expect(out).toContain('type="search"');
+    expect(out).toContain('aria-label="Filter recipes by name"');
+    expect(out).not.toContain('Show all');
+  });
+
+  it('filters the expanded list and counts what matched', () => {
+    const out = screen(
+      { phase: 'ready', data: recipes(12) },
+      { ...INITIAL_LIST_STATE, filter: 'recipe 1' },
+      { expanded: true },
+    );
+    expect(out.match(/class="tile"/g)).toHaveLength(4);
+    expect(out).toContain('4 recipes of 12');
+  });
+
+  it('says when the filter matches nothing', () => {
+    const out = screen(
+      { phase: 'ready', data: recipes(3) },
+      { ...INITIAL_LIST_STATE, filter: 'zzz' },
+      { expanded: true },
+    );
+    expect(out).toContain('No recipes matched.');
+  });
+
+  it('shows the whole title on the tile, so a cut-off name can still be read', () => {
+    const title = `${'Very long '.repeat(10)}name`;
+    const out = screen({
+      phase: 'ready',
+      data: { recipes: [{ id: 'a', title, uncurated: false }] },
+    });
+    expect(out).toContain(`title="${title}"`);
+  });
+
+  it('escapes a hostile title instead of interpreting it', () => {
+    const out = screen({
+      phase: 'ready',
+      data: {
+        recipes: [
+          { id: 'a', title: '<img src=x onerror=alert(1)>', uncurated: false },
+        ],
+      },
+    });
+    expect(out).not.toContain('<img');
+    expect(out).toContain('&lt;img');
+  });
+
+  it('points at the host’s close control when it would not leave fullscreen', () => {
+    const out = screen(
+      { phase: 'ready', data: recipes(12) },
+      INITIAL_LIST_STATE,
+      { expanded: true, closeHint: true },
+    );
+    expect(out).toContain('Use the close button in the header');
+  });
+
+  it('announces how many recipes arrived', () => {
+    expect(screen({ phase: 'ready', data: recipes(12) })).toContain(
+      '12 recipes loaded',
+    );
+  });
+
+  it('takes keyboard focus back to the heading after a recipe was closed', () => {
+    const out = screen(
+      { phase: 'ready', data: recipes(3) },
+      { ...INITIAL_LIST_STATE, refocus: true },
+    );
+    expect(out).toContain('<h1 tabindex="-1">');
   });
 });
 

@@ -26,6 +26,7 @@ import {
   hashedResourceUri,
   viewToolMeta,
 } from '../../../src/lib/mcp/ui-resources';
+import { SITE_URL } from '../../../src/lib/site';
 
 /** The document with its inline script removed: what the host's CSP actually has to police. */
 function shellOf(html: string): string {
@@ -104,6 +105,52 @@ describe('ui resources served', () => {
 
   it('finds nothing at any other address', () => {
     expect(findAppResource('ui://nope')).toBeUndefined();
+  });
+
+  it('serves the current card to an older hashed address, under the address asked for', () => {
+    const stale = 'ui://chowdown/recipe-card-000000000000.html';
+    const resource = findAppResource(stale);
+    expect(resource?.uri).toBe(stale);
+    expect(resource?.html).toBe(cardHtml);
+    expect(resource?.meta).toBe(VIEW_RESOURCE_META);
+  });
+
+  it('serves the current list to an older hashed address of the list', () => {
+    const stale = 'ui://chowdown/recipe-list-abcdef012345.html';
+    const resource = findAppResource(stale);
+    expect(resource?.uri).toBe(stale);
+    expect(resource?.html).toBe(listHtml);
+  });
+
+  it('refuses addresses that only look like a hashed view address', () => {
+    for (const uri of [
+      'ui://chowdown/other-aaaaaaaaaaaa.html',
+      'ui://chowdown/recipe-card-aaaaaaaaaaa.html',
+      'ui://chowdown/recipe-card-aaaaaaaaaaaaa.html',
+      'ui://chowdown/recipe-card-AAAAAAAAAAAA.html',
+      'ui://chowdown/recipe-card-000000000000.htmlx',
+      'ui://other/recipe-card-000000000000.html',
+      'ui://chowdown/recipe-card-000000000000.html/../x',
+    ]) {
+      expect(findAppResource(uri)).toBeUndefined();
+    }
+  });
+
+  it('marks only the current hashed addresses as immutable, so only they are cached for long', () => {
+    expect(findAppResource(CARD_RESOURCE_URI)?.immutable).toBe(true);
+    expect(findAppResource(LIST_RESOURCE_URI)?.immutable).toBe(true);
+    expect(findAppResource(LEGACY_CARD_RESOURCE_URI)?.immutable).toBe(false);
+    expect(
+      findAppResource('ui://chowdown/recipe-card-000000000000.html')?.immutable,
+    ).toBe(false);
+  });
+
+  it('does not list a stale address among the resources', () => {
+    const stale = findAppResource(
+      'ui://chowdown/recipe-card-000000000000.html',
+    );
+    expect(stale?.legacy).toBe(true);
+    expect(APP_RESOURCES.map((r) => r.uri)).not.toContain(stale?.uri);
   });
 
   it('ships a real HTML5 document for each view', () => {
@@ -207,6 +254,10 @@ describe('view resource metadata', () => {
   it('has no standard ui.domain: Claude rejects the view for any value but its own hash form', () => {
     expect(VIEW_RESOURCE_META.ui).not.toHaveProperty('domain');
     expect(buildResourceMeta().ui).not.toHaveProperty('domain');
+  });
+
+  it('uses the site’s own address as the widget domain, not a copy of it', () => {
+    expect(OPENAI_WIDGET_DOMAIN).toBe(SITE_URL);
   });
 
   it('keeps ChatGPT’s own widget domain, as an https origin', () => {

@@ -51,6 +51,71 @@ export function limitArg(value: unknown): number {
   );
 }
 
+/** The position to start a page of results from: a whole number, never negative (0 when not given). */
+export function offsetArg(value: unknown): number {
+  const n = numberArg(value);
+  return n === undefined ? 0 : Math.max(Math.floor(n), 0);
+}
+
+/**
+ * Older or looser spellings of a tool's arguments, and the canonical name each
+ * one stands for. The catalogue lists only the canonical names (so a model sees
+ * one way to say each thing, and the input schemas stay closed), but a
+ * connector that cached an earlier catalogue, or a model that carries an
+ * argument over from a similar tool, must not start failing: its spelling is
+ * renamed before the arguments are checked.
+ */
+const ARGUMENT_ALIASES: Readonly<
+  Record<string, Readonly<Record<string, string>>>
+> = {
+  get_recipe: { name: 'recipe' },
+  find_similar: { name: 'recipe' },
+  browse_recipes: { diet: 'dietary_needs' },
+};
+
+/**
+ * Arguments that are declared as a list of text but that models often send as
+ * one piece of text ("3 tomatoes and 400 g pasta"). That text is wrapped into a
+ * one-item list; the reader of the list already knows how to split a sentence.
+ */
+const LISTS_OF_TEXT: Readonly<Record<string, readonly string[]>> = {
+  recipes_from_ingredients: ['ingredients'],
+};
+
+/**
+ * The arguments of a call to `tool`, with the harmless slips of
+ * {@link ARGUMENT_ALIASES} and {@link LISTS_OF_TEXT} put right. Nothing else is
+ * guessed: a number sent as text, a wrong type or an unknown name is still left
+ * for the schema check to refuse, so the assistant is told and can say it right.
+ * When both an alias and its canonical name are present the arguments are left
+ * as they are, and the check refuses the alias.
+ */
+export function canonicalArguments(
+  tool: string,
+  args: Readonly<Record<string, unknown>>,
+): Readonly<Record<string, unknown>> {
+  const aliases = Object.hasOwn(ARGUMENT_ALIASES, tool)
+    ? Object.entries(ARGUMENT_ALIASES[tool] ?? {})
+    : [];
+  const renamed = Object.fromEntries(
+    Object.entries(args).map(([key, value]) => {
+      const alias = aliases.find(([from]) => from === key);
+      return alias && !Object.hasOwn(args, alias[1])
+        ? [alias[1], value]
+        : [key, value];
+    }),
+  );
+  const lists = Object.hasOwn(LISTS_OF_TEXT, tool)
+    ? (LISTS_OF_TEXT[tool] ?? [])
+    : [];
+  return Object.fromEntries(
+    Object.entries(renamed).map(([key, value]) => [
+      key,
+      lists.includes(key) && typeof value === 'string' ? [value] : value,
+    ]),
+  );
+}
+
 /**
  * An argument read as text the way the tools always have: a missing value
  * becomes empty, and anything that is not a string is spelled out with

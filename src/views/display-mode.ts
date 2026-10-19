@@ -36,9 +36,15 @@ export function isDisplayMode(value: unknown): value is DisplayMode {
 
 /**
  * Whether a View may ask the host for `mode`. A host that publishes its list of
- * modes is believed (so we never ask for one it does not offer); a host that
- * publishes no list is given the benefit of the doubt, because the spec lets a
- * host omit the field and the host will refuse an unsupported request anyway.
+ * modes is believed (so we never ask for one it does not offer).
+ *
+ * A host that publishes no list is given the benefit of the doubt. The spec
+ * says a View must check the host's list, and read strictly that means "do not
+ * ask when there is no list"; but it also lets a host leave the field out (a
+ * ChatGPT-style bridge may), and refusing to ever offer fullscreen to such a
+ * host would take the feature away for no safety gain, since a host that does
+ * not support a mode answers with the mode it did set and the View copes with
+ * that (see {@link modeFromResult} and the hook). This is a deliberate choice.
  */
 export function hostOffersMode(
   context: DisplayModeHostContext | undefined,
@@ -69,12 +75,19 @@ export function planExpand(
 export interface LayoutState {
   readonly hostMode: DisplayMode;
   readonly expandedLocally: boolean;
+  /**
+   * True when the View asked the host to leave fullscreen and got no usable
+   * answer: the View is then still fullscreen and has to say how to get out
+   * (the host's own close control).
+   */
+  readonly collapseRefused: boolean;
 }
 
 /** The layout a View starts in: inline, as hosts always begin. */
 export const INITIAL_LAYOUT: LayoutState = {
   hostMode: 'inline',
   expandedLocally: false,
+  collapseRefused: false,
 };
 
 /** Something that can change the layout. */
@@ -91,6 +104,10 @@ export type LayoutAction =
   | {
       /** The View collapses its own in-place expansion. */
       readonly type: 'collapse-locally';
+    }
+  | {
+      /** The host did not take the View out of fullscreen when asked. */
+      readonly type: 'collapse-refused';
     };
 
 /**
@@ -110,12 +127,15 @@ export function reduceLayout(
       return {
         hostMode: action.mode,
         expandedLocally: leftFullscreen ? false : state.expandedLocally,
+        collapseRefused: false,
       };
     }
     case 'expand-locally':
       return { ...state, expandedLocally: true };
     case 'collapse-locally':
-      return { ...state, expandedLocally: false };
+      return { ...state, expandedLocally: false, collapseRefused: false };
+    case 'collapse-refused':
+      return { ...state, collapseRefused: true };
   }
 }
 

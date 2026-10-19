@@ -152,7 +152,8 @@ function actualWords(value: unknown): string {
     case 'string':
       return 'text';
     case 'number':
-      return 'a number';
+      // `JSON.parse('1e400')` is Infinity: a number that is not one a schema can mean.
+      return Number.isFinite(value) ? 'a number' : 'an out-of-range number';
     case 'boolean':
       return 'true or false';
     case 'object':
@@ -165,6 +166,16 @@ function actualWords(value: unknown): string {
 /** Where in the arguments a value sits: `[]` is the arguments themselves. */
 type Path = readonly (string | number)[];
 
+/** The longest a property name is quoted in a message; a hostile key can be a megabyte long. */
+const NAME_QUOTE_LIMIT = 40;
+
+/** A property name as it is quoted in a message, cut short when it is absurdly long. */
+function quotedKey(key: string): string {
+  return key.length > NAME_QUOTE_LIMIT
+    ? `${key.slice(0, NAME_QUOTE_LIMIT)}…`
+    : key;
+}
+
 /** The path as a name an assistant can find in its call: `limit`, `images[2]`, `a.b`. */
 function nameOf(path: Path, root: string): string {
   if (path.length === 0) {
@@ -175,8 +186,8 @@ function nameOf(path: Path, root: string): string {
       typeof part === 'number'
         ? `${soFar}[${part}]`
         : soFar
-          ? `${soFar}.${part}`
-          : part,
+          ? `${soFar}.${quotedKey(part)}`
+          : quotedKey(part),
     '',
   );
   return `\`${text}\``;
@@ -261,6 +272,34 @@ function arrayProblems(
   ];
 }
 
+/** How many unknown argument names one sentence spells out before it says "and N more". */
+const UNKNOWN_NAMES_SHOWN = 5;
+
+/**
+ * One sentence for all the keys an object may not have: a few of them by name,
+ * the count of the rest, and the accepted names once. One sentence per key would
+ * let a request with a hundred thousand keys make a reply of tens of megabytes.
+ */
+function unknownKeysProblem(
+  unknown: readonly string[],
+  known: readonly string[],
+  path: Path,
+  root: string,
+): readonly string[] {
+  if (unknown.length === 0) {
+    return [];
+  }
+  const shown = unknown
+    .slice(0, UNKNOWN_NAMES_SHOWN)
+    .map((key) => nameOf([...path, key], root));
+  const rest = unknown.length - shown.length;
+  const names =
+    rest > 0 ? `${shown.join(', ')} and ${rest} more` : shown.join(', ');
+  return [
+    `${names} ${unknown.length === 1 ? 'is not an argument' : 'are not arguments'} of this tool (it accepts: ${known.join(', ') || 'none'}).`,
+  ];
+}
+
 /** The problems with an object: required keys, unknown keys, then each known key. */
 function objectProblems(
   schema: JsonSchema,
@@ -275,12 +314,12 @@ function objectProblems(
       .filter((key) => !Object.hasOwn(value, key) || value[key] === undefined)
       .map((key) => `${nameOf([...path, key], root)} is required.`),
     ...(schema.additionalProperties === false
-      ? Object.keys(value)
-          .filter((key) => !Object.hasOwn(properties, key))
-          .map(
-            (key) =>
-              `${nameOf([...path, key], root)} is not an argument of this tool (it accepts: ${known.join(', ') || 'none'}).`,
-          )
+      ? unknownKeysProblem(
+          Object.keys(value).filter((key) => !Object.hasOwn(properties, key)),
+          known,
+          path,
+          root,
+        )
       : []),
     ...Object.entries(properties).flatMap(([key, sub]) =>
       Object.hasOwn(value, key) && value[key] !== undefined
@@ -347,6 +386,9 @@ function problemsAt(
   ];
 }
 
+/** The most problems a check reports; the rest are counted, not spelled out. */
+export const PROBLEMS_SHOWN = 10;
+
 /**
  * Check `value` against `schema` and say what is wrong with it.
  *
@@ -354,14 +396,22 @@ function problemsAt(
  * @param value The parsed JSON to check.
  * @param root How to refer to the value itself in a message; the arguments of a
  *   tool call are "The arguments".
- * @returns One sentence per problem, empty when the value is valid.
+ * @returns One sentence per problem, empty when the value is valid. At most
+ *   {@link PROBLEMS_SHOWN} are spelled out, then a last sentence says how many
+ *   more there were, so a hostile request cannot make a reply of any size.
  */
 export function validateJson(
   schema: JsonSchema,
   value: unknown,
   root = 'The value',
 ): readonly string[] {
-  return problemsAt(schema, value, [], root);
+  const problems = problemsAt(schema, value, [], root);
+  return problems.length > PROBLEMS_SHOWN
+    ? [
+        ...problems.slice(0, PROBLEMS_SHOWN),
+        `…and ${problems.length - PROBLEMS_SHOWN} more problems.`,
+      ]
+    : problems;
 }
 
 /**

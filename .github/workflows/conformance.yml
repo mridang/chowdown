@@ -41,6 +41,13 @@ jobs:
         run: npm run build:views
 
       # The official MCP conformance suite, run against the server's request
-      # handling. Known gaps are listed in scripts/conformance/expected-failures.yml.
-      - name: Run the conformance suite
-        run: npm run conformance
+      # handling once per spec revision it speaks, each with its own list of
+      # known gaps (scripts/conformance/expected-failures-<revision>.yml). Two
+      # steps so a failure names the revision it belongs to.
+      - name: Run the conformance suite (2026-07-28, stateless)
+        run: npm run conformance -- --revision 2026-07-28
+
+      # The initialize-handshake era that Claude, ChatGPT, VS Code and Cursor
+      # still open with: the same endpoint, a different code path.
+      - name: Run the conformance suite (2025-11-25, initialize handshake)
+        run: npm run conformance -- --revision 2025-11-25

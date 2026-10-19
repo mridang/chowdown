@@ -115,6 +115,28 @@ describe('FullRecipe', () => {
     expect(out).not.toContain('javascript:');
   });
 
+  it('numbers the steps for people who cannot see the circle', () => {
+    const out = html(<FullRecipe recipe={RECIPE} />);
+    expect(out).toContain('<span class="sr-only">Step </span>1');
+    expect(out).not.toContain('class="num" aria-hidden');
+  });
+
+  it('says which site the source link leads to', () => {
+    expect(
+      html(<FullRecipe recipe={RECIPE} onOpenLink={() => undefined} />),
+    ).toContain('Open the original recipe on example.com');
+  });
+
+  it('says where to leave fullscreen when the host would not take Back', () => {
+    const out = html(
+      <FullRecipe recipe={RECIPE} onBack={() => undefined} closeHint />,
+    );
+    expect(out).toContain('Use the close button in the header');
+    expect(
+      html(<FullRecipe recipe={RECIPE} onBack={() => undefined} />),
+    ).not.toContain('close button');
+  });
+
   it('does not use anchors with targets for links', () => {
     expect(
       html(<FullRecipe recipe={RECIPE} onOpenLink={() => undefined} />),

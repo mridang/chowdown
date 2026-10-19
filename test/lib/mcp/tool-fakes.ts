@@ -26,12 +26,45 @@ export const PANCAKES = [
   '',
 ].join('\n');
 
-/** A fake Drive folder holding the given recipes, remembering every write. */
-export function folder(initial: Readonly<Record<string, string>> = {}) {
+/** Things a test can do to the fake folder while a tool is working in it. */
+export interface FolderHooks {
+  /**
+   * Called after each read of a file, with the file's name, how many times it has
+   * been read so far, and a way to change its text: a stand-in for someone else
+   * editing the recipe in Drive while a tool is part way through.
+   */
+  readonly afterRead?: (
+    name: string,
+    reads: number,
+    change: (text: string) => void,
+  ) => void;
+  /**
+   * Called after each write of a file, with the file's name, how many times it has
+   * been written so far, and a way to change its text: a stand-in for another save
+   * landing right after ours and replacing it.
+   */
+  readonly afterUpdate?: (
+    name: string,
+    writes: number,
+    change: (text: string) => void,
+  ) => void;
+}
+
+/**
+ * A fake Drive folder holding the given recipes, remembering every write. A
+ * write replaces the file's text, as in Drive, so a later read sees it.
+ */
+export function folder(
+  initial: Readonly<Record<string, string>> = {},
+  hooks: FolderHooks = {},
+) {
   const contents = new Map(Object.entries(initial));
+  const reads = new Map<string, number>();
+  const writes = new Map<string, number>();
   const created: DriveFile[] = [];
   const updates: [string, string][] = [];
   const indexed: [string, string, string][] = [];
+  const nameOf = (id: string) => id.replace(/^id-/, '');
   const ctx: ToolContext = {
     user: USER,
     token: 'tok',
@@ -39,7 +72,16 @@ export function folder(initial: Readonly<Record<string, string>> = {}) {
     files: {
       list: async () =>
         [...contents.keys()].map((name) => ({ id: `id-${name}`, name })),
-      read: async (id) => contents.get(id.replace(/^id-/, '')) ?? '',
+      read: async (id) => {
+        const name = nameOf(id);
+        const text = contents.get(name) ?? '';
+        const count = (reads.get(name) ?? 0) + 1;
+        reads.set(name, count);
+        hooks.afterRead?.(name, count, (changed) =>
+          contents.set(name, changed),
+        );
+        return text;
+      },
       create: async (name, content) => {
         const file = {
           id: `id-${name}`,
@@ -51,13 +93,20 @@ export function folder(initial: Readonly<Record<string, string>> = {}) {
       },
       update: async (id, content) => {
         updates.push([id, content]);
+        const name = nameOf(id);
+        contents.set(name, content);
+        const count = (writes.get(name) ?? 0) + 1;
+        writes.set(name, count);
+        hooks.afterUpdate?.(name, count, (changed) =>
+          contents.set(name, changed),
+        );
       },
       index: async (id, name, source) => {
         indexed.push([id, name, source]);
       },
     },
   };
-  return { ctx, created, updates, indexed };
+  return { ctx, created, updates, indexed, contents };
 }
 
 /** A cached recipe row for the scenario tools. */
@@ -72,6 +121,7 @@ export function row(name: string, source: string): Recipe {
     modified_time: null,
     parse_error: null,
     tags: null,
+    source_url: null,
     first_opened_at: '2026-01-01',
     last_opened_at: '2026-01-01',
   };

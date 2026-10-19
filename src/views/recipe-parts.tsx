@@ -12,7 +12,7 @@ import type { ReactElement } from 'react';
 
 import type { StepToken } from '../lib/recipe/cooklang';
 import type { RecipeCardData } from '../lib/mcp/ui-types';
-import { safeHttpUrl } from './follow-up';
+import { safeHttpUrl, sourceHost } from './follow-up';
 
 /** The small label above a title: "Recipe" or "Recipe idea". */
 export function Eyebrow({
@@ -83,10 +83,20 @@ export function Step({
 /**
  * Moves keyboard focus to an element when it first appears. A module-level
  * function on purpose: React calls a ref callback again whenever its identity
- * changes, and an inline arrow would steal focus on every re-render.
+ * changes, and an inline arrow would steal focus on every re-render. Also used
+ * to put focus back where the person was after they leave an expanded layout.
  */
-function focusWhenShown(element: HTMLElement | null): void {
+export function focusWhenShown(element: HTMLElement | null): void {
   element?.focus({ preventScroll: true });
+}
+
+/** Tells the person where to leave fullscreen when the Back button cannot. */
+export function CloseHint(): ReactElement {
+  return (
+    <span className="status-line hint" role="status">
+      Use the close button in the header to leave fullscreen.
+    </span>
+  );
 }
 
 /** What the full recipe layout needs from its View. */
@@ -94,6 +104,8 @@ export interface FullRecipeProps {
   readonly recipe: RecipeCardData;
   /** Leave the expanded layout. Shown as a "Back" button when given. */
   readonly onBack?: () => void;
+  /** Shown beside Back when the host would not leave fullscreen: where to find its close control. */
+  readonly closeHint?: boolean;
   /** Open a web page through the host. The source link is shown only when given. */
   readonly onOpenLink?: (url: string) => void;
 }
@@ -106,9 +118,11 @@ export interface FullRecipeProps {
 export function FullRecipe({
   recipe,
   onBack,
+  closeHint = false,
   onOpenLink,
 }: Readonly<FullRecipeProps>): ReactElement {
   const source = safeHttpUrl(recipe.source);
+  const host = sourceHost(recipe.source);
   return (
     <section
       className="full"
@@ -121,6 +135,7 @@ export function FullRecipe({
           <button type="button" className="btn ghost" onClick={onBack}>
             Back
           </button>
+          {closeHint ? <CloseHint /> : null}
         </div>
       ) : null}
       <Eyebrow uncurated={recipe.uncurated} />
@@ -134,7 +149,7 @@ export function FullRecipe({
           className="link"
           onClick={() => onOpenLink(source)}
         >
-          Open the original recipe
+          Open the original recipe{host ? ` on ${host}` : ''}
         </button>
       ) : null}
       <div className="cols">
@@ -172,7 +187,8 @@ export function FullRecipe({
           <ol className="steps">
             {recipe.steps.map((tokens, i) => (
               <li className="step" key={i}>
-                <span className="num" aria-hidden="true">
+                <span className="num">
+                  <span className="sr-only">Step </span>
                   {i + 1}
                 </span>
                 <Step tokens={tokens} />

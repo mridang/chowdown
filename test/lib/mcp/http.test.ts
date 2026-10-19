@@ -1,11 +1,14 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import type { User } from '../../../src/lib/db/users';
+import type { McpAuth } from '../../../src/lib/mcp/auth';
 import {
   corsFor,
   handleMcpPost,
   originRefusal,
+  respondToMcp,
   unauthorizedResponse,
+  type Authenticate,
 } from '../../../src/lib/mcp/http';
 import {
   MAX_BODY_BYTES,
@@ -138,9 +141,91 @@ describe('originRefusal / corsFor', () => {
       new Request(`${SELF}/api/mcp`, {
         headers: { origin: 'https://claude.ai' },
       }),
+      SELF,
     );
     expect(cors['Access-Control-Allow-Origin']).toBe('https://claude.ai');
     expect(cors['Vary']).toBe('Origin');
+  });
+
+  it('refuses with no CORS headers, so a page from that origin sees only a network error', async () => {
+    const res = originRefusal(
+      new Request(`${SELF}/api/mcp`, {
+        headers: { origin: 'https://evil.example' },
+      }),
+      SELF,
+    );
+    expect(res?.headers.get('access-control-allow-origin')).toBeNull();
+    expect(res?.headers.get('cache-control')).toBe('no-store');
+  });
+
+  it('lets an origin through that the operator listed, including one the URL parser calls opaque', () => {
+    const from = (origin: string, extra?: string) =>
+      originRefusal(
+        new Request(`${SELF}/api/mcp`, { headers: { origin } }),
+        SELF,
+        extra,
+      );
+    expect(from('chrome-extension://abcdef')?.status).toBe(403);
+    expect(
+      from('chrome-extension://abcdef', 'chrome-extension://abcdef'),
+    ).toBeNull();
+    expect(from('https://tool.example', 'https://tool.example')).toBeNull();
+    expect(
+      from('https://tool.example:8443', 'https://tool.example')?.status,
+    ).toBe(403);
+  });
+
+  it('gives a caller with no Origin the open set, and one with a refused Origin none at all', () => {
+    expect(corsFor(new Request(`${SELF}/api/mcp`), SELF)).toMatchObject({
+      'Access-Control-Allow-Origin': '*',
+    });
+    expect(
+      corsFor(
+        new Request(`${SELF}/api/mcp`, {
+          headers: { origin: 'https://evil.example' },
+        }),
+        SELF,
+      ),
+    ).toEqual({});
+  });
+
+  it('echoes the origin of a listed extension and reads the list from the argument', () => {
+    const request = new Request(`${SELF}/api/mcp`, {
+      headers: { origin: 'chrome-extension://abcdef' },
+    });
+    expect(corsFor(request, SELF)).toEqual({});
+    expect(
+      corsFor(request, SELF, 'chrome-extension://abcdef')[
+        'Access-Control-Allow-Origin'
+      ],
+    ).toBe('chrome-extension://abcdef');
+  });
+
+  it('echoes the headers a preflight asks for, so one more header does not fail it', () => {
+    const preflight = (requested: string) =>
+      corsFor(
+        new Request(`${SELF}/api/mcp`, {
+          method: 'OPTIONS',
+          headers: {
+            origin: 'https://claude.ai',
+            'access-control-request-headers': requested,
+          },
+        }),
+        SELF,
+      );
+    const asked = preflight('authorization, content-type, mcp-param-region');
+    expect(asked['Access-Control-Allow-Headers']).toBe(
+      'authorization, content-type, mcp-param-region',
+    );
+    expect(asked['Vary']).toBe('Origin, Access-Control-Request-Headers');
+    // Anything that is not a plain list of header names, or is absurdly long, is ignored.
+    for (const odd of ['a b c', 'x;y', 'a,', 'a'.repeat(513)]) {
+      const fallback = preflight(odd);
+      expect(fallback['Access-Control-Allow-Headers']).toContain(
+        'MCP-Protocol-Version',
+      );
+      expect(fallback['Vary']).toBe('Origin');
+    }
   });
 
   it('puts the CORS headers on a normal reply, a refusal and a 202', async () => {
@@ -333,7 +418,8 @@ describe('handleMcpPost — malformed bodies', () => {
     expect(status).toBe(400);
     expect(json?.error?.code).toBe(-32600);
     expect(json?.result).toBeUndefined();
-    expect(rate.keys()).toEqual([]);
+    // Refused unread, so only the general allowance is charged, once.
+    expect(rate.keys()).toEqual(['mcp-request:1']);
   });
 
   it('gives a reply to something a server asked an empty 202, and runs nothing', async () => {
@@ -420,7 +506,7 @@ describe('handleMcpPost — request size', () => {
     expect(status).toBe(200);
   });
 
-  it('does not run the rate limiter for a body it refused', async () => {
+  it('charges a body it refused once against the general allowance only', async () => {
     const rate = fakeRate();
     await send(
       {
@@ -433,7 +519,7 @@ describe('handleMcpPost — request size', () => {
       ALL_SCOPES,
       rate.deps,
     );
-    expect(rate.keys()).toEqual([]);
+    expect(rate.keys()).toEqual(['mcp-request:1']);
   });
 });
 
@@ -578,19 +664,19 @@ describe('handleMcpPost — protocol checks', () => {
   });
 
   it.each([
-    ['tools/list', undefined],
-    ['resources/list', undefined],
-    ['resources/read', { uri: 'ui://recipe/card.html' }],
+    ['tools/list', undefined, 'public'],
+    ['resources/list', undefined, 'private'],
+    ['resources/read', { uri: 'ui://recipe/card.html' }, 'public'],
   ])(
-    'sends cache hints and the server’s identity with %s to a newest-era client',
-    async (method, params) => {
+    'sends cache hints and the server’s identity with %s to a newest-era client (shared only when nothing in it is the person’s own)',
+    async (method, params, scope) => {
       const { json } = await send(
         modern(method, params),
         modernHeaders(method, params?.uri),
       );
       expect(json?.result).toMatchObject({
         ttlMs: expect.any(Number),
-        cacheScope: 'public',
+        cacheScope: scope,
         resultType: 'complete',
         _meta: { 'io.modelcontextprotocol/serverInfo': SERVER_INFO },
       });
@@ -850,5 +936,341 @@ describe('unauthorizedResponse', () => {
     expect(res.headers.get('access-control-allow-origin')).toBe(
       'https://claude.ai',
     );
+  });
+});
+
+describe('handleMcpPost — junk bodies and the rate limit', () => {
+  const junk = (rate: RateLimitDeps) =>
+    handleMcpPost(postText('{nope'), user, ALL_SCOPES, SELF, rate);
+
+  it('answers a caller who keeps sending unparseable bodies with a 429 once they pass the general allowance', async () => {
+    const rate = fakeRate();
+    const statuses = await Array.from({ length: 601 }).reduce<
+      Promise<readonly number[]>
+    >(
+      async (done) => [...(await done), (await junk(rate.deps)).status],
+      Promise.resolve([]),
+    );
+    expect(statuses.slice(0, 600).every((status) => status === 400)).toBe(true);
+    expect(statuses[600]).toBe(429);
+    expect(rate.keys()).toEqual(['mcp-request:1']);
+  });
+
+  it('tells such a caller how long to wait', async () => {
+    const rate = fakeRate();
+    await Array.from({ length: 600 }).reduce<Promise<unknown>>(async (done) => {
+      await done;
+      return junk(rate.deps);
+    }, Promise.resolve());
+    const res = await junk(rate.deps);
+    expect(res.status).toBe(429);
+    expect(res.headers.get('retry-after')).toBe('60');
+    expect(((await res.json()) as Reply).error?.code).toBe(-32603);
+  });
+
+  it.each([
+    ['not JSON', () => postText('{nope')],
+    ['not a message', () => post(7)],
+    ['an empty batch', () => post([])],
+    [
+      'a batch of 21',
+      () =>
+        post(
+          Array.from({ length: 21 }, () => ({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'ping',
+          })),
+        ),
+    ],
+    [
+      'a body over the limit',
+      () => postText('{}', { 'content-length': String(MAX_BODY_BYTES + 1) }),
+    ],
+  ])('charges %s once against the general allowance', async (_name, make) => {
+    const rate = fakeRate();
+    const res = await handleMcpPost(make(), user, ALL_SCOPES, SELF, rate.deps);
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(rate.keys()).toEqual(['mcp-request:1']);
+  });
+
+  it('does not charge a well-formed message that was refused for its headers', async () => {
+    const rate = fakeRate();
+    const { status } = await send(
+      modern('tools/list'),
+      { 'mcp-protocol-version': '2026-07-28', 'mcp-method': 'wrong' },
+      ALL_SCOPES,
+      rate.deps,
+    );
+    expect(status).toBe(400);
+    expect(rate.keys()).toEqual([]);
+  });
+});
+
+describe('every reply from the endpoint', () => {
+  /** One request per kind of answer the endpoint gives. */
+  const answers: readonly [
+    string,
+    number,
+    () => Promise<{ readonly headers: Headers }>,
+  ][] = [
+    ['a result', 200, () => send({ jsonrpc: '2.0', id: 1, method: 'ping' })],
+    [
+      'a notification',
+      202,
+      () => send({ jsonrpc: '2.0', method: 'notifications/initialized' }),
+    ],
+    ['a parse error', 400, () => send(7)],
+    [
+      'a scope refusal',
+      403,
+      () =>
+        send(
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'tools/call',
+            params: { name: 'set_measurement_system' },
+          },
+          {},
+          ['recipes:read'],
+        ),
+    ],
+    [
+      'an unknown method',
+      404,
+      () =>
+        send(modern('nope/nothing'), {
+          'mcp-protocol-version': '2026-07-28',
+          'mcp-method': 'nope/nothing',
+        }),
+    ],
+    [
+      'an oversized body',
+      413,
+      () =>
+        handleMcpPost(
+          postText('{}', { 'content-length': String(MAX_BODY_BYTES + 1) }),
+          user,
+          ALL_SCOPES,
+          SELF,
+          fakeRate().deps,
+        ),
+    ],
+    [
+      'a rate limit',
+      429,
+      async () => {
+        const rate = fakeRate();
+        await Array.from({ length: 120 }).reduce<Promise<unknown>>(
+          async (done, _, i) => {
+            await done;
+            return send(
+              {
+                jsonrpc: '2.0',
+                id: i,
+                method: 'tools/call',
+                params: { name: 'ghost' },
+              },
+              {},
+              ALL_SCOPES,
+              rate.deps,
+            );
+          },
+          Promise.resolve(),
+        );
+        return send(
+          {
+            jsonrpc: '2.0',
+            id: 0,
+            method: 'tools/call',
+            params: { name: 'ghost' },
+          },
+          {},
+          ALL_SCOPES,
+          rate.deps,
+        );
+      },
+    ],
+  ];
+
+  it.each(answers)(
+    'is marked no-store: %s (%i)',
+    async (_name, status, make) => {
+      const res = await make();
+      expect('status' in res ? res.status : undefined).toBe(status);
+      expect(res.headers.get('cache-control')).toBe('no-store');
+    },
+  );
+});
+
+describe('respondToMcp', () => {
+  const GOOD: McpAuth = { kind: 'ok', user, scope: ALL_SCOPES };
+
+  /** An authenticate that answers `auth` and remembers it was asked. */
+  function authenticating(auth: McpAuth | Error) {
+    const asked = jest.fn<Authenticate>(async () => {
+      if (auth instanceof Error) {
+        throw auth;
+      }
+      return auth;
+    });
+    return asked;
+  }
+
+  const ask = (
+    method: string,
+    asked: jest.Mock<Authenticate>,
+    headers: Record<string, string> = {},
+    body?: string,
+  ) =>
+    respondToMcp(
+      new Request(`${SELF}/api/mcp`, { method, headers, body }),
+      SELF,
+      asked,
+      fakeRate().deps,
+    );
+
+  const ping = JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'ping' });
+
+  describe.each(['POST', 'GET', 'DELETE'])('%s', (method) => {
+    const body = method === 'POST' ? ping : undefined;
+
+    it('starts the sign-in flow when there is no token', async () => {
+      const res = await ask(
+        method,
+        authenticating({ kind: 'no-token' }),
+        {},
+        body,
+      );
+      expect(res.status).toBe(401);
+      expect(res.headers.get('www-authenticate')).not.toContain(
+        'invalid_token',
+      );
+      expect(res.headers.get('cache-control')).toBe('no-store');
+    });
+
+    it('says so when the token is not valid', async () => {
+      const res = await ask(
+        method,
+        authenticating({ kind: 'invalid-token' }),
+        { origin: 'https://claude.ai' },
+        body,
+      );
+      expect(res.status).toBe(401);
+      expect(res.headers.get('www-authenticate')).toContain(
+        'error="invalid_token"',
+      );
+      expect(res.headers.get('access-control-allow-origin')).toBe(
+        'https://claude.ai',
+      );
+    });
+
+    it('turns an unknown origin away before it looks at the token', async () => {
+      const asked = authenticating(GOOD);
+      const res = await ask(
+        method,
+        asked,
+        { origin: 'https://evil.example' },
+        body,
+      );
+      expect(res.status).toBe(403);
+      expect(res.headers.get('www-authenticate')).toBeNull();
+      expect(asked).not.toHaveBeenCalled();
+    });
+
+    it('does not let an authentication fault escape as a bare 500', async () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const res = await ask(
+        method,
+        authenticating(new Error('D1 exploded: secret detail')),
+        { origin: 'https://claude.ai' },
+        body,
+      );
+      expect(res.status).toBe(503);
+      expect(res.headers.get('retry-after')).toBe('5');
+      expect(res.headers.get('cache-control')).toBe('no-store');
+      expect(res.headers.get('access-control-allow-origin')).toBe(
+        'https://claude.ai',
+      );
+      const text = await res.text();
+      expect(JSON.parse(text)).toEqual({
+        jsonrpc: '2.0',
+        id: null,
+        error: { code: -32603, message: 'Something went wrong on the server.' },
+      });
+      expect(text).not.toContain('secret detail');
+      expect(spy).toHaveBeenCalled();
+      spy.mockRestore();
+    });
+  });
+
+  it.each(['GET', 'DELETE'])(
+    'answers a signed-in %s with 405 and what is allowed',
+    async (method) => {
+      const res = await ask(method, authenticating(GOOD), {
+        origin: 'https://claude.ai',
+      });
+      expect(res.status).toBe(405);
+      expect(res.headers.get('allow')).toBe('POST, OPTIONS');
+      expect(res.headers.get('access-control-allow-origin')).toBe(
+        'https://claude.ai',
+      );
+      expect(res.headers.get('cache-control')).toBe('no-store');
+    },
+  );
+
+  it('hands a signed-in POST to the handler with the user and the scopes of the token', async () => {
+    const readOnly: McpAuth = { kind: 'ok', user, scope: ['recipes:read'] };
+    const call = JSON.stringify({
+      jsonrpc: '2.0',
+      id: 3,
+      method: 'tools/call',
+      params: { name: 'set_measurement_system' },
+    });
+    const res = await ask('POST', authenticating(readOnly), {}, call);
+    expect(res.status).toBe(403);
+    expect(res.headers.get('www-authenticate')).toContain(
+      'scope="recipes:write"',
+    );
+    const ok = await ask('POST', authenticating(GOOD), {}, ping);
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toMatchObject({ id: 1, result: {} });
+  });
+
+  it('asks to authenticate the request it was given, for this origin', async () => {
+    const asked = authenticating(GOOD);
+    await ask('POST', asked, {}, ping);
+    expect(asked).toHaveBeenCalledTimes(1);
+    const [request, origin] = asked.mock.calls[0] ?? [];
+    expect(request?.method).toBe('POST');
+    expect(origin).toBe(SELF);
+  });
+
+  describe('the CORS preflight', () => {
+    it('answers an allowed origin with 204, echoing the origin and the headers it asks for, and never looks at a token', async () => {
+      const asked = authenticating({ kind: 'no-token' });
+      const res = await ask('OPTIONS', asked, {
+        origin: 'https://claude.ai',
+        'access-control-request-headers': 'authorization, mcp-method',
+      });
+      expect(res.status).toBe(204);
+      expect(res.headers.get('access-control-allow-origin')).toBe(
+        'https://claude.ai',
+      );
+      expect(res.headers.get('access-control-allow-headers')).toBe(
+        'authorization, mcp-method',
+      );
+      expect(res.headers.get('allow')).toBe('POST, OPTIONS');
+      expect(asked).not.toHaveBeenCalled();
+    });
+
+    it('refuses an origin that is not allowed', async () => {
+      const res = await ask('OPTIONS', authenticating(GOOD), {
+        origin: 'https://evil.example',
+      });
+      expect(res.status).toBe(403);
+      expect(res.headers.get('access-control-allow-origin')).toBeNull();
+    });
   });
 });

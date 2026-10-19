@@ -6,6 +6,7 @@ import {
   MCP_RATE_LIMITS,
   PURGE_IDLE_SECONDS,
   PURGE_PROBABILITY,
+  chargeRefusedBody,
   checkRateLimits,
   readJsonBody,
   type RateLimitDeps,
@@ -274,6 +275,52 @@ describe('checkRateLimits', () => {
       purge: async () => undefined,
     };
     expect(await checkRateLimits(someone, [call], deps(broken))).toBeNull();
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+  });
+});
+
+describe('chargeRefusedBody', () => {
+  it('counts a body that could not be read against the general allowance, never the tool-call one', async () => {
+    const { store, counters } = memoryStore();
+    expect(await chargeRefusedBody(someone, deps(store))).toBeNull();
+    expect([...counters.keys()]).toEqual(['mcp-request:7']);
+  });
+
+  it('refuses with a 429 and Retry-After once the junk has used up the allowance', async () => {
+    const { store } = memoryStore();
+    const outcomes = await Promise.all(
+      Array.from({ length: MCP_RATE_LIMITS.request.limit + 1 }, () =>
+        chargeRefusedBody(someone, deps(store)),
+      ),
+    );
+    expect(outcomes.slice(0, -1).every((o) => o === null)).toBe(true);
+    expect(outcomes.at(-1)).toMatchObject({
+      status: 429,
+      headers: { 'Retry-After': '60' },
+      body: { id: null, error: { code: -32603 } },
+    });
+  });
+
+  it('counts each user on their own', async () => {
+    const { store } = memoryStore();
+    await Promise.all(
+      Array.from({ length: MCP_RATE_LIMITS.request.limit + 1 }, () =>
+        chargeRefusedBody(someone, deps(store)),
+      ),
+    );
+    expect(await chargeRefusedBody({ id: 8 } as User, deps(store))).toBeNull();
+  });
+
+  it('lets the request go on being refused as before when the counters cannot be reached', async () => {
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const broken: RateLimitStore = {
+      hit: async () => {
+        throw new Error('D1 is down');
+      },
+      purge: async () => undefined,
+    };
+    expect(await chargeRefusedBody(someone, deps(broken))).toBeNull();
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
   });

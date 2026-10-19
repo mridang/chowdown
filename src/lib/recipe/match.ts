@@ -4,10 +4,13 @@
  * Resolve the recipe an assistant means from a free-text reference. Tools take
  * a recipe *name*, but names aren't unique (two recipes can share a title), so
  * an exact Drive file id is accepted too and always wins — that is how a caller
- * disambiguates when it knows which copy it wants.
+ * disambiguates when it knows which copy it wants. Names are compared the way
+ * `search_recipes` compares them, ignoring case and accents, so "creme brulee"
+ * finds "Crème brûlée".
  */
 
 import type { DriveFile } from '../drive/drive-client';
+import { foldText } from '../intl';
 import { recipeDisplayName } from './cook-text';
 
 /** What a reference to a recipe turned out to mean. */
@@ -36,7 +39,7 @@ function outcome(files: readonly DriveFile[]): FileMatch {
 /**
  * Work out which recipe a reference points at, and whether it is certain: an
  * exact file id first, then recipes whose display name equals the reference
- * (case-insensitive), then recipes whose display name contains it. The first
+ * (ignoring case and accents), then recipes whose display name contains it. The first
  * level that matches anything decides, and if it matches more than one recipe
  * the answer is {@link FileMatch} `many` so a caller that must not guess (one
  * that is about to change a file) can ask which was meant.
@@ -57,9 +60,8 @@ export function resolveFile(
   if (byId) {
     return { kind: 'one', file: byId };
   }
-  const target = ref.toLowerCase();
-  const named = (f: DriveFile): string =>
-    recipeDisplayName(f.name).toLowerCase();
+  const target = foldText(ref);
+  const named = (f: DriveFile): string => foldText(recipeDisplayName(f.name));
   const exact = files.filter((f) => named(f) === target);
   return exact.length > 0
     ? outcome(exact)

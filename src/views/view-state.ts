@@ -102,7 +102,7 @@ export const TIMEOUT_MESSAGE =
 
 /**
  * The next state. Late data always wins: a result arriving after a timeout or a
- * failure replaces it. Input and timeout events only matter while the View is
+ * failure replaces it, and fresh data replaces older data. Input and timeout events only matter while the View is
  * still waiting, so they never overwrite data that has already arrived.
  */
 export function reduceViewState<T>(
@@ -117,13 +117,20 @@ export function reduceViewState<T>(
         ? { phase: 'waiting', request: describeRequest(action.args) }
         : state;
     case 'result':
-      return action.outcome.kind === 'data'
-        ? { phase: 'ready', data: action.outcome.data }
-        : {
-            phase: 'failed',
-            reason: action.outcome.isError ? 'error' : 'notice',
-            message: action.outcome.text,
-          };
+      if (action.outcome.kind === 'data') {
+        return { phase: 'ready', data: action.outcome.data };
+      }
+      // A View that already shows its data keeps it when a later result is only
+      // a note, or has another shape (the answer to a tool call the View made
+      // itself can reach it as a result too); only an error replaces the data.
+      if (state.phase === 'ready' && !action.outcome.isError) {
+        return state;
+      }
+      return {
+        phase: 'failed',
+        reason: action.outcome.isError ? 'error' : 'notice',
+        message: action.outcome.text,
+      };
     case 'cancelled':
       return isPending(state)
         ? {

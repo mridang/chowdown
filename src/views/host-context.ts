@@ -43,3 +43,25 @@ export function hasFixedHeight(
 ): boolean {
   return typeof dimensions?.['height'] === 'number';
 }
+
+/**
+ * What a BCP 47 language tag looks like when it is only letters, digits and
+ * hyphens in the usual groups (`en`, `pt-BR`, `zh-Hant-TW`). The tag comes from
+ * the host and ends up in the document, so anything stranger is ignored.
+ */
+const LANGUAGE_TAG = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,4}$/;
+
+/**
+ * The value for the document's `lang` attribute from the host's locale, or
+ * undefined when it is missing or not a plain language tag. Screen readers pick
+ * the voice from `lang`, so it should follow the person's language, not the
+ * English the page was written in. Underscores (`en_US`) are accepted because
+ * some hosts send POSIX-style locales.
+ */
+export function localeToLang(locale: unknown): string | undefined {
+  if (typeof locale !== 'string') {
+    return undefined;
+  }
+  const tag = locale.trim().replaceAll('_', '-');
+  return LANGUAGE_TAG.test(tag) ? tag : undefined;
+}

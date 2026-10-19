@@ -2,17 +2,19 @@
  * @packageDocumentation
  *
  * The MCP endpoint on its own, for the official conformance suite
- * (`npm run conformance`). It serves the real request handling from
- * `src/lib/mcp/http.ts` (the same code `POST /api/mcp` runs) on a plain Node
- * HTTP server, with sign-in replaced by one fixed user and counters kept in
- * memory, so no database, Drive or token is needed.
+ * (`npm run conformance`). It serves `respondToMcp` from `src/lib/mcp/http.ts`
+ * (the same function `src/app/api/mcp/route.ts` hands every request to, so the
+ * origin check, the 401 and 405 branches and the POST handling are the real
+ * ones) on a plain Node HTTP server, with sign-in replaced by one fixed user and
+ * counters kept in memory, so no database, Drive or token is needed.
  */
 
 import { createServer, type IncomingMessage } from 'node:http';
 import { Readable } from 'node:stream';
 
 import type { User } from '../../src/lib/db/users';
-import { corsFor, handleMcpPost, originRefusal } from '../../src/lib/mcp/http';
+import type { McpAuth } from '../../src/lib/mcp/auth';
+import { respondToMcp } from '../../src/lib/mcp/http';
 import type { RateLimitDeps } from '../../src/lib/mcp/request-limits';
 import { SCOPE_READ, SCOPE_WRITE } from '../../src/lib/oauth/scopes';
 import type { RateLimitStore } from '../../src/lib/util/rate-limit';
@@ -60,29 +62,14 @@ function toRequest(incoming: IncomingMessage, origin: string): Request {
   });
 }
 
-/** Answer `request` the way `src/app/api/mcp/route.ts` does. */
-async function respond(request: Request, origin: string): Promise<Response> {
-  const refused = originRefusal(request, origin);
-  if (refused) {
-    return refused;
-  }
-  switch (request.method) {
-    case 'POST':
-      return handleMcpPost(
-        request,
-        SUITE_USER,
-        [SCOPE_READ, SCOPE_WRITE],
-        origin,
-        RATE,
-      );
-    case 'OPTIONS':
-      return new Response(null, { status: 204, headers: corsFor(request) });
-    default:
-      return new Response(null, {
-        status: 405,
-        headers: { ...corsFor(request), Allow: 'POST, OPTIONS' },
-      });
-  }
+/** Every caller is the suite's user, with every scope. */
+async function authenticateSuite(): Promise<McpAuth> {
+  return { kind: 'ok', user: SUITE_USER, scope: [SCOPE_READ, SCOPE_WRITE] };
+}
+
+/** Answer `request` exactly as `src/app/api/mcp/route.ts` does, minus the token lookup. */
+function respond(request: Request, origin: string): Promise<Response> {
+  return respondToMcp(request, origin, authenticateSuite, RATE);
 }
 
 const port = Number(process.env['PORT'] ?? 0);

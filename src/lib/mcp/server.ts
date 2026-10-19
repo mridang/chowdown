@@ -45,7 +45,10 @@ import { PROMPT_DEFINITIONS, getPrompt } from './prompts';
 import {
   RECIPE_TEMPLATE,
   isRecipeUri,
+  listCachedRecipes,
   readRecipeResource,
+  recipeResource,
+  type RecipeLister,
 } from './recipe-resources';
 import { callToolOrExplain } from './tool-calls';
 import { TOOLS } from './tool-definitions';
@@ -110,15 +113,18 @@ function failed(
  * new version is deployed, so every answer is `public`. The tool and view lists
  * are small, so five minutes bounds how stale a client can be after a deploy
  * (there is no way to tell a client holding a fresh copy that it changed); a
- * view's HTML is large (hundreds of kilobytes) and worth keeping longer; the
- * discovery document describes nothing that changes between deploys. The one
- * answer that differs per person is a recipe read from Drive, which only the
- * person who asked may reuse, and only briefly (the recipe can be edited).
+ * view's HTML is large (hundreds of kilobytes) and worth keeping longer, and a
+ * view at its content-hashed address can never change (a new build is a new
+ * address), so a day is safe; the discovery document describes nothing that changes between deploys. The
+ * answers that differ per person are a recipe read from Drive and the list of
+ * resources (which includes the person's recipes): only that person may reuse
+ * them, and only briefly (recipes are added and edited).
  */
 export const CACHE_HINTS = {
   discover: { ttlMs: 3_600_000, cacheScope: 'public' },
   list: { ttlMs: 300_000, cacheScope: 'public' },
   read: { ttlMs: 900_000, cacheScope: 'public' },
+  immutable: { ttlMs: 86_400_000, cacheScope: 'public' },
   recipe: { ttlMs: 60_000, cacheScope: 'private' },
 } as const;
 
@@ -133,6 +139,22 @@ interface Call {
   readonly user: Readonly<User>;
   readonly params: Readonly<Record<string, unknown>> | undefined;
   readonly runTool: ToolRunner;
+  readonly listRecipes: RecipeLister;
+}
+
+/**
+ * Refuse a pagination cursor on a list that has only one page. Cursors are
+ * opaque tokens the server hands out, and this server hands out none for these
+ * lists, so any that arrives is one it did not issue (pagination says an invalid
+ * cursor should be answered `-32602`). Absent, `null` and the empty string all
+ * mean "from the start": some clients send one of them with a first request,
+ * and refusing it would help nobody.
+ */
+function refuseCursor(params: Call['params']): void {
+  const cursor = params?.['cursor'];
+  if (cursor !== undefined && cursor !== null && cursor !== '') {
+    throw new RpcError(ERROR_INVALID_PARAMS, 'Invalid cursor');
+  }
 }
 
 /** One method the server answers. */
@@ -172,31 +194,95 @@ function discoverResult(): object {
   };
 }
 
+/** How many recipes one page of `resources/list` holds. */
+export const RESOURCE_PAGE_SIZE = 100;
+
+/** What a cursor of `resources/list` says before its position. */
+const CURSOR_PREFIX = 'recipes:';
+
+/** The cursor that continues `resources/list` after `offset` recipes. */
+function cursorAt(offset: number): string {
+  return btoa(`${CURSOR_PREFIX}${offset}`);
+}
+
 /**
- * The answer to `resources/list`: the app's current views. The older,
- * hash-free addresses are not listed (a host that prefetches every listed view
- * would fetch each twice) but are still served by `resources/read`.
+ * How many recipes a `resources/list` cursor has already passed. No cursor is
+ * the start.
+ *
+ * @throws {RpcError} `-32602` for a cursor this server did not issue.
  */
-function resourceListResult(): object {
+function offsetOfCursor(cursor: unknown): number {
+  if (cursor === undefined || cursor === null || cursor === '') {
+    return 0;
+  }
+  const text = typeof cursor === 'string' ? decodedCursor(cursor) : undefined;
+  const match = text?.match(/^recipes:(\d{1,9})$/);
+  if (!match) {
+    throw new RpcError(ERROR_INVALID_PARAMS, 'Invalid cursor');
+  }
+  return Number(match[1]);
+}
+
+/** The text inside a cursor, or nothing if it is not one of ours (not base64, not text). */
+function decodedCursor(cursor: string): string | undefined {
+  try {
+    return atob(cursor);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The answer to `resources/list`: on the first page the app's current views (the
+ * older, hash-free addresses are not listed, since a host that prefetches every
+ * listed view would fetch each twice, but they are still served by
+ * `resources/read`), then the user's recipes, a page at a time, from the cache.
+ * If the cache cannot be read the views are still listed.
+ */
+async function resourceListResult({
+  user,
+  params,
+  listRecipes,
+}: Call): Promise<object> {
+  const offset = offsetOfCursor(params?.['cursor']);
+  const views =
+    offset === 0
+      ? APP_RESOURCES.filter((r) => !r.legacy).map((r) => ({
+          uri: r.uri,
+          name: r.name,
+          description: r.description,
+          mimeType: RESOURCE_MIME_TYPE,
+          _meta: r.meta,
+        }))
+      : [];
+  // One more than a page, to know whether there is a next one.
+  const found = await listRecipes(user, offset, RESOURCE_PAGE_SIZE + 1).catch(
+    (error: unknown) => {
+      console.error('[mcp] could not list the recipes as resources:', error);
+      return [];
+    },
+  );
+  const page = found.slice(0, RESOURCE_PAGE_SIZE);
   return {
-    resources: APP_RESOURCES.filter((r) => !r.legacy).map((r) => ({
-      uri: r.uri,
-      name: r.name,
-      description: r.description,
-      mimeType: RESOURCE_MIME_TYPE,
-      _meta: r.meta,
-    })),
+    resources: [...views, ...page.map(recipeResource)],
+    ...(found.length > page.length
+      ? { nextCursor: cursorAt(offset + page.length) }
+      : {}),
   };
 }
 
 /** The answer to `resources/templates/list`: where a single recipe can be read. */
-function resourceTemplateListResult(): object {
+function resourceTemplateListResult({ params }: Call): object {
+  refuseCursor(params);
   return { resourceTemplates: [RECIPE_TEMPLATE] };
 }
 
 /**
  * The cache hints for a `resources/read` result: private (and short) when it
- * holds a person's recipe, shared for a view.
+ * holds a person's recipe; shared for a view, for a day when it is read at the
+ * content-hashed address it will always have, and for the shorter time when it
+ * is read at an address whose content is whatever the current build ships (the
+ * older hash-free addresses, and the stale hashed ones that get the current view).
  */
 export function readCache(result: object): CacheHint {
   const contents = 'contents' in result ? result.contents : undefined;
@@ -205,7 +291,12 @@ export function readCache(result: object): CacheHint {
     isPlainObject(first) && typeof first['uri'] === 'string'
       ? first['uri']
       : '';
-  return isRecipeUri(uri) ? CACHE_HINTS.recipe : CACHE_HINTS.read;
+  if (isRecipeUri(uri)) {
+    return CACHE_HINTS.recipe;
+  }
+  return findAppResource(uri)?.immutable
+    ? CACHE_HINTS.immutable
+    : CACHE_HINTS.read;
 }
 
 /**
@@ -225,7 +316,9 @@ async function readResource({ user, params }: Call): Promise<object> {
   }
   const resource = findAppResource(uri);
   if (!resource) {
-    throw new RpcError(ERROR_INVALID_PARAMS, 'Resource not found', { uri });
+    throw new RpcError(ERROR_INVALID_PARAMS, 'Resource not found', {
+      uri: uri.slice(0, ECHO_LIMIT),
+    });
   }
   return {
     contents: [
@@ -252,19 +345,27 @@ export function isAdvertisedTool(name: unknown): name is string {
   return typeof name === 'string' && TOOL_NAMES.has(name);
 }
 
+/** How much of a name or address a refusal repeats back; a client may send a megabyte of it. */
+const ECHO_LIMIT = 120;
+
 /** The refusal for a tool name the server does not have, listing the ones it does. */
 function unknownToolError(name: unknown): RpcError {
   return new RpcError(
     ERROR_INVALID_PARAMS,
-    `Unknown tool: ${typeof name === 'string' ? name : 'no name given'}. The tools are ${[...TOOL_NAMES].join(', ')}.`,
+    `Unknown tool: ${typeof name === 'string' ? name.slice(0, ECHO_LIMIT) : 'no name given'}. The tools are ${[...TOOL_NAMES].join(', ')}.`,
   );
 }
 
 /**
- * Run a `tools/call`. The tool's name and the shape of its arguments are
+ * Run a `tools/call`. The tool's name and the envelope of its arguments are
  * checked first, before anything is opened (so a typo costs nothing and a
- * person with no Drive still hears about it), and a tool that rejects its
- * arguments is reported as the caller's mistake (`-32602`) with what to fix.
+ * person with no Drive still hears about it): an unknown tool, a missing name or
+ * `arguments` that is not an object are malformed requests and answered `-32602`.
+ * Arguments that are an object but do not fit the tool's schema are not: the
+ * tool answers them itself, as an `isError` result that says what to change, so
+ * the host shows the model the problem and the model can fix its call (the MCP
+ * spec counts input validation among tool execution errors). A tool that still
+ * reports its arguments as invalid by throwing is a malformed request too.
  */
 async function callTool(call: Call): Promise<object> {
   const name = call.params?.['name'];
@@ -303,9 +404,18 @@ const ROUTES: ReadonlyMap<string, Route> = new Map<string, Route>([
     { handle: discoverResult, cache: CACHE_HINTS.discover, modernOnly: true },
   ],
   ['ping', { handle: () => ({}), legacyOnly: true }],
-  ['tools/list', { handle: () => ({ tools: TOOLS }), cache: CACHE_HINTS.list }],
+  [
+    'tools/list',
+    {
+      handle: ({ params }) => {
+        refuseCursor(params);
+        return { tools: TOOLS };
+      },
+      cache: CACHE_HINTS.list,
+    },
+  ],
   ['tools/call', { handle: callTool }],
-  ['resources/list', { handle: resourceListResult, cache: CACHE_HINTS.list }],
+  ['resources/list', { handle: resourceListResult, cache: CACHE_HINTS.recipe }],
   [
     'resources/templates/list',
     { handle: resourceTemplateListResult, cache: CACHE_HINTS.list },
@@ -314,7 +424,10 @@ const ROUTES: ReadonlyMap<string, Route> = new Map<string, Route>([
   [
     'prompts/list',
     {
-      handle: () => ({ prompts: PROMPT_DEFINITIONS }),
+      handle: ({ params }) => {
+        refuseCursor(params);
+        return { prompts: PROMPT_DEFINITIONS };
+      },
       cache: CACHE_HINTS.list,
     },
   ],
@@ -359,13 +472,14 @@ function faultReply(id: ReplyId, error: unknown): JsonRpcResponse {
  * Handle one JSON-RPC message. Returns the response object, or null for
  * notifications (which get an empty 202 from the route). A refusal is returned
  * as a JSON-RPC error carrying the request's id, so the client surfaces it
- * cleanly. `runTool` is what runs a tool call (the real tools unless a test
- * supplies its own).
+ * cleanly. `runTool` is what runs a tool call and `listRecipes` what finds the
+ * recipes for `resources/list` (the real ones unless a test supplies its own).
  */
 export async function handleMcpMessage(
   user: Readonly<User>,
   message: JsonRpcMessage,
   runTool: ToolRunner = callToolOrExplain,
+  listRecipes: RecipeLister = listCachedRecipes,
 ): Promise<JsonRpcResponse | null> {
   // A notification expects no reply, whatever it announces.
   if (isNotification(message)) {
@@ -381,6 +495,7 @@ export async function handleMcpMessage(
       user,
       params: message.params,
       runTool,
+      listRecipes,
     });
     return succeeded(
       id,

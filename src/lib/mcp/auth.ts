@@ -10,6 +10,7 @@ import { createOAuthStore } from '../db/oauth';
 import { getUserById, type User } from '../db/users';
 import { bearerToken } from '../oauth/http';
 import { resourceUri } from '../oauth/metadata';
+import { ACCESS_PREFIX } from '../oauth/secrets';
 import {
   authenticateAccessToken,
   type AccessIdentity,
@@ -43,6 +44,17 @@ export interface McpAuthDeps {
   readonly now: () => number;
 }
 
+/**
+ * What an access token we issued looks like: our prefix, an underscore, then
+ * base64url characters (256 random bits come out at 43; the range tolerates a
+ * change of length). Anything else cannot be one of ours, so it is turned away
+ * without a database lookup, which keeps a flood of made-up tokens from costing
+ * two D1 reads apiece.
+ */
+const ACCESS_TOKEN_SHAPE = new RegExp(
+  `^${ACCESS_PREFIX}_[A-Za-z0-9_-]{20,200}$`,
+);
+
 /** The real database, opened only once a token has actually been sent. */
 function liveDeps(): McpAuthDeps {
   const db = getDatabase();
@@ -58,7 +70,8 @@ function liveDeps(): McpAuthDeps {
 /**
  * Resolve the request's bearer token. `origin` is this site's public origin
  * (a token is only good for the MCP server it was issued for). `deps` is a
- * function so the database is not touched for requests that carry no token.
+ * function so the database is not touched for requests that carry no token, or
+ * a token that is not shaped like one we issue.
  */
 export async function authenticateMcpRequest(
   request: Request,
@@ -68,6 +81,9 @@ export async function authenticateMcpRequest(
   const token = bearerToken(request);
   if (!token) {
     return { kind: 'no-token' };
+  }
+  if (!ACCESS_TOKEN_SHAPE.test(token)) {
+    return { kind: 'invalid-token' };
   }
   const { identify, findUser, now } = deps();
   const identity = await identify(token, resourceUri(origin), now());

@@ -28,8 +28,6 @@ export interface ThemePalette {
   readonly violetSoft: string;
   /** Text on {@link ThemePalette.violetSoft}. */
   readonly violetText: string;
-  /** Page background used only when the host sends no theme variables. */
-  readonly fallbackBackground: string;
   /** Card surface used only when the host sends no theme variables. */
   readonly fallbackSurface: string;
   /** Body text used only when the host sends no theme variables. */
@@ -52,7 +50,6 @@ export const LIGHT_PALETTE: ThemePalette = {
   tealText: '#0f6b61',
   violetSoft: '#e7e1fd',
   violetText: '#5b34c7',
-  fallbackBackground: '#ffffff',
   fallbackSurface: '#fbfaf8',
   fallbackText: '#1f2430',
   fallbackMuted: '#5b6270',
@@ -69,7 +66,6 @@ export const DARK_PALETTE: ThemePalette = {
   tealText: '#7fe0d3',
   violetSoft: '#2c2350',
   violetText: '#c3b0f7',
-  fallbackBackground: '#1b1b1d',
   fallbackSurface: '#252528',
   fallbackText: '#ececed',
   fallbackMuted: '#a8a8b0',

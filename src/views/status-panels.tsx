@@ -71,3 +71,19 @@ export function MessageCard({
     </div>
   );
 }
+
+/**
+ * A line only screen readers get, announced politely whenever its text changes.
+ * It is rendered from the first frame (an empty live region is what assistive
+ * technology watches), so the arrival of the data is announced even though the
+ * loading placeholder that preceded it disappears.
+ */
+export function Announcer({
+  message,
+}: Readonly<{ message: string }>): ReactElement {
+  return (
+    <div className="sr-only" role="status" aria-live="polite">
+      {message}
+    </div>
+  );
+}

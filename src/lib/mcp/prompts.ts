@@ -8,7 +8,8 @@
  * and the assistant does the rest with the same tools it always has.
  *
  * Prompt arguments are always strings (the protocol has no other type), so an
- * optional one that is left out or blank is simply not mentioned.
+ * optional one that is left out, blank or sent as `null` (what some clients put
+ * for a field the person skipped) is simply not mentioned.
  */
 
 import { ERROR_INVALID_PARAMS, RpcError } from './protocol';
@@ -51,6 +52,23 @@ function given(
 ): string | undefined {
   const value = args[name]?.trim();
   return value ? value : undefined;
+}
+
+/** How many dinners a plan covers when the person does not say. */
+const DEFAULT_PLAN_DAYS = 5;
+
+/** The most dinners a plan covers; more would not fit a message the assistant can act on. */
+const MAX_PLAN_DAYS = 14;
+
+/**
+ * How many dinners to plan: the number the person typed if it is a whole number
+ * from 1 to {@link MAX_PLAN_DAYS}, otherwise {@link DEFAULT_PLAN_DAYS}. The
+ * text is the person's own, but it is dropped into a sentence, so only a plain
+ * number goes in.
+ */
+function planDays(text: string | undefined): number {
+  const days = text !== undefined && /^\d{1,3}$/.test(text) ? Number(text) : 0;
+  return days >= 1 && days <= MAX_PLAN_DAYS ? days : DEFAULT_PLAN_DAYS;
 }
 
 /** Every prompt the server offers, in the order a host should list them. */
@@ -114,7 +132,7 @@ const PROMPTS: readonly Prompt[] = [
         {
           name: 'days',
           title: 'How many dinners',
-          description: 'A number of days, such as 5. Defaults to 5.',
+          description: `A number of days from 1 to ${MAX_PLAN_DAYS}, such as 5. Defaults to ${DEFAULT_PLAN_DAYS}.`,
           required: false,
         },
         {
@@ -127,7 +145,7 @@ const PROMPTS: readonly Prompt[] = [
       ],
     },
     text: (args) => {
-      const days = given(args, 'days') ?? '5';
+      const days = planDays(given(args, 'days'));
       const preferences = given(args, 'preferences');
       return [
         `Plan ${days} dinners for me from my chowdown recipes.`,
@@ -159,7 +177,7 @@ export function getPrompt(name: unknown, rawArguments: unknown): PromptResult {
   if (!prompt) {
     throw new RpcError(
       ERROR_INVALID_PARAMS,
-      `Unknown prompt: ${typeof name === 'string' ? name : 'no name given'}. The prompts are ${PROMPT_DEFINITIONS.map((p) => p.name).join(', ')}.`,
+      `Unknown prompt: ${typeof name === 'string' ? name.slice(0, 120) : 'no name given'}. The prompts are ${PROMPT_DEFINITIONS.map((p) => p.name).join(', ')}.`,
     );
   }
   const args = stringArguments(rawArguments);
@@ -181,14 +199,17 @@ export function getPrompt(name: unknown, rawArguments: unknown): PromptResult {
   };
 }
 
-/** The arguments as a record of strings, or a refusal if they are anything else. */
+/**
+ * The arguments as a record of strings, or a refusal if they are anything else.
+ * A `null` value counts as left out.
+ */
 function stringArguments(raw: unknown): Readonly<Record<string, string>> {
   if (raw === undefined || raw === null) {
     return {};
   }
   const entries =
     typeof raw === 'object' && !Array.isArray(raw)
-      ? Object.entries(raw)
+      ? Object.entries(raw).filter(([, value]) => value !== null)
       : undefined;
   if (!entries || entries.some(([, value]) => typeof value !== 'string')) {
     throw new RpcError(

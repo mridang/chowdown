@@ -20,7 +20,16 @@ import { parseUrl } from '../util/url';
 /** The newest revision, which has no handshake and no sessions. */
 export const MODERN_VERSION = '2026-07-28';
 
-/** Revisions that open with an `initialize` handshake, newest first. */
+/**
+ * Revisions that open with an `initialize` handshake, newest first.
+ *
+ * `2024-11-05` is negotiable here, but the HTTP+SSE transport that revision was
+ * defined for is not hosted (a GET answers 405, the documented signal to fall
+ * back): a client can ask for that version over streamable HTTP, a client that
+ * can only speak HTTP+SSE cannot connect. Batches (removed in 2025-06-18) and an
+ * `initialize` inside a batch (forbidden since 2025-03-26) are accepted too;
+ * both are harmless over-acceptance.
+ */
 export const LEGACY_VERSIONS = [
   '2025-11-25',
   '2025-06-18',
@@ -319,6 +328,12 @@ export function parseMessage(raw: unknown): ParsedMessage {
     ...('id' in raw ? { id } : {}),
     ...(isPlainObject(params) ? { params } : {}),
   };
+  // A `notifications/*` method that carries an id is still treated as a
+  // notification (answered 202, no body). JSON-RPC would call it a request, but
+  // answering it with an error would only trip clients that stamp every message
+  // with a counter, and none waits for a reply to a notification, so being
+  // lenient costs nothing. Only the newest revision forbids the id outright, and
+  // being liberal in what we accept is allowed there.
   if (isNotification(message)) {
     return { kind: 'notification', message };
   }
@@ -491,10 +506,33 @@ const ALLOWED_HOSTS: readonly string[] = [
 ];
 
 /**
+ * The origins an operator has added with the `MCP_ALLOWED_ORIGINS` setting: a
+ * comma-separated list, each entry an origin exactly as a browser sends it
+ * (`https://tool.example`, `chrome-extension://abcdef`). Blank entries, `*` and
+ * `null` are dropped: `*` would switch the check off, and `null` is what any
+ * sandboxed frame or local file sends, so it says nothing about who is calling.
+ */
+export function parseAllowedOrigins(
+  setting: string | undefined,
+): readonly string[] {
+  return (setting ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry !== '' && entry !== '*' && entry !== 'null');
+}
+
+/**
  * Whether a request's `Origin` header may reach the endpoint. A request with no
  * `Origin` (a server or a desktop app) is fine. One with an origin we don't
  * recognise is refused, so a web page can't make a visitor's browser talk to the
  * endpoint on its own behalf (DNS rebinding and its cousins).
+ *
+ * `extra` is the `MCP_ALLOWED_ORIGINS` setting. It is matched first and as
+ * written, before the origin is parsed, because the built-in rules below only
+ * understand web origins: for `chrome-extension://abc`, `vscode-webview://abc`
+ * or `tauri://localhost` the URL parser reports an opaque origin, which would
+ * otherwise make it impossible to allow the very clients (extensions, Electron
+ * and webview apps) that need the setting.
  */
 export function isAllowedOrigin(
   origin: string | null,
@@ -502,6 +540,9 @@ export function isAllowedOrigin(
   extra: string | undefined = undefined,
 ): boolean {
   if (origin === null || origin === selfOrigin) {
+    return true;
+  }
+  if (parseAllowedOrigins(extra).includes(origin)) {
     return true;
   }
   const url = parseUrl(origin);
@@ -515,15 +556,8 @@ export function isAllowedOrigin(
   if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') {
     return true;
   }
-  if (
+  return (
     url.protocol === 'https:' &&
     ALLOWED_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))
-  ) {
-    return true;
-  }
-  return (extra ?? '')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean)
-    .includes(origin);
+  );
 }

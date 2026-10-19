@@ -2,12 +2,14 @@
  * @packageDocumentation
  *
  * The limits that protect the MCP endpoint from a caller who sends too much or
- * too often: a cap on how large a request body may be, read in a way that
- * stops early instead of buffering what it will refuse, and a per-user rate
- * limit (the tools spec requires one on tool invocations).
+ * too often: a cap on how large a request body may be (read by the shared
+ * streamed reader in `../http/body.ts`, which stops early instead of buffering
+ * what it will refuse), and a per-user rate limit (the tools spec requires one
+ * on tool invocations).
  */
 
 import type { User } from '../db/users';
+import { readJsonBody as readJsonBodyUpTo, type JsonBody } from '../http/body';
 import { getDatabase, runInBackground } from '../util';
 import {
   d1RateLimitStore,
@@ -28,13 +30,6 @@ import {
 
 /** The largest request body, in bytes. An import page is the biggest legitimate message and fits easily. */
 export const MAX_BODY_BYTES = 1_048_576;
-
-/**
- * The most separate pieces a body may arrive in. Reading keeps a list of the
- * pieces so far, which is cheap for the few hundred a real client sends and
- * wasteful for a caller dribbling a byte at a time, who is turned away instead.
- */
-const MAX_BODY_CHUNKS = 4096;
 
 /** The most messages one POST may carry (older clients may batch; they run side by side). */
 export const MAX_BATCH = 20;
@@ -57,35 +52,8 @@ export const PURGE_PROBABILITY = 0.01;
 /** How long, in seconds, a counter must have been idle before a sweep removes it. */
 export const PURGE_IDLE_SECONDS = 3600;
 
-/** What reading a request body came to. */
-export type BodyResult =
-  | { readonly kind: 'ok'; readonly value: unknown }
-  | { readonly kind: 'too-large' }
-  | { readonly kind: 'unparseable' };
-
-/** The pieces of a body read so far, or null once there were too many bytes or pieces. */
-async function readPieces(
-  reader: ReadableStreamDefaultReader<Uint8Array>,
-  soFar: readonly Uint8Array[] = [],
-  size = 0,
-): Promise<readonly Uint8Array[] | null> {
-  const { done, value } = await reader.read();
-  if (done) {
-    return soFar;
-  }
-  const total = size + value.byteLength;
-  if (total > MAX_BODY_BYTES || soFar.length >= MAX_BODY_CHUNKS) {
-    await reader.cancel().catch(() => undefined);
-    return null;
-  }
-  return readPieces(reader, [...soFar, value], total);
-}
-
-/** Whether the request announces a body over the limit before sending any of it. */
-function announcedTooLarge(request: Request): boolean {
-  const length = Number(request.headers.get('content-length'));
-  return Number.isFinite(length) && length > MAX_BODY_BYTES;
-}
+/** What reading a request body came to: its JSON, or why it could not be had. */
+export type BodyResult = JsonBody;
 
 /**
  * Read the request body as JSON, refusing anything over {@link MAX_BODY_BYTES}.
@@ -94,27 +62,8 @@ function announcedTooLarge(request: Request): boolean {
  * as soon as it grows past the limit, so a big upload is never held in memory.
  * Text that is not valid UTF-8 or not valid JSON is `unparseable`.
  */
-export async function readJsonBody(request: Request): Promise<BodyResult> {
-  if (announcedTooLarge(request)) {
-    return { kind: 'too-large' };
-  }
-  const pieces = request.body ? await readPieces(request.body.getReader()) : [];
-  if (pieces === null) {
-    return { kind: 'too-large' };
-  }
-  try {
-    // One decoder reads the pieces in order (a character may be split between
-    // two of them); `fatal` makes invalid UTF-8 an error, as the spec requires
-    // messages to be UTF-8.
-    const decoder = new TextDecoder('utf-8', { fatal: true });
-    const text =
-      pieces.map((piece) => decoder.decode(piece, { stream: true })).join('') +
-      decoder.decode();
-    const value: unknown = JSON.parse(text);
-    return { kind: 'ok', value };
-  } catch {
-    return { kind: 'unparseable' };
-  }
+export function readJsonBody(request: Request): Promise<BodyResult> {
+  return readJsonBodyUpTo(request, MAX_BODY_BYTES);
 }
 
 /** Where the rate limiter keeps its counters and how it tells the time and rolls dice. */
@@ -168,30 +117,27 @@ function tooManyRequests(
 }
 
 /**
- * Count each message against `user`'s limits and return the 429 refusal if any
- * is over, or null if all may go ahead. Each message in a batch counts, so
- * batching is no way round the limit. On roughly one request in a hundred this
- * also sweeps away counters that have been idle for an hour. If the counters
- * cannot be reached the request goes ahead (and the fault is logged): the limit
- * is a safeguard, and a database hiccup should not take the endpoint down.
+ * Count one hit against each of `limits` for `user` and return the 429 refusal
+ * if any is over, or null if all may go ahead. On roughly one request in a
+ * hundred this also sweeps away counters that have been idle for an hour. If the
+ * counters cannot be reached the request goes ahead (and the fault is logged):
+ * the limit is a safeguard, and a database hiccup should not take the endpoint
+ * down. `id` is the request the refusal answers, when there is just one.
  */
-export async function checkRateLimits(
+async function enforce(
   user: Readonly<User>,
-  messages: readonly ProtocolMessage[],
-  deps: RateLimitDeps = liveRateLimitDeps(),
+  limits: readonly RateLimit[],
+  id: ReplyId,
+  deps: RateLimitDeps,
 ): Promise<ProtocolRefusal | null> {
-  const counted = messages.flatMap((message) => {
-    const limit = limitFor(message);
-    return limit ? [limit] : [];
-  });
-  if (counted.length === 0) {
+  if (limits.length === 0) {
     return null;
   }
   try {
     const store = deps.store();
     const now = deps.now();
     const decisions = await Promise.all(
-      counted.map(async (limit) => ({
+      limits.map(async (limit) => ({
         limit,
         decision: await rateLimit(store, limit, String(user.id), now),
       })),
@@ -204,12 +150,8 @@ export async function checkRateLimits(
         ? []
         : [{ limit, retryAfter: decision.retryAfterSeconds }],
     );
-    // The refusal names the request when there was just the one.
-    const only = messages.length === 1 ? messages[0] : undefined;
     const [first] = over.toSorted((a, b) => b.retryAfter - a.retryAfter);
-    return first
-      ? tooManyRequests(first.limit, first.retryAfter, replyIdOf(only?.id))
-      : null;
+    return first ? tooManyRequests(first.limit, first.retryAfter, id) : null;
   } catch (error) {
     console.error(
       '[mcp] rate limit check failed; letting the request through:',
@@ -217,4 +159,42 @@ export async function checkRateLimits(
     );
     return null;
   }
+}
+
+/**
+ * Count each message against `user`'s limits and return the 429 refusal if any
+ * is over, or null if all may go ahead. Each message in a batch counts, so
+ * batching is no way round the limit. The refusal names the request when there
+ * was just the one.
+ */
+export async function checkRateLimits(
+  user: Readonly<User>,
+  messages: readonly ProtocolMessage[],
+  deps: RateLimitDeps = liveRateLimitDeps(),
+): Promise<ProtocolRefusal | null> {
+  const [only] = messages;
+  return enforce(
+    user,
+    messages.flatMap((message) => {
+      const limit = limitFor(message);
+      return limit ? [limit] : [];
+    }),
+    messages.length === 1 ? replyIdOf(only?.id) : null,
+    deps,
+  );
+}
+
+/**
+ * Count a body that could not be read as messages (too large, not JSON, not a
+ * message, a batch of the wrong size) once against the caller's general
+ * allowance, and return the 429 refusal if that puts them over, or null. Such a
+ * body is refused before anything runs, but the server still read and parsed it,
+ * so without this a token holder could send junk without end; the generous
+ * general limit leaves a client with the odd bug plenty of room.
+ */
+export function chargeRefusedBody(
+  user: Readonly<User>,
+  deps: RateLimitDeps = liveRateLimitDeps(),
+): Promise<ProtocolRefusal | null> {
+  return enforce(user, [MCP_RATE_LIMITS.request], null, deps);
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   NOT_BLANK,
+  PROBLEMS_SHOWN,
   isJsonObject,
   unsupportedKeywords,
   validateJson,
@@ -176,6 +177,29 @@ describe('objects', () => {
     ]);
   });
 
+  it('names several unknown properties in one sentence, and the known ones once', () => {
+    expect(problems(schema, { a: 'x', y: 1, z: 1 })).toEqual([
+      '`y`, `z` are not arguments of this tool (it accepts: a, b).',
+    ]);
+  });
+
+  it('spells out only the first few unknown properties and counts the rest', () => {
+    const many = Object.fromEntries(
+      Array.from({ length: 50_000 }, (_, i) => [`k${i}`, 1]),
+    );
+    const found = problems(schema, { a: 'x', ...many });
+    expect(found).toHaveLength(1);
+    expect(found[0]).toBe(
+      '`k0`, `k1`, `k2`, `k3`, `k4` and 49995 more are not arguments of this tool (it accepts: a, b).',
+    );
+  });
+
+  it('quotes only the start of an absurdly long property name', () => {
+    const [found] = problems(schema, { a: 'x', ['q'.repeat(100_000)]: 1 });
+    expect(found?.length).toBeLessThan(150);
+    expect(found).toContain('…');
+  });
+
   it('allows unknown properties unless told not to', () => {
     expect(problems({ type: 'object' }, { z: 1 })).toEqual([]);
   });
@@ -210,6 +234,39 @@ describe('objects', () => {
     expect(validateJson({ type: 'object' }, 5)).toEqual([
       'The value must be an object, not a number.',
     ]);
+  });
+});
+
+describe('how many problems are reported', () => {
+  it('spells out at most the first few and counts the rest', () => {
+    const schema: JsonSchema = {
+      type: 'array',
+      items: { type: 'string', maxLength: 1 },
+    };
+    const found = problems(
+      schema,
+      Array.from({ length: 5000 }, () => 'long'),
+    );
+    expect(found).toHaveLength(PROBLEMS_SHOWN + 1);
+    expect(found.at(-1)).toBe(`…and ${5000 - PROBLEMS_SHOWN} more problems.`);
+  });
+
+  it('reports exactly the limit without a trailer', () => {
+    const schema: JsonSchema = { type: 'array', items: { type: 'integer' } };
+    const found = problems(
+      schema,
+      Array.from({ length: PROBLEMS_SHOWN }, () => 'x'),
+    );
+    expect(found).toHaveLength(PROBLEMS_SHOWN);
+    expect(found.at(-1)).not.toContain('more problems');
+  });
+});
+
+describe('numbers that are not numbers a schema can mean', () => {
+  it('calls an infinite value out of range, not just a number', () => {
+    expect(
+      problems({ type: 'integer' }, JSON.parse('1e400') as unknown),
+    ).toEqual(['It must be a whole number, not an out-of-range number.']);
   });
 });
 

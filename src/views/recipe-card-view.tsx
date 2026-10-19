@@ -10,12 +10,12 @@
  * connection to the host is in {@link RecipeCardApp}.
  */
 
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 
 import type { RecipeCardData } from '../lib/mcp/ui-types';
 import { isRecipeCardData } from './payload';
-import { Eyebrow, FullRecipe, MetaRow } from './recipe-parts';
-import { LoadingCard, MessageCard } from './status-panels';
+import { Eyebrow, FullRecipe, MetaRow, focusWhenShown } from './recipe-parts';
+import { Announcer, LoadingCard, MessageCard } from './status-panels';
 import { STYLES } from './styles';
 import { useWidgetData } from './use-widget-data';
 import type { ViewState } from './view-state';
@@ -27,9 +27,12 @@ const CHIPS_SHOWN = 7;
 function InlineCard({
   recipe,
   onView,
+  focusButton,
 }: Readonly<{
   recipe: RecipeCardData;
   onView: () => void;
+  /** Put keyboard focus on the button (the person has just come back from the full recipe). */
+  focusButton: boolean;
 }>): ReactElement {
   const shown = recipe.ingredients.slice(0, CHIPS_SHOWN);
   const extra = recipe.ingredients.length - shown.length;
@@ -52,7 +55,12 @@ function InlineCard({
           </ul>
         ) : null}
         <div className="actions">
-          <button type="button" className="btn" onClick={onView}>
+          <button
+            type="button"
+            className="btn"
+            onClick={onView}
+            ref={focusButton ? focusWhenShown : undefined}
+          >
             View recipe
           </button>
         </div>
@@ -68,6 +76,14 @@ export interface RecipeCardScreenProps {
   readonly expanded: boolean;
   readonly onExpand: () => void;
   readonly onCollapse: () => void;
+  /**
+   * True when the person has just left the expanded layout with Back, so focus
+   * goes to the control that opens it again (the Back button has gone away and
+   * focus would otherwise fall to the page).
+   */
+  readonly returned?: boolean;
+  /** True when the host would not leave fullscreen: shows where its own close control is. */
+  readonly closeHint?: boolean;
   /** Opens a web page through the host; absent when the host cannot. */
   readonly onOpenLink: ((url: string) => void) | undefined;
 }
@@ -81,6 +97,8 @@ export function RecipeCardScreen({
   expanded,
   onExpand,
   onCollapse,
+  returned = false,
+  closeHint = false,
   onOpenLink,
 }: Readonly<RecipeCardScreenProps>): ReactElement {
   const body = ((): ReactElement => {
@@ -100,16 +118,26 @@ export function RecipeCardScreen({
           <FullRecipe
             recipe={state.data}
             onBack={onCollapse}
+            closeHint={closeHint}
             onOpenLink={onOpenLink}
           />
         ) : (
-          <InlineCard recipe={state.data} onView={onExpand} />
+          <InlineCard
+            recipe={state.data}
+            onView={onExpand}
+            focusButton={returned}
+          />
         );
     }
   })();
   return (
     <>
       <style>{STYLES}</style>
+      <Announcer
+        message={
+          state.phase === 'ready' ? `Recipe loaded: ${state.data.title}` : ''
+        }
+      />
       {body}
     </>
   );
@@ -118,12 +146,21 @@ export function RecipeCardScreen({
 /** The View: connects to the host and draws the recipe card. */
 export function RecipeCardApp(): ReactElement {
   const bridge = useWidgetData('chowdown-recipe-card', isRecipeCardData);
+  const [returned, setReturned] = useState(false);
   return (
     <RecipeCardScreen
       state={bridge.state}
       expanded={bridge.expanded}
-      onExpand={() => void bridge.expand()}
-      onCollapse={() => void bridge.collapse()}
+      onExpand={() => {
+        setReturned(false);
+        void bridge.expand();
+      }}
+      onCollapse={() => {
+        setReturned(true);
+        void bridge.collapse();
+      }}
+      returned={returned}
+      closeHint={bridge.closeHint}
       onOpenLink={bridge.openLink}
     />
   );

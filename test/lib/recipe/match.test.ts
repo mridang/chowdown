@@ -37,6 +37,30 @@ describe('matchFile', () => {
   });
 });
 
+describe('matchFile ignoring accents', () => {
+  const accented = [
+    { id: 'a', name: 'Crème brûlée.cook' },
+    { id: 'b', name: 'Jalapeño poppers.cook' },
+  ] as DriveFile[];
+
+  it('finds a name written without its accents, by exact name and by part of a name', () => {
+    expect(matchFile(accented, 'creme brulee')?.id).toBe('a');
+    expect(matchFile(accented, 'BRULEE')?.id).toBe('a');
+    expect(matchFile(accented, 'jalapeno')?.id).toBe('b');
+  });
+
+  it('finds a name written with accents the recipe lacks', () => {
+    const plain = [{ id: 'p', name: 'Creme brulee.cook' }] as DriveFile[];
+    expect(matchFile(plain, 'Crème brûlée')?.id).toBe('p');
+  });
+
+  it('still matches an id exactly, and only exactly', () => {
+    const ids = [{ id: 'AbC', name: 'One.cook' }] as DriveFile[];
+    expect(matchFile(ids, 'AbC')?.id).toBe('AbC');
+    expect(resolveFile(ids, 'abc')).toEqual({ kind: 'none' });
+  });
+});
+
 describe('matchFile with a blank reference', () => {
   const files = [
     { id: 'a', name: 'Aloo gobi.cook' },

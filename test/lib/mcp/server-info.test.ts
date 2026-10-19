@@ -97,6 +97,22 @@ describe('INSTRUCTIONS', () => {
     }
   });
 
+  it('stay short enough to be worth reading on every conversation', () => {
+    expect(INSTRUCTIONS.length).toBeLessThan(1800);
+  });
+
+  it('say how to choose between the four ways of finding recipes, and how to page', () => {
+    for (const tool of [
+      'browse_recipes',
+      'recipes_from_ingredients',
+      'search_recipes',
+      'find_recipes',
+    ]) {
+      expect(INSTRUCTIONS).toContain(tool);
+    }
+    expect(INSTRUCTIONS).toContain('`offset`');
+  });
+
   it('tell the assistant where to connect Drive', () => {
     expect(INSTRUCTIONS).toContain(`${SITE_URL}/app`);
   });

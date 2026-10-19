@@ -19,6 +19,7 @@ import {
   isNotification,
   isPlainObject,
   negotiateLegacyVersion,
+  parseAllowedOrigins,
   parseMessage,
   protocolRefusal,
   replyIdOf,
@@ -324,6 +325,15 @@ describe('checkBatch', () => {
     ).toBeNull();
   });
 
+  it('lets an initialize ride in a batch of the older revisions, which is harmless over-acceptance', () => {
+    expect(
+      checkBatch(headers({}), [
+        { jsonrpc: '2.0', id: 1, method: 'initialize' },
+        { jsonrpc: '2.0', id: 2, method: 'ping' },
+      ]),
+    ).toBeNull();
+  });
+
   it('refuses a batch that says it is newest-era in its header or in any message', () => {
     expect(
       checkBatch(new Headers({ 'mcp-protocol-version': MODERN_VERSION }), [
@@ -425,6 +435,33 @@ describe('checkRequestHeaders', () => {
         read,
       ),
     ).toBeNull();
+  });
+
+  it('requires Mcp-Name to match the prompt a prompts/get names', () => {
+    const get = modern('prompts/get', { name: 'weeknight' });
+    const base = { ...good, 'mcp-method': 'prompts/get' };
+    expect(
+      checkRequestHeaders(headers({ ...base, 'mcp-name': 'weeknight' }), get),
+    ).toBeNull();
+    const refusal = checkRequestHeaders(
+      headers({ ...base, 'mcp-name': 'other' }),
+      get,
+    );
+    expect(refusal?.body.error.code).toBe(ERROR_HEADER_MISMATCH);
+    expect(refusal?.body.id).toBe(1);
+  });
+
+  it('calls an Mcp-Name that is not valid base64 a mismatch', () => {
+    const refusal = checkRequestHeaders(
+      headers({
+        ...good,
+        'mcp-method': 'tools/call',
+        'mcp-name': '=?base64?!!!?=',
+      }),
+      modern('tools/call', { name: 'get_recipe' }),
+    );
+    expect(refusal?.status).toBe(400);
+    expect(refusal?.body.error.code).toBe(ERROR_HEADER_MISMATCH);
   });
 
   it('decodes a base64 Mcp-Name before comparing', () => {
@@ -633,5 +670,62 @@ describe('isAllowedOrigin', () => {
     expect(
       isAllowedOrigin('https://other.example', self, 'https://tool.example'),
     ).toBe(false);
+  });
+
+  // The URL parser reports an opaque origin for every scheme but http(s), so
+  // these were refused before the setting was even read.
+  it.each([
+    'chrome-extension://abcdef',
+    'moz-extension://abcdef',
+    'vscode-webview://abc',
+    'app://obsidian.md',
+    'tauri://localhost',
+  ])('admits %s when the operator lists it, and not otherwise', (origin) => {
+    expect(isAllowedOrigin(origin, self, `https://x.example,${origin}`)).toBe(
+      true,
+    );
+    expect(isAllowedOrigin(origin, self, 'https://x.example')).toBe(false);
+    expect(isAllowedOrigin(origin, self)).toBe(false);
+  });
+
+  it.each(['*', 'null', ' * , null '])(
+    'ignores %j in the setting, so nothing can switch the check off',
+    (setting) => {
+      expect(isAllowedOrigin('null', self, setting)).toBe(false);
+      expect(isAllowedOrigin('https://evil.example', self, setting)).toBe(
+        false,
+      );
+    },
+  );
+
+  it('matches a listed origin exactly: the port and the scheme count', () => {
+    const setting = 'https://tool.example';
+    expect(isAllowedOrigin('https://tool.example:8443', self, setting)).toBe(
+      false,
+    );
+    expect(isAllowedOrigin('http://tool.example', self, setting)).toBe(false);
+    expect(isAllowedOrigin('https://sub.tool.example', self, setting)).toBe(
+      false,
+    );
+  });
+
+  it('keeps the built-in rules when a setting is given', () => {
+    expect(isAllowedOrigin('https://claude.ai', self, 'app://x')).toBe(true);
+    expect(isAllowedOrigin('https://claude.ai/path', self, 'app://x')).toBe(
+      false,
+    );
+  });
+});
+
+describe('parseAllowedOrigins', () => {
+  it('splits on commas, trims, and drops blanks, * and null', () => {
+    expect(
+      parseAllowedOrigins(' https://a.example ,, app://b , * , null ,'),
+    ).toEqual(['https://a.example', 'app://b']);
+  });
+
+  it('is empty when there is no setting', () => {
+    expect(parseAllowedOrigins(undefined)).toEqual([]);
+    expect(parseAllowedOrigins('')).toEqual([]);
   });
 });

@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   hasFixedHeight,
+  localeToLang,
   safeAreaVariables,
 } from '../../src/views/host-context';
 
@@ -44,5 +45,26 @@ describe('hasFixedHeight', () => {
     expect(hasFixedHeight({ maxHeight: 600, width: 400 })).toBe(false);
     expect(hasFixedHeight({})).toBe(false);
     expect(hasFixedHeight(undefined)).toBe(false);
+  });
+});
+
+describe('localeToLang', () => {
+  it('passes plain language tags through', () => {
+    expect(localeToLang('en')).toBe('en');
+    expect(localeToLang('pt-BR')).toBe('pt-BR');
+    expect(localeToLang(' zh-Hant-TW ')).toBe('zh-Hant-TW');
+  });
+
+  it('accepts POSIX-style locales by turning the underscore into a hyphen', () => {
+    expect(localeToLang('en_US')).toBe('en-US');
+  });
+
+  it('ignores anything that is not a tag, because it ends up in the document', () => {
+    expect(localeToLang(undefined)).toBeUndefined();
+    expect(localeToLang(42)).toBeUndefined();
+    expect(localeToLang('')).toBeUndefined();
+    expect(localeToLang('e')).toBeUndefined();
+    expect(localeToLang('en" onload="x')).toBeUndefined();
+    expect(localeToLang('en-US-too-many-parts-here-and-more')).toBeUndefined();
   });
 });

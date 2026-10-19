@@ -107,6 +107,33 @@ describe('reduceViewState', () => {
     });
   });
 
+  it('keeps the data on screen when a later result is only a note', () => {
+    const state = run(
+      { type: 'result', outcome: DATA },
+      {
+        type: 'result',
+        outcome: { kind: 'message', text: 'A card.', isError: false },
+      },
+    );
+    expect(state).toEqual({ phase: 'ready', data: { n: 1 } });
+  });
+
+  it('replaces the data with fresh data, and with an error', () => {
+    const newer: ToolOutcome<Data> = { kind: 'data', data: { n: 2 } };
+    expect(
+      run(
+        { type: 'result', outcome: DATA },
+        { type: 'result', outcome: newer },
+      ),
+    ).toEqual({ phase: 'ready', data: { n: 2 } });
+    expect(
+      run(
+        { type: 'result', outcome: DATA },
+        { type: 'result', outcome: ERROR },
+      ),
+    ).toMatchObject({ phase: 'failed', reason: 'error' });
+  });
+
   it('lets late data replace a timeout or a failure', () => {
     expect(
       run({ type: 'timeout' }, { type: 'result', outcome: DATA }).phase,

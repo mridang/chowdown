@@ -1,9 +1,20 @@
+import {
+  CallToolResultSchema,
+  GetPromptResultSchema,
+  ListPromptsResultSchema,
+  ListResourceTemplatesResultSchema,
+  ListResourcesResultSchema,
+  ListToolsResultSchema,
+  ReadResourceResultSchema,
+} from '@modelcontextprotocol/core';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import type { User } from '../../../src/lib/db/users';
+import type { RecipeLister } from '../../../src/lib/mcp/recipe-resources';
 import { SCENARIO_TOOLS } from '../../../src/lib/mcp/scenarios';
 import {
   CACHE_HINTS,
+  RESOURCE_PAGE_SIZE,
   handleMcpMessage,
   readCache,
   isAdvertisedTool,
@@ -23,6 +34,7 @@ import {
 import { textResult } from '../../../src/lib/mcp/tool-results';
 import { APP_RESOURCES } from '../../../src/lib/mcp/ui-resources';
 import { TOOLS } from '../../../src/lib/mcp/tool-definitions';
+import { PANCAKES, call, fakeServices, folder } from './tool-fakes';
 import {
   SCOPE_READ,
   SCOPE_WRITE,
@@ -31,6 +43,21 @@ import {
 
 /** The address of a view the server serves. */
 const FIRST_VIEW = APP_RESOURCES.at(0)?.uri ?? '';
+
+/** A recipe lister for a user with nothing cached, so no test reaches for a database. */
+const noRecipes: RecipeLister = async () => [];
+
+/** A lister over `count` recipes named `Recipe 000`, `Recipe 001` … in name order. */
+function recipesNumbered(count: number): RecipeLister {
+  return async (_user, offset, limit) =>
+    Array.from(
+      { length: Math.max(0, Math.min(limit, count - offset)) },
+      (_, i) => ({
+        id: `id${offset + i}`,
+        name: `Recipe ${String(offset + i).padStart(3, '0')}.cook`,
+      }),
+    );
+}
 
 describe('MCP tool scopes', () => {
   it('only lets read-only tools through with the read scope', () => {
@@ -105,7 +132,12 @@ describe('handleMcpMessage routing', () => {
     _meta: { 'io.modelcontextprotocol/protocolVersion': '2026-07-28' },
   };
   const send = (message: Record<string, unknown>) =>
-    handleMcpMessage(someone, { jsonrpc: '2.0', id: 1, ...message });
+    handleMcpMessage(
+      someone,
+      { jsonrpc: '2.0', id: 1, ...message },
+      undefined,
+      noRecipes,
+    );
 
   it('answers the handshake with a version both sides speak', async () => {
     const reply = await send({
@@ -169,6 +201,7 @@ describe('handleMcpMessage routing', () => {
     expect(listed.result.resources.map((r) => r.uri)).toEqual(
       APP_RESOURCES.filter((r) => !r.legacy).map((r) => r.uri),
     );
+    // (The real recipe lister finds no database in a test and lists nothing.)
     const [first] = APP_RESOURCES;
     const read = await send({
       method: 'resources/read',
@@ -199,7 +232,7 @@ describe('handleMcpMessage routing', () => {
   it('lists the template a single recipe is read at', async () => {
     expect(await send({ method: 'resources/templates/list' })).toMatchObject({
       result: {
-        resourceTemplates: [{ uriTemplate: 'recipe://{id}' }],
+        resourceTemplates: [{ uriTemplate: 'recipe:///{id}' }],
       },
     });
   });
@@ -338,7 +371,12 @@ describe('handleMcpMessage — the newest revision', () => {
     message: Record<string, unknown>,
     runTool?: ToolRunner,
   ): Promise<JsonRpcResponse | null> =>
-    handleMcpMessage(someone, { jsonrpc: '2.0', id: 1, ...message }, runTool);
+    handleMcpMessage(
+      someone,
+      { jsonrpc: '2.0', id: 1, ...message },
+      runTool,
+      noRecipes,
+    );
   const resultOf = async (
     message: Record<string, unknown>,
   ): Promise<Record<string, unknown>> => {
@@ -351,8 +389,8 @@ describe('handleMcpMessage — the newest revision', () => {
 
   it.each([
     ['tools/list', undefined, CACHE_HINTS.list],
-    ['resources/list', undefined, CACHE_HINTS.list],
-    ['resources/read', { uri: FIRST_VIEW }, CACHE_HINTS.read],
+    ['resources/list', undefined, CACHE_HINTS.recipe],
+    ['resources/read', { uri: FIRST_VIEW }, CACHE_HINTS.immutable],
     ['server/discover', undefined, CACHE_HINTS.discover],
   ])(
     'tells the client how long it may keep %s',
@@ -375,8 +413,9 @@ describe('handleMcpMessage — the newest revision', () => {
     }
   });
 
-  it('keeps the large view cached longer than the lists, and shares them all (nothing here is per user)', () => {
+  it('keeps the large view cached longer than the lists, and shares them all except what is per person', () => {
     expect(CACHE_HINTS.read.ttlMs).toBeGreaterThan(CACHE_HINTS.list.ttlMs);
+    expect(CACHE_HINTS.immutable.ttlMs).toBeGreaterThan(CACHE_HINTS.read.ttlMs);
     const { recipe, ...everyoneHints } = CACHE_HINTS;
     for (const hint of Object.values(everyoneHints)) {
       expect(hint.cacheScope).toBe('public');
@@ -395,15 +434,37 @@ describe('handleMcpMessage — the newest revision', () => {
         method: 'resources/read',
         params: { uri: FIRST_VIEW, ...MODERN },
       }),
-    ).toMatchObject(CACHE_HINTS.read);
+    ).toMatchObject(CACHE_HINTS.immutable);
+  });
+
+  it('keeps a view for a day at its hashed address, and for less at an address whose content moves', () => {
+    const current = APP_RESOURCES.filter((r) => !r.legacy);
+    expect(current.length).toBeGreaterThan(0);
+    for (const view of current) {
+      expect(readCache({ contents: [{ uri: view.uri, text: 'x' }] })).toBe(
+        CACHE_HINTS.immutable,
+      );
+    }
+    for (const view of APP_RESOURCES.filter((r) => r.legacy)) {
+      expect(readCache({ contents: [{ uri: view.uri, text: 'x' }] })).toBe(
+        CACHE_HINTS.read,
+      );
+    }
+    expect(
+      readCache({
+        contents: [{ uri: 'ui://chowdown/recipe-card-000000000000.html' }],
+      }),
+    ).toBe(CACHE_HINTS.read);
   });
 
   it('lets only the person who read a recipe reuse it, and a view be shared', () => {
-    expect(readCache({ contents: [{ uri: 'recipe://abc', text: 'x' }] })).toBe(
-      CACHE_HINTS.recipe,
-    );
+    for (const uri of ['recipe:///abc', 'recipe://abc']) {
+      expect(readCache({ contents: [{ uri, text: 'x' }] })).toBe(
+        CACHE_HINTS.recipe,
+      );
+    }
     expect(readCache({ contents: [{ uri: FIRST_VIEW, text: 'x' }] })).toBe(
-      CACHE_HINTS.read,
+      CACHE_HINTS.immutable,
     );
     expect(readCache({})).toBe(CACHE_HINTS.read);
   });
@@ -509,11 +570,16 @@ describe('handleMcpMessage — what the server says about itself', () => {
   const someone = { id: 1, refresh_token_enc: null } as User;
   const result = async (message: Record<string, unknown>) =>
     (
-      (await handleMcpMessage(someone, {
-        jsonrpc: '2.0',
-        id: 1,
-        ...message,
-      })) as { result: Record<string, unknown> }
+      (await handleMcpMessage(
+        someone,
+        {
+          jsonrpc: '2.0',
+          id: 1,
+          ...message,
+        },
+        undefined,
+        noRecipes,
+      )) as { result: Record<string, unknown> }
     ).result;
 
   it('answers the older handshake with the full identity, the capabilities and the instructions', async () => {
@@ -557,6 +623,7 @@ describe('handleMcpMessage — refusals', () => {
       someone,
       { jsonrpc: '2.0', id: 'q1', ...message },
       runTool,
+      noRecipes,
     );
 
   it('echoes the request id on every error', async () => {
@@ -652,6 +719,78 @@ describe('handleMcpMessage — refusals', () => {
     });
   });
 
+  it('answers arguments that do not fit the tool as an error result the model can read, not as a protocol error', async () => {
+    const reply = await handleMcpMessage(
+      someone,
+      {
+        jsonrpc: '2.0',
+        id: 'q1',
+        method: 'tools/call',
+        params: { name: 'get_recipe', arguments: { limit: 5 } },
+      },
+      undefined,
+      noRecipes,
+    );
+    expect(reply).not.toHaveProperty('error');
+    expect(reply).toMatchObject({
+      id: 'q1',
+      result: {
+        isError: true,
+        content: [
+          {
+            type: 'text',
+            text: expect.stringMatching(
+              /Invalid arguments for get_recipe: .*`recipe` is required.*`limit` is not an argument/,
+            ),
+          },
+        ],
+      },
+    });
+  });
+
+  it('marks that error result complete for the newest revision, and still echoes the id', async () => {
+    const reply = await handleMcpMessage(
+      someone,
+      {
+        jsonrpc: '2.0',
+        id: 9,
+        method: 'tools/call',
+        params: { name: 'get_recipe', arguments: {} },
+      },
+      undefined,
+      noRecipes,
+    );
+    expect(reply).toMatchObject({ id: 9, result: { isError: true } });
+    const modern = await handleMcpMessage(
+      someone,
+      {
+        jsonrpc: '2.0',
+        id: 9,
+        method: 'tools/call',
+        params: {
+          name: 'get_recipe',
+          arguments: {},
+          _meta: { 'io.modelcontextprotocol/protocolVersion': '2026-07-28' },
+        },
+      },
+      undefined,
+      noRecipes,
+    );
+    expect(modern).toMatchObject({
+      id: 9,
+      result: { isError: true, resultType: 'complete' },
+    });
+  });
+
+  it('repeats only the start of an absurdly long tool name', async () => {
+    const reply = await send({
+      method: 'tools/call',
+      params: { name: 'x'.repeat(100_000) },
+    });
+    const message = (reply as { error: { message: string } }).error.message;
+    expect(message.length).toBeLessThan(500);
+  });
+
   it('answers any other fault with -32603 and no detail', async () => {
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
     const reply = await send(
@@ -700,6 +839,187 @@ describe('handleMcpMessage — refusals', () => {
       });
     }
   });
+});
+
+describe('lists with more than one page, and lists with only one', () => {
+  const someone = { id: 1, refresh_token_enc: null } as User;
+  const list = (
+    params: Record<string, unknown> | undefined,
+    method = 'resources/list',
+    lister: RecipeLister = noRecipes,
+  ) =>
+    handleMcpMessage(
+      someone,
+      { jsonrpc: '2.0', id: 1, method, params },
+      undefined,
+      lister,
+    );
+  const resultOf = async (
+    params: Record<string, unknown> | undefined,
+    lister: RecipeLister,
+  ): Promise<{
+    resources: { uri: string; name: string }[];
+    nextCursor?: string;
+  }> => {
+    const reply = await list(params, 'resources/list', lister);
+    if (!reply || !('result' in reply)) {
+      throw new Error(`expected a result, got ${JSON.stringify(reply)}`);
+    }
+    return reply.result as never;
+  };
+  const VIEWS = APP_RESOURCES.filter((r) => !r.legacy).length;
+
+  it("lists the views, then the user's recipes, on the first page", async () => {
+    const page = await resultOf(undefined, recipesNumbered(3));
+    expect(page.resources).toHaveLength(VIEWS + 3);
+    expect(page.resources.slice(VIEWS)).toEqual([
+      { uri: 'recipe:///id0', name: 'Recipe 000', mimeType: 'text/plain' },
+      { uri: 'recipe:///id1', name: 'Recipe 001', mimeType: 'text/plain' },
+      { uri: 'recipe:///id2', name: 'Recipe 002', mimeType: 'text/plain' },
+    ]);
+    expect(page).not.toHaveProperty('nextCursor');
+  });
+
+  it('pages through more recipes than a page holds, listing every recipe once and the views once', async () => {
+    const total = RESOURCE_PAGE_SIZE * 2 + 17;
+    const lister = recipesNumbered(total);
+    const first = await resultOf(undefined, lister);
+    expect(first.resources).toHaveLength(VIEWS + RESOURCE_PAGE_SIZE);
+    expect(first.nextCursor).toEqual(expect.any(String));
+    const second = await resultOf({ cursor: first.nextCursor }, lister);
+    expect(second.resources).toHaveLength(RESOURCE_PAGE_SIZE);
+    const third = await resultOf({ cursor: second.nextCursor }, lister);
+    expect(third.resources).toHaveLength(17);
+    expect(third).not.toHaveProperty('nextCursor');
+    const uris = [first, second, third].flatMap((p) =>
+      p.resources.map((r) => r.uri),
+    );
+    expect(new Set(uris).size).toBe(uris.length);
+    expect(uris.filter((uri) => uri.startsWith('recipe:///'))).toHaveLength(
+      total,
+    );
+  });
+
+  it('asks the lister for one recipe more than a page, to know whether there is another', async () => {
+    const lister = jest.fn<RecipeLister>(async () => []);
+    await resultOf(undefined, lister);
+    expect(lister).toHaveBeenCalledWith(someone, 0, RESOURCE_PAGE_SIZE + 1);
+  });
+
+  it('still lists the views when the recipes cannot be read, and logs why', async () => {
+    const quiet = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const page = await resultOf(undefined, async () => {
+      throw new Error('D1 is down');
+    });
+    expect(page.resources).toHaveLength(VIEWS);
+    expect(quiet).toHaveBeenCalled();
+    quiet.mockRestore();
+  });
+
+  it.each([
+    ['not base64', '!!!'],
+    ['base64 of something else', btoa('x')],
+    ['a negative position', btoa('recipes:-1')],
+    ['a position that is not a number', btoa('recipes:abc')],
+    ['not text', 5],
+  ])('refuses a resources cursor that is %s', async (_why, cursor) => {
+    expect(await list({ cursor })).toMatchObject({ error: { code: -32602 } });
+  });
+
+  it.each(['tools/list', 'prompts/list', 'resources/templates/list'])(
+    'refuses a cursor on %s, which has one page and issues no cursors',
+    async (method) => {
+      for (const cursor of ['abc', 5, {}]) {
+        expect(await list({ cursor }, method)).toMatchObject({
+          error: { code: -32602, message: 'Invalid cursor' },
+        });
+      }
+    },
+  );
+
+  it.each(['tools/list', 'prompts/list', 'resources/templates/list'])(
+    'treats an absent, null or empty cursor on %s as the start',
+    async (method) => {
+      for (const params of [undefined, {}, { cursor: null }, { cursor: '' }]) {
+        expect(await list(params, method)).toHaveProperty('result');
+      }
+    },
+  );
+
+  it('treats an absent, null or empty cursor on resources/list as the start', async () => {
+    for (const params of [undefined, { cursor: null }, { cursor: '' }]) {
+      expect(await list(params)).toHaveProperty('result');
+    }
+  });
+});
+
+describe('every reply parses with the SDK’s own schema for its method', () => {
+  const someone = { id: 1, refresh_token_enc: null } as User;
+  const MODERN = {
+    _meta: { 'io.modelcontextprotocol/protocolVersion': '2026-07-28' },
+  };
+  const resultOf = async (
+    method: string,
+    params: Record<string, unknown> | undefined,
+  ): Promise<unknown> => {
+    const reply = await handleMcpMessage(
+      someone,
+      { jsonrpc: '2.0', id: 1, method, params },
+      undefined,
+      recipesNumbered(2),
+    );
+    if (!reply || !('result' in reply)) {
+      throw new Error(`expected a result, got ${JSON.stringify(reply)}`);
+    }
+    return reply.result;
+  };
+  const CASES = [
+    ['tools/list', undefined, ListToolsResultSchema],
+    ['resources/list', undefined, ListResourcesResultSchema],
+    ['resources/templates/list', undefined, ListResourceTemplatesResultSchema],
+    ['prompts/list', undefined, ListPromptsResultSchema],
+    ['prompts/get', { name: 'what-should-i-cook' }, GetPromptResultSchema],
+    ['resources/read', { uri: FIRST_VIEW }, ReadResourceResultSchema],
+  ] as const;
+
+  it.each(CASES)(
+    '%s, to an older and to the newest client',
+    async (method, params, schema) => {
+      for (const extra of [{}, MODERN]) {
+        const result = await resultOf(method, { ...params, ...extra });
+        const parsed = schema.safeParse(result);
+        expect({
+          method,
+          problems: parsed.success ? [] : parsed.error.issues,
+        }).toEqual({ method, problems: [] });
+      }
+    },
+  );
+
+  it.each(TOOLS.map((tool) => [tool.name] as const))(
+    'a call of %s, with no arguments or with one it does not take',
+    async (name) => {
+      const bare = await call(
+        name,
+        {},
+        folder({ 'Pancakes.cook': PANCAKES }),
+        fakeServices(),
+      );
+      const refused = await call(
+        name,
+        { surely_not_an_argument: 1 },
+        folder(),
+        fakeServices(),
+      );
+      for (const result of [bare, refused]) {
+        const parsed = CallToolResultSchema.safeParse(result);
+        expect({
+          name,
+          problems: parsed.success ? [] : parsed.error.issues,
+        }).toEqual({ name, problems: [] });
+      }
+    },
+  );
 });
 
 describe('isAdvertisedTool', () => {

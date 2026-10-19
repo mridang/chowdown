@@ -29,6 +29,7 @@ import {
   contentHash as recipeListHash,
   html as recipeListHtml,
 } from '../../views/generated/recipe-list';
+import { SITE_URL } from '../site';
 
 /**
  * MIME type the MCP Apps spec requires for UI resources. Defined locally so the
@@ -156,13 +157,14 @@ export function buildCsp(origins: ViewOrigins = {}): {
 }
 
 /**
- * The origin ChatGPT should run the views from (`openai/widgetDomain`). This is
- * the ChatGPT form, an https origin. It is deliberately NOT repeated in the
+ * The origin ChatGPT should run the views from (`openai/widgetDomain`): the
+ * site's own address, the one place it is written down. This is the ChatGPT
+ * form, an https origin. It is deliberately NOT repeated in the
  * standard `_meta.ui.domain`: that field is host-specific, Claude insists on
  * its own hash-based value there and refuses to render the view for any other,
  * and the views have no need of a dedicated origin (they make no requests).
  */
-export const OPENAI_WIDGET_DOMAIN = 'https://chowdown.apps.mrida.ng';
+export const OPENAI_WIDGET_DOMAIN = SITE_URL;
 
 /** What ChatGPT tells the model when a view appears, so it does not repeat the content. */
 const WIDGET_DESCRIPTION =
@@ -222,6 +224,13 @@ export interface AppResource {
    * point at these.
    */
   readonly legacy: boolean;
+  /**
+   * True only for the content-hashed address the tool definitions point at:
+   * the HTML behind it can never change, so a host may keep it for a long
+   * time. False for the hash-free and stale addresses, whose content is
+   * whatever the current build ships.
+   */
+  readonly immutable: boolean;
 }
 
 /** Fields shared by a view's current and legacy entries. */
@@ -238,13 +247,14 @@ function entriesFor(
   legacyUri: string,
 ): readonly AppResource[] {
   return [
-    { ...view, uri, meta: VIEW_RESOURCE_META, legacy: false },
+    { ...view, uri, meta: VIEW_RESOURCE_META, legacy: false, immutable: true },
     {
       ...view,
       uri: legacyUri,
       description: `${view.description} (older address, kept for compatibility)`,
       meta: VIEW_RESOURCE_META,
       legacy: true,
+      immutable: false,
     },
   ];
 }
@@ -274,7 +284,37 @@ export const APP_RESOURCES: readonly AppResource[] = [
   ),
 ];
 
-/** The view served at `uri`, current or legacy address, or undefined for any other. */
+/**
+ * What an older content-hashed address looks like: `ui://chowdown/<view>-` and
+ * twelve hex digits. Every build that changes a view's HTML moves it to a new
+ * address, but a host that stored the previous one in a conversation asks for
+ * it again when it redraws that conversation.
+ */
+const HASHED_ADDRESS =
+  /^ui:\/\/chowdown\/(recipe-card|recipe-list)-[0-9a-f]{12}\.html$/;
+
+/**
+ * The view served at `uri`: the current or legacy address, or any earlier
+ * content-hashed address of the card or the list, which gets the current HTML
+ * (answered under the address that was asked for, as the spec expects). The
+ * data the Views draw is checked by a guard and degrades to a text message, so
+ * an old card opened with new code is better than a blank frame. Undefined for
+ * any other address.
+ */
 export function findAppResource(uri: string): AppResource | undefined {
-  return APP_RESOURCES.find((resource) => resource.uri === uri);
+  const exact = APP_RESOURCES.find((resource) => resource.uri === uri);
+  if (exact !== undefined) {
+    return exact;
+  }
+  const view = HASHED_ADDRESS.exec(uri)?.[1];
+  if (view === undefined) {
+    return undefined;
+  }
+  const current = APP_RESOURCES.find(
+    (resource) =>
+      !resource.legacy && resource.uri.startsWith(`ui://chowdown/${view}-`),
+  );
+  return current === undefined
+    ? undefined
+    : { ...current, uri, legacy: true, immutable: false };
 }

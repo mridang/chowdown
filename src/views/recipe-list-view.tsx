@@ -7,54 +7,96 @@
  * turn that fires get_recipe, which renders the recipe card), using whichever
  * route the host supports; a host that offers no way to message the chat but
  * does run tools gets the recipe fetched and shown right here instead.
+ *
+ * Recipe titles are text from imported pages and file names, so they are only
+ * ever drawn, never sent: a tap identifies its recipe by id (see
+ * {@link openRecipePrompt}). Inline, the list draws a handful of tiles and
+ * offers "Show all", because a chat host clips an inline frame; the expanded
+ * layout draws every recipe and a filter box.
  */
 
 import { useCallback, useReducer, type ReactElement } from 'react';
 
 import type { RecipeListData, RecipeListItem } from '../lib/mcp/ui-types';
-import { openRecipePrompt } from './follow-up';
 import {
   INITIAL_LIST_STATE,
   reduceListState,
+  visibleRecipes,
   type ListState,
 } from './list-state';
-import { isRecipeCardData, isRecipeListData } from './payload';
-import { FullRecipe } from './recipe-parts';
-import { LoadingCard, MessageCard } from './status-panels';
+import { openRecipe } from './open-recipe';
+import { isRecipeListData } from './payload';
+import { CloseHint, FullRecipe, focusWhenShown } from './recipe-parts';
+import { Announcer, LoadingCard, MessageCard } from './status-panels';
 import { STYLES } from './styles';
 import { useWidgetData } from './use-widget-data';
 import type { ViewState } from './view-state';
 
-/** The recipes as a grid of tiles. */
+/** What {@link RecipeGrid} needs besides the recipes themselves. */
+interface RecipeGridProps {
+  readonly data: RecipeListData;
+  readonly pendingId: string | undefined;
+  readonly onOpen: (recipe: RecipeListItem) => void;
+  /** Whether the expanded layout (every recipe, with a filter) is showing. */
+  readonly expanded: boolean;
+  readonly filter: string;
+  readonly onFilter: (value: string) => void;
+  /** Take keyboard focus (the person has just come back from a recipe). */
+  readonly refocus: boolean;
+  readonly onExpand: () => void;
+}
+
+/** The recipes as a grid of tiles, with the controls that go with the layout. */
 function RecipeGrid({
   data,
   pendingId,
   onOpen,
-}: Readonly<{
-  data: RecipeListData;
-  pendingId: string | undefined;
-  onOpen: (recipe: RecipeListItem) => void;
-}>): ReactElement {
+  expanded,
+  filter,
+  onFilter,
+  refocus,
+  onExpand,
+}: Readonly<RecipeGridProps>): ReactElement {
   const { recipes, query } = data;
+  const { shown, matching, hidden } = visibleRecipes(recipes, {
+    expanded,
+    filter,
+  });
+  const count = `${matching} ${matching === 1 ? 'recipe' : 'recipes'}`;
   return (
     <>
       <div className="list-head">
-        <h1>{query ? `Recipes matching “${query}”` : 'Your recipes'}</h1>
+        <h1 tabIndex={-1} ref={refocus ? focusWhenShown : undefined}>
+          {query ? `Recipes matching “${query}”` : 'Your recipes'}
+        </h1>
         <span className="count">
-          {recipes.length} {recipes.length === 1 ? 'recipe' : 'recipes'}
+          {expanded && matching !== recipes.length
+            ? `${count} of ${recipes.length}`
+            : count}
         </span>
       </div>
-      {recipes.length === 0 ? (
+      {expanded && recipes.length > 0 ? (
+        <input
+          type="search"
+          className="filter"
+          aria-label="Filter recipes by name"
+          placeholder="Filter by name"
+          value={filter}
+          onChange={(event) => onFilter(event.target.value)}
+        />
+      ) : null}
+      {shown.length === 0 ? (
         <div className="empty" role="status">
-          {query ? 'No recipes matched.' : 'No recipes yet.'}
+          {query || filter ? 'No recipes matched.' : 'No recipes yet.'}
         </div>
       ) : (
         <ul className="grid" aria-label="Recipes">
-          {recipes.map((recipe) => (
+          {shown.map((recipe) => (
             <li key={recipe.id}>
               <button
                 type="button"
                 className="tile"
+                title={recipe.title}
                 aria-busy={pendingId === recipe.id}
                 onClick={() => onOpen(recipe)}
               >
@@ -71,6 +113,13 @@ function RecipeGrid({
           ))}
         </ul>
       )}
+      {hidden > 0 ? (
+        <div className="more-row">
+          <button type="button" className="btn ghost" onClick={onExpand}>
+            Show all {matching} recipes
+          </button>
+        </div>
+      ) : null}
     </>
   );
 }
@@ -82,6 +131,14 @@ export interface RecipeListScreenProps {
   readonly list: ListState;
   readonly onOpen: (recipe: RecipeListItem) => void;
   readonly onCloseDetail: () => void;
+  /** Whether the expanded layout is showing. */
+  readonly expanded: boolean;
+  readonly onExpand: () => void;
+  readonly onCollapse: () => void;
+  /** The person typed in the filter box. */
+  readonly onFilter: (value: string) => void;
+  /** True when the host would not leave fullscreen: shows where its own close control is. */
+  readonly closeHint: boolean;
   /** Opens a web page through the host; absent when the host cannot. */
   readonly onOpenLink: ((url: string) => void) | undefined;
 }
@@ -96,6 +153,11 @@ export function RecipeListScreen({
   list,
   onOpen,
   onCloseDetail,
+  expanded,
+  onExpand,
+  onCollapse,
+  onFilter,
+  closeHint,
   onOpenLink,
 }: Readonly<RecipeListScreenProps>): ReactElement {
   const body = ((): ReactElement => {
@@ -138,12 +200,25 @@ export function RecipeListScreen({
       );
     }
     return (
-      <div className="wrap">
+      <div className={expanded ? 'full' : 'wrap'}>
+        {expanded ? (
+          <div className="toolbar">
+            <button type="button" className="btn ghost" onClick={onCollapse}>
+              Back
+            </button>
+            {closeHint ? <CloseHint /> : null}
+          </div>
+        ) : null}
         {state.phase === 'ready' ? (
           <RecipeGrid
             data={state.data}
             pendingId={list.pendingId}
             onOpen={onOpen}
+            expanded={expanded}
+            filter={list.filter}
+            onFilter={onFilter}
+            refocus={list.refocus}
+            onExpand={onExpand}
           />
         ) : null}
         {list.notice ? (
@@ -157,6 +232,13 @@ export function RecipeListScreen({
   return (
     <>
       <style>{STYLES}</style>
+      <Announcer
+        message={
+          state.phase === 'ready'
+            ? `${state.data.recipes.length} recipes loaded`
+            : ''
+        }
+      />
       {body}
     </>
   );
@@ -166,26 +248,16 @@ export function RecipeListScreen({
 export function RecipeListApp(): ReactElement {
   const bridge = useWidgetData('chowdown-recipe-list', isRecipeListData);
   const [list, dispatch] = useReducer(reduceListState, INITIAL_LIST_STATE);
-  const { sendFollowUp, canCallTools, callTool } = bridge;
+  const { sendFollowUp, canCallTools, callTool, expanded, collapse } = bridge;
 
   const open = useCallback(
-    async (recipe: RecipeListItem) => {
-      dispatch({ type: 'tapped', id: recipe.id });
-      if (await sendFollowUp(openRecipePrompt(recipe.title))) {
-        dispatch({ type: 'asked-assistant', title: recipe.title });
-      } else if (canCallTools) {
-        dispatch({ type: 'fetching', title: recipe.title });
-        const outcome = await callTool(
-          'get_recipe',
-          { name: recipe.title },
-          isRecipeCardData,
-        );
-        dispatch({ type: 'fetched', title: recipe.title, outcome });
-      } else {
-        dispatch({ type: 'unavailable', title: recipe.title });
-      }
-    },
-    [sendFollowUp, canCallTools, callTool],
+    (recipe: RecipeListItem) =>
+      openRecipe(
+        recipe,
+        { sendFollowUp, canCallTools, callTool, expanded, collapse },
+        dispatch,
+      ),
+    [sendFollowUp, canCallTools, callTool, expanded, collapse],
   );
 
   return (
@@ -194,6 +266,11 @@ export function RecipeListApp(): ReactElement {
       list={list}
       onOpen={(recipe) => void open(recipe)}
       onCloseDetail={() => dispatch({ type: 'closed-detail' })}
+      expanded={expanded}
+      onExpand={() => void bridge.expand()}
+      onCollapse={() => void collapse()}
+      onFilter={(value) => dispatch({ type: 'filter-changed', value })}
+      closeHint={bridge.closeHint}
       onOpenLink={bridge.openLink}
     />
   );

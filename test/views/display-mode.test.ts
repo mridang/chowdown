@@ -56,6 +56,7 @@ describe('reduceLayout', () => {
   const fullscreen: LayoutState = {
     hostMode: 'fullscreen',
     expandedLocally: false,
+    collapseRefused: false,
   };
 
   it('starts inline and collapsed', () => {
@@ -75,13 +76,17 @@ describe('reduceLayout', () => {
       type: 'host-mode',
       mode: 'inline',
     });
-    expect(next).toEqual({ hostMode: 'inline', expandedLocally: false });
+    expect(next).toEqual({
+      hostMode: 'inline',
+      expandedLocally: false,
+      collapseRefused: false,
+    });
     expect(isExpanded(next)).toBe(false);
   });
 
   it('drops an in-place expansion when the host leaves fullscreen', () => {
     const next = reduceLayout(
-      { hostMode: 'fullscreen', expandedLocally: true },
+      { ...fullscreen, expandedLocally: true },
       { type: 'host-mode', mode: 'inline' },
     );
     expect(isExpanded(next)).toBe(false);
@@ -113,5 +118,37 @@ describe('modeFromResult', () => {
     expect(modeFromResult({})).toBeUndefined();
     expect(modeFromResult(null)).toBeUndefined();
     expect(modeFromResult('fullscreen')).toBeUndefined();
+  });
+});
+
+describe('a host that will not leave fullscreen', () => {
+  const refused = reduceLayout(
+    { hostMode: 'fullscreen', expandedLocally: false, collapseRefused: false },
+    { type: 'collapse-refused' },
+  );
+
+  it('stays expanded and remembers that the way out is the host’s', () => {
+    expect(isExpanded(refused)).toBe(true);
+    expect(refused.collapseRefused).toBe(true);
+  });
+
+  it('forgets the refusal when the host reports a mode or the View tries again', () => {
+    expect(
+      reduceLayout(refused, { type: 'host-mode', mode: 'inline' })
+        .collapseRefused,
+    ).toBe(false);
+    expect(
+      reduceLayout(refused, { type: 'collapse-locally' }).collapseRefused,
+    ).toBe(false);
+  });
+});
+
+describe('hostOffersMode without a list', () => {
+  it('lets a View ask, because the host may leave the field out and will answer with what it did set', () => {
+    expect(hostOffersMode({}, 'fullscreen')).toBe(true);
+    expect(hostOffersMode(undefined, 'fullscreen')).toBe(true);
+    expect(hostOffersMode({ availableDisplayModes: [] }, 'fullscreen')).toBe(
+      false,
+    );
   });
 });

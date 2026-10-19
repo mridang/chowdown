@@ -14,12 +14,8 @@
  */
 
 import {
-  McpUiResourceTeardownRequestSchema,
-  McpUiResourceTeardownResultSchema,
   useApp,
   useHostStyleVariables,
-  type App,
-  type McpUiHostContext,
 } from '@modelcontextprotocol/ext-apps/react';
 import { useCallback, useEffect, useReducer } from 'react';
 
@@ -28,18 +24,19 @@ import {
   SUPPORTED_DISPLAY_MODES,
   isDisplayMode,
   isExpanded,
-  modeFromResult,
   planExpand,
   reduceLayout,
-  type DisplayMode,
-  type LayoutAction,
 } from './display-mode';
-import { firstThatWorks, followUpChannels } from './follow-up';
-import { hasFixedHeight, safeAreaVariables } from './host-context';
+import {
+  applyHostContext,
+  attachHostListeners,
+  requestMode,
+  runServerTool,
+  sendFollowUpMessage,
+} from './host-wiring';
 import {
   getOpenAi,
   globalsFromEvent,
-  type OpenAiApi,
   type OpenAiGlobals,
 } from './openai-bridge';
 import { readOutcome, type ToolOutcome } from './payload';
@@ -63,6 +60,11 @@ export interface WidgetBridge<T> {
   /** Leave the expanded layout, asking the host to leave fullscreen too. */
   readonly collapse: () => Promise<void>;
   /**
+   * True when the host would not leave fullscreen on request, so the View
+   * should point at the host's own close control.
+   */
+  readonly closeHint: boolean;
+  /**
    * Ask the assistant to do something in the conversation, as if the person had
    * typed it. Resolves true when a route accepted it, false when none did.
    */
@@ -77,64 +79,6 @@ export interface WidgetBridge<T> {
   ) => Promise<ToolOutcome<U>>;
   /** Open a web page through the host; absent when the host cannot. */
   readonly openLink: ((url: string) => void) | undefined;
-}
-
-/**
- * Apply the parts of the host context that change the page itself: the
- * safe-area insets (as CSS custom properties) and whether the host fixes the
- * frame height (as a data attribute the stylesheet reads).
- */
-function applyDocumentContext(context: McpUiHostContext): void {
-  const root = document.documentElement;
-  if (context.safeAreaInsets !== undefined) {
-    safeAreaVariables(context.safeAreaInsets).forEach(([name, value]) =>
-      root.style.setProperty(name, value),
-    );
-  }
-  if (context.containerDimensions !== undefined) {
-    root.toggleAttribute(
-      'data-fixed-height',
-      hasFixedHeight(context.containerDimensions),
-    );
-  }
-}
-
-/** Take a (possibly partial) host context into account: its display mode and page-level settings. */
-function applyHostContext(
-  context: McpUiHostContext | undefined,
-  dispatchLayout: (action: LayoutAction) => void,
-): void {
-  if (context === undefined) {
-    return;
-  }
-  if (isDisplayMode(context.displayMode)) {
-    dispatchLayout({ type: 'host-mode', mode: context.displayMode });
-  }
-  applyDocumentContext(context);
-}
-
-/**
- * Ask for a display mode and report the one the host actually set. Tries the
- * standard request first and ChatGPT's bridge second; undefined when neither
- * gave a recognisable answer.
- */
-async function requestMode(
-  app: App | null,
-  openai: OpenAiApi | undefined,
-  mode: DisplayMode,
-): Promise<DisplayMode | undefined> {
-  const viaApp =
-    app === null
-      ? undefined
-      : await app
-          .requestDisplayMode({ mode })
-          .then(modeFromResult, () => undefined);
-  if (viaApp !== undefined || openai?.requestDisplayMode === undefined) {
-    return viaApp;
-  }
-  return openai
-    .requestDisplayMode({ mode })
-    .then(modeFromResult, () => undefined);
 }
 
 /**
@@ -161,30 +105,13 @@ export function useWidgetData<T>(
     // The spec requires a View to declare every display mode it can lay out.
     capabilities: { availableDisplayModes: [...SUPPORTED_DISPLAY_MODES] },
     // Handlers go in before the handshake so the first notification is not missed.
-    onAppCreated: (created) => {
-      const input = (params: { arguments?: Record<string, unknown> }) =>
-        dispatch({ type: 'input', args: params.arguments });
-      created.addEventListener('toolinput', input);
-      created.addEventListener('toolinputpartial', input);
-      created.addEventListener('toolresult', (result) =>
-        dispatch({ type: 'result', outcome: readOutcome(result, guard) }),
-      );
-      created.addEventListener('toolcancelled', (params) =>
-        dispatch({ type: 'cancelled', reason: params.reason }),
-      );
-      created.addEventListener('hostcontextchanged', (context) =>
-        applyHostContext(context, dispatchLayout),
-      );
-      // Nothing to save when the host closes the View, so just acknowledge.
-      created.setRequestHandler(
-        'ui/resource-teardown',
-        {
-          params: McpUiResourceTeardownRequestSchema.shape.params,
-          result: McpUiResourceTeardownResultSchema,
-        },
-        () => ({}),
-      );
-    },
+    onAppCreated: (created) =>
+      attachHostListeners(created, {
+        dispatch,
+        dispatchLayout,
+        root: document.documentElement,
+        guard,
+      }),
   });
 
   // Theme and CSS variables follow the host, including later theme changes.
@@ -197,7 +124,11 @@ export function useWidgetData<T>(
       return;
     }
     dispatch({ type: 'connected' });
-    applyHostContext(app.getHostContext(), dispatchLayout);
+    applyHostContext(
+      app.getHostContext(),
+      dispatchLayout,
+      document.documentElement,
+    );
   }, [app]);
 
   useEffect(() => {
@@ -266,56 +197,27 @@ export function useWidgetData<T>(
     dispatchLayout({ type: 'collapse-locally' });
     if (hostMode === 'fullscreen') {
       const mode = await requestMode(app, getOpenAi(), 'inline');
-      if (mode !== undefined) {
+      if (mode === undefined) {
+        // Still fullscreen and Back cannot change that: say where the way out is.
+        dispatchLayout({ type: 'collapse-refused' });
+      } else {
         dispatchLayout({ type: 'host-mode', mode });
       }
     }
   }, [app, hostMode]);
 
   const sendFollowUp = useCallback(
-    async (prompt: string): Promise<boolean> => {
-      const openai = getOpenAi();
-      const channels = followUpChannels({
-        connected: app !== null,
-        openAiFollowUp: typeof openai?.sendFollowUpMessage === 'function',
-      });
-      const used = await firstThatWorks(channels, async (channel) => {
-        if (channel === 'openai') {
-          await openai?.sendFollowUpMessage?.({ prompt });
-          return true;
-        }
-        const result = await app?.sendMessage({
-          role: 'user',
-          content: [{ type: 'text', text: prompt }],
-        });
-        return result !== undefined && result.isError !== true;
-      });
-      return used !== undefined;
-    },
+    (prompt: string): Promise<boolean> =>
+      sendFollowUpMessage(app, getOpenAi(), prompt),
     [app],
   );
 
   const callTool = useCallback(
-    async <U>(
+    <U>(
       name: string,
       args: Readonly<Record<string, unknown>>,
       toolGuard: (value: unknown) => value is U,
-    ): Promise<ToolOutcome<U>> => {
-      if (app === null) {
-        return { kind: 'message', text: 'Not connected yet.', isError: true };
-      }
-      return app.callServerTool({ name, arguments: { ...args } }).then(
-        (result) => readOutcome(result, toolGuard),
-        (failure: unknown): ToolOutcome<U> => ({
-          kind: 'message',
-          text:
-            failure instanceof Error
-              ? failure.message
-              : 'The request did not go through.',
-          isError: true,
-        }),
-      );
-    },
+    ): Promise<ToolOutcome<U>> => runServerTool(app, name, args, toolGuard),
     [app],
   );
 
@@ -330,6 +232,7 @@ export function useWidgetData<T>(
     expanded: isExpanded(layout),
     expand,
     collapse,
+    closeHint: layout.collapseRefused,
     sendFollowUp,
     canCallTools: capabilities?.serverTools !== undefined,
     callTool,

@@ -72,19 +72,24 @@ export const CAPABILITIES = {
   extensions: { [UI_EXTENSION_ID]: {} },
 } as const;
 
-/** What an assistant should know before using the tools. */
+/**
+ * What an assistant should know before using the tools. Kept to what the tool
+ * descriptions cannot say on their own, which is how to choose between tools;
+ * a host may put all of it in the model's context, so a test caps its length.
+ */
 export const INSTRUCTIONS =
   "chowdown keeps the user's cooking recipes as Cooklang files in their own Google Drive. " +
-  'A tool that takes a recipe accepts its name, or the id shown in a list when two names are alike. ' +
+  'A tool that takes a recipe accepts its name, or its id (shown next to every recipe in a list) when two names are alike; ' +
+  'long lists come a page at a time, and `offset` asks for the next. ' +
   'To add a recipe from a web page, open the page yourself and call import_recipe with the ' +
-  "page's raw text or HTML as `content` (plus its `url` and photo links); chowdown converts it " +
+  "recipe's text as `content` (plus its `url` and photo links); chowdown converts it " +
   'to Cooklang, so do not write the Cooklang yourself, and it may fetch that page once more to ' +
   'find a cover image. Use add_recipe only for a recipe the user dictates as Cooklang, ' +
   'capture_idea for a wish with no recipe yet, and log_cooking or annotate_recipe for notes. ' +
-  "When the user says what they feel like eating ('something vegetarian', 'a quick pescatarian " +
-  "dinner') use browse_recipes; when they say what they have ('3 tomatoes and 400 g of pasta') " +
-  'use recipes_from_ingredients and tell them what the near misses lack; list_filters shows what ' +
-  'the collection holds. Every recipe is classed vegan, vegetarian, pescatarian or non-vegetarian. ' +
+  "To find recipes: browse_recipes for what the user feels like eating ('something vegetarian', 'a quick " +
+  "pescatarian dinner'), recipes_from_ingredients for what they have ('3 tomatoes and 400 g of pasta'; " +
+  'tell them what the near misses lack), search_recipes for part of a name, find_recipes for what a recipe ' +
+  'is about; list_filters shows what the collection holds. ' +
   'Call set_measurement_system when the user asks for metric, US or imperial units, ' +
   'favourite_recipe when they love or want to keep a recipe, tag_recipe when they ask for tags ' +
   "(it may fetch the recipe's source page once to find a cover), and set_recipe_images when a " +

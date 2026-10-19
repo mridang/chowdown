@@ -15,6 +15,7 @@
  * tool belongs in the server's instructions, not here.
  */
 
+import { scopeForTool } from '../oauth/scopes';
 import { NOT_BLANK } from './json-schema';
 import { CARD_RESOURCE_URI, LIST_RESOURCE_URI } from './ui-resources';
 
@@ -93,6 +94,14 @@ function viewMeta<const Uri extends string>(
   } as const;
 }
 
+/**
+ * Lets the View call the tool itself. ChatGPT only passes a widget's tool calls
+ * through for tools that say so; MCP Apps hosts allow it by default (a tool's
+ * `visibility` defaults to both the model and the app). Only the read tools the
+ * Views call back into carry it, never one that writes.
+ */
+const WIDGET_CALLABLE = { 'openai/widgetAccessible': true } as const;
+
 /** The `_meta` for a tool that draws the recipe card, by what the tool is doing. */
 const cardMeta = (invoking: string, invoked: string) =>
   viewMeta(CARD_RESOURCE_URI, invoking, invoked);
@@ -133,8 +142,26 @@ const RECIPE_REFERENCE = {
   pattern: NOT_BLANK,
 } as const;
 
-/** The most results a list tool may be asked for. */
+/** The most results a question-shaped tool (browse, pantry) may be asked for. */
 const LIMIT_MAX = 50;
+
+/** How many recipes a plain listing returns when no `limit` is given. */
+export const PAGE_DEFAULT = 50;
+
+/** The most recipes one page of a plain listing (all recipes, a name search) may hold. */
+export const PAGE_MAX = 200;
+
+/** The furthest into a result an `offset` may reach. */
+const OFFSET_MAX = 100_000;
+
+/** `offset`: how many results to skip, to read the next page of a long result. */
+const OFFSET = {
+  type: 'integer',
+  minimum: 0,
+  maximum: OFFSET_MAX,
+  description:
+    'How many results to skip, to read the next page (default 0). A result that was cut short says which offset comes next.',
+} as const;
 
 /** A text filter such as a cuisine or a list of them. */
 const FACET_TEXT = { type: 'string', maxLength: 200 } as const;
@@ -154,8 +181,16 @@ const WEB_URL = {
   pattern: '^https?://\\S+$',
 } as const;
 
-/** The largest block of page text or Cooklang a tool takes, in characters. */
-const CONTENT_MAX = 1_000_000;
+/**
+ * The largest block of page text or Cooklang a tool takes, in characters. The
+ * whole call travels as one JSON body of at most a mebibyte, and JSON can spend
+ * six bytes on a single character (`\u0000`), so this is kept to a sixth of
+ * that: a call that is within the limit here is never refused by the transport
+ * for size, which the assistant would see only as a failed request. (A test
+ * checks the two numbers against each other.) It is also far more than a recipe
+ * needs: the converter reads little past the first twelve thousand characters.
+ */
+export const CONTENT_MAX = 150_000;
 
 /** The most image links a tool takes at once. */
 const IMAGES_MAX = 20;
@@ -165,15 +200,30 @@ const TOOL_DEFINITIONS = [
   {
     name: 'list_recipes',
     description:
-      "Lists the names of all recipes saved in the user's Recipes folder, with their ids.",
-    inputSchema: { type: 'object', additionalProperties: false },
+      "Lists the names of the recipes saved in the user's Recipes folder, with their ids, 50 at a time (in name order). When there are more, the result says which offset to ask for next.",
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: PAGE_MAX,
+          description: `Most recipes to return (default ${PAGE_DEFAULT}, at most ${PAGE_MAX}).`,
+        },
+        offset: OFFSET,
+      },
+    },
     outputSchema: RECIPE_LIST_OUTPUT_SCHEMA,
-    _meta: listMeta('Listing your recipes…', 'Here they are'),
+    _meta: {
+      ...listMeta('Listing your recipes…', 'Here they are'),
+      ...WIDGET_CALLABLE,
+    },
   },
   {
     name: 'browse_recipes',
     description:
-      "Filters the user's saved recipes by cuisine, eating style (vegan, vegetarian, pescatarian, non-vegetarian), protein, dietary needs, category, method, difficulty, maximum time, favourites or part of the name. Every filter is optional and they combine. Returns the matching recipes grouped by eating style. list_filters shows which values the collection holds.",
+      "Filters the user's saved recipes by cuisine, eating style (vegan, vegetarian, pescatarian, non-vegetarian), protein, dietary needs, category, method, difficulty, maximum time, favourites or part of the name. Every filter is optional and they combine. Returns the matching recipes, with their ids, grouped by eating style, 12 at a time; use offset for the next page. list_filters shows which values the collection holds.",
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -188,7 +238,7 @@ const TOOL_DEFINITIONS = [
             "Eating style: 'Vegan', 'Vegetarian', 'Pescatarian' or 'Non-vegetarian' (comma-separate several). Asking for Vegetarian also returns vegan dishes, and Pescatarian also returns vegan and vegetarian ones; Non-vegetarian means meat is wanted. Vegetarian dishes contain no meat or fish; pescatarian ones contain fish but no meat.",
         },
         protein: { ...FACET_TEXT, description: "e.g. 'Chicken', 'Paneer'." },
-        diet: {
+        dietary_needs: {
           ...FACET_TEXT,
           description: "Dietary needs, e.g. 'Gluten-free', 'Dairy-free'.",
         },
@@ -196,8 +246,8 @@ const TOOL_DEFINITIONS = [
         method: { ...FACET_TEXT, description: "e.g. 'Baked', 'Grilled'." },
         difficulty: {
           type: 'string',
-          enum: ['Easy', 'Medium', 'Hard'],
-          description: 'Easy, Medium or Hard.',
+          maxLength: 20,
+          description: 'Easy, Medium or Hard (any capitalisation).',
         },
         max_minutes: {
           type: 'number',
@@ -219,6 +269,7 @@ const TOOL_DEFINITIONS = [
           maximum: LIMIT_MAX,
           description: 'Most results (default 12, at most 50).',
         },
+        offset: OFFSET,
       },
     },
     outputSchema: RECIPE_LIST_OUTPUT_SCHEMA,
@@ -262,6 +313,7 @@ const TOOL_DEFINITIONS = [
           maximum: LIMIT_MAX,
           description: 'Most results per list (default 12, at most 50).',
         },
+        offset: OFFSET,
       },
       required: ['ingredients'],
     },
@@ -277,12 +329,19 @@ const TOOL_DEFINITIONS = [
   {
     name: 'search_recipes',
     description:
-      'Finds saved recipes whose name contains the query, ignoring case and accents.',
+      'By name only: finds saved recipes whose name contains the query, ignoring case and accents, 50 at a time. The words of a dish that is not named in it (for example an ingredient) are for find_recipes.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
       properties: {
         query: { ...QUERY, description: 'Text to match in recipe names.' },
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: PAGE_MAX,
+          description: `Most recipes to return (default ${PAGE_DEFAULT}, at most ${PAGE_MAX}).`,
+        },
+        offset: OFFSET,
       },
       required: ['query'],
     },
@@ -292,7 +351,7 @@ const TOOL_DEFINITIONS = [
   {
     name: 'find_recipes',
     description:
-      "Semantic search over the user's saved recipes: ranks them by what they are about rather than by name (for example 'something with beef that's quick', 'a vegetarian curry'). Returns the best 8 matches. Recipes that have not been indexed yet are indexed on demand, a limited number per call; the result says when some are still waiting.",
+      "By meaning, not name: ranks the user's saved recipes by what they are about (for example 'something with beef that's quick', 'a vegetarian curry'). Returns the best 8 matches. Recipes that have not been indexed yet are indexed on demand, a limited number per call; the result says when some are still waiting.",
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -307,18 +366,18 @@ const TOOL_DEFINITIONS = [
   {
     name: 'find_similar',
     description:
-      'Finds the saved recipes most similar to a given saved recipe, which is identified by name or id. Returns up to 6. Recipes that have not been indexed yet are indexed on demand, a limited number per call.',
+      'Finds the saved recipes most similar to a given saved recipe, which is identified by name or id. Returns up to 6, with their ids. Recipes that have not been indexed yet are indexed on demand, a limited number per call.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
       properties: {
-        name: {
+        recipe: {
           ...RECIPE_REFERENCE,
           description:
             'The recipe to find similar ones to: its name, or its id from a list result.',
         },
       },
-      required: ['name'],
+      required: ['recipe'],
     },
     outputSchema: RECIPE_LIST_OUTPUT_SCHEMA,
     _meta: listMeta('Finding similar recipes…', 'Here they are'),
@@ -331,21 +390,24 @@ const TOOL_DEFINITIONS = [
       type: 'object',
       additionalProperties: false,
       properties: {
-        name: {
+        recipe: {
           ...RECIPE_REFERENCE,
           description:
             'The recipe to open: its name, or its id from a list result.',
         },
       },
-      required: ['name'],
+      required: ['recipe'],
     },
     outputSchema: RECIPE_CARD_OUTPUT_SCHEMA,
-    _meta: cardMeta('Opening the recipe…', 'Here it is'),
+    _meta: {
+      ...cardMeta('Opening the recipe…', 'Here it is'),
+      ...WIDGET_CALLABLE,
+    },
   },
   {
     name: 'import_recipe',
     description:
-      "Creates a saved recipe from the content of a web page that the caller has already fetched: pass the page's text or HTML as `content` (not a URL). The server converts it to Cooklang, tags it and saves it in the Recipes folder. If `url` is given it is recorded as the recipe's source, a link that was already imported is not imported twice, and the page is fetched once to look for images. Returns the saved recipe.",
+      "Creates a saved recipe from the content of a web page that the caller has already fetched: pass the recipe's text as `content` (not a URL), meaning its title, ingredients and steps, or the page's JSON-LD `Recipe` block; the rest of the page is not needed. The server converts it to Cooklang, tags it and saves it in the Recipes folder. If `url` is given it is recorded as the recipe's source, a link that was already imported is not imported twice, and the page is fetched once to look for images. Returns the saved recipe.",
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -356,7 +418,7 @@ const TOOL_DEFINITIONS = [
           maxLength: CONTENT_MAX,
           pattern: NOT_BLANK,
           description:
-            "The recipe page's raw text or HTML. This must be the page content, never a URL.",
+            "The recipe's text (title, ingredients, steps) or the page's JSON-LD Recipe block; page text or HTML also works, but only the first 12,000 characters are read unless a JSON-LD Recipe is present. Never a URL.",
         },
         url: {
           ...WEB_URL,
@@ -384,7 +446,7 @@ const TOOL_DEFINITIONS = [
   {
     name: 'add_recipe',
     description:
-      'Saves a recipe the caller has already written in Cooklang as a new file in the Recipes folder. The server does not fetch URLs: `content` must be the recipe text. Cooklang syntax: metadata as `>> key: value` lines at the top (e.g. `>> servings: 4`), ingredients inline as @name{quantity%unit} (e.g. @flour{200%g}, @eggs{2}), cookware as #item{} (e.g. #pan{}) and timers as ~{10%minutes}. Returns the saved recipe.',
+      'Saves a recipe the caller has already written in Cooklang as a new file in the Recipes folder, adding tags (cuisine, diet and so on) to the metadata. Saving the same name and recipe again changes nothing. The server does not fetch URLs: `content` must be the recipe text. Cooklang syntax: metadata as `>> key: value` lines at the top (e.g. `>> servings: 4`), ingredients inline as @name{quantity%unit} (e.g. @flour{200%g}, @eggs{2}), cookware as #item{} (e.g. #pan{}) and timers as ~{10%minutes}. Returns the saved recipe.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -428,6 +490,7 @@ const TOOL_DEFINITIONS = [
           type: 'string',
           minLength: 1,
           maxLength: 20_000,
+          pattern: NOT_BLANK,
           description: 'The original request, kept verbatim.',
         },
         draft: {
@@ -444,7 +507,7 @@ const TOOL_DEFINITIONS = [
   {
     name: 'log_cooking',
     description:
-      'Appends a dated cooking-log entry to a saved recipe: a note about a time it was cooked, such as what was changed and how it turned out. Each call adds a new entry.',
+      'Appends a dated cooking-log entry to a saved recipe: a note about a time it was cooked, such as what was changed and how it turned out. The entry is dated today unless `date` says otherwise. Each call adds a new entry.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -458,7 +521,15 @@ const TOOL_DEFINITIONS = [
           type: 'string',
           minLength: 1,
           maxLength: 5000,
+          pattern: NOT_BLANK,
           description: 'What to record about this cook.',
+        },
+        date: {
+          type: 'string',
+          maxLength: 10,
+          pattern: '^\\d{4}-\\d{2}-\\d{2}$',
+          description:
+            'The day it was cooked, as YYYY-MM-DD, for a cook that was not today (default: today). Not in the future.',
         },
       },
       required: ['recipe', 'note'],
@@ -526,7 +597,7 @@ const TOOL_DEFINITIONS = [
   {
     name: 'set_recipe_images',
     description:
-      'Sets the cover image and any extra photos of a saved recipe from http(s) image URLs, cover first, replacing the images it had; or removes all its images when `clear` is true. The URLs are stored, not downloaded.',
+      'Sets the cover image and any extra photos of a saved recipe from http(s) image URLs, cover first, replacing the images it had; or removes all its images when `clear` is true (and no `images` are given). The URLs are stored, not downloaded.',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -556,7 +627,7 @@ const TOOL_DEFINITIONS = [
   {
     name: 'annotate_recipe',
     description:
-      "Adds a personal note to a saved recipe without changing the original text. The note can be attached to an ingredient (`ingredient`), to a step (`step` number), or to the recipe as a whole when both are left out, for example 'use 3 avocados instead of 2'. Each call adds a new note.",
+      "Adds a personal note to a saved recipe without changing the original text. The note can be attached to one ingredient (`ingredient`), to one step (`step` number), or to the recipe as a whole when both are left out, for example 'use 3 avocados instead of 2'. Each call adds a new note.",
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -570,18 +641,21 @@ const TOOL_DEFINITIONS = [
           type: 'string',
           minLength: 1,
           maxLength: 5000,
+          pattern: NOT_BLANK,
           description: 'The note text.',
         },
         ingredient: {
           type: 'string',
           maxLength: 200,
-          description: 'Attach the note to this ingredient (by name).',
+          description:
+            'Attach the note to this ingredient (by name, as it is in the recipe). Not together with `step`.',
         },
         step: {
           type: 'integer',
           minimum: 1,
           maximum: 1000,
-          description: 'Attach the note to this step (1-based number).',
+          description:
+            'Attach the note to this step (1-based number). Not together with `ingredient`.',
         },
       },
       required: ['recipe', 'note'],
@@ -628,6 +702,10 @@ interface ToolPresentation {
  *   person wrote: tagging replaces tag values in the recipe file, and setting
  *   images replaces or clears the image list. Appending, creating and flipping a
  *   setting or a heart that the same tool can flip back are not destructive.
+ *   `import_recipe` can repair an earlier import by writing over it, but only a
+ *   file that holds no ingredients and no steps (anything with content is
+ *   returned as it is), so nothing a person wrote can be lost and it stays
+ *   `false`.
  * - `idempotentHint` is true when repeating the exact call changes nothing more.
  *   Tools that create a file or append an entry add another each time; tagging
  *   asks a model, whose answer can differ between calls.
@@ -743,7 +821,22 @@ const TOOL_PRESENTATION: Readonly<Record<ToolName, ToolPresentation>> = {
  */
 export const TOOLS = TOOL_DEFINITIONS.map((tool) => {
   const { title, annotations } = TOOL_PRESENTATION[tool.name];
-  return { ...tool, title, annotations: { title, ...annotations } };
+  // What sign-in a call needs, tool by tool: ChatGPT asks for each tool to say
+  // so even when the whole server asks the same of every caller. Written in
+  // `_meta` as well because some MCP libraries drop unknown top-level fields.
+  const securitySchemes = [
+    { type: 'oauth2', scopes: [scopeForTool(tool.name)] },
+  ] as const;
+  return {
+    ...tool,
+    title,
+    annotations: { title, ...annotations },
+    securitySchemes,
+    _meta: {
+      ...('_meta' in tool ? tool._meta : {}),
+      securitySchemes,
+    },
+  };
 });
 
 /** The advertised tool with this name, if there is one. */

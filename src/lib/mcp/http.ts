@@ -18,8 +18,10 @@ import type { User } from '../db/users';
 import { CORS_HEADERS } from '../oauth/http';
 import { wwwAuthenticate } from '../oauth/metadata';
 import { SCOPE_READ, hasScope, scopeForMessage } from '../oauth/scopes';
-import { getEnvSafe } from './env';
+import type { McpAuth } from './auth';
+import { ALLOWED_ORIGINS_SETTING, getEnvSafe } from './env';
 import {
+  ERROR_INTERNAL,
   ERROR_INVALID_REQUEST,
   ERROR_METHOD_NOT_FOUND,
   ERROR_PARSE,
@@ -40,6 +42,7 @@ import {
 import {
   MAX_BATCH,
   checkRateLimits,
+  chargeRefusedBody,
   liveRateLimitDeps,
   readJsonBody,
   type RateLimitDeps,
@@ -51,21 +54,39 @@ import {
 } from './server';
 
 /**
+ * Replies carry a person's recipes and are never meant to be stored by a shared
+ * cache; the MCP-level `cacheScope` hints tell a client what it may keep.
+ */
+const NO_STORE: Readonly<Record<string, string>> = {
+  'Cache-Control': 'no-store',
+};
+
+/** The extra browser origins the operator allowed (see {@link ALLOWED_ORIGINS_SETTING}). */
+function configuredOrigins(): string | undefined {
+  return getEnvSafe(ALLOWED_ORIGINS_SETTING);
+}
+
+/**
  * The refusal for a request from an origin we don't allow, or null. Browsers
  * send `Origin` on cross-site requests; an unknown one is turned away with a 403
- * before anything is read.
+ * before anything is read. `extraOrigins` is the `MCP_ALLOWED_ORIGINS` setting
+ * (read from the environment unless a caller passes it).
+ *
+ * The refusal carries no CORS headers on purpose: a page from a refused origin
+ * gets an opaque network error rather than a body it could read.
  */
 export function originRefusal(
   request: Request,
   selfOrigin: string,
+  extraOrigins: string | undefined = configuredOrigins(),
 ): NextResponse | null {
   const origin = request.headers.get('origin');
-  if (isAllowedOrigin(origin, selfOrigin, getEnvSafe('MCP_ALLOWED_ORIGINS'))) {
+  if (isAllowedOrigin(origin, selfOrigin, extraOrigins)) {
     return null;
   }
   return NextResponse.json(
     errorBody(ERROR_INVALID_REQUEST, 'Origin not allowed'),
-    { status: 403 },
+    { status: 403, headers: NO_STORE },
   );
 }
 
@@ -87,6 +108,7 @@ export function unauthorizedResponse(
       status: 401,
       headers: {
         ...cors,
+        ...NO_STORE,
         'WWW-Authenticate': wwwAuthenticate(
           origin,
           invalidToken ? { error: 'invalid_token' } : {},
@@ -96,12 +118,52 @@ export function unauthorizedResponse(
   );
 }
 
-/** CORS headers for an endpoint that checks origins: echo the caller's, not "*". */
-export function corsFor(request: Request): Readonly<Record<string, string>> {
+/** Header names as a browser lists them in a preflight: tokens separated by commas. */
+const REQUESTED_HEADERS = /^[A-Za-z0-9-]+(?:\s*,\s*[A-Za-z0-9-]+)*$/;
+
+/** The longest list of requested headers worth echoing back. */
+const MAX_REQUESTED_HEADERS_LENGTH = 512;
+
+/**
+ * CORS headers for an endpoint that checks origins: echo the caller's, not "*".
+ *
+ * A caller whose `Origin` is not allowed gets none at all, so this is safe to
+ * use on any reply, not only after an origin check. For an allowed origin a
+ * preflight's `Access-Control-Request-Headers` is echoed back (when it looks
+ * like a plain list of header names), so a client that sends one header more
+ * than the fixed list below (a future `Mcp-Param-*`, `Cache-Control`) is not
+ * stopped by an opaque preflight failure. That is safe because the endpoint is
+ * authenticated by a bearer token the page must hold, never by cookies.
+ */
+export function corsFor(
+  request: Request,
+  selfOrigin: string,
+  extraOrigins: string | undefined = configuredOrigins(),
+): Readonly<Record<string, string>> {
   const origin = request.headers.get('origin');
-  return origin
-    ? { ...CORS_HEADERS, 'Access-Control-Allow-Origin': origin, Vary: 'Origin' }
-    : CORS_HEADERS;
+  if (origin === null) {
+    return CORS_HEADERS;
+  }
+  if (!isAllowedOrigin(origin, selfOrigin, extraOrigins)) {
+    return {};
+  }
+  const requested = request.headers.get('access-control-request-headers');
+  const echoed =
+    requested !== null &&
+    requested.length <= MAX_REQUESTED_HEADERS_LENGTH &&
+    REQUESTED_HEADERS.test(requested)
+      ? requested
+      : undefined;
+  return {
+    ...CORS_HEADERS,
+    'Access-Control-Allow-Origin': origin,
+    ...(echoed === undefined
+      ? { Vary: 'Origin' }
+      : {
+          'Access-Control-Allow-Headers': echoed,
+          Vary: 'Origin, Access-Control-Request-Headers',
+        }),
+  };
 }
 
 /** A protocol refusal as an HTTP response. */
@@ -111,13 +173,16 @@ function refuse(
 ): NextResponse {
   return NextResponse.json(refusal.body, {
     status: refusal.status,
-    headers: { ...cors, ...refusal.headers },
+    headers: { ...cors, ...NO_STORE, ...refusal.headers },
   });
 }
 
 /** An empty 202: the answer to notifications, and to replies we have nothing to say to. */
 function accepted(cors: Readonly<Record<string, string>>): NextResponse {
-  return new NextResponse(null, { status: 202, headers: cors });
+  return new NextResponse(null, {
+    status: 202,
+    headers: { ...cors, ...NO_STORE },
+  });
 }
 
 /** A 400 for a body that cannot be taken as one message or a batch of them. */
@@ -180,6 +245,14 @@ function isUnknownMethod(reply: JsonRpcResponse): boolean {
  * revision), 202 for notifications and for replies a client sent us, 400 for a
  * malformed message or mismatched headers, 403 for a missing scope, 413 for an
  * oversized body and 429 (with `Retry-After`) for a caller over their limit.
+ * Every reply says `Cache-Control: no-store`.
+ *
+ * A body that cannot be read as messages at all (too large, not JSON, not a
+ * message, a batch of the wrong size) is refused without running anything, but
+ * it still counts once against the caller's general allowance: reading and
+ * parsing it was not free, and a token holder must not be able to send junk
+ * without end. Well-formed requests refused for their headers or scope cost
+ * nothing, so a client that is merely misconfigured is not punished twice.
  */
 export async function handleMcpPost(
   request: Request,
@@ -188,26 +261,28 @@ export async function handleMcpPost(
   origin: string,
   rate: RateLimitDeps = liveRateLimitDeps(),
 ): Promise<NextResponse> {
-  const cors = corsFor(request);
+  const cors = corsFor(request, origin);
+  // Refuse a body we could not read as messages, unless the junk has already
+  // used up the caller's allowance, in which case say so instead.
+  const unreadable = async (refusal: ProtocolRefusal) =>
+    refuse((await chargeRefusedBody(user, rate)) ?? refusal, cors);
   const body = await readJsonBody(request);
   if (body.kind === 'too-large') {
-    return refuse(
+    return unreadable(
       protocolRefusal({
         status: 413,
         code: ERROR_INVALID_REQUEST,
         message: 'Request body too large.',
       }),
-      cors,
     );
   }
   if (body.kind === 'unparseable') {
-    return refuse(
+    return unreadable(
       protocolRefusal({
         status: 400,
         code: ERROR_PARSE,
         message: 'Parse error',
       }),
-      cors,
     );
   }
 
@@ -217,15 +292,12 @@ export async function handleMcpPost(
     : [body.value];
   // A batch must be a sensible size (its messages run side by side).
   if (items.length === 0 || items.length > MAX_BATCH) {
-    return refuse(invalidRequest('Invalid Request'), cors);
+    return unreadable(invalidRequest('Invalid Request'));
   }
   const parsed = items.map(parseMessage);
-  const unreadable = parsed.find((p) => p.kind === 'invalid');
-  if (unreadable) {
-    return refuse(
-      isBatch ? withoutId(unreadable.refusal) : unreadable.refusal,
-      cors,
-    );
+  const invalid = parsed.find((p) => p.kind === 'invalid');
+  if (invalid) {
+    return unreadable(isBatch ? withoutId(invalid.refusal) : invalid.refusal);
   }
   // Replies to things a server asked are not ours to answer (we ask nothing).
   const messages = parsed.flatMap((p) => ('message' in p ? [p.message] : []));
@@ -254,10 +326,11 @@ export async function handleMcpPost(
   const replies = await Promise.all(
     messages.map((m) => handleMcpMessage(user, m)),
   );
+  const headers = { ...cors, ...NO_STORE };
   if (isBatch) {
     const answered = replies.filter((r) => r !== null);
     return answered.length > 0
-      ? NextResponse.json(answered, { headers: cors })
+      ? NextResponse.json(answered, { headers })
       : accepted(cors);
   }
   const [reply] = replies;
@@ -270,5 +343,103 @@ export async function handleMcpPost(
     message !== undefined && isModernRequest(message) && isUnknownMethod(reply)
       ? 404
       : 200;
-  return NextResponse.json(reply, { status, headers: cors });
+  return NextResponse.json(reply, { status, headers });
+}
+
+/**
+ * How a request is checked for a bearer token: the real one looks the token up
+ * (see `authenticateMcpRequest`), the conformance harness answers with a fixed
+ * user.
+ */
+export type Authenticate = (
+  request: Request,
+  origin: string,
+) => Promise<McpAuth>;
+
+/** Who got in: the user and the scopes they approved. */
+interface Admitted {
+  readonly user: Readonly<User>;
+  readonly scope: readonly string[];
+}
+
+/**
+ * The 503 for a fault while checking who is calling (a database that cannot be
+ * reached): a JSON-RPC internal error with `Retry-After`, so a client backs off
+ * and tries again instead of treating a bare 500 page as the final word. Nothing
+ * of the fault itself is sent.
+ */
+function authFault(cors: Readonly<Record<string, string>>): NextResponse {
+  return NextResponse.json(
+    errorBody(ERROR_INTERNAL, 'Something went wrong on the server.'),
+    {
+      status: 503,
+      headers: { ...cors, ...NO_STORE, 'Retry-After': '5' },
+    },
+  );
+}
+
+/**
+ * Let a request in, or answer it: 403 for an origin that is not allowed, 401
+ * for a missing or invalid bearer token, 503 if the token could not be checked.
+ */
+async function admit(
+  request: Request,
+  origin: string,
+  authenticate: Authenticate,
+): Promise<Admitted | NextResponse> {
+  const refused = originRefusal(request, origin);
+  if (refused) {
+    return refused;
+  }
+  const cors = corsFor(request, origin);
+  try {
+    const auth = await authenticate(request, origin);
+    return auth.kind === 'ok'
+      ? auth
+      : unauthorizedResponse(origin, auth.kind === 'invalid-token', cors);
+  } catch (error) {
+    console.error('[mcp] could not check the bearer token:', error);
+    return authFault(cors);
+  }
+}
+
+/**
+ * The whole of the MCP endpoint, from origin check to reply, for any method:
+ * `OPTIONS` is the CORS preflight (204, or 403 for an origin that is not
+ * allowed), `POST` is a JSON-RPC message for a signed-in caller, and anything
+ * else (`GET`, `DELETE`) gets 405 with `Allow: POST, OPTIONS` once the caller is
+ * known, because the server has no event stream and no session to end.
+ *
+ * `POST /api/mcp` and the conformance harness both call this, so the harness
+ * cannot drift from what runs in production. `rate` is where the counters live.
+ */
+export async function respondToMcp(
+  request: Request,
+  origin: string,
+  authenticate: Authenticate,
+  rate: RateLimitDeps = liveRateLimitDeps(),
+): Promise<NextResponse> {
+  if (request.method === 'OPTIONS') {
+    return (
+      originRefusal(request, origin) ??
+      new NextResponse(null, {
+        status: 204,
+        headers: { ...corsFor(request, origin), Allow: 'POST, OPTIONS' },
+      })
+    );
+  }
+  const admitted = await admit(request, origin, authenticate);
+  if (admitted instanceof NextResponse) {
+    return admitted;
+  }
+  return request.method === 'POST'
+    ? handleMcpPost(request, admitted.user, admitted.scope, origin, rate)
+    : new NextResponse(null, {
+        status: 405,
+        headers: {
+          ...corsFor(request, origin),
+          ...NO_STORE,
+          Allow: 'POST, OPTIONS',
+        },
+      });
 }

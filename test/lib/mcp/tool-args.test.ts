@@ -1,8 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  canonicalArguments,
   limitArg,
   numberArg,
+  offsetArg,
   stringArg,
   stringListArg,
 } from '../../../src/lib/mcp/tool-args';
@@ -50,5 +52,92 @@ describe('limitArg', () => {
 
   it('rounds down to a whole number', () => {
     expect(limitArg(2.9)).toBe(2);
+  });
+});
+
+describe('offsetArg', () => {
+  it('defaults to the start and never goes below it', () => {
+    expect(offsetArg(undefined)).toBe(0);
+    expect(offsetArg(-5)).toBe(0);
+    expect(offsetArg('abc')).toBe(0);
+    expect(offsetArg(null)).toBe(0);
+  });
+
+  it('rounds down to a whole number', () => {
+    expect(offsetArg(12)).toBe(12);
+    expect(offsetArg('24')).toBe(24);
+    expect(offsetArg(2.9)).toBe(2);
+  });
+});
+
+describe('canonicalArguments', () => {
+  it.each([
+    ['get_recipe', { name: 'pie' }, { recipe: 'pie' }],
+    ['find_similar', { name: 'pie' }, { recipe: 'pie' }],
+    [
+      'browse_recipes',
+      { diet: 'Gluten-free' },
+      { dietary_needs: 'Gluten-free' },
+    ],
+  ])(
+    'renames the older spelling of an argument of %s',
+    (tool, args, expected) => {
+      expect(canonicalArguments(tool, args)).toEqual(expected);
+    },
+  );
+
+  it('keeps every other argument as it is', () => {
+    expect(
+      canonicalArguments('browse_recipes', {
+        diet: 'x',
+        limit: 3,
+        cuisine: 'y',
+      }),
+    ).toEqual({ dietary_needs: 'x', limit: 3, cuisine: 'y' });
+  });
+
+  it('leaves both spellings alone when both are given, so the check can refuse the older one', () => {
+    expect(
+      canonicalArguments('get_recipe', { name: 'a', recipe: 'b' }),
+    ).toEqual({ name: 'a', recipe: 'b' });
+  });
+
+  it('does not rename an argument of a tool that never had the older spelling', () => {
+    expect(canonicalArguments('add_recipe', { name: 'Soup' })).toEqual({
+      name: 'Soup',
+    });
+    expect(canonicalArguments('constructor', { name: 'x' })).toEqual({
+      name: 'x',
+    });
+  });
+
+  it('turns the pantry given as one piece of text into a list of one', () => {
+    expect(
+      canonicalArguments('recipes_from_ingredients', {
+        ingredients: '3 tomatoes and 400 g pasta',
+      }),
+    ).toEqual({ ingredients: ['3 tomatoes and 400 g pasta'] });
+  });
+
+  it('leaves a list, and any other value, for the check to judge', () => {
+    expect(
+      canonicalArguments('recipes_from_ingredients', { ingredients: ['a'] }),
+    ).toEqual({ ingredients: ['a'] });
+    expect(
+      canonicalArguments('recipes_from_ingredients', { ingredients: 5 }),
+    ).toEqual({ ingredients: 5 });
+    expect(canonicalArguments('browse_recipes', { limit: '5' })).toEqual({
+      limit: '5',
+    });
+  });
+
+  it('carries a key called __proto__ as an ordinary property', () => {
+    const args = JSON.parse('{"__proto__": 1, "name": "x"}') as Record<
+      string,
+      unknown
+    >;
+    const result = canonicalArguments('get_recipe', args);
+    expect(Object.keys(result).toSorted()).toEqual(['__proto__', 'recipe']);
+    expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
   });
 });

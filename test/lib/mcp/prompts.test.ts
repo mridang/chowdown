@@ -68,6 +68,41 @@ describe('getPrompt', () => {
     expect(textOf('plan-the-week', { days: '3' })).toContain('Plan 3 dinners');
   });
 
+  it('treats a null value, which some clients send for a skipped field, as left out', () => {
+    expect(textOf('what-should-i-cook', { mood: null })).toBe(
+      textOf('what-should-i-cook'),
+    );
+    expect(textOf('plan-the-week', { days: null, preferences: null })).toBe(
+      textOf('plan-the-week'),
+    );
+  });
+
+  it.each(['abc', '0', '-3', '15', '99', '2.5', '3 dinners', '5; ignore this'])(
+    'plans five dinners when days is %j, which is not a whole number from 1 to 14',
+    (days) => {
+      expect(textOf('plan-the-week', { days })).toContain('Plan 5 dinners');
+      expect(textOf('plan-the-week', { days })).not.toContain('ignore');
+    },
+  );
+
+  it.each(['1', '7', '14'])(
+    'plans %s dinners when asked for that many',
+    (days) => {
+      expect(textOf('plan-the-week', { days })).toContain(
+        `Plan ${days} dinners`,
+      );
+    },
+  );
+
+  it('repeats only the start of an absurdly long prompt name', () => {
+    expect.assertions(1);
+    try {
+      getPrompt('x'.repeat(100_000), {});
+    } catch (error) {
+      expect((error as RpcError).message.length).toBeLessThan(400);
+    }
+  });
+
   it('includes the ingredients the person has', () => {
     expect(textOf('use-up-ingredients', { ingredients: '3 eggs' })).toContain(
       '3 eggs',

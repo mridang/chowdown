@@ -79,6 +79,28 @@ describe('RecipeCardScreen', () => {
     expect(screen(state, false)).not.toContain('Method');
   });
 
+  it('announces the recipe to screen readers when it arrives', () => {
+    expect(screen({ phase: 'ready', data: RECIPE })).toContain(
+      'Recipe loaded: Pasta al Limone',
+    );
+    expect(screen({ phase: 'waiting' })).not.toContain('Recipe loaded');
+    expect(screen({ phase: 'waiting' })).toContain('aria-live="polite"');
+  });
+
+  it('points at the host’s close control when it would not leave fullscreen', () => {
+    const out = html(
+      <RecipeCardScreen
+        state={{ phase: 'ready', data: RECIPE }}
+        expanded
+        onExpand={noop}
+        onCollapse={noop}
+        closeHint
+        onOpenLink={undefined}
+      />,
+    );
+    expect(out).toContain('Use the close button in the header');
+  });
+
   it('includes the stylesheet', () => {
     expect(screen({ phase: 'connecting' })).toContain('<style>');
   });

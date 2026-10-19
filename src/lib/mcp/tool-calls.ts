@@ -3,9 +3,13 @@
  *
  * What each MCP tool does when an assistant calls it. A call arrives as a tool
  * name and untrusted JSON arguments. This module first checks the call against
- * the tool's own input schema (an unknown tool, or arguments that do not fit,
- * are refused as protocol errors before anything runs), then works on the
- * user's Drive and cached recipes and answers with a {@link ToolResult}.
+ * the tool's own input schema before anything runs, then works on the user's
+ * Drive and cached recipes and answers with a {@link ToolResult}. A call that
+ * names no such tool, or whose envelope is malformed, is a protocol error; a
+ * call whose arguments do not fit the schema is a mistake the assistant can fix
+ * and is answered as an `isError` result that says how (the MCP spec files input
+ * validation under tool execution errors, so that a host shows the model what
+ * to correct).
  *
  * Every tool that touches recipe files goes through a {@link ToolContext}: the
  * signed-in user, their Drive access, and four small file operations. The other
@@ -37,6 +41,7 @@ import {
   removeMetadata,
   uncuratedFilename,
 } from '../recipe/cook-text';
+import { parseRecipe } from '../recipe/cooklang';
 import { importRecipe } from '../recipe/import-recipe';
 import { resolveFile } from '../recipe/match';
 import { validImageUrls, withImages } from '../recipe/media';
@@ -45,14 +50,14 @@ import { parseVector, topSimilar } from '../recipe/similar';
 import { isUnitSystem, type UnitSystem } from '../recipe/units';
 import { SITE_URL } from '../site';
 import { getDatabase } from '../util';
-import { isJsonObject, validateJson } from './json-schema';
+import { isJsonObject, validateJson, type JsonSchema } from './json-schema';
 import {
   SCENARIO_TOOLS,
   runScenarioTool,
   type ScenarioToolName,
 } from './scenarios';
-import { textArg } from './tool-args';
-import { toolNamed } from './tool-definitions';
+import { canonicalArguments, numberArg, offsetArg, textArg } from './tool-args';
+import { PAGE_DEFAULT, PAGE_MAX, toolNamed } from './tool-definitions';
 import {
   BackendFailure,
   InvalidToolArguments,
@@ -66,6 +71,7 @@ import {
   textResult,
   type ToolResult,
 } from './tool-results';
+import { nextPageHint, pastTheEnd, plainTitle, rangeText } from './tool-text';
 import {
   EMBEDDINGS_PER_CALL,
   guardFileOps,
@@ -115,9 +121,18 @@ type Handler = (
 /** How many close names to offer when a recipe is not found. */
 const SUGGESTION_COUNT = 5;
 
+/**
+ * A recipe's name as a sentence quotes it. Names are other people's words (a
+ * file name in Drive, a title from an imported page), so they are flattened to
+ * one line first (see {@link plainTitle}).
+ */
+function label(file: DriveFile): string {
+  return plainTitle(recipeDisplayName(file.name));
+}
+
 /** A recipe as "Name (id: abc)", the way messages list the candidates. */
 function candidate(file: DriveFile): string {
-  return `${recipeDisplayName(file.name)} (id: ${file.id})`;
+  return `${label(file)} (id: ${file.id})`;
 }
 
 /**
@@ -263,16 +278,98 @@ function indexingNote(waiting: number): string {
     : '';
 }
 
-/** Save `updated` over a recipe, refresh its cached copy, and show it as a card. */
-async function saveAndShow(
+/** What an edit to a recipe's text decides: the new text, or an answer to give instead of saving. */
+type Edited = { readonly text: string } | { readonly refusal: ToolResult };
+
+/** How many times an edit is worked out afresh when the file changes under it. */
+const EDIT_ATTEMPTS = 5;
+
+/** How often each line occurs in a text, for telling what an edit added. */
+function lineCounts(text: string): ReadonlyMap<string, number> {
+  return new Map(
+    [...Map.groupBy(text.split('\n'), (line) => line)].map(([line, same]) => [
+      line,
+      same.length,
+    ]),
+  );
+}
+
+/**
+ * Whether what an edit added is still in the file after it was written. `written`
+ * is `current` plus the edit; `latest` is what the file holds now. Every line the
+ * edit added must be there as often as `written` has it, which is the case when
+ * nobody else wrote in between, and when somebody did but built on our text. If
+ * somebody wrote from the text we started from, their save replaced ours and the
+ * lines are missing.
+ */
+function editSurvived(
+  current: string,
+  written: string,
+  latest: string,
+): boolean {
+  const before = lineCounts(current);
+  const now = lineCounts(latest);
+  return [...lineCounts(written)].every(
+    ([line, count]) =>
+      count <= (before.get(line) ?? 0) || (now.get(line) ?? 0) >= count,
+  );
+}
+
+/**
+ * Change a recipe's text and show the result as a card.
+ *
+ * Every write tool is a read, a change to the text and a write of the whole
+ * file, and Drive cannot write "only if unchanged", so two edits that overlap
+ * (assistants routinely issue several tool calls at once) would lose one of them.
+ * Without a lock to take, this checks twice and redoes the edit when either check
+ * fails, so that an edit is not lost without anyone knowing:
+ *
+ * - just before writing, the file is read again; if it is no longer what the edit
+ *   was worked out from, the edit is worked out again from the new text;
+ * - just after writing, it is read once more; if the lines the edit added are not
+ *   there, another save replaced ours, and the edit is worked out again from
+ *   what the file holds now. The other save notices the same if it was the one
+ *   replaced, so two overlapping edits end with both in the file.
+ *
+ * It gives up after {@link EDIT_ATTEMPTS} tries with an error that says the
+ * outcome is not certain. This narrows the window for losing an edit to the
+ * moments between a check and the write that follows it, and does not close it;
+ * Drive offers nothing that could.
+ *
+ * @param edit Works out the new text from the current text, or refuses (an
+ *   answer to return as it is, with nothing written). It may be run more than
+ *   once, so it must not have effects of its own.
+ * @param message The sentence that goes with the card.
+ */
+async function editRecipe(
   ctx: ToolContext,
   file: DriveFile,
-  updated: string,
+  edit: (current: string) => Promise<Edited> | Edited,
   message: string,
 ): Promise<ToolResult> {
-  await ctx.files.update(file.id, updated);
-  await ctx.files.index(file.id, file.name, updated);
-  return recipeCardResult(file.id, file.name, updated, message, ctx.system);
+  const attempt = async (left: number): Promise<ToolResult> => {
+    if (left === 0) {
+      return errorResult(
+        `"${label(file)}" was being changed somewhere else while this edit was made, so it is not certain it was saved. Look at the recipe, and make the change again if it is missing.`,
+      );
+    }
+    const current = await ctx.files.read(file.id);
+    const edited = await edit(current);
+    if ('refusal' in edited) {
+      return edited.refusal;
+    }
+    if ((await ctx.files.read(file.id)) !== current) {
+      return attempt(left - 1);
+    }
+    await ctx.files.update(file.id, edited.text);
+    const latest = await ctx.files.read(file.id);
+    if (!editSurvived(current, edited.text, latest)) {
+      return attempt(left - 1);
+    }
+    await ctx.files.index(file.id, file.name, latest);
+    return recipeCardResult(file.id, file.name, latest, message, ctx.system);
+  };
+  return attempt(EDIT_ATTEMPTS);
 }
 
 /** Make a new recipe file, cache it, and show it as a card. */
@@ -293,13 +390,35 @@ async function createAndShow(
   );
 }
 
-/** `list_recipes`: the names of every saved recipe. */
-const listRecipes: Handler = async (_args, ctx) => {
+/** A page of a long list: where it starts and how many it may hold. */
+interface PageWindow {
+  readonly offset: number;
+  readonly limit: number;
+}
+
+/** The page the `limit` and `offset` arguments ask for, with `limit` kept to 1..`max`. */
+function pageWindow(args: Args, fallback: number, max: number): PageWindow {
+  const limit = Math.floor(numberArg(args['limit']) ?? fallback);
+  return {
+    offset: offsetArg(args['offset']),
+    limit: Math.min(Math.max(limit, 1), max),
+  };
+}
+
+/** `list_recipes`: the saved recipes, a page at a time. */
+const listRecipes: Handler = async (args, ctx) => {
   const files = await ctx.files.list();
-  return recipeListResult(
-    files,
-    files.length ? `Showing your ${files.length} recipes.` : 'No recipes yet.',
-  );
+  const { offset, limit } = pageWindow(args, PAGE_DEFAULT, PAGE_MAX);
+  const page = files.slice(offset, offset + limit);
+  const message =
+    files.length === 0
+      ? 'No recipes yet.'
+      : page.length === 0
+        ? pastTheEnd(files.length, offset, 'recipe')
+        : page.length === files.length
+          ? `Showing your ${files.length} recipes.`
+          : `Showing recipes ${rangeText(files.length, offset, page.length)}.${nextPageHint(files.length, offset, page.length)}`;
+  return recipeListResult(page, message);
 };
 
 /** `search_recipes`: recipes whose name contains the query, accents and case ignored. */
@@ -309,13 +428,17 @@ const searchRecipes: Handler = async (args, ctx) => {
   const hits = (await ctx.files.list()).filter((f) =>
     foldText(recipeDisplayName(f.name)).includes(query),
   );
-  return recipeListResult(
-    hits,
-    hits.length
-      ? `Found ${countOf(hits.length, 'recipe')} matching "${queryRaw}".`
-      : `No recipes match "${queryRaw}".`,
-    queryRaw,
-  );
+  const { offset, limit } = pageWindow(args, PAGE_DEFAULT, PAGE_MAX);
+  const page = hits.slice(offset, offset + limit);
+  const message =
+    hits.length === 0
+      ? `No recipes match "${queryRaw}".`
+      : page.length === 0
+        ? pastTheEnd(hits.length, offset, 'matching recipe')
+        : page.length === hits.length
+          ? `Found ${countOf(hits.length, 'recipe')} matching "${queryRaw}".`
+          : `Found ${countOf(hits.length, 'recipe')} matching "${queryRaw}"; showing ${rangeText(hits.length, offset, page.length)}.${nextPageHint(hits.length, offset, page.length)}`;
+  return recipeListResult(page, message, queryRaw);
 };
 
 /** `find_recipes`: semantic search by what the recipes are about. */
@@ -338,7 +461,7 @@ const findRecipes: Handler = async (args, ctx, services) => {
 /** `find_similar`: the saved recipes closest to a named one. */
 const findSimilar: Handler = async (args, ctx, services) => {
   const files = await ctx.files.list();
-  return withRecipeIn(files, args['name'], 'name', 'read', async (file) => {
+  return withRecipeIn(files, args['recipe'], 'recipe', 'read', async (file) => {
     const { rows, waiting } = await services.searchIndex(
       ctx.user,
       files,
@@ -351,19 +474,19 @@ const findSimilar: Handler = async (args, ctx, services) => {
     }
     return recipeListResult(
       topSimilar(rows, parseVector(self.vector), files, 6, file.id),
-      `Recipes similar to "${recipeDisplayName(file.name)}".${indexingNote(waiting)}`,
+      `Recipes similar to "${label(file)}".${indexingNote(waiting)}`,
     );
   });
 };
 
 /** `get_recipe`: one recipe, as a card. */
 const getRecipe: Handler = (args, ctx) =>
-  withRecipe(ctx, args['name'], 'name', 'read', async (file, others) =>
+  withRecipe(ctx, args['recipe'], 'recipe', 'read', async (file, others) =>
     recipeCardResult(
       file.id,
       file.name,
       await ctx.files.read(file.id),
-      `Showing the "${recipeDisplayName(file.name)}" recipe.${alsoMatchingNote(args['name'], others)}`,
+      `Showing the "${label(file)}" recipe.${alsoMatchingNote(args['recipe'], others)}`,
       ctx.system,
     ),
   );
@@ -395,13 +518,13 @@ const importRecipeTool: Handler = async (args, ctx, services) => {
         'Open the page, copy the actual recipe text, and call import_recipe again with it as `content`.',
     );
   }
-  const label = recipeDisplayName(outcome.name);
+  const name = plainTitle(recipeDisplayName(outcome.name));
   const message =
     outcome.kind === 'existing'
-      ? `"${label}" is already in your recipes.`
+      ? `"${name}" is already in your recipes.`
       : outcome.kind === 'repaired'
-        ? `Repaired "${label}" — the earlier import had no ingredients or steps.`
-        : `Imported "${label}".`;
+        ? `Repaired "${name}" — the earlier import had no ingredients or steps.`
+        : `Imported "${name}".`;
   return recipeCardResult(
     outcome.id,
     outcome.name,
@@ -411,77 +534,194 @@ const importRecipeTool: Handler = async (args, ctx, services) => {
   );
 };
 
+/** How many recipes of the same name are read to see whether one is the very recipe being saved. */
+const NAMESAKES_COMPARED = 3;
+
+/**
+ * A recipe's text without its `>>` metadata lines. Tagging adds and rewrites
+ * those after a recipe is saved, so two copies of the same recipe are compared
+ * on what is left: the ingredients, method and comments.
+ */
+function bodyOf(text: string): string {
+  return text
+    .split(/\r?\n/)
+    .filter((line) => !/^\s*>>/.test(line))
+    .map((line) => line.trimEnd())
+    .join('\n')
+    .trim();
+}
+
+/** The recipes whose name is `name`, ignoring case, accents and the uncurated marker. */
+function namesakes(
+  files: readonly DriveFile[],
+  name: string,
+): readonly DriveFile[] {
+  const wanted = foldText(recipeDisplayName(name));
+  return files.filter((f) => foldText(recipeDisplayName(f.name)) === wanted);
+}
+
+/**
+ * Save a new recipe unless that very recipe is already there. Assistants and
+ * the gateways in front of them repeat a call that seems to have timed out, and
+ * each repeat would otherwise add another file. A recipe of the same name whose
+ * body matches is returned as it is; a recipe of the same name with a different
+ * body is a different recipe (people do keep two), so it is saved and the
+ * result says another one exists.
+ *
+ * @param name The dish name, as given.
+ * @param filename The name the new file is saved under.
+ * @param content What the file would hold, before tagging.
+ * @param prepare Works out what is written (tagging may add metadata).
+ * @param said What to say after saving a new file.
+ */
+async function saveUnlessThere(
+  ctx: ToolContext,
+  name: string,
+  filename: string,
+  content: string,
+  prepare: () => Promise<string>,
+  said: (file: DriveFile) => string,
+): Promise<ToolResult> {
+  const same = namesakes(await ctx.files.list(), name);
+  const copies = await Promise.all(
+    same.slice(0, NAMESAKES_COMPARED).map(async (file) => ({
+      file,
+      text: await ctx.files.read(file.id),
+    })),
+  );
+  const already = copies.find((copy) => bodyOf(copy.text) === bodyOf(content));
+  if (already) {
+    return recipeCardResult(
+      already.file.id,
+      already.file.name,
+      already.text,
+      `"${label(already.file)}" is already saved with this recipe, so nothing new was added.`,
+      ctx.system,
+    );
+  }
+  const other = same.at(0);
+  return createAndShow(ctx, filename, await prepare(), (file) =>
+    other
+      ? `${said(file)} A different recipe with the same name already exists (${candidate(other)}), so there are now ${same.length + 1}.`
+      : said(file),
+  );
+}
+
 /** `add_recipe`: save a recipe the assistant already wrote as Cooklang. */
-const addRecipe: Handler = async (args, ctx, services) => {
+const addRecipe: Handler = (args, ctx, services) => {
   const dish = textArg(args['name']);
-  const tagged = await services.tagBestEffort(textArg(args['content']), dish);
-  return createAndShow(
+  const content = textArg(args['content']);
+  return saveUnlessThere(
     ctx,
     dish,
-    tagged,
-    (file) => `Saved "${recipeDisplayName(file.name)}".`,
+    dish,
+    content,
+    () => services.tagBestEffort(content, dish),
+    (file) => `Saved "${label(file)}".`,
   );
 };
 
 /** `capture_idea`: keep a vague wish as an uncurated stub to turn into a recipe later. */
-const captureIdea: Handler = async (args, ctx) => {
+const captureIdea: Handler = (args, ctx) => {
   const dish = textArg(args['name']);
   const body = buildStubSource({
     name: dish,
     prompt: textArg(args['prompt']),
     draft: args['draft'] ? textArg(args['draft']) : undefined,
   });
-  return createAndShow(
+  return saveUnlessThere(
     ctx,
+    dish,
     uncuratedFilename(dish),
     body,
-    () => `Saved "${dish}" as an idea to curate later.`,
+    async () => body,
+    () => `Saved "${plainTitle(dish)}" as an idea to curate later.`,
   );
 };
 
+/** One day, in milliseconds. */
+const DAY_MS = 86_400_000;
+
+/**
+ * The day a cooking-log entry is for: today when none is given, otherwise the
+ * date as a UTC day. Undefined for a date that does not exist (the 30th of
+ * February) or lies in the future. Tomorrow's date, in UTC, is allowed, because
+ * for someone ahead of UTC it is already today.
+ *
+ * @param now The present moment; a test passes its own.
+ */
+function cookedOn(date: string | undefined, now: Date): Date | undefined {
+  if (date === undefined) {
+    return now;
+  }
+  const day = new Date(`${date}T00:00:00Z`);
+  const real =
+    !Number.isNaN(day.getTime()) && day.toISOString().slice(0, 10) === date;
+  return real && day.getTime() < now.getTime() + DAY_MS ? day : undefined;
+}
+
 /** `log_cooking`: add a dated note about a time the recipe was cooked. */
 const logCooking: Handler = (args, ctx) =>
-  withRecipe(ctx, args['recipe'], 'recipe', 'write', async (file) =>
-    saveAndShow(
+  withRecipe(ctx, args['recipe'], 'recipe', 'write', async (file) => {
+    const note = textArg(args['note']).trim();
+    // The schema refuses a blank note; this keeps an empty line out of the
+    // user's file even if a schema is ever loosened.
+    if (!note) {
+      return errorResult('What should the cooking-log entry say?');
+    }
+    const when = cookedOn(
+      args['date'] === undefined ? undefined : textArg(args['date']),
+      new Date(),
+    );
+    if (!when) {
+      return errorResult(
+        `\`date\` must be a real day that is not in the future, as YYYY-MM-DD; "${textArg(args['date'])}" is not. Nothing was changed.`,
+      );
+    }
+    return editRecipe(
       ctx,
       file,
-      appendCookingLog(await ctx.files.read(file.id), textArg(args['note'])),
-      `Logged your note on "${recipeDisplayName(file.name)}".`,
-    ),
-  );
+      (current) => ({ text: appendCookingLog(current, note, when) }),
+      `Logged your note on "${label(file)}".`,
+    );
+  });
 
 /** `favourite_recipe`: heart a recipe, or take the heart off. */
 const favouriteRecipe: Handler = (args, ctx, services) =>
   withRecipe(ctx, args['recipe'], 'recipe', 'write', async (file) => {
     const on = args['favourite'] !== false;
     await services.setFavourite(ctx.user.id, file.id, on);
-    const label = recipeDisplayName(file.name);
     return textResult(
       on
-        ? `Added "${label}" to your favourites.`
-        : `Removed "${label}" from your favourites.`,
+        ? `Added "${label(file)}" to your favourites.`
+        : `Removed "${label(file)}" from your favourites.`,
     );
   });
 
 /** `tag_recipe`: classify a recipe and write the tags (and a missing cover) onto it. */
 const tagRecipe: Handler = (args, ctx, services) =>
-  withRecipe(ctx, args['recipe'], 'recipe', 'write', async (file) => {
-    const original = await ctx.files.read(file.id);
-    const { source: tagged, tags } = await services.tag(original, file.name);
-    // Also backfill a missing cover from the recipe's source page.
-    const updated = await services.addCover(tagged);
-    if (tags.length === 0 && updated === original) {
-      return errorResult(
-        `Couldn't confidently tag "${recipeDisplayName(file.name)}", so nothing was changed.`,
-      );
-    }
-    return saveAndShow(
+  withRecipe(ctx, args['recipe'], 'recipe', 'write', async (file) =>
+    editRecipe(
       ctx,
       file,
-      updated,
-      `Tagged "${recipeDisplayName(file.name)}".`,
-    );
-  });
+      async (original) => {
+        const { source: tagged, tags } = await services.tag(
+          original,
+          file.name,
+        );
+        // Also backfill a missing cover from the recipe's source page.
+        const updated = await services.addCover(tagged);
+        return tags.length === 0 && updated === original
+          ? {
+              refusal: errorResult(
+                `Couldn't confidently tag "${label(file)}", so nothing was changed.`,
+              ),
+            }
+          : { text: updated };
+      },
+      `Tagged "${label(file)}".`,
+    ),
+  );
 
 /** `set_recipe_images`: set the cover and extra photos of a recipe, or remove them. */
 const setRecipeImages: Handler = (args, ctx) =>
@@ -490,18 +730,25 @@ const setRecipeImages: Handler = (args, ctx) =>
       ? args['images'].map(String)
       : [];
     const clear = args['clear'] === true;
+    if (clear && urls.length > 0) {
+      return errorResult(
+        'Pass either `images` to set them or `clear: true` to remove them, not both. Nothing was changed.',
+      );
+    }
     if (!clear && validImageUrls(urls).length === 0) {
       return errorResult('Pass at least one http(s) image URL in `images`.');
     }
-    const original = await ctx.files.read(file.id);
-    const label = recipeDisplayName(file.name);
-    return saveAndShow(
+    return editRecipe(
       ctx,
       file,
-      clear ? removeMetadata(original, 'images') : withImages(original, urls),
+      (current) => ({
+        text: clear
+          ? removeMetadata(current, 'images')
+          : withImages(current, urls),
+      }),
       clear
-        ? `Removed the images from "${label}".`
-        : `Set the cover for "${label}".`,
+        ? `Removed the images from "${label(file)}".`
+        : `Set the cover for "${label(file)}".`,
     );
   });
 
@@ -514,18 +761,71 @@ interface NoteTarget {
   readonly where: string;
 }
 
-/** Work out where an `annotate_recipe` call wants its note: an ingredient wins over a step. */
+/**
+ * Work out where an `annotate_recipe` call wants its note. A call that gives
+ * both an ingredient and a step is refused before this is asked (see
+ * {@link annotateRecipe}); if both ever got here the ingredient would win.
+ */
 export function noteTarget(args: Args): NoteTarget {
   const ingredient = args['ingredient']
     ? textArg(args['ingredient']).trim()
     : '';
   const step = args['step'];
   if (ingredient) {
-    return { scope: 'ingredient', key: ingredient, where: ` on ${ingredient}` };
+    return {
+      scope: 'ingredient',
+      key: ingredient,
+      where: ` on ${plainTitle(ingredient)}`,
+    };
   }
   return step != null
     ? { scope: 'step', key: String(step), where: ` on step ${String(step)}` }
     : { scope: 'general', key: '', where: '' };
+}
+
+/** How many of a recipe's ingredients an error lists when the one asked for is not among them. */
+const INGREDIENTS_LISTED = 12;
+
+/**
+ * What is wrong with attaching a note to this ingredient or step of this recipe,
+ * if anything: a note on something the recipe does not have would be filed under
+ * "general" with a label, which is not what was asked for. Says what the recipe
+ * does have, so the assistant can correct the call.
+ */
+function noteTargetProblem(
+  recipe: Readonly<
+    Pick<ReturnType<typeof parseRecipe>, 'ingredients' | 'steps'>
+  >,
+  target: Readonly<NoteTarget>,
+): string | undefined {
+  if (target.scope === 'step') {
+    const count = recipe.steps.length;
+    return Number(target.key) > count
+      ? count === 0
+        ? 'That recipe has no numbered steps, so a note cannot be attached to one. Nothing was changed; leave `step` out for a note on the whole recipe.'
+        : `That recipe has ${countOf(count, 'step')}, so there is no step ${target.key}. Nothing was changed.`
+      : undefined;
+  }
+  if (target.scope === 'ingredient') {
+    const wanted = foldText(target.key);
+    const fits = recipe.ingredients.some((ingredient) => {
+      const name = foldText(ingredient.name);
+      return name.includes(wanted) || wanted.includes(name);
+    });
+    return fits
+      ? undefined
+      : `That recipe has no ingredient called "${plainTitle(target.key)}". ` +
+          (recipe.ingredients.length > 0
+            ? `Its ingredients are: ${recipe.ingredients
+                .slice(0, INGREDIENTS_LISTED)
+                .map((i) => plainTitle(i.name))
+                .join(
+                  ', ',
+                )}${recipe.ingredients.length > INGREDIENTS_LISTED ? ', and more' : ''}. `
+            : '') +
+          'Nothing was changed; leave `ingredient` out for a note on the whole recipe.';
+  }
+  return undefined;
 }
 
 /** `annotate_recipe`: add a personal note without changing the original recipe. */
@@ -535,17 +835,32 @@ const annotateRecipe: Handler = (args, ctx) =>
     if (!noteText) {
       return errorResult('What note should I add?');
     }
-    const { scope, key, where } = noteTarget(args);
-    const updated = appendNote(await ctx.files.read(file.id), {
-      scope,
-      key,
-      text: noteText,
-    });
-    return saveAndShow(
+    const hasIngredient = Boolean(textArg(args['ingredient']).trim());
+    if (hasIngredient && args['step'] != null) {
+      return errorResult(
+        'A note goes in one place: give either `ingredient` or `step`, not both. Nothing was changed.',
+      );
+    }
+    const target = noteTarget(args);
+    return editRecipe(
       ctx,
       file,
-      updated,
-      `Added your note${where} to "${recipeDisplayName(file.name)}".`,
+      (current) => {
+        const problem = noteTargetProblem(
+          parseRecipe(current, file.name),
+          target,
+        );
+        return problem
+          ? { refusal: errorResult(problem) }
+          : {
+              text: appendNote(current, {
+                scope: target.scope,
+                key: target.key,
+                text: noteText,
+              }),
+            };
+      },
+      `Added your note${target.where} to "${label(file)}".`,
     );
   });
 
@@ -611,26 +926,50 @@ async function runScenario(
   );
 }
 
+/** How a tool is told apart from its arguments when the arguments are checked. */
+type ToolSchema = Readonly<{ name: string; inputSchema: JsonSchema }>;
+
+/** The arguments a tool takes, as one line the assistant can follow: "recipe (required), note (required), step". */
+function usage(schema: JsonSchema): string {
+  const required = new Set(schema.required ?? []);
+  const names = Object.keys(schema.properties ?? {}).map((key) =>
+    required.has(key) ? `${key} (required)` : key,
+  );
+  return names.length > 0
+    ? `The arguments are: ${names.join(', ')}.`
+    : 'This tool takes no arguments.';
+}
+
+/** The arguments of a call that passed the check, or the answer to give when they did not. */
+type Checked = { readonly args: Args } | { readonly refusal: ToolResult };
+
 /**
  * The arguments of a call, checked against the tool's input schema.
  *
- * @throws {InvalidToolArguments} If `arguments` is not an object or does not fit
- *   the schema (missing or unknown properties, wrong types, values out of range).
+ * Arguments that fit are returned (with the alias and list spellings that
+ * {@link canonicalArguments} corrects). Arguments that do not fit are a mistake
+ * the assistant can correct, so they come back as an `isError` result naming
+ * each problem and the arguments the tool takes (the spec lists input validation
+ * among tool execution errors, which a host always shows the model).
+ *
+ * @throws {InvalidToolArguments} If `arguments` is not an object at all: that is
+ *   a malformed request, not a mistaken call.
  */
-function checkedArguments(
-  schema: Parameters<typeof validateJson>[0],
-  rawArgs: unknown,
-): Args {
+function checkedArguments(tool: ToolSchema, rawArgs: unknown): Checked {
   // Omitted arguments count as none, so the schema can say what is required.
-  const args = rawArgs === undefined ? {} : rawArgs;
-  if (!isJsonObject(args)) {
+  const given = rawArgs === undefined ? {} : rawArgs;
+  if (!isJsonObject(given)) {
     throw new InvalidToolArguments(['`arguments` must be an object.']);
   }
-  const problems = validateJson(schema, args, 'The arguments');
-  if (problems.length > 0) {
-    throw new InvalidToolArguments(problems);
-  }
-  return args;
+  const args = canonicalArguments(tool.name, given);
+  const problems = validateJson(tool.inputSchema, args, 'The arguments');
+  return problems.length > 0
+    ? {
+        refusal: errorResult(
+          `Invalid arguments for ${tool.name}: ${problems.join(' ')} ${usage(tool.inputSchema)}`,
+        ),
+      }
+    : { args };
 }
 
 /**
@@ -638,9 +977,12 @@ function checkedArguments(
  *
  * @param openContext How Drive is opened; tests pass a fake.
  * @param services The database, AI and page fetching; tests pass fakes.
+ * @returns The tool's result; for arguments that do not fit the tool's schema,
+ *   an `isError` result saying what to change. Nothing is opened or run for
+ *   those.
  * @throws {UnknownTool} If no such tool exists.
- * @throws {InvalidToolArguments} If the arguments do not fit the tool's schema.
- *   Both are checked before Drive is opened or anything runs.
+ * @throws {InvalidToolArguments} If the request has no tool name, or its
+ *   `arguments` is not an object (both are malformed requests).
  * @throws {DriveNotConnectedError} If the tool needs Drive and it is not
  *   connected.
  * @throws {BackendFailure} If Drive, the database or a model failed mid-call.
@@ -661,7 +1003,11 @@ export async function callTool(
   if (!tool) {
     throw new UnknownTool(name);
   }
-  const args = checkedArguments(tool.inputSchema, params?.['arguments']);
+  const checked = checkedArguments(tool, params?.['arguments']);
+  if ('refusal' in checked) {
+    return checked.refusal;
+  }
+  const { args } = checked;
 
   // set_measurement_system just records a preference — handle it before the
   // Drive round-trip the recipe tools need.
@@ -687,8 +1033,8 @@ export async function callTool(
  * Google Drive has no recipes for the assistant to reach, and Drive, the
  * database or a model can fail mid-call; both are explained in words the
  * assistant can pass on, as a tool error, instead of a protocol error. An
- * unknown tool or arguments that do not fit are still thrown for the router to
- * answer as a protocol error.
+ * unknown tool or a malformed request is still thrown for the router to answer
+ * as a protocol error.
  *
  * @param openContext How Drive is opened; leave out for the real one.
  * @param services The database, AI and page fetching; leave out for the real ones.
