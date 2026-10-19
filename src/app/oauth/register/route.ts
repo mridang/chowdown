@@ -6,30 +6,40 @@
  *   POST /oauth/register { client_name, redirect_uris, … } → 201 { client_id, … }
  */
 
-import { saveClient } from '@/lib/db/oauth';
-import {
-  parseRegistrationText,
-  registrationResponse,
-} from '@/lib/oauth/client';
+import { oauthSweeps, saveClient } from '@/lib/db/oauth';
 import { noStoreJson, oauthError, preflight } from '@/lib/oauth/http';
-import { getDatabase } from '@/lib/util';
+import { clientAddress, tooManyRequests } from '@/lib/oauth/limits';
+import { handleRegistration } from '@/lib/oauth/register-request';
+import { sweepSometimes } from '@/lib/oauth/sweep';
+import { d1RateLimitStore } from '@/lib/util/rate-limit';
+import { getDatabase, runInBackground } from '@/lib/util';
 
 /**
  * `POST /oauth/register`: register a public client from a JSON body. Anyone
- * may call it. Answers 201 with the new `client_id` and its details, or 400
- * with an OAuth error for a body that is too large, not JSON, or not an
- * acceptable client.
+ * may call it, up to a limit per address. Answers 201 with the new `client_id`
+ * and its details, 429 (with `Retry-After`) when the address has registered too
+ * much lately, or 400 with an OAuth error for a body that is too large, not
+ * JSON, or not an acceptable client.
  */
 export async function POST(request: Request) {
-  const result = parseRegistrationText(await request.text());
-  if (!result.ok) {
-    return oauthError(result.error, result.description);
-  }
-  await saveClient(getDatabase(), result.client);
-  return noStoreJson(
-    registrationResponse(result.client, Math.floor(Date.now() / 1000)),
-    201,
+  const db = getDatabase();
+  const now = Math.floor(Date.now() / 1000);
+  const result = await handleRegistration(
+    () => request.text(),
+    clientAddress(request.headers),
+    {
+      rateLimits: d1RateLimitStore(db.$client),
+      save: (client) => saveClient(db, client),
+      now,
+    },
   );
+  sweepSometimes(oauthSweeps(db), runInBackground);
+  if (result.ok) {
+    return noStoreJson(result.body, 201);
+  }
+  return result.limited
+    ? tooManyRequests(result.retryAfter)
+    : oauthError(result.error, result.description);
 }
 
 /** `OPTIONS /oauth/register`: the CORS preflight for browser-based assistants. Answers 204. */

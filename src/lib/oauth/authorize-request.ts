@@ -8,10 +8,10 @@
  * problem is reported to the client by redirecting back with an `error`.
  */
 
-import type { OAuthClient } from './client';
+import { isClientBusy, type ClientBusy, type OAuthClient } from './client';
 import { isWellFormedChallenge } from './pkce';
 import { isOurResource, resourceUri } from './metadata';
-import { redirectUriMatches } from './redirect-uri';
+import { isAcceptableRedirectUri, redirectUriMatches } from './redirect-uri';
 import { normaliseScope } from './scopes';
 import { withQueryParams } from '../util/url';
 
@@ -33,6 +33,11 @@ export type AuthorizeCheck =
       /** OAuth error code. */
       readonly error: string;
       readonly description: string;
+      /**
+       * Set when the problem is "too busy right now" rather than a bad request:
+       * seconds to wait before trying again (a 429 where the caller can send one).
+       */
+      readonly retryAfterSeconds?: number;
       /**
        * Where to send the error. Absent when the client or redirect URI could
        * not be trusted, in which case the error is shown to the user instead.
@@ -75,7 +80,9 @@ export function authorizeParamsFrom(form: FormData): AuthorizeParams {
 export async function validateAuthorizeRequest(
   params: AuthorizeParams,
   origin: string,
-  resolveClient: (clientId: string) => Promise<OAuthClient | undefined>,
+  resolveClient: (
+    clientId: string,
+  ) => Promise<OAuthClient | ClientBusy | undefined>,
 ): Promise<AuthorizeCheck> {
   const clientId = params['client_id'];
   if (!clientId) {
@@ -86,6 +93,14 @@ export async function validateAuthorizeRequest(
     };
   }
   const client = await resolveClient(clientId);
+  if (isClientBusy(client)) {
+    return {
+      ok: false,
+      error: 'temporarily_unavailable',
+      description: `Too many applications are being checked right now. Try again in ${client.retryAfterSeconds} seconds.`,
+      retryAfterSeconds: client.retryAfterSeconds,
+    };
+  }
   if (!client) {
     return {
       ok: false,
@@ -106,7 +121,12 @@ export async function validateAuthorizeRequest(
       description: 'The request has no redirect_uri.',
     };
   }
-  if (!redirectUriMatches(redirectUri, client.redirectUris)) {
+  // A copy of the client saved before the redirect rules tightened may still
+  // list an address we would no longer accept; it is refused here too.
+  if (
+    !isAcceptableRedirectUri(redirectUri) ||
+    !redirectUriMatches(redirectUri, client.redirectUris)
+  ) {
     return {
       ok: false,
       error: 'invalid_request',

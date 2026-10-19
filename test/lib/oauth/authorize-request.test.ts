@@ -58,6 +58,49 @@ describe('validateAuthorizeRequest', () => {
     expect(result.ok === false && result.redirect).toBeFalsy();
   });
 
+  it('shows an error, without redirecting, for a redirect URI the rules no longer allow', async () => {
+    const old: OAuthClient = {
+      ...client,
+      clientId: 'dcr_old',
+      redirectUris: ['http://example.com/cb', 'myapp://cb'],
+    };
+    for (const uri of old.redirectUris) {
+      const result = await validateAuthorizeRequest(
+        { ...good, client_id: 'dcr_old', redirect_uri: uri },
+        ORIGIN,
+        async () => old,
+      );
+      expect(result).toMatchObject({ ok: false, error: 'invalid_request' });
+      expect(result.ok === false && result.redirect).toBeFalsy();
+    }
+  });
+
+  it('accepts a loopback redirect on any port for a registered loopback address', async () => {
+    const local: OAuthClient = {
+      ...client,
+      redirectUris: ['http://localhost:6274/oauth/callback'],
+    };
+    const result = await validateAuthorizeRequest(
+      { ...good, redirect_uri: 'http://localhost:51234/oauth/callback' },
+      ORIGIN,
+      async () => local,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('asks the caller to wait, without redirecting, when the client lookup is rate limited', async () => {
+    const result = await validateAuthorizeRequest(good, ORIGIN, async () => ({
+      busy: true,
+      retryAfterSeconds: 17,
+    }));
+    expect(result).toMatchObject({
+      ok: false,
+      error: 'temporarily_unavailable',
+      retryAfterSeconds: 17,
+    });
+    expect(result.ok === false && result.redirect).toBeFalsy();
+  });
+
   it('shows an error when there is no client_id', async () => {
     const result = await check({ client_id: undefined });
     expect(result).toMatchObject({ ok: false, error: 'invalid_request' });

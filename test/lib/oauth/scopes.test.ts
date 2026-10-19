@@ -27,6 +27,12 @@ describe('normaliseScope', () => {
 
   it('returns nothing when only unknown scopes are asked for', () => {
     expect(normaliseScope('admin')).toEqual([]);
+    expect(normaliseScope('admin offline_access')).toEqual([]);
+  });
+
+  it('ignores offline_access: it alone is the same as asking for nothing', () => {
+    expect(normaliseScope('offline_access')).toEqual([SCOPE_READ, SCOPE_WRITE]);
+    expect(normaliseScope('recipes:read offline_access')).toEqual([SCOPE_READ]);
   });
 });
 

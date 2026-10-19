@@ -12,6 +12,16 @@ export const SCOPE_READ = 'recipes:read';
 /** May change recipes, the user's settings and their notes (implies read). */
 export const SCOPE_WRITE = 'recipes:write';
 
+/**
+ * The OpenID Connect scope that asks for a refresh token. Every grant here gets
+ * one anyway, so the scope changes nothing; it is advertised in the
+ * authorization server's metadata so clients that follow the MCP refresh-token
+ * guidance can send it, and it is accepted and ignored. It is deliberately NOT
+ * in {@link SUPPORTED_SCOPES} (the MCP server must not ask for it in its
+ * `WWW-Authenticate` challenge or resource metadata) and never appears in a grant.
+ */
+export const SCOPE_OFFLINE_ACCESS = 'offline_access';
+
 /** Every scope the server understands. */
 export const SUPPORTED_SCOPES = [SCOPE_READ, SCOPE_WRITE] as const;
 
@@ -43,11 +53,15 @@ const READ_ONLY_TOOLS: ReadonlySet<string> = new Set([
  * asked for means everything we support; asking only for scopes we don't know
  * yields an empty list, which the caller reports as `invalid_scope`. Unknown
  * scopes mixed with known ones are dropped rather than failing the request.
+ * {@link SCOPE_OFFLINE_ACCESS} is ignored, so asking for it alone is the same as
+ * asking for nothing.
  */
 export function normaliseScope(
   requested: string | undefined | null,
 ): readonly Scope[] {
-  const asked = (requested ?? '').split(/\s+/).filter(Boolean);
+  const asked = (requested ?? '')
+    .split(/\s+/)
+    .filter((scope) => scope !== '' && scope !== SCOPE_OFFLINE_ACCESS);
   if (asked.length === 0) {
     return [...SUPPORTED_SCOPES];
   }

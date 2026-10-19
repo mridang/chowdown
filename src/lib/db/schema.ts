@@ -130,6 +130,8 @@ export const oauthClients = sqliteTable('oauth_clients', {
   redirect_uris: text('redirect_uris').notNull(),
   created_at: text('created_at').notNull(),
   fetched_at: text('fetched_at'),
+  /** Until when a fetched document may be reused (from its cache headers); null for older rows and registered clients. */
+  expires_at: text('expires_at'),
 });
 
 /** One user's approval of one client; revoking it revokes all its tokens. */
@@ -145,21 +147,29 @@ export const oauthGrants = sqliteTable(
     last_used_at: text('last_used_at'),
     revoked_at: text('revoked_at'),
   },
-  (table) => [index('idx_oauth_grants_user').on(table.user_id)],
+  (table) => [
+    index('idx_oauth_grants_user').on(table.user_id),
+    index('idx_oauth_grants_user_client').on(table.user_id, table.client_id),
+    index('idx_oauth_grants_client').on(table.client_id),
+  ],
 );
 
 /** Single-use authorization codes (hashed). `grant_id` is set once redeemed. */
-export const oauthCodes = sqliteTable('oauth_codes', {
-  code_hash: text('code_hash').primaryKey(),
-  client_id: text('client_id').notNull(),
-  user_id: integer('user_id').notNull(),
-  redirect_uri: text('redirect_uri').notNull(),
-  code_challenge: text('code_challenge').notNull(),
-  scope: text('scope').notNull(),
-  resource: text('resource').notNull(),
-  expires_at: integer('expires_at').notNull(),
-  grant_id: text('grant_id'),
-});
+export const oauthCodes = sqliteTable(
+  'oauth_codes',
+  {
+    code_hash: text('code_hash').primaryKey(),
+    client_id: text('client_id').notNull(),
+    user_id: integer('user_id').notNull(),
+    redirect_uri: text('redirect_uri').notNull(),
+    code_challenge: text('code_challenge').notNull(),
+    scope: text('scope').notNull(),
+    resource: text('resource').notNull(),
+    expires_at: integer('expires_at').notNull(),
+    grant_id: text('grant_id'),
+  },
+  (table) => [index('idx_oauth_codes_expires').on(table.expires_at)],
+);
 
 /** Access and refresh tokens, stored only as SHA-256 hashes. */
 export const oauthTokens = sqliteTable(
@@ -171,7 +181,10 @@ export const oauthTokens = sqliteTable(
     expires_at: integer('expires_at').notNull(),
     used_at: integer('used_at'),
   },
-  (table) => [index('idx_oauth_tokens_grant').on(table.grant_id)],
+  (table) => [
+    index('idx_oauth_tokens_grant').on(table.grant_id),
+    index('idx_oauth_tokens_expires').on(table.expires_at),
+  ],
 );
 
 /**

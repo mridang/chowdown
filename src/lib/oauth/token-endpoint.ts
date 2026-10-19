@@ -10,7 +10,9 @@
  *    that was issued from it (a sign it was stolen);
  *  - PKCE must verify, and the client and redirect URI must match the request;
  *  - refresh tokens rotate on every use; presenting an old one again revokes
- *    the whole grant;
+ *    the whole grant, except for a short grace window right after a rotation
+ *    (see {@link REFRESH_GRACE_SECONDS});
+ *  - a user has one grant per client: approving again replaces the old one;
  *  - an access token is only good for the MCP server it was issued for.
  */
 
@@ -29,8 +31,31 @@ export const ACCESS_TTL_SECONDS = 60 * 60;
 /** How long a refresh token lasts, in seconds (30 days). */
 export const REFRESH_TTL_SECONDS = 60 * 60 * 24 * 30;
 
-/** Authorization codes are good for ten minutes at most. */
-export const CODE_TTL_SECONDS = 60 * 10;
+/**
+ * Authorization codes are good for two minutes: a client redeems its code the
+ * moment the browser returns, and a short life shrinks the window in which a
+ * leaked code is any use (OAuth 2.1 recommends at most ten minutes).
+ */
+export const CODE_TTL_SECONDS = 60 * 2;
+
+/**
+ * How long after a refresh token has been rotated the same token is still
+ * answered with a fresh pair instead of being treated as stolen.
+ *
+ * Why: a client that loses the response to a refresh (a dropped connection, a
+ * crash before it saved the new tokens) or two processes that share one
+ * credential store and refresh at once will present the old token a second
+ * time. Without a grace window that looks exactly like theft, the whole grant
+ * is revoked and the person has to approve the app again.
+ *
+ * The trade-off: for this many seconds after a rotation, someone who copied the
+ * old token can also obtain a working pair, and the two chains then go on
+ * independently with no reuse detected. A minute is long enough for a retry or
+ * a parallel refresh and short enough that a token replayed later (the real
+ * signature of theft: the thief uses it after the owner has moved on) still
+ * revokes the grant (RFC 9700 §4.14 allows such leeway).
+ */
+export const REFRESH_GRACE_SECONDS = 60;
 
 /** A stored authorization code. */
 export interface CodeRecord {
@@ -64,27 +89,45 @@ export interface TokenRecord {
   readonly grant: GrantRecord;
 }
 
+/** A token row to store: only the hash of the secret is ever kept. */
+export interface TokenRow {
+  readonly hash: string;
+  readonly kind: 'access' | 'refresh';
+  readonly grantId: string;
+  readonly expiresAt: number;
+}
+
 /** Everything the token logic needs from storage. */
 export interface OAuthStore {
   saveCode(hash: string, code: CodeRecord): Promise<void>;
   findCode(hash: string): Promise<CodeRecord | undefined>;
   /** Atomically claim a code; false if it was already claimed. */
   claimCode(hash: string, grantId: string): Promise<boolean>;
+  /**
+   * Record a user's approval of a client together with the first token pair,
+   * as one step. A user has one connection per client, so every other live
+   * grant of the same user and client is revoked in the same step (their tokens
+   * stop working with them): approving an app again replaces the old
+   * connection rather than adding a second one to "Connected apps".
+   */
   createGrant(
     grant: Omit<GrantRecord, 'revoked' | 'lastUsedAt'>,
+    tokens: readonly TokenRow[],
   ): Promise<void>;
   revokeGrant(grantId: string): Promise<void>;
-  saveTokens(
-    tokens: readonly {
-      readonly hash: string;
-      readonly kind: 'access' | 'refresh';
-      readonly grantId: string;
-      readonly expiresAt: number;
-    }[],
-  ): Promise<void>;
+  /** Store tokens under an existing grant. */
+  saveTokens(tokens: readonly TokenRow[]): Promise<void>;
   findToken(hash: string): Promise<TokenRecord | undefined>;
-  /** Atomically mark a refresh token used; false if it already was. */
-  markTokenUsed(hash: string, now: number): Promise<boolean>;
+  /**
+   * Rotate a refresh token: mark it used and store its replacement tokens as
+   * one atomic step. False (and nothing stored) if it had already been used,
+   * which is how two parallel refreshes are told apart.
+   */
+  rotateRefreshToken(
+    hash: string,
+    now: number,
+    tokens: readonly TokenRow[],
+  ): Promise<boolean>;
   touchGrant(grantId: string, now: number): Promise<void>;
 }
 
@@ -126,35 +169,42 @@ export async function issueAuthorizationCode(
   return code;
 }
 
-/** Issue a fresh access + refresh pair under a grant. */
-async function issueTokens(
-  store: OAuthStore,
+/** A freshly minted token pair: the response for the client and the rows to store. */
+interface MintedTokens {
+  readonly response: TokenResponse;
+  readonly rows: readonly TokenRow[];
+}
+
+/** Mint an access + refresh pair under a grant. Nothing is stored yet. */
+async function mintTokens(
   grantId: string,
   scope: readonly string[],
   now: number,
-): Promise<TokenResponse> {
+): Promise<MintedTokens> {
   const access = newSecret(ACCESS_PREFIX);
   const refresh = newSecret(REFRESH_PREFIX);
-  await store.saveTokens([
-    {
-      hash: await hashSecret(access),
-      kind: 'access',
-      grantId,
-      expiresAt: now + ACCESS_TTL_SECONDS,
-    },
-    {
-      hash: await hashSecret(refresh),
-      kind: 'refresh',
-      grantId,
-      expiresAt: now + REFRESH_TTL_SECONDS,
-    },
-  ]);
   return {
-    access_token: access,
-    token_type: 'Bearer',
-    expires_in: ACCESS_TTL_SECONDS,
-    refresh_token: refresh,
-    scope: scope.join(' '),
+    rows: [
+      {
+        hash: await hashSecret(access),
+        kind: 'access',
+        grantId,
+        expiresAt: now + ACCESS_TTL_SECONDS,
+      },
+      {
+        hash: await hashSecret(refresh),
+        kind: 'refresh',
+        grantId,
+        expiresAt: now + REFRESH_TTL_SECONDS,
+      },
+    ],
+    response: {
+      access_token: access,
+      token_type: 'Bearer',
+      expires_in: ACCESS_TTL_SECONDS,
+      refresh_token: refresh,
+      scope: scope.join(' '),
+    },
   };
 }
 
@@ -211,14 +261,18 @@ export async function exchangeAuthorizationCode(
   if (!(await store.claimCode(hash, grantId))) {
     return fail('invalid_grant', 'The authorization code was already used.');
   }
-  await store.createGrant({
-    id: grantId,
-    userId: code.userId,
-    clientId: code.clientId,
-    scope: code.scope,
-    resource: code.resource,
-  });
-  return issueTokens(store, grantId, code.scope, now);
+  const minted = await mintTokens(grantId, code.scope, now);
+  await store.createGrant(
+    {
+      id: grantId,
+      userId: code.userId,
+      clientId: code.clientId,
+      scope: code.scope,
+      resource: code.resource,
+    },
+    minted.rows,
+  );
+  return minted.response;
 }
 
 /** The parameters of a `refresh_token` request. */
@@ -229,7 +283,35 @@ export interface RefreshExchange {
   readonly scope: string | undefined;
 }
 
-/** Exchange a refresh token for a new pair, rotating the refresh token. */
+/** Whether a refresh token used at `usedAt` may still be presented again (see {@link REFRESH_GRACE_SECONDS}). */
+export function withinRefreshGrace(
+  usedAt: number | null,
+  now: number,
+): boolean {
+  return usedAt !== null && now - usedAt <= REFRESH_GRACE_SECONDS;
+}
+
+/** Whether a refresh token that someone else just rotated was used within the grace window (read afresh from storage). */
+async function usedWithinGrace(
+  store: OAuthStore,
+  hash: string,
+  now: number,
+): Promise<boolean> {
+  const current = await store.findToken(hash);
+  return withinRefreshGrace(current?.usedAt ?? null, now);
+}
+
+/**
+ * Exchange a refresh token for a new pair, rotating the refresh token.
+ *
+ * Reuse of a spent token ends the whole grant, because it is the sign that a
+ * copy was stolen, with one exception: within {@link REFRESH_GRACE_SECONDS} of
+ * the rotation the same token is answered with another fresh pair and the grant
+ * stays alive. That covers a client that lost the response and tries again, and
+ * a parallel refresh that lost the race to rotate. (The pair issued earlier
+ * stays valid until it expires; it cannot be handed back because only hashes of
+ * tokens are kept.)
+ */
 export async function exchangeRefreshToken(
   store: OAuthStore,
   request: RefreshExchange,
@@ -250,8 +332,9 @@ export async function exchangeRefreshToken(
       'The refresh token belongs to a different client.',
     );
   }
-  if (token.usedAt !== null) {
-    // An already-rotated token came back: assume theft and end the grant.
+  const spent = token.usedAt !== null;
+  if (spent && !withinRefreshGrace(token.usedAt, now)) {
+    // An already-rotated token came back late: assume theft and end the grant.
     await store.revokeGrant(grant.id);
     return fail('invalid_grant', 'The refresh token was already used.');
   }
@@ -268,14 +351,22 @@ export async function exchangeRefreshToken(
       );
     }
   }
-  if (!(await store.markTokenUsed(hash, now))) {
-    await store.revokeGrant(grant.id);
-    return fail('invalid_grant', 'The refresh token was already used.');
-  }
   // Tokens are not scoped one by one: whatever was asked, the new pair carries
   // the whole grant's scope, and the response says so rather than pretending to
   // have narrowed it.
-  return issueTokens(store, grant.id, grant.scope, now);
+  const minted = await mintTokens(grant.id, grant.scope, now);
+  if (!spent && (await store.rotateRefreshToken(hash, now, minted.rows))) {
+    return minted.response;
+  }
+  if (!spent && !(await usedWithinGrace(store, hash, now))) {
+    // Not a retry and not a lost race either: nothing explains the reuse.
+    await store.revokeGrant(grant.id);
+    return fail('invalid_grant', 'The refresh token was already used.');
+  }
+  // A retry inside the grace window, or a parallel refresh that lost the race
+  // by moments: give this caller its own pair without touching the grant.
+  await store.saveTokens(minted.rows);
+  return minted.response;
 }
 
 /** Who a valid access token speaks for. */

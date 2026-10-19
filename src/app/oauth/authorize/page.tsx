@@ -4,9 +4,6 @@ import { redirect } from 'next/navigation';
 import type { ReactElement } from 'react';
 
 import { CenteredCard } from '@/components/site/centered-card';
-import { CheckIcon } from '@/components/icons';
-import { Button } from '@/components/ui/button';
-import { Callout } from '@/components/ui/callout';
 import { Eyebrow, Heading } from '@/components/ui/layout';
 import { DriveConnectPanel } from '@/components/site/drive-connect';
 import { getCurrentUser } from '@/lib/auth/current-user';
@@ -18,18 +15,13 @@ import {
   validateAuthorizeRequest,
   type AuthorizeParams,
 } from '@/lib/oauth/authorize-request';
-import { SCOPE_READ, SCOPE_WRITE } from '@/lib/oauth/scopes';
+import { clientIdentity, describeRedirect } from '@/lib/oauth/display';
 import { appOriginFromHeaders, getDatabase } from '@/lib/util';
+
+import { ConsentCard } from './consent-card';
 
 /** The tab title of the approval screen. */
 export const metadata: Metadata = { title: 'Connect an app · chowdown' };
-
-/** What each scope lets the app do, in plain words. */
-const SCOPE_TEXT: Readonly<Record<string, string>> = {
-  [SCOPE_READ]: 'See your recipes, search them and find similar ones',
-  [SCOPE_WRITE]:
-    'Add, edit, tag, favourite and annotate recipes, and change your settings',
-};
 
 /** First value of each query parameter. */
 function flatten(
@@ -41,21 +33,6 @@ function flatten(
       Array.isArray(value) ? value[0] : value,
     ]),
   );
-}
-
-/**
- * Where approving will send the person, in the short form the screen shows: the
- * host of the redirect address, or its scheme when it has no host (a custom
- * scheme such as `claude://`). An address that cannot be parsed is shown as
- * written; it has already been validated, so this is only a safety net.
- */
-function destinationOf(redirectUri: string): string {
-  try {
-    const url = new URL(redirectUri);
-    return url.host || url.protocol;
-  } catch {
-    return redirectUri;
-  }
 }
 
 /**
@@ -129,58 +106,20 @@ export default async function AuthorizePage({
   }
 
   const { client, redirectUri, scope } = check.request;
-  const target = destinationOf(redirectUri);
 
   return (
     <CenteredCard>
-      <Eyebrow>Connect an app</Eyebrow>
-      <Heading as="h1" variant="h3" className="mt-2 break-words">
-        Connect <span className="text-ember">{client.name}</span> to chowdown?
-      </Heading>
-      <p className="text-muted mt-3">
-        Signed in as <span className="font-medium">{user.email}</span>. This app
-        will be able to:
-      </p>
-      <ul className="mt-4 flex flex-col gap-3">
-        {scope.map((s) => (
-          <li key={s} className="flex items-start gap-3">
-            <CheckIcon size="md" className="text-forest mt-0.5 shrink-0" />
-            <span className="leading-relaxed">{SCOPE_TEXT[s] ?? s}</span>
-          </li>
-        ))}
-      </ul>
-      <Callout className="mt-5">
-        After you approve, you&apos;ll be sent back to{' '}
-        <span className="font-semibold break-all">{target}</span>. Only approve
-        apps you trust. You can disconnect it any time from chowdown.
-      </Callout>
-      <form action="/oauth/consent" method="post" className="mt-6">
-        {AUTHORIZE_FIELDS.map((name) =>
-          params[name] === undefined ? null : (
-            <input key={name} type="hidden" name={name} value={params[name]} />
-          ),
-        )}
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Button
-            type="submit"
-            name="decision"
-            value="deny"
-            variant="outline"
-            size="lg"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            name="decision"
-            value="approve"
-            variant="primary"
-            size="lg"
-          >
-            Approve
-          </Button>
-        </div>
-      </form>
+      <ConsentCard
+        clientName={client.name}
+        identity={clientIdentity(client)}
+        redirect={describeRedirect(redirectUri)}
+        scopes={scope}
+        email={user.email}
+        fields={AUTHORIZE_FIELDS.flatMap((name) => {
+          const value = params[name];
+          return value === undefined ? [] : [{ name, value }];
+        })}
+      />
     </CenteredCard>
   );
 }

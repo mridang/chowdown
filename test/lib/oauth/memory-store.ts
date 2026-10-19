@@ -3,6 +3,7 @@ import type {
   GrantRecord,
   OAuthStore,
   TokenRecord,
+  TokenRow,
 } from '../../../src/lib/oauth/token-endpoint';
 
 /** A token as the memory store keeps it. */
@@ -34,8 +35,22 @@ export class MemoryStore implements OAuthStore {
     this.codes.set(hash, { ...code, grantId });
     return true;
   }
-  async createGrant(grant: Omit<GrantRecord, 'revoked' | 'lastUsedAt'>) {
+  async createGrant(
+    grant: Omit<GrantRecord, 'revoked' | 'lastUsedAt'>,
+    tokens: readonly TokenRow[],
+  ) {
+    // One connection per (user, client): approving again replaces the old one.
+    for (const [id, other] of this.grants) {
+      if (
+        other.userId === grant.userId &&
+        other.clientId === grant.clientId &&
+        !other.revoked
+      ) {
+        this.grants.set(id, { ...other, revoked: true });
+      }
+    }
     this.grants.set(grant.id, { ...grant, revoked: false, lastUsedAt: null });
+    await this.saveTokens(tokens);
   }
   async revokeGrant(grantId: string) {
     const grant = this.grants.get(grantId);
@@ -43,14 +58,7 @@ export class MemoryStore implements OAuthStore {
       this.grants.set(grantId, { ...grant, revoked: true });
     }
   }
-  async saveTokens(
-    tokens: readonly {
-      hash: string;
-      kind: 'access' | 'refresh';
-      grantId: string;
-      expiresAt: number;
-    }[],
-  ) {
+  async saveTokens(tokens: readonly TokenRow[]) {
     for (const { hash, ...token } of tokens) {
       this.tokens.set(hash, { ...token, usedAt: null });
     }
@@ -60,12 +68,17 @@ export class MemoryStore implements OAuthStore {
     const grant = token && this.grants.get(token.grantId);
     return token && grant ? { ...token, grant } : undefined;
   }
-  async markTokenUsed(hash: string, now: number) {
+  async rotateRefreshToken(
+    hash: string,
+    now: number,
+    tokens: readonly TokenRow[],
+  ) {
     const token = this.tokens.get(hash);
     if (!token || token.usedAt !== null) {
       return false;
     }
     this.tokens.set(hash, { ...token, usedAt: now });
+    await this.saveTokens(tokens);
     return true;
   }
   async touchGrant(grantId: string, now: number) {

@@ -13,7 +13,8 @@
  * both documents describe the same origin.
  */
 
-import { SUPPORTED_SCOPES } from './scopes';
+import { SCOPE_OFFLINE_ACCESS, SUPPORTED_SCOPES } from './scopes';
+import { parseUrl } from '../util/url';
 
 /** Path of the OAuth-protected MCP endpoint. */
 export const MCP_PATH = '/api/mcp';
@@ -31,13 +32,43 @@ export function issuerOf(origin: string): string {
   return origin;
 }
 
+/** A path without its trailing slashes. */
+const withoutTrailingSlashes = (path: string): string =>
+  path.replace(/\/+$/, '');
+
 /**
- * Whether a client-supplied `resource` names this MCP server. Trailing slashes
- * are tolerated, since the spec's own examples vary on them.
+ * Whether a client-supplied `resource` names this MCP server. The value is read
+ * as a URL, so an upper-case scheme or host (`HTTPS://Host/api/mcp`) is the same
+ * address, as the MCP spec asks implementations to accept; trailing slashes are
+ * tolerated, since the spec's own examples vary on them. A query or fragment
+ * means it is some other resource (RFC 8707 forbids fragments).
  */
 export function isOurResource(value: string, origin: string): boolean {
-  const strip = (s: string) => s.replace(/\/+$/, '');
-  return strip(value) === strip(resourceUri(origin));
+  const given = parseUrl(value);
+  const ours = parseUrl(resourceUri(origin));
+  return (
+    given !== undefined &&
+    ours !== undefined &&
+    !given.search &&
+    !given.hash &&
+    given.origin === ours.origin &&
+    withoutTrailingSlashes(given.pathname) ===
+      withoutTrailingSlashes(ours.pathname)
+  );
+}
+
+/**
+ * Whether a path after `/.well-known/oauth-protected-resource` names the MCP
+ * endpoint: nothing (the bare form, which describes the whole site's only
+ * resource) or the MCP endpoint's own path. RFC 9728 §3.3 says the document's
+ * `resource` must match the URL it was derived from, so any other path has no
+ * document. `segments` is the optional catch-all route parameter.
+ */
+export function isProtectedResourcePath(
+  segments: readonly string[] | undefined,
+): boolean {
+  const path = (segments ?? []).join('/');
+  return path === '' || `/${path}` === MCP_PATH;
 }
 
 /** The RFC 9728 document for the MCP endpoint. */
@@ -69,6 +100,7 @@ export interface AuthorizationServerMetadata {
   readonly token_endpoint: string;
   readonly registration_endpoint: string;
   readonly revocation_endpoint: string;
+  readonly revocation_endpoint_auth_methods_supported: readonly string[];
   readonly scopes_supported: readonly string[];
   readonly response_types_supported: readonly string[];
   readonly grant_types_supported: readonly string[];
@@ -88,7 +120,14 @@ export function authorizationServerMetadata(
     token_endpoint: `${origin}/oauth/token`,
     registration_endpoint: `${origin}/oauth/register`,
     revocation_endpoint: `${origin}/oauth/revoke`,
-    scopes_supported: SUPPORTED_SCOPES,
+    // Revocation, like the token endpoint, takes public clients only (RFC 8414
+    // would otherwise assume client_secret_basic).
+    revocation_endpoint_auth_methods_supported: ['none'],
+    // `offline_access` is advertised because every grant gets a refresh token,
+    // so a client that asks for one (MCP refresh-token guidance) is telling the
+    // truth about what it will receive. It is not in the resource metadata or
+    // the WWW-Authenticate challenge, where the spec says it does not belong.
+    scopes_supported: [...SUPPORTED_SCOPES, SCOPE_OFFLINE_ACCESS],
     response_types_supported: ['code'],
     grant_types_supported: ['authorization_code', 'refresh_token'],
     code_challenge_methods_supported: ['S256'],

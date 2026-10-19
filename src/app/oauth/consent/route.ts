@@ -18,9 +18,19 @@ import { isSameOriginPost } from '@/lib/oauth/csrf';
 import { issueAuthorizationCode } from '@/lib/oauth/token-endpoint';
 import { appOrigin, getDatabase } from '@/lib/util';
 
-/** A plain-text error page response. */
-const refuse = (message: string, status: number): NextResponse =>
-  new NextResponse(message, { status });
+/** A plain-text error page response, with a `Retry-After` when the caller should wait. */
+const refuse = (
+  message: string,
+  status: number,
+  retryAfterSeconds?: number,
+): NextResponse =>
+  new NextResponse(message, {
+    status,
+    headers:
+      retryAfterSeconds === undefined
+        ? undefined
+        : { 'Retry-After': String(retryAfterSeconds) },
+  });
 
 /**
  * `POST /oauth/consent`: the decision from the approval screen. Needs a
@@ -28,7 +38,9 @@ const refuse = (message: string, status: number): NextResponse =>
  * verified redirect address (with a `code` on approval, or an `error` when
  * cancelled or when the request has a problem after the address was checked),
  * 400 with a plain message when the client or redirect address cannot be
- * trusted, 401 when nobody is signed in, and 403 for a cross-site post.
+ * trusted or the form is unreadable, 401 when nobody is signed in, 403 for a
+ * cross-site post and 429 when too many client metadata documents are being
+ * fetched at the moment.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const origin = appOrigin(request);
@@ -40,7 +52,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     return refuse('Sign in first.', 401);
   }
 
-  const form = await request.formData();
+  const form = await request.formData().catch(() => null);
+  if (!form) {
+    return refuse('The form could not be read.', 400);
+  }
   const db = getDatabase();
   const check = await validateAuthorizeRequest(
     authorizeParamsFrom(form),
@@ -60,7 +75,9 @@ export async function POST(request: Request): Promise<NextResponse> {
         303,
       );
     }
-    return refuse(check.description, 400);
+    return check.retryAfterSeconds === undefined
+      ? refuse(check.description, 400)
+      : refuse(check.description, 429, check.retryAfterSeconds);
   }
 
   const { client, redirectUri, state, codeChallenge, scope, resource } =

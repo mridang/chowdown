@@ -8,13 +8,33 @@
 
 import { NextResponse } from 'next/server';
 
-/** CORS for endpoints a browser-based client may call. */
+/**
+ * CORS for endpoints a browser-based client may call. The MCP headers are
+ * spelled as the spec writes them (names are case-insensitive to a browser).
+ * `Mcp-Session-Id` and `Last-Event-ID` are for clients of the older revisions,
+ * which may send them even though this server keeps no sessions or streams;
+ * `traceparent`, `tracestate` and `baggage` carry OpenTelemetry trace context.
+ * `DELETE` is listed so such a client's attempt to end a session gets our plain
+ * 405 instead of a CORS failure. `Retry-After` is exposed so a page can back
+ * off when it is rate limited.
+ */
 export const CORS_HEADERS: Readonly<Record<string, string>> = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers':
-    'Authorization, Content-Type, Accept, Mcp-Session-Id, Mcp-Protocol-Version, Mcp-Method, Mcp-Name',
-  'Access-Control-Expose-Headers': 'WWW-Authenticate',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': [
+    'Authorization',
+    'Content-Type',
+    'Accept',
+    'MCP-Protocol-Version',
+    'Mcp-Method',
+    'Mcp-Name',
+    'Mcp-Session-Id',
+    'Last-Event-ID',
+    'traceparent',
+    'tracestate',
+    'baggage',
+  ].join(', '),
+  'Access-Control-Expose-Headers': 'WWW-Authenticate, Retry-After',
   'Access-Control-Max-Age': '86400',
 };
 

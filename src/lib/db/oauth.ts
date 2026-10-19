@@ -6,19 +6,31 @@
  * interface the token logic is written against.
  */
 
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, lt, notInArray } from 'drizzle-orm';
 
 import {
   fetchClientMetadata,
+  isDocumentFresh,
+  isDocumentUsable,
   isMetadataDocumentUrl,
+  type ClientBusy,
   type OAuthClient,
 } from '../oauth/client';
-import type { OAuthStore, TokenRecord } from '../oauth/token-endpoint';
+import { OAUTH_LIMITS, firstRetryAfter } from '../oauth/limits';
+import { purgeCutoffs } from '../oauth/retention';
+import type { Sweeps } from '../oauth/sweep';
+import type {
+  OAuthStore,
+  TokenRecord,
+  TokenRow,
+} from '../oauth/token-endpoint';
+import {
+  d1RateLimitStore,
+  purgeRateLimits,
+  type RateLimitStore,
+} from '../util/rate-limit';
 import type { Database } from './client';
 import { oauthClients, oauthCodes, oauthGrants, oauthTokens } from './schema';
-
-/** How long a fetched client metadata document is trusted before refetching. */
-const CIMD_TTL_MS = 60 * 60 * 1000;
 
 /** Unix seconds as the ISO-8601 text the timestamp columns hold. */
 const iso = (seconds: number): string => new Date(seconds * 1000).toISOString();
@@ -48,19 +60,30 @@ function toClient(row: Readonly<ClientRow>): OAuthClient {
   };
 }
 
-/** Save (or refresh) a client in the registry. */
+/**
+ * Save (or refresh) a client in the registry. For a client fetched from its
+ * metadata document, `ttlSeconds` says how long the copy may be reused (from the
+ * document's cache headers); it is ignored for registered clients.
+ */
 export async function saveClient(
   db: Database,
   client: Readonly<OAuthClient>,
+  ttlSeconds?: number,
 ): Promise<void> {
-  const now = new Date().toISOString();
+  const nowMs = Date.now();
+  const now = new Date(nowMs).toISOString();
+  const fetched = client.kind === 'cimd';
   const values = {
     client_id: client.clientId,
     kind: client.kind,
     client_name: client.name,
     redirect_uris: JSON.stringify(client.redirectUris),
     created_at: now,
-    fetched_at: client.kind === 'cimd' ? now : null,
+    fetched_at: fetched ? now : null,
+    expires_at:
+      fetched && ttlSeconds !== undefined
+        ? new Date(nowMs + ttlSeconds * 1000).toISOString()
+        : null,
   };
   await db
     .insert(oauthClients)
@@ -71,38 +94,94 @@ export async function saveClient(
         client_name: values.client_name,
         redirect_uris: values.redirect_uris,
         fetched_at: values.fetched_at,
+        expires_at: values.expires_at,
       },
     });
 }
 
+/** What {@link resolveClient} needs besides the database; the defaults are the real thing. */
+export interface ResolveDeps {
+  /** Where the metadata-fetch rate limits are counted. Defaults to the database's `rate_limits` table. */
+  readonly rateLimits?: RateLimitStore;
+  /** The current time in milliseconds. */
+  readonly now?: number;
+}
+
+/** The cache timestamps of a registry row. */
+const cachedOf = (row: Readonly<ClientRow>) => ({
+  fetchedAt: row.fetched_at,
+  expiresAt: row.expires_at,
+});
+
 /**
  * Look a client up by `client_id`. A registered client comes straight from the
- * database. A metadata-document URL is fetched and cached; a stale cached copy
- * is refreshed, and still used if the refresh fails so a client's brief outage
- * doesn't lock users out.
+ * database. A metadata-document URL is fetched and cached for as long as the
+ * client's cache headers allow; a stale copy is refreshed, and still used (for
+ * up to a week) if the refresh fails or is rate limited, so a client's brief
+ * outage doesn't lock users out. Fetches are limited per host and overall; a
+ * client that needs a fetch we may not make yet, and has no usable copy, comes
+ * back as {@link ClientBusy}.
  */
 export async function resolveClient(
   db: Database,
   clientId: string,
   fetchImpl: typeof fetch = fetch,
-): Promise<OAuthClient | undefined> {
+  deps: ResolveDeps = {},
+): Promise<OAuthClient | ClientBusy | undefined> {
   const row = await db.query.oauthClients.findFirst({
     where: eq(oauthClients.client_id, clientId),
   });
   if (!isMetadataDocumentUrl(clientId)) {
     return row ? toClient(row) : undefined;
   }
-  const fresh =
-    row?.fetched_at && Date.now() - Date.parse(row.fetched_at) < CIMD_TTL_MS;
-  if (row && fresh) {
+  const nowMs = deps.now ?? Date.now();
+  if (row && isDocumentFresh(cachedOf(row), nowMs)) {
     return toClient(row);
+  }
+  const fallback =
+    row && isDocumentUsable(cachedOf(row), nowMs) ? toClient(row) : undefined;
+  const wait = await firstRetryAfter(
+    deps.rateLimits ?? d1RateLimitStore(db.$client),
+    [
+      { limit: OAUTH_LIMITS.cimdHost, subject: new URL(clientId).host },
+      { limit: OAUTH_LIMITS.cimdAll, subject: 'all' },
+    ],
+    Math.floor(nowMs / 1000),
+  );
+  if (wait !== undefined) {
+    return fallback ?? { busy: true, retryAfterSeconds: wait };
   }
   const fetched = await fetchClientMetadata(clientId, fetchImpl);
   if (fetched.ok) {
-    await saveClient(db, fetched.client);
+    await saveClient(db, fetched.client, fetched.ttlSeconds);
     return fetched.client;
   }
-  return row ? toClient(row) : undefined;
+  return fallback;
+}
+
+/** The rows to insert for a list of tokens. */
+const tokenValues = (tokens: readonly TokenRow[]) =>
+  tokens.map((t) => ({
+    token_hash: t.hash,
+    kind: t.kind,
+    grant_id: t.grantId,
+    expires_at: t.expiresAt,
+  }));
+
+/** How many rows a statement changed, from the result D1 returned for it. */
+function changesOf(result: unknown): number {
+  if (
+    typeof result === 'object' &&
+    result !== null &&
+    'meta' in result &&
+    typeof result.meta === 'object' &&
+    result.meta !== null &&
+    'changes' in result.meta &&
+    typeof result.meta.changes === 'number'
+  ) {
+    return result.meta.changes;
+  }
+  return 0;
 }
 
 /** Adapt D1 to the store the token logic uses. */
@@ -149,15 +228,31 @@ export function createOAuthStore(db: Database): OAuthStore {
       return (result.meta.changes ?? 0) > 0;
     },
 
-    async createGrant(grant) {
-      await db.insert(oauthGrants).values({
-        id: grant.id,
-        user_id: grant.userId,
-        client_id: grant.clientId,
-        scope: grant.scope.join(' '),
-        resource: grant.resource,
-        created_at: new Date().toISOString(),
-      });
+    async createGrant(grant, tokens) {
+      const now = new Date().toISOString();
+      // One batch is one transaction: the old connection is retired, the new
+      // one and its first tokens appear, or none of it happens.
+      await db.batch([
+        db
+          .update(oauthGrants)
+          .set({ revoked_at: now })
+          .where(
+            and(
+              eq(oauthGrants.user_id, grant.userId),
+              eq(oauthGrants.client_id, grant.clientId),
+              isNull(oauthGrants.revoked_at),
+            ),
+          ),
+        db.insert(oauthGrants).values({
+          id: grant.id,
+          user_id: grant.userId,
+          client_id: grant.clientId,
+          scope: grant.scope.join(' '),
+          resource: grant.resource,
+          created_at: now,
+        }),
+        db.insert(oauthTokens).values(tokenValues(tokens)),
+      ]);
     },
 
     async revokeGrant(grantId) {
@@ -170,13 +265,8 @@ export function createOAuthStore(db: Database): OAuthStore {
     },
 
     async saveTokens(tokens) {
-      for (const t of tokens) {
-        await db.insert(oauthTokens).values({
-          token_hash: t.hash,
-          kind: t.kind,
-          grant_id: t.grantId,
-          expires_at: t.expiresAt,
-        });
+      if (tokens.length > 0) {
+        await db.insert(oauthTokens).values(tokenValues(tokens));
       }
     },
 
@@ -206,15 +296,30 @@ export function createOAuthStore(db: Database): OAuthStore {
       };
     },
 
-    async markTokenUsed(hash, now) {
-      const result = await db
-        .update(oauthTokens)
-        .set({ used_at: now })
-        .where(
-          and(eq(oauthTokens.token_hash, hash), isNull(oauthTokens.used_at)),
-        )
-        .run();
-      return (result.meta.changes ?? 0) > 0;
+    async rotateRefreshToken(hash, now, tokens) {
+      // The replacement tokens and the "spent" mark go in one transaction, so a
+      // failure can never leave the old token spent with nothing to replace it.
+      const [, claim] = await db.batch([
+        db.insert(oauthTokens).values(tokenValues(tokens)),
+        db
+          .update(oauthTokens)
+          .set({ used_at: now })
+          .where(
+            and(eq(oauthTokens.token_hash, hash), isNull(oauthTokens.used_at)),
+          ),
+      ]);
+      if (changesOf(claim) > 0) {
+        return true;
+      }
+      // A parallel request spent the token first. Its replacement tokens were
+      // never handed to anyone; take them back so only the winner's pair lives.
+      await db.delete(oauthTokens).where(
+        inArray(
+          oauthTokens.token_hash,
+          tokens.map((t) => t.hash),
+        ),
+      );
+      return false;
     },
 
     async touchGrant(grantId, now) {
@@ -228,6 +333,7 @@ export function createOAuthStore(db: Database): OAuthStore {
 
 /** An approved application as the user sees it in the app. */
 export interface ConnectedApp {
+  /** The newest grant for the app: pass it to {@link revokeConnectedApp}. */
   readonly grantId: string;
   readonly name: string;
   readonly scope: readonly string[];
@@ -235,7 +341,12 @@ export interface ConnectedApp {
   readonly lastUsedAt: string | null;
 }
 
-/** The applications a user has approved and not revoked, newest first. */
+/**
+ * The applications a user has approved and not revoked, newest first. An app is
+ * listed once: approving an app again replaces its grant, but grants made
+ * before that rule existed can still be live side by side, and those are shown
+ * as one connection (the newest grant's details, the latest use of any).
+ */
 export async function listConnectedApps(
   db: Database,
   userId: number,
@@ -246,31 +357,122 @@ export async function listConnectedApps(
     .leftJoin(oauthClients, eq(oauthClients.client_id, oauthGrants.client_id))
     .where(and(eq(oauthGrants.user_id, userId), isNull(oauthGrants.revoked_at)))
     .orderBy(desc(oauthGrants.created_at));
-  return rows.map((r) => ({
-    grantId: r.grant.id,
-    name: r.name ?? r.grant.client_id,
-    scope: r.grant.scope.split(' '),
-    connectedAt: r.grant.created_at,
-    lastUsedAt: r.grant.last_used_at,
-  }));
+  return [...Map.groupBy(rows, (r) => r.grant.client_id).values()].flatMap(
+    ([newest, ...older]) => {
+      if (!newest) {
+        return [];
+      }
+      const lastUsed = [newest, ...older]
+        .flatMap((r) => (r.grant.last_used_at ? [r.grant.last_used_at] : []))
+        .toSorted()
+        .at(-1);
+      return [
+        {
+          grantId: newest.grant.id,
+          name: newest.name ?? newest.grant.client_id,
+          scope: newest.grant.scope.split(' '),
+          connectedAt: newest.grant.created_at,
+          lastUsedAt: lastUsed ?? null,
+        },
+      ];
+    },
+  );
 }
 
-/** Revoke one of the user's grants. Returns false if it isn't theirs. */
+/**
+ * Revoke one of the user's connections: the grant named, and any other live
+ * grant the user has for the same app (see {@link listConnectedApps}). Returns
+ * false if the grant isn't theirs.
+ */
 export async function revokeConnectedApp(
   db: Database,
   userId: number,
   grantId: string,
 ): Promise<boolean> {
+  const sameApp = db
+    .select({ clientId: oauthGrants.client_id })
+    .from(oauthGrants)
+    .where(and(eq(oauthGrants.id, grantId), eq(oauthGrants.user_id, userId)));
   const result = await db
     .update(oauthGrants)
     .set({ revoked_at: new Date().toISOString() })
     .where(
       and(
-        eq(oauthGrants.id, grantId),
         eq(oauthGrants.user_id, userId),
+        inArray(oauthGrants.client_id, sameApp),
         isNull(oauthGrants.revoked_at),
       ),
     )
     .run();
   return (result.meta.changes ?? 0) > 0;
+}
+
+/**
+ * Delete OAuth rows that are stale at `now` (Unix seconds): expired codes and
+ * tokens, the tokens and old rows of revoked grants, and clients nobody ever
+ * approved. What counts as stale is decided by {@link purgeCutoffs}. Safe to
+ * run at any time and by several requests at once; it is one batch.
+ */
+export async function purgeOAuthData(
+  db: Database,
+  now: number = Math.floor(Date.now() / 1000),
+): Promise<void> {
+  const cutoffs = purgeCutoffs(now);
+  const revokedBefore = (iso: string) =>
+    db
+      .select({ id: oauthGrants.id })
+      .from(oauthGrants)
+      .where(lt(oauthGrants.revoked_at, iso));
+  const grantedClients = db
+    .select({ clientId: oauthGrants.client_id })
+    .from(oauthGrants);
+  await db.batch([
+    db
+      .delete(oauthCodes)
+      .where(lt(oauthCodes.expires_at, cutoffs.codesExpiredBefore)),
+    db
+      .delete(oauthTokens)
+      .where(lt(oauthTokens.expires_at, cutoffs.tokensExpiredBefore)),
+    db
+      .delete(oauthTokens)
+      .where(
+        inArray(
+          oauthTokens.grant_id,
+          revokedBefore(cutoffs.revokedTokensBefore),
+        ),
+      ),
+    db
+      .delete(oauthGrants)
+      .where(lt(oauthGrants.revoked_at, cutoffs.revokedGrantsBefore)),
+    db
+      .delete(oauthClients)
+      .where(
+        and(
+          eq(oauthClients.kind, 'dcr'),
+          lt(oauthClients.created_at, cutoffs.unusedDcrClientsBefore),
+          notInArray(oauthClients.client_id, grantedClients),
+        ),
+      ),
+    db
+      .delete(oauthClients)
+      .where(
+        and(
+          eq(oauthClients.kind, 'cimd'),
+          lt(oauthClients.fetched_at, cutoffs.unusedCimdClientsBefore),
+          notInArray(oauthClients.client_id, grantedClients),
+        ),
+      ),
+  ]);
+}
+
+/** How long a rate-limit counter must sit idle before the background sweep removes it (one day). */
+const IDLE_COUNTER_SECONDS = 24 * 60 * 60;
+
+/** The clean-ups a request may start in the background (see `sweepSometimes`): stale OAuth rows and idle rate-limit counters. */
+export function oauthSweeps(db: Database): Sweeps {
+  return {
+    purgeOAuth: () => purgeOAuthData(db),
+    purgeRateLimits: () =>
+      purgeRateLimits(d1RateLimitStore(db.$client), IDLE_COUNTER_SECONDS),
+  };
 }

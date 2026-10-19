@@ -30,6 +30,52 @@ describe('bearerToken', () => {
   });
 });
 
+describe('CORS_HEADERS', () => {
+  const list = (name: string) =>
+    (CORS_HEADERS[name] ?? '').split(',').map((v) => v.trim());
+
+  it('allows the methods the endpoints answer, including DELETE so a session-ending client gets our 405', () => {
+    expect(list('Access-Control-Allow-Methods')).toEqual([
+      'GET',
+      'POST',
+      'DELETE',
+      'OPTIONS',
+    ]);
+  });
+
+  it('allows the request headers every kind of MCP client sends, spelled as the spec spells them', () => {
+    expect(list('Access-Control-Allow-Headers')).toEqual(
+      expect.arrayContaining([
+        'Authorization',
+        'Content-Type',
+        'Accept',
+        'MCP-Protocol-Version',
+        'Mcp-Method',
+        'Mcp-Name',
+        'Mcp-Session-Id',
+        'Last-Event-ID',
+        'traceparent',
+        'tracestate',
+        'baggage',
+      ]),
+    );
+  });
+
+  it('lists no header twice', () => {
+    const lower = list('Access-Control-Allow-Headers').map((h) =>
+      h.toLowerCase(),
+    );
+    expect(new Set(lower).size).toBe(lower.length);
+  });
+
+  it('lets a page read the challenge and the retry delay', () => {
+    expect(list('Access-Control-Expose-Headers')).toEqual([
+      'WWW-Authenticate',
+      'Retry-After',
+    ]);
+  });
+});
+
 describe('preflight', () => {
   it('answers 204 with the CORS headers', () => {
     const response = preflight();

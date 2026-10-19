@@ -13,6 +13,7 @@
  * Only public clients (no client secret, PKCE required) are supported.
  */
 
+import { sanitiseDisplayName } from './display';
 import { isAcceptableRedirectUri } from './redirect-uri';
 import { bytesToBase64Url } from '../util/base64';
 import { parseUrl } from '../util/url';
@@ -26,14 +27,20 @@ export interface OAuthClient {
   readonly kind: 'dcr' | 'cimd';
 }
 
-/** Largest metadata document we will read. */
-const MAX_DOCUMENT_BYTES = 10_000;
+/** Largest metadata document we will read, in bytes (CIMD draft §6.6 asks implementations to limit the size). */
+export const MAX_DOCUMENT_BYTES = 10_000;
 
 /** How long to wait for a client's metadata document. */
 const FETCH_TIMEOUT_MS = 5000;
 
-/** The longest client name we show on the consent page. */
-const MAX_NAME_LENGTH = 100;
+/** How long a fetched document is trusted when the server says nothing about caching (one hour). */
+export const DEFAULT_DOCUMENT_TTL_SECONDS = 60 * 60;
+
+/** The shortest time a fetched document is kept, however short-lived the server says it is (five minutes). */
+export const MIN_DOCUMENT_TTL_SECONDS = 5 * 60;
+
+/** The longest time a fetched document is kept, however long-lived the server says it is (one day). */
+export const MAX_DOCUMENT_TTL_SECONDS = 24 * 60 * 60;
 
 /** Whether a `client_id` is a metadata-document URL rather than a plain id. */
 export function isMetadataDocumentUrl(clientId: string): boolean {
@@ -42,6 +49,8 @@ export function isMetadataDocumentUrl(clientId: string): boolean {
     url !== undefined &&
     url.protocol === 'https:' &&
     url.pathname.length > 1 &&
+    // CIMD draft §3: the URL SHOULD NOT have a query string.
+    !url.href.includes('?') &&
     !url.hash &&
     !url.username &&
     !url.password &&
@@ -55,10 +64,13 @@ export function isMetadataDocumentUrl(clientId: string): boolean {
   );
 }
 
-/** A client's display name: trimmed, capped, with a fallback when it gave none. */
+/**
+ * A client's display name, cleaned for showing to a person (see
+ * {@link sanitiseDisplayName}): invisible and direction-changing characters
+ * removed, whitespace collapsed, capped, and `fallback` when nothing is left.
+ */
 function cleanName(name: unknown, fallback: string): string {
-  const text = typeof name === 'string' ? name.trim() : '';
-  return (text || fallback).slice(0, MAX_NAME_LENGTH);
+  return sanitiseDisplayName(name, fallback);
 }
 
 /** Whether a value is a JSON object (or array) whose members can be looked up by name. */
@@ -79,6 +91,65 @@ function isRedirectList(value: unknown): value is readonly string[] {
 /** The redirect addresses to use: 1 to 20 acceptable ones, or undefined. */
 function redirectList(value: unknown): readonly string[] | undefined {
   return isRedirectList(value) ? value : undefined;
+}
+
+/**
+ * What looking a client up can answer besides "here it is" and "unknown": "ask
+ * again later". The lookup would have meant fetching the client's metadata
+ * document, and too many fetches have happened lately (see `limits.ts`).
+ */
+export interface ClientBusy {
+  readonly busy: true;
+  /** Seconds to wait before asking again. */
+  readonly retryAfterSeconds: number;
+}
+
+/** Whether a client lookup answered "ask again later". */
+export function isClientBusy(
+  lookup: OAuthClient | ClientBusy | undefined,
+): lookup is ClientBusy {
+  return lookup !== undefined && 'busy' in lookup;
+}
+
+/** How long a cached copy of a metadata document may still be used when a fresh one cannot be fetched (seven days). */
+export const MAX_STALE_DOCUMENT_SECONDS = 7 * 24 * 60 * 60;
+
+/** The timestamps that say how current a cached metadata document is. */
+export interface CachedDocument {
+  /** When it was fetched (ISO-8601), or null if the client was not fetched. */
+  readonly fetchedAt: string | null;
+  /** Until when it may be reused (ISO-8601); null for copies stored before expiry was recorded. */
+  readonly expiresAt: string | null;
+}
+
+/** Whether a cached document may be used as it is, without fetching it again, at `nowMs` (milliseconds). */
+export function isDocumentFresh(
+  cached: Readonly<CachedDocument>,
+  nowMs: number,
+): boolean {
+  if (cached.fetchedAt === null) {
+    return false;
+  }
+  const until = cached.expiresAt
+    ? Date.parse(cached.expiresAt)
+    : Date.parse(cached.fetchedAt) + DEFAULT_DOCUMENT_TTL_SECONDS * 1000;
+  return nowMs < until;
+}
+
+/**
+ * Whether a cached document is recent enough to fall back on when fetching a
+ * new one fails. Past {@link MAX_STALE_DOCUMENT_SECONDS} the client is treated
+ * as unknown rather than trusted on very old data (CIMD draft §4.3: abort when
+ * discovery fails).
+ */
+export function isDocumentUsable(
+  cached: Readonly<CachedDocument>,
+  nowMs: number,
+): boolean {
+  return (
+    cached.fetchedAt !== null &&
+    nowMs - Date.parse(cached.fetchedAt) < MAX_STALE_DOCUMENT_SECONDS * 1000
+  );
 }
 
 /** The result of validating client metadata. */
@@ -131,16 +202,106 @@ export function parseClientMetadataDocument(
   };
 }
 
+/** A fetched and validated metadata document, with how long it may be kept. */
+export type ClientFetch =
+  | {
+      readonly ok: true;
+      readonly client: OAuthClient;
+      /** How long the document may be reused before fetching it again, in seconds. */
+      readonly ttlSeconds: number;
+    }
+  | {
+      readonly ok: false;
+      readonly error: string;
+      readonly description: string;
+    };
+
+/**
+ * How long a fetched document may be reused, from its `Cache-Control` header:
+ * `max-age`, kept within five minutes and a day. Without the header, or with
+ * `no-store`/`no-cache`, the shortest time applies (the document is still needed
+ * for the few minutes a sign-in takes, so it is never dropped at once).
+ */
+export function documentTtlSeconds(cacheControl: string | null): number {
+  if (cacheControl === null) {
+    return DEFAULT_DOCUMENT_TTL_SECONDS;
+  }
+  const directives = cacheControl
+    .toLowerCase()
+    .split(',')
+    .map((directive) => directive.trim());
+  if (directives.some((d) => d === 'no-store' || d === 'no-cache')) {
+    return MIN_DOCUMENT_TTL_SECONDS;
+  }
+  const maxAge = directives
+    .map((d) => /^max-age=(\d+)$/.exec(d)?.[1])
+    .find((value) => value !== undefined);
+  return maxAge === undefined
+    ? DEFAULT_DOCUMENT_TTL_SECONDS
+    : Math.min(
+        MAX_DOCUMENT_TTL_SECONDS,
+        Math.max(MIN_DOCUMENT_TTL_SECONDS, Number(maxAge)),
+      );
+}
+
+/** Read chunks until the stream ends, or give up (undefined) once more than `remaining` bytes have arrived. */
+async function drain(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  remaining: number,
+  chunks: readonly Uint8Array[] = [],
+): Promise<readonly Uint8Array[] | undefined> {
+  const { done, value } = await reader.read();
+  if (done) {
+    return chunks;
+  }
+  if (value.byteLength > remaining) {
+    await reader.cancel();
+    return undefined;
+  }
+  return drain(reader, remaining - value.byteLength, [...chunks, value]);
+}
+
+/**
+ * The body of a response as text, read as a stream so that a hostile server
+ * can never make us hold more than `maxBytes`: a declared `Content-Length`
+ * over the cap is refused before reading, and an undeclared (or lying) body is
+ * cut off the moment it passes the cap. Undefined means "too large".
+ */
+export async function readCappedText(
+  response: Response,
+  maxBytes: number,
+): Promise<string | undefined> {
+  const declared = Number(response.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    await response.body?.cancel();
+    return undefined;
+  }
+  if (!response.body) {
+    return '';
+  }
+  const chunks = await drain(response.body.getReader(), maxBytes);
+  // One decoder carried across the chunks, so a character split between two of
+  // them still decodes; only the last chunk flushes it.
+  const decoder = new TextDecoder();
+  return chunks
+    ?.map((chunk, at) =>
+      decoder.decode(chunk, { stream: at < chunks.length - 1 }),
+    )
+    .join('');
+}
+
 /**
  * Fetch and validate a client's metadata document. Never follows redirects, caps
- * the size and time, and (on Workers) can only reach public hosts, so a hostile
- * `client_id` can't be used to probe internal services.
+ * the size (streamed, so a huge body is never buffered) and time, and (on
+ * Workers) can only reach public hosts, so a hostile `client_id` can't be used
+ * to probe internal services. The result says how long the document may be
+ * reused, from its cache headers.
  */
 export async function fetchClientMetadata(
   url: string,
   fetchImpl: typeof fetch = fetch,
-): Promise<ClientParse> {
-  const bad = (description: string): ClientParse => ({
+): Promise<ClientFetch> {
+  const bad = (description: string): ClientFetch => ({
     ok: false,
     error: 'invalid_client',
     description,
@@ -157,18 +318,28 @@ export async function fetchClientMetadata(
     return bad('The client metadata document could not be fetched.');
   }
   if (!response.ok) {
+    await response.body?.cancel();
     return bad(
       `The client metadata document returned HTTP ${response.status}.`,
     );
   }
-  const text = await response.text();
-  if (text.length > MAX_DOCUMENT_BYTES) {
-    return bad('The client metadata document is too large.');
+  const text = await readCappedText(response, MAX_DOCUMENT_BYTES).catch(
+    () => undefined,
+  );
+  if (text === undefined) {
+    return bad('The client metadata document is too large or unreadable.');
   }
   const json = parseJson(text);
-  return json.ok
+  const parsed = json.ok
     ? parseClientMetadataDocument(json.value, url)
     : bad('The client metadata document is not valid JSON.');
+  return parsed.ok
+    ? {
+        ok: true,
+        client: parsed.client,
+        ttlSeconds: documentTtlSeconds(response.headers.get('cache-control')),
+      }
+    : parsed;
 }
 
 /** JSON text parsed without throwing: the value, or a note that it wasn't JSON. */
@@ -245,7 +416,7 @@ export function parseRegistration(body: unknown): Registration {
       ok: false,
       error: 'invalid_redirect_uri',
       description:
-        'redirect_uris must list 1–20 https, loopback http or app-scheme URIs.',
+        'redirect_uris must list 1–20 https URIs, loopback http URIs (localhost, 127.0.0.1 or [::1]) or reverse-domain app-scheme URIs.',
     };
   }
   const method = data['token_endpoint_auth_method'];
@@ -268,6 +439,21 @@ export function parseRegistration(body: unknown): Registration {
       error: 'invalid_client_metadata',
       description:
         'Only the authorization_code and refresh_token grants are supported.',
+    };
+  }
+  const responseTypes = data['response_types'];
+  if (
+    responseTypes !== undefined &&
+    !(
+      Array.isArray(responseTypes) &&
+      responseTypes.length > 0 &&
+      responseTypes.every((type) => type === 'code')
+    )
+  ) {
+    return {
+      ok: false,
+      error: 'invalid_client_metadata',
+      description: 'Only the code response type is supported.',
     };
   }
   const id = bytesToBase64Url(crypto.getRandomValues(new Uint8Array(18)));

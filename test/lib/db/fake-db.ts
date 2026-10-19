@@ -40,6 +40,8 @@ export interface FakeResults {
   readonly insert?: readonly unknown[];
   readonly update?: readonly unknown[];
   readonly delete?: readonly unknown[];
+  /** What the n-th `batch` call answers (one result per statement); the last repeats. Default: an empty result per statement. */
+  readonly batch?: readonly (readonly unknown[])[];
   /** What `query.<table>.findFirst` answers. */
   readonly findFirst?: Readonly<Record<string, unknown>>;
   /** What `query.<table>.findMany` answers. */
@@ -72,8 +74,12 @@ export function fakeDb(results: FakeResults = {}): {
     update: start('update'),
     delete: start('delete'),
     batch: async (statements: unknown[]) => {
+      const n = batches.length;
       batches.push(statements);
-      return statements.map(() => []);
+      return (
+        (nth(results.batch, n) as unknown[] | undefined) ??
+        statements.map(() => [])
+      );
     },
     query: new Proxy(
       {},
