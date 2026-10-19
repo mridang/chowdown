@@ -1,109 +1,338 @@
 /**
- * Shared data/actions bridge for the chowdown Views. MCP Apps hosts differ in
- * how they talk to a View: ChatGPT uses its `window.openai` bridge (the
- * `toolOutput` global + an `openai:set_globals` event + `callTool` /
- * `requestDisplayMode` / `sendFollowUpMessage` methods), while standard hosts
- * use the ext-apps `App` (the `ui/notifications/tool-result` handler). This
- * hook reads from both so a View renders and acts correctly in either.
+ * @packageDocumentation
+ *
+ * The one place a chowdown View talks to its host. It connects with the
+ * ext-apps `App` (the standard MCP Apps channel every compliant host speaks),
+ * turns the host's notifications into the pure state machines in
+ * `view-state.ts` and `display-mode.ts`, and hands the View plain values and
+ * a few actions. ChatGPT's `window.openai` bridge is used on top of that where
+ * it is the better route (see `openai-bridge.ts`).
+ *
+ * The hook is deliberately thin: every decision (what state a result leads to,
+ * whether to ask for fullscreen, which route sends a follow-up) is made by a
+ * tested pure function; this file only wires them to the browser.
  */
 
 import {
+  McpUiResourceTeardownRequestSchema,
+  McpUiResourceTeardownResultSchema,
   useApp,
   useHostStyleVariables,
+  type App,
+  type McpUiHostContext,
 } from '@modelcontextprotocol/ext-apps/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useReducer } from 'react';
 
-/** The values ChatGPT keeps on `window.openai` and announces with `openai:set_globals`. */
-interface OpenAiGlobals {
-  readonly toolOutput?: unknown;
-  readonly displayMode?: string;
-}
+import {
+  INITIAL_LAYOUT,
+  SUPPORTED_DISPLAY_MODES,
+  isDisplayMode,
+  isExpanded,
+  modeFromResult,
+  planExpand,
+  reduceLayout,
+  type DisplayMode,
+  type LayoutAction,
+} from './display-mode';
+import { firstThatWorks, followUpChannels } from './follow-up';
+import { hasFixedHeight, safeAreaVariables } from './host-context';
+import {
+  getOpenAi,
+  globalsFromEvent,
+  type OpenAiApi,
+  type OpenAiGlobals,
+} from './openai-bridge';
+import { readOutcome, type ToolOutcome } from './payload';
+import {
+  INITIAL_VIEW_STATE,
+  LOADING_TIMEOUT_MS,
+  isPending,
+  reduceViewState,
+  type ViewAction,
+  type ViewState,
+} from './view-state';
 
-/** ChatGPT's bridge: its globals, plus the actions it lets a View take. */
-interface OpenAiApi extends OpenAiGlobals {
-  readonly requestDisplayMode?: (params: {
-    readonly mode: string;
-  }) => Promise<unknown>;
-  readonly sendFollowUpMessage?: (params: { readonly prompt: string }) => void;
-}
-
-/** ChatGPT's bridge, when the View is running inside ChatGPT; otherwise nothing. */
-function getOpenai(): OpenAiApi | undefined {
-  const candidate: unknown = Reflect.get(globalThis, 'openai');
-  return typeof candidate === 'object' && candidate !== null
-    ? candidate
-    : undefined;
-}
-
-/** What a View gets: the current data, display mode, and host actions. */
+/** What a View gets: the current state of its data, its layout, and host actions. */
 export interface WidgetBridge<T> {
-  /** The tool's output, or `null` until the host has delivered it. */
-  readonly data: T | null;
-  readonly fullscreen: boolean;
-  readonly requestFullscreen: () => Promise<void>;
-  /** Trigger a follow-up turn (e.g. open a recipe from the list). */
-  readonly sendFollowUp: (prompt: string) => void;
+  /** Where the View is in its life: connecting, waiting, ready or failed. */
+  readonly state: ViewState<T>;
+  /** Whether the expanded (fullscreen) layout should be showing. */
+  readonly expanded: boolean;
+  /** Ask the host for fullscreen; expands in place if the host will not. */
+  readonly expand: () => Promise<void>;
+  /** Leave the expanded layout, asking the host to leave fullscreen too. */
+  readonly collapse: () => Promise<void>;
+  /**
+   * Ask the assistant to do something in the conversation, as if the person had
+   * typed it. Resolves true when a route accepted it, false when none did.
+   */
+  readonly sendFollowUp: (prompt: string) => Promise<boolean>;
+  /** Whether the host will run a tool for the View (so {@link WidgetBridge.callTool} works). */
+  readonly canCallTools: boolean;
+  /** Run one of the server's tools through the host and read its result. */
+  readonly callTool: <U>(
+    name: string,
+    args: Readonly<Record<string, unknown>>,
+    guard: (value: unknown) => value is U,
+  ) => Promise<ToolOutcome<U>>;
+  /** Open a web page through the host; absent when the host cannot. */
+  readonly openLink: ((url: string) => void) | undefined;
+}
+
+/**
+ * Apply the parts of the host context that change the page itself: the
+ * safe-area insets (as CSS custom properties) and whether the host fixes the
+ * frame height (as a data attribute the stylesheet reads).
+ */
+function applyDocumentContext(context: McpUiHostContext): void {
+  const root = document.documentElement;
+  if (context.safeAreaInsets !== undefined) {
+    safeAreaVariables(context.safeAreaInsets).forEach(([name, value]) =>
+      root.style.setProperty(name, value),
+    );
+  }
+  if (context.containerDimensions !== undefined) {
+    root.toggleAttribute(
+      'data-fixed-height',
+      hasFixedHeight(context.containerDimensions),
+    );
+  }
+}
+
+/** Take a (possibly partial) host context into account: its display mode and page-level settings. */
+function applyHostContext(
+  context: McpUiHostContext | undefined,
+  dispatchLayout: (action: LayoutAction) => void,
+): void {
+  if (context === undefined) {
+    return;
+  }
+  if (isDisplayMode(context.displayMode)) {
+    dispatchLayout({ type: 'host-mode', mode: context.displayMode });
+  }
+  applyDocumentContext(context);
+}
+
+/**
+ * Ask for a display mode and report the one the host actually set. Tries the
+ * standard request first and ChatGPT's bridge second; undefined when neither
+ * gave a recognisable answer.
+ */
+async function requestMode(
+  app: App | null,
+  openai: OpenAiApi | undefined,
+  mode: DisplayMode,
+): Promise<DisplayMode | undefined> {
+  const viaApp =
+    app === null
+      ? undefined
+      : await app
+          .requestDisplayMode({ mode })
+          .then(modeFromResult, () => undefined);
+  if (viaApp !== undefined || openai?.requestDisplayMode === undefined) {
+    return viaApp;
+  }
+  return openai
+    .requestDisplayMode({ mode })
+    .then(modeFromResult, () => undefined);
 }
 
 /**
  * Connect the View to its host and return the tool's `structuredContent`
- * (typed as `T`), kept live as the host pushes updates.
+ * (checked by `guard` and typed as `T`) inside a state that always resolves:
+ * data, a message from the server, a cancellation, or a timeout.
+ *
+ * @param appName - Name the View reports to the host in `ui/initialize`.
+ * @param guard - Tells whether `structuredContent` has the shape the View draws.
+ *   Must be a stable (module-level) function.
  */
-export function useWidgetData<T>(appName: string): WidgetBridge<T> {
-  const [data, setData] = useState<T | null>(null);
-  const [displayMode, setDisplayMode] = useState('inline');
-  const [localFullscreen, setLocalFullscreen] = useState(false);
+export function useWidgetData<T>(
+  appName: string,
+  guard: (value: unknown) => value is T,
+): WidgetBridge<T> {
+  const [state, dispatch] = useReducer<ViewState<T>, [ViewAction<T>]>(
+    reduceViewState,
+    INITIAL_VIEW_STATE,
+  );
+  const [layout, dispatchLayout] = useReducer(reduceLayout, INITIAL_LAYOUT);
 
-  const { app } = useApp({
+  const { app, error } = useApp({
     appInfo: { name: appName, version: '0.1.0' },
-    capabilities: {},
+    // The spec requires a View to declare every display mode it can lay out.
+    capabilities: { availableDisplayModes: [...SUPPORTED_DISPLAY_MODES] },
+    // Handlers go in before the handshake so the first notification is not missed.
     onAppCreated: (created) => {
-      // The payload is our own tool's `structuredContent`, typed `T` by contract.
-      created.addEventListener('toolresult', (params) => {
-        const sc = params.structuredContent as T | undefined;
-        if (sc) setData(sc);
-      });
+      const input = (params: { arguments?: Record<string, unknown> }) =>
+        dispatch({ type: 'input', args: params.arguments });
+      created.addEventListener('toolinput', input);
+      created.addEventListener('toolinputpartial', input);
+      created.addEventListener('toolresult', (result) =>
+        dispatch({ type: 'result', outcome: readOutcome(result, guard) }),
+      );
+      created.addEventListener('toolcancelled', (params) =>
+        dispatch({ type: 'cancelled', reason: params.reason }),
+      );
+      created.addEventListener('hostcontextchanged', (context) =>
+        applyHostContext(context, dispatchLayout),
+      );
+      // Nothing to save when the host closes the View, so just acknowledge.
+      created.setRequestHandler(
+        'ui/resource-teardown',
+        {
+          params: McpUiResourceTeardownRequestSchema.shape.params,
+          result: McpUiResourceTeardownResultSchema,
+        },
+        () => ({}),
+      );
     },
   });
+
+  // Theme and CSS variables follow the host, including later theme changes.
+  // The host's font CSS is deliberately not applied: loading fonts would need an
+  // origin in the CSP, and the Views declare none.
   useHostStyleVariables(app, app?.getHostContext());
 
   useEffect(() => {
-    const apply = (g?: OpenAiGlobals) => {
-      if (g?.toolOutput) setData(g.toolOutput as T);
-      if (typeof g?.displayMode === 'string') setDisplayMode(g.displayMode);
-    };
-    apply(getOpenai());
-    const onGlobals = (event: Event) => {
-      if (event instanceof CustomEvent) {
-        apply(event.detail?.globals);
-      }
-    };
-    window.addEventListener('openai:set_globals', onGlobals);
-    return () => window.removeEventListener('openai:set_globals', onGlobals);
-  }, []);
-
-  const requestFullscreen = useCallback(async () => {
-    const oa = getOpenai();
-    try {
-      if (oa?.requestDisplayMode) {
-        await oa.requestDisplayMode({ mode: 'fullscreen' });
-      } else if (app) {
-        await app.requestDisplayMode({ mode: 'fullscreen' });
-      }
-    } catch {
-      /* fall through to local fullscreen */
+    if (app === null) {
+      return;
     }
-    setLocalFullscreen(true);
+    dispatch({ type: 'connected' });
+    applyHostContext(app.getHostContext(), dispatchLayout);
   }, [app]);
 
-  const sendFollowUp = useCallback((prompt: string) => {
-    getOpenai()?.sendFollowUpMessage?.({ prompt });
-  }, []);
+  useEffect(() => {
+    if (error !== null) {
+      dispatch({
+        type: 'connection-error',
+        message: `Could not connect to the assistant (${error.message}).`,
+      });
+    }
+  }, [error]);
+
+  // Never leave the View on a loading placeholder for good.
+  const pending = isPending(state);
+  useEffect(() => {
+    if (!pending) {
+      return;
+    }
+    const timer = setTimeout(
+      () => dispatch({ type: 'timeout' }),
+      LOADING_TIMEOUT_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [pending]);
+
+  // ChatGPT keeps the tool output and display mode on `window.openai` too; read
+  // them once and follow its change events, so a card still renders if the
+  // standard notifications never arrive.
+  useEffect(() => {
+    const apply = (globals: OpenAiGlobals | undefined) => {
+      if (globals?.toolOutput) {
+        dispatch({
+          type: 'result',
+          outcome: readOutcome(
+            { structuredContent: globals.toolOutput },
+            guard,
+          ),
+        });
+      }
+      if (isDisplayMode(globals?.displayMode)) {
+        dispatchLayout({ type: 'host-mode', mode: globals.displayMode });
+      }
+    };
+    apply(getOpenAi());
+    const onGlobals = (event: Event) => apply(globalsFromEvent(event));
+    window.addEventListener('openai:set_globals', onGlobals);
+    return () => window.removeEventListener('openai:set_globals', onGlobals);
+  }, [guard]);
+
+  const hostMode = layout.hostMode;
+
+  const expand = useCallback(async () => {
+    if (planExpand(app?.getHostContext()) === 'local') {
+      dispatchLayout({ type: 'expand-locally' });
+      return;
+    }
+    const mode = await requestMode(app, getOpenAi(), 'fullscreen');
+    if (mode === 'fullscreen') {
+      dispatchLayout({ type: 'host-mode', mode });
+    } else {
+      // The host declined (or did not answer): grow in place, with a way back.
+      dispatchLayout({ type: 'expand-locally' });
+    }
+  }, [app]);
+
+  const collapse = useCallback(async () => {
+    dispatchLayout({ type: 'collapse-locally' });
+    if (hostMode === 'fullscreen') {
+      const mode = await requestMode(app, getOpenAi(), 'inline');
+      if (mode !== undefined) {
+        dispatchLayout({ type: 'host-mode', mode });
+      }
+    }
+  }, [app, hostMode]);
+
+  const sendFollowUp = useCallback(
+    async (prompt: string): Promise<boolean> => {
+      const openai = getOpenAi();
+      const channels = followUpChannels({
+        connected: app !== null,
+        openAiFollowUp: typeof openai?.sendFollowUpMessage === 'function',
+      });
+      const used = await firstThatWorks(channels, async (channel) => {
+        if (channel === 'openai') {
+          await openai?.sendFollowUpMessage?.({ prompt });
+          return true;
+        }
+        const result = await app?.sendMessage({
+          role: 'user',
+          content: [{ type: 'text', text: prompt }],
+        });
+        return result !== undefined && result.isError !== true;
+      });
+      return used !== undefined;
+    },
+    [app],
+  );
+
+  const callTool = useCallback(
+    async <U>(
+      name: string,
+      args: Readonly<Record<string, unknown>>,
+      toolGuard: (value: unknown) => value is U,
+    ): Promise<ToolOutcome<U>> => {
+      if (app === null) {
+        return { kind: 'message', text: 'Not connected yet.', isError: true };
+      }
+      return app.callServerTool({ name, arguments: { ...args } }).then(
+        (result) => readOutcome(result, toolGuard),
+        (failure: unknown): ToolOutcome<U> => ({
+          kind: 'message',
+          text:
+            failure instanceof Error
+              ? failure.message
+              : 'The request did not go through.',
+          isError: true,
+        }),
+      );
+    },
+    [app],
+  );
+
+  const capabilities = app?.getHostCapabilities();
+  const openLink =
+    app !== null && capabilities?.openLinks !== undefined
+      ? (url: string) => void app.openLink({ url }).catch(() => undefined)
+      : undefined;
 
   return {
-    data,
-    fullscreen: displayMode === 'fullscreen' || localFullscreen,
-    requestFullscreen,
+    state,
+    expanded: isExpanded(layout),
+    expand,
+    collapse,
     sendFollowUp,
+    canCallTools: capabilities?.serverTools !== undefined,
+    callTool,
+    openLink,
   };
 }
