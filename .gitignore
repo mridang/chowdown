@@ -45,11 +45,3 @@ next-env.d.ts
 
 # Jest coverage + junit output
 /.out/
-
-# Local credentials — service-account key, never committed (set as a Worker
-# secret for prod and in .dev.vars for local dev)
-/secrets/
-
-# Generated MCP Apps View bundles (built by scripts/build-views.mjs)
-/src/views/generated/
-src/design/*.local.json

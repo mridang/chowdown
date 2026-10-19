@@ -27,7 +27,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const outDir = resolve(root, 'src/views/generated');
+const outDir = resolve(root, 'build/views');
 
 /** The Views to bundle: the entry point name (src/views/<name>.tsx) and the page title. */
 const VIEWS = [

@@ -24,11 +24,11 @@ import {
 import {
   contentHash as recipeCardHash,
   html as recipeCardHtml,
-} from '../../views/generated/recipe-card';
+} from '../../../build/views/recipe-card';
 import {
   contentHash as recipeListHash,
   html as recipeListHtml,
-} from '../../views/generated/recipe-list';
+} from '../../../build/views/recipe-list';
 import { SITE_URL } from '../site';
 
 /**
