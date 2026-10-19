@@ -1,15 +1,14 @@
 import { RECIPES } from '@/components/landing/demo-recipes';
-import {
-  Faq,
-  FinalCta,
-  Features,
-  HeroVisual,
-  SampleStrip,
-  Facts,
-  SignInButton,
-  WorksWith,
-} from '@/components/landing/landing';
+import { Faq } from '@/components/landing/faq';
+import { Facts } from '@/components/landing/facts';
+import { Features } from '@/components/landing/features/features';
+import { FinalCta } from '@/components/landing/final-cta';
+import { HeroVisual } from '@/components/landing/hero-visual';
+import { SampleStrip } from '@/components/landing/sample-strip';
+import { SignInButton } from '@/components/landing/sign-in-button';
+import { WorksWith } from '@/components/landing/works-with';
 import { ButtonLink } from '@/components/ui/button';
+import { Callout } from '@/components/ui/callout';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 import { jsonLdText, landingJsonLd } from '@/lib/seo';
 
@@ -29,10 +28,10 @@ export function HomeLanding({
     <>
       {signInFailed ? (
         <Container className="pt-6">
-          <p className="rounded-card bg-sand px-5 py-4 text-sm leading-relaxed">
+          <Callout shape="banner" className="text-sm leading-relaxed">
             Signing in with Google didn’t work. Nothing was changed, so please
             try again.
-          </p>
+          </Callout>
         </Container>
       ) : null}
       {/* Structured data for search engines and assistants (never executed). */}
