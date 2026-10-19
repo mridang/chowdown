@@ -8,7 +8,7 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireUid } from '@/lib/api/auth';
+import { requireLiveUid } from '@/lib/api/auth';
 import { listRecipes } from '@/lib/api/recipe-list';
 
 /**
@@ -17,7 +17,7 @@ import { listRecipes } from '@/lib/api/recipe-list';
  * or 401 when nobody is signed in.
  */
 export async function GET(request: Request): Promise<NextResponse> {
-  const auth = await requireUid(request);
+  const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
   }

@@ -9,7 +9,7 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireUid } from '@/lib/api/auth';
+import { requireLiveUid } from '@/lib/api/auth';
 import { problems } from '@/lib/api/problem';
 import { recipeSummary } from '@/lib/api/recipe-resource';
 import { setFavourite } from '@/lib/db/favourites';
@@ -41,7 +41,7 @@ export async function GET(
   request: Request,
   { params }: RecipeContext,
 ): Promise<NextResponse> {
-  const auth = await requireUid(request);
+  const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
   }
@@ -67,7 +67,7 @@ export async function PUT(
   request: Request,
   { params }: RecipeContext,
 ): Promise<NextResponse> {
-  const auth = await requireUid(request);
+  const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
   }
@@ -89,7 +89,7 @@ export async function DELETE(
   request: Request,
   { params }: RecipeContext,
 ): Promise<NextResponse> {
-  const auth = await requireUid(request);
+  const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
   }

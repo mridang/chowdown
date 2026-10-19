@@ -7,7 +7,7 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireUid } from '@/lib/api/auth';
+import { requireLiveUid } from '@/lib/api/auth';
 import { pageBody } from '@/lib/api/pagination';
 import { problems } from '@/lib/api/problem';
 import type { IdContext } from '@/lib/api/route-context';
@@ -25,7 +25,7 @@ export async function GET(
   request: Request,
   { params }: IdContext,
 ): Promise<NextResponse> {
-  const auth = await requireUid(request);
+  const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
   }

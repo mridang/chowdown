@@ -7,7 +7,7 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireUid } from '@/lib/api/auth';
+import { requireLiveUid } from '@/lib/api/auth';
 import { problems } from '@/lib/api/problem';
 import type { IdContext } from '@/lib/api/route-context';
 import { deleteRecipeImport, getRecipeImport } from '@/lib/db/recipe-imports';
@@ -21,7 +21,7 @@ export async function GET(
   request: Request,
   { params }: IdContext,
 ): Promise<NextResponse> {
-  const auth = await requireUid(request);
+  const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
   }
@@ -45,7 +45,7 @@ export async function DELETE(
   request: Request,
   { params }: IdContext,
 ): Promise<NextResponse> {
-  const auth = await requireUid(request);
+  const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
   }

@@ -2,26 +2,33 @@
  * Bring the session cookie up to date with the database (today: whether Google
  * Drive is connected, which the header shows) and send the person back where
  * they were going. Pages can't change cookies, so one that notices the two
- * disagree redirects here. Someone not signed in goes home.
+ * disagree redirects here. Someone not signed in goes home, and a session
+ * cookie that no longer stands for anyone (the session was ended, or the
+ * account deleted) is cleared on the way, so pages stop treating them as
+ * signed in.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getCurrentUser, getSession } from '@/lib/auth/current-user';
 import { safeReturnPath } from '@/lib/auth/return-to';
+import { SESSION_COOKIE } from '@/lib/auth/session';
 import { setSessionCookie } from '@/lib/auth/session-cookie';
 import { appOrigin, getEnv } from '@/lib/util';
 
 /**
  * `GET /api/auth/refresh`: reissue the session cookie from the database and
  * send the person on to the safe `?returnTo=` path (or `/app`). Answers a
- * redirect; someone who is not signed in goes to the home page.
+ * redirect; someone who is not signed in goes to the home page with any dead
+ * session cookie cleared.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const origin = appOrigin(request);
   const user = await getCurrentUser();
   if (!user) {
-    return NextResponse.redirect(`${origin}/`);
+    const home = NextResponse.redirect(`${origin}/`);
+    home.cookies.delete(SESSION_COOKIE);
+    return home;
   }
   const returnTo = safeReturnPath(request.nextUrl.searchParams.get('returnTo'));
   const response = NextResponse.redirect(`${origin}${returnTo ?? '/app'}`);

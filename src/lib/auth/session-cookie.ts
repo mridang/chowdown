@@ -39,6 +39,7 @@ export async function setSessionCookie(
       name: user.name ?? undefined,
       picture: user.picture ?? undefined,
       drive: options.drive ?? isDriveConnected(user),
+      ep: user.session_epoch,
       exp: options.exp,
     },
     options.secret,

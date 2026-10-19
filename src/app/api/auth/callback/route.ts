@@ -30,7 +30,11 @@ import {
   RETURN_COOKIE,
   safeReturnPath,
 } from '@/lib/auth/return-to';
-import { SESSION_COOKIE, verifySessionToken } from '@/lib/auth/session';
+import {
+  SESSION_COOKIE,
+  sessionIsCurrent,
+  verifySessionToken,
+} from '@/lib/auth/session';
 import { setSessionCookie } from '@/lib/auth/session-cookie';
 import { encryptSecret } from '@/lib/crypto';
 import type { Database } from '@/lib/db/client';
@@ -97,7 +101,13 @@ async function completeDriveConnect(
     request.cookies.get(SESSION_COOKIE)?.value ?? '',
     env.SESSION_SECRET,
   );
-  const user = session ? await getUserById(db, session.uid) : undefined;
+  const found = session ? await getUserById(db, session.uid) : undefined;
+  // A session the person has since ended (signed out everywhere) cannot be
+  // used to attach a Drive login to the account.
+  const user =
+    session && found && sessionIsCurrent(session, found.session_epoch)
+      ? found
+      : undefined;
   if (!user) {
     return finishFlow(origin, '/?error=auth');
   }

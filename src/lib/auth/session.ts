@@ -21,6 +21,14 @@ import {
 /** Name of the session cookie. */
 export const SESSION_COOKIE = 'chowdown_session';
 
+/**
+ * Where a page sends a person whose session cookie still verifies but has been
+ * ended (they signed out everywhere, or the account was deleted). The route
+ * clears the dead cookie before going home; sending them straight home would
+ * find the cookie still there, take it for a signed-in visit, and come back.
+ */
+export const ENDED_SESSION_PATH = '/api/auth/refresh';
+
 /** How long a session stays valid, in seconds (30 days). */
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
@@ -43,6 +51,13 @@ export interface SessionPayload {
    * sessions issued before it was added; those fall back to a lookup.
    */
   readonly drive?: boolean;
+  /**
+   * The session epoch the person had when this was issued (`users.session_epoch`).
+   * The session is honoured only while the database still holds the same
+   * number, which is how "sign out everywhere" ends a stolen or forgotten
+   * session. Absent on sessions issued before it existed; those count as epoch 0.
+   */
+  readonly ep?: number;
   /** Expiry as a Unix timestamp (seconds). */
   readonly exp: number;
 }
@@ -75,6 +90,7 @@ export async function createSessionToken(
       ? { picture: payload.picture }
       : {}),
     ...(payload.drive !== undefined ? { drive: payload.drive } : {}),
+    ...(payload.ep !== undefined ? { ep: payload.ep } : {}),
     exp: payload.exp ?? Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
   };
   const body = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(full)));
@@ -150,6 +166,21 @@ function isSessionPayload(value: unknown): value is SessionPayload {
     typeof value === 'object' &&
     value !== null &&
     'exp' in value &&
-    typeof value.exp === 'number'
+    typeof value.exp === 'number' &&
+    // Optional, but a wrong type means the token is not one of ours.
+    (!('ep' in value) || typeof value.ep === 'number')
   );
+}
+
+/**
+ * Whether a verified session is still the current generation for its person:
+ * the epoch it carries (0 for one issued before epochs existed) equals the
+ * epoch in the database. A signature and an expiry only prove the cookie was
+ * issued by us once; this is what makes it revocable.
+ */
+export function sessionIsCurrent(
+  payload: Readonly<Pick<SessionPayload, 'ep'>>,
+  dbEpoch: number,
+): boolean {
+  return (payload.ep ?? 0) === dbEpoch;
 }

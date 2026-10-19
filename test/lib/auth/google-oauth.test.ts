@@ -7,6 +7,7 @@ import {
   getUserInfo,
   grantedDrive,
   refreshAccessToken,
+  revokeToken,
 } from '../../../src/lib/auth/google-oauth';
 
 const base = {
@@ -191,5 +192,23 @@ describe('getUserInfo', () => {
   it('throws when the email is not text', async () => {
     answerWith({ sub: '1', email: 7 });
     await expect(getUserInfo('at')).rejects.toThrow(/unexpected response/);
+  });
+});
+
+describe('revokeToken', () => {
+  it('posts the token to the revocation endpoint', async () => {
+    const fetchSpy = answerWith({});
+    await revokeToken('the-token');
+    const [url, init] = fetchSpy.mock.calls[0] ?? [];
+    expect(url).toBe('https://oauth2.googleapis.com/revoke');
+    expect(init?.method).toBe('POST');
+    expect(new URLSearchParams(String(init?.body)).get('token')).toBe(
+      'the-token',
+    );
+  });
+
+  it('throws when Google refuses', async () => {
+    answerWith({}, 400);
+    await expect(revokeToken('t')).rejects.toThrow('400');
   });
 });

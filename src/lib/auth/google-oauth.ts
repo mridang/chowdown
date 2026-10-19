@@ -35,6 +35,8 @@ export type AuthPurpose = 'signin' | 'drive';
 const AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
 /** Where codes and refresh tokens are traded for access tokens. */
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
+/** Where a token (and the grant behind it) is given back to Google. */
+const REVOKE_ENDPOINT = 'https://oauth2.googleapis.com/revoke';
 /** Who the person behind an access token is. */
 const USERINFO_ENDPOINT = 'https://openidconnect.googleapis.com/v1/userinfo';
 
@@ -224,4 +226,22 @@ export async function getUserInfo(accessToken: string): Promise<GoogleUser> {
     throw new Error('userinfo failed: unexpected response');
   }
   return user;
+}
+
+/**
+ * Give a refresh token back to Google, ending chowdown's access to the
+ * person's Drive on Google's side too (revoking a refresh token revokes the
+ * access tokens minted from it). Throws if Google refuses; an already-revoked
+ * token is an `invalid_token` refusal, which callers deleting an account are
+ * free to ignore.
+ */
+export async function revokeToken(refreshToken: string): Promise<void> {
+  const response = await fetch(REVOKE_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ token: refreshToken }),
+  });
+  if (!response.ok) {
+    throw new Error(`Token revocation failed: ${response.status}`);
+  }
 }

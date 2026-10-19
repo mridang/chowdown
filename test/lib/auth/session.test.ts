@@ -2,8 +2,10 @@ import { describe, expect, it } from '@jest/globals';
 
 import { bytesToBase64Url } from '../../../src/lib/util/base64';
 import {
+  ENDED_SESSION_PATH,
   SESSION_TTL_SECONDS,
   createSessionToken,
+  sessionIsCurrent,
   verifySessionToken,
 } from '../../../src/lib/auth/session';
 
@@ -174,5 +176,55 @@ describe('a malformed token', () => {
     for (const token of ['', 'abc', '.abc', 'abc.', 'abc.!!!']) {
       expect(await verifySessionToken(token, SECRET)).toBeNull();
     }
+  });
+});
+
+describe('session epoch', () => {
+  it('carries the epoch the session was issued under, and omits it when unknown', async () => {
+    const issued = await verifySessionToken(
+      await createSessionToken({ uid: 1, email: 'a@b.com', ep: 3 }, SECRET),
+      SECRET,
+    );
+    expect(issued?.ep).toBe(3);
+    const legacy = await verifySessionToken(
+      await createSessionToken({ uid: 1, email: 'a@b.com' }, SECRET),
+      SECRET,
+    );
+    expect(legacy).not.toHaveProperty('ep');
+  });
+
+  it('rejects a signed token whose epoch is not a number', async () => {
+    const body = bytesToBase64Url(
+      new TextEncoder().encode(
+        JSON.stringify({ uid: 1, email: 'a@b.com', ep: '3', exp: 9999999999 }),
+      ),
+    );
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(SECRET),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    );
+    const sig = bytesToBase64Url(
+      new Uint8Array(
+        await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body)),
+      ),
+    );
+    expect(await verifySessionToken(`${body}.${sig}`, SECRET)).toBeNull();
+  });
+
+  it('honours a session only while the database holds the same epoch', () => {
+    expect(sessionIsCurrent({ ep: 2 }, 2)).toBe(true);
+    expect(sessionIsCurrent({ ep: 2 }, 3)).toBe(false);
+  });
+
+  it('treats a session issued before epochs existed as epoch 0', () => {
+    expect(sessionIsCurrent({}, 0)).toBe(true);
+    expect(sessionIsCurrent({}, 1)).toBe(false);
+  });
+
+  it('names the route that clears a dead session', () => {
+    expect(ENDED_SESSION_PATH).toBe('/api/auth/refresh');
   });
 });

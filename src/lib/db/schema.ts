@@ -16,6 +16,7 @@ import {
   primaryKey,
   sqliteTable,
   text,
+  uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 
 /**
@@ -42,6 +43,16 @@ export const users = sqliteTable('users', {
   recipes_folder_id: text('recipes_folder_id'),
   /** Preferred measurement system: 'metric' | 'us' | 'imperial' | null. */
   units: text('units'),
+  /**
+   * Which generation of sessions is valid. A session cookie carries the epoch
+   * it was issued under and is honoured only while it equals this value, so
+   * bumping it signs the person out everywhere at once (migration 0013).
+   */
+  session_epoch: integer('session_epoch').notNull().default(0),
+  /** When a Drive sync for this person was last started (ISO), for throttling (migration 0014). */
+  last_synced_at: text('last_synced_at'),
+  /** Until when one request owns the embeddings backfill (ISO); null when none does (migration 0014). */
+  backfill_lease_until: text('backfill_lease_until'),
   created_at: text('created_at').notNull(),
   updated_at: text('updated_at').notNull(),
 });
@@ -71,10 +82,21 @@ export const recipes = sqliteTable(
     parse_error: text('parse_error'),
     /** Curated taxonomy tags as JSON: `{ facet: string[] }` (see taxonomy.ts). */
     tags: text('tags'),
+    /**
+     * The normalised `>> source:` address, for finding a recipe already
+     * imported from a link. Null: not worked out yet; empty: it has none.
+     */
+    source_url: text('source_url'),
     first_opened_at: text('first_opened_at').notNull(),
     last_opened_at: text('last_opened_at').notNull(),
   },
-  (table) => [index('idx_recipes_user_id').on(table.user_id)],
+  (table) => [
+    index('idx_recipes_user_id').on(table.user_id),
+    // A recipe belongs to one user and one Drive file; upserts conflict on
+    // this pair so one person's sync can never overwrite another's row.
+    uniqueIndex('idx_recipes_user_file').on(table.user_id, table.drive_file_id),
+    index('idx_recipes_user_source_url').on(table.user_id, table.source_url),
+  ],
 );
 
 /**
@@ -162,6 +184,10 @@ export const oauthCodes = sqliteTable(
     client_id: text('client_id').notNull(),
     user_id: integer('user_id').notNull(),
     redirect_uri: text('redirect_uri').notNull(),
+    /** Whether the authorization request carried `redirect_uri` (the token request must then repeat it). */
+    redirect_uri_sent: integer('redirect_uri_sent', { mode: 'boolean' })
+      .notNull()
+      .default(true),
     code_challenge: text('code_challenge').notNull(),
     scope: text('scope').notNull(),
     resource: text('resource').notNull(),
@@ -199,9 +225,12 @@ export const recipeImports = sqliteTable(
     user_id: integer('user_id').notNull(),
     status: text('status').notNull(),
     items: text('items').notNull(),
+    /** How many drafts `items` holds; null means count them (migration 0013). */
+    item_count: integer('item_count'),
     created_at: text('created_at').notNull(),
   },
   (table) => [
     index('idx_recipe_imports_user').on(table.user_id, table.created_at),
+    index('idx_recipe_imports_created').on(table.created_at),
   ],
 );

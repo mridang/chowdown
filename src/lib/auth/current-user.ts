@@ -11,20 +11,31 @@
 import { cookies } from 'next/headers';
 
 import { accessTokenFor } from './access-token';
+import { accessTokenKey, createAccessTokenCache } from './access-token-cache';
 import { DriveNotConnectedError } from './drive-access';
 import { refreshAccessToken } from './google-oauth';
 import {
   SESSION_COOKIE,
+  sessionIsCurrent,
   verifySessionToken,
   type SessionPayload,
 } from './session';
 import { decryptSecret } from '../crypto';
-import { clearRefreshToken, getUserById, type User } from '../db/users';
+import {
+  clearRefreshToken,
+  getSessionEpoch,
+  getUserById,
+  type User,
+} from '../db/users';
 import { getDatabase, getEnv } from '../util';
 
+/** Access tokens already minted by this instance (see the cache module). */
+const accessTokens = createAccessTokenCache();
+
 /**
- * The user for the current request, or null when not signed in or the session
- * is invalid/expired. Verifies the cookie signature before touching the DB.
+ * The user for the current request, or null when not signed in, the session is
+ * invalid or expired, or it was ended (the person signed out everywhere, or the
+ * account is gone). Verifies the cookie signature before touching the DB.
  */
 export async function getCurrentUser(): Promise<User | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
@@ -35,7 +46,8 @@ export async function getCurrentUser(): Promise<User | null> {
   if (!payload) {
     return null;
   }
-  return (await getUserById(getDatabase(), payload.uid)) ?? null;
+  const user = await getUserById(getDatabase(), payload.uid);
+  return user && sessionIsCurrent(payload, user.session_epoch) ? user : null;
 }
 
 /**
@@ -53,13 +65,36 @@ export async function getSession(): Promise<SessionPayload | null> {
   return verifySessionToken(token, getEnv().SESSION_SECRET);
 }
 
-/** The signed-in user's id from the session cookie alone (see {@link getSession}). */
+/**
+ * The signed-in user's id from the session cookie alone (see {@link getSession}).
+ * Because nothing is read from the database, a session the person has since
+ * ended (signed out everywhere) is still accepted here until it expires: use
+ * {@link getLiveSessionUid} for anything that changes data or hands out secrets.
+ */
 export async function getSessionUid(): Promise<number | null> {
   return (await getSession())?.uid ?? null;
 }
 
 /**
- * Exchange a user's stored refresh token for a fresh Drive access token. Throws
+ * Like {@link getSessionUid}, but also confirms with one small database read
+ * that the session has not been ended and the account still exists. Null in
+ * either case.
+ */
+export async function getLiveSessionUid(): Promise<number | null> {
+  const session = await getSession();
+  if (!session) {
+    return null;
+  }
+  const epoch = await getSessionEpoch(getDatabase(), session.uid);
+  return epoch !== undefined && sessionIsCurrent(session, epoch)
+    ? session.uid
+    : null;
+}
+
+/**
+ * A Drive access token for the user. The stored refresh token is traded with
+ * Google for one only when this instance has none still fresh for that login
+ * (see the cache module), so a burst of Drive work costs one Google call. Throws
  * {@link DriveNotConnectedError} if Drive isn't connected or the stored login
  * is no longer usable (see {@link accessTokenFor} for exactly when).
  */
@@ -69,17 +104,27 @@ export async function getUserAccessToken(
   if (!user.refresh_token_enc) {
     throw new DriveNotConnectedError();
   }
+  const sealed = user.refresh_token_enc;
   const env = getEnv();
-  return accessTokenFor(user.refresh_token_enc, {
-    decrypt: (sealed) => decryptSecret(sealed, env.TOKEN_ENCRYPTION_KEY),
-    refresh: async (refreshToken) =>
-      (
-        await refreshAccessToken({
+  return accessTokens.resolve(accessTokenKey(user.id, sealed), () =>
+    accessTokenFor(sealed, {
+      decrypt: (stored) => decryptSecret(stored, env.TOKEN_ENCRYPTION_KEY),
+      refresh: (refreshToken) =>
+        refreshAccessToken({
           refreshToken,
           clientId: env.GOOGLE_OAUTH_CLIENT_ID,
           clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
-        })
-      ).access_token,
-    forget: (sealed) => clearRefreshToken(getDatabase(), user.id, sealed),
-  });
+        }),
+      forget: (stored) => clearRefreshToken(getDatabase(), user.id, stored),
+    }),
+  );
+}
+
+/**
+ * Drop any Drive access token this instance is holding for the person, for use
+ * when their Drive login is removed (account deletion) so a token cannot
+ * outlive the connection it came from.
+ */
+export function forgetAccessTokens(userId: number): void {
+  accessTokens.forgetUser(userId);
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  MAX_IMPORT_BODY_BYTES,
   MAX_INPUT,
   compareImportPositions,
   importPosition,
@@ -39,6 +40,13 @@ describe('parseImportInput', () => {
       errors: ['input: too large.'],
     });
     expect(parseImportInput({ input: 'x'.repeat(MAX_INPUT) }).ok).toBe(true);
+  });
+});
+
+describe('MAX_IMPORT_BODY_BYTES', () => {
+  it('leaves room for the longest input even at three bytes a character', () => {
+    expect(MAX_IMPORT_BODY_BYTES).toBe(1024 * 1024);
+    expect(MAX_INPUT * 3).toBeLessThan(MAX_IMPORT_BODY_BYTES);
   });
 });
 

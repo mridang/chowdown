@@ -13,6 +13,7 @@ const user = (overrides: Partial<User> = {}) =>
     name: 'Ada Lovelace',
     picture: null,
     refresh_token_enc: null,
+    session_epoch: 0,
     ...overrides,
   }) as User;
 
@@ -52,6 +53,10 @@ describe('setSessionCookie', () => {
       (await issued(user({ refresh_token_enc: 'sealed' }))).payload?.drive,
     ).toBe(true);
     expect((await issued(user(), { drive: true })).payload?.drive).toBe(true);
+  });
+
+  it("stamps the session with the account's epoch, so signing out everywhere can end it", async () => {
+    expect((await issued(user({ session_epoch: 4 }))).payload?.ep).toBe(4);
   });
 
   it('keeps an existing expiry, so correcting the hint never lengthens a session', async () => {

@@ -102,18 +102,36 @@ export function sqliteD1(...migrations: readonly string[]): {
   return { d1: d1 as unknown as D1Database, raw };
 }
 
+/** Work handed to `waitUntil` since the last {@link settleBackground}. */
+const background: Promise<unknown>[] = [];
+
+/** Wait for every piece of background work started so far (see `runInBackground`), then forget it. */
+export async function settleBackground(): Promise<void> {
+  await Promise.allSettled(background.splice(0));
+}
+
 /**
  * Make `d1` the database that `getCloudflareContext()` (and so `getDatabase()`)
  * finds, as it would be inside a Worker, and return a function that puts the
- * global back. `waitUntil` runs nothing: background work is not awaited in tests.
+ * global back. `env` adds the other bindings and secrets a test needs
+ * (`SESSION_SECRET`, `APP_URL`, …). Work handed to `waitUntil` is not awaited
+ * by the code that started it; a test that needs it finished calls
+ * {@link settleBackground}.
  */
-export function installCloudflareContext(d1: D1Database): () => void {
+export function installCloudflareContext(
+  d1: D1Database,
+  env: Readonly<Record<string, unknown>> = {},
+): () => void {
   const key = Symbol.for('__cloudflare-context__');
   const holder = globalThis as unknown as Record<symbol, unknown>;
   const previous = holder[key];
   holder[key] = {
-    env: { DB: d1 },
-    ctx: { waitUntil: () => undefined },
+    env: { ...env, DB: d1 },
+    ctx: {
+      waitUntil: (work: Promise<unknown>) => {
+        background.push(work);
+      },
+    },
     cf: {},
   };
   return () => {

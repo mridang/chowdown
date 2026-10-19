@@ -7,6 +7,7 @@
  * own; `getUserAccessToken` in `current-user.ts` supplies the real ones.
  */
 
+import type { MintedToken } from './access-token-cache';
 import { DriveNotConnectedError, isAuthFailure } from './drive-access';
 
 /** What the exchange needs from the outside world. */
@@ -14,13 +15,13 @@ export interface AccessTokenDeps {
   /** Unseal the stored refresh token. Throws if it can't be unsealed. */
   readonly decrypt: (sealed: string) => Promise<string>;
   /** Trade a refresh token for an access token. Throws Google's refusal. */
-  readonly refresh: (refreshToken: string) => Promise<string>;
+  readonly refresh: (refreshToken: string) => Promise<MintedToken>;
   /** Forget the stored token, but only if it is still `sealed`. */
   readonly forget: (sealed: string) => Promise<void>;
 }
 
 /**
- * A fresh Drive access token for the stored login `sealed`.
+ * A fresh Drive access token (and its lifetime) for the stored login `sealed`.
  *
  * Throws {@link DriveNotConnectedError} when there is no login, when Google no
  * longer accepts it (it is forgotten first, so the person is offered
@@ -34,7 +35,7 @@ export interface AccessTokenDeps {
 export async function accessTokenFor(
   sealed: string | null,
   deps: AccessTokenDeps,
-): Promise<string> {
+): Promise<MintedToken> {
   if (!sealed) {
     throw new DriveNotConnectedError();
   }

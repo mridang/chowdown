@@ -29,6 +29,12 @@ export interface RecipePageRows {
   readonly similarFavouriteIds: readonly string[];
   /** The user's saved measurement system, or null when they haven't chosen. */
   readonly units: string | null;
+  /**
+   * The epoch the user's sessions must carry, or undefined when the account is
+   * gone. Read in the same round trip so the page can confirm the session is
+   * still valid without a query of its own.
+   */
+  readonly sessionEpoch: number | undefined;
 }
 
 /**
@@ -101,7 +107,7 @@ export async function getRecipePageRows(
         ),
       ),
     db
-      .select({ units: users.units })
+      .select({ units: users.units, epoch: users.session_epoch })
       .from(users)
       .where(eq(users.id, userId))
       .limit(1),
@@ -113,6 +119,7 @@ export async function getRecipePageRows(
     similarRecipes: similarRecipeRows,
     similarFavouriteIds: similarFavouriteRows.map((r) => r.id),
     units: userRows[0]?.units ?? null,
+    sessionEpoch: userRows[0]?.epoch,
   };
 }
 

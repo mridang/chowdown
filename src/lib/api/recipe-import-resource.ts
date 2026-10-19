@@ -12,6 +12,13 @@ import type { CursorPosition } from './pagination';
 /** Largest pasted blob accepted, in characters. */
 export const MAX_INPUT = 100_000;
 
+/**
+ * Largest request body an import accepts, in bytes. A blob of {@link MAX_INPUT}
+ * characters can take three bytes a character in many scripts, plus the JSON
+ * around it.
+ */
+export const MAX_IMPORT_BODY_BYTES = 1024 * 1024;
+
 /** The checked pasted text of an import, or what was wrong with it. */
 export type ImportInput =
   | { readonly ok: true; readonly input: string }

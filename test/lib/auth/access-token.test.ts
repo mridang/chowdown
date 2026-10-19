@@ -10,7 +10,7 @@ function deps(overrides: Partial<AccessTokenDeps> = {}) {
   const forget = jest.fn<AccessTokenDeps['forget']>().mockResolvedValue();
   const all: AccessTokenDeps = {
     decrypt: async () => 'refresh-token',
-    refresh: async () => 'access-token',
+    refresh: async () => ({ access_token: 'access-token', expires_in: 3599 }),
     forget,
     ...overrides,
   };
@@ -20,7 +20,10 @@ function deps(overrides: Partial<AccessTokenDeps> = {}) {
 describe('accessTokenFor', () => {
   it('trades a working login for an access token', async () => {
     const { all, forget } = deps();
-    expect(await accessTokenFor('sealed', all)).toBe('access-token');
+    expect(await accessTokenFor('sealed', all)).toEqual({
+      access_token: 'access-token',
+      expires_in: 3599,
+    });
     expect(forget).not.toHaveBeenCalled();
   });
 

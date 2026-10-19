@@ -8,7 +8,7 @@
  * upserted during sync.
  */
 
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import { normalizeSourceUrl, sourceUrlOf } from '../recipe/cook-text';
 import { chunked } from './chunk';
@@ -24,9 +24,26 @@ function now(): string {
 }
 
 /**
- * Insert or update a cached recipe by its Drive file id. On first sight the
- * `first_opened_at`/`last_opened_at` stamps are set; on update only the
- * content-derived fields and `last_opened_at` change.
+ * What goes in `recipes.source_url` for a recipe's source text: the normalised
+ * address of its `>> source:` line, or the empty string when it has none. (Null
+ * is reserved for "not worked out yet", which is how rows cached before the
+ * column existed look.)
+ */
+function indexedSourceUrl(source: string): string {
+  const url = sourceUrlOf(source);
+  return url === undefined ? '' : normalizeSourceUrl(url);
+}
+
+/**
+ * Insert or update a cached recipe, identified by its owner and its Drive file
+ * id together. On first sight the `first_opened_at`/`last_opened_at` stamps are
+ * set; on update only the content-derived fields and `last_opened_at` change.
+ *
+ * The conflict target is the pair, so a row is only ever updated by the person
+ * it belongs to. If another person already holds the same Drive file id the
+ * insert is refused by the table's older global uniqueness rule (kept so the
+ * previous release still works) and throws, rather than quietly replacing the
+ * first person's recipe text.
  */
 export async function upsertRecipe(
   db: Database,
@@ -54,11 +71,12 @@ export async function upsertRecipe(
       modified_time: input.modified_time ?? null,
       parse_error: input.parse_error ?? null,
       tags: input.tags ?? null,
+      source_url: indexedSourceUrl(input.source),
       first_opened_at: timestamp,
       last_opened_at: timestamp,
     })
     .onConflictDoUpdate({
-      target: recipes.drive_file_id,
+      target: [recipes.user_id, recipes.drive_file_id],
       set: {
         name: input.name,
         title: input.title ?? null,
@@ -66,6 +84,7 @@ export async function upsertRecipe(
         modified_time: input.modified_time ?? null,
         parse_error: input.parse_error ?? null,
         tags: input.tags ?? null,
+        source_url: indexedSourceUrl(input.source),
         last_opened_at: timestamp,
       },
     });
@@ -96,10 +115,62 @@ export async function getRecipeByFileId(
   });
 }
 
+/** Statements per D1 batch when filling in `source_url` (well under D1's limit). */
+const BACKFILL_BATCH = 50;
+
+/**
+ * Work out `source_url` for the user's rows that do not have it yet: rows
+ * cached before the column existed, or written by the previous release during
+ * a deploy. Returns how many rows were filled in, so the caller knows whether
+ * an earlier lookup could have missed one. Once a user's rows are all filled in
+ * (the steady state) this is one indexed read that finds nothing.
+ */
+async function backfillSourceUrls(
+  db: Database,
+  userId: number,
+): Promise<number> {
+  const legacy = await db
+    .select({ id: recipes.drive_file_id, source: recipes.source })
+    .from(recipes)
+    .where(and(eq(recipes.user_id, userId), isNull(recipes.source_url)));
+  const statements = legacy.map((row) =>
+    db
+      .update(recipes)
+      .set({ source_url: indexedSourceUrl(row.source) })
+      .where(
+        and(eq(recipes.user_id, userId), eq(recipes.drive_file_id, row.id)),
+      ),
+  );
+  for (const [first, ...rest] of chunked(statements, BACKFILL_BATCH)) {
+    // `batch` wants at least one statement; a chunk always has one.
+    if (first) {
+      await db.batch([first, ...rest]);
+    }
+  }
+  return legacy.length;
+}
+
+/** The user's recipe whose indexed source address is `sourceUrl`, if any. */
+async function recipeWithSourceUrl(
+  db: Database,
+  userId: number,
+  sourceUrl: string,
+): Promise<Recipe | undefined> {
+  return db.query.recipes.findFirst({
+    where: and(eq(recipes.user_id, userId), eq(recipes.source_url, sourceUrl)),
+    // Stable when the same link was imported twice: the first by name wins,
+    // as it did when this scanned the whole library in name order.
+    orderBy: (r, { asc }) => [asc(r.name)],
+  });
+}
+
 /**
  * Find a cached recipe the user already imported from `url` (matched on the
  * `>> source:` line, ignoring `www.`, query strings and trailing slashes), so a
  * re-import can return the existing recipe instead of saving a duplicate.
+ *
+ * This is an index lookup on `source_url`, not a scan of the user's library.
+ * Rows that predate the column are filled in the first time a lookup misses.
  */
 export async function findRecipeBySourceUrl(
   db: Database,
@@ -107,11 +178,13 @@ export async function findRecipeBySourceUrl(
   url: string,
 ): Promise<Recipe | undefined> {
   const want = normalizeSourceUrl(url);
-  const rows = await listRecipesByUser(db, userId);
-  return rows.find((r) => {
-    const have = sourceUrlOf(r.source);
-    return have !== undefined && normalizeSourceUrl(have) === want;
-  });
+  const hit = await recipeWithSourceUrl(db, userId, want);
+  if (hit) {
+    return hit;
+  }
+  return (await backfillSourceUrls(db, userId)) > 0
+    ? recipeWithSourceUrl(db, userId, want)
+    : undefined;
 }
 
 /**

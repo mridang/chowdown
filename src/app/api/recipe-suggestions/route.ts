@@ -4,6 +4,11 @@
  * embeddings against the cached recipe embeddings), best first.
  *
  *   GET /api/recipe-suggestions?q=something light with chicken&limit=8
+ *
+ * No page of the app calls this endpoint today: it is part of the documented
+ * API for other clients. It is also the most expensive read there is (it can
+ * fetch and embed every recipe file in Drive, then embeds `q`), so `q` is
+ * capped and the route is the first candidate for a per-user rate limit.
  */
 
 import { NextResponse } from 'next/server';
@@ -24,10 +29,17 @@ import { getEnv } from '@/lib/util';
 const DEFAULT_SUGGESTIONS = 8;
 
 /**
+ * The longest wish accepted, in characters. It goes straight to the embedding
+ * model; a sentence or two is all a wish ever needs.
+ */
+const MAX_QUERY_LENGTH = 300;
+
+/**
  * `GET /api/recipe-suggestions?q=…&limit=…`: the user's recipes closest in
  * meaning to the text in `q`, best first, as `{ id, title }` entries. Answers
- * 200 with a page, 400 for a missing `q` or a bad `limit`. Needs a signed-in
- * user: 401, and 502 or 409 when Drive or the model is unavailable.
+ * 200 with a page, 400 for a missing or over-long (300 characters) `q` or a bad
+ * `limit`. Needs a signed-in user: 401, and 502 or 409 when Drive or the model
+ * is unavailable.
  */
 export async function GET(request: Request): Promise<NextResponse> {
   const auth = await requireUser(request);
@@ -38,6 +50,11 @@ export async function GET(request: Request): Promise<NextResponse> {
   const q = query.get('q')?.trim();
   if (!q) {
     return problems.badRequest('q is required.');
+  }
+  if (q.length > MAX_QUERY_LENGTH) {
+    return problems.badRequest(
+      `q must be at most ${MAX_QUERY_LENGTH} characters.`,
+    );
   }
   const limit = parseLimit(query.get('limit'), DEFAULT_SUGGESTIONS);
   if (typeof limit !== 'number') {

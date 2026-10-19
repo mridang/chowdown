@@ -9,7 +9,11 @@
 
 import type { NextResponse } from 'next/server';
 
-import { getCurrentUser, getSessionUid } from '../auth/current-user';
+import {
+  getCurrentUser,
+  getLiveSessionUid,
+  getSessionUid,
+} from '../auth/current-user';
 import type { User } from '../db/users';
 import { isSameOriginPost } from '../oauth/csrf';
 import { appOrigin } from '../util';
@@ -32,32 +36,46 @@ export type Auth<T> =
   | { readonly ok: false; readonly response: NextResponse };
 
 /**
- * The caller's user id, from the signed cookie alone (no database read).
- * Enough for anything that only scopes queries by user.
+ * Run the cross-site check, then `identify`: 403 for a cross-site write, 401
+ * when `identify` finds nobody (it answers null), otherwise the caller. The
+ * 403 comes first so a forged request learns nothing about who is signed in.
  */
-export async function requireUid(request: Request): Promise<Auth<number>> {
+async function authenticate<T>(
+  request: Request,
+  identify: () => Promise<T | null>,
+): Promise<Auth<T>> {
   if (crossSite(request)) {
     return {
       ok: false,
       response: problems.forbidden('Cross-site requests are not allowed.'),
     };
   }
-  const uid = await getSessionUid();
-  return uid === null
+  const caller = await identify();
+  return caller === null
     ? { ok: false, response: problems.unauthorized() }
-    : { ok: true, value: uid };
+    : { ok: true, value: caller };
+}
+
+/**
+ * The caller's user id, from the signed cookie alone (no database read).
+ * Enough for anything that only scopes queries by user, but it cannot tell that
+ * the person has since signed out everywhere: use {@link requireLiveUid} (or
+ * {@link requireUser}) wherever that matters.
+ */
+export async function requireUid(request: Request): Promise<Auth<number>> {
+  return authenticate(request, getSessionUid);
+}
+
+/**
+ * The caller's user id, after confirming with one small database read that the
+ * session has not been ended and the account still exists. For routes that
+ * only need the id but must honour "sign out everywhere".
+ */
+export async function requireLiveUid(request: Request): Promise<Auth<number>> {
+  return authenticate(request, getLiveSessionUid);
 }
 
 /** The caller's full user record, for routes that need Drive access. */
 export async function requireUser(request: Request): Promise<Auth<User>> {
-  if (crossSite(request)) {
-    return {
-      ok: false,
-      response: problems.forbidden('Cross-site requests are not allowed.'),
-    };
-  }
-  const user = await getCurrentUser();
-  return user
-    ? { ok: true, value: user }
-    : { ok: false, response: problems.unauthorized() };
+  return authenticate(request, getCurrentUser);
 }

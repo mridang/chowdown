@@ -10,7 +10,7 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireUid, requireUser } from '@/lib/api/auth';
+import { requireLiveUid, requireUser } from '@/lib/api/auth';
 import { driveFailure } from '@/lib/api/drive-failure';
 import { readJsonObject } from '@/lib/api/json';
 import { settleMutation } from '@/lib/api/mutation-response';
@@ -32,7 +32,7 @@ export async function GET(
   request: Request,
   { params }: IdContext,
 ): Promise<NextResponse> {
-  const auth = await requireUid(request);
+  const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
   }

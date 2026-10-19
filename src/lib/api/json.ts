@@ -2,13 +2,34 @@
  * @packageDocumentation
  *
  * Reading JSON request bodies for the REST API: checks the media type (415 if
- * it's wrong) and the syntax (400 if it isn't JSON), so each route can assume a
- * parsed value and focus on validating its fields.
+ * it's wrong), the size (413 if it's over the route's limit, checked while the
+ * body streams in, so a huge upload is never held in memory) and the syntax
+ * (400 if it isn't JSON), so each route can assume a parsed value and focus on
+ * validating its fields.
  */
 
 import type { NextResponse } from 'next/server';
 
-import { problems } from './problem';
+import { readJsonBody } from '../http/body';
+import { problem, problems } from './problem';
+
+/**
+ * The largest JSON body a route accepts unless it asks for more. Generous for
+ * anything the app sends (the largest field, a recipe's Cooklang, is capped at
+ * 200,000 characters) and small enough that a hostile upload costs next to
+ * nothing.
+ */
+const DEFAULT_MAX_BODY_BYTES = 256 * 1024;
+
+/** The 413 problem for a body over `maxBytes`. */
+function tooLarge(maxBytes: number): NextResponse {
+  return problem(
+    413,
+    '/problems/payload-too-large',
+    'Payload too large',
+    `The request body must be at most ${Math.round(maxBytes / 1024)} KiB.`,
+  );
+}
 
 /** A parsed body, or the problem response to send. */
 export type Body =
@@ -17,11 +38,13 @@ export type Body =
 
 /**
  * Read the request body as JSON. `mediaTypes` lists the acceptable
- * `Content-Type`s; `application/json` is always acceptable.
+ * `Content-Type`s; `application/json` is always acceptable. A body over
+ * `maxBytes` (256 KiB unless the route says otherwise) is refused with 413.
  */
 export async function readJson(
   request: Request,
   mediaTypes: readonly string[] = [],
+  maxBytes: number = DEFAULT_MAX_BODY_BYTES,
 ): Promise<Body> {
   const accepted = ['application/json', ...mediaTypes];
   // Only the media type matters; parameters such as `charset` are ignored.
@@ -33,13 +56,17 @@ export async function readJson(
       response: problems.unsupportedMediaType(accepted.join(' or ')),
     };
   }
-  try {
-    return { ok: true, value: await request.json() };
-  } catch {
-    return {
-      ok: false,
-      response: problems.badRequest('The request body is not valid JSON.'),
-    };
+  const body = await readJsonBody(request, maxBytes);
+  switch (body.kind) {
+    case 'ok':
+      return { ok: true, value: body.value };
+    case 'too-large':
+      return { ok: false, response: tooLarge(maxBytes) };
+    case 'unparseable':
+      return {
+        ok: false,
+        response: problems.badRequest('The request body is not valid JSON.'),
+      };
   }
 }
 
@@ -54,13 +81,15 @@ export type ObjectBody =
 /**
  * Read the request body as a JSON object. `notObject` is the sentence for a
  * body that is JSON but not an object ("The patch must be a JSON object.").
+ * `mediaTypes` and `maxBytes` are as for {@link readJson}.
  */
 export async function readJsonObject(
   request: Request,
   notObject: string,
   mediaTypes: readonly string[] = [],
+  maxBytes: number = DEFAULT_MAX_BODY_BYTES,
 ): Promise<ObjectBody> {
-  const body = await readJson(request, mediaTypes);
+  const body = await readJson(request, mediaTypes, maxBytes);
   if (!body.ok) {
     return body;
   }

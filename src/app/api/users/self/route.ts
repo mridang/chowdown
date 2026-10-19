@@ -1,8 +1,9 @@
 /**
  * The signed-in user. `self` stands for whoever the session belongs to.
  *
- *   GET   /api/users/self   their profile and preferences
- *   PATCH /api/users/self   change a preference (JSON Merge Patch)
+ *   GET    /api/users/self   their profile and preferences
+ *   PATCH  /api/users/self   change a preference (JSON Merge Patch)
+ *   DELETE /api/users/self   delete the account and everything chowdown keeps
  */
 
 import { NextResponse } from 'next/server';
@@ -11,8 +12,12 @@ import { requireUser } from '@/lib/api/auth';
 import { readJsonObject } from '@/lib/api/json';
 import { problems } from '@/lib/api/problem';
 import { parseUserPatch, userResource } from '@/lib/api/user-resource';
+import { forgetAccessTokens } from '@/lib/auth/current-user';
+import { revokeDriveLogin } from '@/lib/auth/drive-login';
+import { SESSION_COOKIE } from '@/lib/auth/session';
+import { deleteAccountData } from '@/lib/db/account';
 import { getUserById, setUserUnits } from '@/lib/db/users';
-import { getDatabase } from '@/lib/util';
+import { getDatabase, runInBackground } from '@/lib/util';
 
 /**
  * `GET /api/users/self`: the signed-in user's profile (id, email, name,
@@ -57,4 +62,28 @@ export async function PATCH(request: Request): Promise<NextResponse> {
   }
   const updated = (await getUserById(db, auth.value.id)) ?? auth.value;
   return NextResponse.json(userResource(updated));
+}
+
+/**
+ * `DELETE /api/users/self`: delete the signed-in person's account. Everything
+ * chowdown keeps about them goes at once (cached recipes, embeddings, hearts,
+ * import drafts, connected assistants and their tokens, the profile), their
+ * session is ended and the Drive permission is given back to Google. The
+ * recipe files in their own Google Drive are left exactly as they are. Answers
+ * 204, 401 when nobody is signed in, 403 for a request from another site.
+ */
+export async function DELETE(request: Request): Promise<NextResponse> {
+  const auth = await requireUser(request);
+  if (!auth.ok) {
+    return auth.response;
+  }
+  const user = auth.value;
+  await deleteAccountData(getDatabase(), user.id);
+  forgetAccessTokens(user.id);
+  // After the response: a slow or failing Google must not undo a deletion
+  // that has already happened.
+  runInBackground(revokeDriveLogin(user));
+  const response = new NextResponse(null, { status: 204 });
+  response.cookies.delete(SESSION_COOKIE);
+  return response;
 }

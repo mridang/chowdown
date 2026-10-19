@@ -8,6 +8,22 @@
 /** Largest Cooklang body accepted, in characters. */
 export const MAX_COOKLANG_BYTES = 200_000;
 
+/**
+ * Most lines of Cooklang accepted. Real recipes run to dozens of lines; the
+ * Cooklang parser's work grows with the square of the line count (20,000 blank
+ * lines cost it over a second), so a text of nothing but line breaks, which fits
+ * the character limit, could otherwise tie the server up for minutes.
+ */
+export const MAX_COOKLANG_LINES = 5_000;
+
+/**
+ * Largest request body a recipe route reads, in bytes. The Cooklang limit above
+ * counts characters; the body carries them as UTF-8 inside JSON, where a line
+ * break takes two bytes and an emoji four, so a recipe at the limit needs well
+ * over the 256 KiB other routes get. 1 MiB covers it with room to spare.
+ */
+export const MAX_RECIPE_BODY_BYTES = 1024 * 1024;
+
 /** The longest recipe name accepted. */
 const MAX_NAME_LENGTH = 200;
 
@@ -34,7 +50,12 @@ function cooklangErrors(cooklang: unknown): readonly string[] {
   if (typeof cooklang !== 'string' || !cooklang.trim()) {
     return ['cooklang: required.'];
   }
-  return cooklang.length > MAX_COOKLANG_BYTES ? ['cooklang: too large.'] : [];
+  if (cooklang.length > MAX_COOKLANG_BYTES) {
+    return ['cooklang: too large.'];
+  }
+  return cooklang.split('\n').length > MAX_COOKLANG_LINES
+    ? [`cooklang: at most ${MAX_COOKLANG_LINES} lines.`]
+    : [];
 }
 
 /**
@@ -54,18 +75,22 @@ export function parseNewRecipe(
     : { ok: true, name, cooklang };
 }
 
+/** The checked Cooklang text of a replacement, or what was wrong with it. */
+export type ReplacementInput =
+  | { readonly ok: true; readonly cooklang: string }
+  | { readonly ok: false; readonly errors: readonly string[] };
+
 /**
- * The Cooklang text of a replacement body (`PUT /api/recipes/:id`), or
- * undefined if it is missing, blank or too large.
+ * Check the body of `PUT /api/recipes/:id`: the recipe's new Cooklang text as
+ * `cooklang`, held to the same limits as a new recipe.
  */
-export function parseReplacementCooklang(body: unknown): string | undefined {
+export function parseReplacementCooklang(body: unknown): ReplacementInput {
   const cooklang =
     typeof body === 'object' && body !== null
       ? Reflect.get(body, 'cooklang')
       : undefined;
-  return typeof cooklang === 'string' &&
-    cooklang.trim() &&
-    cooklang.length <= MAX_COOKLANG_BYTES
-    ? cooklang
-    : undefined;
+  const errors = cooklangErrors(cooklang);
+  return errors.length > 0 || typeof cooklang !== 'string'
+    ? { ok: false, errors }
+    : { ok: true, cooklang };
 }

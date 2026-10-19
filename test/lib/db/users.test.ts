@@ -1,7 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  bumpSessionEpoch,
+  claimBackfillLease,
+  claimDriveSync,
   clearRefreshToken,
+  getSessionEpoch,
   getUserById,
   setRecipesFolderId,
   setRefreshToken,
@@ -9,6 +13,19 @@ import {
   upsertUser,
 } from '../../../src/lib/db/users';
 import { fakeDb } from './fake-db';
+import { APP_MIGRATIONS } from './migrations';
+import { sqliteDatabase } from './sqlite-db';
+
+/** A database with every migration applied and two people in it. */
+function seeded() {
+  const made = sqliteDatabase(...APP_MIGRATIONS);
+  const user = made.raw.prepare(
+    "INSERT INTO users (id, google_sub, email, created_at, updated_at) VALUES (?, ?, ?, '2026-01-01', '2026-01-01')",
+  );
+  user.run(1, 'sub-1', 'a@b.com');
+  user.run(2, 'sub-2', 'c@d.com');
+  return made;
+}
 
 const saved = { id: 7, email: 'a@b.com' };
 
@@ -108,5 +125,91 @@ describe('the small updates', () => {
     expect(sets).toHaveLength(2);
     expect(sets[0]).toMatchObject({ refresh_token_enc: null });
     expect(calls.filter((c) => c.method === 'where')).toHaveLength(2);
+  });
+});
+
+describe('session epoch', () => {
+  it('starts at zero, is read back, and is undefined for an account that is gone', async () => {
+    const { db } = seeded();
+    expect(await getSessionEpoch(db, 1)).toBe(0);
+    expect(await getSessionEpoch(db, 99)).toBeUndefined();
+  });
+
+  it("moves one person's epoch on and leaves everyone else's", async () => {
+    const { db } = seeded();
+    await bumpSessionEpoch(db, 1);
+    await bumpSessionEpoch(db, 1);
+    expect(await getSessionEpoch(db, 1)).toBe(2);
+    expect(await getSessionEpoch(db, 2)).toBe(0);
+  });
+
+  it('is part of the row a sign-in returns', async () => {
+    const { db } = seeded();
+    const user = await upsertUser(db, {
+      google_sub: 'sub-3',
+      email: 'e@f.com',
+    });
+    expect(user.session_epoch).toBe(0);
+  });
+});
+
+describe('claimDriveSync', () => {
+  const at = new Date('2026-03-01T12:00:00.000Z');
+  const later = (seconds: number) => new Date(at.getTime() + seconds * 1000);
+
+  it('gives the turn to the first caller and refuses the next within a minute', async () => {
+    const { db } = seeded();
+    expect(await claimDriveSync(db, 1, at)).toBe(true);
+    expect(await claimDriveSync(db, 1, later(30))).toBe(false);
+  });
+
+  it('gives it again once a minute has passed', async () => {
+    const { db } = seeded();
+    await claimDriveSync(db, 1, at);
+    expect(await claimDriveSync(db, 1, later(61))).toBe(true);
+  });
+
+  it('keeps a turn per person', async () => {
+    const { db } = seeded();
+    await claimDriveSync(db, 1, at);
+    expect(await claimDriveSync(db, 2, at)).toBe(true);
+  });
+
+  it('lets exactly one of several simultaneous callers win', async () => {
+    const { db } = seeded();
+    const wins = await Promise.all([
+      claimDriveSync(db, 1, at),
+      claimDriveSync(db, 1, at),
+      claimDriveSync(db, 1, at),
+    ]);
+    expect(wins.filter(Boolean)).toHaveLength(1);
+  });
+
+  it('refuses for an account that does not exist', async () => {
+    const { db } = seeded();
+    expect(await claimDriveSync(db, 99, at)).toBe(false);
+  });
+});
+
+describe('claimBackfillLease', () => {
+  const at = new Date('2026-03-01T12:00:00.000Z');
+  const later = (seconds: number) => new Date(at.getTime() + seconds * 1000);
+
+  it('is held for two minutes by whoever takes it first', async () => {
+    const { db } = seeded();
+    expect(await claimBackfillLease(db, 1, at)).toBe(true);
+    expect(await claimBackfillLease(db, 1, later(119))).toBe(false);
+  });
+
+  it('can be taken again when the lease has run out', async () => {
+    const { db } = seeded();
+    await claimBackfillLease(db, 1, at);
+    expect(await claimBackfillLease(db, 1, later(121))).toBe(true);
+  });
+
+  it('is independent of the sync turn', async () => {
+    const { db } = seeded();
+    await claimDriveSync(db, 1, at);
+    expect(await claimBackfillLease(db, 1, at)).toBe(true);
   });
 });

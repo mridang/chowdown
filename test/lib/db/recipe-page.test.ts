@@ -38,7 +38,7 @@ describe('getRecipePageRows', () => {
       [{ similar: '[{"id":"s1","title":"S"}]' }],
       [similar],
       [{ id: 's1' }],
-      [{ units: 'metric' }],
+      [{ units: 'metric', epoch: 4 }],
     ]);
     const rows = await getRecipePageRows(stub.db, 1, 'r1');
     expect(stub.queries).toBe(6);
@@ -49,6 +49,7 @@ describe('getRecipePageRows', () => {
       similarRecipes: [similar],
       similarFavouriteIds: ['s1'],
       units: 'metric',
+      sessionEpoch: 4,
     });
   });
 
@@ -62,6 +63,7 @@ describe('getRecipePageRows', () => {
       similarRecipes: [],
       similarFavouriteIds: [],
       units: null,
+      sessionEpoch: undefined,
     });
   });
 });

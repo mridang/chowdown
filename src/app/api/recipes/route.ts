@@ -12,12 +12,12 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireUid, requireUser } from '@/lib/api/auth';
+import { requireLiveUid, requireUser } from '@/lib/api/auth';
 import { driveFailure } from '@/lib/api/drive-failure';
 import { readJsonObject } from '@/lib/api/json';
 import { absoluteUrl } from '@/lib/api/pagination';
 import { problems } from '@/lib/api/problem';
-import { parseNewRecipe } from '@/lib/api/recipe-input';
+import { MAX_RECIPE_BODY_BYTES, parseNewRecipe } from '@/lib/api/recipe-input';
 import { listRecipes } from '@/lib/api/recipe-list';
 import { sendRecipe } from '@/lib/api/recipe-response';
 import { getUserAccessToken } from '@/lib/auth/current-user';
@@ -46,7 +46,7 @@ async function createInDrive(
  * signed in.
  */
 export async function GET(request: Request): Promise<NextResponse> {
-  const auth = await requireUid(request);
+  const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
   }
@@ -57,8 +57,8 @@ export async function GET(request: Request): Promise<NextResponse> {
  * `POST /api/recipes`: create a recipe from `{ name, cooklang }`. Answers 201
  * with the new recipe and its `Location`, or 200 with the existing recipe (and
  * a `Content-Location`) when its source URL is already saved. Needs a signed-in
- * user with Drive connected: 401 without a session, 400 for a bad body, 409
- * when Drive is not connected, 502 when Drive fails.
+ * user with Drive connected: 401 without a session, 400 for a bad body, 413
+ * for a body over 1 MiB, 409 when Drive is not connected, 502 when Drive fails.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const auth = await requireUser(request);
@@ -69,6 +69,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   const body = await readJsonObject(
     request,
     'The request body must be a JSON object.',
+    [],
+    MAX_RECIPE_BODY_BYTES,
   );
   if (!body.ok) {
     return body.response;

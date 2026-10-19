@@ -13,12 +13,15 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireUid, requireUser } from '@/lib/api/auth';
+import { requireLiveUid, requireUser } from '@/lib/api/auth';
 import { driveFailure } from '@/lib/api/drive-failure';
 import { readJson, readJsonObject } from '@/lib/api/json';
 import { settleMutation } from '@/lib/api/mutation-response';
 import { problems } from '@/lib/api/problem';
-import { parseReplacementCooklang } from '@/lib/api/recipe-input';
+import {
+  MAX_RECIPE_BODY_BYTES,
+  parseReplacementCooklang,
+} from '@/lib/api/recipe-input';
 import { sendRecipe } from '@/lib/api/recipe-response';
 import type { IdContext } from '@/lib/api/route-context';
 import { deleteRecipeForUser } from '@/lib/recipe/delete-recipe';
@@ -50,7 +53,7 @@ export async function GET(
   request: Request,
   { params }: IdContext,
 ): Promise<NextResponse> {
-  const auth = await requireUid(request);
+  const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
   }
@@ -60,7 +63,7 @@ export async function GET(
 /**
  * `PUT /api/recipes/:id`: replace the recipe's Cooklang text with `{ cooklang }`.
  * Answers 200 with the recipe. Needs a signed-in user: 401, 400 for a bad
- * body, 404 for an unknown recipe, 412 when `If-Match` is stale, and 409 or
+ * body, 413 for a body over 1 MiB, 404 for an unknown recipe, 412 when `If-Match` is stale, and 409 or
  * 502 when Drive is not connected or fails.
  */
 export async function PUT(
@@ -71,16 +74,15 @@ export async function PUT(
   if (!auth.ok) {
     return auth.response;
   }
-  const body = await readJson(request);
+  const body = await readJson(request, [], MAX_RECIPE_BODY_BYTES);
   if (!body.ok) {
     return body.response;
   }
-  const cooklang = parseReplacementCooklang(body.value);
-  if (cooklang === undefined) {
-    return problems.badRequest('The recipe is not valid.', [
-      'cooklang: required.',
-    ]);
+  const input = parseReplacementCooklang(body.value);
+  if (!input.ok) {
+    return problems.badRequest('The recipe is not valid.', input.errors);
   }
+  const { cooklang } = input;
   const { id } = await params;
   try {
     const outcome = await mutateRecipeForUser(

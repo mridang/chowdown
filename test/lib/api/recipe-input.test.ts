@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   MAX_COOKLANG_BYTES,
+  MAX_COOKLANG_LINES,
   parseNewRecipe,
   parseReplacementCooklang,
 } from '../../../src/lib/api/recipe-input';
@@ -57,22 +58,56 @@ describe('parseNewRecipe', () => {
   });
 });
 
-describe('parseReplacementCooklang', () => {
-  it('returns the Cooklang text', () => {
-    expect(parseReplacementCooklang({ cooklang: 'Boil.' })).toBe('Boil.');
+describe('line limit', () => {
+  it('refuses text with more lines than the limit, but not at it', () => {
+    const at = 'x\n'.repeat(MAX_COOKLANG_LINES - 1);
+    expect(parseNewRecipe({ name: 'a', cooklang: at }).ok).toBe(true);
+    expect(parseNewRecipe({ name: 'a', cooklang: `${at}\n` })).toMatchObject({
+      ok: false,
+      errors: [`cooklang: at most ${MAX_COOKLANG_LINES} lines.`],
+    });
   });
 
-  it('is undefined for anything unusable', () => {
-    expect(parseReplacementCooklang(undefined)).toBeUndefined();
-    expect(parseReplacementCooklang(null)).toBeUndefined();
-    expect(parseReplacementCooklang('x')).toBeUndefined();
-    expect(parseReplacementCooklang({})).toBeUndefined();
-    expect(parseReplacementCooklang({ cooklang: ' ' })).toBeUndefined();
-    expect(parseReplacementCooklang({ cooklang: 5 })).toBeUndefined();
+  it('refuses a text of nothing but line breaks that is within the character limit', () => {
+    const blank = `x${'\n'.repeat(MAX_COOKLANG_BYTES - 1)}`;
+    expect(blank.length).toBe(MAX_COOKLANG_BYTES);
+    expect(parseNewRecipe({ name: 'a', cooklang: blank }).ok).toBe(false);
+    expect(parseReplacementCooklang({ cooklang: blank }).ok).toBe(false);
+  });
+});
+
+describe('parseReplacementCooklang', () => {
+  it('returns the Cooklang text', () => {
+    expect(parseReplacementCooklang({ cooklang: 'Boil.' })).toEqual({
+      ok: true,
+      cooklang: 'Boil.',
+    });
+  });
+
+  it('asks for the text when it is missing, blank or not text', () => {
+    for (const body of [
+      undefined,
+      null,
+      'x',
+      {},
+      { cooklang: ' ' },
+      { cooklang: 5 },
+    ]) {
+      expect(parseReplacementCooklang(body)).toEqual({
+        ok: false,
+        errors: ['cooklang: required.'],
+      });
+    }
+  });
+
+  it('refuses text over the size limit, but not at it', () => {
     expect(
       parseReplacementCooklang({
         cooklang: 'x'.repeat(MAX_COOKLANG_BYTES + 1),
       }),
-    ).toBeUndefined();
+    ).toEqual({ ok: false, errors: ['cooklang: too large.'] });
+    expect(
+      parseReplacementCooklang({ cooklang: 'x'.repeat(MAX_COOKLANG_BYTES) }).ok,
+    ).toBe(true);
   });
 });
