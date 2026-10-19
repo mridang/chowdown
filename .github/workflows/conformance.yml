@@ -1,0 +1,46 @@
+name: MCP Conformance
+
+on: push
+
+permissions:
+  contents: read
+
+# A newer push makes an older run of this workflow on the same branch pointless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: ./
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    # A hung step must not run to GitHub's six-hour limit on paid minutes.
+    timeout-minutes: 10
+
+    steps:
+      - name: Runner Common Setup
+        uses: mridang/action-runner-common@v1
+
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          cache: 'npm'
+          node-version-file: '.nvmrc'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # The MCP server bundles generated widget pages that are not committed.
+      - name: Build widget views
+        run: npm run build:views
+
+      # The official MCP conformance suite, run against the server's request
+      # handling. Known gaps are listed in scripts/conformance/expected-failures.yml.
+      - name: Run the conformance suite
+        run: npm run conformance

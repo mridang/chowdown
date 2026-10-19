@@ -5,6 +5,8 @@ export default {
     // page (the build:views script), the browser registers the service worker
     // by address, and the icon script is run by hand.
     'scripts/build-icons.mjs',
+    // The conformance runner bundles and starts this server entry itself.
+    'scripts/conformance/server.ts',
     'src/views/*.tsx',
     'public/sw.js',
   ],

@@ -1,0 +1,58 @@
+# Conformance results this server is known not to meet, and why.
+#
+# `npm run conformance` fails on a new failure, and on an entry here that now passes
+# (remove it). A scenario is listed whole when the suite cannot exercise it here, and
+# by single check (`scenario:check`) when it also holds checks that must keep passing.
+server:
+  # The suite calls tools that only its own reference server defines (test_simple_text, test_error_handling, ...); chowdown has recipe tools instead.
+  - tools-call-audio
+  - tools-call-embedded-resource
+  - tools-call-error
+  - tools-call-image
+  - tools-call-mixed-content
+  - tools-call-simple-text
+  - tools-call-with-progress
+  # The suite reads prompts that only its reference server defines (test_simple_prompt, ...); chowdown has its own prompts.
+  - prompts-get-embedded-resource
+  - prompts-get-simple
+  - prompts-get-with-args
+  - prompts-get-with-image
+  # The suite reads test:// resources that only its reference server serves; chowdown serves views and recipe://{id}.
+  - resources-read-binary
+  - resources-read-text
+  - resources-templates-read
+  # The suite calls the reference server's own tool (json_schema_2020_12_tool).
+  - json-schema-2020-12
+  # Completion is not offered: no prompt or resource template argument benefits from it.
+  - completion-complete
+  # No tool carries an x-mcp-header annotation, so there is nothing for the suite to exercise.
+  - http-custom-header-server-validation
+  # Multi round-trip requests (input required results) are not implemented; the tools never ask the client for anything.
+  - input-required-result-basic-elicitation
+  - input-required-result-basic-list-roots
+  - input-required-result-basic-sampling
+  - input-required-result-capability-check
+  - input-required-result-ignore-extra-params
+  - input-required-result-missing-input-response
+  - input-required-result-multi-round
+  - input-required-result-multiple-input-requests
+  - input-required-result-non-tool-request
+  - input-required-result-request-state
+  - input-required-result-result-type
+  - input-required-result-tampered-state
+  # The tasks extension is not implemented: every tool finishes within one request.
+  - tasks-capability-negotiation
+  - tasks-dispatch-and-envelope
+  - tasks-lifecycle
+  - tasks-mrtr-composition
+  - tasks-mrtr-input
+  - tasks-request-headers
+  - tasks-request-state-removal
+  - tasks-required-task-error
+  - tasks-wire-fields
+  # The suite probes with diagnostic tools only its reference server has (test_missing_capability,
+  # test_streaming_elicitation, test_logging_tool), so these checks cannot be exercised here.
+  - server-stateless:sep-2575-server-rejects-undeclared-capability
+  - server-stateless:sep-2575-missing-capability-http-400
+  - server-stateless:sep-2575-http-server-no-independent-requests-on-stream
+  - server-stateless:sep-2575-server-no-log-without-loglevel
