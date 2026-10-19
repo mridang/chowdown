@@ -38,8 +38,10 @@ function imagesBinding(): ImagesLike | undefined {
  * `GET /api/cover-images?url=…&w=…`: the photo at `url`, scaled to the nearest
  * allowed width and kept at the edge. Answers 200 with the image, 400 for an
  * address that is not a public image, 404 when none of the person's recipes
- * lists that photo or when the photo is gone, 502 when its site fails. Needs a
- * signed-in user: 401 without a session.
+ * lists that photo, and 204 (no content, kept an hour by the browser) when the
+ * photo is gone or its site refuses or fails: the page shows a placeholder, and
+ * an error status would only fill the console with red. Needs a signed-in user:
+ * 401 without a session.
  */
 export async function GET(request: Request): Promise<Response> {
   const uid = await getSessionUid();

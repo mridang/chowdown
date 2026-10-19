@@ -111,17 +111,17 @@ describe('serveCover', () => {
     expect(background).not.toHaveBeenCalled();
   });
 
-  it('answers 404 when the photo is gone', async () => {
+  it('answers 204 when the photo is gone', async () => {
     const gone: CoverFetch = async () => new Response('', { status: 404 });
     const response = await serveCover(PHOTO, 640, {
       fetcher: gone,
       background: () => undefined,
       mayFetch: allowed,
     });
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(204);
   });
 
-  it('answers 502 when its site cannot be reached', async () => {
+  it('answers 204 when its site cannot be reached', async () => {
     const down: CoverFetch = async () => {
       throw new Error('offline');
     };
@@ -130,7 +130,7 @@ describe('serveCover', () => {
       background: () => undefined,
       mayFetch: allowed,
     });
-    expect(response.status).toBe(502);
+    expect(response.status).toBe(204);
   });
 
   it('refuses a photo the person has no recipe for, without fetching it', async () => {

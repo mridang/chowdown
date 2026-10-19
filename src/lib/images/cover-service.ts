@@ -55,10 +55,28 @@ export function withBrowserCaching(response: Response): Response {
 }
 
 /**
+ * The answer for a photo its own site will not give us (gone, refused, too large,
+ * not a photo, not answering). It is 204, not an error status: the page asks for
+ * covers by the dozen and shows a placeholder for one that cannot be had, and a
+ * 4xx or 5xx would put a red network error in the browser's console on every
+ * visit for something that is not a fault in the app. The browser may keep the
+ * answer for an hour, so it does not ask again at once.
+ */
+function unavailable(reason: string): Response {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Cache-Control': 'private, max-age=3600',
+      'X-Cover-Unavailable': reason,
+    },
+  });
+}
+
+/**
  * The response for a request for the photo at `url`, scaled to `width`: the
  * photo (200), 400 for an address that is not a public image, 404 when the
- * person has no recipe with that photo or when the photo is gone, or 502 when
- * its site cannot be reached or refuses.
+ * person has no recipe with that photo, or 204 when the photo cannot be had
+ * from its own site (see `unavailable`).
  */
 export async function serveCover(
   url: string,
@@ -86,9 +104,7 @@ export async function serveCover(
     fetcher: deps.fetcher,
   });
   if (!result.ok) {
-    return result.status === 404
-      ? problems.notFound('cover image')
-      : problems.upstream(result.reason);
+    return unavailable(result.reason);
   }
   const { cache } = deps;
   if (cache) {

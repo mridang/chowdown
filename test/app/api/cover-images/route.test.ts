@@ -124,23 +124,32 @@ describe('GET /api/cover-images', () => {
     expect(fetched).toEqual([]);
   });
 
-  it('answers 404 when the photo is gone and 502 when its site fails', async () => {
+  it('answers 204, which is no error in the browser, when the photo is gone or its site fails', async () => {
     serving(() => new Response('', { status: 404 }));
-    expect((await ask(photo(PHOTO))).status).toBe(404);
+    expect((await ask(photo(PHOTO))).status).toBe(204);
     serving(() => new Response('', { status: 500 }));
-    expect((await ask(photo(PHOTO))).status).toBe(502);
+    expect((await ask(photo(PHOTO))).status).toBe(204);
     global.fetch = (async () => {
       throw new TypeError('offline');
     }) as unknown as typeof fetch;
-    expect((await ask(photo(PHOTO))).status).toBe(502);
+    expect((await ask(photo(PHOTO))).status).toBe(204);
   });
 
-  it('answers 502 for something that is not a photo', async () => {
+  it('lets the browser keep a 204 for an hour, and says why in a header', async () => {
+    serving(() => new Response('', { status: 403 }));
+    const res = await ask(photo(PHOTO));
+    expect(res.status).toBe(204);
+    expect(res.headers.get('cache-control')).toBe('private, max-age=3600');
+    expect(res.headers.get('x-cover-unavailable')).toBeTruthy();
+    expect(await res.text()).toBe('');
+  });
+
+  it('answers 204 for something that is not a photo', async () => {
     serving(
       () =>
         new Response('<html>', { headers: { 'content-type': 'text/html' } }),
     );
-    expect((await ask(photo(PHOTO))).status).toBe(502);
+    expect((await ask(photo(PHOTO))).status).toBe(204);
   });
 
   it('refuses to be redirected to an address it should not reach', async () => {
@@ -152,7 +161,7 @@ describe('GET /api/cover-images', () => {
         }),
     );
     const res = await ask(photo(PHOTO));
-    expect(res.status).toBe(502);
+    expect(res.status).toBe(204);
     expect(fetched).toEqual([PHOTO]);
   });
 
