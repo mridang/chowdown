@@ -21,7 +21,8 @@
     "test:watch": "npm run test -- --watch",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run --browser chrome",
-    "conformance": "node scripts/conformance/run.mjs"
+    "conformance": "node scripts/conformance/run.mjs",
+    "conformance:legacy": "node scripts/conformance/run.mjs --revision 2025-11-25"
   },
   "browserslist": [
     "chrome >= 111",
@@ -34,9 +35,9 @@
   },
   "dependencies": {
     "@cooklang/cooklang-ts": "^1.1.2",
-    "@opennextjs/cloudflare": "^1.19.11",
+    "@opennextjs/cloudflare": "^1.20.12",
     "drizzle-orm": "^0.45.2",
-    "next": "16.2.7",
+    "next": "16.4.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
@@ -46,6 +47,7 @@
     "@eslint/compat": "^2.1.0",
     "@jest/globals": "^30.0.3",
     "@modelcontextprotocol/conformance": "0.2.0-alpha.12",
+    "@modelcontextprotocol/core": "^2.3.1",
     "@modelcontextprotocol/ext-apps": "^2.0.3",
     "@mridang/eslint-defaults": "^1.6.3",
     "@tailwindcss/postcss": "^4",
@@ -66,6 +68,7 @@
     "tailwindcss": "^4",
     "ts-jest": "^29.4.0",
     "typescript": "^6.0.3",
-    "wrangler": "^4.86.0"
+    "wrangler": "^4.151.1",
+    "yaml": "^2.9.1"
   }
 }
