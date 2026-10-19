@@ -10,6 +10,7 @@
  */
 
 import { SESSION_COOKIE } from '../auth/session';
+import { nonceOf } from './csp';
 import { replacingHeaders } from './headers';
 
 /** The public pages worth keeping at the edge. */
@@ -64,6 +65,32 @@ export function storableCopy(response: Response): Response | null {
     statusText: response.statusText,
     headers: replacingHeaders(response.headers, {
       'Cache-Control': `public, max-age=${EDGE_TTL_SECONDS}`,
+    }),
+  });
+}
+
+/**
+ * A cached page with this request's own Content Security Policy nonce in place
+ * of the one it was stored with. The copy is shared by every anonymous visitor
+ * for several minutes, and a nonce that stays the same for that long is a
+ * password everyone knows; so each hit gets a nonce of its own, swapped into the
+ * scripts and into the policy header. A page whose policy carries no nonce is
+ * returned as it is.
+ */
+export async function withFreshNonce(
+  cached: Response,
+  nonce: string,
+  csp: string,
+): Promise<Response> {
+  const old = nonceOf(cached.headers.get('content-security-policy') ?? '');
+  if (old === undefined) {
+    return cached;
+  }
+  return new Response((await cached.text()).replaceAll(old, nonce), {
+    status: cached.status,
+    statusText: cached.statusText,
+    headers: replacingHeaders(cached.headers, {
+      'Content-Security-Policy': csp,
     }),
   });
 }

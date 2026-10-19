@@ -8,15 +8,17 @@
   // Cloudflare auto-routes the Worker to the colo closest to D1
   // (avoids the worst-case ~70 ms hop). Free on all plans.
   "placement": { "mode": "smart" },
-  // Full Workers Observability: logs, metrics, invocation traces — all
-  // sampled at 100% (the volume is tiny, the data is gold for debugging).
+  // Workers Observability: the app's own log lines and metrics, sampled at 100%
+  // (the volume is tiny and the data is what debugging needs). The automatic
+  // per-request invocation logs are off: they record the full URL, and URLs here
+  // carry search text, cover-image addresses and sign-in codes.
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,
     "logs": {
       "enabled": true,
       "head_sampling_rate": 1,
-      "invocation_logs": true,
+      "invocation_logs": false,
     },
   },
   // Custom domain — the workers.dev subdomain is disabled so the
@@ -29,9 +31,10 @@
     "binding": "ASSETS",
     "directory": ".open-next/assets",
   },
-  // Workers AI — used server-side to convert fetched recipe content into
-  // Cooklang under our control (the client passes raw page text/HTML, never
-  // the Cooklang itself). Free daily allocation covers hobby volume.
+  // Workers AI: converts imported recipe pages and pasted text into Cooklang,
+  // tags recipes, and embeds them for similar-recipe search, all server-side
+  // under our own prompts. Billed beyond the free daily allocation; the edge
+  // limits below and the per-request caps in the import code bound the spend.
   "ai": {
     "binding": "AI",
   },
@@ -44,6 +47,86 @@
   "version_metadata": {
     "binding": "CF_VERSION_METADATA",
   },
+  // Cloudflare Workers Rate Limiting: the first line of defence, checked in the
+  // Worker before the app, D1, Google or a model is touched (src/lib/http/edge-limits.ts
+  // says which request counts against which binding; a test keeps this list and that
+  // table in step). Limits are per Cloudflare location and eventually consistent:
+  // a cost guard, not an accounting system. namespace_id is account-wide and shared
+  // by every Worker that uses the same number, hence the distinctive 71xx range.
+  "ratelimits": [
+    // sign-in and approval flows: slow human actions
+    {
+      "name": "RL_AUTH",
+      "namespace_id": "7101",
+      "simple": { "limit": 30, "period": 60 },
+    },
+    // the token endpoint: assistants share egress addresses, so this is a flood guard only
+    {
+      "name": "RL_TOKEN",
+      "namespace_id": "7102",
+      "simple": { "limit": 600, "period": 60 },
+    },
+    // client registration (the durable per-hour limit is in D1)
+    {
+      "name": "RL_REGISTER",
+      "namespace_id": "7103",
+      "simple": { "limit": 10, "period": 60 },
+    },
+    // MCP requests, per bearer token
+    {
+      "name": "RL_MCP",
+      "namespace_id": "7104",
+      "simple": { "limit": 300, "period": 60 },
+    },
+    // MCP requests with no bearer token: probing only
+    {
+      "name": "RL_MCP_ANONYMOUS",
+      "namespace_id": "7105",
+      "simple": { "limit": 60, "period": 60 },
+    },
+    // recipe imports, per person: each can cost many model calls
+    {
+      "name": "RL_IMPORT",
+      "namespace_id": "7106",
+      "simple": { "limit": 5, "period": 60 },
+    },
+    // tagging and suggestions, per person: a model call and Drive reads each
+    {
+      "name": "RL_EXPENSIVE",
+      "namespace_id": "7107",
+      "simple": { "limit": 10, "period": 60 },
+    },
+    // cover images, per person: a grid loads dozens, cache hits are cheap
+    {
+      "name": "RL_COVER",
+      "namespace_id": "7108",
+      "simple": { "limit": 600, "period": 60 },
+    },
+    // the rest of the signed-in API, per person
+    {
+      "name": "RL_API",
+      "namespace_id": "7109",
+      "simple": { "limit": 120, "period": 60 },
+    },
+    // well-known documents, health and crawler files, per address
+    {
+      "name": "RL_DISCOVERY",
+      "namespace_id": "7110",
+      "simple": { "limit": 120, "period": 60 },
+    },
+    // pages, per address
+    {
+      "name": "RL_SITE",
+      "namespace_id": "7111",
+      "simple": { "limit": 300, "period": 60 },
+    },
+    // everything, per address: bounds callers who make up session cookies
+    {
+      "name": "RL_ADDRESS",
+      "namespace_id": "7112",
+      "simple": { "limit": 900, "period": 60 },
+    },
+  ],
   "d1_databases": [
     {
       "binding": "DB",

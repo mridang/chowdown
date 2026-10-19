@@ -39,10 +39,32 @@ export function appOrigin(request: Request): string {
   return configuredOrigin() ?? new URL(request.url).origin;
 }
 
-/** The `APP_URL` setting, or `undefined` when it is not set or there is no Cloudflare context (tests, scripts). */
+/**
+ * The origin in an `APP_URL` setting: `https://host`, whatever else the value
+ * carries (a trailing slash or a path would otherwise end up in every absolute
+ * URL built from it). `undefined` for nothing, or for a value that is not an
+ * http(s) URL, which is ignored rather than trusted.
+ */
+export function originOfSetting(
+  setting: string | undefined,
+): string | undefined {
+  if (!setting) {
+    return undefined;
+  }
+  try {
+    const url = new URL(setting.trim());
+    return url.protocol === 'https:' || url.protocol === 'http:'
+      ? url.origin
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The `APP_URL` setting as an origin, or `undefined` when it is not set or there is no Cloudflare context (tests, scripts). */
 function configuredOrigin(): string | undefined {
   try {
-    return getEnv().APP_URL;
+    return originOfSetting(getEnv().APP_URL);
   } catch {
     return undefined;
   }

@@ -5,6 +5,7 @@ import path from 'node:path';
 import {
   SECURITY_HEADERS,
   applyResponseHeaders,
+  openerPolicyFor,
   replacingHeaders,
   resourcePolicyFor,
 } from '../../../src/lib/http/headers';
@@ -16,7 +17,63 @@ const html = (headers: Record<string, string> = {}) =>
     headers: { 'content-type': 'text/html; charset=utf-8', ...headers },
   });
 
+describe('openerPolicyFor', () => {
+  it('lets the window that opened the approval screen keep its link to it', () => {
+    expect(openerPolicyFor('/oauth/authorize')).toBe('unsafe-none');
+  });
+
+  it('cuts other windows off everywhere else', () => {
+    for (const pathname of [
+      '/',
+      '/app',
+      '/oauth/consent',
+      '/oauth/token',
+      '/api/mcp',
+    ]) {
+      expect(openerPolicyFor(pathname)).toBe('same-origin');
+    }
+  });
+});
+
+describe('applyResponseHeaders — files other sites and browsers fetch', () => {
+  it.each([
+    '/favicon.ico',
+    '/security-policy.txt',
+    '/screenshots/wide.png',
+    '/icons/icon-192.png',
+  ])('serves %s to other sites and does not mark it noindex', (pathname) => {
+    const out = applyResponseHeaders(at(pathname), new Response('x'));
+    expect(out.headers.get('cross-origin-resource-policy')).toBe(
+      'cross-origin',
+    );
+    expect(out.headers.has('x-robots-tag')).toBe(false);
+  });
+
+  it.each([
+    '/favicon.ico',
+    '/opengraph-image.png',
+    '/twitter-image.png',
+    '/icon.svg',
+  ])('lets a browser keep %s for a day', (pathname) => {
+    const out = applyResponseHeaders(at(pathname), new Response('x'));
+    expect(out.headers.get('cache-control')).toContain('max-age=86400');
+  });
+});
+
 describe('applyResponseHeaders', () => {
+  it('sends the approval screen with an opener policy a popup client can live with', () => {
+    expect(
+      applyResponseHeaders(at('/oauth/authorize'), html()).headers.get(
+        'cross-origin-opener-policy',
+      ),
+    ).toBe('unsafe-none');
+    expect(
+      applyResponseHeaders(at('/app'), html()).headers.get(
+        'cross-origin-opener-policy',
+      ),
+    ).toBe('same-origin');
+  });
+
   it('adds the security headers to every response', async () => {
     const out = applyResponseHeaders(at('/app'), html());
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) {

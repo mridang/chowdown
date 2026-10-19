@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   buildCsp,
+  cspSurfaceFor,
   forwardedHeaders,
   newNonce,
   nonceOf,
@@ -113,5 +114,20 @@ describe('forwardedHeaders', () => {
     const incoming = new Headers({ accept: 'text/html' });
     forwardedHeaders(incoming, 'x', 'y');
     expect(incoming.has('content-security-policy')).toBe(false);
+  });
+});
+
+describe('cspSurfaceFor', () => {
+  it('gives the approval screen its own policy and every other path the site policy', () => {
+    expect(cspSurfaceFor('/oauth/authorize')).toBe('approval');
+    for (const pathname of [
+      '/',
+      '/app',
+      '/oauth/consent',
+      '/oauth/authorize/x',
+      '/api/mcp',
+    ]) {
+      expect(cspSurfaceFor(pathname)).toBe('site');
+    }
   });
 });

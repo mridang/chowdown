@@ -4,6 +4,7 @@ import {
   appOrigin,
   appOriginFromHeaders,
   isDatabaseBound,
+  originOfSetting,
   runInBackground,
 } from '../../../src/lib/util/runtime';
 
@@ -80,5 +81,35 @@ describe('appOriginFromHeaders', () => {
         }),
       ),
     ).toBe('https://chowdown.apps.mrida.ng');
+  });
+});
+
+describe('originOfSetting', () => {
+  it('reduces a setting to its origin, so no slash or path ends up in absolute URLs', () => {
+    expect(originOfSetting('https://chowdown.apps.mrida.ng')).toBe(
+      'https://chowdown.apps.mrida.ng',
+    );
+    expect(originOfSetting('https://chowdown.apps.mrida.ng/')).toBe(
+      'https://chowdown.apps.mrida.ng',
+    );
+    expect(originOfSetting(' https://chowdown.apps.mrida.ng/app?x=1 ')).toBe(
+      'https://chowdown.apps.mrida.ng',
+    );
+  });
+
+  it('keeps a port and allows http for local use', () => {
+    expect(originOfSetting('http://localhost:3737/')).toBe(
+      'http://localhost:3737',
+    );
+  });
+
+  it.each([
+    undefined,
+    '',
+    'not a url',
+    'javascript:alert(1)',
+    'ftp://example.com',
+  ])('ignores %p', (value) => {
+    expect(originOfSetting(value)).toBeUndefined();
   });
 });

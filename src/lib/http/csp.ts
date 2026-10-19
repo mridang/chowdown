@@ -61,6 +61,15 @@ export function buildCsp(nonce: string, surface: CspSurface = 'site'): string {
   ].join('; ');
 }
 
+/**
+ * Which policy a path gets. The approval screen may not be framed by anyone,
+ * not even this site, and must let the browser follow the redirect back to the
+ * assistant, so it has a policy of its own; every other page has the site's.
+ */
+export function cspSurfaceFor(pathname: string): CspSurface {
+  return pathname === '/oauth/authorize' ? 'approval' : 'site';
+}
+
 /** The nonce in a policy, if it carries one. */
 export function nonceOf(csp: string): string | undefined {
   return /'nonce-([^']+)'/.exec(csp)?.[1];

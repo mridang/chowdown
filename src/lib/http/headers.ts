@@ -38,11 +38,24 @@ export const PUBLIC_PAGES: ReadonlySet<string> = new Set(['/', '/privacy']);
  * plain-text files at the root) are open to all.
  */
 const OPEN_FILES =
-  /^\/(opengraph-image\.png|twitter-image\.png|icon\.svg|apple-icon\.png|manifest\.webmanifest|robots\.txt|sitemap\.xml|llms\.txt|\.well-known\/.*|icons\/.*)$/;
+  /^\/(opengraph-image\.png|twitter-image\.png|icon\.svg|apple-icon\.png|favicon\.ico|manifest\.webmanifest|robots\.txt|sitemap\.xml|llms\.txt|security-policy\.txt|\.well-known\/.*|icons\/.*|screenshots\/.*)$/;
 
 /** The `Cross-Origin-Resource-Policy` for a path. */
 export function resourcePolicyFor(pathname: string): string {
   return OPEN_FILES.test(pathname) ? 'cross-origin' : 'same-site';
+}
+
+/**
+ * The `Cross-Origin-Opener-Policy` for a path. Everywhere but one place it cuts
+ * other windows off from this one. The approval screen is the exception: an
+ * assistant that opens it in a popup finishes sign-in through the window that
+ * opened it, and `same-origin` would sever that link the moment the popup
+ * lands here. The screen holds nothing a window that opened it could read.
+ */
+export function openerPolicyFor(pathname: string): string {
+  return pathname === '/oauth/authorize'
+    ? 'unsafe-none'
+    : (SECURITY_HEADERS['Cross-Origin-Opener-Policy'] ?? 'same-origin');
 }
 
 /** One response header: its name and value. */
@@ -65,13 +78,19 @@ export function replacingHeaders(
 /** Tells crawlers not to index a page or follow its links. */
 const NOINDEX: HeaderPair = ['X-Robots-Tag', 'noindex, nofollow'];
 
+/** The small files that rarely change, and for which a stale copy is harmless. */
+const RARELY_CHANGING: ReadonlySet<string> = new Set([
+  '/manifest.webmanifest',
+  '/icon.svg',
+  '/apple-icon.png',
+  '/favicon.ico',
+  '/opengraph-image.png',
+  '/twitter-image.png',
+]);
+
 /** Cache rules for the few responses that want something other than the default. */
 function cacheControlFor(pathname: string, response: Response): string | null {
-  if (
-    pathname === '/manifest.webmanifest' ||
-    pathname === '/icon.svg' ||
-    pathname === '/apple-icon.png'
-  ) {
+  if (RARELY_CHANGING.has(pathname)) {
     // Rarely changes, and a stale copy is harmless.
     return 'public, max-age=86400, stale-while-revalidate=604800';
   }
@@ -104,7 +123,14 @@ export function applyResponseHeaders(
   const present = response.headers;
   const leftAlone = PUBLIC_PAGES.has(pathname) || OPEN_FILES.test(pathname);
   const candidates: HeaderPair[] = [
-    ...Object.entries(SECURITY_HEADERS),
+    ...Object.entries(SECURITY_HEADERS).map(
+      ([name, value]): HeaderPair => [
+        name,
+        name === 'Cross-Origin-Opener-Policy'
+          ? openerPolicyFor(pathname)
+          : value,
+      ],
+    ),
     ['Cross-Origin-Resource-Policy', resourcePolicyFor(pathname)],
     // Whatever the page itself says, tell crawlers not to index or follow it.
     // (The files other sites are meant to fetch, such as the sitemap and

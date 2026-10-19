@@ -6,6 +6,7 @@ import {
   edgeCacheKey,
   isEdgeCacheable,
   storableCopy,
+  withFreshNonce,
 } from '../../../src/lib/http/edge-cache';
 
 const get = (path: string, headers: Record<string, string> = {}) =>
@@ -110,5 +111,52 @@ describe('edgeCache', () => {
   it('ignores something that is not a cache', () => {
     Reflect.set(globalThis, 'caches', { default: {} });
     expect(edgeCache()).toBeUndefined();
+  });
+});
+
+describe('withFreshNonce', () => {
+  const cached = () =>
+    new Response(
+      '<script nonce="old1"></script><script nonce="old1"></script>',
+      {
+        headers: {
+          'content-type': 'text/html',
+          'content-security-policy': "script-src 'nonce-old1' 'strict-dynamic'",
+        },
+      },
+    );
+
+  it('puts the new nonce in every script and in the policy, and the old one nowhere', async () => {
+    const out = await withFreshNonce(
+      cached(),
+      'new2',
+      "script-src 'nonce-new2' 'strict-dynamic'",
+    );
+    const body = await out.text();
+    expect(body).toBe(
+      '<script nonce="new2"></script><script nonce="new2"></script>',
+    );
+    expect(out.headers.get('content-security-policy')).toBe(
+      "script-src 'nonce-new2' 'strict-dynamic'",
+    );
+  });
+
+  it('keeps the status and the other headers', async () => {
+    const out = await withFreshNonce(
+      cached(),
+      'new2',
+      "script-src 'nonce-new2'",
+    );
+    expect(out.status).toBe(200);
+    expect(out.headers.get('content-type')).toBe('text/html');
+  });
+
+  it('returns a page whose policy has no nonce as it is', async () => {
+    const plain = new Response('<p>x</p>', {
+      headers: { 'content-type': 'text/html' },
+    });
+    expect(await withFreshNonce(plain, 'new2', "script-src 'nonce-new2'")).toBe(
+      plain,
+    );
   });
 });
