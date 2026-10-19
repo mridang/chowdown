@@ -22,6 +22,7 @@ import { MenuLink } from './menu-link';
 import { DeleteAccountDialog } from './delete-account-dialog';
 import { FindAuthorsDialog } from './find-authors-dialog';
 import type { DriveLink } from './drive-link';
+import { InstallIosHint } from './install-ios-hint';
 import { useInstallPrompt } from './use-install-prompt';
 
 /**
@@ -147,6 +148,8 @@ export function AccountMenu({
             Install app
           </button>
         ) : null}
+        {/* Safari on iPhone has no install button to offer; this says where to tap. */}
+        <InstallIosHint />
         <PopoverSeparator />
         <button
           type="button"

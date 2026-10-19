@@ -118,6 +118,11 @@ describe('TextInput and TextArea', () => {
     expect(classOf(html(<TextArea mono />), 'textarea')).toContain('font-mono');
     expect(classOf(html(<TextArea />), 'textarea')).not.toContain('font-mono');
   });
+
+  it('grows with what is typed only when asked, through the autogrow rule in globals.css', () => {
+    expect(classOf(html(<TextArea grow />), 'textarea')).toContain('autogrow');
+    expect(classOf(html(<TextArea />), 'textarea')).not.toContain('autogrow');
+  });
 });
 
 describe('FormMessage', () => {

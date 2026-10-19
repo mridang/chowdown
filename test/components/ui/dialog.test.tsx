@@ -4,8 +4,10 @@ import {
   backdropClickHandler,
   cancelHandler,
   Dialog,
+  closedBy,
   hasDescription,
-  lockScroll,
+  LEAVE_MS,
+  supportsLightDismiss,
   syncModal,
   DialogContent,
   DialogDescription,
@@ -188,30 +190,56 @@ describe('cancelHandler', () => {
   });
 });
 
-describe('lockScroll', () => {
-  /** A style declaration that remembers what was set. */
-  function fakeStyle(initial: string) {
-    const values = new Map([['overflow', initial]]);
-    return {
-      values,
-      getPropertyValue: (name: string) => values.get(name) ?? '',
-      setProperty: (name: string, value: string) => {
-        values.set(name, value);
-      },
-    };
-  }
-
-  it('stops the page scrolling, and puts back exactly what was there', () => {
-    const style = fakeStyle('scroll');
-    const unlock = lockScroll(style);
-    expect(style.values.get('overflow')).toBe('hidden');
-    unlock();
-    expect(style.values.get('overflow')).toBe('scroll');
+describe('closedBy', () => {
+  it('lets the browser close a dismissable dialog on a click outside it', () => {
+    expect(closedBy(true)).toEqual({ closedby: 'any' });
   });
 
-  it('puts back nothing when nothing was set before', () => {
-    const style = fakeStyle('');
-    lockScroll(style)();
-    expect(style.values.get('overflow')).toBe('');
+  it('keeps a busy dialog open until the page closes it', () => {
+    expect(closedBy(false)).toEqual({ closedby: 'none' });
+  });
+});
+
+describe('supportsLightDismiss', () => {
+  it('is true for a dialog whose browser knows closedBy', () => {
+    const prototype = { closedBy: 'closerequest' };
+    expect(supportsLightDismiss(Object.create(prototype))).toBe(true);
+  });
+
+  it('is false for a dialog whose browser does not, so it must watch for the click itself', () => {
+    expect(supportsLightDismiss(Object.create({ open: false }))).toBe(false);
+  });
+});
+
+describe('LEAVE_MS', () => {
+  it('outlasts the 200ms fade-out in globals.css, so the content is there to fade', () => {
+    expect(LEAVE_MS).toBeGreaterThan(200);
+  });
+});
+
+describe('DialogContent markup', () => {
+  it('says what kind of dialog it is, for the stylesheet’s entry and exit animation', () => {
+    const out = html(
+      <Dialog open>
+        <DialogContent variant="drawer">
+          <DialogTitle>T</DialogTitle>
+        </DialogContent>
+      </Dialog>,
+    );
+    expect(out).toContain('data-variant="drawer"');
+    expect(sample(true)).toContain('data-variant="full"');
+  });
+
+  it('asks the browser for light dismiss, and for none while busy', () => {
+    const dialog = (dismissable: boolean) =>
+      html(
+        <Dialog open>
+          <DialogContent dismissable={dismissable}>
+            <DialogTitle>T</DialogTitle>
+          </DialogContent>
+        </Dialog>,
+      );
+    expect(dialog(true)).toContain('closedby="any"');
+    expect(dialog(false)).toContain('closedby="none"');
   });
 });

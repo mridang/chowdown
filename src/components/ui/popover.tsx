@@ -7,23 +7,12 @@ import {
   useId,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactElement,
   type ReactNode,
 } from 'react';
 
 import { cn } from '@/components/ui/cn';
-
-/**
- * Run `close` once the click that chose a menu item has finished being handled.
- *
- * Closing straight away is a bug that looks like nothing happening: React has
- * unmounted the item by the time it gets the click, so the item's own handler
- * (Sign out, say) never runs, and a link falls back to a full page load. A
- * timeout of zero lets the click reach the item first.
- */
-export function closeAfterClick(close: () => void): void {
-  setTimeout(close, 0);
-}
 
 /**
  * Whether focus has moved out of a popover to somewhere else on the page.
@@ -82,20 +71,123 @@ export function isOpenOn(
   return openedOn !== null && openedOn.pathname === pathname;
 }
 
+/** Where a popover's panel goes when the browser cannot place it: in pixels from the window's top and right edge. */
+type Placement = Readonly<{ top: number; right: number }>;
+
+/**
+ * Whether this browser has the Popover API (Chrome 114, Firefox 125, Safari 17).
+ * Where it has not, the panel is an ordinary box that the component shows and
+ * hides itself, and the `popover` attribute does nothing.
+ *
+ * @param panel Any element; the API is looked for on it.
+ */
+export function supportsPopover(panel: object): boolean {
+  return 'popover' in panel;
+}
+
+/**
+ * Whether this browser can anchor a panel to its button in CSS (`position-area`:
+ * Chrome 125, Safari 26, Firefox 147). The same test the stylesheet makes with
+ * `@supports`, so that the script steps in exactly when the stylesheet does not.
+ *
+ * @param css The `CSS` namespace (or anything with its `supports`).
+ */
+export function supportsAnchorPositioning(
+  css: Readonly<{
+    supports: (property: string, value: string) => boolean;
+  }>,
+): boolean {
+  return css.supports('position-area', 'bottom');
+}
+
+/**
+ * Where to put a popover's panel in a browser that has popovers but cannot
+ * anchor one to its button (before Safari 26 and Firefox 147): just under the
+ * button, with the panel's right edge on the button's, like the anchored
+ * layout. A button too near the window's right edge still leaves a margin.
+ *
+ * @param button The button's box, from `getBoundingClientRect()`.
+ * @param viewportWidth The window's width, without a scrollbar.
+ */
+export function fallbackPlacement(
+  button: Readonly<Pick<DOMRect, 'bottom' | 'right'>>,
+  viewportWidth: number,
+): Placement {
+  const margin = 8;
+  return {
+    top: button.bottom + margin,
+    right: Math.max(margin, viewportWidth - button.right),
+  };
+}
+
+/**
+ * Hand a panel its {@link Placement} as two custom properties that the
+ * stylesheet reads (`--popover-top`, `--popover-right`). Going through the style
+ * object is allowed by the content security policy, which refuses an inline
+ * `style` attribute.
+ */
+export function applyPlacement(
+  style: Pick<CSSStyleDeclaration, 'setProperty'>,
+  place: Placement,
+): void {
+  style.setProperty('--popover-top', `${place.top}px`);
+  style.setProperty('--popover-right', `${place.right}px`);
+}
+
+/**
+ * In a browser that cannot anchor the panel to its button in CSS, work out where
+ * it goes from the button's box and hand that to the stylesheet. Does nothing
+ * where the stylesheet can do it itself.
+ */
+function placeWithoutAnchors(
+  panel: HTMLElement | null,
+  trigger: Element | null,
+): void {
+  if (!panel || !trigger || supportsAnchorPositioning(CSS)) {
+    return;
+  }
+  const width = document.documentElement.clientWidth;
+  applyPlacement(
+    panel.style,
+    fallbackPlacement(trigger.getBoundingClientRect(), width),
+  );
+}
+
+/** A store that never changes: all `useHydrated` needs is its two snapshots. */
+const NO_STORE = (): (() => void) => () => undefined;
+
+/**
+ * Whether the page has been hydrated, that is, whether React has taken over the
+ * markup the server sent. False on the server and during the first client
+ * render, true afterwards.
+ */
+function useHydrated(): boolean {
+  return useSyncExternalStore(
+    NO_STORE,
+    () => true,
+    () => false,
+  );
+}
+
 /**
  * A button that opens a small panel of links and actions (the account menu and
- * the phone navigation). It is a disclosure, not an ARIA "menu": the button says
- * whether the panel is open, and the panel is an ordinary list that Tab moves
- * through. It closes on Escape (returning focus to the button), on a click
- * outside, and when anything inside it is chosen. The panel opens beneath the
- * button, lined up with its right edge. It weighs about a kilobyte,
- * where a full menu library would weigh dozens on every page.
+ * the phone navigation), built on the browser's own Popover API. It is a
+ * disclosure, not an ARIA "menu": the button says whether the panel is open, and
+ * the panel is an ordinary list that Tab moves through.
+ *
+ * The browser does the work: the button opens and closes the panel with no
+ * script (`popovertarget`), Escape and a click outside close it, focus goes back
+ * to the button when it closes, and the open panel sits in the top layer, above
+ * the sticky header. CSS places it under the button, lined up with its right
+ * edge (see `globals.css`, which also says what happens in browsers without
+ * anchor positioning or without popovers). What is left here is what the
+ * browser does not do: it keeps the panel's contents out of the page until it
+ * is opened (so a closed menu costs nothing and is not read out twice); it closes the panel when focus tabs out of it, when
+ * anything inside it is chosen, and when the page navigates (the back button,
+ * say); and it keeps `aria-expanded` and `data-state` in step with the panel.
  *
  * As a disclosure, opening it leaves focus on the button: the panel follows the
- * button in the page, so the next Tab enters it. It also closes when focus
- * moves out of it, and when the page navigates (the back button, say) while it
- * is open. A click outside closes it without moving focus, because focus is
- * already going to whatever was clicked.
+ * button in the page, so the next Tab enters it.
  */
 export function Popover({
   label,
@@ -113,55 +205,66 @@ export function Popover({
   children: ReactNode;
 }>): ReactElement {
   const pathname = usePathname();
-  // Remember which page it was opened on: a different page means it is closed,
-  // with no effect needed to notice the navigation.
+  const hydrated = useHydrated();
+  // Remember which page it was opened on: a different page means it is closed.
   const [openedOn, setOpenedOn] = useState<OpenedOn | null>(null);
   const open = isOpenOn(openedOn, pathname);
-  const setOpen = useCallback(
-    (next: boolean) => setOpenedOn(next ? { pathname } : null),
-    [pathname],
-  );
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const panelId = useId();
 
+  // Hide the panel, however this browser shows it. In a browser with popovers
+  // that is `hidePopover()` (which does nothing if it is already hidden), and
+  // the panel's `toggle` event then updates the state; without them the state
+  // is all there is.
+  const close = useCallback(() => {
+    const element = panel.current;
+    if (element && supportsPopover(element)) {
+      element.hidePopover();
+    } else {
+      setOpenedOn(null);
+    }
+  }, []);
+
+  // The panel can be left open by a navigation that the browser knows nothing
+  // about (a client-side route change): `open` has gone false by itself, so
+  // bring the panel into step with it.
   useEffect(() => {
     if (!open) {
+      close();
+    }
+  }, [open, close]);
+
+  // Two listeners for what the browser does not do. Choosing a link or an
+  // action inside the panel closes it: this runs after the item's own handler
+  // (the click bubbles up to the panel), and closing does not stop a link being
+  // followed. And in a browser with no popovers, where nothing else would,
+  // Escape closes the panel and puts focus back on the button.
+  useEffect(() => {
+    const panelElement = panel.current;
+    const rootElement = root.current;
+    if (!panelElement || !rootElement) {
       return;
     }
-    const onPointerDown = (event: PointerEvent) => {
-      if (
-        event.target instanceof Node &&
-        !root.current?.contains(event.target)
-      ) {
-        setOpen(false);
-      }
-    };
-    const onKeyDown = escapeHandler(
-      () => setOpen(false),
-      () => trigger.current?.focus(),
-    );
-    // Choosing a link or an action inside the panel closes it, but only once
-    // the click has finished being handled (see closeAfterClick).
     const onPanelClick = (event: MouseEvent) => {
       if (
         event.target instanceof Element &&
         event.target.closest('a, button')
       ) {
-        closeAfterClick(() => setOpen(false));
+        close();
       }
     };
-    const panelElement = panel.current;
-    panelElement?.addEventListener('click', onPanelClick);
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
+    const onKeyDown = escapeHandler(close, () => trigger.current?.focus());
+    panelElement.addEventListener('click', onPanelClick);
+    if (!supportsPopover(panelElement)) {
+      rootElement.addEventListener('keydown', onKeyDown);
+    }
     return () => {
-      panelElement?.removeEventListener('click', onPanelClick);
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
+      panelElement.removeEventListener('click', onPanelClick);
+      rootElement.removeEventListener('keydown', onKeyDown);
     };
-  }, [open, setOpen]);
+  }, [close]);
 
   return (
     <div
@@ -169,7 +272,7 @@ export function Popover({
       className="relative"
       onBlur={(event) => {
         if (focusLeft(event.currentTarget, event.relatedTarget)) {
-          setOpen(false);
+          close();
         }
       }}
     >
@@ -178,25 +281,50 @@ export function Popover({
         type="button"
         aria-label={label}
         aria-expanded={open}
-        aria-controls={open ? panelId : undefined}
-        onClick={() => setOpen(!open)}
+        aria-controls={panelId}
+        // Wired up only once React is listening. Before that the browser would
+        // open an empty panel (its contents are mounted when it opens), which
+        // the page would then have to close again.
+        popoverTarget={hydrated ? panelId : undefined}
+        onClick={() => {
+          // With popovers the browser has already toggled it; without, do it.
+          if (panel.current && !supportsPopover(panel.current)) {
+            setOpenedOn(open ? null : { pathname });
+          }
+        }}
         data-state={open ? 'open' : 'closed'}
         className={buttonClassName}
       >
         {button}
       </button>
-      {open ? (
-        <div
-          id={panelId}
-          ref={panel}
-          className={cn(
-            'rounded-card border-line text-ink absolute top-full right-0 z-50 mt-2 min-w-56 border bg-white p-1.5',
-            panelClassName,
-          )}
-        >
-          {children}
-        </div>
-      ) : null}
+      <div
+        id={panelId}
+        ref={panel}
+        popover="auto"
+        data-popover=""
+        data-open={open ? '' : undefined}
+        onBeforeToggle={(event) => {
+          // About to open: mount the contents now, in the same tick, so the
+          // panel is never drawn empty. Closing is told apart in `onToggle`,
+          // after the browser has put focus back on the button; unmounting the
+          // focused item first would leave focus nowhere.
+          if (event.nativeEvent.newState === 'open') {
+            setOpenedOn({ pathname });
+            placeWithoutAnchors(panel.current, trigger.current);
+          }
+        }}
+        onToggle={(event) => {
+          if (event.nativeEvent.newState === 'closed') {
+            setOpenedOn(null);
+          }
+        }}
+        className={cn(
+          'rounded-card border-line text-ink min-w-56 border bg-white p-1.5',
+          panelClassName,
+        )}
+      >
+        {open ? children : null}
+      </div>
     </div>
   );
 }

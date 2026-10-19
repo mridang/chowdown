@@ -141,18 +141,28 @@ export function TextInput({
   );
 }
 
-/** A multi-line text box; `mono` shows code-like text such as Cooklang. */
+/**
+ * A multi-line text box. `mono` shows code-like text such as Cooklang. `grow`
+ * makes it grow with what is typed, up to 60% of the screen (the `autogrow`
+ * rule in `globals.css`; a browser without `field-sizing` keeps the height that
+ * `rows` gives it). It starts three lines tall; `[--autogrow-rows:8]` in
+ * `className` starts it taller.
+ */
 export function TextArea({
   mono,
+  grow,
   className,
   ...props
-}: Readonly<{ mono?: boolean } & ComponentProps<'textarea'>>): ReactElement {
+}: Readonly<
+  { mono?: boolean; grow?: boolean } & ComponentProps<'textarea'>
+>): ReactElement {
   return (
     <textarea
       className={cn(
         BOX,
         'py-3 leading-relaxed',
         mono && 'font-mono text-[13px]',
+        grow && 'autogrow',
         className,
       )}
       {...props}

@@ -115,3 +115,216 @@ body {
     background: #fff;
   }
 }
+
+/*
+ * Typography and page layout the browser can do for us. All of it sits in the
+ * `base` layer so a utility class on an element (`text-nowrap`, `text-balance`,
+ * `overflow-auto`) still wins over it, and every property here is ignored, not
+ * broken, by a browser that does not know it.
+ */
+@layer base {
+  /* Short blocks, split into evenly long lines instead of one long line and a
+   * stranded word (the browser only balances a few lines, so a long heading
+   * costs nothing). Centred text is short by nature: taglines, empty states. */
+  @supports (text-wrap: balance) {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    .text-center {
+      text-wrap: balance;
+    }
+  }
+
+  /* Paragraphs and list items (recipe steps, notes, descriptions): keep the
+   * last line from being a single orphaned word. Chrome and Safari do this;
+   * Firefox ignores it and wraps as it always has. */
+  @supports (text-wrap: pretty) {
+    p,
+    li,
+    dd,
+    blockquote {
+      text-wrap: pretty;
+    }
+  }
+
+  /* Always leave room for the page's scrollbar. Without it, a modal that
+   * hides the scrollbar makes a page that has one jump sideways by its width. */
+  @supports (scrollbar-gutter: stable) {
+    html {
+      scrollbar-gutter: stable;
+    }
+  }
+
+  /* No scrolling behind an open modal dialog. This is the whole scroll lock:
+   * `:modal` is true exactly while a dialog is shown with `showModal()`, so it
+   * also lets go by itself if the dialog is removed without being closed. */
+  @supports selector(:has(*)) {
+    html:has(dialog:modal) {
+      overflow: hidden;
+    }
+  }
+}
+
+/*
+ * A textarea that grows with what is typed, up to 60% of the screen and then
+ * scrolls. `field-sizing: content` does what a resize-on-input script used to,
+ * without the script. It ignores the `rows` attribute, so the least height is
+ * set here: `--autogrow-rows` lines (3 unless a class sets another, as in
+ * `[--autogrow-rows:8]`) plus the box's padding and border. Where it is not
+ * supported (Firefox, older Safari) the textarea keeps the fixed height its
+ * `rows` give it, so nothing is lost; hence the @supports gate, so that this
+ * minimum is not applied on top of `rows` there.
+ */
+@supports (field-sizing: content) and (min-height: 1lh) {
+  .autogrow {
+    field-sizing: content;
+    min-height: calc(var(--autogrow-rows, 3) * 1lh + 1.5rem + 2px);
+    max-height: 60vh;
+  }
+}
+
+/*
+ * Modal dialogs fade (and the side drawer slides, the centred box grows a
+ * little) in and out. A `<dialog>` is `display: none` while closed and leaves
+ * the page the instant it closes, which a transition cannot play across.
+ * Opening is a keyframe animation, which needs no help from the browser. Closing
+ * is a transition with `allow-discrete` on `display` and `overlay`, which keeps
+ * the dialog on screen (and in the top layer) until the fade-out has finished;
+ * a browser without it just closes at once. (`@starting-style` could do the
+ * opening too, but the stylesheet linter cannot yet parse it, and a keyframe
+ * animation also works in older browsers.) Only for people who have not asked
+ * for less motion; for the rest nothing here applies and the dialog, whose own
+ * classes already give it a half-ink backdrop, simply appears and disappears.
+ * The backdrop colour is repeated here because it has to be where a transition
+ * ends, which a utility class cannot be.
+ */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: var(--dialog-from);
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    background-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog[data-variant] {
+    --dialog-from: none;
+    opacity: 0;
+    transform: var(--dialog-from);
+    transition:
+      opacity 200ms ease-out,
+      transform 200ms ease-out,
+      overlay 200ms allow-discrete,
+      display 200ms allow-discrete;
+  }
+
+  dialog[data-variant='drawer'] {
+    --dialog-from: translateX(-1.5rem);
+  }
+
+  dialog[data-variant='center'] {
+    --dialog-from: scale(0.97);
+  }
+
+  dialog[data-variant][open] {
+    opacity: 1;
+    transform: none;
+    animation: dialog-in 200ms ease-out;
+  }
+
+  dialog[data-variant]::backdrop {
+    background-color: transparent;
+    transition:
+      background-color 200ms ease-out,
+      overlay 200ms allow-discrete,
+      display 200ms allow-discrete;
+  }
+
+  @supports (background-color: color-mix(in srgb, red, blue)) {
+    dialog[data-variant][open]::backdrop {
+      background-color: color-mix(in srgb, var(--color-ink) 50%, transparent);
+      animation: backdrop-in 200ms ease-out;
+    }
+  }
+}
+
+/*
+ * Popover panels (the account menu, the phone menu, "More actions"). The
+ * browser puts an open popover in the top layer, above everything, so it is
+ * never clipped by or stacked under the sticky header; it also supplies Escape,
+ * clicking outside and focus return. What it does not do is place the panel,
+ * which is done here, in three tiers (the last of which is written first,
+ * because the others take over from it).
+ *
+ * Tier 3, a browser with no Popover API at all (before Safari 17, Firefox 125,
+ * Chrome 114): the panel is an ordinary box under its button, shown while the
+ * component marks it `data-open`, which is how it worked before popovers.
+ */
+[data-popover] {
+  display: none;
+  position: absolute;
+  inset: auto;
+  top: 100%;
+  right: 0;
+  z-index: 50;
+  margin: 0.5rem 0 0;
+}
+
+[data-popover][data-open] {
+  display: block;
+}
+
+@supports selector(:popover-open) {
+  /* With popovers, the browser decides whether the panel shows (`revert` hands
+   * `display` back to it) and puts it in the top layer; undo the box above. */
+  [data-popover],
+  [data-popover][data-open] {
+    display: revert;
+  }
+
+  [data-popover] {
+    position: fixed;
+    inset: auto;
+    z-index: auto;
+    margin: 0;
+  }
+
+  /* Tier 2, no anchor positioning (Safari before 26, Firefox before 147): the
+   * component measures the button when the panel opens and passes where the
+   * panel goes in two custom properties. */
+  @supports not (position-area: bottom) {
+    [data-popover] {
+      top: var(--popover-top, 4rem);
+      right: var(--popover-right, 1rem);
+    }
+  }
+}
+
+/* Tier 1, CSS anchor positioning: hang the panel under its button with their
+ * right edges together, flipping it above the button when there is no room
+ * below. Only the button whose panel is open is the anchor, so one fixed name
+ * serves every popover on the page (an inline style per instance is not
+ * allowed by the content security policy, and only one `popover="auto"` is
+ * open at a time). */
+@supports selector(:popover-open) and selector(:has(*)) and (anchor-name: --a)
+  and (position-anchor: --a) and (position-area: bottom) and
+  (position-try-fallbacks: flip-block) {
+  [popovertarget]:has(+ [data-popover]:popover-open) {
+    anchor-name: --popover-anchor;
+  }
+
+  [data-popover] {
+    position-anchor: --popover-anchor;
+    position-area: bottom span-left;
+    margin-top: 0.5rem;
+    position-try-fallbacks: flip-block;
+  }
+}

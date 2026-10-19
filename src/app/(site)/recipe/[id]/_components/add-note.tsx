@@ -81,6 +81,7 @@ export function AddNote({
       <FormField id="note-text" label="Your note">
         <TextArea
           id="note-text"
+          grow
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={3}

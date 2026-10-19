@@ -140,9 +140,35 @@ export function syncModal(
 }
 
 /**
+ * The `closedby` attribute for a dialog, as props to spread onto it. `any` is
+ * light dismiss: the browser closes the dialog itself for a click outside it
+ * (and for Escape), telling us through the `cancel` event. `none` is a dialog
+ * that is busy and must stay until the page says otherwise. React's own types
+ * know the attribute, but the lint rule that checks property names does not yet,
+ * so it is passed as a spread.
+ */
+export function closedBy(dismissable: boolean): {
+  readonly closedby: 'any' | 'none';
+} {
+  return { closedby: dismissable ? 'any' : 'none' };
+}
+
+/**
+ * Whether this browser closes a dialog on a click outside it by itself, that
+ * is, understands `closedby` (Chrome 134, Firefox 141, Safari 26). Where it does
+ * not, the dialog has to watch for that click, with {@link backdropClickHandler}.
+ *
+ * @param dialog Any dialog element; the feature is looked for on its prototype.
+ */
+export function supportsLightDismiss(dialog: object): boolean {
+  return 'closedBy' in dialog;
+}
+
+/**
  * The click handler for the dialog element, which is also its own backdrop: a
  * click that lands on the dialog itself, rather than on something inside it, is
- * a click outside, and closes it.
+ * a click outside, and closes it. Only needed where the browser has no light
+ * dismiss of its own ({@link supportsLightDismiss}).
  */
 export function backdropClickHandler(
   dialog: EventTarget,
@@ -156,9 +182,10 @@ export function backdropClickHandler(
 }
 
 /**
- * The handler for the dialog's `cancel` event (Escape). The browser would close
- * the dialog itself; this stops that and routes it through the dialog's own
- * state, so the two never disagree and a busy dialog can refuse to close.
+ * The handler for the dialog's `cancel` event (Escape, or a click outside under
+ * light dismiss). The browser would close the dialog itself; this stops that and
+ * routes it through the dialog's own state, so the two never disagree and a busy
+ * dialog can refuse to close.
  */
 export function cancelHandler(
   dismissable: boolean,
@@ -173,16 +200,37 @@ export function cancelHandler(
 }
 
 /**
- * Stop the page behind a modal from scrolling, and return the function that
- * lets it scroll again. The page's own `overflow` is put back exactly as it was
- * (not simply cleared), in case something else had set it.
+ * How long, in milliseconds, a closed dialog keeps its content on screen so the
+ * fade-out in `globals.css` (200ms) has something to fade. A little longer than
+ * the transition, because nothing tells us when a CSS transition has ended in a
+ * browser that does not play one, and then the wait is simply never noticed.
  */
-export function lockScroll(
-  style: Pick<CSSStyleDeclaration, 'getPropertyValue' | 'setProperty'>,
-): () => void {
-  const before = style.getPropertyValue('overflow');
-  style.setProperty('overflow', 'hidden');
-  return () => style.setProperty('overflow', before);
+export const LEAVE_MS = 250;
+
+/**
+ * Whether a dialog's content should still be on the page: while it is open, and
+ * for {@link LEAVE_MS} after it closes. Without the second part the content
+ * would vanish the instant the dialog is closed and an empty panel would fade.
+ *
+ * @param open Whether the dialog is open now.
+ */
+function useMounted(open: boolean): boolean {
+  const [leaving, setLeaving] = useState(false);
+  const [wasOpen, setWasOpen] = useState(open);
+  // Noticing the change while rendering, rather than in an effect, means the
+  // content is never missing for even one frame between "closed" and "leaving".
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    setLeaving(!open);
+  }
+  useEffect(() => {
+    if (!leaving) {
+      return;
+    }
+    const timer = setTimeout(() => setLeaving(false), LEAVE_MS);
+    return () => clearTimeout(timer);
+  }, [leaving]);
+  return open || leaving;
 }
 
 /**
@@ -236,8 +284,10 @@ export function DialogContent({
   } & Omit<ComponentProps<'dialog'>, 'open'>
 >): ReactElement {
   const { open, setOpen, titleId, descriptionId } = useDialog();
+  // Held on for a moment after closing so the fade-out has content to fade.
+  const mounted = useMounted(open);
   // Closed, nothing of the content is rendered, so there is nothing to point at.
-  const described = open && hasDescription(children);
+  const described = mounted && hasDescription(children);
   const ref = useRef<HTMLDialogElement>(null);
 
   // Keep the element in step with the state: showing it modally is what traps
@@ -250,11 +300,11 @@ export function DialogContent({
     syncModal(dialog, open);
   }, [open]);
 
-  // The dialog element is also its own backdrop: a click that lands on it,
-  // rather than on the content inside, is a click outside.
+  // A click outside closes a dialog that can be dismissed. The browser does it
+  // itself under `closedby="any"`; this is only for the ones that cannot.
   useEffect(() => {
     const dialog = ref.current;
-    if (!dialog || !dismissable) {
+    if (!dialog || !dismissable || supportsLightDismiss(dialog)) {
       return;
     }
     const onClick = backdropClickHandler(dialog, () => setOpen(false));
@@ -262,22 +312,16 @@ export function DialogContent({
     return () => dialog.removeEventListener('click', onClick);
   }, [dismissable, setOpen]);
 
-  // No scrolling behind a modal. The page's own `overflow` is put back as it
-  // was (not simply cleared) when the dialog closes.
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    return lockScroll(document.body.style);
-  }, [open]);
-
   return (
     <dialog
       ref={ref}
+      data-variant={variant}
       aria-labelledby={titleId}
       aria-describedby={described ? descriptionId : undefined}
-      // Escape: the browser would close it itself; route it through our state so
-      // the two never disagree (and so a busy dialog can refuse).
+      {...closedBy(dismissable)}
+      // Escape or a click outside: the browser would close it itself; route it
+      // through our state so the two never disagree (and so a busy dialog can
+      // refuse).
       onCancel={cancelHandler(dismissable, () => setOpen(false))}
       className={cn(
         'bg-paper text-ink fixed m-0 overflow-y-auto p-0 backdrop:bg-ink/50',
@@ -286,7 +330,7 @@ export function DialogContent({
       )}
       {...props}
     >
-      {open ? (
+      {mounted ? (
         <>
           {children}
           {showClose ? (

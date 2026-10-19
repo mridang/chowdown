@@ -124,3 +124,145 @@ describe('the handwriting font tokens', () => {
     expect(css).not.toMatch(/--font-hand:/);
   });
 });
+
+/** The body of the first rule or at-rule whose prelude is exactly `prelude`. */
+function blockOf(prelude: string): string {
+  const start = css.indexOf(`${prelude} {`);
+  if (start < 0) {
+    throw new Error(`no rule for ${prelude}`);
+  }
+  const open = css.indexOf('{', start);
+  const body = [...css.slice(open + 1)].reduce<{
+    readonly depth: number;
+    readonly text: string;
+    readonly done: boolean;
+  }>(
+    (state, char) => {
+      if (state.done) {
+        return state;
+      }
+      const depth =
+        state.depth + (char === '{' ? 1 : 0) - (char === '}' ? 1 : 0);
+      return depth < 0
+        ? { ...state, done: true }
+        : { depth, text: state.text + char, done: false };
+    },
+    { depth: 0, text: '', done: false },
+  );
+  return body.text;
+}
+
+describe('typography the browser does for us', () => {
+  const base = blockOf('@layer base');
+
+  it('sits in the base layer, so a utility class on an element still wins', () => {
+    expect(base).toContain('text-wrap: balance');
+    expect(base).toContain('text-wrap: pretty');
+  });
+
+  it('balances headings and centred text, and tidies the last line of paragraphs and list items', () => {
+    expect(base).toMatch(
+      /h1,[\s\S]*h6,\s*\.text-center \{\s*text-wrap: balance/,
+    );
+    expect(base).toMatch(/p,\s*li,[\s\S]*\{\s*text-wrap: pretty/);
+  });
+
+  it('keeps room for the scrollbar, so a modal that hides it does not shift the page', () => {
+    expect(base).toMatch(/html \{\s*scrollbar-gutter: stable/);
+  });
+});
+
+describe('the scroll lock behind a modal dialog', () => {
+  it('is one CSS rule on the root, true only while a dialog is shown modally', () => {
+    expect(blockOf('@layer base')).toMatch(
+      /html:has\(dialog:modal\) \{\s*overflow: hidden;\s*\}/,
+    );
+  });
+});
+
+describe('the auto-growing textarea', () => {
+  const gate = '@supports (field-sizing: content) and (min-height: 1lh)';
+
+  it('applies only where field-sizing and the lh unit exist, so rows still sizes it elsewhere', () => {
+    expect(css).toContain(gate);
+    expect(blockOf(gate)).toContain('field-sizing: content');
+  });
+
+  it('starts at the rows it is told, and stops growing at 60% of the screen', () => {
+    const rule = blockOf(gate);
+    expect(rule).toContain('var(--autogrow-rows, 3)');
+    expect(rule).toContain('max-height: 60vh');
+  });
+});
+
+describe('the dialog entry and exit animation', () => {
+  const motion = blockOf('@media (prefers-reduced-motion: no-preference)');
+
+  it('runs only for people who have not asked for less motion', () => {
+    expect(motion).toContain('dialog[data-variant]');
+    expect(css.indexOf('animation: dialog-in')).toBeGreaterThan(
+      css.indexOf('@media (prefers-reduced-motion: no-preference)'),
+    );
+  });
+
+  it('fades in with a keyframe animation, which every browser understands', () => {
+    expect(css).toMatch(/@keyframes dialog-in \{\s*from \{\s*opacity: 0/);
+    expect(motion).toContain('animation: dialog-in 200ms');
+  });
+
+  it('fades out by holding display and overlay (allow-discrete) until the transition ends', () => {
+    expect(motion).toContain('overlay 200ms allow-discrete');
+    expect(motion).toContain('display 200ms allow-discrete');
+  });
+
+  it('slides the drawer in and scales the centred box, and fades the backdrop', () => {
+    expect(motion).toContain("dialog[data-variant='drawer']");
+    expect(motion).toContain('translateX(-1.5rem)');
+    expect(motion).toContain("dialog[data-variant='center']");
+    expect(motion).toContain('animation: backdrop-in 200ms');
+  });
+});
+
+describe('popover placement', () => {
+  it('anchors the open panel to its own button under one fixed name', () => {
+    expect(css).toMatch(
+      /\[popovertarget\]:has\(\+ \[data-popover\]:popover-open\) \{\s*anchor-name: --popover-anchor/,
+    );
+  });
+
+  it('hangs the panel below the button, right edges together, flipping above if cramped', () => {
+    expect(css).toContain('position-area: bottom span-left');
+    expect(css).toContain('position-try-fallbacks: flip-block');
+  });
+
+  it('applies the anchored layout only where every part of it exists', () => {
+    const condition = /@supports ([^{]*) \{\s*\[popovertarget\]/.exec(css)?.[1];
+    [
+      'selector(:popover-open)',
+      'selector(:has(*))',
+      '(anchor-name: --a)',
+      '(position-anchor: --a)',
+      '(position-area: bottom)',
+      '(position-try-fallbacks: flip-block)',
+    ].forEach((part) => expect(condition).toContain(part));
+  });
+
+  it('reads a measured position where anchor positioning is missing', () => {
+    const measured = blockOf('@supports not (position-area: bottom)');
+    expect(measured).toContain('var(--popover-top');
+    expect(measured).toContain('var(--popover-right');
+  });
+
+  it('is an absolute box under its button, shown by data-open, where there are no popovers', () => {
+    expect(css).toMatch(
+      /\[data-popover\] \{\s*display: none;\s*position: absolute;/,
+    );
+    expect(css).toMatch(/\[data-popover\]\[data-open\] \{\s*display: block/);
+  });
+
+  it('hands display back to the browser once it has popovers, so it decides when the panel shows', () => {
+    const native = blockOf('@supports selector(:popover-open)');
+    expect(native).toContain('display: revert');
+    expect(native).toContain('position: fixed');
+  });
+});
