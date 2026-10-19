@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { getShellUser } from '@/lib/auth/shell-user';
 
+import { MAIN_MIN_HEIGHT_CLASS } from './header-height';
 import { SiteFooter } from './site-footer';
 import { SiteHeader } from './site-header';
 
@@ -23,7 +24,7 @@ export async function SiteShell({ children }: { children: ReactNode }) {
         for their real content, and the two differ in height: without this the
         footer, which is huge, would jump up or down in view at every swap.
       */}
-      <main id="main" className="min-h-[calc(100svh-4.75rem)] flex-1">
+      <main id="main" className={`${MAIN_MIN_HEIGHT_CLASS} flex-1`}>
         {children}
       </main>
       <SiteFooter />

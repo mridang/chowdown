@@ -6,6 +6,7 @@ import { useCallback, useState, type ReactNode } from 'react';
 
 import { ChevronLeftIcon, LinkIcon, NoteIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 import { problemError, problemText } from '@/lib/problem-message';
 
@@ -55,10 +56,7 @@ function ManualEditor({ onCancel }: { onCancel: () => void }) {
   }, [name, content, router]);
 
   return (
-    <section
-      aria-labelledby="write-recipe-heading"
-      className="rounded-card border-ink/10 border bg-white p-5 sm:p-8"
-    >
+    <Card as="section" aria-labelledby="write-recipe-heading">
       <h2
         id="write-recipe-heading"
         className="font-display text-2xl font-semibold tracking-tight"
@@ -105,7 +103,7 @@ function ManualEditor({ onCancel }: { onCancel: () => void }) {
           Back
         </Button>
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -122,10 +120,12 @@ function ChoiceCard({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Card
+      as="button"
       type="button"
+      padding="lg"
       onClick={onClick}
-      className="rounded-card border-ink/10 hover:border-ink/40 flex flex-1 flex-col items-start border bg-white p-6 text-left transition sm:p-8 focus-ring"
+      className="hover:border-ink/40 focus-ring flex flex-1 flex-col items-start text-left transition"
     >
       <span className="rounded-control bg-marigold/30 grid h-11 w-11 place-items-center">
         {icon}
@@ -136,7 +136,7 @@ function ChoiceCard({
       <span className="text-muted mt-2 block leading-relaxed">
         {description}
       </span>
-    </button>
+    </Card>
   );
 }
 

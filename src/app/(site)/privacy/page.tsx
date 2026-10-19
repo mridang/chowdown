@@ -3,6 +3,9 @@ import Link from 'next/link';
 
 import { ChevronLeftIcon } from '@/components/icons';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
+import { TextLink } from '@/components/ui/text-link';
+
+import { LegalItem, LegalSection } from './_components/legal-section';
 
 const SOCIAL_IMAGE = {
   url: '/opengraph-image.png',
@@ -37,35 +40,6 @@ export const metadata: Metadata = {
   },
 };
 
-/** A list item with a flame-coloured marker, so lists read as part of the brand. */
-function Item({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex gap-3">
-      <span
-        aria-hidden="true"
-        className="bg-flame mt-[0.65rem] h-1.5 w-1.5 shrink-0 rounded-full"
-      />
-      <span>{children}</span>
-    </li>
-  );
-}
-
-/** A titled block of the policy. */
-function Block({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section>
-      <Heading variant="h3">{title}</Heading>
-      <div className="mt-3">{children}</div>
-    </section>
-  );
-}
-
 /**
  * Privacy policy. Required for the Google OAuth consent screen / production
  * publishing, and a plain statement of exactly what chowdown touches. Kept
@@ -89,13 +63,13 @@ export default function PrivacyPage() {
             keeps.
           </p>
 
-          <Block title="What we access">
+          <LegalSection title="What we access">
             <ul className="space-y-2">
-              <Item>
+              <LegalItem>
                 Your Google account’s basic identity (name, email, profile
                 picture) — to sign you in. This is all signing in asks for.
-              </Item>
-              <Item>
+              </LegalItem>
+              <LegalItem>
                 Only if you choose to connect it, as a separate step after
                 signing in: Google Drive, using the{' '}
                 <code className="font-mono text-base">drive.file</code> scope
@@ -104,51 +78,48 @@ export default function PrivacyPage() {
                   solely to the recipe files chowdown itself creates
                 </strong>{' '}
                 in a “Recipes” folder — never the rest of your Drive.
-              </Item>
+              </LegalItem>
             </ul>
-          </Block>
+          </LegalSection>
 
-          <Block title="What we store">
+          <LegalSection title="What we store">
             <ul className="space-y-2">
-              <Item>Your name, email and Google account id.</Item>
-              <Item>
+              <LegalItem>Your name, email and Google account id.</LegalItem>
+              <LegalItem>
                 Once you connect Google Drive, a Google refresh token,{' '}
                 <strong>encrypted at rest</strong>, so the app can sync your
                 recipes when you’re away.
-              </Item>
-              <Item>
+              </LegalItem>
+              <LegalItem>
                 A cached copy of your recipe files, to make the app and your MCP
                 link fast. Your Drive remains the source of truth.
-              </Item>
+              </LegalItem>
             </ul>
-          </Block>
+          </LegalSection>
 
-          <Block title="What we don’t do">
+          <LegalSection title="What we don’t do">
             <p>
               We don’t sell or share your data, show ads, or access anything in
               your Drive beyond the recipe files the app created. Your recipe
               data is never used to train any model.
             </p>
-          </Block>
+          </LegalSection>
 
-          <Block title="Deleting your data">
+          <LegalSection title="Deleting your data">
             <p>
               Remove chowdown’s access at{' '}
-              <a
-                href="https://myaccount.google.com/permissions"
-                className="text-ember hover:text-ink underline underline-offset-4"
-              >
+              <TextLink href="https://myaccount.google.com/permissions">
                 your Google account permissions
-              </a>
+              </TextLink>
               , and email us to delete your stored record. Your{' '}
               <code className="font-mono text-base">.cook</code> files always
               remain yours in your Drive.
             </p>
-          </Block>
+          </LegalSection>
 
-          <Block title="Contact">
+          <LegalSection title="Contact">
             <p>mridang.agarwalla@gmail.com</p>
-          </Block>
+          </LegalSection>
         </div>
 
         <Link

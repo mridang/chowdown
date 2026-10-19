@@ -1,6 +1,6 @@
 import { PlusIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
-import { Heading } from '@/components/ui/layout';
+import { EmptyState } from '@/components/ui/empty-state';
 
 /**
  * What a signed-in person with no recipes sees in place of a list: a friendly
@@ -9,18 +9,19 @@ import { Heading } from '@/components/ui/layout';
  */
 export function EmptyCollection() {
   return (
-    <div className="rounded-card border-ink/25 border border-dashed px-6 py-16 text-center">
-      <Heading variant="h3">No recipes yet</Heading>
-      <p className="text-muted mx-auto mt-2 max-w-md">
-        Paste a link, drop in a photo or a file, or save a recipe from your
-        assistant, and it will show up here.
-      </p>
-      <div className="mt-6 flex justify-center">
+    <EmptyState
+      title="No recipes yet"
+      actions={
         <ButtonLink href="/recipes/add" size="lg">
           <PlusIcon size="sm" />
           Add recipes
         </ButtonLink>
-      </div>
-    </div>
+      }
+    >
+      <p className="text-muted mx-auto mt-2 max-w-md">
+        Paste a link, drop in a photo or a file, or save a recipe from your
+        assistant, and it will show up here.
+      </p>
+    </EmptyState>
   );
 }

@@ -14,7 +14,25 @@ describe('Skeleton', () => {
   });
 });
 
+describe('Skeleton shapes', () => {
+  it('softens the corners by default, and can be square or round', () => {
+    expect(classOf(html(<Skeleton />), 'div')).toContain('rounded-control');
+    expect(classOf(html(<Skeleton shape="square" />), 'div')).not.toContain(
+      'rounded',
+    );
+    expect(classOf(html(<Skeleton shape="circle" />), 'div')).toContain(
+      'rounded-full',
+    );
+  });
+});
+
 describe('SkeletonFrame', () => {
+  it('announces the label it is given, instead of just "Loading"', () => {
+    expect(
+      html(<SkeletonFrame label="Loading your recipes">x</SkeletonFrame>),
+    ).toContain('Loading your recipes');
+  });
+
   it('tells assistive technology the page is loading', () => {
     const out = html(<SkeletonFrame>shapes</SkeletonFrame>);
     expect(out).toContain('role="status"');

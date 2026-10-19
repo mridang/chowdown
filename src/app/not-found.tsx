@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { BarePage, Notice } from '@/components/landing/bare-page';
+import { BarePage, MessagePage } from '@/components/landing/bare-page';
 import { ButtonLink } from '@/components/ui/button';
 
 export const metadata: Metadata = {
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <BarePage>
-      <Notice
+      <MessagePage
         eyebrow="Page not found"
         title="We couldn't find that page"
         actions={
@@ -33,7 +33,7 @@ export default function NotFound() {
           The link may be out of date, or the recipe may have been moved or
           deleted.
         </p>
-      </Notice>
+      </MessagePage>
     </BarePage>
   );
 }

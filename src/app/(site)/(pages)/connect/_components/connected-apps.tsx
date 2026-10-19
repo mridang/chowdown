@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { PlugIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { accessLabel, type ConnectedApp } from '@/lib/connected-apps';
 import { relativeTime } from '@/lib/intl';
 
@@ -86,9 +87,11 @@ export function ConnectedApps() {
     <>
       <ul className="mt-5 flex flex-col gap-3">
         {apps.map((app) => (
-          <li
+          <Card
+            as="li"
             key={app.id}
-            className="rounded-card border-ink/10 flex items-center justify-between gap-4 border bg-white p-4"
+            padding="sm"
+            className="flex items-center justify-between gap-4"
           >
             <div className="flex min-w-0 items-center gap-3">
               <span className="rounded-control bg-ink/5 grid h-10 w-10 shrink-0 place-items-center">
@@ -113,7 +116,7 @@ export function ConnectedApps() {
             >
               {busyId === app.id ? 'Disconnecting…' : 'Disconnect'}
             </Button>
-          </li>
+          </Card>
         ))}
       </ul>
       {problem ? (

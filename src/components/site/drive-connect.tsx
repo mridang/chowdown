@@ -1,6 +1,7 @@
 import { DriveIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
-import { Eyebrow, Heading } from '@/components/ui/layout';
+import { Callout } from '@/components/ui/callout';
+import { EmptyState } from '@/components/ui/empty-state';
 import { driveConnectHref, type DriveAttempt } from '@/lib/auth/drive-access';
 
 /** What to tell someone whose last attempt didn't work. */
@@ -53,13 +54,17 @@ export function DriveConnectPanel({
   heading = 'h2',
 }: PanelProps) {
   return (
-    <div className="rounded-card border-ink/10 mx-auto max-w-2xl border bg-white px-6 py-12 text-center sm:px-10">
-      <Eyebrow>{reconnect ? 'Connection lost' : 'One more step'}</Eyebrow>
-      <Heading as={heading} variant="h3" className="mt-2">
-        {reconnect
-          ? 'Reconnect your Google Drive'
-          : 'Connect your Google Drive'}
-      </Heading>
+    <EmptyState
+      variant="card"
+      eyebrow={reconnect ? 'Connection lost' : 'One more step'}
+      title={
+        reconnect ? 'Reconnect your Google Drive' : 'Connect your Google Drive'
+      }
+      headingAs={heading}
+      actions={
+        <ConnectButton reconnect={reconnect} returnTo={returnTo} size="lg" />
+      }
+    >
       <p className="text-muted mx-auto mt-3 max-w-xl leading-relaxed">
         {reconnect
           ? 'Google stopped accepting chowdown’s access to your Drive, perhaps because it was removed. Your recipes are still in your Drive. Reconnect to sync them again.'
@@ -70,14 +75,11 @@ export function DriveConnectPanel({
         your Drive.
       </p>
       {attempt ? (
-        <p className="rounded-control bg-sand text-muted mx-auto mt-5 max-w-xl px-4 py-3 text-sm leading-relaxed">
+        <Callout className="mx-auto mt-5 max-w-xl">
           {ATTEMPT_MESSAGE[attempt]}
-        </p>
+        </Callout>
       ) : null}
-      <div className="mt-6 flex justify-center">
-        <ConnectButton reconnect={reconnect} returnTo={returnTo} size="lg" />
-      </div>
-    </div>
+    </EmptyState>
   );
 }
 
@@ -92,19 +94,22 @@ export function DriveConnectNotice({
   message = 'Recipes shown here are saved copies. Connect your Drive to sync, add and edit them.',
 }: NoticeProps) {
   return (
-    <div className="rounded-card bg-sand flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <Callout
+      shape="banner"
+      className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+    >
       <div>
-        <p className="font-semibold">
+        <p className="font-semibold text-ink">
           {reconnect
             ? 'Google Drive is disconnected'
             : 'Google Drive is not connected'}
         </p>
-        <p className="text-muted mt-0.5 text-sm leading-relaxed">
+        <p className="mt-0.5 text-sm leading-relaxed">
           {attempt ? ATTEMPT_MESSAGE[attempt] : message}
         </p>
       </div>
       <ConnectButton reconnect={reconnect} returnTo={returnTo} />
-    </div>
+    </Callout>
   );
 }
 
@@ -115,12 +120,11 @@ export function DriveConnectNotice({
  */
 export function DriveUnreachable() {
   return (
-    <div className="rounded-card border-ink/25 border border-dashed px-6 py-16 text-center">
-      <Heading variant="h3">Couldn’t reach Google Drive</Heading>
+    <EmptyState title="Couldn’t reach Google Drive">
       <p className="text-muted mx-auto mt-2 max-w-md">
         Your recipes are safe in your Drive. Reload the page in a moment to try
         again.
       </p>
-    </div>
+    </EmptyState>
   );
 }

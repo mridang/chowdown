@@ -12,7 +12,12 @@ import {
   SparkIcon,
 } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
-import { POPOVER_ITEM, Popover } from '@/components/ui/popover';
+import {
+  POPOVER_ITEM,
+  Popover,
+  PopoverLabel,
+  PopoverSeparator,
+} from '@/components/ui/popover';
 import { driveConnectHref } from '@/lib/auth/drive-access';
 
 import { useInstallPrompt } from './use-install-prompt';
@@ -93,11 +98,8 @@ export function AccountMenu({
       buttonClassName="group rounded-control hover:bg-ink/5 focus-visible:outline-ink data-[state=open]:bg-ink/5 flex h-10 items-center gap-2 pr-2 pl-1 transition focus-visible:outline-2 sm:pr-3"
       panelClassName="w-64"
     >
-      <div className="px-3 py-2 text-sm">
-        <span className="text-subtle block text-xs">Signed in as</span>
-        <span className="block truncate font-semibold">{email}</span>
-      </div>
-      <div className="bg-ink/10 my-1.5 h-px" />
+      <PopoverLabel caption="Signed in as">{email}</PopoverLabel>
+      <PopoverSeparator />
       <Link href="/connect" className={POPOVER_ITEM}>
         <PlugIcon size="menu" className="text-subtle" />
         Connect an assistant
@@ -127,7 +129,7 @@ export function AccountMenu({
           Install app
         </button>
       ) : null}
-      <div className="bg-ink/10 my-1.5 h-px" />
+      <PopoverSeparator />
       <button
         type="button"
         disabled={busy}

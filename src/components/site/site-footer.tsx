@@ -1,11 +1,11 @@
 import Link from 'next/link';
 
 import { PanIcon, SparkIcon } from '@/components/icons';
-import { Logo } from '@/components/site/site-header';
+import { Logo } from '@/components/site/logo';
 import { Container } from '@/components/ui/layout';
 
-/** The address assistants connect to (used by the connect page and home CTA). */
-export const MCP_URL = 'https://chowdown.apps.mrida.ng/api/mcp';
+// The address now lives in `@/lib/site`; this re-export keeps older importers
+// working until they switch.
 
 /**
  * The jagged edge above the footer: one flame-orange polygon whose top edge

@@ -17,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { SearchField } from '@/components/ui/field';
 import { Container, Heading, SectionHeader } from '@/components/ui/layout';
+import { PillLink } from '@/components/ui/pill';
 import {
   easyAndQuick,
   fromTheShelf,
@@ -136,21 +137,14 @@ export async function Dashboard({ user }: { user: ShellUser }) {
               </form>
               <div className="mt-5 flex flex-wrap gap-2">
                 {SHORTCUTS.map(([label, href]) => (
-                  <Link
-                    key={label}
-                    href={href}
-                    className="border-ink/20 hover:border-ink inline-flex h-9 items-center rounded-full border bg-white px-4 text-sm font-medium transition focus-ring"
-                  >
+                  <PillLink key={label} href={href}>
                     {label}
-                  </Link>
+                  </PillLink>
                 ))}
-                <Link
-                  href="/recipes/add"
-                  className="bg-ink hover:bg-ink/85 inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white transition focus-ring"
-                >
+                <PillLink href="/recipes/add" variant="solid">
                   <PlusIcon size="sm" />
                   Add recipe
-                </Link>
+                </PillLink>
               </div>
             </>
           )}

@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { BarePage } from '@/components/landing/bare-page';
+import { CenteredCard } from '@/components/landing/centered-card';
 import { CheckIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { Callout } from '@/components/ui/callout';
 import { Eyebrow, Heading } from '@/components/ui/layout';
 import { DriveConnectPanel } from '@/components/site/drive-connect';
 import { getCurrentUser } from '@/lib/auth/current-user';
@@ -81,7 +82,7 @@ export default async function AuthorizePage({
       );
     }
     return (
-      <Panel>
+      <CenteredCard>
         <Eyebrow>Connect an app</Eyebrow>
         <Heading as="h1" variant="h3" className="mt-2">
           Can&apos;t connect this app
@@ -90,7 +91,7 @@ export default async function AuthorizePage({
         <p className="text-subtle mt-5 font-mono text-sm">
           Error: {check.error}
         </p>
-      </Panel>
+      </CenteredCard>
     );
   }
 
@@ -108,15 +109,13 @@ export default async function AuthorizePage({
     // An assistant has nothing to reach until the recipes' Drive is connected;
     // connect it first, then come straight back to this approval.
     return (
-      <BarePage>
-        <div className="mx-auto w-full max-w-lg px-4 py-10 sm:py-16">
-          <DriveConnectPanel
-            heading="h1"
-            reconnect={wasDriveConnected(user)}
-            returnTo={here}
-          />
-        </div>
-      </BarePage>
+      <CenteredCard framed={false}>
+        <DriveConnectPanel
+          heading="h1"
+          reconnect={wasDriveConnected(user)}
+          returnTo={here}
+        />
+      </CenteredCard>
     );
   }
 
@@ -129,7 +128,7 @@ export default async function AuthorizePage({
   }
 
   return (
-    <Panel>
+    <CenteredCard>
       <Eyebrow>Connect an app</Eyebrow>
       <Heading as="h1" variant="h3" className="mt-2 break-words">
         Connect <span className="text-ember">{client.name}</span> to chowdown?
@@ -146,11 +145,11 @@ export default async function AuthorizePage({
           </li>
         ))}
       </ul>
-      <p className="rounded-control bg-sand text-muted mt-5 px-4 py-3 text-sm leading-relaxed">
+      <Callout className="mt-5">
         After you approve, you&apos;ll be sent back to{' '}
         <span className="font-semibold break-all">{target}</span>. Only approve
         apps you trust. You can disconnect it any time from chowdown.
-      </p>
+      </Callout>
       <form action="/oauth/consent" method="post" className="mt-6">
         {FIELDS.map((name) =>
           params[name] === undefined ? null : (
@@ -178,19 +177,6 @@ export default async function AuthorizePage({
           </Button>
         </div>
       </form>
-    </Panel>
-  );
-}
-
-/** The approval screen's frame: the bare page with a centred card in it. */
-function Panel({ children }: { children: React.ReactNode }) {
-  return (
-    <BarePage>
-      <div className="mx-auto w-full max-w-lg px-4 py-10 sm:py-16">
-        <div className="rounded-card border-ink/10 border bg-white p-6 sm:p-8">
-          {children}
-        </div>
-      </div>
-    </BarePage>
+    </CenteredCard>
   );
 }

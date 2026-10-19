@@ -7,8 +7,11 @@ import { getCurrentUser } from '@/lib/auth/current-user';
 import { isDriveConnected, wasDriveConnected } from '@/lib/auth/drive-access';
 import { mcpUrl } from '@/lib/connected-apps';
 import { appOriginFromHeaders } from '@/lib/util';
+import { Card } from '@/components/ui/card';
 import { CopyField } from '@/components/ui/copy-field';
-import { Container, Eyebrow, Heading } from '@/components/ui/layout';
+import { Container, Heading } from '@/components/ui/layout';
+import { NumberBadge } from '@/components/ui/number-badge';
+import { PageHeader } from '@/components/ui/page-header';
 
 import { ConnectedApps } from './_components/connected-apps';
 
@@ -80,49 +83,35 @@ export default async function ConnectPage() {
           />
         </Container>
       )}
-      <div className="border-ink/10 border-b">
-        <Container className="py-10 sm:py-14">
-          <Eyebrow>Connect an assistant</Eyebrow>
-          <Heading as="h1" variant="h1" className="mt-2 max-w-3xl">
-            Cook with AI
-          </Heading>
-          <p className="text-muted mt-5 max-w-2xl text-lg leading-relaxed">
-            chowdown speaks MCP, the open standard assistants use to reach your
-            tools. Add this address once and ask for ideas, searches and new
-            recipes in plain words.
-          </p>
-          <div className="mt-8 max-w-2xl">
-            <p className="mb-2 text-sm font-semibold">MCP server address</p>
-            <CopyField value={mcpUrl(origin)} label="MCP server address" />
-          </div>
-        </Container>
-      </div>
+      <PageHeader
+        roomy
+        eyebrow="Connect an assistant"
+        title="Cook with AI"
+        intro="chowdown speaks MCP, the open standard assistants use to reach your tools. Add this address once and ask for ideas, searches and new recipes in plain words."
+      >
+        <div className="mt-8 max-w-2xl">
+          <p className="mb-2 text-sm font-semibold">MCP server address</p>
+          <CopyField value={mcpUrl(origin)} label="MCP server address" />
+        </div>
+      </PageHeader>
 
       <Container className="py-12">
         <h2 className="sr-only">Add it to your assistant</h2>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {ASSISTANTS.map((a) => (
-            <section
-              key={a.name}
-              className="rounded-card border-ink/10 border bg-white p-6 sm:p-8"
-            >
+            <Card as="section" key={a.name} padding="lg">
               <Heading as="h3" variant="h3">
                 {a.name}
               </Heading>
               <ol className="mt-5 flex flex-col gap-4">
                 {a.steps.map((step, i) => (
                   <li key={step} className="flex items-start gap-4">
-                    <span
-                      aria-hidden="true"
-                      className="bg-flame text-ink grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-semibold"
-                    >
-                      {i + 1}
-                    </span>
+                    <NumberBadge value={i + 1} />
                     <p className="pt-0.5 leading-relaxed">{step}</p>
                   </li>
                 ))}
               </ol>
-            </section>
+            </Card>
           ))}
         </div>
       </Container>

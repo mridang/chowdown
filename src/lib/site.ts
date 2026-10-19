@@ -7,6 +7,10 @@
 
 export const SITE_NAME = 'chowdown';
 export const SITE_URL = 'https://chowdown.apps.mrida.ng';
+
+/** The address assistants connect to (the connect page and the home page's call to action). */
+export const MCP_URL = `${SITE_URL}/api/mcp`;
+
 export const SITE_TITLE =
   'chowdown: your recipes, kept in your own Google Drive';
 export const SITE_DESCRIPTION =

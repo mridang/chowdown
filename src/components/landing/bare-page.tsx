@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { PanIcon } from '@/components/icons';
+import { HEADER_ROW_CLASS } from '@/components/site/header-height';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 
 /**
@@ -16,7 +17,7 @@ export function BarePage({ children }: { children: ReactNode }) {
       <header>
         <div className="bg-marigold h-1.5" />
         <div className="border-ink/10 border-b">
-          <Container className="flex h-[4.25rem] items-center">
+          <Container className={`flex ${HEADER_ROW_CLASS} items-center`}>
             <Link
               href="/"
               className="font-display text-ink focus-visible:outline-ink rounded-control text-[1.7rem] leading-none font-bold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4"
@@ -34,10 +35,11 @@ export function BarePage({ children }: { children: ReactNode }) {
 }
 
 /**
- * A short message with a headline and a way onward: what the not-found and
- * error pages say. `actions` are the buttons beneath the text.
+ * A full-page message with a headline and a way onward: what the not-found and
+ * error pages say. `actions` are the buttons beneath the text. (For a short
+ * note inside a page, use `Callout`.)
  */
-export function Notice({
+export function MessagePage({
   eyebrow,
   title,
   children,

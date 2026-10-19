@@ -22,12 +22,15 @@ import {
   sortRecipes,
   type RawParams,
 } from '@/components/recipes/search-query';
+import { STICKY_SIDEBAR_CLASS } from '@/components/site/header-height';
 import { SortSelect } from '@/components/recipes/sort-select';
+import { PlusIcon } from '@/components/icons';
 import { buttonClass, ButtonLink } from '@/components/ui/button';
 import { FilterChip } from '@/components/ui/chip';
 import { SearchField } from '@/components/ui/field';
-import { PlusIcon } from '@/components/icons';
-import { Container, Eyebrow, Heading } from '@/components/ui/layout';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Container } from '@/components/ui/layout';
+import { PageHeader } from '@/components/ui/page-header';
 import { driveAttemptOf } from '@/lib/auth/drive-access';
 import { countOf } from '@/lib/intl';
 import { toCardRecipe } from '@/lib/recipe/card-data';
@@ -84,56 +87,51 @@ export default async function AppPage({
 
   return (
     <>
-      <div className="border-ink/10 border-b">
-        <Container className="py-8 sm:py-12">
-          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-            <div>
-              <Eyebrow>Your collection</Eyebrow>
-              <Heading as="h1" variant="h1" className="mt-2">
-                Recipes
-              </Heading>
-            </div>
-            <ButtonLink href="/recipes/add" size="lg">
-              <PlusIcon size="md" />
-              Add recipe
-            </ButtonLink>
-          </div>
-          <form action="/app" role="search" className="mt-6 max-w-2xl">
-            {/* Searching keeps the filters and order already chosen. */}
-            {query.favourites ? (
-              <input type="hidden" name="fav" value="1" />
-            ) : null}
-            {query.sort !== 'title' ? (
-              <input type="hidden" name="sort" value={query.sort} />
-            ) : null}
-            {Object.entries(query.selected).map(([key, values]) =>
-              values?.length ? (
-                <input
-                  key={key}
-                  type="hidden"
-                  name={key}
-                  value={values.join(',')}
-                />
-              ) : null,
-            )}
-            <SearchField
-              size="lg"
-              name="q"
-              defaultValue={query.q}
-              placeholder="Search recipes, sites or tags"
-              aria-label="Search recipes"
-              action={
-                <button
-                  type="submit"
-                  className="rounded-control bg-ink hover:bg-ink/85 h-10 px-5 text-sm font-semibold text-white transition focus-ring"
-                >
-                  Search
-                </button>
-              }
-            />
-          </form>
-        </Container>
-      </div>
+      <PageHeader
+        eyebrow="Your collection"
+        title="Recipes"
+        actions={
+          <ButtonLink href="/recipes/add" size="lg">
+            <PlusIcon size="md" />
+            Add recipe
+          </ButtonLink>
+        }
+      >
+        <form action="/app" role="search" className="mt-6 max-w-2xl">
+          {/* Searching keeps the filters and order already chosen. */}
+          {query.favourites ? (
+            <input type="hidden" name="fav" value="1" />
+          ) : null}
+          {query.sort !== 'title' ? (
+            <input type="hidden" name="sort" value={query.sort} />
+          ) : null}
+          {Object.entries(query.selected).map(([key, values]) =>
+            values?.length ? (
+              <input
+                key={key}
+                type="hidden"
+                name={key}
+                value={values.join(',')}
+              />
+            ) : null,
+          )}
+          <SearchField
+            size="lg"
+            name="q"
+            defaultValue={query.q}
+            placeholder="Search recipes, sites or tags"
+            aria-label="Search recipes"
+            action={
+              <button
+                type="submit"
+                className="rounded-control bg-ink hover:bg-ink/85 focus-ring h-10 px-5 text-sm font-semibold text-white transition"
+              >
+                Search
+              </button>
+            }
+          />
+        </form>
+      </PageHeader>
 
       {recipes.length === 0 ? (
         <Container className="py-10">
@@ -158,7 +156,7 @@ export default async function AppPage({
           <Container className="grid grid-cols-1 gap-6 py-8 md:grid-cols-[16rem_minmax(0,1fr)] md:gap-10 md:py-10 lg:gap-12">
             <aside
               aria-label="Filters"
-              className="hidden md:sticky md:top-24 md:block md:max-h-[calc(100vh-7rem)] md:self-start md:overflow-y-auto md:pr-1"
+              className={`hidden ${STICKY_SIDEBAR_CLASS} md:block md:self-start md:overflow-y-auto md:pr-1`}
             >
               <div className="mb-4">{favouritesLink}</div>
               <FilterPanel facets={facets} />
@@ -212,17 +210,18 @@ export default async function AppPage({
                   ))}
                 </RecipeGrid>
               ) : (
-                <div className="rounded-card border-ink/25 border border-dashed px-6 py-16 text-center">
-                  <Heading variant="h3">Nothing matches those filters</Heading>
-                  <p className="text-muted mt-2">
-                    Try removing one, or start over.
-                  </p>
-                  <div className="mt-6 flex justify-center">
+                <EmptyState
+                  title="Nothing matches those filters"
+                  actions={
                     <ButtonLink href="/app" variant="outline">
                       Clear all filters
                     </ButtonLink>
-                  </div>
-                </div>
+                  }
+                >
+                  <p className="text-muted mt-2">
+                    Try removing one, or start over.
+                  </p>
+                </EmptyState>
               )}
 
               {found.length > shown.length ? (

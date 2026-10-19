@@ -1,6 +1,6 @@
 'use client';
 
-import { BarePage, Notice } from '@/components/landing/bare-page';
+import { BarePage, MessagePage } from '@/components/landing/bare-page';
 import { Button, ButtonLink } from '@/components/ui/button';
 
 /**
@@ -18,7 +18,7 @@ export default function ErrorPage({
 }) {
   return (
     <BarePage>
-      <Notice
+      <MessagePage
         eyebrow="Something went wrong"
         title="That didn't work"
         actions={
@@ -41,7 +41,7 @@ export default function ErrorPage({
             Reference: {error.digest}
           </p>
         ) : null}
-      </Notice>
+      </MessagePage>
     </BarePage>
   );
 }

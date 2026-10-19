@@ -3,31 +3,15 @@ import { Suspense } from 'react';
 
 import { DriveIcon, GoogleIcon, PlusIcon, SparkIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
-import { cn } from '@/components/ui/cn';
 import { Container } from '@/components/ui/layout';
 import { driveConnectHref } from '@/lib/auth/drive-access';
 import type { ShellUser } from '@/lib/auth/shell-user';
 
 import { AccountMenu } from './account-menu';
 import { HeaderNav } from './header-nav';
+import { HEADER_ROW_CLASS } from './header-height';
+import { Logo } from './logo';
 import { MobileNav } from './mobile-nav';
-
-/** The wordmark: a heavy heading face, lower case, with a small descriptor beneath. */
-export function Logo({ className }: { className?: string }) {
-  return (
-    <Link
-      href="/"
-      className={cn('text-ink inline-block leading-none', className)}
-    >
-      <span className="font-display block text-[1.7rem] font-bold tracking-tight">
-        chowdown
-      </span>
-      <span className="mt-1 block text-[10px] font-semibold tracking-[0.24em] uppercase">
-        Recipe keeper
-      </span>
-    </Link>
-  );
-}
 
 /** Links for a visitor: they jump to sections of the landing page. */
 const VISITOR_NAV: [string, string][] = [
@@ -66,7 +50,9 @@ export function SiteHeader({ user }: { user: ShellUser | null }) {
     <header className="bg-paper/95 sticky top-0 z-30 backdrop-blur">
       <div className="bg-marigold h-1.5" />
       <div className="border-ink/10 border-b">
-        <Container className="flex h-[4.25rem] items-center justify-between gap-4">
+        <Container
+          className={`flex ${HEADER_ROW_CLASS} items-center justify-between gap-4`}
+        >
           <div className="flex items-center gap-8 lg:gap-10">
             <Logo />
             {user ? (
