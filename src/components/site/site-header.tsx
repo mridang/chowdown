@@ -1,13 +1,12 @@
 import Link from 'next/link';
 import { Suspense, type ReactElement } from 'react';
 
-import { GoogleIcon, PlusIcon, SparklesIcon } from '@/components/icons';
+import { GoogleIcon, PlusIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
 import { Container } from '@/components/ui/layout';
 import type { ShellUser } from '@/lib/auth/shell-user';
 
 import { AccountMenu } from './account-menu';
-import { DriveButton } from './drive-button';
 import { driveLink } from './drive-link';
 import { HEADER_ROW_CLASS } from './header-height';
 import { HeaderNav } from './header-nav';
@@ -16,51 +15,43 @@ import { MobileNav } from './mobile-nav';
 import { menuLinks, VISITOR_NAV } from './nav-links';
 
 /**
- * The buttons beside the account menu for someone signed in: add a recipe (once
- * Drive is connected), the Drive button, and "Cook with AI". The first two fold
- * into the phone menu on small screens, and "Cook with AI" under `sm`. On
- * tablets (`md` up to `lg`) the buttons are too many for the row, so they show
- * only their icons there; the words stay for screen readers.
+ * What sits beside the account menu for someone signed in: the "Add recipe"
+ * button, the one call to action on the site, shown once Drive is connected
+ * (there is nowhere to save a recipe before). It folds into the phone menu on
+ * small screens. Connecting Drive, connecting an assistant and installing the
+ * app all live in the account menu, so the header carries nothing else.
  */
 function SignedInActions({
   user,
 }: Readonly<{ user: ShellUser }>): ReactElement {
-  const drive = driveLink(user);
   return (
     <>
       {user.driveConnected ? (
         <ButtonLink
           href="/recipes/add"
-          variant="outline"
+          variant="accent"
           className="max-md:hidden"
         >
           <PlusIcon size="sm" />
-          <span className="md:max-lg:sr-only">Add recipe</span>
+          Add recipe
         </ButtonLink>
       ) : null}
-      <DriveButton link={drive} className="max-md:hidden" />
-      <ButtonLink href="/connect" variant="accent" className="max-sm:hidden">
-        <SparklesIcon size="md" />
-        <span className="md:max-lg:sr-only">Cook with AI</span>
-      </ButtonLink>
       <AccountMenu
         firstName={user.firstName}
         name={user.name}
         email={user.email}
         picture={user.picture}
-        drive={drive}
+        drive={driveLink(user)}
       />
     </>
   );
 }
 
 /**
- * The site header. Signed in: the main app links, a "Cook with AI" call to
- * action and the account menu ("Hi Mridang" beside the person's Google photo).
- * A Google Drive button is always there: "Connect Google Drive" until that is
- * done, then "Open Drive", which opens Drive in a new tab. "Add recipe" appears
- * only once Drive is connected (there is nowhere to save one before).
- * Signed out: links to the landing page's sections and a Sign in button. On
+ * The site header. Signed in: the main app links, the "Add recipe" call to
+ * action (once Drive is connected) and the account menu ("Hi Mridang" beside
+ * the person's Google photo), which holds Drive, the assistant connection and
+ * installing the app. Signed out: links to the landing page's sections and a Sign in button. On
  * phones the links fold into a menu.
  */
 export function SiteHeader({

@@ -1,13 +1,7 @@
 import Link from 'next/link';
 import type { ReactElement } from 'react';
 
-import {
-  DriveIcon,
-  HeartIcon,
-  PlusIcon,
-  SearchIcon,
-  SparklesIcon,
-} from '@/components/icons';
+import { DriveIcon, HeartIcon, PlusIcon, SearchIcon } from '@/components/icons';
 import { isApiHref } from '@/components/ui/button';
 import { POPOVER_ITEM } from '@/components/ui/popover';
 
@@ -19,7 +13,6 @@ const ICONS: Readonly<Record<NavIcon, ReactElement>> = {
   recipes: <SearchIcon size="menu" className="text-subtle" />,
   favourites: <HeartIcon size="menu" className="text-subtle" />,
   add: <PlusIcon size="menu" className="text-subtle" />,
-  ai: <SparklesIcon size="menu" className="text-subtle" />,
   drive: <DriveIcon size="menu" />,
 };
 

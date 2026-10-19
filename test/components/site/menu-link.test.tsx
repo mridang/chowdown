@@ -51,7 +51,7 @@ describe('MenuLink', () => {
     expect(htmlAt(<MenuLink label="x" href="/x" icon="drive" />)).toContain(
       'fill="#0066da"',
     );
-    expect(htmlAt(<MenuLink label="x" href="/x" icon="ai" />)).not.toContain(
+    expect(htmlAt(<MenuLink label="x" href="/x" icon="add" />)).not.toContain(
       '#0066da',
     );
   });

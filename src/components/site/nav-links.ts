@@ -10,10 +10,8 @@
 
 import type { ShellUser } from '@/lib/auth/shell-user';
 
-import { driveLink } from './drive-link';
-
 /** The little pictures a menu link can carry (see the phone menu). */
-export type NavIcon = 'recipes' | 'favourites' | 'add' | 'ai' | 'drive';
+export type NavIcon = 'recipes' | 'favourites' | 'add' | 'drive';
 
 /** One link: the words on it, where it goes, and how it should open. */
 export type NavLink = Readonly<{
@@ -65,7 +63,7 @@ const SECTION_ICONS = {
   favourites: 'favourites',
 } as const satisfies Record<(typeof APP_NAV)[number]['key'], NavIcon>;
 
-/** Links in the phone menu for someone signed in, before the Drive entry. */
+/** Links in the phone menu for someone signed in. */
 const APP_MENU: readonly NavLink[] = [
   ...APP_NAV.map(({ key, label, href }) => ({
     label,
@@ -73,19 +71,13 @@ const APP_MENU: readonly NavLink[] = [
     icon: SECTION_ICONS[key],
   })),
   { label: 'Add recipes', href: '/recipes/add', icon: 'add' },
-  { label: 'Cook with AI', href: '/connect', icon: 'ai' },
 ];
 
 /**
  * The phone menu's links. A visitor gets the landing page's sections; someone
- * signed in gets the app links, then the Drive entry ("Connect Google Drive"
- * until that is done, "Open Drive" after), because the header's own buttons
- * for these are hidden on a phone.
+ * signed in gets the app links. Drive, the assistant connection and installing
+ * the app are in the account menu, which is always in the header.
  */
 export function menuLinks(user: ShellUser | null): readonly NavLink[] {
-  if (!user) {
-    return VISITOR_NAV;
-  }
-  const { label, href, external } = driveLink(user);
-  return [...APP_MENU, { label, href, external, icon: 'drive' }];
+  return user ? APP_MENU : VISITOR_NAV;
 }
