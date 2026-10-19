@@ -20,7 +20,7 @@ export function NoteChip({
         className,
       )}
     >
-      <NoteIcon className="mt-px h-4 w-4 shrink-0" />
+      <NoteIcon size="sm" className="mt-px shrink-0" />
       <span>
         <span className="font-semibold">Your note: </span>
         {text}

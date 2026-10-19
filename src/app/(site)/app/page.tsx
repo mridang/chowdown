@@ -94,7 +94,7 @@ export default async function AppPage({
               </Heading>
             </div>
             <ButtonLink href="/recipes/add" size="lg">
-              <PlusIcon className="h-5 w-5" />
+              <PlusIcon size="md" />
               Add recipe
             </ButtonLink>
           </div>
@@ -125,7 +125,7 @@ export default async function AppPage({
               action={
                 <button
                   type="submit"
-                  className="rounded-control bg-ink hover:bg-ink/85 focus-visible:outline-ink h-10 px-5 text-sm font-semibold text-white transition focus-visible:outline-2 focus-visible:outline-offset-2"
+                  className="rounded-control bg-ink hover:bg-ink/85 h-10 px-5 text-sm font-semibold text-white transition focus-ring"
                 >
                   Search
                 </button>
@@ -172,7 +172,7 @@ export default async function AppPage({
             <section aria-label="Results" className="min-w-0">
               <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                  <p className="text-ink/65 text-sm" aria-live="polite">
+                  <p className="text-subtle text-sm" aria-live="polite">
                     {countOf(found.length, 'recipe')}
                   </p>
                   {chips.map((chip) => (
@@ -214,7 +214,7 @@ export default async function AppPage({
               ) : (
                 <div className="rounded-card border-ink/25 border border-dashed px-6 py-16 text-center">
                   <Heading variant="h3">Nothing matches those filters</Heading>
-                  <p className="text-ink/70 mt-2">
+                  <p className="text-muted mt-2">
                     Try removing one, or start over.
                   </p>
                   <div className="mt-6 flex justify-center">

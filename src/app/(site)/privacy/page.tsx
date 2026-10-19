@@ -79,11 +79,9 @@ export default function PrivacyPage() {
         <Heading as="h1" variant="h1" className="mt-2">
           Privacy Policy
         </Heading>
-        <p className="text-ink/70 mt-3 text-sm">
-          Last updated: 18 October 2026
-        </p>
+        <p className="text-muted mt-3 text-sm">Last updated: 18 October 2026</p>
 
-        <div className="text-ink/85 mt-8 space-y-9 text-lg leading-relaxed">
+        <div className="text-muted mt-8 space-y-9 text-lg leading-relaxed">
           <p>
             chowdown is a personal recipe app. It stores your recipes as
             Cooklang (<code className="font-mono text-base">.cook</code>) files
@@ -155,9 +153,9 @@ export default function PrivacyPage() {
 
         <Link
           href="/"
-          className="text-ink/75 hover:text-ink focus-visible:outline-ink mt-12 inline-flex h-10 items-center gap-1 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="text-muted hover:text-ink mt-12 inline-flex h-10 items-center gap-1 text-sm font-semibold focus-ring"
         >
-          <ChevronLeftIcon className="h-4 w-4" />
+          <ChevronLeftIcon size="sm" />
           Back to chowdown
         </Link>
       </div>

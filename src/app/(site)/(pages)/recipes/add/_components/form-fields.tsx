@@ -4,7 +4,7 @@ import { cn } from '@/components/ui/cn';
 
 /** The look shared by the text boxes on the add-recipes page. */
 const BOX =
-  'w-full rounded-control border border-ink/25 bg-white px-3.5 text-base text-ink transition placeholder:text-ink/65 hover:border-ink/50 focus:border-ink focus:outline-2 focus:outline-offset-0 focus:outline-ink/15';
+  'w-full rounded-control border border-ink/25 bg-white px-3.5 text-base text-ink transition placeholder:text-subtle hover:border-ink/50 focus:border-ink focus:outline-2 focus:outline-offset-0 focus:outline-ink/15';
 
 /**
  * A labelled form control: the visible label above, an optional line of help
@@ -28,7 +28,7 @@ export function FormField({
         {label}
       </label>
       {hint ? (
-        <p id={`${id}-hint`} className="text-ink/70 mt-1 text-sm">
+        <p id={`${id}-hint`} className="text-muted mt-1 text-sm">
           {hint}
         </p>
       ) : null}

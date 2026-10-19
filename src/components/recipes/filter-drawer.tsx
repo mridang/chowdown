@@ -24,7 +24,7 @@ export function FilterDrawer({
     <Dialog>
       <DialogTrigger className="rounded-control border-ink/20 focus-visible:outline-ink flex h-11 w-full items-center justify-between border bg-white px-4 text-sm font-semibold outline-none focus-visible:outline-2 md:hidden">
         <span className="flex items-center gap-2">
-          <SlidersIcon className="h-[18px] w-[18px]" />
+          <SlidersIcon size="menu" />
           Filters
         </span>
         {activeCount > 0 ? <CountBadge>{activeCount}</CountBadge> : null}
@@ -34,7 +34,7 @@ export function FilterDrawer({
           <DialogTitle className="font-display text-2xl font-semibold">
             Filters
           </DialogTitle>
-          <DialogDescription className="text-ink/65 mt-1 text-sm">
+          <DialogDescription className="text-subtle mt-1 text-sm">
             Pick as many as you like.
           </DialogDescription>
           <div className="mt-5">{children}</div>

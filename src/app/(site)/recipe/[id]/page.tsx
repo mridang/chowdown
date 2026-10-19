@@ -236,7 +236,7 @@ function Fact({
   // sits inside the term, positioned to the left of both lines.
   return (
     <div className="relative min-h-11 pl-[3.625rem] leading-tight">
-      <dt className="text-label text-ink/65 font-semibold uppercase">
+      <dt className="text-label text-subtle font-semibold uppercase">
         <span
           aria-hidden="true"
           className="rounded-control bg-sand text-ember absolute top-0 left-0 grid h-11 w-11 place-items-center"
@@ -260,14 +260,14 @@ function Source({ value, url }: { value?: string; url?: string }) {
   if (url && domain) {
     return (
       <p className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-        <span className="text-ink/65">From</span>
+        <span className="text-subtle">From</span>
         <a
           href={url}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex h-8 items-center gap-1.5 font-semibold underline underline-offset-4"
         >
-          <LinkIcon className="h-4 w-4" />
+          <LinkIcon size="sm" />
           {domain}
         </a>
         <Link
@@ -282,7 +282,7 @@ function Source({ value, url }: { value?: string; url?: string }) {
   if (value) {
     return (
       <p className="mt-5 text-sm">
-        <span className="text-ink/65">From </span>
+        <span className="text-subtle">From </span>
         <span className="font-semibold">{value}</span>
       </p>
     );
@@ -389,7 +389,7 @@ export default async function RecipePage({
           />
           <div className="px-4 py-8 sm:px-6 lg:order-1 lg:py-14 lg:pr-16 lg:pl-[max(2.5rem,calc((100cqw-90rem)/2+2.5rem))]">
             <nav
-              className="text-ink/65 text-sm print:hidden"
+              className="text-subtle text-sm print:hidden"
               aria-label="Breadcrumb"
             >
               <Link
@@ -462,12 +462,12 @@ export default async function RecipePage({
         {hasFacts ? (
           <dl className="mt-10 grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
             {data.minutes !== undefined ? (
-              <Fact icon={<ClockIcon className="h-6 w-6" />} label="Total time">
+              <Fact icon={<ClockIcon size="lg" />} label="Total time">
                 {duration(data.minutes)}
               </Fact>
             ) : null}
             {serves !== undefined ? (
-              <Fact icon={<ServingsIcon className="h-6 w-6" />} label="Serves">
+              <Fact icon={<ServingsIcon size="lg" />} label="Serves">
                 {serves}
               </Fact>
             ) : null}
@@ -487,37 +487,34 @@ export default async function RecipePage({
             ) : null}
             {protein ? (
               <Fact
-                icon={<ProteinIcon protein={protein} className="h-6 w-6" />}
+                icon={<ProteinIcon size="lg" protein={protein} />}
                 label="Protein"
               >
                 {sentenceCase(protein)}
               </Fact>
             ) : null}
             {cuisine ? (
-              <Fact icon={<GlobeIcon className="h-6 w-6" />} label="Cuisine">
+              <Fact icon={<GlobeIcon size="lg" />} label="Cuisine">
                 {sentenceCase(cuisine)}
               </Fact>
             ) : null}
             {course ? (
-              <Fact icon={<PlateIcon className="h-6 w-6" />} label="Course">
+              <Fact icon={<PlateIcon size="lg" />} label="Course">
                 {sentenceCase(course)}
               </Fact>
             ) : null}
             {methods.length > 0 ? (
-              <Fact icon={<OvenIcon className="h-6 w-6" />} label="Method">
+              <Fact icon={<OvenIcon size="lg" />} label="Method">
                 {methods.map(sentenceCase).join(', ')}
               </Fact>
             ) : null}
             {eatingStyle ? (
-              <Fact
-                icon={<LeafIcon className="h-6 w-6" />}
-                label="Eating style"
-              >
+              <Fact icon={<LeafIcon size="lg" />} label="Eating style">
                 {eatingStyle}
               </Fact>
             ) : null}
             {diet.length > 0 ? (
-              <Fact icon={<ShieldIcon className="h-6 w-6" />} label="Diet">
+              <Fact icon={<ShieldIcon size="lg" />} label="Diet">
                 {diet.join(', ')}
               </Fact>
             ) : null}
@@ -537,7 +534,7 @@ export default async function RecipePage({
 
             <section className="mt-14 max-w-3xl">
               <Heading variant="h3" className="flex items-center gap-2.5">
-                <NoteIcon className="text-ember h-6 w-6" />
+                <NoteIcon size="lg" className="text-ember" />
                 Your notes
               </Heading>
               {grouped.general.length > 0 ? (
@@ -557,7 +554,7 @@ export default async function RecipePage({
                   ))}
                 </ul>
               ) : (
-                <p className="text-ink/65 mt-3 text-sm print:hidden">
+                <p className="text-subtle mt-3 text-sm print:hidden">
                   Jot down what you changed so you can cook it your way next
                   time. Your notes never change the original recipe.
                 </p>
@@ -574,7 +571,7 @@ export default async function RecipePage({
 
         {keywords.length > 0 ? (
           <div className="border-ink/15 mt-14 flex flex-wrap items-center gap-2 border-t pt-6 print:hidden">
-            <span className="text-label text-ink/65 mr-2 font-semibold uppercase">
+            <span className="text-label text-subtle mr-2 font-semibold uppercase">
               Tagged
             </span>
             {keywords.slice(0, 10).map((word) => (
@@ -586,7 +583,7 @@ export default async function RecipePage({
         ) : null}
 
         {extras.length > 0 ? (
-          <dl className="text-ink/75 mt-6 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+          <dl className="text-muted mt-6 flex flex-wrap gap-x-6 gap-y-1 text-sm">
             {extras.map(([key, value]) => (
               <div key={key} className="flex gap-1.5">
                 <dt className="font-semibold capitalize">{key}</dt>

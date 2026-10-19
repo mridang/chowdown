@@ -69,7 +69,7 @@ export function AddNote({
   if (!open) {
     return (
       <Button variant="outline" onClick={() => setOpen(true)}>
-        <PlusIcon className="h-4 w-4" />
+        <PlusIcon size="sm" />
         Add a note
       </Button>
     );
@@ -87,7 +87,7 @@ export function AddNote({
         rows={3}
         ref={field}
         placeholder="e.g. use 3 avocados instead of 2"
-        className="rounded-control border-ink/25 focus:border-ink placeholder:text-ink/65 mt-1.5 w-full border bg-white px-3 py-2 text-base outline-none"
+        className="rounded-control border-ink/25 focus:border-ink placeholder:text-subtle mt-1.5 w-full border bg-white px-3 py-2 text-base outline-none"
       />
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <SelectField

@@ -15,11 +15,11 @@ export function ConnectBand() {
       <Container className="grid grid-cols-1 items-center gap-8 py-12 sm:py-16 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
         <div>
           <Eyebrow className="text-ink flex items-center gap-2">
-            <PlugIcon className="h-4 w-4" />
+            <PlugIcon size="sm" />
             Works with ChatGPT and Claude
           </Eyebrow>
           <Heading className="mt-3">Ask your assistant what to cook</Heading>
-          <p className="text-ink/80 mt-4 max-w-xl text-lg leading-relaxed">
+          <p className="text-muted mt-4 max-w-xl text-lg leading-relaxed">
             Add chowdown to your AI assistant with one address. It can search
             your recipes, suggest dinner from what you have saved, and file new
             ones for you.
@@ -30,9 +30,9 @@ export function ConnectBand() {
           <CopyField value={MCP_URL} label="MCP server address" />
           <div className="mt-4 flex flex-wrap items-center gap-4">
             <ButtonLink href="/connect" size="lg">
-              Set it up <ArrowIcon className="h-4 w-4" />
+              Set it up <ArrowIcon size="sm" />
             </ButtonLink>
-            <p className="text-ink/70 text-sm">
+            <p className="text-muted text-sm">
               You sign in and approve. No keys to copy.
             </p>
           </div>

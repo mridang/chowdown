@@ -14,7 +14,7 @@ export function SortSelect({
 }) {
   const router = useRouter();
   return (
-    <label className="text-ink/65 flex items-center gap-2.5 text-sm">
+    <label className="text-subtle flex items-center gap-2.5 text-sm">
       <span>Sort</span>
       <span className="relative">
         <select
@@ -33,7 +33,10 @@ export function SortSelect({
             </option>
           ))}
         </select>
-        <ChevronIcon className="text-ink/65 pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2" />
+        <ChevronIcon
+          size="sm"
+          className="text-subtle pointer-events-none absolute top-1/2 right-3 -translate-y-1/2"
+        />
       </span>
     </label>
   );

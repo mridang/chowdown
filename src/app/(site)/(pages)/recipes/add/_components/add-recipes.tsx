@@ -162,14 +162,14 @@ export function AddRecipes({
               : 'All done'}
         </h2>
         <Button variant="ghost" size="sm" onClick={onClose}>
-          <CloseIcon className="h-4 w-4" />
+          <CloseIcon size="sm" />
           Close
         </Button>
       </div>
 
       {phase === 'input' ? (
         <>
-          <p className="text-ink/75 mt-2 max-w-2xl leading-relaxed">
+          <p className="text-muted mt-2 max-w-2xl leading-relaxed">
             Paste recipe links, markdown, or plain text — mix as many as you
             like. We&apos;ll fetch each link, turn everything into Cooklang, and
             walk you through saving them one at a time.
@@ -205,12 +205,12 @@ export function AddRecipes({
 
       {phase === 'review' ? (
         <>
-          <p className="text-ink/75 mt-2 font-medium">
+          <p className="text-muted mt-2 font-medium">
             Recipe {index + 1} of {drafts.length}
             {drafts[index]?.source ? (
               <>
                 {' · '}
-                <span className="text-ink/65 break-all">
+                <span className="text-subtle break-all">
                   {drafts[index]!.source}
                 </span>
               </>

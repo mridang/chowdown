@@ -39,7 +39,7 @@ function Token({ token }: { token: StepToken }) {
     case 'timer':
       return (
         <span className={`${HIGHLIGHT} bg-flame/10 text-ember`}>
-          <ClockIcon className="mr-1 inline-block h-4 w-4 -translate-y-px" />
+          <ClockIcon size="sm" className="mr-1 inline-block -translate-y-px" />
           {token.label}
         </span>
       );
@@ -86,7 +86,7 @@ export function Method({
           ))}
         </ol>
       ) : (
-        <p className="text-ink/65 mt-4">This recipe has no method yet.</p>
+        <p className="text-subtle mt-4">This recipe has no method yet.</p>
       )}
     </div>
   );

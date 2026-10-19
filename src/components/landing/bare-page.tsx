@@ -56,7 +56,7 @@ export function Notice({
         <Heading as="h1" variant="h1" className="mt-3">
           {title}
         </Heading>
-        <div className="text-ink/75 mt-5 text-lg leading-relaxed">
+        <div className="text-muted mt-5 text-lg leading-relaxed">
           {children}
         </div>
         <div className="mt-8 flex flex-wrap gap-3">{actions}</div>

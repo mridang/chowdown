@@ -37,12 +37,12 @@ export function FavouritesLink({
       role="switch"
       aria-checked={active}
       className={cn(
-        'rounded-control focus-visible:outline-ink flex h-10 w-full items-center justify-between px-3.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2',
+        'rounded-control flex h-10 w-full items-center justify-between px-3.5 text-sm font-semibold transition focus-ring',
         active ? 'bg-ink text-white' : 'bg-marigold hover:bg-marigold/85',
       )}
     >
       <span className="flex items-center gap-2">
-        <HeartIcon filled={active} className="h-4 w-4" />
+        <HeartIcon size="sm" filled={active} />
         Favourites
       </span>
       <span className="tabular-nums">{count}</span>

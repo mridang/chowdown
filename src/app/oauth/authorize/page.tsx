@@ -86,8 +86,8 @@ export default async function AuthorizePage({
         <Heading as="h1" variant="h3" className="mt-2">
           Can&apos;t connect this app
         </Heading>
-        <p className="text-ink/75 mt-3 leading-relaxed">{check.description}</p>
-        <p className="text-ink/65 mt-5 font-mono text-sm">
+        <p className="text-muted mt-3 leading-relaxed">{check.description}</p>
+        <p className="text-subtle mt-5 font-mono text-sm">
           Error: {check.error}
         </p>
       </Panel>
@@ -134,19 +134,19 @@ export default async function AuthorizePage({
       <Heading as="h1" variant="h3" className="mt-2 break-words">
         Connect <span className="text-ember">{client.name}</span> to chowdown?
       </Heading>
-      <p className="text-ink/75 mt-3">
+      <p className="text-muted mt-3">
         Signed in as <span className="font-medium">{user.email}</span>. This app
         will be able to:
       </p>
       <ul className="mt-4 flex flex-col gap-3">
         {scope.map((s) => (
           <li key={s} className="flex items-start gap-3">
-            <CheckIcon className="text-forest mt-0.5 h-5 w-5 shrink-0" />
+            <CheckIcon size="md" className="text-forest mt-0.5 shrink-0" />
             <span className="leading-relaxed">{SCOPE_TEXT[s] ?? s}</span>
           </li>
         ))}
       </ul>
-      <p className="rounded-control bg-sand text-ink/80 mt-5 px-4 py-3 text-sm leading-relaxed">
+      <p className="rounded-control bg-sand text-muted mt-5 px-4 py-3 text-sm leading-relaxed">
         After you approve, you&apos;ll be sent back to{' '}
         <span className="font-semibold break-all">{target}</span>. Only approve
         apps you trust. You can disconnect it any time from chowdown.

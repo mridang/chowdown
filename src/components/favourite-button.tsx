@@ -25,7 +25,7 @@ export { HeartIcon };
 export type FavouriteVariant = 'overlay' | 'inline' | 'labelled';
 
 const BASE =
-  'inline-flex items-center justify-center gap-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:opacity-60';
+  'inline-flex items-center justify-center gap-2 transition disabled:opacity-60 focus-ring';
 
 function variantClasses(variant: FavouriteVariant, on: boolean): string {
   switch (variant) {
@@ -34,12 +34,12 @@ function variantClasses(variant: FavouriteVariant, on: boolean): string {
         'h-9 w-9 rounded-full border border-ink/10 bg-white',
         on
           ? 'text-flame opacity-100'
-          : 'text-ink/70 hover:text-flame focus-visible:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100',
+          : 'text-muted hover:text-flame focus-visible:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100',
       );
     case 'inline':
       return cn(
         'h-9 w-9 rounded-full hover:bg-ink/5',
-        on ? 'text-flame' : 'text-ink/65 hover:text-flame',
+        on ? 'text-flame' : 'text-subtle hover:text-flame',
       );
     case 'labelled':
       return cn(
@@ -123,7 +123,7 @@ export function FavouriteButton({
       title={on ? 'Remove from favourites' : 'Add to favourites'}
       className={cn(BASE, variantClasses(variant, on), className)}
     >
-      <HeartIcon filled={on} className="h-[18px] w-[18px]" />
+      <HeartIcon size="menu" filled={on} />
       {variant === 'labelled' ? (on ? 'Favourited' : 'Favourite') : null}
     </button>
   );

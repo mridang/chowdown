@@ -45,7 +45,7 @@ export function HeaderNav() {
             'rounded-control hover:bg-ink/5 flex h-10 items-center px-3 text-sm font-medium transition',
             active === key
               ? 'text-ink underline decoration-2 underline-offset-[10px]'
-              : 'text-ink/75',
+              : 'text-muted',
           )}
         >
           {label}

@@ -34,7 +34,7 @@ function ConnectButton({
 }: Pick<DriveConnectProps, 'reconnect' | 'returnTo'> & { size?: 'md' | 'lg' }) {
   return (
     <ButtonLink href={driveConnectHref(returnTo, { force: true })} size={size}>
-      <DriveIcon className="h-5 w-5" />
+      <DriveIcon size="md" />
       {reconnect ? 'Reconnect Google Drive' : 'Connect Google Drive'}
     </ButtonLink>
   );
@@ -60,17 +60,17 @@ export function DriveConnectPanel({
           ? 'Reconnect your Google Drive'
           : 'Connect your Google Drive'}
       </Heading>
-      <p className="text-ink/75 mx-auto mt-3 max-w-xl leading-relaxed">
+      <p className="text-muted mx-auto mt-3 max-w-xl leading-relaxed">
         {reconnect
           ? 'Google stopped accepting chowdown’s access to your Drive, perhaps because it was removed. Your recipes are still in your Drive. Reconnect to sync them again.'
           : 'chowdown keeps your recipes as plain text files in a “Recipes” folder in your own Google Drive. Connect it to see, add and edit them.'}
       </p>
-      <p className="text-ink/65 mx-auto mt-2 max-w-xl text-sm leading-relaxed">
+      <p className="text-subtle mx-auto mt-2 max-w-xl text-sm leading-relaxed">
         chowdown can only see the files it creates there, and nothing else in
         your Drive.
       </p>
       {attempt ? (
-        <p className="rounded-control bg-sand text-ink/80 mx-auto mt-5 max-w-xl px-4 py-3 text-sm leading-relaxed">
+        <p className="rounded-control bg-sand text-muted mx-auto mt-5 max-w-xl px-4 py-3 text-sm leading-relaxed">
           {ATTEMPT_MESSAGE[attempt]}
         </p>
       ) : null}
@@ -99,7 +99,7 @@ export function DriveConnectNotice({
             ? 'Google Drive is disconnected'
             : 'Google Drive is not connected'}
         </p>
-        <p className="text-ink/75 mt-0.5 text-sm leading-relaxed">
+        <p className="text-muted mt-0.5 text-sm leading-relaxed">
           {attempt ? ATTEMPT_MESSAGE[attempt] : message}
         </p>
       </div>
@@ -117,7 +117,7 @@ export function DriveUnreachable() {
   return (
     <div className="rounded-card border-ink/25 border border-dashed px-6 py-16 text-center">
       <Heading variant="h3">Couldn’t reach Google Drive</Heading>
-      <p className="text-ink/70 mx-auto mt-2 max-w-md">
+      <p className="text-muted mx-auto mt-2 max-w-md">
         Your recipes are safe in your Drive. Reload the page in a moment to try
         again.
       </p>

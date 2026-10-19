@@ -81,7 +81,10 @@ export function AccountMenu({
           <span className="hidden text-sm font-semibold sm:block">
             Hi {firstName}
           </span>
-          <ChevronIcon className="text-ink/65 hidden h-4 w-4 transition group-data-[state=open]:rotate-180 sm:block" />
+          <ChevronIcon
+            size="sm"
+            className="text-subtle hidden transition group-data-[state=open]:rotate-180 sm:block"
+          />
           <span className="sr-only sm:hidden">
             Account menu, signed in as {firstName}
           </span>
@@ -91,12 +94,12 @@ export function AccountMenu({
       panelClassName="w-64"
     >
       <div className="px-3 py-2 text-sm">
-        <span className="text-ink/65 block text-xs">Signed in as</span>
+        <span className="text-subtle block text-xs">Signed in as</span>
         <span className="block truncate font-semibold">{email}</span>
       </div>
       <div className="bg-ink/10 my-1.5 h-px" />
       <Link href="/connect" className={POPOVER_ITEM}>
-        <PlugIcon className="text-ink/65 h-[18px] w-[18px]" />
+        <PlugIcon size="menu" className="text-subtle" />
         Connect an assistant
       </Link>
       {driveConnected ? (
@@ -105,12 +108,12 @@ export function AccountMenu({
           disabled
           className={cn(POPOVER_ITEM, 'cursor-default hover:bg-transparent')}
         >
-          <CheckIcon className="text-forest h-[18px] w-[18px]" />
+          <CheckIcon size="menu" className="text-forest" />
           Google Drive connected
         </button>
       ) : (
         <a href={driveConnectHref()} className={POPOVER_ITEM}>
-          <DriveIcon className="text-ink/65 h-[18px] w-[18px]" />
+          <DriveIcon size="menu" className="text-subtle" />
           Connect Google Drive
         </a>
       )}
@@ -120,7 +123,7 @@ export function AccountMenu({
           onClick={() => void install()}
           className={POPOVER_ITEM}
         >
-          <SparkIcon className="text-ink/65 h-[18px] w-[18px]" />
+          <SparkIcon size="menu" className="text-subtle" />
           Install app
         </button>
       ) : null}
@@ -131,7 +134,7 @@ export function AccountMenu({
         onClick={() => void signOut()}
         className={POPOVER_ITEM}
       >
-        <LogoutIcon className="text-ink/65 h-[18px] w-[18px]" />
+        <LogoutIcon size="menu" className="text-subtle" />
         Sign out
       </button>
     </Popover>

@@ -35,13 +35,16 @@ export function AccordionTrigger({
     <summary
       className={cn(
         'flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-control text-left transition [&::-webkit-details-marker]:hidden',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink',
+        'focus-ring',
         className,
       )}
       {...props}
     >
       {children}
-      <ChevronIcon className="text-ink/65 h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
+      <ChevronIcon
+        size="sm"
+        className="text-subtle shrink-0 transition-transform group-open:rotate-180"
+      />
     </summary>
   );
 }

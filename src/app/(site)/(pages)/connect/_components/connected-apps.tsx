@@ -64,19 +64,19 @@ export function ConnectedApps() {
 
   if (failed) {
     return (
-      <p className="text-ink/75 mt-5">Could not load your connected apps.</p>
+      <p className="text-muted mt-5">Could not load your connected apps.</p>
     );
   }
   if (apps === null) {
     return (
-      <p className="text-ink/65 mt-5" role="status">
+      <p className="text-subtle mt-5" role="status">
         Loading…
       </p>
     );
   }
   if (apps.length === 0) {
     return (
-      <p className="text-ink/75 mt-5 max-w-md leading-relaxed">
+      <p className="text-muted mt-5 max-w-md leading-relaxed">
         No assistants are connected yet. Once you add the address and approve
         access, they will appear here.
       </p>
@@ -92,11 +92,11 @@ export function ConnectedApps() {
           >
             <div className="flex min-w-0 items-center gap-3">
               <span className="rounded-control bg-ink/5 grid h-10 w-10 shrink-0 place-items-center">
-                <PlugIcon className="h-5 w-5" />
+                <PlugIcon size="md" />
               </span>
               <p className="min-w-0 leading-tight">
                 <span className="block truncate font-semibold">{app.name}</span>
-                <span className="text-ink/70 block text-sm">
+                <span className="text-muted block text-sm">
                   {accessLabel(app.scopes)}
                   {app.last_used_at
                     ? ` · last used ${relativeTime(app.last_used_at)}`

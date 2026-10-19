@@ -42,7 +42,7 @@ function StepBody({ tokens }: { tokens: StepToken[] }) {
                   {token.name}
                 </span>
                 {token.quantity ? (
-                  <span className="text-ink/65 text-[0.6em] font-normal">
+                  <span className="text-subtle text-[0.6em] font-normal">
                     {' '}
                     ({quantity(token.quantity)})
                   </span>
@@ -136,7 +136,7 @@ export function CookMode({
     >
       <DialogTrigger asChild>
         <Button variant="accent" size="lg">
-          <ExpandIcon className="h-[18px] w-[18px]" />
+          <ExpandIcon size="menu" />
           Cook mode
         </Button>
       </DialogTrigger>
@@ -146,7 +146,7 @@ export function CookMode({
             <DialogTitle className="font-display text-xl font-semibold sm:text-2xl">
               {title}
             </DialogTitle>
-            <DialogDescription className="text-ink/65 mt-1 text-sm">
+            <DialogDescription className="text-subtle mt-1 text-sm">
               Step {index + 1} of {steps.length}. Use the arrow keys or the
               buttons.
             </DialogDescription>
@@ -191,7 +191,7 @@ export function CookMode({
                     'grid shrink-0 place-items-center rounded-full font-semibold',
                     i === index
                       ? 'h-12 w-12 bg-flame text-xl text-ink'
-                      : 'h-9 w-9 bg-ink/10 text-base text-ink/70',
+                      : 'h-9 w-9 bg-ink/10 text-base text-muted',
                   )}
                 >
                   {i + 1}
@@ -199,9 +199,7 @@ export function CookMode({
                 <p
                   className={cn(
                     'font-display leading-snug font-medium',
-                    i === index
-                      ? 'text-3xl sm:text-5xl'
-                      : 'text-xl text-ink/70',
+                    i === index ? 'text-3xl sm:text-5xl' : 'text-xl text-muted',
                   )}
                 >
                   {i === index ? <StepBody tokens={step} /> : stepText(step)}
@@ -218,7 +216,7 @@ export function CookMode({
               onClick={() => setIndex((i) => Math.max(0, i - 1))}
               className="disabled:opacity-40"
             >
-              <ChevronLeftIcon className="h-5 w-5" />
+              <ChevronLeftIcon size="md" />
               Back
             </Button>
             {index === last ? (
@@ -231,7 +229,7 @@ export function CookMode({
                 onClick={() => setIndex((i) => Math.min(last, i + 1))}
               >
                 Next
-                <ChevronRightIcon className="h-5 w-5" />
+                <ChevronRightIcon size="md" />
               </Button>
             )}
           </div>

@@ -19,7 +19,7 @@ export function FilterChip({
       className="rounded-control border-ink/25 hover:border-ink inline-flex h-8 items-center gap-1.5 border bg-white pr-2 pl-3 text-sm font-medium transition"
     >
       {children}
-      <CloseIcon className="text-ink/65 h-3.5 w-3.5" />
+      <CloseIcon className="text-subtle h-3.5 w-3.5" />
       <span className="sr-only">Remove filter</span>
     </Link>
   );

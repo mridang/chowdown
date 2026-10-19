@@ -8,7 +8,7 @@ const SIZES = {
 
 const TONES = {
   flame: 'bg-flame text-ink',
-  quiet: 'bg-ink/10 text-ink/70',
+  quiet: 'bg-ink/10 text-muted',
 } as const;
 
 /**

@@ -68,7 +68,7 @@ function Row({
             href={href}
             className="focus-visible:outline-ink flex h-10 shrink-0 items-center gap-1.5 text-sm font-semibold underline underline-offset-4 focus-visible:outline-2"
           >
-            See all <ArrowIcon className="h-4 w-4" />
+            See all <ArrowIcon size="sm" />
           </Link>
         }
       />
@@ -128,7 +128,7 @@ export async function Dashboard({ user }: { user: ShellUser }) {
                   aria-label="Describe what you feel like cooking"
                   action={
                     <Button type="submit" size="md" className="h-10">
-                      <SearchIcon className="h-4 w-4" />
+                      <SearchIcon size="sm" />
                       Find
                     </Button>
                   }
@@ -139,23 +139,23 @@ export async function Dashboard({ user }: { user: ShellUser }) {
                   <Link
                     key={label}
                     href={href}
-                    className="border-ink/20 hover:border-ink focus-visible:outline-ink inline-flex h-9 items-center rounded-full border bg-white px-4 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="border-ink/20 hover:border-ink inline-flex h-9 items-center rounded-full border bg-white px-4 text-sm font-medium transition focus-ring"
                   >
                     {label}
                   </Link>
                 ))}
                 <Link
                   href="/recipes/add"
-                  className="bg-ink hover:bg-ink/85 focus-visible:outline-ink inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white transition focus-visible:outline-2 focus-visible:outline-offset-2"
+                  className="bg-ink hover:bg-ink/85 inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white transition focus-ring"
                 >
-                  <PlusIcon className="h-4 w-4" />
+                  <PlusIcon size="sm" />
                   Add recipe
                 </Link>
               </div>
             </>
           )}
           {recipes.length > 0 ? (
-            <p className="text-ink/65 mt-5 text-sm">
+            <p className="text-subtle mt-5 text-sm">
               {countOf(recipes.length, 'recipe')} ·{' '}
               {countOf(favouriteCount, 'favourite')}
             </p>

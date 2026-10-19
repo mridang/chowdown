@@ -30,7 +30,7 @@ export function buttonClass({
 }: Look): string {
   return cn(
     'inline-flex shrink-0 items-center justify-center rounded-control font-semibold whitespace-nowrap transition',
-    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink',
+    'focus-ring',
     'disabled:cursor-not-allowed disabled:opacity-50',
     VARIANTS[variant],
     SIZES[size],
@@ -103,7 +103,7 @@ export function IconButton({
       title={label}
       className={cn(
         'grid h-10 w-10 place-items-center rounded-control text-ink transition hover:bg-ink/5',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink',
+        'focus-ring',
         'disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}

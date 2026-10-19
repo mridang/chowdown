@@ -12,7 +12,7 @@ const TINTS: Record<Tone, string> = {
   flame: 'bg-flame/15 text-flame',
   marigold: 'bg-marigold/30 text-ink',
   forest: 'bg-forest/15 text-forest',
-  sand: 'bg-sand text-ink/70',
+  sand: 'bg-sand text-muted',
   ink: 'bg-ink/10 text-ink',
 };
 

@@ -86,7 +86,7 @@ export function SiteHeader({ user }: { user: ShellUser | null }) {
                   <Link
                     key={label}
                     href={href}
-                    className="rounded-control text-ink/75 hover:bg-ink/5 flex h-10 items-center px-3 text-sm font-medium transition"
+                    className="rounded-control text-muted hover:bg-ink/5 flex h-10 items-center px-3 text-sm font-medium transition"
                   >
                     {label}
                   </Link>
@@ -104,7 +104,7 @@ export function SiteHeader({ user }: { user: ShellUser | null }) {
                     variant="outline"
                     className="max-md:hidden"
                   >
-                    <PlusIcon className="h-4 w-4" />
+                    <PlusIcon size="sm" />
                     Add recipe
                   </ButtonLink>
                 ) : (
@@ -113,7 +113,7 @@ export function SiteHeader({ user }: { user: ShellUser | null }) {
                     variant="outline"
                     className="max-md:hidden"
                   >
-                    <DriveIcon className="h-4 w-4" />
+                    <DriveIcon size="sm" />
                     Connect Google Drive
                   </ButtonLink>
                 )}
@@ -122,7 +122,7 @@ export function SiteHeader({ user }: { user: ShellUser | null }) {
                   variant="accent"
                   className="max-sm:hidden"
                 >
-                  <SparkIcon className="h-4 w-4" />
+                  <SparkIcon size="sm" />
                   Cook with AI
                 </ButtonLink>
                 <AccountMenu
@@ -135,7 +135,7 @@ export function SiteHeader({ user }: { user: ShellUser | null }) {
               </>
             ) : (
               <ButtonLink href="/api/auth/login">
-                <GoogleIcon className="h-4 w-4" />
+                <GoogleIcon size="sm" />
                 Sign in
               </ButtonLink>
             )}

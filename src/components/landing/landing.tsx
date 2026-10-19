@@ -36,7 +36,7 @@ import { duration, sentenceCase } from '@/lib/format';
 export function SignInButton({ size = 'lg' }: { size?: 'md' | 'lg' }) {
   return (
     <ButtonLink href="/api/auth/login" size={size}>
-      <GoogleIcon className="h-5 w-5" />
+      <GoogleIcon size="md" />
       Continue with Google
     </ButtonLink>
   );
@@ -50,7 +50,7 @@ const TINTS: Record<Tone, string> = {
   flame: 'bg-flame/15 text-flame',
   marigold: 'bg-marigold/30 text-ink',
   forest: 'bg-forest/15 text-forest',
-  sand: 'bg-sand text-ink/70',
+  sand: 'bg-sand text-muted',
   ink: 'bg-ink/10 text-ink',
 };
 
@@ -92,7 +92,7 @@ function Window({
         <span className="bg-ink/20 h-2.5 w-2.5 rounded-full" />
         <span className="bg-ink/20 h-2.5 w-2.5 rounded-full" />
         {title ? (
-          <span className="text-ink/65 ml-3 truncate font-mono text-xs">
+          <span className="text-subtle ml-3 truncate font-mono text-xs">
             {title}
           </span>
         ) : null}
@@ -108,9 +108,9 @@ function CookLine({ line }: { line: string }) {
     const [key, ...rest] = line.slice(2).split(':');
     return (
       <>
-        <span className="text-ink/65">{'>> '}</span>
+        <span className="text-subtle">{'>> '}</span>
         <span className="text-ember">{key?.trim()}</span>
-        <span className="text-ink/65">: </span>
+        <span className="text-subtle">: </span>
         <span>{rest.join(':').trim()}</span>
       </>
     );
@@ -176,14 +176,14 @@ function RenderedRecipe({ recipe }: { recipe: SampleRecipe }) {
         <p className="font-display mt-1.5 line-clamp-2 text-xl leading-tight font-semibold">
           {recipe.title}
         </p>
-        <div className="text-ink/75 mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
+        <div className="text-muted mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
           <span className="inline-flex items-center gap-1.5">
-            <ClockIcon className="h-4 w-4" />
+            <ClockIcon size="sm" />
             {duration(recipe.minutes)}
           </span>
           <Difficulty level={recipe.difficulty} />
           <span className="inline-flex items-center gap-1.5">
-            <ServingsIcon className="h-4 w-4" />
+            <ServingsIcon size="sm" />
             Serves {recipe.servings}
           </span>
         </div>
@@ -213,7 +213,7 @@ export function HeroVisual({ recipe }: { recipe: SampleRecipe }) {
 export function SampleStrip({ recipes }: { recipes: SampleRecipe[] }) {
   return (
     <Container className="pb-4">
-      <p className="text-ink/65 mb-4 text-sm">
+      <p className="text-subtle mb-4 text-sm">
         Example recipes, to show how a collection looks.
       </p>
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -230,7 +230,7 @@ export function SampleStrip({ recipes }: { recipes: SampleRecipe[] }) {
               <p className="line-clamp-2 min-h-[2lh] text-sm leading-snug font-semibold">
                 {r.title}
               </p>
-              <p className="text-ink/65 mt-2 flex items-center gap-1.5 text-[13px]">
+              <p className="text-subtle mt-2 flex items-center gap-1.5 text-[13px]">
                 <ClockIcon className="h-3.5 w-3.5" />
                 {duration(r.minutes)}
               </p>
@@ -257,7 +257,7 @@ export function Facts() {
             <dt className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
               {value}
             </dt>
-            <dd className="text-ink/70 mt-2">{label}</dd>
+            <dd className="text-muted mt-2">{label}</dd>
           </div>
         ))}
       </dl>
@@ -284,7 +284,7 @@ function Feature({
       <div className={flip ? 'lg:order-2' : undefined}>
         <Eyebrow>{eyebrow}</Eyebrow>
         <Heading className="mt-3">{title}</Heading>
-        <p className="text-ink/75 mt-5 max-w-md text-lg leading-relaxed">
+        <p className="text-muted mt-5 max-w-md text-lg leading-relaxed">
           {body}
         </p>
       </div>
@@ -302,7 +302,7 @@ function MiniCard({ recipe }: { recipe: SampleRecipe }) {
         <p className="line-clamp-2 min-h-[2lh] text-sm leading-snug font-semibold">
           {recipe.title}
         </p>
-        <p className="text-ink/65 mt-1.5 text-xs">
+        <p className="text-subtle mt-1.5 text-xs">
           {duration(recipe.minutes)} · {recipe.difficulty}
         </p>
       </div>
@@ -350,7 +350,7 @@ function ImportVisual({ recipe }: { recipe: SampleRecipe }) {
     <Window label="Pasting a link to import a recipe" title="Add recipes">
       <div className="p-5 sm:p-6">
         <p className="text-sm font-semibold">Paste links or text</p>
-        <div className="rounded-control border-ink/20 bg-paper text-ink/75 mt-2 border p-3 font-mono text-xs break-all">
+        <div className="rounded-control border-ink/20 bg-paper text-muted mt-2 border p-3 font-mono text-xs break-all">
           https://{recipe.site}/{fileSlug(recipe.title)}
         </div>
         <div className="rounded-card border-ink/10 mt-5 flex items-center gap-4 border p-3">
@@ -414,7 +414,7 @@ function Option({
         ) : null}
       </span>
       <span className={on ? 'font-semibold' : undefined}>{label}</span>
-      <span className="text-ink/65 ml-auto text-xs">{count}</span>
+      <span className="text-subtle ml-auto text-xs">{count}</span>
     </li>
   );
 }
@@ -431,7 +431,7 @@ function FiltersVisual({ recipes }: { recipes: SampleRecipe[] }) {
       <div className="grid grid-cols-1 gap-6 p-5 sm:grid-cols-[13rem_1fr] sm:p-6">
         <div className="flex flex-col gap-5">
           <div>
-            <p className="text-label text-ink/65 font-semibold uppercase">
+            <p className="text-label text-subtle font-semibold uppercase">
               Difficulty
             </p>
             <ul className="mt-3 flex flex-col gap-2.5">
@@ -451,7 +451,7 @@ function FiltersVisual({ recipes }: { recipes: SampleRecipe[] }) {
             </ul>
           </div>
           <div>
-            <p className="text-label text-ink/65 font-semibold uppercase">
+            <p className="text-label text-subtle font-semibold uppercase">
               Time
             </p>
             <ul className="mt-3 flex flex-col gap-2.5">
@@ -487,7 +487,7 @@ function CookVisual({ recipe }: { recipe: SampleRecipe }) {
         className="border-ink/20 w-[min(21rem,100%)] rounded-[2.25rem] border bg-white p-3"
       >
         <div className="bg-paper rounded-[1.6rem] p-5">
-          <p className="text-ink/65 truncate text-xs font-semibold">
+          <p className="text-subtle truncate text-xs font-semibold">
             {recipe.title}
           </p>
           <div className="bg-ink/10 mt-3 h-1.5 overflow-hidden rounded-full">
@@ -539,7 +539,7 @@ function AiVisual({ recipes }: { recipes: SampleRecipe[] }) {
               <MiniCard key={r.id} recipe={r} />
             ))}
           </div>
-          <p className="rounded-control bg-sand text-ink/70 mt-4 flex items-center gap-2 truncate px-3 py-2 font-mono text-xs">
+          <p className="rounded-control bg-sand text-muted mt-4 flex items-center gap-2 truncate px-3 py-2 font-mono text-xs">
             <PlugIcon className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{MCP_URL}</span>
           </p>
@@ -633,7 +633,7 @@ export function Faq() {
               <AccordionTrigger className="py-1 text-lg font-semibold">
                 {question}
               </AccordionTrigger>
-              <AccordionContent className="text-ink/75 max-w-2xl leading-relaxed">
+              <AccordionContent className="text-muted max-w-2xl leading-relaxed">
                 {answer}
               </AccordionContent>
             </AccordionItem>
@@ -651,7 +651,7 @@ export function FinalCta() {
       <Container className="flex flex-col items-start justify-between gap-6 py-14 sm:py-16 md:flex-row md:items-center">
         <div>
           <Heading>Start your collection today</Heading>
-          <p className="text-ink/80 mt-2 text-lg">
+          <p className="text-muted mt-2 text-lg">
             Sign in with Google and add your first recipe.
           </p>
         </div>
@@ -664,7 +664,7 @@ export function FinalCta() {
 /** A quiet note under the hero buttons about who it works with. */
 export function WorksWith() {
   return (
-    <p className="text-ink/70 mt-5 flex flex-wrap items-center gap-2 text-sm">
+    <p className="text-muted mt-5 flex flex-wrap items-center gap-2 text-sm">
       Works with Google Drive, ChatGPT and Claude.
     </p>
   );

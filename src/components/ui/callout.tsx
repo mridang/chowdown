@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/components/ui/cn';
 
 const TONES = {
-  neutral: 'bg-sand text-ink/80',
+  neutral: 'bg-sand text-muted',
   highlight: 'bg-marigold/25 text-ink',
   error: 'bg-red-50 text-red-800',
 } as const;

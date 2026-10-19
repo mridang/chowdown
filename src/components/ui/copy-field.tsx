@@ -44,11 +44,7 @@ export function CopyField({
         }}
         className="rounded-control bg-ink hover:bg-ink/85 inline-flex h-10 shrink-0 items-center gap-2 px-4 text-sm font-semibold text-white transition"
       >
-        {copied ? (
-          <CheckIcon className="h-4 w-4" />
-        ) : (
-          <CopyIcon className="h-4 w-4" />
-        )}
+        {copied ? <CheckIcon size="sm" /> : <CopyIcon size="sm" />}
         {copied ? 'Copied' : 'Copy'}
       </button>
     </div>

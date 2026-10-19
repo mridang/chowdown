@@ -41,7 +41,7 @@ export function Segmented<T extends string>({
             className={cn(
               'flex h-8 cursor-pointer items-center rounded-[calc(var(--radius-control)-2px)] px-3 text-sm font-medium transition',
               'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-ink',
-              'text-ink/75 hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-white peer-checked:hover:bg-ink',
+              'text-muted hover:bg-ink/5 peer-checked:bg-ink peer-checked:text-white peer-checked:hover:bg-ink',
             )}
           >
             {option.label}

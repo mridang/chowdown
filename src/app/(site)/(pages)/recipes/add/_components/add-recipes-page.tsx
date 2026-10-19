@@ -125,7 +125,7 @@ function ChoiceCard({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-card border-ink/10 hover:border-ink/40 focus-visible:outline-ink flex flex-1 flex-col items-start border bg-white p-6 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 sm:p-8"
+      className="rounded-card border-ink/10 hover:border-ink/40 flex flex-1 flex-col items-start border bg-white p-6 text-left transition sm:p-8 focus-ring"
     >
       <span className="rounded-control bg-marigold/30 grid h-11 w-11 place-items-center">
         {icon}
@@ -133,7 +133,7 @@ function ChoiceCard({
       <span className="font-display mt-5 block text-xl font-semibold">
         {title}
       </span>
-      <span className="text-ink/75 mt-2 block leading-relaxed">
+      <span className="text-muted mt-2 block leading-relaxed">
         {description}
       </span>
     </button>
@@ -154,9 +154,9 @@ export function AddRecipesPage() {
       <div className="max-w-4xl">
         <Link
           href="/app"
-          className="text-ink/75 hover:text-ink focus-visible:outline-ink rounded-control -ml-1 inline-flex h-9 items-center gap-1 px-1 text-sm font-medium transition focus-visible:outline-2"
+          className="text-muted hover:text-ink focus-visible:outline-ink rounded-control -ml-1 inline-flex h-9 items-center gap-1 px-1 text-sm font-medium transition focus-visible:outline-2"
         >
-          <ChevronLeftIcon className="h-4 w-4" />
+          <ChevronLeftIcon size="sm" />
           All recipes
         </Link>
 
@@ -168,13 +168,13 @@ export function AddRecipesPage() {
         {mode === 'choose' ? (
           <div className="mt-8 flex flex-col gap-4 sm:flex-row">
             <ChoiceCard
-              icon={<LinkIcon className="h-5 w-5" />}
+              icon={<LinkIcon size="md" />}
               title="Import links or text"
               description="Paste recipe links, markdown or plain text — we fetch and convert each one, then you review and save."
               onClick={() => setMode('import')}
             />
             <ChoiceCard
-              icon={<NoteIcon className="h-5 w-5" />}
+              icon={<NoteIcon size="md" />}
               title="Write it myself"
               description="Type a recipe by hand in Cooklang and save it straight to your Drive."
               onClick={() => setMode('manual')}

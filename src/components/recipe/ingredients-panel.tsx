@@ -69,7 +69,7 @@ export function IngredientsPanel({
       </div>
 
       <div className="rounded-control border-ink/15 mt-4 flex items-center justify-between border bg-white px-3 py-2">
-        <span className="text-ink/75 text-sm" id="servings-label">
+        <span className="text-muted text-sm" id="servings-label">
           Servings
         </span>
         <span
@@ -84,7 +84,7 @@ export function IngredientsPanel({
             onClick={() => setPeople((n) => Math.max(1, n - 1))}
             className="rounded-control hover:bg-ink/5 focus-visible:outline-ink grid h-9 w-9 place-items-center transition focus-visible:outline-2 disabled:opacity-35"
           >
-            <MinusIcon className="h-4 w-4" />
+            <MinusIcon size="sm" />
           </button>
           <span
             className="w-8 text-center text-base font-semibold tabular-nums"
@@ -98,7 +98,7 @@ export function IngredientsPanel({
             onClick={() => setPeople((n) => n + 1)}
             className="rounded-control hover:bg-ink/5 focus-visible:outline-ink grid h-9 w-9 place-items-center transition focus-visible:outline-2"
           >
-            <PlusIcon className="h-4 w-4" />
+            <PlusIcon size="sm" />
           </button>
         </span>
       </div>
@@ -124,15 +124,13 @@ export function IngredientsPanel({
                         : 'border-ink/50 bg-white',
                     )}
                   >
-                    {ticked ? (
-                      <CheckIcon className="h-3 w-3" strokeWidth={3} />
-                    ) : null}
+                    {ticked ? <CheckIcon size="xs" strokeWidth={3} /> : null}
                   </span>
                   {hasAmounts ? (
                     <span
                       className={cn(
                         'w-24 shrink-0 font-semibold',
-                        ticked && 'text-ink/60 line-through',
+                        ticked && 'text-subtle line-through',
                       )}
                     >
                       {quantity(ingredient.quantity)}
@@ -141,7 +139,7 @@ export function IngredientsPanel({
                   <span
                     className={cn(
                       'flex-1',
-                      ticked ? 'text-ink/60 line-through' : 'text-ink/85',
+                      ticked ? 'text-subtle line-through' : 'text-muted',
                     )}
                   >
                     {ingredient.name}
@@ -159,14 +157,14 @@ export function IngredientsPanel({
           })}
         </ul>
       ) : (
-        <p className="text-ink/65 mt-4 text-sm">
+        <p className="text-subtle mt-4 text-sm">
           This recipe doesn&apos;t list any ingredients yet.
         </p>
       )}
 
       {cookware.length > 0 ? (
         <div className="mt-8">
-          <h3 className="text-label text-ink/65 font-semibold uppercase">
+          <h3 className="text-label text-subtle font-semibold uppercase">
             You will need
           </h3>
           <ul className="mt-3 flex flex-wrap gap-2">
@@ -175,7 +173,7 @@ export function IngredientsPanel({
                 key={`${item}-${index}`}
                 className="border-ink/20 inline-flex h-8 items-center gap-2 rounded-full border bg-white px-3 text-sm"
               >
-                <PanIcon className="text-ember h-4 w-4" />
+                <PanIcon size="sm" className="text-ember" />
                 {item}
               </li>
             ))}

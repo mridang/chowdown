@@ -63,13 +63,13 @@ export function CardHeart({
       aria-label={label}
       title={label}
       className={cn(
-        'border-ink/10 focus-visible:outline-ink absolute top-3 right-3 grid h-9 w-9 place-items-center rounded-full border bg-white transition focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60',
+        'border-ink/10 absolute top-3 right-3 grid h-9 w-9 place-items-center rounded-full border bg-white transition focus-visible:opacity-100 disabled:opacity-60 focus-ring',
         on
           ? 'text-ember'
-          : 'text-ink/70 hover:text-ember [@media(hover:hover)]:opacity-0 group-focus-within:opacity-100 group-hover:opacity-100',
+          : 'text-muted hover:text-ember [@media(hover:hover)]:opacity-0 group-focus-within:opacity-100 group-hover:opacity-100',
       )}
     >
-      <HeartIcon filled={on} className="h-[18px] w-[18px]" />
+      <HeartIcon size="menu" filled={on} />
     </button>
   );
 }

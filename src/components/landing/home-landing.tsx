@@ -50,7 +50,7 @@ export function HomeLanding({
             <br />
             Your rules.
           </Heading>
-          <p className="text-ink/75 mt-6 max-w-xl text-lg leading-relaxed">
+          <p className="text-muted mt-6 max-w-xl text-lg leading-relaxed">
             chowdown keeps every recipe as a plain text file in a folder you
             own, then makes them a pleasure to search, scale and cook from, and
             ready for your AI assistant.
@@ -61,7 +61,7 @@ export function HomeLanding({
               See what it does
             </ButtonLink>
           </div>
-          <p className="text-ink/65 mt-4 max-w-xl text-sm">
+          <p className="text-subtle mt-4 max-w-xl text-sm">
             Signing in shares only your name, email and photo. Connecting your
             Google Drive is a separate step, once you are in.
           </p>

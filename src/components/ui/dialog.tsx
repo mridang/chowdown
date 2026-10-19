@@ -224,7 +224,7 @@ export function DialogContent({
               onClick={() => setOpen(false)}
               className="rounded-control hover:bg-ink/5 focus-visible:outline-ink absolute top-3 right-3 grid h-10 w-10 place-items-center transition focus-visible:outline-2"
             >
-              <CloseIcon className="h-5 w-5" />
+              <CloseIcon size="md" />
             </button>
           ) : null}
         </>

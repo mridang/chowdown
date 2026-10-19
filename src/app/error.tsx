@@ -37,7 +37,7 @@ export default function ErrorPage({
           recipes will still be in your Drive either way.
         </p>
         {error.digest ? (
-          <p className="text-ink/65 mt-3 font-mono text-sm">
+          <p className="text-subtle mt-3 font-mono text-sm">
             Reference: {error.digest}
           </p>
         ) : null}

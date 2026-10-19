@@ -37,9 +37,7 @@ function FacetOption({
             : 'border-ink/40 bg-white',
         )}
       >
-        {option.active ? (
-          <CheckIcon className="h-3 w-3" strokeWidth={3} />
-        ) : null}
+        {option.active ? <CheckIcon size="xs" strokeWidth={3} /> : null}
       </span>
       <span
         className={cn(
@@ -52,8 +50,9 @@ function FacetOption({
         ) : facet.key === 'protein' ? (
           <>
             <ProteinIcon
+              size="sm"
               protein={option.value}
-              className="text-ink/65 h-4 w-4"
+              className="text-subtle"
             />
             {option.label}
           </>
@@ -61,7 +60,7 @@ function FacetOption({
           option.label
         )}
       </span>
-      <span className="text-ink/65 text-xs tabular-nums">{option.count}</span>
+      <span className="text-subtle text-xs tabular-nums">{option.count}</span>
     </Link>
   );
 }

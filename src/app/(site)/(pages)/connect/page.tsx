@@ -86,7 +86,7 @@ export default async function ConnectPage() {
           <Heading as="h1" variant="h1" className="mt-2 max-w-3xl">
             Cook with AI
           </Heading>
-          <p className="text-ink/75 mt-5 max-w-2xl text-lg leading-relaxed">
+          <p className="text-muted mt-5 max-w-2xl text-lg leading-relaxed">
             chowdown speaks MCP, the open standard assistants use to reach your
             tools. Add this address once and ask for ideas, searches and new
             recipes in plain words.
@@ -134,11 +134,11 @@ export default async function ConnectPage() {
             {ACCESS.map(([title, body]) => (
               <div key={title} className="py-4">
                 <dt className="font-semibold">{title}</dt>
-                <dd className="text-ink/75 mt-1">{body}</dd>
+                <dd className="text-muted mt-1">{body}</dd>
               </div>
             ))}
           </dl>
-          <p className="text-ink/65 mt-4 text-sm">
+          <p className="text-subtle mt-4 text-sm">
             You approve each assistant&apos;s access when it connects, and you
             can disconnect any of them from the list at any time.
           </p>

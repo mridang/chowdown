@@ -48,11 +48,7 @@ export function ShareButton({ title }: { title: string }) {
       aria-live="polite"
       className="gap-2"
     >
-      {copied ? (
-        <CheckIcon className="h-[18px] w-[18px]" />
-      ) : (
-        <ShareIcon className="h-[18px] w-[18px]" />
-      )}
+      {copied ? <CheckIcon size="menu" /> : <ShareIcon size="menu" />}
       {copied ? 'Link copied' : 'Share'}
     </Button>
   );
@@ -118,7 +114,7 @@ export function MoreMenu({
       <Popover
         label="More actions"
         button={<span aria-hidden="true">⋯</span>}
-        buttonClassName="rounded-control border-ink/25 hover:border-ink focus-visible:outline-ink grid h-10 w-10 place-items-center border bg-white text-xl leading-none transition focus-visible:outline-2 focus-visible:outline-offset-2"
+        buttonClassName="rounded-control border-ink/25 hover:border-ink grid h-10 w-10 place-items-center border bg-white text-xl leading-none transition focus-ring"
         panelClassName="print:hidden"
       >
         <button
@@ -127,7 +123,7 @@ export function MoreMenu({
           onClick={() => void autoTag()}
           className={POPOVER_ITEM}
         >
-          <SparkIcon className="text-ink/65 h-[18px] w-[18px]" />
+          <SparkIcon size="menu" className="text-subtle" />
           Auto-tag
         </button>
         <button
@@ -136,7 +132,7 @@ export function MoreMenu({
           onClick={() => setTimeout(() => window.print(), 150)}
           className={POPOVER_ITEM}
         >
-          <PrinterIcon className="text-ink/65 h-[18px] w-[18px]" />
+          <PrinterIcon size="menu" className="text-subtle" />
           Print
         </button>
         <div className="bg-ink/10 my-1.5 h-px" />
@@ -145,7 +141,7 @@ export function MoreMenu({
           className={`${POPOVER_ITEM} text-ember`}
           onClick={() => setConfirmingDelete(true)}
         >
-          <TrashIcon className="h-[18px] w-[18px]" />
+          <TrashIcon size="menu" />
           Delete recipe
         </button>
       </Popover>

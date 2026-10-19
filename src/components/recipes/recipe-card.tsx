@@ -24,7 +24,7 @@ const TINTS: Record<Tone, string> = {
   flame: 'bg-flame/15 text-flame',
   marigold: 'bg-marigold/30 text-ink',
   forest: 'bg-forest/15 text-forest',
-  sand: 'bg-sand text-ink/70',
+  sand: 'bg-sand text-muted',
   ink: 'bg-ink/10 text-ink',
 };
 
@@ -73,7 +73,7 @@ export function PhotoBlock({
 /** An icon with a short value, used for the facts on a card. */
 function Fact({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
-    <span className="text-ink/65 inline-flex items-center gap-1.5 text-[13px]">
+    <span className="text-subtle inline-flex items-center gap-1.5 text-[13px]">
       {icon}
       {children}
     </span>
@@ -116,7 +116,7 @@ export function RecipeCard({
         enabled={live}
         eager={priority}
         href={`/recipe/${recipe.id}`}
-        className="rounded-card border-ink/10 group-hover:border-ink/30 focus-visible:outline-ink flex h-full flex-col overflow-hidden border bg-white transition focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="rounded-card border-ink/10 group-hover:border-ink/30 flex h-full flex-col overflow-hidden border bg-white transition focus-ring"
       >
         <PhotoBlock
           tone={recipe.tone}
@@ -137,21 +137,15 @@ export function RecipeCard({
           </Heading>
           <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-3.5">
             {recipe.minutes !== undefined ? (
-              <Fact icon={<ClockIcon className="h-4 w-4" />}>
+              <Fact icon={<ClockIcon size="sm" />}>
                 {duration(recipe.minutes)}
               </Fact>
             ) : null}
             {recipe.difficulty ? (
-              <Fact icon={<FlameIcon className="h-4 w-4" />}>
-                {recipe.difficulty}
-              </Fact>
+              <Fact icon={<FlameIcon size="sm" />}>{recipe.difficulty}</Fact>
             ) : null}
             {recipe.protein ? (
-              <Fact
-                icon={
-                  <ProteinIcon protein={recipe.protein} className="h-4 w-4" />
-                }
-              >
+              <Fact icon={<ProteinIcon size="sm" protein={recipe.protein} />}>
                 {sentenceCase(recipe.protein)}
               </Fact>
             ) : null}
@@ -174,10 +168,10 @@ export function RecipeCard({
             'focus-visible:opacity-100',
             recipe.favourite
               ? 'text-ember'
-              : 'text-ink/70 hover:text-ember [@media(hover:hover)]:opacity-0 group-focus-within:opacity-100 group-hover:opacity-100',
+              : 'text-muted hover:text-ember [@media(hover:hover)]:opacity-0 group-focus-within:opacity-100 group-hover:opacity-100',
           )}
         >
-          <HeartIcon filled={recipe.favourite} className="h-[18px] w-[18px]" />
+          <HeartIcon size="menu" filled={recipe.favourite} />
         </button>
       )}
     </article>

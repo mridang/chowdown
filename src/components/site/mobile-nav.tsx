@@ -12,7 +12,7 @@ export function MobileNav({ links }: { links: [string, string][] }) {
     <div className="md:hidden">
       <Popover
         label="Menu"
-        button={<MenuIcon className="h-5 w-5" />}
+        button={<MenuIcon size="md" />}
         buttonClassName="rounded-control hover:bg-ink/5 focus-visible:outline-ink grid h-10 w-10 place-items-center focus-visible:outline-2"
         panelClassName="w-56"
       >
