@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { preload } from 'react-dom';
 
 import {
@@ -31,11 +31,11 @@ export function CoverImage({
   height,
   widths = [320, 480, 640],
   sizes = '(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw',
-}: {
+}: Readonly<{
   src: string;
   className: string;
   /** What to show if the image fails to load. */
-  fallback: React.ReactNode;
+  fallback: ReactNode;
   alt?: string;
   /** Load immediately at high priority (the page's hero photo only). */
   priority?: boolean;
@@ -46,10 +46,12 @@ export function CoverImage({
   widths?: readonly number[];
   /** How wide the image is laid out, so the browser can pick one. */
   sizes?: string;
-}) {
+}>): ReactElement {
   const [failed, setFailed] = useState(false);
   const proxied = isFetchableImageUrl(src);
-  const largest = proxied ? coverSrc(src, widths[widths.length - 1]!) : src;
+  const largestWidth = widths.at(-1);
+  const largest =
+    proxied && largestWidth !== undefined ? coverSrc(src, largestWidth) : src;
   if (priority && !failed) {
     // Tell the browser about the page's main photo in the head, before it has
     // read as far as the <img>, so it starts downloading at once.

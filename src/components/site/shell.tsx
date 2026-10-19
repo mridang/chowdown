@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { getShellUser } from '@/lib/auth/shell-user';
 
@@ -7,7 +7,9 @@ import { SiteFooter } from './site-footer';
 import { SiteHeader } from './site-header';
 
 /** The frame shared by every page: skip link, header, content and footer. */
-export async function SiteShell({ children }: { children: ReactNode }) {
+export async function SiteShell({
+  children,
+}: Readonly<{ children: ReactNode }>): Promise<ReactElement> {
   const user = await getShellUser();
   return (
     <>

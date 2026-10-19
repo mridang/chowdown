@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
 
 import { CoverImage } from '@/components/cover-image';
 import { cn } from '@/components/ui/cn';
@@ -22,13 +22,13 @@ export function HeroPhoto({
   title,
   tone,
   className,
-}: {
+}: Readonly<{
   /** Photo addresses, the cover first. */
-  images: string[];
+  images: readonly string[];
   title: string;
   tone: Tone;
   className?: string;
-}) {
+}>): ReactElement {
   const [index, setIndex] = useState(0);
   // What a recipe without a photo (or with a broken one) shows instead.
   const tile = <TintTile tone={tone} className="h-full w-full" />;

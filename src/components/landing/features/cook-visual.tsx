@@ -1,8 +1,12 @@
+import type { ReactElement } from 'react';
+
 import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import { NumberBadge } from '@/components/ui/number-badge';
 
 /** Cook mode: a phone showing one large step. */
-export function CookVisual({ recipe }: { recipe: SampleRecipe }) {
+export function CookVisual({
+  recipe,
+}: Readonly<{ recipe: SampleRecipe }>): ReactElement {
   return (
     <div className="flex justify-center">
       <div
@@ -25,7 +29,7 @@ export function CookVisual({ recipe }: { recipe: SampleRecipe }) {
             </p>
           </div>
           <div className="mt-10 flex items-center justify-between">
-            <span className="rounded-control border-ink/25 inline-flex h-10 items-center border px-4 text-sm font-medium">
+            <span className="rounded-control border-field inline-flex h-10 items-center border px-4 text-sm font-medium">
               Back
             </span>
             <span className="rounded-control bg-ink inline-flex h-10 items-center gap-2 px-4 text-sm font-semibold text-white">

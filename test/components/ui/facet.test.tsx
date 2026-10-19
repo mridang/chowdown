@@ -32,4 +32,42 @@ describe('FacetSection', () => {
     expect(out).not.toContain('role="checkbox"');
     expect(out).not.toContain('aria-checked');
   });
+
+  it('badges the title with how many of its options are on', () => {
+    const out = html(<FacetSection facet={FACET} />);
+    expect(out).toMatch(/Cuisine<span[^>]*>1<\/span>/);
+  });
+
+  it('shows no badge while nothing in the group is on', () => {
+    const none: FacetData = {
+      ...FACET,
+      options: FACET.options.map((o) => ({ ...o, active: false })),
+    };
+    expect(html(<FacetSection facet={none} />)).not.toMatch(/Cuisine<span/);
+  });
+
+  it('shows each option’s label and how many recipes match', () => {
+    const out = html(<FacetSection facet={FACET} defaultOpen />);
+    expect(out).toContain('Indian');
+    expect(out).toContain('>3<');
+    expect(out).toContain('>2<');
+  });
+
+  it('puts the protein’s icon before its name in the protein filter', () => {
+    const protein: FacetData = {
+      key: 'protein',
+      title: 'Protein',
+      options: [
+        {
+          value: 'chicken',
+          label: 'Chicken',
+          count: 1,
+          active: false,
+          href: '/app?protein=chicken',
+        },
+      ],
+    };
+    const out = html(<FacetSection facet={protein} defaultOpen />);
+    expect(out.indexOf('<svg')).toBeLessThan(out.indexOf('Chicken'));
+  });
 });

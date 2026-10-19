@@ -1,4 +1,4 @@
-import type { ElementType, ReactNode } from 'react';
+import type { ElementType, ReactElement, ReactNode } from 'react';
 
 import { Card } from '@/components/ui/card';
 import { cn } from '@/components/ui/cn';
@@ -18,16 +18,18 @@ export function EmptyState({
   actions,
   className,
   children,
-}: {
+}: Readonly<{
   variant?: 'dashed' | 'card';
   eyebrow?: string;
   title: string;
   /** The heading's tag; a page that is only this uses `h1`. */
   headingAs?: ElementType;
+  /** The way forward: a button or two, centred under the text. */
   actions?: ReactNode;
   className?: string;
+  /** The explanation, between the headline and the actions. */
   children?: ReactNode;
-}) {
+}>): ReactElement {
   const body = (
     <>
       {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
@@ -56,7 +58,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'rounded-card border border-dashed border-ink/25 px-6 py-16 text-center',
+        'rounded-card border border-dashed border-field px-6 py-16 text-center',
         className,
       )}
     >

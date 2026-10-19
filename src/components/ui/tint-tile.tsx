@@ -1,9 +1,11 @@
+import type { ReactElement } from 'react';
+
 import { PanIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
 import type { Tone } from '@/lib/recipe/card-data';
 
 /** Soft tints, so a missing photo is a quiet block of colour and not a loud one. */
-const TINTS: Record<Tone, string> = {
+const TINTS: Readonly<Record<Tone, string>> = {
   flame: 'bg-flame/15 text-flame',
   marigold: 'bg-marigold/30 text-ink',
   forest: 'bg-forest/15 text-forest',
@@ -18,10 +20,10 @@ const TINTS: Record<Tone, string> = {
 export function TintTile({
   tone,
   className,
-}: {
+}: Readonly<{
   tone: Tone;
   className?: string;
-}) {
+}>): ReactElement {
   return (
     <div
       aria-hidden="true"

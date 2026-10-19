@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, type ComponentProps } from 'react';
+import { useState, type ComponentProps, type ReactElement } from 'react';
 
 /**
  * A link that fetches its whole page, data included, before it is clicked, so
@@ -18,11 +18,14 @@ export function IntentLink({
   onFocus,
   onTouchStart,
   ...props
-}: {
-  eager?: boolean;
-  /** Off for links that go nowhere real (demo content): no fetching at all. */
-  enabled?: boolean;
-} & ComponentProps<typeof Link>) {
+}: Readonly<
+  {
+    /** Fetch the whole page at once, without waiting for any sign of intent. */
+    eager?: boolean;
+    /** Off for links that go nowhere real (demo content): no fetching at all. */
+    enabled?: boolean;
+  } & ComponentProps<typeof Link>
+>): ReactElement {
   const [intent, setIntent] = useState(false);
   return (
     <Link

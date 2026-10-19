@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 import { ClockIcon } from '@/components/icons';
 import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import { Card } from '@/components/ui/card';
@@ -7,7 +9,9 @@ import { TintTile } from '@/components/ui/tint-tile';
 import { duration } from '@/lib/format';
 
 /** A row of example recipes, drawn as tinted tiles with their facts. */
-export function SampleStrip({ recipes }: { recipes: SampleRecipe[] }) {
+export function SampleStrip({
+  recipes,
+}: Readonly<{ recipes: readonly SampleRecipe[] }>): ReactElement {
   return (
     <Container className="pb-4">
       <p className="text-subtle mb-4 text-sm">
@@ -28,7 +32,7 @@ export function SampleStrip({ recipes }: { recipes: SampleRecipe[] }) {
                 {recipe.title}
               </p>
               <p className="text-subtle mt-2 flex items-center gap-1.5 text-[13px]">
-                <ClockIcon className="h-3.5 w-3.5" />
+                <ClockIcon size="compact" />
                 {duration(recipe.minutes)}
               </p>
             </div>

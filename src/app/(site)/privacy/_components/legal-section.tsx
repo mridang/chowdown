@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { Heading } from '@/components/ui/layout';
 
@@ -6,10 +6,10 @@ import { Heading } from '@/components/ui/layout';
 export function LegalSection({
   title,
   children,
-}: {
+}: Readonly<{
   title: string;
   children: ReactNode;
-}) {
+}>): ReactElement {
   return (
     <section>
       <Heading variant="h3">{title}</Heading>
@@ -19,7 +19,9 @@ export function LegalSection({
 }
 
 /** A list item with a flame-coloured marker, so lists read as part of the brand. */
-export function LegalItem({ children }: { children: ReactNode }) {
+export function LegalItem({
+  children,
+}: Readonly<{ children: ReactNode }>): ReactElement {
   return (
     <li className="flex gap-3">
       <span

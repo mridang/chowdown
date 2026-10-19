@@ -1,13 +1,18 @@
+import type { ReactElement } from 'react';
+
 import { CookFile } from '@/components/landing/cook-file-view';
 import { fileSlug } from '@/components/landing/cook-file';
-import type { SampleRecipe } from '@/components/landing/demo-recipes';
+import type { SampleRecipes } from '@/components/landing/demo-recipes';
 import { WindowFrame } from '@/components/landing/window-frame';
 import { cn } from '@/components/ui/cn';
 import { TintTile } from '@/components/ui/tint-tile';
 
 /** Your Drive: the folder of files, and the first one open beside it. */
-export function FilesVisual({ recipes }: { recipes: SampleRecipe[] }) {
-  const files = recipes.slice(0, 6);
+export function FilesVisual({
+  recipes,
+}: Readonly<{ recipes: SampleRecipes }>): ReactElement {
+  const [first, ...others] = recipes;
+  const files = [first, ...others.slice(0, 5)];
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-[0.9fr_1.1fr]">
       <WindowFrame
@@ -35,7 +40,7 @@ export function FilesVisual({ recipes }: { recipes: SampleRecipe[] }) {
           ))}
         </ul>
       </WindowFrame>
-      <CookFile recipe={files[0]!} lines={9} />
+      <CookFile recipe={first} lines={9} />
     </div>
   );
 }

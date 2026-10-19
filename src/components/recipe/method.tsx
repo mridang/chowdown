@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactElement } from 'react';
+
 import { ClockIcon } from '@/components/icons';
 import { Heading } from '@/components/ui/layout';
 import { NumberBadge } from '@/components/ui/number-badge';
@@ -16,7 +18,7 @@ import { useRecipeState } from './recipe-state';
 const HIGHLIGHT = 'box-decoration-clone rounded px-1 py-px font-semibold';
 
 /** One piece of a step: plain text or an ingredient, cookware or timer highlight. */
-function Token({ token }: { token: StepToken }) {
+function Token({ token }: Readonly<{ token: StepToken }>): ReactElement {
   const { quantity } = useRecipeState();
   switch (token.kind) {
     case 'text':
@@ -54,11 +56,11 @@ function Token({ token }: { token: StepToken }) {
 export function Method({
   steps,
   notes,
-}: {
-  steps: StepToken[][];
+}: Readonly<{
+  steps: readonly (readonly StepToken[])[];
   /** Note texts per step, in step order. */
-  notes: string[][];
-}) {
+  notes: readonly (readonly string[])[];
+}>): ReactElement {
   return (
     <div>
       <Heading variant="h3">Method</Heading>

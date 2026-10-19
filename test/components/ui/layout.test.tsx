@@ -7,6 +7,7 @@ import {
   Container,
   Eyebrow,
   Heading,
+  Section,
   SectionHeader,
 } from '../../../src/components/ui/layout';
 import { classOf, html } from '../render';
@@ -113,5 +114,22 @@ describe('SectionHeader', () => {
 describe('Container', () => {
   it('centres the content in the page column', () => {
     expect(classOf(html(<Container>x</Container>), 'div')).toContain('mx-auto');
+  });
+});
+
+describe('Section', () => {
+  it('is a landmark band that header links can jump to', () => {
+    const out = html(<Section id="faq">x</Section>);
+    expect(out.startsWith('<section')).toBe(true);
+    expect(out).toContain('id="faq"');
+  });
+
+  it('is the page colour unless told otherwise', () => {
+    expect(classOf(html(<Section>x</Section>), 'section')).toContain(
+      'bg-paper',
+    );
+    expect(
+      classOf(html(<Section surface="white">x</Section>), 'section'),
+    ).toContain('bg-white');
   });
 });

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Suspense } from 'react';
+import { Suspense, type ReactElement } from 'react';
 
 import { Dashboard } from '@/components/home/dashboard';
 import { HomeLanding } from '@/components/landing/home-landing';
@@ -25,9 +25,11 @@ export async function generateMetadata(): Promise<Metadata> {
  */
 export default async function Home({
   searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+}: Readonly<{
+  searchParams: Promise<
+    Readonly<Record<string, string | readonly string[] | undefined>>
+  >;
+}>): Promise<ReactElement> {
   const user = await getShellUser();
   if (user) {
     // The dashboard reads the person's recipes, so it streams in behind a

@@ -19,22 +19,18 @@ import {
 import { CloseIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
 
-/**
- * Modal surfaces (cook mode, the phone filter drawer, the delete confirmation),
- * built on the browser's own `<dialog>`: it traps focus, makes everything behind
- * it inert, closes on Escape, and returns focus to whatever opened it, with no
- * library to download. It can be uncontrolled (a trigger opens it) or controlled
- * (`open` and `onOpenChange`).
- */
+/** What the parts of one dialog share: whether it is open, and the ids that tie its title and description to it. */
 interface DialogState {
-  open: boolean;
-  setOpen: (open: boolean) => void;
-  titleId: string;
-  descriptionId: string;
+  readonly open: boolean;
+  readonly setOpen: (open: boolean) => void;
+  readonly titleId: string;
+  readonly descriptionId: string;
 }
 
+/** The nearest enclosing {@link Dialog}'s state; `null` outside one. */
 const DialogContext = createContext<DialogState | null>(null);
 
+/** The enclosing dialog's state, or an error for a part used outside a `<Dialog>`. */
 function useDialog(): DialogState {
   const state = useContext(DialogContext);
   if (!state) {
@@ -43,15 +39,27 @@ function useDialog(): DialogState {
   return state;
 }
 
+/**
+ * Modal surfaces (cook mode, the phone filter drawer, the delete confirmation),
+ * built on the browser's own `<dialog>`: it traps focus, makes everything behind
+ * it inert, closes on Escape, and returns focus to whatever opened it, with no
+ * library to download. It can be uncontrolled (a {@link DialogTrigger} opens it)
+ * or controlled (`open` and `onOpenChange`).
+ *
+ * This is the state holder; the visible pieces are {@link DialogTrigger},
+ * {@link DialogContent}, {@link DialogTitle} and {@link DialogDescription}.
+ */
 export function Dialog({
   open: controlled,
   onOpenChange,
   children,
-}: {
+}: Readonly<{
+  /** Whether it is open, when the caller keeps that state; leave out to let it keep its own. */
   open?: boolean;
+  /** Told whenever it asks to open or close (a trigger, Escape, a click outside). */
   onOpenChange?: (open: boolean) => void;
   children: ReactNode;
-}) {
+}>): ReactElement {
   const [own, setOwn] = useState(false);
   const open = controlled ?? own;
   const id = useId();
@@ -81,15 +89,11 @@ export function DialogTrigger({
   asChild,
   children,
   ...props
-}: { asChild?: boolean } & ComponentProps<'button'>) {
+}: Readonly<{ asChild?: boolean } & ComponentProps<'button'>>): ReactElement {
   const { setOpen } = useDialog();
-  if (asChild) {
-    const only = Children.only(children);
-    if (isValidElement(only)) {
-      return cloneElement(only as ReactElement<ComponentProps<'button'>>, {
-        onClick: () => setOpen(true),
-      });
-    }
+  const only = asChild ? Children.only(children) : null;
+  if (isValidElement<ComponentProps<'button'>>(only)) {
+    return cloneElement(only, { onClick: () => setOpen(true) });
   }
   return (
     <button type="button" onClick={() => setOpen(true)} {...props}>
@@ -98,16 +102,11 @@ export function DialogTrigger({
   );
 }
 
-export function DialogClose({ children, ...props }: ComponentProps<'button'>) {
-  const { setOpen } = useDialog();
-  return (
-    <button type="button" onClick={() => setOpen(false)} {...props}>
-      {children}
-    </button>
-  );
-}
-
-export function DialogTitle({ children, ...props }: ComponentProps<'h2'>) {
+/** The dialog's heading; the dialog is announced by this name. */
+export function DialogTitle({
+  children,
+  ...props
+}: Readonly<ComponentProps<'h2'>>): ReactElement {
   const { titleId } = useDialog();
   return (
     <h2 id={titleId} {...props}>
@@ -116,11 +115,15 @@ export function DialogTitle({ children, ...props }: ComponentProps<'h2'>) {
   );
 }
 
-export function DialogDescription(props: ComponentProps<'p'>) {
+/** A line of explanation under the title, read out with it by assistive technology. */
+export function DialogDescription(
+  props: Readonly<ComponentProps<'p'>>,
+): ReactElement {
   const { descriptionId } = useDialog();
   return <p id={descriptionId} {...props} />;
 }
 
+/** The shape and position of each kind of dialog. */
 const VARIANTS = {
   /** Fills the whole screen. */
   full: 'inset-0 h-full max-h-none w-full max-w-none',
@@ -140,15 +143,18 @@ export function DialogContent({
   showClose = true,
   dismissable = true,
   ...props
-}: {
-  variant?: keyof typeof VARIANTS;
-  closeLabel?: string;
-  /** Show the corner close button. */
-  showClose?: boolean;
-  /** Whether Escape and a click on the backdrop close it (off while busy). */
-  dismissable?: boolean;
-  children: ReactNode;
-} & Omit<ComponentProps<'dialog'>, 'open'>) {
+}: Readonly<
+  {
+    variant?: keyof typeof VARIANTS;
+    /** The corner close button's accessible name. */
+    closeLabel?: string;
+    /** Show the corner close button. */
+    showClose?: boolean;
+    /** Whether Escape and a click on the backdrop close it (off while busy). */
+    dismissable?: boolean;
+    children: ReactNode;
+  } & Omit<ComponentProps<'dialog'>, 'open'>
+>): ReactElement {
   const { open, setOpen, titleId, descriptionId } = useDialog();
   const ref = useRef<HTMLDialogElement>(null);
 
@@ -182,16 +188,16 @@ export function DialogContent({
     return () => dialog.removeEventListener('click', onClick);
   }, [dismissable, setOpen]);
 
-  // No scrolling behind a modal.
+  // No scrolling behind a modal. The page's own `overflow` is put back as it
+  // was (not simply cleared) when the dialog closes.
   useEffect(() => {
     if (!open) {
       return;
     }
-    const before = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = before;
-    };
+    const { style } = document.body;
+    const before = style.getPropertyValue('overflow');
+    style.setProperty('overflow', 'hidden');
+    return () => style.setProperty('overflow', before);
   }, [open]);
 
   return (
@@ -222,7 +228,7 @@ export function DialogContent({
               type="button"
               aria-label={closeLabel}
               onClick={() => setOpen(false)}
-              className="rounded-control hover:bg-ink/5 focus-visible:outline-ink absolute top-3 right-3 grid h-10 w-10 place-items-center transition focus-visible:outline-2"
+              className="rounded-control hover:bg-ink/5 absolute top-3 right-3 grid h-10 w-10 place-items-center transition focus-ring-flush"
             >
               <CloseIcon size="md" />
             </button>

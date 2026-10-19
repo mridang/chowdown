@@ -1,15 +1,18 @@
 import Link from 'next/link';
+import type { ReactElement } from 'react';
 
 import { PanIcon, SparkIcon } from '@/components/icons';
 import { Logo } from '@/components/site/logo';
 import { Container } from '@/components/ui/layout';
+
+import type { NavLink } from './nav-links';
 
 /**
  * The jagged edge above the footer: one flame-orange polygon whose top edge
  * climbs and falls in broad peaks. It scales with the width (the ratio stays
  * 1512:240).
  */
-function ZigZag() {
+function ZigZag(): ReactElement {
   return (
     <svg
       viewBox="0 0 1512 240"
@@ -26,17 +29,20 @@ function ZigZag() {
 }
 
 /** Only pages anyone can open belong in the footer: no account or app links. */
-const COLUMNS: { title: string; links: [string, string][] }[] = [
+const COLUMNS: readonly Readonly<{
+  title: string;
+  links: readonly NavLink[];
+}>[] = [
   {
     title: 'Explore',
     links: [
-      ['How it works', '/#features'],
-      ['Questions', '/#faq'],
+      { label: 'How it works', href: '/#features' },
+      { label: 'Questions', href: '/#faq' },
     ],
   },
   {
     title: 'About',
-    links: [['Privacy', '/privacy']],
+    links: [{ label: 'Privacy', href: '/privacy' }],
   },
 ];
 
@@ -46,7 +52,7 @@ const COLUMNS: { title: string; links: [string, string][] }[] = [
  * marigold strip with the small print. It stays short on purpose: account,
  * sign-out and connection links live in the header and on their own pages.
  */
-export function SiteFooter() {
+export function SiteFooter(): ReactElement {
   return (
     <footer className="relative mt-24 sm:mt-32">
       <PanIcon
@@ -74,7 +80,7 @@ export function SiteFooter() {
                   {column.title}
                 </h2>
                 <ul className="mt-4 flex flex-col gap-3 text-sm font-semibold">
-                  {column.links.map(([label, href]) => (
+                  {column.links.map(({ label, href }) => (
                     <li key={label}>
                       <Link href={href} className="hover:underline">
                         {label}

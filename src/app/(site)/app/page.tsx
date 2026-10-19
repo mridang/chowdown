@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import type { ReactElement } from 'react';
 
 import { EmptyCollection } from '@/components/recipes/empty-collection';
 import {
@@ -25,7 +26,7 @@ import {
 import { STICKY_SIDEBAR_CLASS } from '@/components/site/header-height';
 import { SortSelect } from '@/components/recipes/sort-select';
 import { PlusIcon } from '@/components/icons';
-import { buttonClass, ButtonLink } from '@/components/ui/button';
+import { Button, buttonClass, ButtonLink } from '@/components/ui/button';
 import { FilterChip } from '@/components/ui/chip';
 import { SearchField } from '@/components/ui/field';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -39,6 +40,7 @@ import { loadCollection } from '@/lib/recipe/load-collection';
 /** How many cards are likely on screen at first, and so load their photos eagerly. */
 const ABOVE_THE_FOLD = 3;
 
+/** The tab title and description of the recipe list. */
 export const metadata: Metadata = {
   title: 'Your recipes · chowdown',
   description:
@@ -54,9 +56,9 @@ export const metadata: Metadata = {
  */
 export default async function AppPage({
   searchParams,
-}: {
+}: Readonly<{
   searchParams: Promise<RawParams>;
-}) {
+}>): Promise<ReactElement> {
   const { recipes: rows, favouriteIds, drive } = await loadCollection();
   const params = await searchParams;
   // `?drive=denied|error` is where a failed attempt to connect Drive lands.
@@ -122,12 +124,9 @@ export default async function AppPage({
             placeholder="Search recipes, sites or tags"
             aria-label="Search recipes"
             action={
-              <button
-                type="submit"
-                className="rounded-control bg-ink hover:bg-ink/85 focus-ring h-10 px-5 text-sm font-semibold text-white transition"
-              >
+              <Button type="submit" size="wide">
                 Search
-              </button>
+              </Button>
             }
           />
         </form>

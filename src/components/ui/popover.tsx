@@ -1,6 +1,13 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 
 import { cn } from '@/components/ui/cn';
 
@@ -21,7 +28,8 @@ export function closeAfterClick(close: () => void): void {
  * the phone navigation). It is a disclosure, not an ARIA "menu": the button says
  * whether the panel is open, and the panel is an ordinary list that Tab moves
  * through. It closes on Escape (returning focus to the button), on a click
- * outside, and when anything inside it is chosen. It weighs about a kilobyte,
+ * outside, and when anything inside it is chosen. The panel opens beneath the
+ * button, lined up with its right edge. It weighs about a kilobyte,
  * where a full menu library would weigh dozens on every page.
  */
 export function Popover({
@@ -29,18 +37,16 @@ export function Popover({
   button,
   buttonClassName,
   panelClassName,
-  align = 'end',
   children,
-}: {
+}: Readonly<{
   /** The button's accessible name when `button` is just an icon. */
   label?: string;
   /** What the button shows. */
   button: ReactNode;
   buttonClassName?: string;
   panelClassName?: string;
-  align?: 'start' | 'end';
   children: ReactNode;
-}) {
+}>): ReactElement {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -52,7 +58,10 @@ export function Popover({
       return;
     }
     const onPointerDown = (event: PointerEvent) => {
-      if (!root.current?.contains(event.target as Node)) {
+      if (
+        event.target instanceof Node &&
+        !root.current?.contains(event.target)
+      ) {
         setOpen(false);
       }
     };
@@ -65,7 +74,10 @@ export function Popover({
     // Choosing a link or an action inside the panel closes it, but only once
     // the click has finished being handled (see closeAfterClick).
     const onPanelClick = (event: MouseEvent) => {
-      if ((event.target as HTMLElement).closest('a, button')) {
+      if (
+        event.target instanceof Element &&
+        event.target.closest('a, button')
+      ) {
         closeAfterClick(() => setOpen(false));
       }
     };
@@ -99,8 +111,7 @@ export function Popover({
           id={panelId}
           ref={panel}
           className={cn(
-            'rounded-card border-ink/15 text-ink absolute top-full z-50 mt-2 min-w-56 border bg-white p-1.5',
-            align === 'end' ? 'right-0' : 'left-0',
+            'rounded-card border-ink/15 text-ink absolute top-full right-0 z-50 mt-2 min-w-56 border bg-white p-1.5',
             panelClassName,
           )}
         >
@@ -111,12 +122,12 @@ export function Popover({
   );
 }
 
-/** One row in a popover panel; style a link or a button with it. */
+/** The class list for one row in a popover panel; style a link or a button with it. */
 export const POPOVER_ITEM =
-  'flex h-10 w-full cursor-pointer items-center gap-3 rounded-control px-3 text-left text-sm font-medium transition hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-ink disabled:opacity-50';
+  'flex h-10 w-full cursor-pointer items-center gap-3 rounded-control px-3 text-left text-sm font-medium transition hover:bg-ink/5 disabled:opacity-50 focus-ring-flush';
 
 /** A thin rule between groups of items in a popover panel. */
-export function PopoverSeparator() {
+export function PopoverSeparator(): ReactElement {
   return <div className="my-1.5 h-px bg-ink/10" role="separator" />;
 }
 
@@ -124,10 +135,12 @@ export function PopoverSeparator() {
 export function PopoverLabel({
   caption,
   children,
-}: {
+}: Readonly<{
+  /** The small grey line above the value ("Signed in as"). */
   caption: string;
+  /** The value itself, kept to one line. */
   children: ReactNode;
-}) {
+}>): ReactElement {
   return (
     <div className="px-3 py-2 text-sm">
       <span className="block text-xs text-subtle">{caption}</span>

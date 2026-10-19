@@ -1,13 +1,17 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { cn } from '@/components/ui/cn';
 
+/** The border, fill and weight of each kind of pill. */
 const VARIANTS = {
+  /** An outlined pill with the weight of the text around it, for tags. */
+  plain: 'border border-ink/20 bg-white hover:border-ink',
   outline: 'border border-ink/20 bg-white font-medium hover:border-ink',
   solid: 'bg-ink font-semibold text-white hover:bg-ink/85',
 } as const;
 
+/** The height and side padding of each size. */
 const SIZES = {
   sm: 'h-8 px-3',
   md: 'h-9 px-4',
@@ -20,13 +24,13 @@ export function PillLink({
   size = 'md',
   className,
   children,
-}: {
+}: Readonly<{
   href: string;
   variant?: keyof typeof VARIANTS;
   size?: keyof typeof SIZES;
   className?: string;
   children: ReactNode;
-}) {
+}>): ReactElement {
   return (
     <Link
       href={href}

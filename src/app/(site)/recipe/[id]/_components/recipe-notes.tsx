@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 import { NoteIcon } from '@/components/icons';
 import { Card } from '@/components/ui/card';
 import { Eyebrow, Heading } from '@/components/ui/layout';
@@ -15,13 +17,13 @@ export function RecipeNotes({
   recipeId,
   general,
   ingredients,
-}: {
+}: Readonly<{
   recipeId: string;
   /** The notes that belong to the whole recipe. */
-  general: GeneralNote[];
+  general: readonly Readonly<GeneralNote>[];
   /** Ingredient names, to offer as targets for a new note. */
-  ingredients: string[];
-}) {
+  ingredients: readonly string[];
+}>): ReactElement {
   return (
     <section className="mt-14 max-w-3xl">
       <Heading variant="h3" className="flex items-center gap-2.5">

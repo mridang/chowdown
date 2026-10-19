@@ -12,7 +12,7 @@ describe('Faq', () => {
 
   it('shows every question as a summary and every answer inside its item', () => {
     expect(out.match(/<details/g)).toHaveLength(FAQ.length);
-    for (const [question, answer] of FAQ) {
+    for (const { question, answer } of FAQ) {
       expect(out).toContain(question);
       expect(out).toContain(answer);
     }

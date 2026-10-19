@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 import { fileSlug } from '@/components/landing/cook-file';
 import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import { WindowFrame } from '@/components/landing/window-frame';
@@ -7,7 +9,9 @@ import { TintTile } from '@/components/ui/tint-tile';
 import { sentenceCase } from '@/lib/format';
 
 /** Importing: a pasted link becomes a draft with tags. */
-export function ImportVisual({ recipe }: { recipe: SampleRecipe }) {
+export function ImportVisual({
+  recipe,
+}: Readonly<{ recipe: SampleRecipe }>): ReactElement {
   return (
     <WindowFrame label="Pasting a link to import a recipe" title="Add recipes">
       <div className="p-5 sm:p-6">

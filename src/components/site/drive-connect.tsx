@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 import { DriveIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
@@ -5,7 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { driveConnectHref, type DriveAttempt } from '@/lib/auth/drive-access';
 
 /** What to tell someone whose last attempt didn't work. */
-const ATTEMPT_MESSAGE: Record<DriveAttempt, string> = {
+const ATTEMPT_MESSAGE: Readonly<Record<DriveAttempt, string>> = {
   denied:
     'Google Drive was not connected: the permission was not granted. chowdown needs it to keep your recipes in your Drive.',
   error:
@@ -14,25 +16,26 @@ const ATTEMPT_MESSAGE: Record<DriveAttempt, string> = {
 
 interface DriveConnectProps {
   /** Not connected now, but was before: say "reconnect". */
-  reconnect?: boolean;
+  readonly reconnect?: boolean;
   /** Where to land after connecting; defaults to the recipe list. */
-  returnTo?: string;
+  readonly returnTo?: string;
   /** What went wrong last time, if they just came back from a failed attempt. */
-  attempt?: DriveAttempt;
+  readonly attempt?: DriveAttempt;
 }
 
 /** The panel can stand in for a whole page, which then needs its own `h1`. */
-type PanelProps = DriveConnectProps & { heading?: 'h1' | 'h2' };
+type PanelProps = DriveConnectProps & { readonly heading?: 'h1' | 'h2' };
 
 /** The notice's own line, for pages where "saved copies" doesn't apply. */
-type NoticeProps = DriveConnectProps & { message?: string };
+type NoticeProps = DriveConnectProps & { readonly message?: string };
 
 /** The button that starts connecting. */
 function ConnectButton({
   reconnect,
   returnTo,
   size,
-}: Pick<DriveConnectProps, 'reconnect' | 'returnTo'> & { size?: 'md' | 'lg' }) {
+}: Pick<DriveConnectProps, 'reconnect' | 'returnTo'> &
+  Readonly<{ size?: 'md' | 'lg' }>): ReactElement {
   return (
     <ButtonLink href={driveConnectHref(returnTo, { force: true })} size={size}>
       <DriveIcon size="md" />
@@ -52,7 +55,7 @@ export function DriveConnectPanel({
   returnTo,
   attempt,
   heading = 'h2',
-}: PanelProps) {
+}: PanelProps): ReactElement {
   return (
     <EmptyState
       variant="card"
@@ -92,7 +95,7 @@ export function DriveConnectNotice({
   returnTo,
   attempt,
   message = 'Recipes shown here are saved copies. Connect your Drive to sync, add and edit them.',
-}: NoticeProps) {
+}: NoticeProps): ReactElement {
   return (
     <Callout
       shape="banner"
@@ -118,7 +121,7 @@ export function DriveConnectNotice({
  * be reached just now (and nothing is cached yet): not "no recipes", which
  * would be untrue.
  */
-export function DriveUnreachable() {
+export function DriveUnreachable(): ReactElement {
   return (
     <EmptyState title="Couldn’t reach Google Drive">
       <p className="text-muted mx-auto mt-2 max-w-md">

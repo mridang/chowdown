@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import type { ReactElement } from 'react';
 
 import { ChevronLeftIcon } from '@/components/icons';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
@@ -7,18 +8,23 @@ import { TextLink } from '@/components/ui/text-link';
 
 import { LegalItem, LegalSection } from './_components/legal-section';
 
+/** The picture shown when the page is shared; the same card as the rest of the site. */
 const SOCIAL_IMAGE = {
   url: '/opengraph-image.png',
   width: 1200,
   height: 630,
   alt: 'chowdown: your recipes, kept as plain text in your own Google Drive',
 };
+/** The tab title, and the title of the social card. */
 const PRIVACY_TITLE = 'Privacy · chowdown';
+/** What search results and social cards say about the page. */
 const PRIVACY_DESCRIPTION =
   'What chowdown stores, what it asks Google for, and what stays in your own Drive.';
 
-// A public page: it may be indexed, and it carries its own social card (the
-// image comes from the site-wide one).
+/**
+ * A public page: it may be indexed, and it carries its own social card (the
+ * image comes from the site-wide one).
+ */
 export const metadata: Metadata = {
   title: PRIVACY_TITLE,
   description: PRIVACY_DESCRIPTION,
@@ -45,7 +51,7 @@ export const metadata: Metadata = {
  * publishing, and a plain statement of exactly what chowdown touches. Kept
  * deliberately short and concrete.
  */
-export default function PrivacyPage() {
+export default function PrivacyPage(): ReactElement {
   return (
     <Container className="py-10 sm:py-16">
       <div className="max-w-2xl">

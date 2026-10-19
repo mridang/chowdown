@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { cn } from '@/components/ui/cn';
 
+/** How the link is drawn: `inline` among words, `strong` when it stands alone. */
 const LOOKS = {
   /** An ordinary link inside running text. */
   inline: 'text-ember underline underline-offset-4 hover:text-ink',
@@ -21,13 +22,14 @@ export function TextLink({
   external,
   className,
   children,
-}: {
+}: Readonly<{
   href: string;
   look?: keyof typeof LOOKS;
+  /** The address is on another site: open it in a new tab. */
   external?: boolean;
   className?: string;
   children: ReactNode;
-}) {
+}>): ReactElement {
   const classes = cn('focus-ring rounded-control', LOOKS[look], className);
   if (external) {
     return (

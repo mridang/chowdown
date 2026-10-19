@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 import { PageSkeleton } from '@/components/site/page-skeleton';
 
 /**
@@ -9,6 +11,6 @@ import { PageSkeleton } from '@/components/site/page-skeleton';
  * policy: a boundary above them would put the page's text behind a skeleton in
  * the first HTML, hidden from anything that doesn't run scripts.
  */
-export default function PagesLoading() {
+export default function PagesLoading(): ReactElement {
   return <PageSkeleton />;
 }

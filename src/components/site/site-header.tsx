@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Suspense } from 'react';
+import { Suspense, type ReactElement } from 'react';
 
 import { DriveIcon, GoogleIcon, PlusIcon, SparkIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
@@ -8,34 +8,11 @@ import { driveConnectHref } from '@/lib/auth/drive-access';
 import type { ShellUser } from '@/lib/auth/shell-user';
 
 import { AccountMenu } from './account-menu';
-import { HeaderNav } from './header-nav';
 import { HEADER_ROW_CLASS } from './header-height';
+import { HeaderNav } from './header-nav';
 import { Logo } from './logo';
 import { MobileNav } from './mobile-nav';
-
-/** Links for a visitor: they jump to sections of the landing page. */
-const VISITOR_NAV: [string, string][] = [
-  ['Features', '/#features'],
-  ['FAQ', '/#faq'],
-];
-
-/** Links in the phone menu for someone signed in. */
-const APP_MENU: [string, string][] = [
-  ['Recipes', '/app'],
-  ['Favourites', '/app?fav=1'],
-  ['Add recipes', '/recipes/add'],
-  ['Cook with AI', '/connect'],
-];
-
-/** The phone menu's links: the app ones, plus connecting Drive until that is done. */
-function menuLinks(user: ShellUser | null): [string, string][] {
-  if (!user) {
-    return VISITOR_NAV;
-  }
-  return user.driveConnected
-    ? APP_MENU
-    : [...APP_MENU, ['Connect Google Drive', driveConnectHref()]];
-}
+import { menuLinks, VISITOR_NAV } from './nav-links';
 
 /**
  * The site header. Signed in: the main app links, a "Cook with AI" call to
@@ -45,11 +22,13 @@ function menuLinks(user: ShellUser | null): [string, string][] {
  * Signed out: links to the landing page's sections and a Sign in button. On
  * phones the links fold into a menu.
  */
-export function SiteHeader({ user }: { user: ShellUser | null }) {
+export function SiteHeader({
+  user,
+}: Readonly<{ user: ShellUser | null }>): ReactElement {
   return (
     <header className="bg-paper/95 sticky top-0 z-30 backdrop-blur">
       <div className="bg-marigold h-1.5" />
-      <div className="border-ink/10 border-b">
+      <div className="border-line border-b">
         <Container
           className={`flex ${HEADER_ROW_CLASS} items-center justify-between gap-4`}
         >
@@ -68,7 +47,7 @@ export function SiteHeader({ user }: { user: ShellUser | null }) {
                 className="hidden items-center gap-1 md:flex"
                 aria-label="Main"
               >
-                {VISITOR_NAV.map(([label, href]) => (
+                {VISITOR_NAV.map(({ label, href }) => (
                   <Link
                     key={label}
                     href={href}

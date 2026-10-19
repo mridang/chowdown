@@ -1,26 +1,33 @@
 import Link from 'next/link';
-import type { ComponentProps, ReactNode } from 'react';
+import type { ComponentProps, ReactElement, ReactNode } from 'react';
 
 import { cn } from '@/components/ui/cn';
 
+/** The colours of each kind of button. */
 const VARIANTS = {
   primary: 'bg-ink text-white hover:bg-ink/85',
   accent: 'bg-flame text-ink hover:bg-flame/90',
-  outline: 'border border-ink/25 bg-white text-ink hover:border-ink',
+  outline: 'border border-field bg-white text-ink hover:border-ink',
   ghost: 'text-ink hover:bg-ink/5',
 } as const;
 
+/**
+ * The height, gap and side padding of each size. `wide` is `md` with roomier
+ * sides, for a text-only button that sits inside a field (the Search button).
+ */
 const SIZES = {
   sm: 'h-9 gap-1.5 px-3 text-sm',
   md: 'h-10 gap-2 px-4 text-sm',
+  wide: 'h-10 gap-2 px-5 text-sm',
   lg: 'h-12 gap-2 px-6 text-base',
 } as const;
 
-type Look = {
+/** What a button looks like: its colours, its size, and any extra layout classes. */
+type Look = Readonly<{
   variant?: keyof typeof VARIANTS;
   size?: keyof typeof SIZES;
   className?: string;
-};
+}>;
 
 /** The class list for a button look; shared by buttons and button-styled links. */
 export function buttonClass({
@@ -38,14 +45,18 @@ export function buttonClass({
   );
 }
 
-/** A button. */
+/**
+ * A button. It is `type="button"` unless you say otherwise, so one inside a
+ * form never submits it by accident; pass `type="submit"` for the one that
+ * should.
+ */
 export function Button({
   variant,
   size,
   className,
   children,
   ...props
-}: Look & ComponentProps<'button'>) {
+}: Look & Readonly<ComponentProps<'button'>>): ReactElement {
   return (
     <button
       type="button"
@@ -73,7 +84,7 @@ export function ButtonLink({
   className,
   href,
   children,
-}: Look & { href: string; children: ReactNode }) {
+}: Look & Readonly<{ href: string; children: ReactNode }>): ReactElement {
   const classes = buttonClass({ variant, size, className });
   if (isApiHref(href)) {
     return (
@@ -86,30 +97,5 @@ export function ButtonLink({
     <Link href={href} className={classes}>
       {children}
     </Link>
-  );
-}
-
-/** A square icon-only button with an accessible name. */
-export function IconButton({
-  label,
-  className,
-  children,
-  ...props
-}: { label: string } & ComponentProps<'button'>) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      className={cn(
-        'grid h-10 w-10 place-items-center rounded-control text-ink transition hover:bg-ink/5',
-        'focus-ring',
-        'disabled:cursor-not-allowed disabled:opacity-50',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </button>
   );
 }

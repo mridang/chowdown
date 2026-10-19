@@ -57,8 +57,8 @@ describe('FormField', () => {
 
 describe('TextInput and TextArea', () => {
   it('share one look', () => {
-    expect(classOf(html(<TextInput />), 'input')).toContain('border-ink/25');
-    expect(classOf(html(<TextArea />), 'textarea')).toContain('border-ink/25');
+    expect(classOf(html(<TextInput />), 'input')).toContain('border-field');
+    expect(classOf(html(<TextArea />), 'textarea')).toContain('border-field');
   });
 
   it('show code-like text in a monospace face on request', () => {

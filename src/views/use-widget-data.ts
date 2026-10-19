@@ -13,26 +13,36 @@ import {
 } from '@modelcontextprotocol/ext-apps/react';
 import { useCallback, useEffect, useState } from 'react';
 
+/** The values ChatGPT keeps on `window.openai` and announces with `openai:set_globals`. */
 interface OpenAiGlobals {
-  toolOutput?: unknown;
-  displayMode?: string;
+  readonly toolOutput?: unknown;
+  readonly displayMode?: string;
 }
+
+/** ChatGPT's bridge: its globals, plus the actions it lets a View take. */
 interface OpenAiApi extends OpenAiGlobals {
-  requestDisplayMode?: (params: { mode: string }) => Promise<unknown>;
-  callTool?: (name: string, args: Record<string, unknown>) => Promise<unknown>;
-  sendFollowUpMessage?: (params: { prompt: string }) => void;
+  readonly requestDisplayMode?: (params: {
+    readonly mode: string;
+  }) => Promise<unknown>;
+  readonly sendFollowUpMessage?: (params: { readonly prompt: string }) => void;
 }
+
+/** ChatGPT's bridge, when the View is running inside ChatGPT; otherwise nothing. */
 function getOpenai(): OpenAiApi | undefined {
-  return (globalThis as unknown as { openai?: OpenAiApi }).openai;
+  const candidate: unknown = Reflect.get(globalThis, 'openai');
+  return typeof candidate === 'object' && candidate !== null
+    ? candidate
+    : undefined;
 }
 
 /** What a View gets: the current data, display mode, and host actions. */
 export interface WidgetBridge<T> {
-  data: T | null;
-  fullscreen: boolean;
-  requestFullscreen: () => Promise<void>;
+  /** The tool's output, or `null` until the host has delivered it. */
+  readonly data: T | null;
+  readonly fullscreen: boolean;
+  readonly requestFullscreen: () => Promise<void>;
   /** Trigger a follow-up turn (e.g. open a recipe from the list). */
-  sendFollowUp: (prompt: string) => void;
+  readonly sendFollowUp: (prompt: string) => void;
 }
 
 /**
@@ -47,11 +57,12 @@ export function useWidgetData<T>(appName: string): WidgetBridge<T> {
   const { app } = useApp({
     appInfo: { name: appName, version: '0.1.0' },
     capabilities: {},
-    onAppCreated: (a) => {
-      a.ontoolresult = (params) => {
+    onAppCreated: (created) => {
+      // The payload is our own tool's `structuredContent`, typed `T` by contract.
+      created.addEventListener('toolresult', (params) => {
         const sc = params.structuredContent as T | undefined;
         if (sc) setData(sc);
-      };
+      });
     },
   });
   useHostStyleVariables(app, app?.getHostContext());
@@ -62,14 +73,13 @@ export function useWidgetData<T>(appName: string): WidgetBridge<T> {
       if (typeof g?.displayMode === 'string') setDisplayMode(g.displayMode);
     };
     apply(getOpenai());
-    const onGlobals = (e: Event) =>
-      apply((e as CustomEvent).detail?.globals as OpenAiGlobals | undefined);
-    window.addEventListener('openai:set_globals', onGlobals as EventListener);
-    return () =>
-      window.removeEventListener(
-        'openai:set_globals',
-        onGlobals as EventListener,
-      );
+    const onGlobals = (event: Event) => {
+      if (event instanceof CustomEvent) {
+        apply(event.detail?.globals);
+      }
+    };
+    window.addEventListener('openai:set_globals', onGlobals);
+    return () => window.removeEventListener('openai:set_globals', onGlobals);
   }, []);
 
   const requestFullscreen = useCallback(async () => {

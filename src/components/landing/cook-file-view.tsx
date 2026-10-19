@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import {
   fileSlug,
@@ -11,7 +13,7 @@ import { WindowFrame } from '@/components/landing/window-frame';
  * metadata line has a coloured key, and in any other line the `@ingredient{}`,
  * `#cookware{}` and `~timer{}` marks are highlighted.
  */
-function CookLine({ line }: { line: string }) {
+function CookLine({ line }: Readonly<{ line: string }>): ReactElement {
   if (line.startsWith('>>')) {
     const [key, ...rest] = line.slice(2).split(':');
     return (
@@ -52,11 +54,11 @@ function CookLine({ line }: { line: string }) {
 export function CookFile({
   recipe,
   lines = 11,
-}: {
+}: Readonly<{
   recipe: SampleRecipe;
   /** How many lines of the file to show. */
   lines?: number;
-}) {
+}>): ReactElement {
   return (
     <WindowFrame
       label="A recipe as a plain text file"

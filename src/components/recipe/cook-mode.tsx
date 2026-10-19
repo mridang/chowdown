@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 
 import {
   ChevronLeftIcon,
@@ -28,7 +28,9 @@ import { useRecipeState } from './recipe-state';
  * the amount for the servings and units chosen, so the number is right there at
  * the stove; timers get a clock.
  */
-function StepBody({ tokens }: { tokens: StepToken[] }) {
+function StepBody({
+  tokens,
+}: Readonly<{ tokens: readonly StepToken[] }>): ReactElement {
   const { quantity } = useRecipeState();
   return (
     <>
@@ -70,6 +72,49 @@ function StepBody({ tokens }: { tokens: StepToken[] }) {
 }
 
 /**
+ * The step to show after a move: `index` clamped to the steps there are, so
+ * "next" on the last step and "back" on the first stay where they are.
+ *
+ * @param index The step asked for (zero-based), possibly out of range.
+ * @param stepCount How many steps the recipe has.
+ */
+export function clampStep(index: number, stepCount: number): number {
+  return Math.max(0, Math.min(stepCount - 1, index));
+}
+
+/**
+ * How far an arrow key moves through the steps: one forward for the right
+ * arrow, one back for the left, and zero for any other key.
+ */
+export function stepOffsetForKey(key: string): -1 | 0 | 1 {
+  switch (key) {
+    case 'ArrowRight':
+      return 1;
+    case 'ArrowLeft':
+      return -1;
+    default:
+      return 0;
+  }
+}
+
+/**
+ * Ask the browser to keep the screen awake and return the function that lets
+ * it sleep again. Safe to call at any moment: if the lock is not granted yet
+ * when it is released, it is given back the moment it is granted, and if the
+ * browser refuses, releasing does nothing.
+ *
+ * @param wakeLock The browser's wake lock (`navigator.wakeLock`).
+ */
+export function keepScreenAwake(
+  wakeLock: Pick<WakeLock, 'request'>,
+): () => void {
+  const granted = wakeLock.request('screen').catch(() => undefined);
+  return () => {
+    void granted.then((sentinel) => sentinel?.release());
+  };
+}
+
+/**
  * Cook mode: a full-screen view for use at the stove. One step at a time in
  * large type, the other steps dimmed within reach, a progress bar, arrow-key
  * and button navigation, and the screen kept awake while it is open.
@@ -77,10 +122,10 @@ function StepBody({ tokens }: { tokens: StepToken[] }) {
 export function CookMode({
   title,
   steps,
-}: {
+}: Readonly<{
   title: string;
-  steps: StepToken[][];
-}) {
+  steps: readonly (readonly StepToken[])[];
+}>): ReactElement {
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
 
@@ -89,23 +134,7 @@ export function CookMode({
     if (!open || !('wakeLock' in navigator)) {
       return;
     }
-    let lock: WakeLockSentinel | undefined;
-    let cancelled = false;
-    navigator.wakeLock
-      .request('screen')
-      .then((sentinel) => {
-        if (cancelled) {
-          // Cook mode closed before the lock was granted: give it straight back.
-          void sentinel.release();
-        } else {
-          lock = sentinel;
-        }
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-      void lock?.release();
-    };
+    return keepScreenAwake(navigator.wakeLock);
   }, [open]);
 
   // Left and right arrows move between steps.
@@ -114,10 +143,9 @@ export function CookMode({
       return;
     }
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowRight') {
-        setIndex((i) => Math.min(steps.length - 1, i + 1));
-      } else if (event.key === 'ArrowLeft') {
-        setIndex((i) => Math.max(0, i - 1));
+      const offset = stepOffsetForKey(event.key);
+      if (offset !== 0) {
+        setIndex((i) => clampStep(i + offset, steps.length));
       }
     };
     window.addEventListener('keydown', onKey);
@@ -211,7 +239,7 @@ export function CookMode({
               variant="outline"
               size="lg"
               disabled={index === 0}
-              onClick={() => setIndex((i) => Math.max(0, i - 1))}
+              onClick={() => setIndex((i) => clampStep(i - 1, steps.length))}
               className="disabled:opacity-40"
             >
               <ChevronLeftIcon size="md" />
@@ -224,7 +252,7 @@ export function CookMode({
             ) : (
               <Button
                 size="lg"
-                onClick={() => setIndex((i) => Math.min(last, i + 1))}
+                onClick={() => setIndex((i) => clampStep(i + 1, steps.length))}
               >
                 Next
                 <ChevronRightIcon size="md" />

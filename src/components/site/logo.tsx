@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactElement } from 'react';
 
 import { cn } from '@/components/ui/cn';
 
@@ -6,7 +7,9 @@ import { cn } from '@/components/ui/cn';
  * The wordmark: a heavy heading face, lower case, with a small descriptor
  * beneath, linking home. Used in the site header and, scaled up, the footer.
  */
-export function Logo({ className }: { className?: string }) {
+export function Logo({
+  className,
+}: Readonly<{ className?: string }>): ReactElement {
   return (
     <Link
       href="/"

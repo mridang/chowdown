@@ -1,34 +1,19 @@
 'use client';
 
 import { usePathname, useSearchParams } from 'next/navigation';
+import type { ReactElement } from 'react';
 
 import { cn } from '@/components/ui/cn';
 import { IntentLink } from '@/components/ui/intent-link';
 
-/** The links a signed-in person sees, and the section each belongs to. */
-export const APP_NAV = [
-  { key: 'search', label: 'Recipes', href: '/app' },
-  { key: 'favourites', label: 'Favourites', href: '/app?fav=1' },
-] as const;
+import { activeSection, APP_NAV } from './nav-links';
 
-export type NavKey = (typeof APP_NAV)[number]['key'] | 'connect';
-
-/** Which section the current address is in. */
-export function activeSection(
-  pathname: string,
-  favourites: boolean,
-): NavKey | undefined {
-  if (pathname === '/app' || pathname.startsWith('/recipe/')) {
-    return favourites && pathname === '/app' ? 'favourites' : 'search';
-  }
-  if (pathname.startsWith('/connect')) {
-    return 'connect';
-  }
-  return undefined;
-}
-
-/** The main navigation on wide screens, marking the current section. */
-export function HeaderNav() {
+/**
+ * The main navigation on wide screens, marking the current section. It reads
+ * the address (and so must render on the client, inside a `Suspense`), and
+ * fetches its main destination as soon as the header appears.
+ */
+export function HeaderNav(): ReactElement {
   const pathname = usePathname();
   const favourites = useSearchParams().get('fav') === '1';
   const active = activeSection(pathname, favourites);

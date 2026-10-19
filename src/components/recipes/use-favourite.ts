@@ -45,6 +45,16 @@ export async function saveFavourite(
   }
 }
 
+/** What {@link useFavourite} hands back to a heart. */
+export interface Favourite {
+  /** Whether the recipe is a favourite right now (including an unsaved change). */
+  readonly on: boolean;
+  /** Whether a save is in flight. */
+  readonly busy: boolean;
+  /** Flip the favourite; resolves once the save has finished. */
+  readonly toggle: () => Promise<void>;
+}
+
 /**
  * The state and action behind a favourite (heart) button, shared by the heart
  * on a recipe card and the one on the recipe page.
@@ -54,7 +64,7 @@ export async function saveFavourite(
  * a prefetched recipe page) without refetching anything. `busy` is true while a
  * save is in flight, so the button can be disabled against double presses.
  */
-export function useFavourite(recipeId: string, initial: boolean) {
+export function useFavourite(recipeId: string, initial: boolean): Favourite {
   const on = useSyncExternalStore(
     subscribeFavourites,
     () => getFavouriteOverride(recipeId) ?? initial,

@@ -8,7 +8,7 @@ describe('Card', () => {
     const out = html(<Card>hello</Card>);
     expect(classOf(out, 'div')).toContain('rounded-card');
     expect(classOf(out, 'div')).toContain('bg-white');
-    expect(classOf(out, 'div')).toContain('border-ink/10');
+    expect(classOf(out, 'div')).toContain('border-line');
     expect(out).toContain('hello');
   });
 

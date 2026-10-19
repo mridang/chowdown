@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useState } from 'react';
+import { useState, type ReactElement } from 'react';
 
 import {
   CheckIcon,
@@ -27,7 +27,15 @@ import { useInstallPrompt } from './use-install-prompt';
  * load. Google's photo host refuses requests that carry a referrer, hence the
  * referrer policy.
  */
-export function Avatar({ name, picture }: { name: string; picture?: string }) {
+export function Avatar({
+  name,
+  picture,
+}: Readonly<{
+  /** Their name; its first letter stands in for a missing photo. */
+  name: string;
+  /** The address of their Google profile photo, if they have one. */
+  picture?: string;
+}>): ReactElement {
   const [failed, setFailed] = useState(false);
   return (
     <span className="bg-ink relative grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full text-sm font-semibold text-white">
@@ -49,6 +57,19 @@ export function Avatar({ name, picture }: { name: string; picture?: string }) {
 }
 
 /**
+ * Signs the person out: ends the session on the server, then goes to the home
+ * page whether or not that request succeeded (a failed request must not leave
+ * them stuck on a page that thinks they are still signed in).
+ */
+async function signOut(): Promise<void> {
+  try {
+    await fetch('/api/sessions/self', { method: 'DELETE' });
+  } finally {
+    window.location.assign('/');
+  }
+}
+
+/**
  * The signed-in account control. Closed, it is the person's photo and "Hi
  * Mridang"; opened, it says which account you are in and offers only what the
  * header doesn't already (connecting an assistant, installing the app) and Sign
@@ -61,23 +82,15 @@ export function AccountMenu({
   email,
   picture,
   driveConnected,
-}: {
+}: Readonly<{
   firstName: string;
   name: string;
   email: string;
   picture?: string;
   driveConnected: boolean;
-}) {
+}>): ReactElement {
   const [busy, setBusy] = useState(false);
   const { install } = useInstallPrompt();
-  const signOut = useCallback(async () => {
-    setBusy(true);
-    try {
-      await fetch('/api/sessions/self', { method: 'DELETE' });
-    } finally {
-      window.location.assign('/');
-    }
-  }, []);
   return (
     <Popover
       button={
@@ -95,7 +108,7 @@ export function AccountMenu({
           </span>
         </>
       }
-      buttonClassName="group rounded-control hover:bg-ink/5 focus-visible:outline-ink data-[state=open]:bg-ink/5 flex h-10 items-center gap-2 pr-2 pl-1 transition focus-visible:outline-2 sm:pr-3"
+      buttonClassName="group rounded-control hover:bg-ink/5 data-[state=open]:bg-ink/5 flex h-10 items-center gap-2 pr-2 pl-1 transition sm:pr-3 focus-ring-flush"
       panelClassName="w-64"
     >
       <PopoverLabel caption="Signed in as">{email}</PopoverLabel>
@@ -133,7 +146,10 @@ export function AccountMenu({
       <button
         type="button"
         disabled={busy}
-        onClick={() => void signOut()}
+        onClick={() => {
+          setBusy(true);
+          void signOut();
+        }}
         className={POPOVER_ITEM}
       >
         <LogoutIcon size="menu" className="text-subtle" />

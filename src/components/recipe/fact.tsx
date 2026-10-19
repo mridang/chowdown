@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
+
 import { Eyebrow } from '@/components/ui/layout';
 
 /**
@@ -10,11 +11,11 @@ export function Fact({
   icon,
   label,
   children,
-}: {
+}: Readonly<{
   icon: ReactNode;
   label: string;
   children: ReactNode;
-}) {
+}>): ReactElement {
   return (
     <div className="relative min-h-11 pl-[3.625rem] leading-tight">
       <Eyebrow as="dt" tone="subtle">

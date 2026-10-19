@@ -16,7 +16,9 @@ import { sentenceCase } from '../../lib/format';
 import { compareText, foldText } from '../../lib/intl';
 
 /** The query-string bag Next gives a page. */
-export type RawParams = Record<string, string | string[] | undefined>;
+export type RawParams = Readonly<
+  Record<string, string | readonly string[] | undefined>
+>;
 
 /** The filters that offer a list of values. */
 export const FACET_KEYS = [
@@ -30,30 +32,40 @@ export const FACET_KEYS = [
   'method',
   'site',
 ] as const;
+
+/** The name of one filter, e.g. `protein`; also its parameter in the URL. */
 export type FacetKey = (typeof FACET_KEYS)[number];
 
+/** The orders the list can take, each as its URL value and its menu label. */
 export const SORTS = [
   ['title', 'Title A–Z'],
   ['time', 'Quickest first'],
   ['easy', 'Easiest first'],
 ] as const;
+
+/** The URL value of one of the orders in {@link SORTS}. */
 export type SortKey = (typeof SORTS)[number][0];
 
+/**
+ * Everything the URL says about what to show: the search text, whether only
+ * favourites are wanted, the order, how many results to show, and the values
+ * switched on for each filter.
+ */
 export interface Query {
-  q: string;
-  favourites: boolean;
-  sort: SortKey;
-  limit: number;
-  selected: Partial<Record<FacetKey, string[]>>;
+  readonly q: string;
+  readonly favourites: boolean;
+  readonly sort: SortKey;
+  readonly limit: number;
+  readonly selected: Readonly<Partial<Record<FacetKey, readonly string[]>>>;
 }
 
 /** How long a recipe takes, in the buckets the Time filter offers. */
-export const TIME_BUCKETS: [string, string][] = [
+export const TIME_BUCKETS = [
   ['15', 'Up to 15 min'],
   ['30', '16–30 min'],
   ['60', '31–60 min'],
   ['long', 'Over an hour'],
-];
+] as const;
 
 /** The Time bucket a number of minutes falls in. */
 export function timeBucket(minutes: number): string {
@@ -66,7 +78,11 @@ export function timeBucket(minutes: number): string {
   return minutes <= 60 ? '60' : 'long';
 }
 
-const DIFFICULTY_ORDER = ['Easy', 'Medium', 'Hard'];
+/** Difficulty levels from easiest to hardest, the order they sort and list in. */
+const DIFFICULTY_ORDER: readonly string[] = ['Easy', 'Medium', 'Hard'];
+
+/** The Time buckets in the order they list in. */
+const TIME_ORDER: readonly string[] = TIME_BUCKETS.map(([value]) => value);
 
 /** How many recipes the list shows at a time; Show more adds this many. */
 export const PAGE_SIZE = 24;
@@ -74,36 +90,47 @@ export const PAGE_SIZE = 24;
 /** A source site needs at least this many recipes to be offered as a filter. */
 const SITE_MIN = 2;
 
-function first(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
+/** The first value of a query parameter that may have been repeated. */
+function first(
+  value: string | readonly string[] | undefined,
+): string | undefined {
+  return typeof value === 'string' || value === undefined ? value : value[0];
+}
+
+/** Whether `value` is one of the orders the list can take. */
+function isSortKey(value: string | undefined): value is SortKey {
+  return SORTS.some(([key]) => key === value);
+}
+
+/** The comma-separated values of one filter in the URL, trimmed, blanks dropped. */
+function selectedValues(params: RawParams, key: FacetKey): readonly string[] {
+  return (first(params[key]) ?? '')
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
 }
 
 /** Read the query from the URL. */
 export function parseQuery(params: RawParams): Query {
-  const selected: Query['selected'] = {};
-  for (const key of FACET_KEYS) {
-    const values = (first(params[key]) ?? '')
-      .split(',')
-      .map((v) => v.trim())
-      .filter(Boolean);
-    if (values.length > 0) {
-      selected[key] = values;
-    }
-  }
   const sort = first(params['sort']);
   const limit = Number(first(params['limit']));
   return {
     q: (first(params['q']) ?? '').trim(),
     favourites: first(params['fav']) === '1',
-    sort: SORTS.some(([k]) => k === sort) ? (sort as SortKey) : 'title',
+    sort: isSortKey(sort) ? sort : 'title',
     limit: Number.isInteger(limit) && limit >= PAGE_SIZE ? limit : PAGE_SIZE,
-    selected,
+    // A filter with no values is left out, so "nothing chosen" is a missing key.
+    selected: Object.fromEntries(
+      FACET_KEYS.map(
+        (key) => [key, selectedValues(params, key)] as const,
+      ).filter(([, values]) => values.length > 0),
+    ),
   };
 }
 
 /** The values a recipe has for a filter; a fact it lacks gives none. */
-export function valuesOf(recipe: CardRecipe, key: FacetKey): string[] {
-  const values = ((): (string | undefined)[] => {
+export function valuesOf(recipe: CardRecipe, key: FacetKey): readonly string[] {
+  const values = ((): readonly (string | undefined)[] => {
     switch (key) {
       case 'difficulty':
         return [recipe.difficulty];
@@ -130,40 +157,54 @@ export function valuesOf(recipe: CardRecipe, key: FacetKey): string[] {
   return values.filter((v): v is string => Boolean(v));
 }
 
+/**
+ * Whether a recipe has the words in the search box. Every word must appear
+ * somewhere, in any order, so "chicken curry" finds "Curry with chicken" as
+ * well as a title that holds the phrase.
+ */
+function matchesText(recipe: CardRecipe, text: string): boolean {
+  const haystack = foldText(
+    [
+      recipe.title,
+      recipe.site,
+      recipe.cuisine,
+      recipe.protein,
+      recipe.category,
+      ...recipe.keywords,
+    ].join(' '),
+  );
+  return foldText(text)
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((word) => haystack.includes(word));
+}
+
+/**
+ * Whether a recipe has any of the wanted values for a filter. Compared without
+ * regard to case, so a hand-typed `?protein=Chicken` works.
+ */
+function matchesFacet(
+  recipe: CardRecipe,
+  key: FacetKey,
+  wanted: readonly string[],
+): boolean {
+  const have = valuesOf(recipe, key).map((v) => v.toLowerCase());
+  return wanted.some((v) => have.includes(v.toLowerCase()));
+}
+
 /** Whether a recipe passes every part of the query. */
 export function matches(recipe: CardRecipe, query: Query): boolean {
   if (query.favourites && !recipe.favourite) {
     return false;
   }
-  if (query.q) {
-    const haystack = foldText(
-      [
-        recipe.title,
-        recipe.site,
-        recipe.cuisine,
-        recipe.protein,
-        recipe.category,
-        ...recipe.keywords,
-      ].join(' '),
-    );
-    // Every word must appear somewhere, in any order, so "chicken curry" finds
-    // "Curry with chicken" as well as a title that holds the phrase.
-    const words = foldText(query.q).split(/\s+/).filter(Boolean);
-    if (!words.every((word) => haystack.includes(word))) {
-      return false;
-    }
+  if (query.q && !matchesText(recipe, query.q)) {
+    return false;
   }
-  for (const key of FACET_KEYS) {
+  return FACET_KEYS.every((key) => {
     const wanted = query.selected[key];
-    if (wanted && wanted.length > 0) {
-      // Compared without regard to case, so a hand-typed `?protein=Chicken` works.
-      const have = valuesOf(recipe, key).map((v) => v.toLowerCase());
-      if (!wanted.some((v) => have.includes(v.toLowerCase()))) {
-        return false;
-      }
-    }
-  }
-  return true;
+    // A filter with nothing chosen lets everything through.
+    return !wanted || wanted.length === 0 || matchesFacet(recipe, key, wanted);
+  });
 }
 
 /** Title order, the way a person would alphabetise it; ties fall back to the id. */
@@ -183,42 +224,36 @@ function byDifficulty(a: CardRecipe, b: CardRecipe): number {
   return rank(a) - rank(b) || 0;
 }
 
+/**
+ * How each order compares two recipes. Every order falls back to title so the
+ * list never shuffles between visits.
+ */
+const COMPARATORS = {
+  title: byTitle,
+  time: (a, b) => byMinutes(a, b) || byTitle(a, b),
+  easy: (a, b) => byDifficulty(a, b) || byMinutes(a, b) || byTitle(a, b),
+} as const satisfies Record<SortKey, (a: CardRecipe, b: CardRecipe) => number>;
+
 /** Order recipes; every order falls back to title so the list never shuffles. */
 export function sortRecipes(
-  recipes: CardRecipe[],
+  recipes: readonly CardRecipe[],
   sort: SortKey,
-): CardRecipe[] {
-  const list = [...recipes];
-  if (sort === 'time') {
-    return list.sort((a, b) => byMinutes(a, b) || byTitle(a, b));
-  }
-  if (sort === 'easy') {
-    return list.sort(
-      (a, b) => byDifficulty(a, b) || byMinutes(a, b) || byTitle(a, b),
-    );
-  }
-  return list.sort(byTitle);
+): readonly CardRecipe[] {
+  return recipes.toSorted(COMPARATORS[sort]);
 }
 
 /** The URL for a query, leaving out anything at its default. */
 export function hrefFor(query: Query): string {
-  const params = new URLSearchParams();
-  if (query.q) {
-    params.set('q', query.q);
-  }
-  if (query.favourites) {
-    params.set('fav', '1');
-  }
-  if (query.sort !== 'title') {
-    params.set('sort', query.sort);
-  }
-  for (const key of FACET_KEYS) {
-    const values = query.selected[key];
-    if (values?.length) {
-      params.set(key, values.join(','));
-    }
-  }
-  const qs = params.toString();
+  const pairs: readonly (readonly [string, string])[] = [
+    ...(query.q ? [['q', query.q] as const] : []),
+    ...(query.favourites ? [['fav', '1'] as const] : []),
+    ...(query.sort !== 'title' ? [['sort', query.sort] as const] : []),
+    ...FACET_KEYS.flatMap((key) => {
+      const values = query.selected[key];
+      return values?.length ? [[key, values.join(',')] as const] : [];
+    }),
+  ];
+  const qs = new URLSearchParams(Object.fromEntries(pairs)).toString();
   return qs ? `/app?${qs}` : '/app';
 }
 
@@ -238,45 +273,62 @@ export function toggled(query: Query, key: FacetKey, value: string): Query {
   return { ...query, selected: { ...query.selected, [key]: next } };
 }
 
+/** What a filter value is called on screen: a time bucket by its range, a site as it is, the rest in sentence case. */
+function labelFor(key: FacetKey, value: string): string {
+  switch (key) {
+    case 'time':
+      return TIME_BUCKETS.find(([v]) => v === value)?.[1] ?? value;
+    case 'site':
+      return value;
+    default:
+      return sentenceCase(value);
+  }
+}
+
+/** An active filter's label and the link that removes it. */
+export interface ActiveFilter {
+  readonly label: string;
+  readonly href: string;
+}
+
 /** Every active filter as a labelled chip with the link that removes it. */
-export function activeFilters(query: Query): { label: string; href: string }[] {
-  const chips: { label: string; href: string }[] = [];
-  if (query.favourites) {
-    chips.push({
-      label: 'Favourites',
-      href: hrefFor({ ...query, favourites: false }),
-    });
-  }
-  for (const key of FACET_KEYS) {
-    for (const value of query.selected[key] ?? []) {
-      const label =
-        key === 'time'
-          ? (TIME_BUCKETS.find(([v]) => v === value)?.[1] ?? value)
-          : key === 'site'
-            ? value
-            : sentenceCase(value);
-      chips.push({ label, href: hrefFor(toggled(query, key, value)) });
-    }
-  }
-  return chips;
+export function activeFilters(query: Query): readonly ActiveFilter[] {
+  return [
+    ...(query.favourites
+      ? [
+          {
+            label: 'Favourites',
+            href: hrefFor({ ...query, favourites: false }),
+          },
+        ]
+      : []),
+    ...FACET_KEYS.flatMap((key) =>
+      (query.selected[key] ?? []).map((value) => ({
+        label: labelFor(key, value),
+        href: hrefFor(toggled(query, key, value)),
+      })),
+    ),
+  ];
 }
 
 /** One value in a filter: its label, how many recipes have it, and whether it is on. */
 export interface FacetOptionData {
-  value: string;
-  label: string;
-  count: number;
-  active: boolean;
-  href: string;
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+  readonly active: boolean;
+  readonly href: string;
 }
 
+/** One filter as the panel shows it: its heading and the values on offer. */
 export interface FacetData {
-  key: FacetKey;
-  title: string;
-  options: FacetOptionData[];
+  readonly key: FacetKey;
+  readonly title: string;
+  readonly options: readonly FacetOptionData[];
 }
 
-const TITLES: Record<FacetKey, string> = {
+/** The heading each filter shows in the panel. */
+const TITLES = {
   difficulty: 'Difficulty',
   time: 'Time',
   protein: 'Protein',
@@ -286,52 +338,72 @@ const TITLES: Record<FacetKey, string> = {
   diet: 'Dietary needs',
   method: 'Method',
   site: 'Source',
-};
+} as const satisfies Record<FacetKey, string>;
+
+/** A value of a filter and how many recipes have it. */
+type Count = readonly [value: string, count: number];
+
+/** How many recipes have each value of a filter, in the order first met. */
+function countValues(
+  recipes: readonly CardRecipe[],
+  key: FacetKey,
+): readonly Count[] {
+  const groups = Map.groupBy(
+    recipes.flatMap((recipe) => valuesOf(recipe, key)),
+    (value) => value,
+  );
+  return [...groups].map(([value, found]) => [value, found.length] as const);
+}
+
+/** Comparing two counts by where their value sits in a fixed list. */
+function byListOrder(order: readonly string[]) {
+  return (a: Count, b: Count): number =>
+    order.indexOf(a[0]) - order.indexOf(b[0]);
+}
+
+/** Most recipes first; equal counts fall back to alphabetical. */
+function byPopularity(a: Count, b: Count): number {
+  return b[1] - a[1] || a[0].localeCompare(b[0]);
+}
+
+/** How a filter's values are ordered: difficulty, time and diet follow their natural order, the rest by popularity. */
+function orderFor(key: FacetKey): (a: Count, b: Count) => number {
+  switch (key) {
+    case 'difficulty':
+      return byListOrder(DIFFICULTY_ORDER);
+    case 'time':
+      return byListOrder(TIME_ORDER);
+    case 'diet_type':
+      return byListOrder(DIET_TYPES);
+    default:
+      return byPopularity;
+  }
+}
 
 /** Build every filter's options, with counts over the whole collection. */
-export function buildFacets(recipes: CardRecipe[], query: Query): FacetData[] {
+export function buildFacets(
+  recipes: readonly CardRecipe[],
+  query: Query,
+): readonly FacetData[] {
   return FACET_KEYS.map((key) => {
-    const counts = new Map<string, number>();
-    for (const recipe of recipes) {
-      for (const value of valuesOf(recipe, key)) {
-        counts.set(value, (counts.get(value) ?? 0) + 1);
-      }
-    }
-    let entries = [...counts.entries()];
-    if (key === 'site') {
-      entries = entries.filter(
-        ([value, n]) =>
-          n >= SITE_MIN || (query.selected.site ?? []).includes(value),
-      );
-    }
-    const order =
-      key === 'difficulty'
-        ? (a: [string, number], b: [string, number]) =>
-            DIFFICULTY_ORDER.indexOf(a[0]) - DIFFICULTY_ORDER.indexOf(b[0])
-        : key === 'time'
-          ? (a: [string, number], b: [string, number]) =>
-              TIME_BUCKETS.findIndex(([v]) => v === a[0]) -
-              TIME_BUCKETS.findIndex(([v]) => v === b[0])
-          : key === 'diet_type'
-            ? (a: [string, number], b: [string, number]) =>
-                DIET_TYPES.indexOf(a[0] as (typeof DIET_TYPES)[number]) -
-                DIET_TYPES.indexOf(b[0] as (typeof DIET_TYPES)[number])
-            : (a: [string, number], b: [string, number]) =>
-                b[1] - a[1] || a[0].localeCompare(b[0]);
-    entries.sort(order);
+    const chosen = query.selected[key] ?? [];
+    const counted = countValues(recipes, key);
+    // A source site needs a few recipes to be worth offering, unless it is
+    // already switched on (so it can be switched off again).
+    const offered =
+      key === 'site'
+        ? counted.filter(
+            ([value, n]) => n >= SITE_MIN || chosen.includes(value),
+          )
+        : counted;
     return {
       key,
       title: TITLES[key],
-      options: entries.map(([value, count]) => ({
+      options: offered.toSorted(orderFor(key)).map(([value, count]) => ({
         value,
-        label:
-          key === 'time'
-            ? (TIME_BUCKETS.find(([v]) => v === value)?.[1] ?? value)
-            : key === 'site'
-              ? value
-              : sentenceCase(value),
+        label: labelFor(key, value),
         count,
-        active: (query.selected[key] ?? []).includes(value),
+        active: chosen.includes(value),
         href: hrefFor(toggled(query, key, value)),
       })),
     };

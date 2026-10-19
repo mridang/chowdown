@@ -1,52 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
 
 import { CheckIcon, CopyIcon } from '@/components/icons';
-import { cn } from '@/components/ui/cn';
+import { Button } from '@/components/ui/button';
+
+/** How long "Copied" stays on the button before it goes back to "Copy". */
+const CONFIRMATION_MS = 1600;
 
 /**
  * A read-only value (like the MCP server URL) with a Copy button. The button
- * confirms for a moment. `tone="onFlame"` restyles it for the orange footer.
+ * confirms for a moment, then goes back to "Copy".
  */
 export function CopyField({
   value,
   label,
-  tone = 'light',
-}: {
+}: Readonly<{
+  /** The text shown, and the text copied. */
   value: string;
+  /** What the value is, for assistive technology. */
   label: string;
-  tone?: 'light' | 'onFlame';
-}) {
+}>): ReactElement {
   const [copied, setCopied] = useState(false);
   return (
-    <div
-      className={cn(
-        'flex h-12 items-center gap-2 rounded-control border pr-1 pl-4',
-        tone === 'light'
-          ? 'border-ink/25 bg-white'
-          : 'border-ink bg-transparent',
-      )}
-    >
+    <div className="flex h-12 items-center gap-2 rounded-control border border-field bg-white pr-1 pl-4">
       <code
         aria-label={label}
         className="min-w-0 flex-1 truncate font-mono text-sm"
       >
         {value}
       </code>
-      <button
-        type="button"
+      <Button
         onClick={() => {
+          // `clipboard` is missing on insecure pages; then there is nothing to confirm.
           void navigator.clipboard?.writeText(value).then(() => {
             setCopied(true);
-            setTimeout(() => setCopied(false), 1600);
+            setTimeout(() => setCopied(false), CONFIRMATION_MS);
           });
         }}
-        className="rounded-control bg-ink hover:bg-ink/85 inline-flex h-10 shrink-0 items-center gap-2 px-4 text-sm font-semibold text-white transition"
       >
         {copied ? <CheckIcon size="sm" /> : <CopyIcon size="sm" />}
         {copied ? 'Copied' : 'Copy'}
-      </button>
+      </Button>
     </div>
   );
 }

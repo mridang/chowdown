@@ -99,6 +99,17 @@ describe('fromTheShelf', () => {
     expect(fromTheShelf([], 9)).toEqual([]);
   });
 
+  it('never picks the same recipe twice, whatever the size of the collection', () => {
+    // 12 recipes, 4 picks: the first stride tried (3) shares a factor with 12
+    // and would revisit recipes, so a different one has to be found.
+    for (const length of [8, 9, 12, 15, 16, 20, 24]) {
+      for (const seed of [0, 1, 7, 100]) {
+        const picks = fromTheShelf(many(length, { cover: 'x' }), seed);
+        expect(new Set(picks.map((r) => r.id)).size).toBe(4);
+      }
+    }
+  });
+
   it('copes with a negative seed', () => {
     expect(fromTheShelf(many(10), -7)).toHaveLength(4);
   });

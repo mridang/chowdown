@@ -1,6 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { IngredientsPanel } from '../../../src/components/recipe/ingredients-panel';
+import {
+  IngredientsPanel,
+  toggledIn,
+} from '../../../src/components/recipe/ingredients-panel';
 import { RecipeStateProvider } from '../../../src/components/recipe/recipe-state';
 import { html } from '../render';
 
@@ -35,5 +38,21 @@ describe('IngredientsPanel', () => {
 
   it('names the cookware under "You will need"', () => {
     expect(panel([])).toContain('You will need');
+  });
+});
+
+describe('toggledIn', () => {
+  it('ticks an ingredient that was not ticked', () => {
+    expect([...toggledIn(new Set([0]), 2)]).toEqual([0, 2]);
+  });
+
+  it('un-ticks one that was', () => {
+    expect([...toggledIn(new Set([0, 2]), 0)]).toEqual([2]);
+  });
+
+  it('leaves the set it was given as it was', () => {
+    const before = new Set([1]);
+    toggledIn(before, 3);
+    expect([...before]).toEqual([1]);
   });
 });

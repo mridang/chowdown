@@ -1,6 +1,9 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { cn } from '@/components/ui/cn';
+
+/** One key for each of the three dots of the title bar. */
+const DOTS = [0, 1, 2] as const;
 
 /**
  * A window frame (three dots and an optional file name along the top), so a
@@ -13,14 +16,14 @@ export function WindowFrame({
   label,
   title,
   className,
-}: {
+}: Readonly<{
   children: ReactNode;
   /** What the picture shows, for assistive technology. */
   label: string;
   /** A name shown in the title bar, such as a file name. */
   title?: string;
   className?: string;
-}) {
+}>): ReactElement {
   return (
     <div
       role="img"
@@ -30,9 +33,9 @@ export function WindowFrame({
         className,
       )}
     >
-      <div className="border-ink/10 bg-sand flex items-center gap-1.5 border-b px-4 py-2.5">
+      <div className="border-line bg-sand flex items-center gap-1.5 border-b px-4 py-2.5">
         {/* The three dots of a window's title bar. */}
-        {[0, 1, 2].map((dot) => (
+        {DOTS.map((dot) => (
           <span key={dot} className="bg-ink/20 h-2.5 w-2.5 rounded-full" />
         ))}
         {title ? (

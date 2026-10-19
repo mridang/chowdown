@@ -1,20 +1,29 @@
 'use client';
 
+import type { ReactElement } from 'react';
+
+import { buttonClass } from '@/components/ui/button';
+
 import './globals.css';
 
 /**
  * The last resort: shown when the root layout itself fails, so nothing else on
  * the page can be relied on. It stands alone, with its own document, the global
- * styles and plain markup (no shared components), and falls back to system
- * fonts because the font loader lives in the layout that just failed.
+ * styles and plain markup (no shared components, and plain `<a>` and `<button>`
+ * elements because there is no router), and falls back to system fonts because
+ * the font loader lives in the layout that just failed. Only the look of the
+ * two buttons is shared, through `buttonClass`, which is just a function that
+ * returns class names.
  */
 export default function GlobalError({
   error,
   unstable_retry,
-}: {
+}: Readonly<{
+  /** What was thrown; Next adds a `digest` that matches the server log entry. */
   error: Error & { digest?: string };
+  /** Asks Next to render the whole app again. */
   unstable_retry: () => void;
-}) {
+}>): ReactElement {
   return (
     <html lang="en" className="h-full antialiased">
       <body className="bg-paper text-ink flex min-h-full flex-col font-sans">
@@ -43,14 +52,14 @@ export default function GlobalError({
             <button
               type="button"
               onClick={() => unstable_retry()}
-              className="rounded-control bg-ink hover:bg-ink/85 inline-flex h-12 items-center px-6 font-semibold text-white focus-ring"
+              className={buttonClass({ size: 'lg' })}
             >
               Try again
             </button>
             {/* A plain link: this page has no router to rely on. */}
             <a
               href="/"
-              className="rounded-control border-ink/25 hover:border-ink inline-flex h-12 items-center border bg-white px-6 font-semibold focus-ring"
+              className={buttonClass({ variant: 'outline', size: 'lg' })}
             >
               Back to the home page
             </a>

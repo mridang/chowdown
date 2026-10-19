@@ -7,7 +7,7 @@
  */
 
 /** Metadata lines a preview leaves out because they say nothing to a newcomer. */
-const HIDDEN_KEYS = ['>> images', '>> keywords', '>> favourite'];
+const HIDDEN_KEYS = ['>> images', '>> keywords', '>> favourite'] as const;
 
 /**
  * The file name stem a recipe title becomes: lower case, words joined by
@@ -37,7 +37,7 @@ export function tidyLine(line: string): string {
  * are not blank and not machine-only metadata (cover images, keywords, the
  * favourite flag).
  */
-export function previewLines(source: string, max: number): string[] {
+export function previewLines(source: string, max: number): readonly string[] {
   return source
     .split('\n')
     .filter(

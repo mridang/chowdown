@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
+import type { ReactElement } from 'react';
 
 import { BarePage, MessagePage } from '@/components/site/bare-page';
 import { ButtonLink } from '@/components/ui/button';
 
+/** The tab title, and a note to crawlers that this is not a page to index. */
 export const metadata: Metadata = {
   title: 'Page not found · chowdown',
   robots: { index: false },
@@ -12,7 +14,7 @@ export const metadata: Metadata = {
  * What anyone sees for an address that leads nowhere (and for a recipe that
  * does not exist): a plain explanation and two ways back.
  */
-export default function NotFound() {
+export default function NotFound(): ReactElement {
   return (
     <BarePage>
       <MessagePage

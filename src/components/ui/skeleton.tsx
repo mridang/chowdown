@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { cn } from '@/components/ui/cn';
 
@@ -7,7 +7,7 @@ export function Skeleton({
   tone = 'bar',
   shape = 'rounded',
   className,
-}: {
+}: Readonly<{
   /** `bar` for text and controls, `block` for a card or photo (a lighter grey). */
   tone?: 'bar' | 'block';
   /**
@@ -16,7 +16,7 @@ export function Skeleton({
    */
   shape?: 'rounded' | 'square' | 'circle';
   className?: string;
-}) {
+}>): ReactElement {
   const colour = tone === 'bar' ? 'bg-ink/10' : 'bg-ink/5';
   const corners =
     shape === 'square'
@@ -37,12 +37,12 @@ export function SkeletonFrame({
   label = 'Loading',
   className,
   children,
-}: {
+}: Readonly<{
   /** What assistive technology announces, e.g. "Loading your recipes". */
   label?: string;
   className?: string;
   children: ReactNode;
-}) {
+}>): ReactElement {
   return (
     <div
       role="status"

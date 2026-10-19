@@ -6,6 +6,7 @@ import {
   useMemo,
   useState,
   type Dispatch,
+  type ReactElement,
   type ReactNode,
   type SetStateAction,
 } from 'react';
@@ -15,15 +16,16 @@ import { displayQuantity, type UnitChoice } from '@/lib/recipe/page-view';
 /** What the controls on a recipe page share. */
 interface RecipeState {
   /** The number of people the amounts are scaled to. */
-  people: number;
-  setPeople: Dispatch<SetStateAction<number>>;
+  readonly people: number;
+  readonly setPeople: Dispatch<SetStateAction<number>>;
   /** The recipe's own units, or a measurement system to convert to. */
-  units: UnitChoice;
-  setUnits: (units: UnitChoice) => void;
+  readonly units: UnitChoice;
+  readonly setUnits: (units: UnitChoice) => void;
   /** An amount as it should read right now: scaled, then converted. */
-  quantity: (quantity: string) => string;
+  readonly quantity: (quantity: string) => string;
 }
 
+/** Carries {@link RecipeState} down to the parts of the page that use it. */
 const RecipeStateContext = createContext<RecipeState | null>(null);
 
 /**
@@ -36,12 +38,12 @@ export function RecipeStateProvider({
   servings,
   initialUnits,
   children,
-}: {
+}: Readonly<{
   /** How many people the recipe is written for. */
   servings: number;
   initialUnits: UnitChoice;
   children: ReactNode;
-}) {
+}>): ReactElement {
   const [people, setPeople] = useState(servings);
   const [units, setUnits] = useState<UnitChoice>(initialUnits);
   const value = useMemo<RecipeState>(

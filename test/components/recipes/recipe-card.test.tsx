@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   PhotoBlock,
   RecipeCard,
+  RecipeGrid,
 } from '../../../src/components/recipes/recipe-card';
 import { toCardRecipe } from '../../../src/lib/recipe/card-data';
 import { html } from '../render';
@@ -57,5 +58,41 @@ describe('RecipeCard', () => {
     expect(out).not.toContain('<button');
     expect(out).not.toContain('aria-label="Add to favourites"');
     expect(out).toContain('aria-hidden="true"');
+  });
+
+  it('gives a live card a real heart button, beside the link and not inside it', () => {
+    const out = html(<RecipeCard recipe={recipe} live />);
+    expect(out).toContain('aria-pressed="false"');
+    expect(out).toContain('aria-label="Add to favourites"');
+    const link = out.slice(out.indexOf('<a '), out.indexOf('</a>'));
+    expect(link).not.toContain('<button');
+  });
+
+  it('shows a live card’s heart as pressed for a favourite', () => {
+    const loved = toCardRecipe(
+      { drive_file_id: 'dal', name: 'Dal.cook', source: SOURCE },
+      true,
+    );
+    const out = html(<RecipeCard recipe={loved} live />);
+    expect(out).toContain('aria-pressed="true"');
+    expect(out).toContain('aria-label="Remove from favourites"');
+  });
+
+  it('marks a recipe that is only an idea', () => {
+    const idea = { ...recipe, uncurated: true };
+    expect(html(<RecipeCard recipe={idea} />)).toContain('>Idea<');
+    expect(html(<RecipeCard recipe={recipe} />)).not.toContain('>Idea<');
+  });
+
+  it('titles the card with the heading level it is given', () => {
+    expect(html(<RecipeCard recipe={recipe} headingLevel="h2" />)).toMatch(
+      /<h2[^>]*>Dal<\/h2>/,
+    );
+  });
+});
+
+describe('RecipeGrid', () => {
+  it('holds its children', () => {
+    expect(html(<RecipeGrid>hello</RecipeGrid>)).toContain('hello');
   });
 });

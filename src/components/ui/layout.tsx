@@ -1,4 +1,4 @@
-import type { ElementType, ReactNode } from 'react';
+import type { ElementType, ReactElement, ReactNode } from 'react';
 
 import { cn } from '@/components/ui/cn';
 
@@ -7,11 +7,12 @@ export function Container({
   children,
   className,
   as: Tag = 'div',
-}: {
+}: Readonly<{
   children: ReactNode;
   className?: string;
+  /** The tag to render, when a `div` is not the right element. */
   as?: ElementType;
-}) {
+}>): ReactElement {
   return (
     <Tag
       className={cn(
@@ -24,10 +25,10 @@ export function Container({
   );
 }
 
+/** The background and text colour of each kind of band. */
 const SURFACES = {
   page: 'bg-paper text-ink',
   white: 'bg-white text-ink',
-  ink: 'bg-forest text-white',
 } as const;
 
 /** A full-width band of one surface colour, with consistent vertical rhythm. */
@@ -36,13 +37,13 @@ export function Section({
   children,
   className,
   id,
-}: {
+}: Readonly<{
   surface?: keyof typeof SURFACES;
   children: ReactNode;
   className?: string;
   /** Lets the header's links jump to this section. */
   id?: string;
-}) {
+}>): ReactElement {
   return (
     <section
       id={id}
@@ -57,6 +58,7 @@ export function Section({
   );
 }
 
+/** The colour of an eyebrow line. */
 const EYEBROW_TONES = {
   /** The accent colour, for the line that introduces a heading. */
   ember: 'text-ember',
@@ -77,12 +79,12 @@ export function Eyebrow({
   tone = 'ember',
   children,
   className,
-}: {
+}: Readonly<{
   as?: ElementType;
   tone?: keyof typeof EYEBROW_TONES;
   children: ReactNode;
   className?: string;
-}) {
+}>): ReactElement {
   return (
     <Tag
       className={cn(
@@ -96,6 +98,7 @@ export function Eyebrow({
   );
 }
 
+/** The type size and line height of each heading level. */
 const HEADINGS = {
   display: 'text-5xl leading-[1.04] sm:text-6xl lg:text-7xl',
   h1: 'text-4xl leading-[1.08] sm:text-5xl',
@@ -110,12 +113,12 @@ export function Heading({
   as: Tag = 'h2',
   children,
   className,
-}: {
+}: Readonly<{
   variant?: keyof typeof HEADINGS;
   as?: ElementType;
   children: ReactNode;
   className?: string;
-}) {
+}>): ReactElement {
   return (
     <Tag
       className={cn(
@@ -134,11 +137,12 @@ export function SectionHeader({
   eyebrow,
   title,
   action,
-}: {
+}: Readonly<{
   eyebrow?: string;
   title: string;
+  /** Something to sit at the right of the heading, such as a "See all" link. */
   action?: ReactNode;
-}) {
+}>): ReactElement {
   return (
     <div className="flex items-end justify-between gap-6">
       <div>

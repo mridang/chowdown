@@ -1,8 +1,16 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import type { ReactElement } from 'react';
 
 import { Select } from '@/components/ui/field';
+
+/** One way to order the list: its value, its label and the address that applies it. */
+export interface SortOption {
+  readonly value: string;
+  readonly label: string;
+  readonly href: string;
+}
 
 /**
  * The sort dropdown. Each option carries the URL that applies it, so choosing
@@ -13,10 +21,11 @@ import { Select } from '@/components/ui/field';
 export function SortSelect({
   value,
   options,
-}: {
+}: Readonly<{
+  /** The value of the order in force. */
   value: string;
-  options: { value: string; label: string; href: string }[];
-}) {
+  options: readonly SortOption[];
+}>): ReactElement {
   const router = useRouter();
   return (
     <label className="text-subtle flex items-center gap-2.5 text-sm">

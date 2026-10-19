@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 import { ArrowIcon, PlugIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
 import { CopyField } from '@/components/ui/copy-field';
@@ -9,7 +11,7 @@ import { MCP_URL } from '@/lib/site';
  * address with a Copy button, and a link to the full instructions. Used on the
  * home page; the footer carries a smaller version of the same address.
  */
-export function ConnectBand() {
+export function ConnectBand(): ReactElement {
   return (
     <section className="bg-marigold">
       <Container className="grid grid-cols-1 items-center gap-8 py-12 sm:py-16 lg:grid-cols-[1.1fr_1fr] lg:gap-16">

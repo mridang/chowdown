@@ -2,21 +2,27 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 
 import { ChevronLeftIcon, LinkIcon, NoteIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Container, Eyebrow, Heading } from '@/components/ui/layout';
-import { problemError, problemText } from '@/lib/problem-message';
-
-import { AddRecipes } from './add-recipes';
 import {
   FormField,
   FormMessage,
   TextArea,
   TextInput,
 } from '@/components/ui/field';
+import { Container, Eyebrow, Heading } from '@/components/ui/layout';
+import { problemError, problemText } from '@/lib/problem-message';
+
+import { AddRecipes } from './add-recipes';
+import { createdRecipeId, postRecipe } from './recipe-requests';
 
 /** Starter content offered when writing a recipe by hand. */
 const STARTER = `>> title: New Recipe
@@ -25,10 +31,13 @@ const STARTER = `>> title: New Recipe
 Add @your ingredient{1} to a #pan{} and cook for ~{5%minutes}.
 `;
 
+/** Which part of the flow is showing: the two choices, or the one chosen. */
 type Mode = 'choose' | 'import' | 'manual';
 
 /** The manual "write it yourself" editor. */
-function ManualEditor({ onCancel }: { onCancel: () => void }) {
+function ManualEditor({
+  onCancel,
+}: Readonly<{ onCancel: () => void }>): ReactElement {
   const router = useRouter();
   const [name, setName] = useState('');
   const [content, setContent] = useState(STARTER);
@@ -42,20 +51,19 @@ function ManualEditor({ onCancel }: { onCancel: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch('/api/recipes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), cooklang: content }),
-      });
+      const res = await postRecipe(name, content);
       if (!res.ok) {
         throw await problemError(res);
       }
-      const created = (await res.json()) as { id: string };
-      router.push(`/recipe/${created.id}`);
+      const id = createdRecipeId(await res.json());
+      if (id === undefined) {
+        throw new Error('The server did not say which recipe it saved.');
+      }
+      router.push(`/recipe/${id}`);
       // ...and the list the router remembers should include it too.
       router.refresh();
-    } catch (error) {
-      setError(problemText(error, 'Could not save the recipe.'));
+    } catch (caught) {
+      setError(problemText(caught, 'Could not save the recipe.'));
       setBusy(false);
     }
   }, [name, content, router]);
@@ -117,12 +125,12 @@ function ChoiceCard({
   title,
   description,
   onClick,
-}: {
+}: Readonly<{
   icon: ReactNode;
   title: string;
   description: string;
   onClick: () => void;
-}) {
+}>): ReactElement {
   return (
     <Card
       as="button"
@@ -149,7 +157,7 @@ function ChoiceCard({
  * hand), then run that flow. Import reuses the review wizard; writing opens the
  * editor. Both save to Drive and land you on the recipe (or back on the grid).
  */
-export function AddRecipesPage() {
+export function AddRecipesPage(): ReactElement {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>('choose');
 
@@ -158,7 +166,7 @@ export function AddRecipesPage() {
       <div className="max-w-4xl">
         <Link
           href="/app"
-          className="text-muted hover:text-ink focus-visible:outline-ink rounded-control -ml-1 inline-flex h-9 items-center gap-1 px-1 text-sm font-medium transition focus-visible:outline-2"
+          className="text-muted hover:text-ink rounded-control -ml-1 inline-flex h-9 items-center gap-1 px-1 text-sm font-medium transition focus-ring-flush"
         >
           <ChevronLeftIcon size="sm" />
           All recipes

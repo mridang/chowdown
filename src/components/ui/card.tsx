@@ -1,7 +1,12 @@
-import type { ComponentPropsWithoutRef, ElementType } from 'react';
+import type {
+  ComponentPropsWithoutRef,
+  ElementType,
+  ReactElement,
+} from 'react';
 
 import { cn } from '@/components/ui/cn';
 
+/** The inner space of a card, from none at all to the roomy default. */
 const PADDING = {
   none: '',
   xs: 'p-3',
@@ -22,16 +27,20 @@ export function Card<Tag extends ElementType = 'div'>({
   padding = 'md',
   className,
   ...props
-}: {
+}: Readonly<{
   as?: Tag;
   padding?: keyof typeof PADDING;
   className?: string;
-} & Omit<ComponentPropsWithoutRef<Tag>, 'as' | 'padding' | 'className'>) {
+}> &
+  Omit<
+    ComponentPropsWithoutRef<Tag>,
+    'as' | 'padding' | 'className'
+  >): ReactElement {
   const Component: ElementType = as ?? 'div';
   return (
     <Component
       className={cn(
-        'rounded-card border border-ink/10 bg-white',
+        'rounded-card border border-line bg-white',
         PADDING[padding],
         className,
       )}

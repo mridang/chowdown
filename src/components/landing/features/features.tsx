@@ -1,4 +1,6 @@
-import type { SampleRecipe } from '@/components/landing/demo-recipes';
+import type { ReactElement } from 'react';
+
+import type { SampleRecipes } from '@/components/landing/demo-recipes';
 import { AiVisual } from '@/components/landing/features/ai-visual';
 import { CookVisual } from '@/components/landing/features/cook-visual';
 import { Feature } from '@/components/landing/features/feature';
@@ -8,12 +10,14 @@ import { ImportVisual } from '@/components/landing/features/import-visual';
 import { Container, Section } from '@/components/ui/layout';
 
 /** The product's selling points, one picture each. */
-export function Features({ recipes }: { recipes: SampleRecipe[] }) {
+export function Features({
+  recipes,
+}: Readonly<{ recipes: SampleRecipes }>): ReactElement {
   // The import picture shows a link from a well-known site when there is one.
   const importer =
-    recipes.find((recipe) => recipe.site === 'seriouseats.com') ?? recipes[0]!;
+    recipes.find((recipe) => recipe.site === 'seriouseats.com') ?? recipes[0];
   // The cook-mode picture needs a recipe that has steps (a Cooklang source).
-  const cook = recipes.find((recipe) => recipe.cooklang) ?? recipes[0]!;
+  const cook = recipes.find((recipe) => recipe.cooklang) ?? recipes[0];
   return (
     <Section id="features" surface="white">
       <Container className="flex flex-col gap-24 sm:gap-32">

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import type { ReactElement } from 'react';
 
 import {
   IngredientsPanel,
@@ -7,10 +8,8 @@ import {
 } from '@/components/recipe/ingredients-panel';
 import { Method } from '@/components/recipe/method';
 import { RecipeStateProvider } from '@/components/recipe/recipe-state';
-import { Tag } from '@/components/ui/chip';
 import { STICKY_PANEL_CLASS } from '@/components/site/header-height';
-import { Container, Eyebrow } from '@/components/ui/layout';
-import { sentenceCase } from '@/lib/format';
+import { Container } from '@/components/ui/layout';
 import { cleanTitle } from '@/lib/recipe/card-data';
 import { firstTag } from '@/lib/recipe/first-tag';
 import { loadRecipe } from '@/lib/recipe/load-recipe';
@@ -28,13 +27,20 @@ import { SITE_URL } from '@/lib/site';
 import { AlsoLike } from './_components/also-like';
 import { buildFacts, RecipeFacts } from './_components/recipe-facts';
 import { RecipeHero } from './_components/recipe-hero';
+import { RecipeExtras } from './_components/recipe-extras';
 import { RecipeNotes } from './_components/recipe-notes';
+import { RecipeTags } from './_components/recipe-tags';
 
+/**
+ * The page's title: the recipe's own, or a plain "Recipe" when it cannot be
+ * loaded (a missing recipe gets its own not-found page, and a hiccup in the
+ * store should not break the tab title).
+ */
 export async function generateMetadata({
   params,
-}: {
+}: Readonly<{
   params: Promise<{ id: string }>;
-}): Promise<Metadata> {
+}>): Promise<Metadata> {
   const { id } = await params;
   try {
     const data = await loadRecipe(id);
@@ -61,9 +67,9 @@ export async function generateMetadata({
  */
 export default async function RecipePage({
   params,
-}: {
+}: Readonly<{
   params: Promise<{ id: string }>;
-}) {
+}>): Promise<ReactElement> {
   const { id } = await params;
   const data = await loadRecipe(id);
   if (!data) {
@@ -76,11 +82,9 @@ export default async function RecipePage({
   const images = media.cover ? [media.cover, ...media.rest] : [];
   const title = cleanTitle(recipe.title);
 
-  const keywords = tags['keywords'] ?? [];
   const sourceText = recipe.metadata.find(
     ([key]) => key.toLowerCase() === 'source',
   )?.[1];
-  const extras = extraMetadata(recipe.metadata);
   const facts = buildFacts({
     minutes: data.minutes,
     serves: declaredServings(recipe.metadata),
@@ -91,7 +95,7 @@ export default async function RecipePage({
   // (whole-recipe notes and any whose target is gone) are listed below.
   const ingredientNames = recipe.ingredients.map((i) => i.name);
   const grouped = groupNotes(data.notes, ingredientNames, recipe.steps.length);
-  const panelIngredients: PanelIngredient[] = recipe.ingredients.map(
+  const panelIngredients: readonly PanelIngredient[] = recipe.ingredients.map(
     (ingredient, index) => ({
       name: ingredient.name,
       quantity: ingredient.quantity,
@@ -150,29 +154,8 @@ export default async function RecipePage({
           </div>
         </div>
 
-        {keywords.length > 0 ? (
-          <div className="border-ink/15 mt-14 flex flex-wrap items-center gap-2 border-t pt-6 print:hidden">
-            <Eyebrow as="span" tone="subtle" className="mr-2">
-              Tagged
-            </Eyebrow>
-            {keywords.slice(0, 10).map((word) => (
-              <Tag key={word} href={`/app?q=${encodeURIComponent(word)}`}>
-                {sentenceCase(word)}
-              </Tag>
-            ))}
-          </div>
-        ) : null}
-
-        {extras.length > 0 ? (
-          <dl className="text-muted mt-6 flex flex-wrap gap-x-6 gap-y-1 text-sm">
-            {extras.map(([key, value]) => (
-              <div key={key} className="flex gap-1.5">
-                <dt className="font-semibold capitalize">{key}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-          </dl>
-        ) : null}
+        <RecipeTags keywords={tags['keywords'] ?? []} />
+        <RecipeExtras extras={extraMetadata(recipe.metadata)} />
       </Container>
 
       <AlsoLike recipes={similar} />

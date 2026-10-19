@@ -1,11 +1,15 @@
+import type { ReactElement } from 'react';
+
 import { cn } from '@/components/ui/cn';
 
+/** The width, height and type size of each badge. */
 const SIZES = {
   sm: 'h-7 w-7 text-sm',
   md: 'h-9 w-9 text-base',
   lg: 'h-12 w-12 text-xl',
 } as const;
 
+/** The colours of each badge: `flame` stands out, `quiet` recedes. */
 const TONES = {
   flame: 'bg-flame text-ink',
   quiet: 'bg-ink/10 text-muted',
@@ -20,12 +24,12 @@ export function NumberBadge({
   size = 'sm',
   tone = 'flame',
   className,
-}: {
+}: Readonly<{
   value: number;
   size?: keyof typeof SIZES;
   tone?: keyof typeof TONES;
   className?: string;
-}) {
+}>): ReactElement {
   return (
     <span
       aria-hidden="true"

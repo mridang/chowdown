@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * An icon with a short value, used for the facts along the foot of a recipe
@@ -8,10 +8,10 @@ import type { ReactNode } from 'react';
 export function CardFact({
   icon,
   children,
-}: {
+}: Readonly<{
   icon: ReactNode;
   children: ReactNode;
-}) {
+}>): ReactElement {
   return (
     <span className="text-subtle inline-flex items-center gap-1.5 text-[13px]">
       {icon}

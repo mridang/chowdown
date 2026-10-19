@@ -25,6 +25,14 @@ describe('Callout', () => {
     );
   });
 
+  it('can be plain, in ordinary ink instead of the quiet note colour', () => {
+    const out = html(<Callout tone="plain">x</Callout>);
+    expect(classOf(out, 'div')).toContain('bg-sand');
+    expect(classOf(out, 'div')).toContain('text-ink');
+    expect(classOf(out, 'div')).not.toContain('text-muted');
+    expect(out).not.toContain('role=');
+  });
+
   it('can be highlighted', () => {
     expect(
       classOf(html(<Callout tone="highlight">x</Callout>), 'div'),

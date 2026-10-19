@@ -7,7 +7,7 @@
  * from day to day without ever being random on each load.
  */
 
-import type { CardRecipe } from '../../lib/recipe/card-data';
+import type { CardRecipe } from '@/lib/recipe/card-data';
 
 /** How many recipes a row shows. */
 export const ROW_SIZE = 4;
@@ -23,7 +23,9 @@ export function todaySeed(now: number = Date.now()): number {
 }
 
 /** Recipes with a photo first, keeping their order otherwise. */
-export function photosFirst(recipes: CardRecipe[]): CardRecipe[] {
+export function photosFirst(
+  recipes: readonly CardRecipe[],
+): readonly CardRecipe[] {
   return [
     ...recipes.filter((r) => r.cover),
     ...recipes.filter((r) => !r.cover),
@@ -31,7 +33,9 @@ export function photosFirst(recipes: CardRecipe[]): CardRecipe[] {
 }
 
 /** Easy recipes that take half an hour or less; ones without a time don't count. */
-export function easyAndQuick(recipes: CardRecipe[]): CardRecipe[] {
+export function easyAndQuick(
+  recipes: readonly CardRecipe[],
+): readonly CardRecipe[] {
   return recipes.filter(
     (r) =>
       r.difficulty === 'Easy' &&
@@ -47,11 +51,11 @@ export function easyAndQuick(recipes: CardRecipe[]): CardRecipe[] {
  * Recipes with a photo are preferred, since this row is there to tempt.
  */
 export function fromTheShelf(
-  recipes: CardRecipe[],
+  recipes: readonly CardRecipe[],
   seed: number,
   skip: ReadonlySet<string> = new Set(),
   size = ROW_SIZE,
-): CardRecipe[] {
+): readonly CardRecipe[] {
   const pool = photosFirst(recipes.filter((r) => !skip.has(r.id)));
   const withPhoto = pool.filter((r) => r.cover);
   const from = withPhoto.length >= size ? withPhoto : pool;
@@ -60,17 +64,22 @@ export function fromTheShelf(
   }
   // Walk the pool from a seeded start, stepping by a stride that shares no
   // factor with its length so the picks are spread out rather than adjacent.
-  let stride = Math.max(2, Math.floor(from.length / size));
-  while (gcd(stride, from.length) !== 1) {
-    stride += 1;
-  }
-  const start = ((seed % from.length) + from.length) % from.length;
-  return Array.from(
-    { length: size },
-    (_, i) => from[(start + i * stride) % from.length]!,
+  const stride = coprimeStride(
+    Math.max(2, Math.floor(from.length / size)),
+    from.length,
   );
+  const start = ((seed % from.length) + from.length) % from.length;
+  return Array.from({ length: size }, (_, i) =>
+    from.at((start + i * stride) % from.length),
+  ).filter((recipe) => recipe !== undefined);
 }
 
+/** The greatest common divisor of two whole numbers. */
 function gcd(a: number, b: number): number {
   return b === 0 ? a : gcd(b, a % b);
+}
+
+/** The first number from `stride` upward that shares no factor with `length`. */
+function coprimeStride(stride: number, length: number): number {
+  return gcd(stride, length) === 1 ? stride : coprimeStride(stride + 1, length);
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import type { ReactElement } from 'react';
 
 import { DriveConnectNotice } from '@/components/site/drive-connect';
 import { getCurrentUser } from '@/lib/auth/current-user';
@@ -15,6 +16,7 @@ import { PageHeader } from '@/components/ui/page-header';
 
 import { ConnectedApps } from './_components/connected-apps';
 
+/** The tab title and description of the Cook with AI page. */
 export const metadata: Metadata = {
   title: 'Cook with AI · chowdown',
   description:
@@ -22,7 +24,10 @@ export const metadata: Metadata = {
 };
 
 /** Where to add the address, for each assistant, in the order a person does it. */
-const ASSISTANTS: { name: string; steps: string[] }[] = [
+const ASSISTANTS: readonly Readonly<{
+  name: string;
+  steps: readonly string[];
+}>[] = [
   {
     name: 'ChatGPT',
     steps: [
@@ -50,22 +55,26 @@ const ASSISTANTS: { name: string; steps: string[] }[] = [
 ];
 
 /** What each level of access lets an assistant do (the wording of the approval screen). */
-const ACCESS: [string, string][] = [
-  ['Read', 'See your recipes, search them and find similar ones.'],
-  [
-    'Write',
-    'Add, edit, tag, favourite and annotate recipes, and change your settings.',
-  ],
-];
+const ACCESS = [
+  {
+    title: 'Read',
+    body: 'See your recipes, search them and find similar ones.',
+  },
+  {
+    title: 'Write',
+    body: 'Add, edit, tag, favourite and annotate recipes, and change your settings.',
+  },
+] as const;
 
 /**
  * "Cook with AI": how to connect an assistant, what it is allowed to do, which
- * assistants are connected (with a way to disconnect them). Someone who hasn't connected Google Drive yet is told,
- * since an assistant has no recipes to reach until they do. Only for signed-in people; anyone else is sent to sign
+ * assistants are connected (with a way to disconnect them). Someone who hasn't
+ * connected Google Drive yet is told, since an assistant has no recipes to
+ * reach until they do. Only for signed-in people; anyone else is sent to sign
  * in and brought straight back here. The addresses use the origin the page is
  * served from, so they are right in every environment.
  */
-export default async function ConnectPage() {
+export default async function ConnectPage(): Promise<ReactElement> {
   const user = await getCurrentUser();
   if (!user) {
     redirect(`/api/auth/login?returnTo=${encodeURIComponent('/connect')}`);
@@ -119,8 +128,8 @@ export default async function ConnectPage() {
       <Container className="grid grid-cols-1 gap-12 pb-4 md:grid-cols-2 md:gap-10">
         <section>
           <Heading variant="h3">What you are allowing</Heading>
-          <dl className="divide-ink/10 border-ink/10 mt-5 divide-y border-y">
-            {ACCESS.map(([title, body]) => (
+          <dl className="divide-line border-line mt-5 divide-y border-y">
+            {ACCESS.map(({ title, body }) => (
               <div key={title} className="py-4">
                 <dt className="font-semibold">{title}</dt>
                 <dd className="text-muted mt-1">{body}</dd>

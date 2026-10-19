@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * A link that switches a filter on or off, such as a facet option or the
@@ -27,7 +27,7 @@ export function ToggleLink({
   activeText,
   className,
   children,
-}: {
+}: Readonly<{
   /** Where pressing it goes: the current page with the filter flipped. */
   href: string;
   /** Whether the filter is switched on right now. */
@@ -40,7 +40,7 @@ export function ToggleLink({
   activeText?: string;
   className?: string;
   children: ReactNode;
-}) {
+}>): ReactElement {
   return (
     <Link
       href={href}

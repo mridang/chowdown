@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactElement } from 'react';
+
 import { BarePage, MessagePage } from '@/components/site/bare-page';
 import { Button, ButtonLink } from '@/components/ui/button';
 
@@ -12,10 +14,12 @@ import { Button, ButtonLink } from '@/components/ui/button';
 export default function ErrorPage({
   error,
   unstable_retry,
-}: {
+}: Readonly<{
+  /** What was thrown; Next adds a `digest` that matches the server log entry. */
   error: Error & { digest?: string };
+  /** Asks Next to render the page again. */
   unstable_retry: () => void;
-}) {
+}>): ReactElement {
   return (
     <BarePage>
       <MessagePage

@@ -7,7 +7,7 @@ import { useEffect } from 'react';
  * the app is installable and shows an offline page. It does nothing in
  * development, where a worker would hold on to stale pages.
  */
-export function ServiceWorker() {
+export function ServiceWorker(): null {
   useEffect(() => {
     if (
       process.env.NODE_ENV !== 'production' ||

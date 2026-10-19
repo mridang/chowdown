@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { problemError, problemText } from '@/lib/problem-message';
@@ -27,12 +27,12 @@ export function DeleteDialog({
   title,
   open,
   onOpenChange,
-}: {
+}: Readonly<{
   recipeId: string;
   title: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}) {
+}>): ReactElement {
   const router = useRouter();
   const cancel = useRef<HTMLButtonElement>(null);
   const [busy, setBusy] = useState(false);

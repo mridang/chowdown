@@ -7,6 +7,7 @@
  * {@link useWidgetData} bridge (ChatGPT `window.openai` + ext-apps).
  */
 
+import type { ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import type { RecipeCardData } from '../lib/mcp/ui-types';
@@ -14,7 +15,10 @@ import { STYLES } from './styles';
 import { useWidgetData } from './use-widget-data';
 
 /** Render one Cooklang step as text with highlighted ingredient/cookware/timer tokens. */
-function Step({ recipe, index }: { recipe: RecipeCardData; index: number }) {
+function Step({
+  recipe,
+  index,
+}: Readonly<{ recipe: RecipeCardData; index: number }>): ReactElement {
   const step = recipe.steps[index] ?? [];
   return (
     <p>
@@ -46,10 +50,10 @@ function Step({ recipe, index }: { recipe: RecipeCardData; index: number }) {
 function InlineCard({
   recipe,
   onView,
-}: {
+}: Readonly<{
   recipe: RecipeCardData;
   onView: () => void;
-}) {
+}>): ReactElement {
   const shown = recipe.ingredients.slice(0, 7);
   const extra = recipe.ingredients.length - shown.length;
   return (
@@ -93,7 +97,9 @@ function InlineCard({
 }
 
 /** The expanded fullscreen recipe. */
-function FullRecipe({ recipe }: { recipe: RecipeCardData }) {
+function FullRecipe({
+  recipe,
+}: Readonly<{ recipe: RecipeCardData }>): ReactElement {
   return (
     <div className="full">
       <div className="eyebrow">
@@ -159,7 +165,8 @@ function FullRecipe({ recipe }: { recipe: RecipeCardData }) {
   );
 }
 
-function RecipeCardApp() {
+/** The View: a loading note, then the compact card or the full recipe. */
+function RecipeCardApp(): ReactElement {
   const {
     data: recipe,
     fullscreen,

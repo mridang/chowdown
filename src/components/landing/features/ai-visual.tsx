@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 import { PlugIcon } from '@/components/icons';
 import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import { MiniCard } from '@/components/landing/features/mini-card';
@@ -5,7 +7,9 @@ import { WindowFrame } from '@/components/landing/window-frame';
 import { MCP_URL } from '@/lib/site';
 
 /** The assistant: a chat that answers from your own recipes. */
-export function AiVisual({ recipes }: { recipes: SampleRecipe[] }) {
+export function AiVisual({
+  recipes,
+}: Readonly<{ recipes: readonly SampleRecipe[] }>): ReactElement {
   const picks = recipes
     .filter((recipe) => recipe.protein === 'chicken' && recipe.minutes <= 40)
     .slice(0, 2);
@@ -29,7 +33,7 @@ export function AiVisual({ recipes }: { recipes: SampleRecipe[] }) {
             ))}
           </div>
           <p className="rounded-control bg-sand text-muted mt-4 flex items-center gap-2 truncate px-3 py-2 font-mono text-xs">
-            <PlugIcon className="h-3.5 w-3.5 shrink-0" />
+            <PlugIcon size="compact" className="shrink-0" />
             <span className="truncate">{MCP_URL}</span>
           </p>
         </div>

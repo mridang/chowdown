@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { BarePage } from '@/components/site/bare-page';
 import { Card } from '@/components/ui/card';
@@ -15,10 +15,10 @@ import { Card } from '@/components/ui/card';
 export function CenteredCard({
   framed = true,
   children,
-}: {
+}: Readonly<{
   framed?: boolean;
   children: ReactNode;
-}) {
+}>): ReactElement {
   return (
     <BarePage>
       <div className="mx-auto w-full max-w-lg px-4 py-10 sm:py-16">

@@ -1,29 +1,36 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, type ReactElement } from 'react';
 
 import { CloseIcon } from '@/components/icons';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { countOf } from '@/lib/intl';
-import { problemMessage } from '@/lib/problem-message';
-
+import { Card } from '@/components/ui/card';
 import {
   FormField,
   FormMessage,
   TextArea,
   TextInput,
 } from '@/components/ui/field';
+import { countOf } from '@/lib/intl';
+import { problemMessage } from '@/lib/problem-message';
 
-/** A prepared, not-yet-saved recipe, from an item of POST /api/recipe-imports. */
-interface ImportDraft {
-  title: string;
-  cook: string;
-  source?: string;
-  error?: string;
-}
+import {
+  discardImport,
+  postImport,
+  postRecipe,
+  readImport,
+  type ImportDraft,
+} from './recipe-requests';
 
+/** Where the wizard is: pasting, stepping through the drafts, or finished. */
 type Phase = 'input' | 'review' | 'done';
+
+/** The wizard's heading for each phase. */
+const HEADINGS: Readonly<Record<Phase, string>> = {
+  input: 'Import links or text',
+  review: 'Review your recipes',
+  done: 'All done',
+};
 
 /**
  * The "Add recipes" wizard. Two phases:
@@ -34,18 +41,21 @@ type Phase = 'input' | 'review' | 'done';
  *  2. **review** — the user steps through the drafts one at a time, editing the
  *     name and Cooklang, and saves each to Drive before moving to the next.
  *
- * Saving reuses POST /api/recipes; `onSaved` runs after each recipe is saved, so the parent can refresh its list.
+ * Saving reuses POST /api/recipes; `onSaved` runs after each recipe is saved,
+ * so the parent can refresh its list.
  */
 export function AddRecipes({
   onClose,
   onSaved,
-}: {
+}: Readonly<{
+  /** Told when the person is finished with the wizard (Close, or Done). */
   onClose: () => void;
+  /** Told after each recipe is saved, so the parent can refresh its list. */
   onSaved: () => void;
-}) {
+}>): ReactElement {
   const [phase, setPhase] = useState<Phase>('input');
   const [input, setInput] = useState('');
-  const [drafts, setDrafts] = useState<ImportDraft[]>([]);
+  const [drafts, setDrafts] = useState<readonly ImportDraft[]>([]);
   const [index, setIndex] = useState(0);
   const [name, setName] = useState('');
   const [cook, setCook] = useState('');
@@ -56,21 +66,20 @@ export function AddRecipes({
   const importId = useRef<string | null>(null);
 
   /** Load draft `i` into the editable fields, or finish when past the end. */
-  const seek = useCallback((list: ImportDraft[], i: number) => {
-    if (i >= list.length) {
+  const seek = useCallback((list: readonly ImportDraft[], i: number) => {
+    const draft = list[i];
+    if (!draft) {
       setPhase('done');
       if (importId.current) {
         // The drafts have been dealt with; tidy the import away.
-        void fetch(`/api/recipe-imports/${importId.current}`, {
-          method: 'DELETE',
-        });
+        discardImport(importId.current);
         importId.current = null;
       }
       return;
     }
     setIndex(i);
-    setName(list[i]!.title);
-    setCook(list[i]!.cook);
+    setName(draft.title);
+    setCook(draft.cook);
     setError(null);
   }, []);
 
@@ -81,33 +90,18 @@ export function AddRecipes({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch('/api/recipe-imports', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input }),
-      });
+      const res = await postImport(input);
       if (!res.ok) {
         throw new Error(await problemMessage(res));
       }
-      const created = (await res.json()) as {
-        id: string;
-        items: {
-          title: string;
-          cooklang?: string;
-          source_url?: string;
-          problem?: string;
-        }[];
-      };
-      importId.current = created.id;
-      const prepared: ImportDraft[] = created.items.map((item) => ({
-        title: item.title,
-        cook: item.cooklang ?? '',
-        source: item.source_url,
-        error: item.problem,
-      }));
-      setDrafts(prepared);
+      const prepared = readImport(await res.json());
+      if (!prepared) {
+        throw new Error('Could not prepare those recipes.');
+      }
+      importId.current = prepared.id;
+      setDrafts(prepared.drafts);
       setPhase('review');
-      seek(prepared, 0);
+      seek(prepared.drafts, 0);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Could not prepare those recipes.',
@@ -125,11 +119,7 @@ export function AddRecipes({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch('/api/recipes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), cooklang: cook }),
-      });
+      const res = await postRecipe(name, cook);
       if (!res.ok) {
         throw new Error(await problemMessage(res));
       }
@@ -151,6 +141,8 @@ export function AddRecipes({
     [drafts, index, seek],
   );
 
+  const current = drafts[index];
+
   return (
     <Card as="section" aria-labelledby="add-recipes-heading">
       <div className="flex items-center justify-between gap-4">
@@ -158,11 +150,7 @@ export function AddRecipes({
           id="add-recipes-heading"
           className="font-display text-2xl font-semibold tracking-tight"
         >
-          {phase === 'input'
-            ? 'Import links or text'
-            : phase === 'review'
-              ? 'Review your recipes'
-              : 'All done'}
+          {HEADINGS[phase]}
         </h2>
         <Button variant="ghost" size="sm" onClick={onClose}>
           <CloseIcon size="sm" />
@@ -210,18 +198,16 @@ export function AddRecipes({
         <>
           <p className="text-muted mt-2 font-medium">
             Recipe {index + 1} of {drafts.length}
-            {drafts[index]?.source ? (
+            {current?.source ? (
               <>
                 {' · '}
-                <span className="text-subtle break-all">
-                  {drafts[index]!.source}
-                </span>
+                <span className="text-subtle break-all">{current.source}</span>
               </>
             ) : null}
           </p>
 
-          {drafts[index]?.error ? (
-            <FormMessage tone="note">{drafts[index]!.error}</FormMessage>
+          {current?.error ? (
+            <FormMessage tone="note">{current.error}</FormMessage>
           ) : null}
 
           <div className="mt-5 flex flex-col gap-5">

@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
 
+import type { ReactElement } from 'react';
+
 import { ButtonLink } from '@/components/ui/button';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 
+/** The tab title for the not-found page. */
 export const metadata: Metadata = { title: 'Recipe not found · chowdown' };
 
 /**
@@ -10,7 +13,7 @@ export const metadata: Metadata = { title: 'Recipe not found · chowdown' };
  * of the Recipes folder, or the address was mistyped. Offers the way back to the
  * list rather than leaving a dead end.
  */
-export default function RecipeNotFound() {
+export default function RecipeNotFound(): ReactElement {
   return (
     <Container className="py-20 sm:py-28">
       <Eyebrow>Recipe not found</Eyebrow>

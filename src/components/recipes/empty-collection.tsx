@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 import { PlusIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -7,7 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state';
  * nudge and the way to add the first ones. Shared by the home page and the
  * recipe list.
  */
-export function EmptyCollection() {
+export function EmptyCollection(): ReactElement {
   return (
     <EmptyState
       title="No recipes yet"

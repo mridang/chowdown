@@ -1,7 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 
 import { PlusIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -22,11 +28,11 @@ import { problemError, problemText } from '@/lib/problem-message';
 export function AddNote({
   recipeId,
   ingredients,
-}: {
+}: Readonly<{
   recipeId: string;
   /** Ingredient names, to offer as note targets. */
-  ingredients: string[];
-}) {
+  ingredients: readonly string[];
+}>): ReactElement {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');

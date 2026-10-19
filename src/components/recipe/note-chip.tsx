@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 import { NoteIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
 
@@ -9,10 +11,10 @@ import { cn } from '@/components/ui/cn';
 export function NoteChip({
   text,
   className,
-}: {
+}: Readonly<{
   text: string;
   className?: string;
-}) {
+}>): ReactElement {
   return (
     <p
       className={cn(

@@ -1,6 +1,6 @@
 'use client';
 
-import { useId } from 'react';
+import { useId, type ReactElement } from 'react';
 
 import { cn } from '@/components/ui/cn';
 
@@ -14,12 +14,15 @@ export function Segmented<T extends string>({
   onValueChange,
   options,
   label,
-}: {
+}: Readonly<{
+  /** The selected option's value. */
   value: T;
+  /** Told the value of the option the person chose. */
   onValueChange: (value: T) => void;
-  options: { value: T; label: string }[];
+  options: readonly Readonly<{ value: T; label: string }>[];
+  /** What is being chosen, as the group's accessible name. */
   label: string;
-}) {
+}>): ReactElement {
   const name = useId();
   return (
     <div

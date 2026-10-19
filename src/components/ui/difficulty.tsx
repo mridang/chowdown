@@ -1,7 +1,16 @@
+import type { ReactElement } from 'react';
+
 import { cn } from '@/components/ui/cn';
 
-/** How many of the three bars each level fills. */
-const LEVELS: Record<string, number> = { Easy: 1, Medium: 2, Hard: 3 };
+/** How many of the three bars each level fills; an unknown level fills one. */
+const LEVELS: Readonly<Record<string, number>> = {
+  Easy: 1,
+  Medium: 2,
+  Hard: 3,
+};
+
+/** The height of each bar, left to right: they rise so the level reads at a glance. */
+const BAR_HEIGHTS = ['h-2', 'h-3', 'h-4'] as const;
 
 /**
  * Difficulty as a small three-bar meter plus its name: Easy lights one bar,
@@ -11,15 +20,14 @@ const LEVELS: Record<string, number> = { Easy: 1, Medium: 2, Hard: 3 };
 export function Difficulty({
   level,
   showLabel = true,
-  onDark = false,
   className,
-}: {
+}: Readonly<{
+  /** `Easy`, `Medium` or `Hard`. */
   level: string;
+  /** Show the word beside the bars; off where the bars alone are enough. */
   showLabel?: boolean;
-  /** Draw the bars for a dark background (a selected chip). */
-  onDark?: boolean;
   className?: string;
-}) {
+}>): ReactElement {
   const filled = LEVELS[level] ?? 1;
   return (
     <span className={cn('inline-flex items-center gap-1.5', className)}>
@@ -28,19 +36,13 @@ export function Difficulty({
         role="img"
         aria-label={`${level} difficulty, ${filled} of 3`}
       >
-        {[1, 2, 3].map((bar) => (
+        {BAR_HEIGHTS.map((height, index) => (
           <span
-            key={bar}
+            key={height}
             className={cn(
               'w-[3px] rounded-[1px]',
-              bar === 1 ? 'h-2' : bar === 2 ? 'h-3' : 'h-4',
-              bar <= filled
-                ? onDark
-                  ? 'bg-marigold'
-                  : 'bg-ember'
-                : onDark
-                  ? 'bg-white/35'
-                  : 'bg-ink/20',
+              height,
+              index < filled ? 'bg-ember' : 'bg-ink/20',
             )}
           />
         ))}

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 
@@ -15,16 +15,16 @@ export function PageHeader({
   actions,
   roomy = false,
   children,
-}: {
+}: Readonly<{
   eyebrow?: string;
   title: string;
   intro?: ReactNode;
   actions?: ReactNode;
   roomy?: boolean;
   children?: ReactNode;
-}) {
+}>): ReactElement {
   return (
-    <div className="border-b border-ink/10">
+    <div className="border-b border-line">
       <Container className={roomy ? 'py-10 sm:py-14' : 'py-8 sm:py-12'}>
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
           <div>

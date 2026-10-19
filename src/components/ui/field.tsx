@@ -10,6 +10,7 @@ import { ChevronIcon, SearchIcon } from '@/components/icons';
 import { Callout } from '@/components/ui/callout';
 import { cn } from '@/components/ui/cn';
 
+/** The height of a search box. */
 const HEIGHTS = { md: 'h-10', lg: 'h-12' } as const;
 
 /**
@@ -21,15 +22,18 @@ export function SearchField({
   action,
   className,
   ...props
-}: {
-  size?: keyof typeof HEIGHTS;
-  action?: ReactNode;
-  className?: string;
-} & Omit<ComponentProps<'input'>, 'size'>) {
+}: Readonly<
+  {
+    size?: keyof typeof HEIGHTS;
+    /** A control at the right end, inside the box (usually the submit button). */
+    action?: ReactNode;
+    className?: string;
+  } & Omit<ComponentProps<'input'>, 'size'>
+>): ReactElement {
   return (
     <label
       className={cn(
-        'flex items-center gap-3 rounded-control border border-ink/25 bg-white pl-3.5 transition',
+        'flex items-center gap-3 rounded-control border border-field bg-white pl-3.5 transition',
         'focus-within:border-ink focus-within:outline-2 focus-within:outline-offset-0 focus-within:outline-ink/15',
         action ? 'pr-1' : 'pr-3.5',
         HEIGHTS[size],
@@ -49,7 +53,7 @@ export function SearchField({
 
 /** The look of a text box, shared by the single-line and multi-line ones. */
 const BOX =
-  'w-full rounded-control border border-ink/25 bg-white px-3.5 text-base text-ink transition placeholder:text-subtle hover:border-ink/50 focus:border-ink focus:outline-2 focus:outline-offset-0 focus:outline-ink/15';
+  'w-full rounded-control border border-field bg-white px-3.5 text-base text-ink transition placeholder:text-subtle hover:border-ink/50 focus:border-ink focus:outline-2 focus:outline-offset-0 focus:outline-ink/15';
 
 /**
  * A labelled form control: the visible label above, an optional line of help
@@ -63,21 +67,18 @@ export function FormField({
   label,
   hint,
   children,
-}: {
+}: Readonly<{
+  /** The control's `id`: the label points at it. */
   id: string;
   label: string;
+  /** A line of help under the label, read out with the field. */
   hint?: string;
   children: ReactNode;
-}) {
+}>): ReactElement {
   const hintId = `${id}-hint`;
   const control =
-    hint && isValidElement(children)
-      ? cloneElement(
-          children as ReactElement<{ 'aria-describedby'?: string }>,
-          {
-            'aria-describedby': hintId,
-          },
-        )
+    hint && isValidElement<{ 'aria-describedby'?: string }>(children)
+      ? cloneElement(children, { 'aria-describedby': hintId })
       : children;
   return (
     <div>
@@ -95,7 +96,10 @@ export function FormField({
 }
 
 /** A single-line text box. */
-export function TextInput({ className, ...props }: ComponentProps<'input'>) {
+export function TextInput({
+  className,
+  ...props
+}: Readonly<ComponentProps<'input'>>): ReactElement {
   return (
     <input type="text" className={cn(BOX, 'h-11', className)} {...props} />
   );
@@ -106,7 +110,7 @@ export function TextArea({
   mono,
   className,
   ...props
-}: { mono?: boolean } & ComponentProps<'textarea'>) {
+}: Readonly<{ mono?: boolean } & ComponentProps<'textarea'>>): ReactElement {
   return (
     <textarea
       className={cn(
@@ -124,10 +128,10 @@ export function TextArea({
 export function FormMessage({
   tone,
   children,
-}: {
+}: Readonly<{
   tone: 'error' | 'note';
   children: ReactNode;
-}) {
+}>): ReactElement {
   return (
     <Callout tone={tone === 'error' ? 'error' : 'highlight'} className="mt-4">
       {children}
@@ -140,12 +144,12 @@ export function Select({
   className,
   children,
   ...props
-}: ComponentProps<'select'>) {
+}: Readonly<ComponentProps<'select'>>): ReactElement {
   return (
     <span className="relative">
       <select
         className={cn(
-          'h-10 appearance-none rounded-control border border-ink/25 bg-white pr-9 pl-3 text-sm font-medium text-ink transition outline-none hover:border-ink focus:border-ink',
+          'h-10 appearance-none rounded-control border border-field bg-white pr-9 pl-3 text-sm font-medium text-ink transition outline-none hover:border-ink focus:border-ink',
           className,
         )}
         {...props}
@@ -166,7 +170,7 @@ export function SelectField({
   className,
   children,
   ...props
-}: { label: string } & ComponentProps<'select'>) {
+}: Readonly<{ label: string } & ComponentProps<'select'>>): ReactElement {
   return (
     <label
       className={cn('flex items-center gap-2.5 text-sm text-muted', className)}

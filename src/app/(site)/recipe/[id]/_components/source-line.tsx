@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactElement } from 'react';
 
 import { LinkIcon } from '@/components/icons';
 import { TextLink } from '@/components/ui/text-link';
@@ -10,7 +11,15 @@ import { domainOf } from '@/lib/recipe/cook-text';
  * that isn't a web address (typed in by hand) is shown as plain text, and a
  * recipe with neither shows nothing.
  */
-export function SourceLine({ value, url }: { value?: string; url?: string }) {
+export function SourceLine({
+  value,
+  url,
+}: Readonly<{
+  /** The recipe's own "source" line, shown as plain text when there is no web address. */
+  value?: string;
+  /** The web address the recipe was saved from. */
+  url?: string;
+}>): ReactElement | null {
   const domain = url ? domainOf(url) : undefined;
   if (url && domain) {
     return (
@@ -31,7 +40,7 @@ export function SourceLine({ value, url }: { value?: string; url?: string }) {
         */}
         <Link
           href={`/app?site=${encodeURIComponent(domain)}`}
-          className="rounded-control border-ink/25 hover:border-ink focus-ring inline-flex h-8 items-center border px-2.5 text-xs font-medium transition print:hidden"
+          className="rounded-control border-field hover:border-ink focus-ring inline-flex h-8 items-center border px-2.5 text-xs font-medium transition print:hidden"
         >
           More from {domain}
         </Link>

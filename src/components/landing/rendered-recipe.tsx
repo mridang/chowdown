@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 import { ClockIcon, ServingsIcon } from '@/components/icons';
 import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import { WindowFrame } from '@/components/landing/window-frame';
@@ -7,7 +9,9 @@ import { TintTile } from '@/components/ui/tint-tile';
 import { duration, sentenceCase } from '@/lib/format';
 
 /** The same recipe as the Cooklang file beside it, rendered the way chowdown shows it. */
-export function RenderedRecipe({ recipe }: { recipe: SampleRecipe }) {
+export function RenderedRecipe({
+  recipe,
+}: Readonly<{ recipe: SampleRecipe }>): ReactElement {
   return (
     <WindowFrame label={`${recipe.title} in chowdown`}>
       <TintTile tone={recipe.tone} className="aspect-[16/9]" />

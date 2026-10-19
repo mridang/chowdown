@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactElement } from 'react';
 
 import { ArrowIcon, PlusIcon, SearchIcon } from '@/components/icons';
 import { ConnectBand } from '@/components/site/connect-band';
@@ -7,6 +8,7 @@ import {
   DriveConnectPanel,
   DriveUnreachable,
 } from '@/components/site/drive-connect';
+import type { NavLink } from '@/components/site/nav-links';
 import { EmptyCollection } from '@/components/recipes/empty-collection';
 import { RecipeCard, RecipeGrid } from '@/components/recipes/recipe-card';
 import {
@@ -41,12 +43,12 @@ function listHref(params: RawParams): string {
 }
 
 /** One-tap ways into the list. */
-const SHORTCUTS: [string, string][] = [
-  ['Easy', listHref({ difficulty: 'Easy' })],
-  ['Up to 30 min', listHref({ time: '15,30' })],
-  ['Vegetarian', listHref({ diet_type: 'Vegetarian' })],
-  ['Chicken', listHref({ protein: 'chicken' })],
-  ['Favourites', listHref({ fav: '1' })],
+const SHORTCUTS: readonly NavLink[] = [
+  { label: 'Easy', href: listHref({ difficulty: 'Easy' }) },
+  { label: 'Up to 30 min', href: listHref({ time: '15,30' }) },
+  { label: 'Vegetarian', href: listHref({ diet_type: 'Vegetarian' }) },
+  { label: 'Chicken', href: listHref({ protein: 'chicken' }) },
+  { label: 'Favourites', href: listHref({ fav: '1' }) },
 ];
 
 /** A row of recipes with a heading and a link to see them all; empty rows vanish. */
@@ -55,12 +57,13 @@ function Row({
   title,
   href,
   items,
-}: {
+}: Readonly<{
   eyebrow: string;
   title: string;
+  /** Where "See all" goes. */
   href: string;
-  items: CardRecipe[];
-}) {
+  items: readonly CardRecipe[];
+}>): ReactElement | null {
   if (items.length === 0) {
     return null;
   }
@@ -72,7 +75,7 @@ function Row({
         action={
           <Link
             href={href}
-            className="focus-visible:outline-ink flex h-10 shrink-0 items-center gap-1.5 text-sm font-semibold underline underline-offset-4 focus-visible:outline-2"
+            className="flex h-10 shrink-0 items-center gap-1.5 text-sm font-semibold underline underline-offset-4 focus-ring-flush"
           >
             See all <ArrowIcon size="sm" />
           </Link>
@@ -95,7 +98,9 @@ function Row({
  * redirects and Drive refresh as the recipe list) and shows a few rows of them,
  * or the offer to connect Google Drive when that hasn't been done.
  */
-export async function Dashboard({ user }: { user: ShellUser }) {
+export async function Dashboard({
+  user,
+}: Readonly<{ user: ShellUser }>): Promise<ReactElement> {
   const { recipes: rows, favouriteIds, drive } = await loadCollection('/');
   const hearted = new Set(favouriteIds);
   const recipes = rows.map((row) =>
@@ -115,7 +120,7 @@ export async function Dashboard({ user }: { user: ShellUser }) {
 
   return (
     <>
-      <section className="border-ink/10 border-b">
+      <section className="border-line border-b">
         <Container className="py-10 sm:py-14">
           <Eyebrow className="flex items-center gap-2">
             <span className="bg-live h-2 w-2 rounded-full" />
@@ -141,7 +146,7 @@ export async function Dashboard({ user }: { user: ShellUser }) {
                 />
               </form>
               <div className="mt-5 flex flex-wrap gap-2">
-                {SHORTCUTS.map(([label, href]) => (
+                {SHORTCUTS.map(({ label, href }) => (
                   <PillLink key={label} href={href}>
                     {label}
                   </PillLink>

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque, Inter } from 'next/font/google';
+import type { ReactElement, ReactNode } from 'react';
 
 import { ServiceWorker } from '@/components/site/service-worker';
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from '@/lib/site';
@@ -30,6 +31,11 @@ const TITLE = SITE_NAME;
 const DEFAULT_TITLE = SITE_TITLE;
 const DESCRIPTION = SITE_DESCRIPTION;
 
+/**
+ * What every page says about itself unless it says otherwise: the title and
+ * description, the social card, and the home-screen look on iOS. Pages override
+ * the parts they need to (their own title, or the right to be indexed).
+ */
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: DEFAULT_TITLE,
@@ -57,6 +63,7 @@ export const metadata: Metadata = {
   },
 };
 
+/** How phones lay the page out, and the colour of the browser's own chrome. */
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -65,11 +72,17 @@ export const viewport: Viewport = {
   themeColor: '#ffb100',
 };
 
+/**
+ * The document every page sits in: the language, the two typefaces, the page
+ * colours, and the service worker that makes the app installable. The site's
+ * header and footer are added one level down, in the `(site)` layout, so the
+ * not-found and error pages can use a plainer frame.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
-}>) {
+  children: ReactNode;
+}>): ReactElement {
   return (
     <html
       lang="en"

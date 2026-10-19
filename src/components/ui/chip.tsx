@@ -1,25 +1,27 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { CloseIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
+import { PillLink } from '@/components/ui/pill';
 
 /** An active-filter chip; following it removes that filter. */
 export function FilterChip({
   href,
   children,
-}: {
+}: Readonly<{
+  /** The same page with this filter taken out of the address. */
   href: string;
   children: ReactNode;
-}) {
+}>): ReactElement {
   return (
     <Link
       href={href}
       scroll={false}
-      className="rounded-control border-ink/25 hover:border-ink inline-flex h-8 items-center gap-1.5 border bg-white pr-2 pl-3 text-sm font-medium transition"
+      className="rounded-control border-field hover:border-ink inline-flex h-8 items-center gap-1.5 border bg-white pr-2 pl-3 text-sm font-medium transition"
     >
       {children}
-      <CloseIcon className="text-subtle h-3.5 w-3.5" />
+      <CloseIcon size="compact" className="text-subtle" />
       <span className="sr-only">Remove filter</span>
     </Link>
   );
@@ -29,10 +31,10 @@ export function FilterChip({
 export function CountBadge({
   children,
   className,
-}: {
+}: Readonly<{
   children: ReactNode;
   className?: string;
-}) {
+}>): ReactElement {
   return (
     <span
       className={cn(
@@ -46,13 +48,13 @@ export function CountBadge({
 }
 
 /** A plain tag, e.g. a keyword on a recipe. */
-export function Tag({ href, children }: { href: string; children: ReactNode }) {
+export function Tag({
+  href,
+  children,
+}: Readonly<{ href: string; children: ReactNode }>): ReactElement {
   return (
-    <Link
-      href={href}
-      className="border-ink/20 hover:border-ink inline-flex h-8 items-center rounded-full border bg-white px-3 text-sm transition"
-    >
+    <PillLink href={href} variant="plain" size="sm">
       {children}
-    </Link>
+    </PillLink>
   );
 }

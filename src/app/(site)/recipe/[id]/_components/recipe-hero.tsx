@@ -1,5 +1,7 @@
+import type { ReactElement } from 'react';
+
 import { PlayIcon } from '@/components/icons';
-import { FavouriteButton } from '@/components/recipe/favourite-button';
+import { FavouriteButton } from '@/components/recipes/favourite-button';
 import { CookMode } from '@/components/recipe/cook-mode';
 import { HeroPhoto } from '@/components/recipe/hero-photo';
 import { MoreMenu, ShareButton } from '@/components/recipe/actions';
@@ -16,15 +18,18 @@ import { SourceLine } from './source-line';
  * The trail above the title: always "Recipes", plus the recipe's cuisine (a
  * link to that cuisine's list) when it has one.
  */
-export function heroCrumbs(cuisine: string | undefined): Crumb[] {
-  const crumbs: Crumb[] = [{ label: 'Recipes', href: '/app' }];
-  if (cuisine) {
-    crumbs.push({
-      label: sentenceCase(cuisine),
-      href: `/app?cuisine=${encodeURIComponent(cuisine)}`,
-    });
-  }
-  return crumbs;
+export function heroCrumbs(cuisine: string | undefined): readonly Crumb[] {
+  return [
+    { label: 'Recipes', href: '/app' },
+    ...(cuisine
+      ? [
+          {
+            label: sentenceCase(cuisine),
+            href: `/app?cuisine=${encodeURIComponent(cuisine)}`,
+          },
+        ]
+      : []),
+  ];
 }
 
 /**
@@ -64,12 +69,12 @@ export function RecipeHero({
   video,
   steps,
   favourite,
-}: {
+}: Readonly<{
   recipeId: string;
   /** The title, already cleaned for display. */
   title: string;
   /** Photo addresses, the cover first (empty when the recipe has none). */
-  images: string[];
+  images: readonly string[];
   tone: Tone;
   cuisine?: string;
   course?: string;
@@ -79,12 +84,12 @@ export function RecipeHero({
   sourceUrl?: string;
   /** A video for the recipe, when it links one. */
   video?: string;
-  steps: StepToken[][];
+  steps: readonly (readonly StepToken[])[];
   favourite: boolean;
-}) {
+}>): ReactElement {
   const eyebrow = heroEyebrow(cuisine, course);
   return (
-    <section className="border-ink/10 @container border-b print:border-0">
+    <section className="border-line @container border-b print:border-0">
       <div className="grid grid-cols-1 lg:grid-cols-2 print:block">
         <HeroPhoto
           images={images}

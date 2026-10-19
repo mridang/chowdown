@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 
 import { PlugIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -8,41 +8,65 @@ import { Card } from '@/components/ui/card';
 import { accessLabel, type ConnectedApp } from '@/lib/connected-apps';
 import { relativeTime } from '@/lib/intl';
 
+/** Whether a value has the members of a {@link ConnectedApp} that this list shows. */
+function isConnectedApp(value: unknown): value is ConnectedApp {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    typeof value.id === 'string' &&
+    'name' in value &&
+    typeof value.name === 'string' &&
+    'scopes' in value &&
+    Array.isArray(value.scopes)
+  );
+}
+
+/** The apps in the answer of `GET /api/users/self/connected-apps`; anything unreadable is left out. */
+function appsOf(body: unknown): readonly ConnectedApp[] {
+  return typeof body === 'object' &&
+    body !== null &&
+    'items' in body &&
+    Array.isArray(body.items)
+    ? body.items.filter(isConnectedApp)
+    : [];
+}
+
 /**
  * The assistants that have been given access with sign-in, each with a
  * Disconnect button. The list loads in the browser once the page is up, so it
  * adds nothing to the page's own load time; disconnecting an app revokes its
  * tokens at once and drops it from the list.
  */
-export function ConnectedApps() {
-  const [apps, setApps] = useState<ConnectedApp[] | null>(null);
+export function ConnectedApps(): ReactElement {
+  const [apps, setApps] = useState<readonly ConnectedApp[] | null>(null);
   const [failed, setFailed] = useState(false);
   /** The app currently being disconnected, and a message if that fails. */
   const [busyId, setBusyId] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
 
   useEffect(() => {
-    let live = true;
-    fetch('/api/users/self/connected-apps')
+    // Leaving the page cancels the request, and a cancelled request must not
+    // set state on a component that has gone.
+    const controller = new AbortController();
+    fetch('/api/users/self/connected-apps', { signal: controller.signal })
       .then(async (res) => {
         if (!res.ok) {
           throw new Error(String(res.status));
         }
-        return ((await res.json()) as { items: ConnectedApp[] }).items;
+        return appsOf(await res.json());
       })
       .then((items) => {
-        if (live) {
+        if (!controller.signal.aborted) {
           setApps(items);
         }
       })
       .catch(() => {
-        if (live) {
+        if (!controller.signal.aborted) {
           setFailed(true);
         }
       });
-    return () => {
-      live = false;
-    };
+    return () => controller.abort();
   }, []);
 
   const disconnect = useCallback(async (grantId: string) => {

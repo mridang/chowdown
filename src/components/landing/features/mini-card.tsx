@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import { TintTile } from '@/components/ui/tint-tile';
 import { duration } from '@/lib/format';
@@ -7,9 +9,11 @@ import { duration } from '@/lib/format';
  * has the tighter corner of a control, not the card corner, because it sits
  * inside a mock window rather than on the page.
  */
-export function MiniCard({ recipe }: { recipe: SampleRecipe }) {
+export function MiniCard({
+  recipe,
+}: Readonly<{ recipe: SampleRecipe }>): ReactElement {
   return (
-    <div className="rounded-control border-ink/10 overflow-hidden border bg-white">
+    <div className="rounded-control border-line overflow-hidden border bg-white">
       <TintTile tone={recipe.tone} className="aspect-[4/3]" />
       <div className="px-3 py-2.5">
         <p className="line-clamp-2 min-h-[2lh] text-sm leading-snug font-semibold">

@@ -1,4 +1,6 @@
-import { RECIPES } from '@/components/landing/demo-recipes';
+import type { ReactElement } from 'react';
+
+import { HERO_RECIPE, RECIPES } from '@/components/landing/demo-recipes';
 import { Faq } from '@/components/landing/faq';
 import { Facts } from '@/components/landing/facts';
 import { Features } from '@/components/landing/features/features';
@@ -19,16 +21,19 @@ import { jsonLdText, landingJsonLd } from '@/lib/seo';
  */
 export function HomeLanding({
   signInFailed = false,
-}: {
+}: Readonly<{
   /** Google sign-in just failed and sent them back here. */
   signInFailed?: boolean;
-}) {
-  const hero = RECIPES[0]!;
+}>): ReactElement {
   return (
     <>
       {signInFailed ? (
         <Container className="pt-6">
-          <Callout shape="banner" className="text-sm leading-relaxed">
+          <Callout
+            tone="plain"
+            shape="banner"
+            className="text-sm leading-relaxed"
+          >
             Signing in with Google didn’t work. Nothing was changed, so please
             try again.
           </Callout>
@@ -67,7 +72,7 @@ export function HomeLanding({
           <WorksWith />
         </div>
         <div className="lg:pb-10">
-          <HeroVisual recipe={hero} />
+          <HeroVisual recipe={HERO_RECIPE} />
         </div>
       </Container>
       <SampleStrip recipes={RECIPES.slice(0, 6)} />

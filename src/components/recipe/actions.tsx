@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 
 import {
   CheckIcon,
@@ -24,7 +24,9 @@ import { DeleteDialog } from './delete-dialog';
  * Share the recipe using the device's own share sheet where there is one (phones,
  * and many desktops); otherwise copy the address and say so.
  */
-export function ShareButton({ title }: { title: string }) {
+export function ShareButton({
+  title,
+}: Readonly<{ title: string }>): ReactElement {
   const [copied, setCopied] = useState(false);
   const share = async () => {
     const url = window.location.href;
@@ -71,13 +73,27 @@ const MORE_ACTIONS_LABEL = 'More actions';
  * thing that is still there.
  */
 export function focusMoreActionsButton(
-  container: {
+  container: Readonly<{
     querySelector(selector: string): { focus(): void } | null;
-  } | null,
+  }> | null,
 ): void {
   container
     ?.querySelector(`button[aria-label="${MORE_ACTIONS_LABEL}"]`)
     ?.focus();
+}
+
+/**
+ * Whether the auto-tag endpoint's answer says the recipe was tagged. The body
+ * comes off the network, so it is checked rather than trusted: anything but
+ * `{ "tagged": true }` counts as "not tagged".
+ */
+export function wasTagged(body: unknown): boolean {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    'tagged' in body &&
+    body.tagged === true
+  );
 }
 
 /**
@@ -91,10 +107,10 @@ export function focusMoreActionsButton(
 export function MoreMenu({
   recipeId,
   title,
-}: {
+}: Readonly<{
   recipeId: string;
   title: string;
-}) {
+}>): ReactElement {
   const router = useRouter();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [status, setStatus] = useState('');
@@ -133,8 +149,7 @@ export function MoreMenu({
       if (!res.ok) {
         throw await problemError(res);
       }
-      const data = (await res.json()) as { tagged: boolean };
-      if (data.tagged) {
+      if (wasTagged(await res.json())) {
         say('Tags updated.');
         router.refresh();
       } else {
@@ -154,7 +169,7 @@ export function MoreMenu({
         <Popover
           label={MORE_ACTIONS_LABEL}
           button={<span aria-hidden="true">⋯</span>}
-          buttonClassName="rounded-control border-ink/25 hover:border-ink grid h-10 w-10 place-items-center border bg-white text-xl leading-none transition focus-ring"
+          buttonClassName="rounded-control border-field hover:border-ink grid h-10 w-10 place-items-center border bg-white text-xl leading-none transition focus-ring"
           panelClassName="print:hidden"
         >
           <button

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { Eyebrow, Heading } from '@/components/ui/layout';
 
@@ -13,13 +13,15 @@ export function Feature({
   body,
   flip,
   children,
-}: {
+}: Readonly<{
   eyebrow: string;
   title: string;
   body: string;
+  /** Put the picture on the left (wide screens only). */
   flip?: boolean;
+  /** The picture. */
   children: ReactNode;
-}) {
+}>): ReactElement {
   return (
     <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
       <div className={flip ? 'lg:order-2' : undefined}>

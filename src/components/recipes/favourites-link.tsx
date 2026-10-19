@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useSyncExternalStore, type ReactElement } from 'react';
 
 import { HeartIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
@@ -19,12 +19,12 @@ export function FavouritesLink({
   href,
   active,
   serverIds,
-}: {
+}: Readonly<{
   href: string;
   active: boolean;
   /** The recipes that are favourites according to the server. */
-  serverIds: string[];
-}) {
+  serverIds: readonly string[];
+}>): ReactElement {
   const count = useSyncExternalStore(
     subscribeFavourites,
     () => liveFavouriteCount(serverIds),

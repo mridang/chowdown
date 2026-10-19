@@ -8,6 +8,7 @@ import {
 } from '@jest/globals';
 
 import {
+  Popover,
   PopoverLabel,
   PopoverSeparator,
   closeAfterClick,
@@ -54,5 +55,24 @@ describe('PopoverLabel', () => {
       out.indexOf('ada@example.com'),
     );
     expect(out).toContain('truncate');
+  });
+});
+
+describe('Popover', () => {
+  const out = html(
+    <Popover label="Menu" button="Open">
+      <a href="/x">Inside</a>
+    </Popover>,
+  );
+
+  it('is a button that says the panel is closed, named for what it opens', () => {
+    expect(out).toMatch(/<button[^>]*aria-label="Menu"[^>]*>Open<\/button>/);
+    expect(out).toContain('aria-expanded="false"');
+    expect(out).toContain('data-state="closed"');
+  });
+
+  it('keeps the panel out of the page until it is opened', () => {
+    expect(out).not.toContain('Inside');
+    expect(out).not.toContain('aria-controls');
   });
 });

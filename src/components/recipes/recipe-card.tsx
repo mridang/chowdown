@@ -1,16 +1,12 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { CoverImage } from '@/components/cover-image';
 import { IntentLink } from '@/components/ui/intent-link';
 
-import {
-  ClockIcon,
-  FlameIcon,
-  HeartIcon,
-  ProteinIcon,
-} from '@/components/icons';
+import { ClockIcon, FlameIcon, ProteinIcon } from '@/components/icons';
 import { CardFact } from '@/components/recipes/card-fact';
-import { CardHeart } from '@/components/recipes/card-heart';
+import { FavouriteBadge } from '@/components/recipes/favourite-badge';
+import { FavouriteButton } from '@/components/recipes/favourite-button';
 import { cn } from '@/components/ui/cn';
 import { Heading } from '@/components/ui/layout';
 import { TintTile } from '@/components/ui/tint-tile';
@@ -27,13 +23,13 @@ export function PhotoBlock({
   cover,
   className,
   priority,
-}: {
+}: Readonly<{
   tone: Tone;
   cover?: string;
   className?: string;
   /** The photo is above the fold, so load it straight away. */
   priority?: boolean;
-}) {
+}>): ReactElement {
   // A recipe without a cover still gets a quiet block of colour.
   const tile = <TintTile tone={tone} className="h-full w-full" />;
   return (
@@ -56,6 +52,9 @@ export function PhotoBlock({
   );
 }
 
+/** Where the heart sits on a card: the top-right corner of the photo. */
+const HEART_POSITION = 'absolute top-3 right-3';
+
 /**
  * A recipe card. Every card in a grid is the same height: the photo is a fixed
  * ratio, the title reserves two lines, and the facts sit on the bottom edge.
@@ -70,14 +69,14 @@ export function RecipeCard({
   live = false,
   priority = false,
   headingLevel = 'h3',
-}: {
+}: Readonly<{
   recipe: CardRecipe;
   live?: boolean;
   /** The card is above the fold: load its photo eagerly. */
   priority?: boolean;
   /** The card title's heading level: one below the heading it sits under. */
   headingLevel?: 'h2' | 'h3';
-}) {
+}>): ReactElement {
   // A recipe typed in by hand has no cuisine; its source site is the next best
   // line to show, and a bare idea has neither.
   const kicker = recipe.cuisine || recipe.site;
@@ -89,7 +88,7 @@ export function RecipeCard({
         enabled={live}
         eager={priority}
         href={`/recipe/${recipe.id}`}
-        className="rounded-card border-ink/10 group-hover:border-ink/30 flex h-full flex-col overflow-hidden border bg-white transition focus-ring"
+        className="rounded-card border-line group-hover:border-ink/30 flex h-full flex-col overflow-hidden border bg-white transition focus-ring"
       >
         <PhotoBlock
           tone={recipe.tone}
@@ -135,21 +134,16 @@ export function RecipeCard({
         </span>
       ) : null}
       {live ? (
-        <CardHeart recipeId={recipe.id} initial={recipe.favourite} />
+        <FavouriteButton
+          recipeId={recipe.id}
+          initial={recipe.favourite}
+          variant="overlay"
+          className={HEART_POSITION}
+        />
       ) : (
         // A demo card's heart is only decoration: it is not a control, so it is
         // neither focusable nor announced.
-        <span
-          aria-hidden="true"
-          className={cn(
-            'border-ink/10 absolute top-3 right-3 grid h-9 w-9 place-items-center rounded-full border bg-white transition',
-            recipe.favourite
-              ? 'text-ember'
-              : 'text-muted hover:text-ember [@media(hover:hover)]:opacity-0 group-focus-within:opacity-100 group-hover:opacity-100',
-          )}
-        >
-          <HeartIcon size="menu" filled={recipe.favourite} />
-        </span>
+        <FavouriteBadge on={recipe.favourite} className={HEART_POSITION} />
       )}
     </article>
   );
@@ -159,10 +153,10 @@ export function RecipeCard({
 export function RecipeGrid({
   children,
   columns = 3,
-}: {
+}: Readonly<{
   children: ReactNode;
   columns?: 3 | 4;
-}) {
+}>): ReactElement {
   return (
     <div
       className={cn(

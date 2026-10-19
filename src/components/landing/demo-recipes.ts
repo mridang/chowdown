@@ -10,20 +10,28 @@
 
 import type { CardRecipe, DifficultyLevel, Tone } from '@/lib/recipe/card-data';
 
+/** The soft colours a recipe tile can wear, re-exported for the landing page's mock-ups. */
 export type { Tone };
-/** A demo recipe is shaped like a saved one, but always has its facts. */
-export type SampleRecipe = CardRecipe & {
-  minutes: number;
-  servings: number;
-  difficulty: DifficultyLevel;
-};
 
+/** A demo recipe is shaped like a saved one, but always has its facts. */
+export type SampleRecipe = CardRecipe &
+  Readonly<{
+    minutes: number;
+    servings: number;
+    difficulty: DifficultyLevel;
+  }>;
+
+/** The sample recipes: always at least one, so the hero picture always has its recipe. */
+export type SampleRecipes = readonly [SampleRecipe, ...SampleRecipe[]];
+
+/** What each sample recipe states itself; the rest is the same for all of them. */
 type BaseRecipe = Omit<
   SampleRecipe,
   'category' | 'diet' | 'method' | 'keywords'
 >;
 
-const BASE: BaseRecipe[] = [
+/** The eight recipes, the first of which becomes the featured one. */
+const BASE: readonly [BaseRecipe, ...BaseRecipe[]] = [
   {
     id: 'a',
     title: 'Smoky Chipotle Chicken Tacos',
@@ -142,12 +150,27 @@ simmer for ~{25%minutes}.
 Warm @corn tortillas{8} and fill.
 `;
 
-/** The sample recipes the landing page draws. */
-export const RECIPES: SampleRecipe[] = BASE.map((r, i) => ({
-  ...r,
-  category: 'Main',
-  diet: [],
-  method: ['Stovetop'],
-  keywords: [],
-  ...(i === 0 ? { cooklang: TACOS_COOKLANG } : {}),
-}));
+/** A base recipe filled out with the facts every sample shares. */
+function toSample(base: BaseRecipe): SampleRecipe {
+  return {
+    ...base,
+    category: 'Main',
+    diet: [],
+    method: ['Stovetop'],
+    keywords: [],
+  };
+}
+
+const [FIRST, ...REST] = BASE;
+
+/**
+ * The featured recipe: the one the hero picture shows as a text file and as the
+ * finished recipe. Alone among the samples it carries its Cooklang source.
+ */
+export const HERO_RECIPE: SampleRecipe = {
+  ...toSample(FIRST),
+  cooklang: TACOS_COOKLANG,
+};
+
+/** The sample recipes the landing page draws, the featured one first. */
+export const RECIPES: SampleRecipes = [HERO_RECIPE, ...REST.map(toSample)];

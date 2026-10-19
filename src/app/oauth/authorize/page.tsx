@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import type { ReactElement } from 'react';
 
 import { CenteredCard } from '@/components/site/centered-card';
 import { CheckIcon } from '@/components/icons';
@@ -12,6 +13,7 @@ import { getCurrentUser } from '@/lib/auth/current-user';
 import { isDriveConnected, wasDriveConnected } from '@/lib/auth/drive-access';
 import { resolveClient } from '@/lib/db/oauth';
 import {
+  AUTHORIZE_FIELDS,
   redirectWith,
   validateAuthorizeRequest,
   type AuthorizeParams,
@@ -19,22 +21,11 @@ import {
 import { SCOPE_READ, SCOPE_WRITE } from '@/lib/oauth/scopes';
 import { appOriginFromHeaders, getDatabase } from '@/lib/util';
 
+/** The tab title of the approval screen. */
 export const metadata: Metadata = { title: 'Connect an app · chowdown' };
 
-/** The form fields passed through to the consent POST. */
-const FIELDS = [
-  'client_id',
-  'redirect_uri',
-  'response_type',
-  'state',
-  'code_challenge',
-  'code_challenge_method',
-  'scope',
-  'resource',
-] as const;
-
 /** What each scope lets the app do, in plain words. */
-const SCOPE_TEXT: Record<string, string> = {
+const SCOPE_TEXT: Readonly<Record<string, string>> = {
   [SCOPE_READ]: 'See your recipes, search them and find similar ones',
   [SCOPE_WRITE]:
     'Add, edit, tag, favourite and annotate recipes, and change your settings',
@@ -42,13 +33,29 @@ const SCOPE_TEXT: Record<string, string> = {
 
 /** First value of each query parameter. */
 function flatten(
-  raw: Record<string, string | string[] | undefined>,
+  raw: Readonly<Record<string, string | readonly string[] | undefined>>,
 ): AuthorizeParams {
-  const out: AuthorizeParams = {};
-  for (const [key, value] of Object.entries(raw)) {
-    out[key] = Array.isArray(value) ? value[0] : value;
+  return Object.fromEntries(
+    Object.entries(raw).map(([key, value]) => [
+      key,
+      Array.isArray(value) ? value[0] : value,
+    ]),
+  );
+}
+
+/**
+ * Where approving will send the person, in the short form the screen shows: the
+ * host of the redirect address, or its scheme when it has no host (a custom
+ * scheme such as `claude://`). An address that cannot be parsed is shown as
+ * written; it has already been validated, so this is only a safety net.
+ */
+function destinationOf(redirectUri: string): string {
+  try {
+    const url = new URL(redirectUri);
+    return url.host || url.protocol;
+  } catch {
+    return redirectUri;
   }
-  return out;
 }
 
 /**
@@ -59,9 +66,11 @@ function flatten(
  */
 export default async function AuthorizePage({
   searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+}: Readonly<{
+  searchParams: Promise<
+    Readonly<Record<string, string | readonly string[] | undefined>>
+  >;
+}>): Promise<ReactElement> {
   const raw = await searchParams;
   const params = flatten(raw);
   const origin = appOriginFromHeaders(await headers());
@@ -120,12 +129,7 @@ export default async function AuthorizePage({
   }
 
   const { client, redirectUri, scope } = check.request;
-  let target = redirectUri;
-  try {
-    target = new URL(redirectUri).host || new URL(redirectUri).protocol;
-  } catch {
-    // validated already; show it raw if somehow unparseable
-  }
+  const target = destinationOf(redirectUri);
 
   return (
     <CenteredCard>
@@ -151,7 +155,7 @@ export default async function AuthorizePage({
         apps you trust. You can disconnect it any time from chowdown.
       </Callout>
       <form action="/oauth/consent" method="post" className="mt-6">
-        {FIELDS.map((name) =>
+        {AUTHORIZE_FIELDS.map((name) =>
           params[name] === undefined ? null : (
             <input key={name} type="hidden" name={name} value={params[name]} />
           ),

@@ -14,4 +14,8 @@ describe('PageSkeleton', () => {
   it('stands in for four cards', () => {
     expect(html(<PageSkeleton />).match(/h-64/g)).toHaveLength(4);
   });
+
+  it('sits in the same page column as the page it stands in for', () => {
+    expect(html(<PageSkeleton />)).toContain('max-w-[90rem]');
+  });
 });

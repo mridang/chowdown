@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import { MiniCard } from '@/components/landing/features/mini-card';
@@ -11,12 +11,12 @@ function FilterOption({
   label,
   count,
   on,
-}: {
+}: Readonly<{
   label: string;
   count: number;
   /** Whether the option is ticked. */
   on?: boolean;
-}) {
+}>): ReactElement {
   return (
     <li className="flex items-center gap-2.5 text-sm">
       <span
@@ -46,10 +46,10 @@ function FilterOption({
 function FilterGroup({
   title,
   children,
-}: {
+}: Readonly<{
   title: string;
   children: ReactNode;
-}) {
+}>): ReactElement {
   return (
     <div>
       <Eyebrow tone="subtle">{title}</Eyebrow>
@@ -59,7 +59,9 @@ function FilterGroup({
 }
 
 /** Filtering: a filter panel next to the recipes it leaves. */
-export function FiltersVisual({ recipes }: { recipes: SampleRecipe[] }) {
+export function FiltersVisual({
+  recipes,
+}: Readonly<{ recipes: readonly SampleRecipe[] }>): ReactElement {
   const count = (test: (recipe: SampleRecipe) => boolean) =>
     recipes.filter(test).length;
   // The two ticked options (Easy, 16-30 min) decide which recipes are shown.

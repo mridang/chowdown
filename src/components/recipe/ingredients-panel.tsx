@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
 
 import { CheckIcon, MinusIcon, PanIcon, PlusIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
@@ -13,9 +13,22 @@ import { useRecipeState } from './recipe-state';
 
 /** One line of the ingredient list, with any personal notes that belong to it. */
 export interface PanelIngredient {
-  name: string;
-  quantity: string;
-  notes: string[];
+  readonly name: string;
+  readonly quantity: string;
+  readonly notes: readonly string[];
+}
+
+/**
+ * The set with `index` ticked if it was not, or un-ticked if it was. Returns a
+ * new set; the one passed in is left as it was.
+ */
+export function toggledIn(
+  ticked: ReadonlySet<number>,
+  index: number,
+): ReadonlySet<number> {
+  return ticked.has(index)
+    ? new Set([...ticked].filter((i) => i !== index))
+    : new Set([...ticked, index]);
 }
 
 /**
@@ -27,26 +40,18 @@ export interface PanelIngredient {
 export function IngredientsPanel({
   ingredients,
   cookware,
-}: {
-  ingredients: PanelIngredient[];
-  cookware: string[];
-}) {
+}: Readonly<{
+  ingredients: readonly PanelIngredient[];
+  cookware: readonly string[];
+}>): ReactElement {
   const { people, setPeople, units, setUnits, quantity } = useRecipeState();
-  const [done, setDone] = useState<Set<number>>(new Set());
+  const [done, setDone] = useState<ReadonlySet<number>>(new Set());
   // Only reserve a column for amounts when some ingredient has one, so a recipe
   // that writes them into the name doesn't get a blank gap.
   const hasAmounts = ingredients.some((ingredient) => ingredient.quantity);
 
   const toggle = (index: number) =>
-    setDone((current) => {
-      const next = new Set(current);
-      if (next.has(index)) {
-        next.delete(index);
-      } else {
-        next.add(index);
-      }
-      return next;
-    });
+    setDone((current) => toggledIn(current, index));
 
   return (
     <div>
@@ -83,7 +88,7 @@ export function IngredientsPanel({
             aria-label="Fewer servings"
             disabled={people <= 1}
             onClick={() => setPeople((n) => Math.max(1, n - 1))}
-            className="rounded-control hover:bg-ink/5 focus-visible:outline-ink grid h-9 w-9 place-items-center transition focus-visible:outline-2 disabled:opacity-35"
+            className="rounded-control hover:bg-ink/5 grid h-9 w-9 place-items-center transition disabled:opacity-35 focus-ring-flush"
           >
             <MinusIcon size="sm" />
           </button>
@@ -97,7 +102,7 @@ export function IngredientsPanel({
             type="button"
             aria-label="More servings"
             onClick={() => setPeople((n) => n + 1)}
-            className="rounded-control hover:bg-ink/5 focus-visible:outline-ink grid h-9 w-9 place-items-center transition focus-visible:outline-2"
+            className="rounded-control hover:bg-ink/5 grid h-9 w-9 place-items-center transition focus-ring-flush"
           >
             <PlusIcon size="sm" />
           </button>
@@ -105,7 +110,7 @@ export function IngredientsPanel({
       </div>
 
       {ingredients.length > 0 ? (
-        <ul className="divide-ink/10 border-ink/10 mt-4 divide-y border-y">
+        <ul className="divide-line border-line mt-4 divide-y border-y">
           {ingredients.map((ingredient, index) => {
             const ticked = done.has(index);
             return (
@@ -115,7 +120,7 @@ export function IngredientsPanel({
                   role="checkbox"
                   aria-checked={ticked}
                   onClick={() => toggle(index)}
-                  className="focus-visible:outline-ink flex min-h-11 w-full items-center gap-3 py-2 text-left text-base focus-visible:outline-2"
+                  className="flex min-h-11 w-full items-center gap-3 py-2 text-left text-base focus-ring-flush"
                 >
                   <span
                     className={cn(

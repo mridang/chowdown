@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 import { Skeleton, SkeletonFrame } from '@/components/ui/skeleton';
 import { Container } from '@/components/ui/layout';
 
@@ -8,10 +10,10 @@ import { Container } from '@/components/ui/layout';
  * server responds. It mirrors the real page's layout (split hero, facts, then
  * ingredients beside the method) so nothing jumps when the content arrives.
  */
-export default function RecipeLoading() {
+export default function RecipeLoading(): ReactElement {
   return (
     <SkeletonFrame label="Loading recipe">
-      <div className="border-ink/10 border-b">
+      <div className="border-line border-b">
         <div className="grid grid-cols-1 lg:grid-cols-2">
           <Skeleton
             shape="square"

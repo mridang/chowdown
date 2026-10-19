@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { SlidersIcon } from '@/components/icons';
 import { CountBadge } from '@/components/ui/chip';
@@ -12,17 +12,23 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
-/** On phones the filters live in a drawer opened from a button. */
+/**
+ * On phones the filters live in a drawer opened from a "Filters" button, which
+ * shows how many are on. From the `md` breakpoint the button is hidden and the
+ * panel is laid out in the page instead.
+ */
 export function FilterDrawer({
   activeCount,
   children,
-}: {
+}: Readonly<{
+  /** How many filters are switched on; shown on the button when above zero. */
   activeCount: number;
+  /** The filter panel to show inside the drawer. */
   children: ReactNode;
-}) {
+}>): ReactElement {
   return (
     <Dialog>
-      <DialogTrigger className="rounded-control border-ink/20 focus-visible:outline-ink flex h-11 w-full items-center justify-between border bg-white px-4 text-sm font-semibold outline-none focus-visible:outline-2 md:hidden">
+      <DialogTrigger className="rounded-control border-ink/20 flex h-11 w-full items-center justify-between border bg-white px-4 text-sm font-semibold outline-none md:hidden focus-ring-flush">
         <span className="flex items-center gap-2">
           <SlidersIcon size="menu" />
           Filters

@@ -5,13 +5,15 @@
  * which renders the recipe card). Data/actions via the shared bridge.
  */
 
+import type { ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import type { RecipeListData } from '../lib/mcp/ui-types';
 import { STYLES } from './styles';
 import { useWidgetData } from './use-widget-data';
 
-function RecipeListApp() {
+/** The View: a loading note, then the list of recipes as tappable tiles. */
+function RecipeListApp(): ReactElement {
   const { data, sendFollowUp } = useWidgetData<RecipeListData>(
     'chowdown-recipe-list',
   );

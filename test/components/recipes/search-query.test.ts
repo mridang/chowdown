@@ -75,6 +75,14 @@ describe('parseQuery', () => {
     });
   });
 
+  it('leaves out a filter with nothing chosen, blanks and stray commas included', () => {
+    expect(parseQuery({ protein: ' , ,', cuisine: '' }).selected).toEqual({});
+  });
+
+  it('takes the first of a repeated parameter', () => {
+    expect(parseQuery({ q: ['rice', 'pasta'] }).q).toBe('rice');
+  });
+
   it('falls back to defaults for unknown sorts and bad limits', () => {
     expect(parseQuery({ sort: 'random', limit: '3' })).toMatchObject({
       sort: 'title',
@@ -304,6 +312,47 @@ describe('buildFacets', () => {
     expect(
       facet('site', query({ site: 'b.com' }))!.options.map((o) => o.value),
     ).toEqual(['a.com', 'b.com']);
+  });
+
+  it('lists difficulty from easiest to hardest, whatever the counts', () => {
+    const levels = buildFacets(
+      [
+        recipe({ id: 'h1', difficulty: 'Hard' }),
+        recipe({ id: 'h2', difficulty: 'Hard' }),
+        recipe({ id: 'e', difficulty: 'Easy' }),
+        recipe({ id: 'm', difficulty: 'Medium' }),
+      ],
+      query(),
+    ).find((f) => f.key === 'difficulty');
+    expect(levels!.options.map((o) => o.value)).toEqual([
+      'Easy',
+      'Medium',
+      'Hard',
+    ]);
+  });
+
+  it('lists the other filters by popularity, then alphabetically', () => {
+    const cuisines = buildFacets(
+      [
+        recipe({ id: '1', cuisine: 'Thai' }),
+        recipe({ id: '2', cuisine: 'Indian' }),
+        recipe({ id: '3', cuisine: 'Indian' }),
+        recipe({ id: '4', cuisine: 'Greek' }),
+      ],
+      query(),
+    ).find((f) => f.key === 'cuisine');
+    expect(cuisines!.options.map((o) => o.value)).toEqual([
+      'Indian',
+      'Greek',
+      'Thai',
+    ]);
+  });
+
+  it('labels a time bucket by its range', () => {
+    expect(facet('time')!.options.map((o) => o.label)).toEqual([
+      '16–30 min',
+      'Over an hour',
+    ]);
   });
 
   it('marks active options and links to toggle them', () => {
