@@ -137,13 +137,25 @@ describe('handleMcpMessage routing', () => {
   });
 
   it('marks results complete only for the newest revision', async () => {
-    expect(await send({ method: 'ping', params: MODERN_META })).toMatchObject({
+    expect(
+      await send({ method: 'tools/list', params: MODERN_META }),
+    ).toMatchObject({
       result: { resultType: 'complete' },
     });
     expect(await send({ method: 'ping' })).not.toHaveProperty(
       'result.resultType',
     );
   });
+
+  it.each(['initialize', 'ping'])(
+    'answers %s for the older revisions, and says it was removed to the newest',
+    async (method) => {
+      expect(await send({ method })).toMatchObject({ result: {} });
+      expect(await send({ method, params: MODERN_META })).toMatchObject({
+        error: { code: -32601 },
+      });
+    },
+  );
 
   it('lists the tools', async () => {
     const reply = await send({ method: 'tools/list' });
@@ -406,7 +418,7 @@ describe('handleMcpMessage — the newest revision', () => {
 
   it('puts no cache hints on results that are not cacheable', async () => {
     for (const message of [
-      { method: 'ping', params: MODERN },
+      { method: 'ping' },
       {
         method: 'tools/call',
         params: { name: 'list_recipes', arguments: {}, ...MODERN },
@@ -430,7 +442,7 @@ describe('handleMcpMessage — the newest revision', () => {
 
   it('names the server in the _meta of every result', async () => {
     for (const message of [
-      { method: 'ping', params: MODERN },
+      { method: 'prompts/list', params: MODERN },
       { method: 'tools/list', params: MODERN },
       { method: 'resources/list', params: MODERN },
       { method: 'server/discover', params: MODERN },

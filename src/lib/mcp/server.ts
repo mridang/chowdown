@@ -146,6 +146,11 @@ interface Route {
   readonly cache?: CacheHint | ((result: object) => CacheHint);
   /** Whether the method belongs to the newest revision only (and so always gets its result fields). */
   readonly modernOnly?: true;
+  /**
+   * Whether the newest revision removed the method: a request of that era gets
+   * "method not found", while the older revisions still use it.
+   */
+  readonly legacyOnly?: true;
 }
 
 /** The answer to the older revisions' `initialize` handshake. */
@@ -292,12 +297,12 @@ async function callTool(call: Call): Promise<object> {
 
 /** Every method the server answers, by name (a `Map`, so `constructor` and friends are not methods). */
 const ROUTES: ReadonlyMap<string, Route> = new Map<string, Route>([
-  ['initialize', { handle: initializeResult }],
+  ['initialize', { handle: initializeResult, legacyOnly: true }],
   [
     'server/discover',
     { handle: discoverResult, cache: CACHE_HINTS.discover, modernOnly: true },
   ],
-  ['ping', { handle: () => ({}) }],
+  ['ping', { handle: () => ({}), legacyOnly: true }],
   ['tools/list', { handle: () => ({ tools: TOOLS }), cache: CACHE_HINTS.list }],
   ['tools/call', { handle: callTool }],
   ['resources/list', { handle: resourceListResult, cache: CACHE_HINTS.list }],
@@ -368,7 +373,7 @@ export async function handleMcpMessage(
   }
   const id = replyIdOf(message.id);
   const route = ROUTES.get(message.method ?? '');
-  if (!route) {
+  if (!route || (route.legacyOnly && isModernRequest(message))) {
     return failed(id, ERROR_METHOD_NOT_FOUND, 'Method not found');
   }
   try {

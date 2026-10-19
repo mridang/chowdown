@@ -568,7 +568,10 @@ describe('handleMcpPost — protocol checks', () => {
   });
 
   it('adds resultType to a newest-era result and leaves an older one alone', async () => {
-    const newest = await send(modern('ping'), modernHeaders('ping'));
+    const newest = await send(
+      modern('tools/list'),
+      modernHeaders('tools/list'),
+    );
     expect(newest.json?.result?.['resultType']).toBe('complete');
     const older = await send({ jsonrpc: '2.0', id: 2, method: 'ping' });
     expect(older.json?.result).not.toHaveProperty('resultType');

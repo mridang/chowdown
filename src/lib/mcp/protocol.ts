@@ -367,8 +367,8 @@ export function checkBatch(
  *  - A request with no `_meta` version is an older-era request and may omit every
  *    header. But one whose header says 2026-07-28 has no `_meta` to match it,
  *    which makes it malformed.
- *  - A request that declares a version in `_meta` must declare it as text, name a
- *    version we speak, and that must be 2026-07-28: the older revisions are only
+ *  - A request that declares a version in `_meta` must declare it as text, agree
+ *    with the header if there is one (else `-32020`), name a version we speak, and that must be 2026-07-28: the older revisions are only
  *    reached by `initialize`. It must repeat that version in the header, carry
  *    the client's capabilities as an object, and `Mcp-Method` (and `Mcp-Name` for
  *    calls that name something) must match too: a gateway may route on the
@@ -400,7 +400,14 @@ export function checkRequestHeaders(
     return malformed(`_meta["${META_VERSION}"] must be a string.`, id);
   }
   if (!SUPPORTED_VERSIONS.includes(fromBody)) {
-    return unsupportedVersion(fromBody, id);
+    // A header that names another version is the more basic fault: the two
+    // places must agree before it matters whether we speak what they say.
+    return fromHeader !== undefined && fromHeader !== fromBody
+      ? mismatch(
+          `Header mismatch: MCP-Protocol-Version is "${fromHeader}" but the body says "${fromBody}".`,
+          id,
+        )
+      : unsupportedVersion(fromBody, id);
   }
   if (fromBody !== MODERN_VERSION) {
     return unsupportedVersion(

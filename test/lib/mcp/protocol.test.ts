@@ -468,6 +468,32 @@ describe('checkRequestHeaders — refusals name the request', () => {
 });
 
 describe('checkRequestHeaders — per-request metadata', () => {
+  const unspeakable = {
+    jsonrpc: '2.0' as const,
+    id: 1,
+    method: 'tools/list',
+    params: { _meta: { [META]: 'v999.0.0', [CAPS]: {} } },
+  };
+
+  it('calls a header that names another version than the body a mismatch, even when the body names one we do not speak', () => {
+    const refusal = checkRequestHeaders(headers(good), unspeakable);
+    expect(refusal?.status).toBe(400);
+    expect(refusal?.body.error.code).toBe(-32020);
+  });
+
+  it('still calls a version we do not speak unsupported when there is no header to disagree with', () => {
+    const refusal = checkRequestHeaders(headers({}), unspeakable);
+    expect(refusal?.body.error.code).toBe(-32022);
+  });
+
+  it('calls a version we do not speak unsupported when the header says the same', () => {
+    const refusal = checkRequestHeaders(
+      headers({ 'mcp-protocol-version': 'v999.0.0' }),
+      unspeakable,
+    );
+    expect(refusal?.body.error.code).toBe(-32022);
+  });
+
   const withMeta = (meta: Record<string, unknown>, id = 1) => ({
     jsonrpc: '2.0' as const,
     id,
