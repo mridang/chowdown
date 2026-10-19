@@ -118,6 +118,19 @@ describe('get_recipe', () => {
     expect(said(result)).toBe('No recipe found matching "pizza".');
     expect(result.isError).toBeUndefined();
   });
+
+  it('says no recipe was named, and never says "undefined", when the name is missing or blank', async () => {
+    for (const args of [{}, { name: '' }, { name: '   ' }]) {
+      const result = await call(
+        'get_recipe',
+        args,
+        folder({ 'Pancakes.cook': PANCAKES }),
+      );
+      expect(said(result)).toBe(
+        'No recipe was named. Say which recipe you mean.',
+      );
+    }
+  });
 });
 
 describe('capture_idea', () => {

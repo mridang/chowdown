@@ -64,6 +64,11 @@ async function completeSignIn(
   info: GoogleUser,
   db: Database,
 ): Promise<NextResponse> {
+  if (!info.email) {
+    // Signing in asked for the email scope, so Google not sharing one is a
+    // failed sign-in, not an account without an address.
+    throw new Error('Google did not share an email address');
+  }
   const user = await upsertUser(db, {
     google_sub: info.sub,
     email: info.email,

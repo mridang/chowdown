@@ -100,7 +100,10 @@ function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
 
 /** The sentence for a recipe name that matched no file. */
 function noRecipeMatching(asked: unknown): string {
-  return `No recipe found matching "${String(asked)}".`;
+  const name = typeof asked === 'string' ? asked.trim() : '';
+  return name
+    ? `No recipe found matching "${name}".`
+    : 'No recipe was named. Say which recipe you mean.';
 }
 
 /**

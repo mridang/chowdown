@@ -175,8 +175,21 @@ describe('getUserInfo', () => {
     await expect(getUserInfo('at')).rejects.toThrow('userinfo failed: 401');
   });
 
-  it('throws when the answer does not say who the person is', async () => {
+  it('accepts an answer with only `sub`, as a Drive-only grant gives', async () => {
+    // Connecting Drive asks for `openid` and `drive.file` only, so if the earlier
+    // identity grant is gone Google names the account and nothing else. That is
+    // all the Drive step needs.
     answerWith({ sub: '1' });
+    await expect(getUserInfo('at')).resolves.toEqual({ sub: '1' });
+  });
+
+  it('throws when the answer does not say which account it is', async () => {
+    answerWith({ email: 'a@b.com' });
+    await expect(getUserInfo('at')).rejects.toThrow(/unexpected response/);
+  });
+
+  it('throws when the email is not text', async () => {
+    answerWith({ sub: '1', email: 7 });
     await expect(getUserInfo('at')).rejects.toThrow(/unexpected response/);
   });
 });

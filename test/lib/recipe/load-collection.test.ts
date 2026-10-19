@@ -11,6 +11,9 @@ import {
 
 const db = {} as Database;
 
+/** What a mocked collaborator looks like to `expect`, without dragging the database's deep types into the comparison. */
+type Calls = jest.Mock<(...args: readonly unknown[]) => Promise<unknown>>;
+
 /** Thrown by the fake redirect so a test can see where it went. */
 class Redirected extends Error {
   constructor(readonly to: string) {
@@ -108,7 +111,7 @@ describe('loadCollection', () => {
   it('tops up missing embeddings in the background, a few at a time', async () => {
     const { deps, background } = fakes([rows({ recipes: 3, embedded: 1 })]);
     await loadCollection('/app', deps);
-    expect(deps.backfill).toHaveBeenCalledWith(db, 1, 20);
+    expect(deps.backfill as unknown as Calls).toHaveBeenCalledWith(db, 1, 20);
     expect(background).toHaveLength(2);
   });
 

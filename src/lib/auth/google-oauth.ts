@@ -38,10 +38,15 @@ const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 /** Who the person behind an access token is. */
 const USERINFO_ENDPOINT = 'https://openidconnect.googleapis.com/v1/userinfo';
 
-/** The identity fields we keep from the OpenID userinfo response. */
+/**
+ * The identity fields we keep from the OpenID userinfo response. Only `sub` is
+ * always there: a grant that carries just `openid` (connecting Drive, when the
+ * earlier identity grant has been revoked) answers with nothing else, and the
+ * Drive step only needs to know which account approved.
+ */
 export interface GoogleUser {
   readonly sub: string;
-  readonly email: string;
+  readonly email?: string;
   readonly name?: string;
   readonly picture?: string;
 }
@@ -89,7 +94,7 @@ function isGoogleUser(value: unknown): value is GoogleUser {
     typeof value === 'object' &&
     value !== null &&
     hasString(value, 'sub') &&
-    hasString(value, 'email')
+    (!('email' in value) || typeof value.email === 'string')
   );
 }
 
