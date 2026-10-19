@@ -15,22 +15,45 @@
  * 2026-07-28 one are spoken (see `protocol.ts`).
  *
  * This file routes messages (handshake, discovery, listing, calling, reading
- * resources); the tool catalogue is in `tool-definitions.ts` and what the tools
- * do is in `tool-calls.ts`.
+ * resources) through a table of {@link Route}s, so a new method is one entry
+ * (plus a capability); the tool catalogue is in `tool-definitions.ts`, what the
+ * tools do is in `tool-calls.ts`, and what the server says about itself is in
+ * `server-info.ts`.
  */
 
 import type { User } from '../db/users';
 import {
+  ERROR_INTERNAL,
+  ERROR_INVALID_PARAMS,
+  ERROR_METHOD_NOT_FOUND,
+  RpcError,
   SUPPORTED_VERSIONS,
   isModernRequest,
+  isNotification,
+  isPlainObject,
   negotiateLegacyVersion,
+  replyIdOf,
+  type ReplyId,
 } from './protocol';
-import { TOOLS } from './tool-definitions';
+import {
+  CAPABILITIES,
+  INSTRUCTIONS,
+  SERVER_INFO,
+  SERVER_INFO_META_KEY,
+} from './server-info';
+import { PROMPT_DEFINITIONS, getPrompt } from './prompts';
+import {
+  RECIPE_TEMPLATE,
+  isRecipeUri,
+  readRecipeResource,
+} from './recipe-resources';
 import { callToolOrExplain } from './tool-calls';
+import { TOOLS } from './tool-definitions';
+import { InvalidToolArguments, UnknownTool } from './tool-errors';
 import {
   APP_RESOURCES,
-  CARD_UI_META,
   RESOURCE_MIME_TYPE,
+  findAppResource,
 } from './ui-resources';
 
 /** A JSON-RPC 2.0 request/notification, as received (clients may leave any member out). */
@@ -41,8 +64,12 @@ export interface JsonRpcMessage {
   readonly params?: Readonly<Record<string, unknown>>;
 }
 
-/** The id a reply carries: the request's, or null when it had none. */
-type ReplyId = number | string | null;
+/** A JSON-RPC error: what went wrong, and detail for the caller when there is any. */
+export interface JsonRpcErrorBody {
+  readonly code: number;
+  readonly message: string;
+  readonly data?: unknown;
+}
 
 /** A JSON-RPC reply: a result, or an error. */
 export type JsonRpcResponse =
@@ -54,7 +81,7 @@ export type JsonRpcResponse =
   | {
       readonly jsonrpc: '2.0';
       readonly id: ReplyId;
-      readonly error: { readonly code: number; readonly message: string };
+      readonly error: JsonRpcErrorBody;
     };
 
 /** A successful reply. */
@@ -63,35 +90,68 @@ function succeeded(id: ReplyId, result: object): JsonRpcResponse {
 }
 
 /** An error reply. */
-function failed(id: ReplyId, code: number, message: string): JsonRpcResponse {
-  return { jsonrpc: '2.0', id, error: { code, message } };
+function failed(
+  id: ReplyId,
+  code: number,
+  message: string,
+  data?: unknown,
+): JsonRpcResponse {
+  return {
+    jsonrpc: '2.0',
+    id,
+    error: { code, message, ...(data === undefined ? {} : { data }) },
+  };
 }
 
-/** What an assistant should know before using the tools. */
-const INSTRUCTIONS =
-  "chowdown stores the user's cooking recipes as Cooklang files in their Google Drive. " +
-  'IMPORTANT: this server never fetches URLs or browses the web. When the user gives a ' +
-  'recipe link or web page, YOU open and read that page yourself, then call import_recipe ' +
-  "and pass the page's RAW text or HTML as `content` — do NOT convert it to Cooklang " +
-  'yourself; chowdown does the Cooklang conversion so the format stays consistent. Use ' +
-  'add_recipe only for a recipe the user dictates directly as Cooklang, capture_idea for a ' +
-  'vague wish with no full recipe yet, and log_cooking to record notes about a cook. ' +
-  "When the user says what they feel like eating ('I feel like cooking Indian today', " +
-  "'something vegetarian', 'a quick pescatarian dinner') use browse_recipes; when they say " +
-  "what they have ('I have 3 tomatoes and 400 g of pasta') use recipes_from_ingredients and " +
-  'tell them what is missing from the near misses; list_filters shows what the collection holds. ' +
-  'Every recipe is classed vegan, vegetarian, pescatarian or non-vegetarian.';
+/**
+ * How long a client may reuse a list or a read, and who may share the copy
+ * (the newest revision asks for these on every cacheable result). Everything
+ * the server lists or serves is the same for every user and changes only when a
+ * new version is deployed, so every answer is `public`. The tool and view lists
+ * are small, so five minutes bounds how stale a client can be after a deploy
+ * (there is no way to tell a client holding a fresh copy that it changed); a
+ * view's HTML is large (hundreds of kilobytes) and worth keeping longer; the
+ * discovery document describes nothing that changes between deploys. The one
+ * answer that differs per person is a recipe read from Drive, which only the
+ * person who asked may reuse, and only briefly (the recipe can be edited).
+ */
+export const CACHE_HINTS = {
+  discover: { ttlMs: 3_600_000, cacheScope: 'public' },
+  list: { ttlMs: 300_000, cacheScope: 'public' },
+  read: { ttlMs: 900_000, cacheScope: 'public' },
+  recipe: { ttlMs: 60_000, cacheScope: 'private' },
+} as const;
 
-/** The name and version this server reports about itself. */
-const SERVER_INFO = { name: 'chowdown', version: '0.1.0' } as const;
+/** The hints a cacheable result carries. */
+export type CacheHint = (typeof CACHE_HINTS)[keyof typeof CACHE_HINTS];
 
-/** What this server can do, as announced in the handshake and in discovery. */
-const CAPABILITIES = { tools: {}, resources: {} } as const;
+/** Runs a tool by name; the real one opens Drive and the database, so tests pass their own. */
+export type ToolRunner = typeof callToolOrExplain;
+
+/** What a route's handler is given. */
+interface Call {
+  readonly user: Readonly<User>;
+  readonly params: Readonly<Record<string, unknown>> | undefined;
+  readonly runTool: ToolRunner;
+}
+
+/** One method the server answers. */
+interface Route {
+  /** Produce the result, or throw an {@link RpcError} to refuse the request. */
+  readonly handle: (call: Call) => object | Promise<object>;
+  /**
+   * Caching hints for the result, for the methods the newest revision makes
+   * cacheable: fixed, or chosen from the result when they depend on it.
+   */
+  readonly cache?: CacheHint | ((result: object) => CacheHint);
+  /** Whether the method belongs to the newest revision only (and so always gets its result fields). */
+  readonly modernOnly?: true;
+}
 
 /** The answer to the older revisions' `initialize` handshake. */
-function initializeResult(requestedVersion: unknown): object {
+function initializeResult({ params }: Call): object {
   return {
-    protocolVersion: negotiateLegacyVersion(requestedVersion),
+    protocolVersion: negotiateLegacyVersion(params?.['protocolVersion']),
     capabilities: CAPABILITIES,
     serverInfo: SERVER_INFO,
     instructions: INSTRUCTIONS,
@@ -101,113 +161,229 @@ function initializeResult(requestedVersion: unknown): object {
 /** The newest revision's way to learn what a server is, with no handshake. */
 function discoverResult(): object {
   return {
-    resultType: 'complete',
     supportedVersions: SUPPORTED_VERSIONS,
     capabilities: CAPABILITIES,
-    _meta: { 'io.modelcontextprotocol/serverInfo': SERVER_INFO },
     instructions: INSTRUCTIONS,
-    ttlMs: 3_600_000,
-    cacheScope: 'public',
   };
 }
 
-/** The answer to `resources/list`: the app's views. */
+/**
+ * The answer to `resources/list`: the app's current views. The older,
+ * hash-free addresses are not listed (a host that prefetches every listed view
+ * would fetch each twice) but are still served by `resources/read`.
+ */
 function resourceListResult(): object {
   return {
-    resources: APP_RESOURCES.map((r) => ({
+    resources: APP_RESOURCES.filter((r) => !r.legacy).map((r) => ({
       uri: r.uri,
       name: r.name,
       description: r.description,
       mimeType: RESOURCE_MIME_TYPE,
-      _meta: CARD_UI_META,
+      _meta: r.meta,
     })),
   };
 }
 
-/** The reply to `resources/read`: the view's HTML, or an error for an unknown address. */
-function readResource(id: ReplyId, uri: string): JsonRpcResponse {
-  const resource = APP_RESOURCES.find((r) => r.uri === uri);
-  return resource
-    ? succeeded(id, {
-        contents: [
-          {
-            uri: resource.uri,
-            mimeType: RESOURCE_MIME_TYPE,
-            text: resource.html,
-            _meta: CARD_UI_META,
-          },
-        ],
-      })
-    : failed(id, -32602, `Unknown resource: ${uri}`);
+/** The answer to `resources/templates/list`: where a single recipe can be read. */
+function resourceTemplateListResult(): object {
+  return { resourceTemplates: [RECIPE_TEMPLATE] };
+}
+
+/**
+ * The cache hints for a `resources/read` result: private (and short) when it
+ * holds a person's recipe, shared for a view.
+ */
+export function readCache(result: object): CacheHint {
+  const contents = 'contents' in result ? result.contents : undefined;
+  const first: unknown = Array.isArray(contents) ? contents[0] : undefined;
+  const uri =
+    isPlainObject(first) && typeof first['uri'] === 'string'
+      ? first['uri']
+      : '';
+  return isRecipeUri(uri) ? CACHE_HINTS.recipe : CACHE_HINTS.read;
+}
+
+/**
+ * The reply to `resources/read`: a view's HTML, or one of the user's recipes
+ * from their Drive, or an error for an address the server does not have.
+ */
+async function readResource({ user, params }: Call): Promise<object> {
+  const uri = params?.['uri'];
+  if (typeof uri !== 'string') {
+    throw new RpcError(
+      ERROR_INVALID_PARAMS,
+      'resources/read needs a `uri`, as a string.',
+    );
+  }
+  if (isRecipeUri(uri)) {
+    return readRecipeResource(user, uri);
+  }
+  const resource = findAppResource(uri);
+  if (!resource) {
+    throw new RpcError(ERROR_INVALID_PARAMS, 'Resource not found', { uri });
+  }
+  return {
+    contents: [
+      {
+        uri: resource.uri,
+        mimeType: RESOURCE_MIME_TYPE,
+        text: resource.html,
+        _meta: resource.meta,
+      },
+    ],
+  };
+}
+
+/** The answer to `prompts/get`. */
+function promptResult({ params }: Call): object {
+  return getPrompt(params?.['name'], params?.['arguments']);
+}
+
+/** The names of the tools the server advertises. */
+const TOOL_NAMES: ReadonlySet<string> = new Set(TOOLS.map((t) => t.name));
+
+/** Whether `name` is a tool the server advertises in `tools/list`. */
+export function isAdvertisedTool(name: unknown): name is string {
+  return typeof name === 'string' && TOOL_NAMES.has(name);
+}
+
+/** The refusal for a tool name the server does not have, listing the ones it does. */
+function unknownToolError(name: unknown): RpcError {
+  return new RpcError(
+    ERROR_INVALID_PARAMS,
+    `Unknown tool: ${typeof name === 'string' ? name : 'no name given'}. The tools are ${[...TOOL_NAMES].join(', ')}.`,
+  );
+}
+
+/**
+ * Run a `tools/call`. The tool's name and the shape of its arguments are
+ * checked first, before anything is opened (so a typo costs nothing and a
+ * person with no Drive still hears about it), and a tool that rejects its
+ * arguments is reported as the caller's mistake (`-32602`) with what to fix.
+ */
+async function callTool(call: Call): Promise<object> {
+  const name = call.params?.['name'];
+  if (!isAdvertisedTool(name)) {
+    throw unknownToolError(name);
+  }
+  const args = call.params?.['arguments'];
+  if (args !== undefined && !isPlainObject(args)) {
+    throw new RpcError(
+      ERROR_INVALID_PARAMS,
+      `Invalid arguments for tool ${name}: "arguments" must be an object.`,
+    );
+  }
+  try {
+    return await call.runTool(call.user, call.params);
+  } catch (error) {
+    if (error instanceof UnknownTool) {
+      throw unknownToolError(error.tool);
+    }
+    if (error instanceof InvalidToolArguments) {
+      throw new RpcError(
+        ERROR_INVALID_PARAMS,
+        `Invalid arguments for tool ${name}: ${error.problems.join(' ')}`,
+        { tool: name, problems: error.problems },
+      );
+    }
+    throw error;
+  }
+}
+
+/** Every method the server answers, by name (a `Map`, so `constructor` and friends are not methods). */
+const ROUTES: ReadonlyMap<string, Route> = new Map<string, Route>([
+  ['initialize', { handle: initializeResult }],
+  [
+    'server/discover',
+    { handle: discoverResult, cache: CACHE_HINTS.discover, modernOnly: true },
+  ],
+  ['ping', { handle: () => ({}) }],
+  ['tools/list', { handle: () => ({ tools: TOOLS }), cache: CACHE_HINTS.list }],
+  ['tools/call', { handle: callTool }],
+  ['resources/list', { handle: resourceListResult, cache: CACHE_HINTS.list }],
+  [
+    'resources/templates/list',
+    { handle: resourceTemplateListResult, cache: CACHE_HINTS.list },
+  ],
+  ['resources/read', { handle: readResource, cache: readCache }],
+  [
+    'prompts/list',
+    {
+      handle: () => ({ prompts: PROMPT_DEFINITIONS }),
+      cache: CACHE_HINTS.list,
+    },
+  ],
+  ['prompts/get', { handle: promptResult }],
+]);
+
+/** The `_meta` of a result, when it has one. */
+function metaOf(result: object): Readonly<Record<string, unknown>> {
+  return '_meta' in result && isPlainObject(result._meta) ? result._meta : {};
+}
+
+/**
+ * Dress a successful result for the newest revision: it says it is complete,
+ * carries the caching hints of its method, and names the server in `_meta`
+ * (merged into any `_meta` the result already has, such as a tool's).
+ * Older revisions get the result as it is.
+ */
+function forModernClient(result: object, route: Route): object {
+  return {
+    ...result,
+    ...(typeof route.cache === 'function'
+      ? route.cache(result)
+      : (route.cache ?? {})),
+    ...('resultType' in result ? {} : { resultType: 'complete' }),
+    _meta: { ...metaOf(result), [SERVER_INFO_META_KEY]: SERVER_INFO },
+  };
+}
+
+/** The error reply for something that went wrong while handling a request. */
+function faultReply(id: ReplyId, error: unknown): JsonRpcResponse {
+  if (error instanceof RpcError) {
+    return failed(id, error.code, error.message, error.data);
+  }
+  // What went wrong stays in our logs: the text can carry Google's replies or
+  // database details, which should not travel on to an assistant and the
+  // service behind it.
+  console.error('[mcp] request failed:', error);
+  return failed(id, ERROR_INTERNAL, 'Something went wrong on the server.');
 }
 
 /**
  * Handle one JSON-RPC message. Returns the response object, or null for
- * notifications (which get an empty 202 from the route). Errors in a tool are
- * returned as a JSON-RPC error so the client surfaces them cleanly.
+ * notifications (which get an empty 202 from the route). A refusal is returned
+ * as a JSON-RPC error carrying the request's id, so the client surfaces it
+ * cleanly. `runTool` is what runs a tool call (the real tools unless a test
+ * supplies its own).
  */
 export async function handleMcpMessage(
   user: Readonly<User>,
   message: JsonRpcMessage,
+  runTool: ToolRunner = callToolOrExplain,
 ): Promise<JsonRpcResponse | null> {
-  const response = await dispatch(user, message);
-  // In the newest revision every successful result says it is complete.
-  if (
-    response &&
-    'result' in response &&
-    isModernRequest(message) &&
-    !('resultType' in response.result)
-  ) {
-    return succeeded(response.id, {
-      ...response.result,
-      resultType: 'complete',
-    });
-  }
-  return response;
-}
-
-/** Route one message to what handles it. */
-async function dispatch(
-  user: Readonly<User>,
-  message: JsonRpcMessage,
-): Promise<JsonRpcResponse | null> {
-  const id = message.id ?? null;
   // A notification expects no reply, whatever it announces.
-  if (
-    typeof message.method === 'string' &&
-    message.method.startsWith('notifications/')
-  ) {
+  if (isNotification(message)) {
     return null;
   }
+  const id = replyIdOf(message.id);
+  const route = ROUTES.get(message.method ?? '');
+  if (!route) {
+    return failed(id, ERROR_METHOD_NOT_FOUND, 'Method not found');
+  }
   try {
-    switch (message.method) {
-      case 'initialize':
-        return succeeded(
-          id,
-          initializeResult(message.params?.['protocolVersion']),
-        );
-      case 'server/discover':
-        return succeeded(id, discoverResult());
-      case 'ping':
-        return succeeded(id, {});
-      case 'tools/list':
-        return succeeded(id, { tools: TOOLS });
-      case 'tools/call':
-        return succeeded(id, await callToolOrExplain(user, message.params));
-      case 'resources/list':
-        return succeeded(id, resourceListResult());
-      case 'resources/read': {
-        const uri = message.params?.['uri'];
-        return readResource(id, typeof uri === 'string' ? uri : '');
-      }
-      default:
-        return failed(id, -32601, 'Method not found');
-    }
-  } catch (err) {
-    // What went wrong stays in our logs: the text can carry Google's replies or
-    // database details, which should not travel on to an assistant and the
-    // service behind it.
-    console.error('[mcp] request failed:', err);
-    return failed(id, -32000, 'Something went wrong on the server.');
+    const result = await route.handle({
+      user,
+      params: message.params,
+      runTool,
+    });
+    return succeeded(
+      id,
+      route.modernOnly || isModernRequest(message)
+        ? forModernClient(result, route)
+        : result,
+    );
+  } catch (error) {
+    return faultReply(id, error);
   }
 }

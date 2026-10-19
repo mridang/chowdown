@@ -34,12 +34,20 @@ export const SUPPORTED_VERSIONS: readonly string[] = [
   ...LEGACY_VERSIONS,
 ];
 
-/** JSON-RPC error code: a request header disagrees with the request body. */
-export const ERROR_HEADER_MISMATCH = -32020;
-/** JSON-RPC error code: the protocol version asked for is not one we speak. */
-export const ERROR_UNSUPPORTED_VERSION = -32022;
+/** JSON-RPC error code: the body is not JSON. */
+export const ERROR_PARSE = -32700;
+/** JSON-RPC error code: the body is JSON but not a valid request. */
+export const ERROR_INVALID_REQUEST = -32600;
 /** JSON-RPC error code: no such method. */
 export const ERROR_METHOD_NOT_FOUND = -32601;
+/** JSON-RPC error code: the method exists but its parameters are wrong. */
+export const ERROR_INVALID_PARAMS = -32602;
+/** JSON-RPC error code: the server failed in a way the caller cannot fix. */
+export const ERROR_INTERNAL = -32603;
+/** MCP error code: a request header disagrees with the request body. */
+export const ERROR_HEADER_MISMATCH = -32020;
+/** MCP error code: the protocol version asked for is not one we speak. */
+export const ERROR_UNSUPPORTED_VERSION = -32022;
 
 /**
  * The version to answer an `initialize` with: the one the client asked for if we
@@ -53,8 +61,58 @@ export function negotiateLegacyVersion(requested: unknown): string {
     : LEGACY_VERSIONS[0];
 }
 
-/** The keys the newest revision uses in a request's `_meta`. */
+/** The `_meta` key where the newest revision's requests state their protocol version. */
 const META_VERSION = 'io.modelcontextprotocol/protocolVersion';
+/** The `_meta` key where the newest revision's requests list what the client can do. */
+const META_CAPABILITIES = 'io.modelcontextprotocol/clientCapabilities';
+
+/**
+ * The id a reply carries: the request's, or null when it had none (or when it
+ * could not be read, which is the only time the spec lets a reply drop it).
+ */
+export type ReplyId = number | string | null;
+
+/** Whether a value is a plain JSON object (not null, an array or a scalar). */
+export function isPlainObject(
+  value: unknown,
+): value is Readonly<Record<string, unknown>> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * The id to echo for a request: its own when it is a string or an integer (the
+ * only ids JSON-RPC in MCP allows), otherwise null.
+ */
+export function replyIdOf(value: unknown): ReplyId {
+  if (typeof value === 'string') {
+    return value;
+  }
+  return typeof value === 'number' && Number.isSafeInteger(value)
+    ? value
+    : null;
+}
+
+/**
+ * A JSON-RPC error raised while handling a request. The request router turns
+ * it into the error reply, so handlers can say "this is the caller's mistake"
+ * without building the reply themselves.
+ */
+export class RpcError extends Error {
+  override readonly name = 'RpcError';
+
+  /**
+   * @param code The JSON-RPC error code.
+   * @param message What went wrong, written for the caller.
+   * @param data Extra detail for the caller, when there is any.
+   */
+  constructor(
+    readonly code: number,
+    message: string,
+    readonly data?: unknown,
+  ) {
+    super(message);
+  }
+}
 
 /** A JSON-RPC message as far as protocol checks care. */
 export interface ProtocolMessage {
@@ -66,23 +124,38 @@ export interface ProtocolMessage {
   };
 }
 
-/** The protocol version a request declares in its `_meta`, if it does. */
+/** Whether a message is a notification: it expects no reply, whatever it announces. */
+export function isNotification(message: ProtocolMessage): boolean {
+  return (
+    typeof message.method === 'string' &&
+    message.method.startsWith('notifications/')
+  );
+}
+
+/** The protocol version a request declares in its `_meta`, if it does (and says it as text). */
 export function declaredVersion(message: ProtocolMessage): string | undefined {
   const value = message.params?._meta?.[META_VERSION];
   return typeof value === 'string' ? value : undefined;
 }
 
-/** Whether a request is in the newest era: it carries its version in `_meta`. */
+/**
+ * Whether a request is in the newest era: it carries that revision's version in
+ * `_meta`. The older revisions only exist after an `initialize` handshake, so a
+ * request naming one of them per request is not a newest-era request (and is
+ * refused by {@link checkRequestHeaders}).
+ */
 export function isModernRequest(message: ProtocolMessage): boolean {
-  return declaredVersion(message) !== undefined;
+  return declaredVersion(message) === MODERN_VERSION;
 }
 
-/** A refusal to send as an HTTP error with a JSON-RPC body. */
+/** What to send when a request is refused: an HTTP status plus a JSON-RPC error body. */
 export interface ProtocolRefusal {
-  readonly status: 400 | 403 | 404;
+  readonly status: 400 | 403 | 404 | 413 | 429;
+  /** Extra response headers (`Retry-After`, `WWW-Authenticate`). */
+  readonly headers?: Readonly<Record<string, string>>;
   readonly body: {
     readonly jsonrpc: '2.0';
-    readonly id: null;
+    readonly id: ReplyId;
     readonly error: {
       readonly code: number;
       readonly message: string;
@@ -91,84 +164,275 @@ export interface ProtocolRefusal {
   };
 }
 
-/** Build a refusal: the HTTP status, plus a JSON-RPC error body (with `data` when there is any). */
-function refusal(
-  status: ProtocolRefusal['status'],
+/** Everything a refusal is made of. */
+export interface RefusalSpec {
+  readonly status: ProtocolRefusal['status'];
+  readonly code: number;
+  readonly message: string;
+  /** The request's id, when it could be read. */
+  readonly id?: ReplyId;
+  readonly data?: unknown;
+  readonly headers?: Readonly<Record<string, string>>;
+}
+
+/** A JSON-RPC error reply body. The id defaults to null, for when no request could be read. */
+export function errorBody(
   code: number,
   message: string,
+  id: ReplyId = null,
   data?: unknown,
-): ProtocolRefusal {
+): ProtocolRefusal['body'] {
   return {
-    status,
-    body: {
-      jsonrpc: '2.0',
-      id: null,
-      error: { code, message, ...(data === undefined ? {} : { data }) },
-    },
+    jsonrpc: '2.0',
+    id,
+    error: { code, message, ...(data === undefined ? {} : { data }) },
   };
 }
 
-/** The refusal for a version we don't speak, listing the ones we do. */
-function unsupportedVersion(requested: string): ProtocolRefusal {
-  return refusal(
-    400,
-    ERROR_UNSUPPORTED_VERSION,
-    'Unsupported protocol version',
-    { supported: SUPPORTED_VERSIONS, requested },
-  );
+/** Build a refusal: the HTTP status, any extra headers, and the JSON-RPC error body. */
+export function protocolRefusal(spec: RefusalSpec): ProtocolRefusal {
+  return {
+    status: spec.status,
+    ...(spec.headers ? { headers: spec.headers } : {}),
+    body: errorBody(spec.code, spec.message, spec.id, spec.data),
+  };
 }
 
 /**
- * Check one request's `MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name`
- * headers against what it says in its body. Returns the refusal to send, or null
- * when the request is fine.
+ * The same refusal without a request id. A batch is answered with one error for
+ * the whole body, which belongs to no single request in it.
+ */
+export function withoutId(refusal: ProtocolRefusal): ProtocolRefusal {
+  return { ...refusal, body: { ...refusal.body, id: null } };
+}
+
+/** The refusal for a version we don't speak, listing the ones we do. */
+function unsupportedVersion(
+  requested: string,
+  id: ReplyId,
+  message = 'Unsupported protocol version',
+): ProtocolRefusal {
+  return protocolRefusal({
+    status: 400,
+    code: ERROR_UNSUPPORTED_VERSION,
+    message,
+    id,
+    data: { supported: SUPPORTED_VERSIONS, requested },
+  });
+}
+
+/** A 400 for a request that is missing something the newest revision requires of every request. */
+function malformed(message: string, id: ReplyId): ProtocolRefusal {
+  return protocolRefusal({
+    status: 400,
+    code: ERROR_INVALID_PARAMS,
+    message,
+    id,
+  });
+}
+
+/** A 400 for a header that disagrees with the body. */
+function mismatch(message: string, id: ReplyId): ProtocolRefusal {
+  return protocolRefusal({
+    status: 400,
+    code: ERROR_HEADER_MISMATCH,
+    message,
+    id,
+  });
+}
+
+/** What came of looking at one parsed JSON value that should be a JSON-RPC message. */
+export type ParsedMessage =
+  | {
+      /** A call that expects a reply, or a notification that does not. */
+      readonly kind: 'request' | 'notification';
+      readonly message: ProtocolMessage;
+    }
+  /** A reply to something a server asked: we never ask, so there is nothing to do. */
+  | { readonly kind: 'response' }
+  /** Not a valid message; send this refusal. */
+  | { readonly kind: 'invalid'; readonly refusal: ProtocolRefusal };
+
+/** A refusal for a body that is not a valid JSON-RPC message (HTTP 400). */
+function invalid(
+  code: number,
+  message: string,
+  id: ReplyId = null,
+): ParsedMessage {
+  return {
+    kind: 'invalid',
+    refusal: protocolRefusal({ status: 400, code, message, id }),
+  };
+}
+
+/**
+ * Check one parsed JSON value is a well-formed JSON-RPC 2.0 message and say
+ * what kind it is:
  *
- *  - A version header we don't speak is refused, whichever era the request is in.
- *  - A newest-era request must carry the version header, it must match the body,
- *    and `Mcp-Method` (and `Mcp-Name` for calls that name something) must match
- *    too: a gateway may route on the headers while we act on the body, so the two
- *    must never disagree.
- *  - An older request (no `_meta` version) may omit all of them.
+ *  - a reply (`result` or `error`, no `method`) is not for us to answer;
+ *  - `jsonrpc` must be `"2.0"` and `method` a string;
+ *  - `params`, and `params._meta`, must be objects when present (a `null`
+ *    `params` is read as absent, which some clients send for methods that take none);
+ *  - a request's `id` must be a string or an integer, never null; one with no
+ *    id is a notification and only `notifications/*` methods may be sent so.
+ *
+ * Whatever id could be read is echoed back in the refusal.
+ */
+export function parseMessage(raw: unknown): ParsedMessage {
+  if (!isPlainObject(raw)) {
+    return invalid(ERROR_INVALID_REQUEST, 'Invalid Request');
+  }
+  const { method, params } = raw;
+  const id = replyIdOf(raw['id']);
+  if (typeof method !== 'string' && ('result' in raw || 'error' in raw)) {
+    return { kind: 'response' };
+  }
+  if (raw['jsonrpc'] !== '2.0') {
+    return invalid(ERROR_INVALID_REQUEST, '"jsonrpc" must be "2.0".', id);
+  }
+  if (typeof method !== 'string' || method === '') {
+    return invalid(ERROR_INVALID_REQUEST, '"method" must be a string.', id);
+  }
+  if (params !== null && 'params' in raw && !isPlainObject(params)) {
+    return invalid(ERROR_INVALID_PARAMS, '"params" must be an object.', id);
+  }
+  if (
+    isPlainObject(params) &&
+    '_meta' in params &&
+    !isPlainObject(params['_meta'])
+  ) {
+    return invalid(
+      ERROR_INVALID_PARAMS,
+      '"params._meta" must be an object.',
+      id,
+    );
+  }
+  if ('id' in raw && id === null) {
+    return invalid(
+      ERROR_INVALID_REQUEST,
+      '"id" must be a string or an integer (never null).',
+    );
+  }
+  const message: ProtocolMessage = {
+    jsonrpc: '2.0',
+    method,
+    ...('id' in raw ? { id } : {}),
+    ...(isPlainObject(params) ? { params } : {}),
+  };
+  if (isNotification(message)) {
+    return { kind: 'notification', message };
+  }
+  return 'id' in raw
+    ? { kind: 'request', message }
+    : invalid(
+        ERROR_INVALID_REQUEST,
+        `"${method}" is a request, not a notification, so it needs an "id".`,
+      );
+}
+
+/** The protocol version a request's `MCP-Protocol-Version` header names, if it sends one. */
+export function headerVersion(headers: Headers): string | undefined {
+  const value = headers.get('mcp-protocol-version')?.trim();
+  return value ? value : undefined;
+}
+
+/**
+ * Check a batch is allowed. Batches belong to the older revisions (2025-03-26
+ * asks servers to accept them); the newest revision's body is a single message,
+ * and a batch can't carry the per-message headers it requires. So a batch that
+ * says it is newest-era, in its headers or in any member, is refused.
+ */
+export function checkBatch(
+  headers: Headers,
+  messages: readonly ProtocolMessage[],
+): ProtocolRefusal | null {
+  return headerVersion(headers) === MODERN_VERSION ||
+    messages.some(isModernRequest)
+    ? protocolRefusal({
+        status: 400,
+        code: ERROR_INVALID_REQUEST,
+        message: `Protocol ${MODERN_VERSION} takes one message per request; batches are only for older clients.`,
+      })
+    : null;
+}
+
+/**
+ * Check one message's `MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name`
+ * headers against what it says in its body, and its per-request `_meta`.
+ * Returns the refusal to send (carrying the message's id), or null when the
+ * request is fine.
+ *
+ *  - A version header we don't speak is refused, whichever era the message is in.
+ *  - A notification has no further requirements: the revision defines none.
+ *  - A request with no `_meta` version is an older-era request and may omit every
+ *    header. But one whose header says 2026-07-28 has no `_meta` to match it,
+ *    which makes it malformed.
+ *  - A request that declares a version in `_meta` must declare it as text, name a
+ *    version we speak, and that must be 2026-07-28: the older revisions are only
+ *    reached by `initialize`. It must repeat that version in the header, carry
+ *    the client's capabilities as an object, and `Mcp-Method` (and `Mcp-Name` for
+ *    calls that name something) must match too: a gateway may route on the
+ *    headers while we act on the body, so the two must never disagree.
  */
 export function checkRequestHeaders(
   headers: Headers,
   message: ProtocolMessage,
 ): ProtocolRefusal | null {
-  const headerVersion = headers.get('mcp-protocol-version')?.trim();
-  if (headerVersion && !SUPPORTED_VERSIONS.includes(headerVersion)) {
-    return unsupportedVersion(headerVersion);
+  const id = replyIdOf(message.id);
+  const fromHeader = headerVersion(headers);
+  if (fromHeader !== undefined && !SUPPORTED_VERSIONS.includes(fromHeader)) {
+    return unsupportedVersion(fromHeader, id);
   }
-  const bodyVersion = declaredVersion(message);
-  if (bodyVersion === undefined) {
+  if (isNotification(message)) {
     return null;
   }
-  if (!SUPPORTED_VERSIONS.includes(bodyVersion)) {
-    return unsupportedVersion(bodyVersion);
+  const meta = message.params?._meta;
+  const fromBody: unknown = meta?.[META_VERSION];
+  if (fromBody === undefined) {
+    return fromHeader === MODERN_VERSION
+      ? malformed(
+          `MCP-Protocol-Version is "${MODERN_VERSION}" but the request has no _meta["${META_VERSION}"] (and _meta["${META_CAPABILITIES}"]).`,
+          id,
+        )
+      : null;
   }
-  if (headerVersion !== bodyVersion) {
-    return refusal(
-      400,
-      ERROR_HEADER_MISMATCH,
-      `Header mismatch: MCP-Protocol-Version is ${headerVersion ? `"${headerVersion}"` : 'missing'} but the body says "${bodyVersion}".`,
+  if (typeof fromBody !== 'string') {
+    return malformed(`_meta["${META_VERSION}"] must be a string.`, id);
+  }
+  if (!SUPPORTED_VERSIONS.includes(fromBody)) {
+    return unsupportedVersion(fromBody, id);
+  }
+  if (fromBody !== MODERN_VERSION) {
+    return unsupportedVersion(
+      fromBody,
+      id,
+      `Protocol ${fromBody} starts with an initialize handshake; per-request metadata is for ${MODERN_VERSION}.`,
+    );
+  }
+  if (fromHeader !== fromBody) {
+    return mismatch(
+      `Header mismatch: MCP-Protocol-Version is ${fromHeader ? `"${fromHeader}"` : 'missing'} but the body says "${fromBody}".`,
+      id,
+    );
+  }
+  if (!isPlainObject(meta?.[META_CAPABILITIES])) {
+    return malformed(
+      `_meta["${META_CAPABILITIES}"] is required and must be an object.`,
+      id,
     );
   }
   const method = message.method ?? '';
   if (headers.get('mcp-method') !== method) {
-    return refusal(
-      400,
-      ERROR_HEADER_MISMATCH,
-      `Header mismatch: Mcp-Method must be "${method}".`,
-    );
+    return mismatch(`Header mismatch: Mcp-Method must be "${method}".`, id);
   }
   const name = nameOf(message);
   if (
     name !== undefined &&
     decodeHeaderValue(headers.get('mcp-name')) !== name
   ) {
-    return refusal(
-      400,
-      ERROR_HEADER_MISMATCH,
+    return mismatch(
       'Header mismatch: Mcp-Name must be the name or URI the request asks for.',
+      id,
     );
   }
   return null;
@@ -202,11 +466,6 @@ export function decodeHeaderValue(value: string | null): string | undefined {
   } catch {
     return undefined;
   }
-}
-
-/** The refusal for a method we don't have, which the newest revision wants as a 404. */
-export function methodNotFound(): ProtocolRefusal {
-  return refusal(404, ERROR_METHOD_NOT_FOUND, 'Method not found');
 }
 
 /**

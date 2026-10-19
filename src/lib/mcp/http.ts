@@ -2,8 +2,14 @@
  * @packageDocumentation
  *
  * The HTTP side of the MCP endpoints: read a JSON-RPC message (or batch), check
- * the caller's scopes cover it, hand it to the MCP server, and write the reply.
- * Used by the OAuth-protected `/api/mcp`.
+ * it is well formed and that the caller's scopes and rate limit cover it, hand
+ * it to the MCP server, and write the reply. Used by the OAuth-protected
+ * `/api/mcp`.
+ *
+ * The order matters. The size cap comes before the JSON is parsed; envelope and
+ * header checks come before anything is run; the scope check comes before the
+ * rate limit (a refused call costs nothing); and every refusal that can name the
+ * request it answers carries that request's id.
  */
 
 import { NextResponse } from 'next/server';
@@ -11,15 +17,38 @@ import { NextResponse } from 'next/server';
 import type { User } from '../db/users';
 import { CORS_HEADERS } from '../oauth/http';
 import { wwwAuthenticate } from '../oauth/metadata';
-import { hasScope, scopeForMessage } from '../oauth/scopes';
+import { SCOPE_READ, hasScope, scopeForMessage } from '../oauth/scopes';
 import { getEnvSafe } from './env';
 import {
+  ERROR_INVALID_REQUEST,
+  ERROR_METHOD_NOT_FOUND,
+  ERROR_PARSE,
+  checkBatch,
   checkRequestHeaders,
+  errorBody,
+  headerVersion,
   isAllowedOrigin,
   isModernRequest,
+  parseMessage,
+  protocolRefusal,
+  withoutId,
+  MODERN_VERSION,
+  replyIdOf,
+  type ProtocolMessage,
   type ProtocolRefusal,
 } from './protocol';
-import { handleMcpMessage, type JsonRpcMessage } from './server';
+import {
+  MAX_BATCH,
+  checkRateLimits,
+  liveRateLimitDeps,
+  readJsonBody,
+  type RateLimitDeps,
+} from './request-limits';
+import {
+  handleMcpMessage,
+  isAdvertisedTool,
+  type JsonRpcResponse,
+} from './server';
 
 /**
  * The refusal for a request from an origin we don't allow, or null. Browsers
@@ -35,11 +64,7 @@ export function originRefusal(
     return null;
   }
   return NextResponse.json(
-    {
-      jsonrpc: '2.0',
-      id: null,
-      error: { code: -32000, message: 'Origin not allowed' },
-    },
+    errorBody(ERROR_INVALID_REQUEST, 'Origin not allowed'),
     { status: 403 },
   );
 }
@@ -47,7 +72,9 @@ export function originRefusal(
 /**
  * The 401 that starts the sign-in flow (no token) or reports a bad one
  * (`invalidToken`). Its `WWW-Authenticate` points the assistant at the
- * discovery documents.
+ * discovery documents. The status and that header are what tell a client to
+ * sign in; the JSON-RPC body is only a courtesy, and it carries no id because
+ * the request was never read.
  */
 export function unauthorizedResponse(
   origin: string,
@@ -55,11 +82,7 @@ export function unauthorizedResponse(
   cors: Readonly<Record<string, string>>,
 ): NextResponse {
   return NextResponse.json(
-    {
-      jsonrpc: '2.0',
-      id: null,
-      error: { code: -32001, message: 'Authorization required' },
-    },
+    errorBody(ERROR_INVALID_REQUEST, 'Authorization required'),
     {
       status: 401,
       headers: {
@@ -88,119 +111,164 @@ function refuse(
 ): NextResponse {
   return NextResponse.json(refusal.body, {
     status: refusal.status,
-    headers: cors,
+    headers: { ...cors, ...refusal.headers },
   });
 }
 
-/** The most messages one POST may carry. */
-const MAX_BATCH = 20;
-
-/** Whether a parsed JSON value is a plain object (not null, array or scalar). */
-export function isMessageObject(value: unknown): value is JsonRpcMessage {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+/** An empty 202: the answer to notifications, and to replies we have nothing to say to. */
+function accepted(cors: Readonly<Record<string, string>>): NextResponse {
+  return new NextResponse(null, { status: 202, headers: cors });
 }
 
-/** A JSON-RPC error body that answers no particular request. */
-const rpcError = (
-  code: number,
-  message: string,
-): {
-  readonly jsonrpc: '2.0';
-  readonly id: null;
-  readonly error: { readonly code: number; readonly message: string };
-} => ({
-  jsonrpc: '2.0',
-  id: null,
-  error: { code, message },
-});
-
-/** A 400 with a JSON-RPC error body. */
-function badRequest(
-  code: number,
-  message: string,
-  cors: Readonly<Record<string, string>>,
-): NextResponse {
-  return NextResponse.json(rpcError(code, message), {
+/** A 400 for a body that cannot be taken as one message or a batch of them. */
+function invalidRequest(message: string): ProtocolRefusal {
+  return protocolRefusal({
     status: 400,
-    headers: cors,
+    code: ERROR_INVALID_REQUEST,
+    message,
   });
 }
 
 /**
- * Handle one POST of JSON-RPC. `scopes` is what the caller was granted.
+ * The scope a message needs. A call to a tool we don't have needs only the
+ * ability to read, so the caller is told the tool does not exist rather than
+ * that they lack a scope for something that isn't there.
+ */
+function requiredScope(message: ProtocolMessage): string {
+  return message.method === 'tools/call' &&
+    !isAdvertisedTool(message.params?.['name'])
+    ? SCOPE_READ
+    : scopeForMessage(message);
+}
+
+/** The refusal for a message the token's scopes don't cover, or null if all are covered. */
+function scopeRefusal(
+  messages: readonly ProtocolMessage[],
+  scopes: readonly string[],
+  origin: string,
+): ProtocolRefusal | null {
+  const denied = messages
+    .map((message) => ({ message, needed: requiredScope(message) }))
+    .find(({ needed }) => !hasScope(scopes, needed));
+  return denied
+    ? protocolRefusal({
+        status: 403,
+        code: ERROR_INVALID_REQUEST,
+        message: `Requires the ${denied.needed} scope`,
+        id: replyIdOf(denied.message.id),
+        headers: {
+          'WWW-Authenticate': wwwAuthenticate(origin, {
+            error: 'insufficient_scope',
+            scope: denied.needed,
+          }),
+        },
+      })
+    : null;
+}
+
+/** Whether a reply is the "no such method" error. */
+function isUnknownMethod(reply: JsonRpcResponse): boolean {
+  return 'error' in reply && reply.error.code === ERROR_METHOD_NOT_FOUND;
+}
+
+/**
+ * Handle one POST of JSON-RPC. `scopes` is what the caller was granted; `rate`
+ * says where the per-user rate-limit counters live (the real database unless a
+ * test passes its own).
+ *
+ * Answers 200 with the reply (404 for an unknown method in the newest
+ * revision), 202 for notifications and for replies a client sent us, 400 for a
+ * malformed message or mismatched headers, 403 for a missing scope, 413 for an
+ * oversized body and 429 (with `Retry-After`) for a caller over their limit.
  */
 export async function handleMcpPost(
   request: Request,
   user: Readonly<User>,
   scopes: readonly string[],
   origin: string,
+  rate: RateLimitDeps = liveRateLimitDeps(),
 ): Promise<NextResponse> {
   const cors = corsFor(request);
-  const payload: unknown = await request.json().catch(() => null);
-  if (!payload) {
-    return badRequest(-32700, 'Parse error', cors);
-  }
-  const messages: readonly unknown[] = Array.isArray(payload)
-    ? payload
-    : [payload];
-  // Every message must be a JSON object, and a batch must stay a sensible size
-  // (its messages run side by side).
-  if (
-    messages.length === 0 ||
-    messages.length > MAX_BATCH ||
-    !messages.every(isMessageObject)
-  ) {
-    return badRequest(-32600, 'Invalid Request', cors);
-  }
-
-  const refusal = messages
-    .map((message) => checkRequestHeaders(request.headers, message))
-    .find((found) => found !== null);
-  if (refusal) {
-    return refuse(refusal, cors);
-  }
-
-  const missing = messages
-    .map((m) => scopeForMessage(m))
-    .find((needed) => !hasScope(scopes, needed));
-  if (missing) {
-    return NextResponse.json(
-      rpcError(-32001, `Requires the ${missing} scope`),
-      {
-        status: 403,
-        headers: {
-          ...cors,
-          'WWW-Authenticate': wwwAuthenticate(origin, {
-            error: 'insufficient_scope',
-            scope: missing,
-          }),
-        },
-      },
+  const body = await readJsonBody(request);
+  if (body.kind === 'too-large') {
+    return refuse(
+      protocolRefusal({
+        status: 413,
+        code: ERROR_INVALID_REQUEST,
+        message: 'Request body too large.',
+      }),
+      cors,
     );
+  }
+  if (body.kind === 'unparseable') {
+    return refuse(
+      protocolRefusal({
+        status: 400,
+        code: ERROR_PARSE,
+        message: 'Parse error',
+      }),
+      cors,
+    );
+  }
+
+  const isBatch = Array.isArray(body.value);
+  const items: readonly unknown[] = Array.isArray(body.value)
+    ? body.value
+    : [body.value];
+  // A batch must be a sensible size (its messages run side by side).
+  if (items.length === 0 || items.length > MAX_BATCH) {
+    return refuse(invalidRequest('Invalid Request'), cors);
+  }
+  const parsed = items.map(parseMessage);
+  const unreadable = parsed.find((p) => p.kind === 'invalid');
+  if (unreadable) {
+    return refuse(
+      isBatch ? withoutId(unreadable.refusal) : unreadable.refusal,
+      cors,
+    );
+  }
+  // Replies to things a server asked are not ours to answer (we ask nothing).
+  const messages = parsed.flatMap((p) => ('message' in p ? [p.message] : []));
+  if (messages.length === 0) {
+    return headerVersion(request.headers) === MODERN_VERSION
+      ? refuse(
+          invalidRequest(
+            `Protocol ${MODERN_VERSION} clients must not send replies.`,
+          ),
+          cors,
+        )
+      : accepted(cors);
+  }
+
+  const refusal =
+    (isBatch ? checkBatch(request.headers, messages) : null) ??
+    messages
+      .map((message) => checkRequestHeaders(request.headers, message))
+      .find((found) => found !== null) ??
+    scopeRefusal(messages, scopes, origin) ??
+    (await checkRateLimits(user, messages, rate));
+  if (refusal) {
+    return refuse(isBatch ? withoutId(refusal) : refusal, cors);
   }
 
   const replies = await Promise.all(
     messages.map((m) => handleMcpMessage(user, m)),
   );
-  if (Array.isArray(payload)) {
+  if (isBatch) {
     const answered = replies.filter((r) => r !== null);
     return answered.length > 0
       ? NextResponse.json(answered, { headers: cors })
-      : new NextResponse(null, { status: 202, headers: cors });
+      : accepted(cors);
   }
   const [reply] = replies;
   const [message] = messages;
   if (!reply) {
-    return new NextResponse(null, { status: 202, headers: cors });
+    return accepted(cors);
   }
   // The newest revision wants an unknown method as a 404, not a plain 200.
-  const unknownMethod =
-    message !== undefined &&
-    isModernRequest(message) &&
-    'error' in reply &&
-    reply.error.code === -32601;
-  return NextResponse.json(reply, {
-    status: unknownMethod ? 404 : 200,
-    headers: cors,
-  });
+  const status =
+    message !== undefined && isModernRequest(message) && isUnknownMethod(reply)
+      ? 404
+      : 200;
+  return NextResponse.json(reply, { status, headers: cors });
 }

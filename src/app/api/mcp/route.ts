@@ -49,9 +49,11 @@ async function admit(
 
 /**
  * `POST /api/mcp`: handle a JSON-RPC message (or batch) from an assistant.
- * Answers 200 with the reply, 202 for notifications, 400 for a malformed
- * message, 401 without a valid bearer token, 403 for an origin that is not
- * allowed or a token that lacks the scope the call needs.
+ * Answers 200 with the reply (404 for an unknown method in the newest
+ * revision), 202 for notifications, 400 for a malformed message or mismatched
+ * headers, 401 without a valid bearer token, 403 for an origin that is not
+ * allowed or a token that lacks the scope the call needs, 413 for a body over
+ * 1 MiB and 429 (with `Retry-After`) for a user over their rate limit.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const origin = appOrigin(request);
