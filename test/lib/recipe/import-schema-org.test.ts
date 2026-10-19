@@ -1,49 +1,16 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { parseRecipe } from '../../../src/lib/recipe/cooklang';
+
 import {
   extractOgImage,
   extractRecipeFromHtml,
   findRecipeNode,
   humaniseDuration,
   imageUrls,
-  parseIngredientLine,
   resolveImageRefs,
   schemaOrgToCook,
-  toCookIngredient,
 } from '../../../src/lib/recipe/import-schema-org';
-
-describe('parseIngredientLine', () => {
-  it('parses quantity + unit + name', () => {
-    expect(parseIngredientLine('200 g flour')).toEqual({
-      quantity: '200',
-      unit: 'g',
-      name: 'flour',
-    });
-  });
-
-  it('parses quantity + name with no unit', () => {
-    expect(parseIngredientLine('2 eggs')).toEqual({
-      quantity: '2',
-      name: 'eggs',
-    });
-  });
-
-  it('keeps a bare name when there is no quantity', () => {
-    expect(parseIngredientLine('salt to taste')).toEqual({
-      name: 'salt to taste',
-    });
-  });
-
-  it('renders Cooklang tokens', () => {
-    expect(
-      toCookIngredient({ quantity: '200', unit: 'g', name: 'flour' }),
-    ).toBe('@flour{200%g}');
-    expect(toCookIngredient({ quantity: '2', name: 'eggs' })).toBe('@eggs{2}');
-    expect(toCookIngredient({ name: 'salt to taste' })).toBe(
-      '@salt to taste{}',
-    );
-  });
-});
 
 describe('humaniseDuration', () => {
   it('formats hours and minutes', () => {
@@ -379,5 +346,42 @@ describe('extractOgImage markup', () => {
         '<script>x = \'<meta property="og:image" content="https://a.com/p.jpg">\'</script>',
       ),
     ).toBeUndefined();
+  });
+});
+
+describe('an imported recipe read back', () => {
+  const imported = schemaOrgToCook({
+    '@type': 'Recipe',
+    name: 'Chicken Fajitas',
+    recipeIngredient: [
+      '1/4 cup / 65 ml lime juice',
+      '2 garlic cloves (, minced)',
+      '700g / 1.2 lb skinless chicken thighs (, halved (Note 2))',
+      '8– 12 small tortillas',
+      'Lamb stew meat, 1000 g',
+      'Salt, to taste',
+      '½ tbsp fresh ginger',
+    ],
+    recipeInstructions: ['Marinate the chicken.', 'Cook it hot and fast.'],
+  });
+  const recipe = parseRecipe(imported, 'fajitas.cook');
+
+  it('has the ingredients with their quantities in the ingredients panel', () => {
+    expect(recipe.ingredients).toEqual([
+      { name: 'lime juice', quantity: '1/4 cup' },
+      { name: 'garlic cloves', quantity: '2' },
+      { name: 'skinless chicken thighs', quantity: '700 g' },
+      { name: 'small tortillas', quantity: '8-12' },
+      { name: 'Lamb stew meat', quantity: '1000 g' },
+      { name: 'Salt', quantity: 'to taste' },
+      { name: 'fresh ginger', quantity: '1/2 tbsp' },
+    ]);
+  });
+
+  it('starts its method with the first instruction, not with the ingredients again', () => {
+    expect(recipe.steps).toEqual([
+      [{ kind: 'text', text: 'Marinate the chicken.' }],
+      [{ kind: 'text', text: 'Cook it hot and fast.' }],
+    ]);
   });
 });

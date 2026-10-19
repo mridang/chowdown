@@ -12,13 +12,14 @@
  * The conversion is intentionally lossy and honest about it: schema.org gives
  * us free-text ingredient strings ("200 g flour") and free-text instructions,
  * not Cooklang's structured tokens, so we parse a leading quantity/unit off
- * each ingredient and emit `@name{qty%unit}` on a best-effort basis. The
- * result is a valid, editable `.cook` the user curates — not a perfect
+ * each ingredient (see `ingredient-line.ts`) and emit `@name{qty%unit}` on a
+ * best-effort basis. The result is a valid, editable `.cook` the user curates — not a perfect
  * reconstruction. The fetch/HTML side lives in the caller; everything here is
  * pure and unit-tested.
  */
 
 import { scanHtml, type Attributes } from './import-html-scan';
+import { parseIngredientLine, toCookIngredient } from './ingredient-line';
 import { validImageUrls } from './media';
 
 /** A loose JSON value — JSON-LD arrives without a fixed shape. */
@@ -26,81 +27,6 @@ type Json = unknown;
 
 /** A JSON object whose members are not yet known to be anything in particular. */
 type JsonObject = Readonly<Record<string, Json>>;
-
-/** A parsed ingredient: an optional quantity and unit plus the ingredient name. */
-export interface ParsedIngredientLine {
-  readonly quantity?: string;
-  readonly unit?: string;
-  readonly name: string;
-}
-
-/** Units we recognise as the token right after a leading quantity. */
-const KNOWN_UNITS: ReadonlySet<string> = new Set([
-  'g',
-  'kg',
-  'mg',
-  'ml',
-  'l',
-  'cup',
-  'cups',
-  'tbsp',
-  'tablespoon',
-  'tablespoons',
-  'tsp',
-  'teaspoon',
-  'teaspoons',
-  'oz',
-  'lb',
-  'lbs',
-  'pound',
-  'pounds',
-  'clove',
-  'cloves',
-  'pinch',
-  'slice',
-  'slices',
-  'can',
-  'cans',
-  'stick',
-  'sticks',
-  'piece',
-  'pieces',
-]);
-
-/** Leading-quantity matcher: integers, decimals, simple fractions and ranges. */
-const LEADING_QUANTITY =
-  /^(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?(?:\s*-\s*\d+)?|[½¼¾⅓⅔⅛])\s+/;
-
-/**
- * Parse one schema.org ingredient string into a quantity/unit/name. Falls back
- * gracefully: with no recognisable number the whole string becomes the name
- * ("salt to taste"); with a number but no known unit the number is the
- * quantity ("2 eggs" -> qty 2, name "eggs").
- */
-export function parseIngredientLine(raw: string): ParsedIngredientLine {
-  const text = raw.replace(/\s+/g, ' ').trim();
-  const quantityMatch = LEADING_QUANTITY.exec(text);
-  if (!quantityMatch) {
-    return { name: text };
-  }
-  const quantity = (quantityMatch[1] ?? '').replace(/\s+/g, '');
-  const rest = text.slice(quantityMatch[0].length).trim();
-
-  const [maybeUnit, ...tail] = rest.split(' ');
-  if (maybeUnit && KNOWN_UNITS.has(maybeUnit.toLowerCase()) && tail.length) {
-    return { quantity, unit: maybeUnit, name: tail.join(' ') };
-  }
-  return { quantity, name: rest };
-}
-
-/** Render a parsed ingredient as a Cooklang token: `@name{qty%unit}`. */
-export function toCookIngredient(ing: Readonly<ParsedIngredientLine>): string {
-  const amount =
-    ing.quantity && ing.unit
-      ? `${ing.quantity}%${ing.unit}`
-      : (ing.quantity ?? '');
-  return `@${ing.name}{${amount}}`;
-}
 
 /** Convert an ISO-8601 duration (`PT1H30M`) into a human string (`1 hr 30 min`). */
 export function humaniseDuration(iso: string): string | undefined {

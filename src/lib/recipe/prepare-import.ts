@@ -14,7 +14,11 @@ import { fetchPage, PageFetchError } from './fetch-page';
 import { MAX_IMPORT_UNITS, type ImportUnit } from './import-blob';
 import { mapSequentially } from './map-sequentially';
 import { tagCookSourceBestEffort } from './tagging';
-import { ConversionError, convertToCooklang } from './to-cooklang';
+import {
+  ConversionError,
+  convertToCooklang,
+  hasRecipeBody,
+} from './to-cooklang';
 
 /** One prepared unit of an import. */
 export interface ImportItem {
@@ -56,6 +60,11 @@ async function prepareUnit(
             sourceUrl: unit.url,
           })
         : await convertToCooklang(unit.text, env);
+    // A page the converter could not find a recipe on comes back as a title and
+    // a placeholder sentence; saved, that would be an empty recipe in Drive.
+    if (!hasRecipeBody(raw)) {
+      throw new ConversionError('not a recipe');
+    }
     // Tag the draft so imported recipes arrive ready to filter by facet.
     const cooklang = await tagCookSourceBestEffort(raw, 'Imported Recipe', env);
     return {

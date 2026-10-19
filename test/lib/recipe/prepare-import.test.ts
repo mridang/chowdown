@@ -125,6 +125,31 @@ describe('prepareImport', () => {
       );
     });
 
+    it('says not a recipe, instead of drafting an empty one, when the model answers with a placeholder sentence', async () => {
+      const { env } = envAnswering(
+        '>> title: Chocolate Cake\n\nRecipe content is unavailable.\n',
+      );
+      expect(
+        await problemOf(
+          'A long paragraph about chocolate cake that never lists a single ingredient or step.',
+          env,
+        ),
+      ).toBe(
+        "Couldn't import pasted text: not a recipe. Paste the recipe text directly instead.",
+      );
+    });
+
+    it('still drafts a recipe that has ingredients, however short its method', async () => {
+      const { env } = envAnswering(
+        '>> title: Toast\n\nToast @bread{2%slices}.\n',
+      );
+      const [item] = await prepare(
+        'A paragraph telling you to toast two slices of bread until golden.',
+        env,
+      );
+      expect(item?.status).toBe('DRAFT');
+    });
+
     it('names a failed pasted recipe plainly', async () => {
       const { env } = envAnswering('');
       const items = await prepare(
