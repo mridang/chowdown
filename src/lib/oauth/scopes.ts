@@ -91,6 +91,10 @@ export interface ScopedMessage {
  * The scope a JSON-RPC message needs. Calling a tool needs that tool's scope;
  * every other method (handshake, listing tools, reading UI resources) only
  * needs a valid token, which means at least read.
+ * A tool this function does not know counts as a write, so a tool added
+ * without being classified is protected; the MCP endpoint (`mcp/http.ts`)
+ * checks the name first, so a call to a tool that does not exist is answered
+ * "unknown tool" to any valid token instead of reaching this rule.
  */
 export function scopeForMessage(message: ScopedMessage): Scope {
   if (message.method === 'tools/call') {
