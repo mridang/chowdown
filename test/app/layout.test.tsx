@@ -13,6 +13,12 @@ jest.unstable_mockModule('next/font/google', () => ({
   Inter: font,
   Bricolage_Grotesque: font,
   Caveat: font,
+  Kalam: font,
+  Shadows_Into_Light: font,
+  Over_the_Rainbow: font,
+  Indie_Flower: font,
+  Delicious_Handrawn: font,
+  La_Belle_Aurore: font,
 }));
 jest.unstable_mockModule('../../src/app/globals.css', () => ({}));
 jest.unstable_mockModule('../../src/components/site/service-worker', () => ({
@@ -52,9 +58,19 @@ describe('RootLayout', () => {
     expect(viewport).not.toHaveProperty('userScalable');
   });
 
-  it('makes the handwriting face available to the whole page, for the author byline', () => {
+  it('makes all seven handwriting faces available to the whole page, for people’s names', () => {
     const out = html(<RootLayout>{null}</RootLayout>);
-    expect(out).toContain('class-for--font-hand-face');
+    [
+      'caveat',
+      'kalam',
+      'shadows',
+      'rainbow',
+      'indie',
+      'handrawn',
+      'aurore',
+    ].forEach((face) =>
+      expect(out).toContain(`class-for--font-hand-${face}-face`),
+    );
   });
 
   it('lets an overflowing child show, rather than hiding it on the body', () => {

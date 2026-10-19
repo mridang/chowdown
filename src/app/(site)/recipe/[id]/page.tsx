@@ -10,6 +10,7 @@ import { Method } from '@/components/recipe/method';
 import { RecipeStateProvider } from '@/components/recipe/recipe-state';
 import { STICKY_PANEL_CLASS } from '@/components/site/header-height';
 import { Container } from '@/components/ui/layout';
+import { getShellUser } from '@/lib/auth/shell-user';
 import { cleanTitle } from '@/lib/recipe/card-data';
 import { firstTag } from '@/lib/recipe/first-tag';
 import { loadRecipe } from '@/lib/recipe/load-recipe';
@@ -78,6 +79,8 @@ export default async function RecipePage({
   }
 
   const { recipe, tags, similar } = data;
+  // Cached for the request (the header reads the same value), so this is no extra work.
+  const driveConnected = (await getShellUser())?.driveConnected === true;
   const jsonLd = recipeToJsonLd(recipe, `${SITE_URL}/recipe/${id}`);
   const media = extractMedia(recipe);
   const images = media.cover ? [media.cover, ...media.rest] : [];
@@ -128,6 +131,7 @@ export default async function RecipePage({
         sourceText={sourceText}
         sourceUrl={data.sourceUrl}
         author={authorOf(recipe.metadata)}
+        driveConnected={driveConnected}
         video={media.video}
         steps={recipe.steps}
         favourite={data.favourite}

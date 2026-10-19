@@ -2,8 +2,9 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   authorOf,
-  Byline,
+  AuthorLine,
   isAuthorKey,
+  SourceLine,
 } from '../../../../../../src/app/(site)/recipe/[id]/_components/byline';
 import { html } from '../../../../../components/render';
 
@@ -53,8 +54,47 @@ describe('isAuthorKey', () => {
   });
 });
 
-describe('Byline with a source and an author', () => {
-  const out = html(<Byline url={SITE} author="Ethan Chlebowski" />);
+describe('AuthorLine', () => {
+  const out = html(<AuthorLine name="Ethan Chlebowski" />);
+
+  it('says "by", then the name', () => {
+    expect(out).toMatch(/>by<.*Ethan Chlebowski/);
+  });
+
+  it('sets the name in a handwriting face, and nothing else', () => {
+    expect(out.match(/font-hand-/g)).toHaveLength(1);
+    expect(out).toMatch(
+      /class="[^"]*font-hand-\w+[^"]*"[^>]*>Ethan Chlebowski</,
+    );
+  });
+
+  it('draws the name at the large size, under the title', () => {
+    expect(out).toContain('leading-8');
+  });
+
+  it('keeps the same face for the same person, however the name is written', () => {
+    const face = (name: string) =>
+      /font-hand-(\w+)/.exec(html(<AuthorLine name={name} />))?.[1];
+    expect(face('ethan  chlebowski')).toBe(face('Ethan Chlebowski'));
+  });
+
+  it('cuts a long name with an ellipsis instead of widening the line, and says it in full', () => {
+    const long = 'A'.repeat(200);
+    const longOut = html(<AuthorLine name={long} />);
+    expect(longOut).toMatch(/class="[^"]*truncate[^"]*"/);
+    expect(longOut).toContain(`title="${long}"`);
+    expect(longOut).toContain('min-w-0');
+  });
+
+  it('shows a name as text, never as markup', () => {
+    const hostile = html(<AuthorLine name={'<img src=x onerror=alert(1)>'} />);
+    expect(hostile).not.toContain('<img');
+    expect(hostile).toContain('&lt;img src=x onerror=alert(1)&gt;');
+  });
+});
+
+describe('SourceLine with a web address', () => {
+  const out = html(<SourceLine url={SITE} />);
 
   it('links out to the original page, in a new tab', () => {
     expect(out).toContain(`href="${SITE}"`);
@@ -63,103 +103,47 @@ describe('Byline with a source and an author', () => {
     expect(out).toContain('From');
   });
 
-  it('names the author after the source, with a lower-case "by"', () => {
-    expect(out).toMatch(/seriouseats\.com.*by.*Ethan Chlebowski/);
-  });
-
-  it('sets the author in the handwriting face', () => {
-    expect(out).toMatch(
-      /<span[^>]*class="font-hand[^"]*"[^>]*>Ethan Chlebowski</,
-    );
-  });
-
-  it('keeps the handwriting for the name alone', () => {
-    expect(out.match(/font-hand/g)).toHaveLength(1);
-  });
-
-  it('still offers the other recipes from the same site, after the author', () => {
+  it('offers the other recipes saved from the same site, after the link', () => {
     expect(out).toContain('href="/app?site=seriouseats.com"');
-    expect(out.indexOf('Ethan Chlebowski')).toBeLessThan(
+    expect(out.indexOf('seriouseats.com</a>')).toBeLessThan(
       out.indexOf('More from seriouseats.com'),
     );
   });
 
-  it('cuts a long name with an ellipsis instead of widening the line, and says it in full', () => {
-    const long = 'A'.repeat(200);
-    const longOut = html(<Byline url={SITE} author={long} />);
-    expect(longOut).toMatch(/class="[^"]*truncate[^"]*"/);
-    expect(longOut).toContain(`title="${long}"`);
-    expect(longOut).toContain('min-w-0');
-  });
-
-  it('shows a name as text, never as markup', () => {
-    const hostile = html(
-      <Byline url={SITE} author={'<img src=x onerror=alert(1)>'} />,
-    );
-    expect(hostile).not.toContain('<img');
-    expect(hostile).toContain('&lt;img src=x onerror=alert(1)&gt;');
+  it('never uses a handwriting face, which is for people only', () => {
+    expect(out).not.toContain('font-hand');
   });
 });
 
-describe('Byline with only a source', () => {
-  it('offers the other recipes saved from the same site', () => {
-    const out = html(<Byline url={SITE} />);
-    expect(out).toContain('More from seriouseats.com');
-    expect(out).not.toContain('font-hand');
-    expect(out).not.toMatch(/>by</i);
-  });
-
+describe('SourceLine with a typed source', () => {
   it('shows a source that is not a web address as plain text', () => {
-    const out = html(<Byline value="Grandma" />);
+    const out = html(<SourceLine value="Grandma" />);
     expect(out).toContain('Grandma');
     expect(out).not.toContain('<a');
     expect(out).not.toContain('More from');
   });
 
   it('prefers the address when there is both an address and a typed source', () => {
-    const out = html(<Byline value="Grandma" url="https://example.com/dal" />);
+    const out = html(
+      <SourceLine value="Grandma" url="https://example.com/dal" />,
+    );
     expect(out).toContain('example.com');
     expect(out).not.toContain('Grandma');
   });
 
   it('falls back to the typed source when the address is not a web address', () => {
-    const out = html(<Byline value="Grandma" url="not a url" />);
+    const out = html(<SourceLine value="Grandma" url="not a url" />);
     expect(out).toContain('Grandma');
     expect(out).not.toContain('href=');
   });
 });
 
-describe('Byline with a typed source and an author', () => {
-  it('names both, without inventing a "More from" link', () => {
-    const out = html(<Byline value="Grandma" author="Ada" />);
-    expect(out).toContain('Grandma');
-    expect(out).toContain('Ada');
-    expect(out).not.toContain('<a');
-    expect(out).not.toContain('More from');
-  });
-});
-
-describe('Byline with only an author', () => {
-  const out = html(<Byline author="Ethan Chlebowski" />);
-
-  it('opens with a capital "By", and has no link to offer', () => {
-    expect(out).toContain('>By<');
-    expect(out).not.toContain('>by<');
-    expect(out).not.toContain('<a');
-    expect(out).not.toContain('From');
-  });
-
-  it('still sets the name in handwriting', () => {
-    expect(out).toContain('font-hand');
-  });
-});
-
-describe('Byline with neither', () => {
-  it('shows nothing', () => {
-    expect(html(<Byline />)).toBe('');
+describe('SourceLine with no source', () => {
+  it('shows nothing, so no gap is left', () => {
+    expect(html(<SourceLine />)).toBe('');
   });
 
   it('shows nothing for an address that cannot be read and no typed source', () => {
-    expect(html(<Byline url="not a url" />)).toBe('');
+    expect(html(<SourceLine url="not a url" />)).toBe('');
   });
 });

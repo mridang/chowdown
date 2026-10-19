@@ -12,7 +12,11 @@ import { sentenceCase } from '@/lib/format';
 import type { Tone } from '@/lib/recipe/card-data';
 import type { StepToken } from '@/lib/recipe/cooklang';
 
-import { Byline } from './byline';
+import { driveConnectHref } from '@/lib/auth/drive-access';
+import { domainOf } from '@/lib/recipe/cook-text';
+
+import { AuthorLine, SourceLine } from './byline';
+import { FindAuthorButton } from './find-author-button';
 
 /**
  * The trail above the title: always "Recipes", plus the recipe's cuisine (a
@@ -49,8 +53,17 @@ export function heroEyebrow(
 }
 
 /**
- * The top of the recipe page: a split hero with the title, byline (source and
- * author) and actions beside the photo (stacked, photo first, on phones).
+ * The top of the recipe page: a split hero with the title, who wrote it, the
+ * actions and where it came from, beside the photo (stacked, photo first, on
+ * phones).
+ *
+ * The order is the title, then "by <author>" directly under it, then the
+ * actions, then the source line ("From cookwell.com", "More from ..."): a
+ * person's name is the first thing to know about a recipe, and where it was
+ * found comes later. A recipe with a source page but no author gets a small
+ * "Find the author" button where the author line would be. A recipe with no
+ * author line at all keeps the source line directly under the title, so no
+ * empty gap is left.
  *
  * The text column must start exactly where the page container does, so the
  * title, the facts and the ingredients share one left edge. The photo bleeds to
@@ -67,6 +80,7 @@ export function RecipeHero({
   sourceText,
   sourceUrl,
   author,
+  driveConnected = false,
   video,
   steps,
   favourite,
@@ -83,14 +97,54 @@ export function RecipeHero({
   sourceText?: string;
   /** The web address the recipe was saved from. */
   sourceUrl?: string;
-  /** Who wrote the recipe, shown beside the source in a handwriting face. */
+  /** Who wrote the recipe, shown under the title in a handwriting face. */
   author?: string;
+  /** Whether Google Drive is connected, which "Find the author" needs to save what it finds. */
+  driveConnected?: boolean;
   /** A video for the recipe, when it links one. */
   video?: string;
   steps: readonly (readonly StepToken[])[];
   favourite: boolean;
 }>): ReactElement {
   const eyebrow = heroEyebrow(cuisine, course);
+  // Where the author line goes: the name, or (when the recipe has a source
+  // page to read it from, and a Drive to save it to) the button that finds it.
+  const authorSlot = author ? (
+    <AuthorLine name={author} />
+  ) : driveConnected && sourceUrl && domainOf(sourceUrl) ? (
+    <FindAuthorButton
+      recipeId={recipeId}
+      connectHref={driveConnectHref(`/recipe/${recipeId}`)}
+    />
+  ) : null;
+  const source = (
+    <>
+      <SourceLine value={sourceText} url={sourceUrl} />
+      {video ? (
+        <TextLink
+          href={video}
+          external
+          variant="strong"
+          className="mt-1 inline-flex h-8 items-center gap-1.5 text-sm print:hidden"
+        >
+          <PlayIcon size="sm" />
+          Watch the video
+        </TextLink>
+      ) : null}
+    </>
+  );
+  const actions = (
+    <div className="mt-7 flex flex-wrap items-center gap-2.5 print:hidden">
+      {steps.length > 0 ? <CookMode title={title} steps={steps} /> : null}
+      <FavouriteButton
+        recipeId={recipeId}
+        initial={favourite}
+        variant="labelled"
+      />
+      <ShareButton title={title} />
+      <MoreMenu recipeId={recipeId} title={title} />
+    </div>
+  );
   return (
     <section className="border-line @container border-b print:border-0">
       <div className="grid grid-cols-1 lg:grid-cols-2 print:block">
@@ -106,28 +160,18 @@ export function RecipeHero({
           <Heading as="h1" variant="h1" className="mt-3 lg:text-6xl">
             {title}
           </Heading>
-          <Byline value={sourceText} url={sourceUrl} author={author} />
-          {video ? (
-            <TextLink
-              href={video}
-              external
-              variant="strong"
-              className="mt-1 inline-flex h-8 items-center gap-1.5 text-sm print:hidden"
-            >
-              <PlayIcon size="sm" />
-              Watch the video
-            </TextLink>
-          ) : null}
-          <div className="mt-7 flex flex-wrap items-center gap-2.5 print:hidden">
-            {steps.length > 0 ? <CookMode title={title} steps={steps} /> : null}
-            <FavouriteButton
-              recipeId={recipeId}
-              initial={favourite}
-              variant="labelled"
-            />
-            <ShareButton title={title} />
-            <MoreMenu recipeId={recipeId} title={title} />
-          </div>
+          {authorSlot ? (
+            <>
+              {authorSlot}
+              {actions}
+              {source}
+            </>
+          ) : (
+            <>
+              {source}
+              {actions}
+            </>
+          )}
         </div>
       </div>
     </section>

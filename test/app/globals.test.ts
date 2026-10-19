@@ -101,8 +101,26 @@ describe('reduced motion', () => {
   });
 });
 
-describe('the handwriting font token', () => {
-  it('is exposed as a theme font, so `font-hand` is a utility', () => {
-    expect(css).toMatch(/--font-hand:\s*var\(--font-hand-face\)/);
+describe('the handwriting font tokens', () => {
+  const faces = [
+    'caveat',
+    'kalam',
+    'shadows',
+    'rainbow',
+    'indie',
+    'handrawn',
+    'aurore',
+  ];
+
+  it('expose each face as a theme font, so `font-hand-<face>` is a utility', () => {
+    faces.forEach((face) =>
+      expect(css).toContain(
+        `--font-hand-${face}: var(--font-hand-${face}-face), cursive;`,
+      ),
+    );
+  });
+
+  it('leave no general `font-hand`, so handwriting cannot be applied to anything but a name', () => {
+    expect(css).not.toMatch(/--font-hand:/);
   });
 });

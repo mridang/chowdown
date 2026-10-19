@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from 'next';
-import { Bricolage_Grotesque, Caveat, Inter } from 'next/font/google';
+import { Bricolage_Grotesque, Inter } from 'next/font/google';
 import type { ReactElement, ReactNode } from 'react';
 
 import { ServiceWorker } from '@/components/site/service-worker';
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from '@/lib/site';
 
+import { HANDWRITING_VARIABLES } from './handwriting-fonts';
 import './globals.css';
 
 /**
@@ -24,24 +25,6 @@ const display = Bricolage_Grotesque({
   variable: '--font-display-face',
   subsets: ['latin'],
   display: 'optional',
-  preload: false,
-});
-
-/**
- * Handwriting, used for one thing only: a recipe author's name, so it reads as
- * a person's and not as interface text. Caveat is a variable face (weights 400
- * to 700, one small file) with Latin-extended coverage for names such as
- * "Zoë Jõgi". Like the other faces it is self-hosted at build
- * time (the Content Security Policy allows fonts only from this site) and not
- * preloaded, since only recipe pages use it. Unlike them it is `swap`, not
- * `optional`: `optional` would skip it on a first visit, and a handwriting
- * face that never appears defeats its purpose. The name is one short line set
- * in a size-matched fallback until the face arrives, so little moves.
- */
-const hand = Caveat({
-  variable: '--font-hand-face',
-  subsets: ['latin', 'latin-ext'],
-  display: 'swap',
   preload: false,
 });
 
@@ -108,7 +91,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${sans.variable} ${display.variable} ${hand.variable} h-full antialiased`}
+      className={`${sans.variable} ${display.variable} ${HANDWRITING_VARIABLES} h-full antialiased`}
     >
       <body className="bg-paper text-ink flex min-h-full flex-col font-sans">
         {children}

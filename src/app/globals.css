@@ -42,8 +42,16 @@
   --text-label--line-height: 1rem;
   --text-label--letter-spacing: 0.16em;
   --font-sans: var(--font-sans-face);
-  /* Handwriting, for a recipe author's name and nothing else (`font-hand`). */
-  --font-hand: var(--font-hand-face);
+  /* Handwriting, for people's names and nothing else (see AuthorName): one
+   * token per face, each with `cursive` behind it for the moment before the
+   * file arrives. The `--font-hand-*-face` variables come from next/font. */
+  --font-hand-caveat: var(--font-hand-caveat-face), cursive;
+  --font-hand-kalam: var(--font-hand-kalam-face), cursive;
+  --font-hand-shadows: var(--font-hand-shadows-face), cursive;
+  --font-hand-rainbow: var(--font-hand-rainbow-face), cursive;
+  --font-hand-indie: var(--font-hand-indie-face), cursive;
+  --font-hand-handrawn: var(--font-hand-handrawn-face), cursive;
+  --font-hand-aurore: var(--font-hand-aurore-face), cursive;
 }
 
 /*
