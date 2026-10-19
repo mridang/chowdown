@@ -1,6 +1,6 @@
 'use client';
 
-import { BarePage, MessagePage } from '@/components/landing/bare-page';
+import { BarePage, MessagePage } from '@/components/site/bare-page';
 import { Button, ButtonLink } from '@/components/ui/button';
 
 /**

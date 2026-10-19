@@ -3,11 +3,17 @@
 import { useCallback, useRef, useState } from 'react';
 
 import { CloseIcon } from '@/components/icons';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { countOf } from '@/lib/intl';
 import { problemMessage } from '@/lib/problem-message';
 
-import { FormField, FormMessage, TextArea, TextInput } from './form-fields';
+import {
+  FormField,
+  FormMessage,
+  TextArea,
+  TextInput,
+} from '@/components/ui/field';
 
 /** A prepared, not-yet-saved recipe, from an item of POST /api/recipe-imports. */
 interface ImportDraft {
@@ -146,10 +152,7 @@ export function AddRecipes({
   );
 
   return (
-    <section
-      aria-labelledby="add-recipes-heading"
-      className="rounded-card border-ink/10 border bg-white p-5 sm:p-8"
-    >
+    <Card as="section" aria-labelledby="add-recipes-heading">
       <div className="flex items-center justify-between gap-4">
         <h2
           id="add-recipes-heading"
@@ -238,7 +241,6 @@ export function AddRecipes({
               <TextArea
                 id="draft-cook"
                 mono
-                aria-describedby="draft-cook-hint"
                 value={cook}
                 onChange={(e) => setCook(e.target.value)}
                 rows={14}
@@ -287,6 +289,6 @@ export function AddRecipes({
           </div>
         </>
       ) : null}
-    </section>
+    </Card>
   );
 }

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { BarePage } from '@/components/landing/bare-page';
+import { BarePage } from '@/components/site/bare-page';
 import { Card } from '@/components/ui/card';
 
 /**

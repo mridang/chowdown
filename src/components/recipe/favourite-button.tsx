@@ -4,9 +4,6 @@ import { HeartIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
 import { useFavourite } from '@/components/recipes/use-favourite';
 
-// Re-exported so the older import path keeps working.
-export { HeartIcon };
-
 /**
  * How the heart is presented:
  *  - `overlay`: a round button laid over a card's image. Hidden until the card

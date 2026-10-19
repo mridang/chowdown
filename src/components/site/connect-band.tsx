@@ -14,7 +14,7 @@ export function ConnectBand() {
     <section className="bg-marigold">
       <Container className="grid grid-cols-1 items-center gap-8 py-12 sm:py-16 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
         <div>
-          <Eyebrow className="text-ink flex items-center gap-2">
+          <Eyebrow tone="ink" className="flex items-center gap-2">
             <PlugIcon size="sm" />
             Works with ChatGPT and Claude
           </Eyebrow>

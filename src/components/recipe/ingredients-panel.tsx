@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { CheckIcon, MinusIcon, PanIcon, PlusIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
-import { Heading } from '@/components/ui/layout';
+import { Eyebrow, Heading } from '@/components/ui/layout';
 import { Segmented } from '@/components/ui/segmented';
 import type { UnitChoice } from '@/lib/recipe/page-view';
 
@@ -165,9 +165,9 @@ export function IngredientsPanel({
 
       {cookware.length > 0 ? (
         <div className="mt-8">
-          <h3 className="text-label text-subtle font-semibold uppercase">
+          <Eyebrow as="h3" tone="subtle">
             You will need
-          </h3>
+          </Eyebrow>
           <ul className="mt-3 flex flex-wrap gap-2">
             {cookware.map((item, index) => (
               <li

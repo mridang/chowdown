@@ -54,4 +54,20 @@ describe('ToggleLink', () => {
     );
     expect(out).toContain('class="h-10 bg-marigold"');
   });
+
+  it('tells screen readers what pressing it does, but only while it is on', () => {
+    const on = html(
+      <ToggleLink href="/app" active activeText="selected">
+        Easy
+      </ToggleLink>,
+    );
+    expect(on).toContain('sr-only');
+    expect(on).toContain(', selected');
+    const off = html(
+      <ToggleLink href="/app" active={false} activeText="selected">
+        Easy
+      </ToggleLink>,
+    );
+    expect(off).not.toContain('selected');
+  });
 });

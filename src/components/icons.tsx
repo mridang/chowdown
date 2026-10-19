@@ -57,6 +57,12 @@ export const HeartIcon = ({
     <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
   </Icon>
 );
+/** A filled "play" triangle, for the link that opens a recipe's video. */
+export const PlayIcon = (p: IconProps) => (
+  <Icon {...p} fill="currentColor" stroke="none">
+    <path d="M8 5v14l11-7z" />
+  </Icon>
+);
 export const SearchIcon = (p: IconProps) => (
   <Icon {...p}>
     <circle cx="11" cy="11" r="7" />

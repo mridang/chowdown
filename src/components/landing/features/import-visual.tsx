@@ -15,7 +15,7 @@ export function ImportVisual({ recipe }: { recipe: SampleRecipe }) {
         <div className="rounded-control border-ink/20 bg-paper text-muted mt-2 border p-3 font-mono text-xs break-all">
           https://{recipe.site}/{fileSlug(recipe.title)}
         </div>
-        <Card padding="none" className="mt-5 flex items-center gap-4 p-3">
+        <Card padding="xs" className="mt-5 flex items-center gap-4">
           <TintTile
             tone={recipe.tone}
             className="rounded-control h-20 w-20 shrink-0"

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { CenteredCard } from '@/components/landing/centered-card';
+import { CenteredCard } from '@/components/site/centered-card';
 import { CheckIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';

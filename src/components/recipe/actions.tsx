@@ -12,7 +12,11 @@ import {
 } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { problemError, problemText } from '@/lib/problem-message';
-import { POPOVER_ITEM, Popover } from '@/components/ui/popover';
+import {
+  POPOVER_ITEM,
+  Popover,
+  PopoverSeparator,
+} from '@/components/ui/popover';
 
 import { DeleteDialog } from './delete-dialog';
 
@@ -171,7 +175,7 @@ export function MoreMenu({
             <PrinterIcon size="menu" className="text-subtle" />
             Print
           </button>
-          <div className="bg-ink/10 my-1.5 h-px" />
+          <PopoverSeparator />
           <button
             type="button"
             className={`${POPOVER_ITEM} text-ember`}

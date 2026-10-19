@@ -34,6 +34,7 @@ export function FavouritesLink({
     <ToggleLink
       href={href}
       active={active}
+      activeText="on"
       className={cn(
         'rounded-control flex h-10 w-full items-center justify-between px-3.5 text-sm font-semibold transition focus-ring',
         active ? 'bg-ink text-white' : 'bg-marigold hover:bg-marigold/85',

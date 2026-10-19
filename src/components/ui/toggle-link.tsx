@@ -24,6 +24,7 @@ import type { ReactNode } from 'react';
 export function ToggleLink({
   href,
   active,
+  activeText,
   className,
   children,
 }: {
@@ -31,6 +32,12 @@ export function ToggleLink({
   href: string;
   /** Whether the filter is switched on right now. */
   active: boolean;
+  /**
+   * What to add for screen readers while it is on ("selected", "on"). Without
+   * it a selected option would read "link, current", which does not say that
+   * pressing it again removes the filter.
+   */
+  activeText?: string;
   className?: string;
   children: ReactNode;
 }) {
@@ -42,6 +49,9 @@ export function ToggleLink({
       className={className}
     >
       {children}
+      {active && activeText ? (
+        <span className="sr-only">, {activeText}</span>
+      ) : null}
     </Link>
   );
 }

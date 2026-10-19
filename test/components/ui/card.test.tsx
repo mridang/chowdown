@@ -12,7 +12,12 @@ describe('Card', () => {
     expect(out).toContain('hello');
   });
 
+  it('has room inside by default', () => {
+    expect(classOf(html(<Card>x</Card>), 'div')).toContain('p-5 sm:p-8');
+  });
+
   it('offers a few padding sizes, and none', () => {
+    expect(classOf(html(<Card padding="xs">x</Card>), 'div')).toContain('p-3');
     expect(classOf(html(<Card padding="sm">x</Card>), 'div')).toContain('p-4');
     expect(classOf(html(<Card padding="lg">x</Card>), 'div')).toContain(
       'p-6 sm:p-8',
@@ -31,5 +36,15 @@ describe('Card', () => {
     expect(out.startsWith('<section')).toBe(true);
     expect(out).toContain('aria-label="Steps"');
     expect(classOf(out, 'section')).toContain('extra');
+  });
+
+  it('can be a button and then takes the button’s props', () => {
+    const out = html(
+      <Card as="button" type="button" padding="lg">
+        Choose
+      </Card>,
+    );
+    expect(out.startsWith('<button')).toBe(true);
+    expect(out).toContain('type="button"');
   });
 });

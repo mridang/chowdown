@@ -52,12 +52,10 @@ describe('RecipeCard', () => {
     expect(html(<RecipeCard recipe={bare} />)).not.toContain('text-[13px]');
   });
 
-  it('tells the heart state apart in its label', () => {
-    expect(html(<RecipeCard recipe={recipe} />)).toContain(
-      'aria-label="Add to favourites"',
-    );
-    expect(
-      html(<RecipeCard recipe={{ ...recipe, favourite: true }} />),
-    ).toContain('aria-label="Remove from favourites"');
+  it('draws a demo card’s heart as decoration: hidden, and not a control to tab to', () => {
+    const out = html(<RecipeCard recipe={recipe} />);
+    expect(out).not.toContain('<button');
+    expect(out).not.toContain('aria-label="Add to favourites"');
+    expect(out).toContain('aria-hidden="true"');
   });
 });

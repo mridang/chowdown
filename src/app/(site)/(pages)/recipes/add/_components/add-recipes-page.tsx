@@ -11,7 +11,12 @@ import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 import { problemError, problemText } from '@/lib/problem-message';
 
 import { AddRecipes } from './add-recipes';
-import { FormField, FormMessage, TextArea, TextInput } from './form-fields';
+import {
+  FormField,
+  FormMessage,
+  TextArea,
+  TextInput,
+} from '@/components/ui/field';
 
 /** Starter content offered when writing a recipe by hand. */
 const STARTER = `>> title: New Recipe
@@ -80,7 +85,6 @@ function ManualEditor({ onCancel }: { onCancel: () => void }) {
           <TextArea
             id="recipe-cook"
             mono
-            aria-describedby="recipe-cook-hint"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={12}

@@ -4,7 +4,8 @@ import { useState } from 'react';
 
 import { CoverImage } from '@/components/cover-image';
 import { cn } from '@/components/ui/cn';
-import { TintTile, type Tone } from '@/components/ui/tint-tile';
+import { TintTile } from '@/components/ui/tint-tile';
+import type { Tone } from '@/lib/recipe/card-data';
 
 /**
  * The recipe's big photo. The caller sets the shape with `className` (an aspect

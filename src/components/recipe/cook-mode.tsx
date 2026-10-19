@@ -198,6 +198,8 @@ export function CookMode({
                     i === index ? 'text-3xl sm:text-5xl' : 'text-xl text-muted',
                   )}
                 >
+                  {/* The number badge is decorative, and the list may have lost its numbering. */}
+                  <span className="sr-only">Step {i + 1}: </span>
                   {i === index ? <StepBody tokens={step} /> : stepText(step)}
                 </p>
               </li>

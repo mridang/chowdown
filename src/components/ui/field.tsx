@@ -1,4 +1,10 @@
-import type { ComponentProps, ReactNode } from 'react';
+import {
+  cloneElement,
+  isValidElement,
+  type ComponentProps,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 
 import { ChevronIcon, SearchIcon } from '@/components/icons';
 import { Callout } from '@/components/ui/callout';
@@ -48,7 +54,9 @@ const BOX =
 /**
  * A labelled form control: the visible label above, an optional line of help
  * under it, then the control itself. The label is tied to the control by `id`,
- * so clicking it focuses the field and screen readers announce it.
+ * so clicking it focuses the field and screen readers announce it; when there
+ * is help text the control is also pointed at it (`aria-describedby`), so the
+ * help is read out with the field. Pass the control as the single child.
  */
 export function FormField({
   id,
@@ -61,17 +69,27 @@ export function FormField({
   hint?: string;
   children: ReactNode;
 }) {
+  const hintId = `${id}-hint`;
+  const control =
+    hint && isValidElement(children)
+      ? cloneElement(
+          children as ReactElement<{ 'aria-describedby'?: string }>,
+          {
+            'aria-describedby': hintId,
+          },
+        )
+      : children;
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-semibold">
         {label}
       </label>
       {hint ? (
-        <p id={`${id}-hint`} className="mt-1 text-sm text-muted">
+        <p id={hintId} className="mt-1 text-sm text-muted">
           {hint}
         </p>
       ) : null}
-      <div className="mt-2">{children}</div>
+      <div className="mt-2">{control}</div>
     </div>
   );
 }

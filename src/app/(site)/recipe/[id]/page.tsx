@@ -9,7 +9,7 @@ import { Method } from '@/components/recipe/method';
 import { RecipeStateProvider } from '@/components/recipe/recipe-state';
 import { Tag } from '@/components/ui/chip';
 import { STICKY_PANEL_CLASS } from '@/components/site/header-height';
-import { Container } from '@/components/ui/layout';
+import { Container, Eyebrow } from '@/components/ui/layout';
 import { sentenceCase } from '@/lib/format';
 import { cleanTitle } from '@/lib/recipe/card-data';
 import { firstTag } from '@/lib/recipe/first-tag';
@@ -152,9 +152,9 @@ export default async function RecipePage({
 
         {keywords.length > 0 ? (
           <div className="border-ink/15 mt-14 flex flex-wrap items-center gap-2 border-t pt-6 print:hidden">
-            <span className="text-label text-subtle mr-2 font-semibold uppercase">
+            <Eyebrow as="span" tone="subtle" className="mr-2">
               Tagged
-            </span>
+            </Eyebrow>
             {keywords.slice(0, 10).map((word) => (
               <Tag key={word} href={`/app?q=${encodeURIComponent(word)}`}>
                 {sentenceCase(word)}

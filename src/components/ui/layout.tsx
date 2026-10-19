@@ -57,20 +57,42 @@ export function Section({
   );
 }
 
-/** The small tracked-caps line above a heading. */
+const EYEBROW_TONES = {
+  /** The accent colour, for the line that introduces a heading. */
+  ember: 'text-ember',
+  /** Plain ink, for use on a coloured band. */
+  ink: 'text-ink',
+  /** Quiet grey, for the label of a group or a fact. */
+  subtle: 'text-subtle',
+} as const;
+
+/**
+ * The small tracked-caps line above a heading, or the label of a group. `tone`
+ * picks its colour (do not pass a colour class: classes are joined, not merged,
+ * so two colours would fight); `as` changes the tag when it labels a term or a
+ * heading rather than being a paragraph.
+ */
 export function Eyebrow({
+  as: Tag = 'p',
+  tone = 'ember',
   children,
   className,
 }: {
+  as?: ElementType;
+  tone?: keyof typeof EYEBROW_TONES;
   children: ReactNode;
   className?: string;
 }) {
   return (
-    <p
-      className={cn('text-label font-semibold uppercase text-ember', className)}
+    <Tag
+      className={cn(
+        'text-label font-semibold uppercase',
+        EYEBROW_TONES[tone],
+        className,
+      )}
     >
       {children}
-    </p>
+    </Tag>
   );
 }
 

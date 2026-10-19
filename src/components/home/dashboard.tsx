@@ -16,7 +16,12 @@ import {
 } from '@/components/recipes/search-query';
 import { Button } from '@/components/ui/button';
 import { SearchField } from '@/components/ui/field';
-import { Container, Heading, SectionHeader } from '@/components/ui/layout';
+import {
+  Container,
+  Eyebrow,
+  Heading,
+  SectionHeader,
+} from '@/components/ui/layout';
 import { PillLink } from '@/components/ui/pill';
 import {
   easyAndQuick,
@@ -112,10 +117,10 @@ export async function Dashboard({ user }: { user: ShellUser }) {
     <>
       <section className="border-ink/10 border-b">
         <Container className="py-10 sm:py-14">
-          <p className="text-label text-ember flex items-center gap-2 font-semibold uppercase">
+          <Eyebrow className="flex items-center gap-2">
             <span className="bg-live h-2 w-2 rounded-full" />
             Welcome back, {user.firstName}
-          </p>
+          </Eyebrow>
           <Heading as="h1" variant="h1" className="mt-3 max-w-3xl">
             What do you feel like cooking?
           </Heading>
@@ -128,7 +133,7 @@ export async function Dashboard({ user }: { user: ShellUser }) {
                   placeholder="Try “chicken curry”"
                   aria-label="Describe what you feel like cooking"
                   action={
-                    <Button type="submit" size="md" className="h-10">
+                    <Button type="submit" size="md">
                       <SearchIcon size="sm" />
                       Find
                     </Button>

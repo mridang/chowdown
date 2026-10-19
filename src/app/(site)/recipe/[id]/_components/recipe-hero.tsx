@@ -1,4 +1,5 @@
-import { FavouriteButton } from '@/components/favourite-button';
+import { PlayIcon } from '@/components/icons';
+import { FavouriteButton } from '@/components/recipe/favourite-button';
 import { CookMode } from '@/components/recipe/cook-mode';
 import { HeroPhoto } from '@/components/recipe/hero-photo';
 import { MoreMenu, ShareButton } from '@/components/recipe/actions';
@@ -6,10 +7,9 @@ import { Breadcrumb, type Crumb } from '@/components/ui/breadcrumb';
 import { Eyebrow, Heading } from '@/components/ui/layout';
 import { TextLink } from '@/components/ui/text-link';
 import { sentenceCase } from '@/lib/format';
-import type { Tone } from '@/components/ui/tint-tile';
+import type { Tone } from '@/lib/recipe/card-data';
 import type { StepToken } from '@/lib/recipe/cooklang';
 
-import { PlayIcon } from './play-icon';
 import { SourceLine } from './source-line';
 
 /**
@@ -106,7 +106,7 @@ export function RecipeHero({
               look="strong"
               className="mt-1 inline-flex h-8 items-center gap-1.5 text-sm print:hidden"
             >
-              <PlayIcon />
+              <PlayIcon size="sm" />
               Watch the video
             </TextLink>
           ) : null}

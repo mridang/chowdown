@@ -24,6 +24,7 @@ function FacetOption({
     <ToggleLink
       href={option.href}
       active={option.active}
+      activeText="selected"
       className="rounded-control hover:bg-ink/5 focus-visible:outline-ink flex min-h-9 items-center gap-3 px-2 text-[15px] transition focus-visible:outline-2"
     >
       <span

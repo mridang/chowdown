@@ -25,6 +25,25 @@ describe('FormField', () => {
     );
   });
 
+  it('points the control at its help text so the help is read with the field', () => {
+    const out = html(
+      <FormField id="cook" label="Cooklang" hint="Paste it here.">
+        <TextArea id="cook" />
+      </FormField>,
+    );
+    expect(out).toContain('aria-describedby="cook-hint"');
+    expect(out).toContain('id="cook-hint"');
+  });
+
+  it('adds no describedby when there is no help text', () => {
+    const out = html(
+      <FormField id="cook" label="Cooklang">
+        <TextArea id="cook" />
+      </FormField>,
+    );
+    expect(out).not.toContain('aria-describedby');
+  });
+
   it('leaves the help line out when there is none', () => {
     expect(
       html(

@@ -13,9 +13,9 @@ import { CardFact } from '@/components/recipes/card-fact';
 import { CardHeart } from '@/components/recipes/card-heart';
 import { cn } from '@/components/ui/cn';
 import { Heading } from '@/components/ui/layout';
-import { TintTile, type Tone } from '@/components/ui/tint-tile';
+import { TintTile } from '@/components/ui/tint-tile';
 import { duration, sentenceCase } from '@/lib/format';
-import type { CardRecipe } from '@/lib/recipe/card-data';
+import type { CardRecipe, Tone } from '@/lib/recipe/card-data';
 
 /**
  * A recipe photo. With a cover it shows the photo (falling back to the tint if
@@ -81,9 +81,6 @@ export function RecipeCard({
   // A recipe typed in by hand has no cuisine; its source site is the next best
   // line to show, and a bare idea has neither.
   const kicker = recipe.cuisine || recipe.site;
-  const heartLabel = recipe.favourite
-    ? 'Remove from favourites'
-    : 'Add to favourites';
   return (
     <article className="group relative h-full">
       <IntentLink
@@ -140,19 +137,19 @@ export function RecipeCard({
       {live ? (
         <CardHeart recipeId={recipe.id} initial={recipe.favourite} />
       ) : (
-        <button
-          type="button"
-          aria-label={heartLabel}
+        // A demo card's heart is only decoration: it is not a control, so it is
+        // neither focusable nor announced.
+        <span
+          aria-hidden="true"
           className={cn(
             'border-ink/10 absolute top-3 right-3 grid h-9 w-9 place-items-center rounded-full border bg-white transition',
-            'focus-visible:opacity-100',
             recipe.favourite
               ? 'text-ember'
               : 'text-muted hover:text-ember [@media(hover:hover)]:opacity-0 group-focus-within:opacity-100 group-hover:opacity-100',
           )}
         >
           <HeartIcon size="menu" filled={recipe.favourite} />
-        </button>
+        </span>
       )}
     </article>
   );

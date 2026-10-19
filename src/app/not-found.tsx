@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { BarePage, MessagePage } from '@/components/landing/bare-page';
+import { BarePage, MessagePage } from '@/components/site/bare-page';
 import { ButtonLink } from '@/components/ui/button';
 
 export const metadata: Metadata = {

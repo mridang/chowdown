@@ -1,8 +1,6 @@
 import { PanIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
-
-/** The colours a recipe without a photo can wear. */
-export type Tone = 'flame' | 'marigold' | 'forest' | 'sand' | 'ink';
+import type { Tone } from '@/lib/recipe/card-data';
 
 /** Soft tints, so a missing photo is a quiet block of colour and not a loud one. */
 const TINTS: Record<Tone, string> = {

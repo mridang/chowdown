@@ -4,9 +4,6 @@ import { PanIcon, SparkIcon } from '@/components/icons';
 import { Logo } from '@/components/site/logo';
 import { Container } from '@/components/ui/layout';
 
-// The address now lives in `@/lib/site`; this re-export keeps older importers
-// working until they switch.
-
 /**
  * The jagged edge above the footer: one flame-orange polygon whose top edge
  * climbs and falls in broad peaks. It scales with the width (the ratio stays

@@ -35,4 +35,18 @@ describe('EmptyState', () => {
     );
     expect(out.indexOf('One more step')).toBeLessThan(out.indexOf('Connect'));
   });
+
+  it('shows the actions after the explanation, not before it', () => {
+    const out = html(
+      <EmptyState title="x" actions={<a href="/go">Go</a>}>
+        <p>Explanation.</p>
+      </EmptyState>,
+    );
+    expect(out.indexOf('Explanation.')).toBeLessThan(out.indexOf('href="/go"'));
+  });
+
+  it('spaces the heading from an eyebrow only when there is one', () => {
+    expect(html(<EmptyState title="x" />)).not.toContain('mt-2');
+    expect(html(<EmptyState eyebrow="Step" title="x" />)).toContain('mt-2');
+  });
 });

@@ -4,6 +4,7 @@ import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import { MiniCard } from '@/components/landing/features/mini-card';
 import { WindowFrame } from '@/components/landing/window-frame';
 import { cn } from '@/components/ui/cn';
+import { Eyebrow } from '@/components/ui/layout';
 
 /** One filter option in the mock-up: a box, a name and how many recipes match. */
 function FilterOption({
@@ -51,7 +52,7 @@ function FilterGroup({
 }) {
   return (
     <div>
-      <p className="text-label text-subtle font-semibold uppercase">{title}</p>
+      <Eyebrow tone="subtle">{title}</Eyebrow>
       <ul className="mt-3 flex flex-col gap-2.5">{children}</ul>
     </div>
   );

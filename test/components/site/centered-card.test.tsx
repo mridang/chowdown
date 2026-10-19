@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { CenteredCard } from '../../../src/components/landing/centered-card';
+import { CenteredCard } from '../../../src/components/site/centered-card';
 import { html } from '../render';
 
 describe('CenteredCard', () => {

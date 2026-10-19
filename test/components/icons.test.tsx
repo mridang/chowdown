@@ -1,6 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { ClockIcon, GoogleIcon, HeartIcon } from '../../src/components/icons';
+import {
+  ClockIcon,
+  GoogleIcon,
+  HeartIcon,
+  PlayIcon,
+} from '../../src/components/icons';
 import { classOf, html } from './render';
 
 describe('icons', () => {
@@ -29,5 +34,12 @@ describe('icons', () => {
   it('are hidden from assistive technology, and the Google one honours sizes too', () => {
     expect(html(<HeartIcon />)).toContain('aria-hidden="true"');
     expect(classOf(html(<GoogleIcon size="md" />), 'svg')).toBe('h-5 w-5');
+  });
+
+  it('has a filled play triangle that takes the same sizes', () => {
+    const out = html(<PlayIcon size="sm" />);
+    expect(classOf(out, 'svg')).toBe('h-4 w-4');
+    expect(out).toContain('fill="currentColor"');
+    expect(out).toContain('stroke="none"');
   });
 });

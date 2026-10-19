@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Eyebrow } from '@/components/ui/layout';
 
 /**
  * One fact about a recipe: a line icon in a tinted square, a small label and the
@@ -16,7 +17,7 @@ export function Fact({
 }) {
   return (
     <div className="relative min-h-11 pl-[3.625rem] leading-tight">
-      <dt className="text-label font-semibold text-subtle uppercase">
+      <Eyebrow as="dt" tone="subtle">
         <span
           aria-hidden="true"
           className="rounded-control absolute top-0 left-0 grid h-11 w-11 place-items-center bg-sand text-ember"
@@ -24,7 +25,7 @@ export function Fact({
           {icon}
         </span>
         {label}
-      </dt>
+      </Eyebrow>
       <dd className="mt-0.5 text-base font-semibold break-words">{children}</dd>
     </div>
   );

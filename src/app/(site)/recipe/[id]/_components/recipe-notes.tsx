@@ -1,6 +1,6 @@
 import { NoteIcon } from '@/components/icons';
 import { Card } from '@/components/ui/card';
-import { Heading } from '@/components/ui/layout';
+import { Eyebrow, Heading } from '@/components/ui/layout';
 import { sentenceCase } from '@/lib/format';
 import type { GeneralNote } from '@/lib/recipe/page-view';
 
@@ -33,9 +33,7 @@ export function RecipeNotes({
           {general.map((note, index) => (
             <Card as="li" padding="sm" key={index}>
               {note.label ? (
-                <p className="text-label text-ember font-semibold uppercase">
-                  {sentenceCase(note.label)}
-                </p>
+                <Eyebrow>{sentenceCase(note.label)}</Eyebrow>
               ) : null}
               <p className="leading-relaxed">{note.text}</p>
             </Card>
