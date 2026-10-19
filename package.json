@@ -35,7 +35,7 @@
     "@cooklang/cooklang-ts": "^1.1.2",
     "@opennextjs/cloudflare": "^1.19.11",
     "drizzle-orm": "^0.45.2",
-    "next": "16.2.7",
+    "next": "16.4.2",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
@@ -52,7 +52,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "ajv": "^8.20.0",
-    "cypress": "^14.5.4",
+    "cypress": "^16.2.0",
     "esbuild": "^0.28.2",
     "eslint": "^9.39.4",
     "eslint-plugin-drizzle": "^0.2.3",
