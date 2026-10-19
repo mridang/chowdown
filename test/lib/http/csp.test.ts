@@ -68,10 +68,18 @@ describe('buildCsp', () => {
     expect(csp).toContain('upgrade-insecure-requests');
   });
 
-  it('can forbid framing altogether, for the approval screen', () => {
-    const none = buildCsp('abc123==', 'none');
-    expect(none).toContain("frame-ancestors 'none'");
-    expect(none).toContain("script-src 'self' 'nonce-abc123=='");
+  it('forbids framing altogether on the approval screen', () => {
+    const approval = buildCsp('abc123==', 'approval');
+    expect(approval).toContain("frame-ancestors 'none'");
+    expect(approval).toContain("script-src 'self' 'nonce-abc123=='");
+  });
+
+  it('names no form-action on the approval screen, so its redirect back to the app is allowed', () => {
+    // A browser checks the consent form's redirect (to the client's address)
+    // against form-action. `'self'` there would block returning to ChatGPT or
+    // Claude after approval.
+    expect(buildCsp('abc123==', 'approval')).not.toContain('form-action');
+    expect(buildCsp('abc123==', 'site')).toContain("form-action 'self'");
   });
 
   it('puts the nonce on styles as well', () => {

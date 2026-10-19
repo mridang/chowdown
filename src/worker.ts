@@ -69,7 +69,9 @@ const handler: ExportedHandler<CloudflareEnv> = {
     // The approval screen may not be framed by anyone, not even this site.
     const csp = buildCsp(
       nonce,
-      new URL(request.url).pathname === '/oauth/authorize' ? 'none' : 'self',
+      new URL(request.url).pathname === '/oauth/authorize'
+        ? 'approval'
+        : 'site',
     );
     const forwarded = new Request(request, {
       headers: forwardedHeaders(request.headers, csp, nonce),

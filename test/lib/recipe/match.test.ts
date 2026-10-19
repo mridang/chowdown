@@ -36,3 +36,15 @@ describe('matchFile', () => {
     expect(matchFile(files, 'lasagne')).toBeUndefined();
   });
 });
+
+describe('matchFile with a blank reference', () => {
+  const files = [
+    { id: 'a', name: 'Aloo gobi.cook' },
+    { id: 'b', name: 'Biryani.cook' },
+  ];
+
+  it('points at nothing, so a missing recipe argument never picks the first recipe', () => {
+    expect(matchFile(files, '')).toBeUndefined();
+    expect(matchFile(files, '   ')).toBeUndefined();
+  });
+});

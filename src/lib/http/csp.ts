@@ -20,14 +20,24 @@ export function newNonce(): string {
   return bytesToBase64(crypto.getRandomValues(new Uint8Array(16)));
 }
 
+/** Which kind of page a policy is for: an ordinary one, or the approval screen. */
+export type CspSurface = 'site' | 'approval';
+
 /**
- * The policy for one response, carrying that response's nonce. `framing` says
- * who may put the page in a frame: this site (the default) or no one.
+ * The policy for one response, carrying that response's nonce.
+ *
+ * The approval screen (`approval`) differs in two ways. It may not be framed by
+ * anyone, this site included (`frame-ancestors 'none'`). And it names no
+ * `form-action`: its form posts to our own consent endpoint, which answers with a
+ * redirect to the *client's* address (a web page, a localhost port, an app's own
+ * scheme). Browsers check a form's redirects against `form-action`, so listing
+ * `'self'` there makes them refuse to send the person back to the app they just
+ * approved. Where the form is allowed to post is not what protects the page
+ * (the consent endpoint is protected by its own same-origin and CSRF checks),
+ * so the directive is left out rather than made so wide it means nothing.
  */
-export function buildCsp(
-  nonce: string,
-  framing: 'self' | 'none' = 'self',
-): string {
+export function buildCsp(nonce: string, surface: CspSurface = 'site'): string {
+  const approval = surface === 'approval';
   return [
     // Deny anything not named below; every kind of load the site needs is listed.
     "default-src 'none'",
@@ -45,8 +55,8 @@ export function buildCsp(
     "object-src 'none'",
     "frame-src 'none'",
     "base-uri 'self'",
-    "form-action 'self'",
-    `frame-ancestors '${framing}'`,
+    ...(approval ? [] : ["form-action 'self'"]),
+    `frame-ancestors '${approval ? 'none' : 'self'}'`,
     'upgrade-insecure-requests',
   ].join('; ');
 }
