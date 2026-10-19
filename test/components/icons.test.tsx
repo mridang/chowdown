@@ -5,6 +5,7 @@ import {
   GoogleIcon,
   HeartIcon,
   PlayIcon,
+  ProteinIcon,
 } from '../../src/components/icons';
 import { classOf, html } from './render';
 
@@ -41,5 +42,25 @@ describe('icons', () => {
     expect(classOf(out, 'svg')).toBe('h-4 w-4');
     expect(out).toContain('fill="currentColor"');
     expect(out).toContain('stroke="none"');
+  });
+
+  it('picks the protein icon, and a pan for anything it does not know', () => {
+    expect(html(<ProteinIcon protein="Chicken" />)).toBe(
+      html(<ProteinIcon protein="chicken" />),
+    );
+    expect(html(<ProteinIcon protein="dragon" />)).toContain('<svg');
+  });
+
+  it('does not mistake a name from JavaScript’s own objects for a protein', () => {
+    for (const word of [
+      'constructor',
+      'toString',
+      '__proto__',
+      'hasOwnProperty',
+    ]) {
+      expect(html(<ProteinIcon protein={word} />)).toBe(
+        html(<ProteinIcon protein="dragon" />),
+      );
+    }
   });
 });

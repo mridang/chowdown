@@ -28,6 +28,12 @@
   --color-muted: color-mix(in srgb, var(--color-ink) 75%, transparent);
   --color-subtle: color-mix(in srgb, var(--color-ink) 65%, transparent);
 
+  /* Edges: `border-line` for a hairline between areas and around cards,
+   * `border-field` for the edge of something you can act on (an input, a
+   * button, a chip). */
+  --color-line: color-mix(in srgb, var(--color-ink) 10%, transparent);
+  --color-field: color-mix(in srgb, var(--color-ink) 25%, transparent);
+
   /* Shape and type tokens: every component draws from these. */
   --text-label: 0.6875rem;
   --text-label--line-height: 1rem;
@@ -35,10 +41,25 @@
   --font-sans: var(--font-sans-face);
 }
 
-/* The focus ring every interactive element shares. */
+/*
+ * The focus ring every interactive element shares: two pixels of ink, set off
+ * from the element by two pixels. `focus-ring-flush` hugs the element (for one
+ * that already has a border or fills its box), `focus-ring-wide` stands further
+ * off (for a bare text link).
+ */
 .focus-ring:focus-visible {
   outline: 2px solid var(--color-ink);
   outline-offset: 2px;
+}
+
+.focus-ring-flush:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 0;
+}
+
+.focus-ring-wide:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 4px;
 }
 
 body {

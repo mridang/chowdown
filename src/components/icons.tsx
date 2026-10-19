@@ -8,12 +8,14 @@ import type { SVGProps } from 'react';
 /** The sizes icons are drawn at; without one an icon is 1em, the text around it. */
 const ICON_SIZES = {
   xs: 'h-3 w-3',
+  compact: 'h-3.5 w-3.5',
   sm: 'h-4 w-4',
   menu: 'h-[18px] w-[18px]',
   md: 'h-5 w-5',
   lg: 'h-6 w-6',
 } as const;
 
+/** The names of the standard icon sizes (`xs`, `compact`, `sm`, `menu`, `md`, `lg`). */
 export type IconSize = keyof typeof ICON_SIZES;
 
 type IconProps = SVGProps<SVGSVGElement> & {
@@ -49,6 +51,7 @@ function Icon({ children, size, className, ...props }: IconProps) {
   );
 }
 
+/** A heart, for favourites. Pass `filled` for a recipe that is one. */
 export const HeartIcon = ({
   filled,
   ...p
@@ -63,120 +66,142 @@ export const PlayIcon = (p: IconProps) => (
     <path d="M8 5v14l11-7z" />
   </Icon>
 );
+/** A magnifying glass, for searching. */
 export const SearchIcon = (p: IconProps) => (
   <Icon {...p}>
     <circle cx="11" cy="11" r="7" />
     <path d="m20 20-3.6-3.6" />
   </Icon>
 );
+/** A clock face, for cooking time. */
 export const ClockIcon = (p: IconProps) => (
   <Icon {...p}>
     <circle cx="12" cy="12" r="9" />
     <path d="M12 7v5l3 2" />
   </Icon>
 );
+/** Place settings, for how many people a recipe serves. */
 export const ServingsIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10" />
     <path d="M17 3c-2 2-3 5-3 8h3v10" />
   </Icon>
 );
+/** A flame, for heat and cooking. */
 export const FlameIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 .3 1.2 1 2 2 2 0-3-1-5 1-8z" />
   </Icon>
 );
+/** A leaf, for vegetarian and plant-based food. */
 export const LeafIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M5 19C5 10 10 5 20 4c0 10-5 15-14 15z" />
     <path d="M5 19c3-5 6-8 10-10" />
   </Icon>
 );
+/** A frying pan: the stand-in for a recipe without a photo, and the fallback protein. */
 export const PanIcon = (p: IconProps) => (
   <Icon {...p}>
     <circle cx="9" cy="14" r="6" />
     <path d="M15 12 22 7" />
   </Icon>
 );
+/** A carrot, for vegetables. */
 export const CarrotIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M14 8 4 20l3.5-.5L20 9a4 4 0 0 0-6-1z" />
     <path d="M15 6c0-2 1-3 3-3M17 8c2 0 3-1 4-3" />
   </Icon>
 );
+/** A tick, for a chosen option or a finished step. */
 export const CheckIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="m5 12.5 4.5 4.5L19 7" />
   </Icon>
 );
+/** A plus sign, for adding something. */
 export const PlusIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M12 5v14M5 12h14" />
   </Icon>
 );
+/** A minus sign, for taking something away. */
 export const MinusIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M5 12h14" />
   </Icon>
 );
+/** Three stacked lines, for a menu. */
 export const MenuIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M4 7h16M4 12h16M4 17h16" />
   </Icon>
 );
+/** A person's head and shoulders, for an account. */
 export const UserIcon = (p: IconProps) => (
   <Icon {...p}>
     <circle cx="12" cy="8" r="4" />
     <path d="M4 21c0-4 3.5-6 8-6s8 2 8 6" />
   </Icon>
 );
+/** An arrow pointing right, for going on to the next thing. */
 export const ArrowIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M5 12h14M13 6l6 6-6 6" />
   </Icon>
 );
+/** A lightning bolt, for quick and easy. */
 export const BoltIcon = (p: IconProps) => (
   <Icon {...p} fill="currentColor" strokeWidth="1.5">
     <path d="m13 2-8 12h6l-1 8 8-12h-6z" />
   </Icon>
 );
+/** A sparkle, for the assistant and AI features. */
 export const SparkIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" />
   </Icon>
 );
+/** A bin, for deleting. */
 export const TrashIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
   </Icon>
 );
+/** Two chain links, for a web address. */
 export const LinkIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
   </Icon>
 );
+/** A chevron pointing down, for something that opens; rotate it for other directions. */
 export const ChevronIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="m6 9 6 6 6-6" />
   </Icon>
 );
+/** A cross, for closing or removing. */
 export const CloseIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M6 6l12 12M18 6 6 18" />
   </Icon>
 );
 
+/** A plug, for connecting an app. */
 export const PlugIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4" />
   </Icon>
 );
+/** Two overlapping sheets, for copying. */
 export const CopyIcon = (p: IconProps) => (
   <Icon {...p}>
     <rect x="9" y="9" width="11" height="11" rx="2" />
     <path d="M5 15V6a2 2 0 0 1 2-2h9" />
   </Icon>
 );
+/** An arrow leaving a doorway, for signing out. */
 export const LogoutIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9" />
@@ -184,6 +209,7 @@ export const LogoutIcon = (p: IconProps) => (
 );
 
 /* Protein icons: one small drawing per protein so a card shows it at a glance. */
+/** A chicken, for the chicken protein. */
 export const ChickenIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M14.5 3.5c3.2 0 5.5 2.6 5.5 5.6 0 2.7-2 4.9-4.6 5.4-.9.2-1.7-.1-2.3-.7l-1.7-1.7c-.6-.6-.9-1.5-.7-2.3C10.8 7 12.2 3.5 14.5 3.5Z" />
@@ -192,6 +218,7 @@ export const ChickenIcon = (p: IconProps) => (
     <circle cx="7.1" cy="19.2" r="1.5" />
   </Icon>
 );
+/** A cut of beef, for the beef protein. */
 export const BeefIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M4.5 10c0-3.6 3-6 7.5-6s7.5 2.4 7.5 6c0 5-3.8 10-9 10-4 0-6-4.5-6-10Z" />
@@ -199,6 +226,7 @@ export const BeefIcon = (p: IconProps) => (
     <circle cx="14.5" cy="14.5" r="1.6" />
   </Icon>
 );
+/** A pig, for the pork protein. */
 export const PorkIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="m5.5 9.5-1.5-5 4.5 2M18.5 9.5l1.5-5-4.5 2" />
@@ -207,6 +235,7 @@ export const PorkIcon = (p: IconProps) => (
     <path d="M10.9 15h.01M13.1 15h.01M8.8 11h.01M15.2 11h.01" />
   </Icon>
 );
+/** A lamb, for the lamb protein. */
 export const LambIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M7 17V9M12 17V7M17 17V9" />
@@ -216,23 +245,27 @@ export const LambIcon = (p: IconProps) => (
     <path d="M5 17c0 3 14 3 14 0v-3H5z" />
   </Icon>
 );
+/** An egg, for the egg protein. */
 export const EggIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M12 3c4 0 6.5 5.5 6.5 9.5a6.5 6.5 0 0 1-13 0C5.5 8.5 8 3 12 3Z" />
   </Icon>
 );
+/** Beans, for beans and pulses. */
 export const BeansIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M6.5 7.5c2-3 7.5-3 8.5.5s-1 6.5-4 8.5-6.5 1.5-6.5-1.5c0-2.8.5-5 2-7.5Z" />
     <path d="M17 12c1.8.5 3 2 2.5 4s-2.5 3.5-4.5 3.5" />
   </Icon>
 );
+/** A fish, for seafood. */
 export const FishIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M3 12c3-5 9-6 13-3l5-2v10l-5-2c-4 3-10 2-13-3Z" />
     <circle cx="8.5" cy="11" r=".6" fill="currentColor" />
   </Icon>
 );
+/** A cube, for tofu and paneer. */
 export const CubeIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="m4 8 8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8" />
@@ -257,21 +290,28 @@ export function ProteinIcon({
   protein,
   ...props
 }: IconProps & { protein: string }) {
-  const Component = PROTEIN_ICONS[protein.toLowerCase()] ?? PanIcon;
+  const key = protein.toLowerCase();
+  // `hasOwn`, so a word like "constructor" is not read off the object's prototype.
+  const Component = Object.hasOwn(PROTEIN_ICONS, key)
+    ? (PROTEIN_ICONS[key] ?? PanIcon)
+    : PanIcon;
   return <Component {...props} />;
 }
 
+/** A globe, for a recipe's cuisine. */
 export const GlobeIcon = (p: IconProps) => (
   <Icon {...p}>
     <circle cx="12" cy="12" r="9" />
     <path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" />
   </Icon>
 );
+/** A plate, for a recipe's course. */
 export const PlateIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M3 17h18M5 17a7 7 0 0 1 14 0M12 8V6M10.5 6h3" />
   </Icon>
 );
+/** An oven, for a recipe's cooking method. */
 export const OvenIcon = (p: IconProps) => (
   <Icon {...p}>
     <rect x="3.5" y="4" width="17" height="16" rx="2" />
@@ -279,22 +319,26 @@ export const OvenIcon = (p: IconProps) => (
     <rect x="7" y="12" width="10" height="5" rx="1" />
   </Icon>
 );
+/** An arrow leaving a box, for sharing. */
 export const ShareIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M12 15V4M8 8l4-4 4 4M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6" />
   </Icon>
 );
+/** A printer, for printing a recipe. */
 export const PrinterIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M7 9V4h10v5M7 17H5a1 1 0 0 1-1-1v-5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5a1 1 0 0 1-1 1h-2" />
     <rect x="7" y="14" width="10" height="6" rx="1" />
   </Icon>
 );
+/** Four outward corners, for going full screen. */
 export const ExpandIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
   </Icon>
 );
+/** Two sliders, for filters. */
 export const SlidersIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
@@ -302,37 +346,44 @@ export const SlidersIcon = (p: IconProps) => (
     <circle cx="8" cy="17" r="2" />
   </Icon>
 );
+/** A folder, for the Recipes folder in Drive. */
 export const FolderIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
   </Icon>
 );
+/** A shield, for a recipe's dietary suitability. */
 export const ShieldIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z" />
     <path d="m9 12 2 2 4-4" />
   </Icon>
 );
+/** A chevron pointing left, for going back. */
 export const ChevronLeftIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="m15 6-6 6 6 6" />
   </Icon>
 );
+/** A chevron pointing right, for going forward. */
 export const ChevronRightIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="m9 6 6 6-6 6" />
   </Icon>
 );
+/** An open book, for a cookbook or a method. */
 export const BookIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 19a2 2 0 0 0 2 2h13" />
   </Icon>
 );
+/** A page with a folded corner, for notes. */
 export const NoteIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M5 4h14v12l-5 5H5zM14 21v-5h5M8 9h8M8 13h4" />
   </Icon>
 );
+/** A plus inside a circle, for adding an item. */
 export const PlusCircleIcon = (p: IconProps) => (
   <Icon {...p}>
     <circle cx="12" cy="12" r="9" />

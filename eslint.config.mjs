@@ -38,6 +38,51 @@ export default [
     },
   },
   {
+    // Application code does not mutate. Values are built with expressions
+    // (`map`, `filter`, `reduce`, spread, `toSorted`, `toSpliced`, `with`,
+    // `Object.fromEntries`) rather than declared empty and filled in, and
+    // nothing is reassigned, so a value never changes under a reader's feet.
+    // React refs (`ref.current = …`) are the one deliberate exception: they are
+    // React's own escape hatch for values that live outside rendering.
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
+    rules: {
+      'prefer-const': 'error',
+      'no-param-reassign': ['error', { props: true }],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "VariableDeclaration[kind='let']",
+          message:
+            'Use const. Compute the value with an expression, a helper function, map/reduce, or a ternary instead of reassigning a let.',
+        },
+        {
+          selector:
+            "CallExpression[callee.type='MemberExpression'][callee.property.name=/^(push|pop|shift|unshift|splice|sort|reverse|fill|copyWithin)$/]:not([callee.object.name='router'])",
+          // (`router.push(url)` is navigation, not an array method.)
+          message:
+            'This changes the array in place. Build a new one: spread, concat, filter, toSorted, toReversed, toSpliced, with.',
+        },
+        {
+          selector:
+            "AssignmentExpression[left.type='MemberExpression'][left.property.name!='current']",
+          message:
+            'Do not assign to a property or an index. Build a new object or array (spread, Object.fromEntries, with).',
+        },
+        {
+          selector: "UnaryExpression[operator='delete']",
+          message:
+            'Do not delete a property. Build a new object without it (destructure the key out, or use Object.fromEntries).',
+        },
+        {
+          selector:
+            "CallExpression[callee.object.name='Object'][callee.property.name='assign']",
+          message:
+            'Object.assign changes its first argument. Spread into a new object instead.',
+        },
+      ],
+    },
+  },
+  {
     // The Tailwind lint plugin shipped with the preset is built for Tailwind 3:
     // it reads a tailwind.config file, which this Tailwind 4 project does not
     // have (the theme lives in `@theme` blocks in globals.css). It cannot see
