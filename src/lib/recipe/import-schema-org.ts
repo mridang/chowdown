@@ -18,6 +18,8 @@
  * pure and unit-tested.
  */
 
+import { authorEvidence, declaredAuthor, hasAuthor } from './author';
+import { upsertMetadata } from './cook-text';
 import { scanHtml, type Attributes } from './import-html-scan';
 import { parseIngredientLine, toCookIngredient } from './ingredient-line';
 import { validImageUrls } from './media';
@@ -411,5 +413,14 @@ export function extractRecipeFromHtml(
   // way into the Map (a later entry overwrites an earlier one).
   const byId = new Map(blocks.flatMap(collectById).toReversed());
   const node = blocks.map(findRecipeNode).find((found) => found !== null);
-  return node ? schemaOrgToCook(resolveImageRefs(node, byId), sourceUrl) : null;
+  if (!node) {
+    return null;
+  }
+  const cook = schemaOrgToCook(resolveImageRefs(node, byId), sourceUrl);
+  // Most sites credit the author on the page's Article, or in a meta tag, and
+  // not on the Recipe, which is the only place the conversion above looks.
+  const author = hasAuthor(cook)
+    ? undefined
+    : declaredAuthor(authorEvidence(html));
+  return author ? upsertMetadata(cook, [['author', author]]) : cook;
 }

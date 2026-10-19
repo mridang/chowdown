@@ -385,3 +385,59 @@ describe('an imported recipe read back', () => {
     ]);
   });
 });
+
+describe('the author of an imported recipe', () => {
+  const recipeNode = {
+    '@type': 'Recipe',
+    name: 'Fajitas',
+    recipeIngredient: ['1 onion'],
+    recipeInstructions: ['Cook it.'],
+  };
+  const html = (graph: unknown, head = '') =>
+    `<html><head>${head}<script type="application/ld+json">${JSON.stringify(graph)}</script></head></html>`;
+
+  it("is read from the page's Article when the Recipe names nobody", () => {
+    const cook = extractRecipeFromHtml(
+      html({
+        '@graph': [
+          recipeNode,
+          { '@type': 'Article', author: { '@id': '#nagi' } },
+          { '@type': 'Person', '@id': '#nagi', name: 'Nagi' },
+        ],
+      }),
+    );
+    expect(cook).toContain('>> author: Nagi');
+  });
+
+  it('is read from a meta tag when the structured data has none', () => {
+    expect(
+      extractRecipeFromHtml(
+        html(recipeNode, '<meta name="author" content="Liz Marino">'),
+      ),
+    ).toContain('>> author: Liz Marino');
+  });
+
+  it("keeps the Recipe's own author over any other", () => {
+    const cook = extractRecipeFromHtml(
+      html(
+        {
+          '@graph': [
+            { ...recipeNode, author: { name: 'Marion Grasby' } },
+            { '@type': 'Article', author: { name: 'Someone Else' } },
+          ],
+        },
+        '<meta name="author" content="Liz Marino">',
+      ),
+    );
+    expect(cook).toContain('>> author: Marion Grasby');
+    expect(cook).not.toContain('Someone Else');
+  });
+
+  it('is left out when the page gives no name a person could have', () => {
+    expect(
+      extractRecipeFromHtml(
+        html(recipeNode, '<meta name="author" content="admin">'),
+      ),
+    ).not.toContain('>> author:');
+  });
+});

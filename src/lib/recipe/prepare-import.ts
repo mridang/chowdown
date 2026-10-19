@@ -9,6 +9,7 @@
  * whole import.
  */
 
+import { withAuthor } from './author';
 import { parseRecipe } from './cooklang';
 import { fetchPage, PageFetchError } from './fetch-page';
 import { MAX_IMPORT_UNITS, type ImportUnit } from './import-blob';
@@ -54,12 +55,14 @@ async function prepareUnit(
 ): Promise<ImportItem> {
   const sourceUrl = unit.kind === 'url' ? unit.url : undefined;
   try {
-    const raw =
+    const page = unit.kind === 'url' ? await fetchPage(unit.url) : undefined;
+    const converted =
       unit.kind === 'url'
-        ? await convertToCooklang(await fetchPage(unit.url), env, {
-            sourceUrl: unit.url,
-          })
+        ? await convertToCooklang(page ?? '', env, { sourceUrl: unit.url })
         : await convertToCooklang(unit.text, env);
+    // The page says who wrote the recipe far more often than the text of it does.
+    const raw =
+      page === undefined ? converted : await withAuthor(converted, page, env);
     // A page the converter could not find a recipe on comes back as a title and
     // a placeholder sentence; saved, that would be an empty recipe in Drive.
     if (!hasRecipeBody(raw)) {

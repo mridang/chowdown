@@ -31,6 +31,8 @@ export const DAILY_BUDGETS = {
   import: { name: 'budget-import', limit: 30, windowSeconds: DAY_SECONDS },
   tag: { name: 'budget-tag', limit: 100, windowSeconds: DAY_SECONDS },
   suggest: { name: 'budget-suggest', limit: 200, windowSeconds: DAY_SECONDS },
+  /** Looking up who wrote a recipe: a page fetch, and a model call when the page does not say. */
+  author: { name: 'budget-author', limit: 400, windowSeconds: DAY_SECONDS },
   /** Tools that call a model on an assistant's behalf (importing, tagging, adding). */
   assistantModel: {
     name: 'budget-assistant-model',

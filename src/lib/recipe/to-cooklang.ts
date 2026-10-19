@@ -16,6 +16,8 @@
 
 import { removeEmptyMetadata, sourceUrlOf, upsertMetadata } from './cook-text';
 import { parseRecipe } from './cooklang';
+import { hasAuthor, withAuthor } from './author';
+import { withoutScriptsAndStyles } from './html-text';
 import { fetchPage } from './fetch-page';
 import { extractOgImage, extractRecipeFromHtml } from './import-schema-org';
 
@@ -24,25 +26,6 @@ const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
 /** Max characters of source content sent to the model (keeps within context). */
 const MAX_CONTENT = 12000;
-
-/**
- * The page without its scripts and style sheets. A real page spends most of its
- * first kilobytes on them, and the model sees only the first
- * {@link MAX_CONTENT} characters, so the recipe itself could be cut off. An
- * unterminated script drops everything after it. Linear in the page's size.
- */
-function withoutScriptsAndStyles(html: string): string {
-  const [head = '', ...rest] = html.split(/<(?:script|style)\b/i);
-  return (
-    head +
-    rest
-      .map((part) => {
-        const closer = /<\/(?:script|style)\s*>/i.exec(part);
-        return closer ? part.slice(closer.index + closer[0].length) : '';
-      })
-      .join('')
-  );
-}
 
 /** Our Cooklang authoring rules — the single place the format is defined. */
 const SYSTEM_PROMPT = `You convert recipes into Cooklang. Output ONLY valid Cooklang — no commentary, no explanations, no markdown code fences.
@@ -179,7 +162,7 @@ export async function convertImport(
 ): Promise<string> {
   const direct = extractRecipeFromHtml(content, opts.sourceUrl);
   if (direct && hasRecipeBody(direct)) {
-    return direct;
+    return withAuthor(direct, content, env);
   }
 
   const page = opts.sourceUrl ? await fetchPageOrNull(opts.sourceUrl) : null;
@@ -188,17 +171,19 @@ export async function convertImport(
   // only record (empty ingredient/instruction lists) still donates its image.
   const fromPage = page ? extractRecipeFromHtml(page, opts.sourceUrl) : null;
   if (fromPage && hasRecipeBody(fromPage)) {
-    return fromPage;
+    return withAuthor(fromPage, page ?? '', env);
   }
 
   const cook = await convertToCooklang(content, env, opts);
   const image =
     /^>>\s*images:\s*(\S+)/im.exec(fromPage ?? '')?.[1] ??
     (page ? extractOgImage(page, opts.sourceUrl) : undefined);
-  if (image && !/^>>\s*images:/im.test(cook)) {
-    return upsertMetadata(cook, [['images', image]]);
-  }
-  return cook;
+  const covered =
+    image && !/^>>\s*images:/im.test(cook)
+      ? upsertMetadata(cook, [['images', image]])
+      : cook;
+  // The assistant's text rarely says who wrote it; the page it came from does.
+  return page ? withAuthor(covered, page, env) : covered;
 }
 
 /**
@@ -225,6 +210,23 @@ export async function addMissingCover(source: string): Promise<string> {
     (fromJsonLd && /^>>\s*images:\s*(\S+)/im.exec(fromJsonLd)?.[1]) ||
     extractOgImage(page, url);
   return image ? upsertMetadata(source, [['images', image]]) : source;
+}
+
+/**
+ * Backfill a missing author. If the recipe names no author but does record a
+ * `>> source:` page, make one best-effort fetch of it and have the author read
+ * from it (what the page declares, else what the model finds in it; see
+ * `author.ts`). Returns the source unchanged when it already has an author, has
+ * no source, the page can't be fetched, or no credible name is found — so it is
+ * always safe to call.
+ */
+export async function addMissingAuthor(
+  source: string,
+  env: Pick<CloudflareEnv, 'AI'>,
+): Promise<string> {
+  const url = hasAuthor(source) ? undefined : sourceUrlOf(source);
+  const page = url ? await fetchPageOrNull(url) : null;
+  return page === null ? source : withAuthor(source, page, env);
 }
 
 /**

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import {
+  addMissingAuthor,
   addMissingCover,
   ConversionError,
   convertImport,
@@ -308,5 +309,80 @@ describe('hasRecipeBody', () => {
 
   it('is false for empty content', () => {
     expect(hasRecipeBody('')).toBe(false);
+  });
+});
+
+describe('addMissingAuthor', () => {
+  const page = (head: string) =>
+    `<html><head>${head}</head><body></body></html>`;
+  const noModel = {
+    AI: { run: jest.fn(async () => ({ response: '{"author": null}' })) },
+  } as unknown as Pick<CloudflareEnv, 'AI'>;
+
+  it('leaves a recipe that already has an author alone, without fetching anything', async () => {
+    const spy = jest.fn();
+    global.fetch = spy as unknown as typeof fetch;
+    const src =
+      '>> title: T\n>> source: https://a.com/x\n>> author: Jane Cook\n';
+    expect(await addMissingAuthor(src, noModel)).toBe(src);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('leaves a recipe with no source alone', async () => {
+    const spy = jest.fn();
+    global.fetch = spy as unknown as typeof fetch;
+    const src = '>> title: T\n\nCook.\n';
+    expect(await addMissingAuthor(src, noModel)).toBe(src);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('adds the author its source page names', async () => {
+    global.fetch = (async () =>
+      new Response(page('<meta name="author" content="Liz Marino">'), {
+        headers: { 'content-type': 'text/html' },
+      })) as unknown as typeof fetch;
+    const out = await addMissingAuthor(
+      '>> title: T\n>> source: https://a.com/x\n\nCook.\n',
+      noModel,
+    );
+    expect(out).toContain('>> author: Liz Marino');
+    expect(out).toContain('Cook.');
+  });
+
+  it('asks the model when the page names nobody, and trusts it only for a name on the page', async () => {
+    global.fetch = (async () =>
+      new Response(
+        page(
+          '<title>Kori Ghassi | Maunika Gowardhan</title><meta property="og:site_name" content="Maunika Gowardhan">',
+        ),
+        { headers: { 'content-type': 'text/html' } },
+      )) as unknown as typeof fetch;
+    const knows = {
+      AI: {
+        run: jest.fn(async () => ({
+          response: '{"author": "Maunika Gowardhan"}',
+        })),
+      },
+    } as unknown as Pick<CloudflareEnv, 'AI'>;
+    const out = await addMissingAuthor(
+      '>> title: T\n>> source: https://a.com/x\n\nCook.\n',
+      knows,
+    );
+    expect(out).toContain('>> author: Maunika Gowardhan');
+    const invents = {
+      AI: {
+        run: jest.fn(async () => ({ response: '{"author": "Julia Child"}' })),
+      },
+    } as unknown as Pick<CloudflareEnv, 'AI'>;
+    const unchanged = '>> title: T\n>> source: https://a.com/x\n\nCook.\n';
+    expect(await addMissingAuthor(unchanged, invents)).toBe(unchanged);
+  });
+
+  it('returns the source unchanged when the page cannot be fetched', async () => {
+    global.fetch = (async () => {
+      throw new Error('offline');
+    }) as unknown as typeof fetch;
+    const src = '>> title: T\n>> source: https://a.com/x\n\nCook.\n';
+    expect(await addMissingAuthor(src, noModel)).toBe(src);
   });
 });
