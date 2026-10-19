@@ -390,3 +390,10 @@ describe('matchRecipe — amounts', () => {
     expect(m.missing).toEqual(['red bell pepper', 'salt pork']);
   });
 });
+
+describe('ingredientWords with names that are also JavaScript built-ins', () => {
+  it('treats them as ordinary words', () => {
+    expect(ingredientWords('constructor')).toEqual(['constructor']);
+    expect(ingredientWords('toString')).toEqual(['tostring']);
+  });
+});

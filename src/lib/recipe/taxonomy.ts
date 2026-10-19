@@ -15,20 +15,20 @@
 /** One facet: the metadata key we write, the schema.org field, and its values. */
 export interface Facet {
   /** The `>> key:` we write into the `.cook` file. */
-  key: string;
+  readonly key: string;
   /** Human label for the facet (sidebar heading). */
-  label: string;
+  readonly label: string;
   /** The closed set of allowed values, or `null` for an open facet (keywords). */
   values: readonly string[] | null;
   /** Whether a recipe can carry several values for this facet. */
-  multi: boolean;
+  readonly multi: boolean;
   /**
    * Worked out from the recipe itself (see diet-type.ts) rather than written in
    * its file or chosen by the tagger, so it can't be set or patched by hand.
    */
-  derived?: boolean;
+  readonly derived?: boolean;
   /** Values have a natural order (Easy → Hard) that lists should keep. */
-  ordered?: boolean;
+  readonly ordered?: boolean;
 }
 
 /** The facets, in the order the filter sidebar shows them. */
@@ -170,6 +170,28 @@ export function canonicalValue(key: string, value: string): string | undefined {
 }
 
 /**
+ * The values of one facet that a proposal actually earns: each one spelled the
+ * way the vocabulary spells it, without repeats, and cut to the first one for
+ * a facet that holds only a single value.
+ */
+function acceptedValues(f: Facet, raw: unknown): readonly string[] {
+  const candidates: readonly unknown[] = Array.isArray(raw) ? raw : [raw];
+  const accepted = [
+    ...new Set(
+      candidates.flatMap((candidate) => {
+        const canon =
+          typeof candidate === 'string'
+            ? canonicalValue(f.key, candidate)
+            : undefined;
+        return canon ? [canon] : [];
+      }),
+    ),
+  ];
+  // Single-valued facet: take the first accepted value only.
+  return f.multi ? accepted : accepted.slice(0, 1);
+}
+
+/**
  * Validate a map of proposed tags against the taxonomy, dropping anything not
  * in a closed facet's vocabulary. Returns one `[key, value]` pair per accepted
  * value (multi-valued facets expand to several pairs), ready to write as
@@ -178,39 +200,20 @@ export function canonicalValue(key: string, value: string): string | undefined {
  * @param proposed - `{ facetKey: value | value[] }` as returned by the tagger.
  */
 export function validateTags(
-  proposed: Record<string, unknown>,
-): [string, string][] {
-  const out: [string, string][] = [];
-  for (const f of FACETS) {
-    if (f.derived) {
-      continue; // worked out from the recipe, never taken from the model
-    }
-    const raw = proposed[f.key];
-    if (raw === undefined || raw === null) {
-      continue;
-    }
-    const candidates = Array.isArray(raw) ? raw : [raw];
-    const accepted: string[] = [];
-    for (const c of candidates) {
-      if (typeof c !== 'string') {
-        continue;
-      }
-      const canon = canonicalValue(f.key, c);
-      if (canon && !accepted.includes(canon)) {
-        accepted.push(canon);
-      }
-      if (!f.multi && accepted.length > 0) {
-        break; // single-valued facet: take the first accepted value only
-      }
-    }
-    if (f.multi) {
-      // Emit a comma-joined value so the facet stays one metadata line.
-      if (accepted.length > 0) {
-        out.push([f.key, accepted.join(', ')]);
-      }
-    } else if (accepted.length > 0) {
-      out.push([f.key, accepted[0]!]);
-    }
-  }
-  return out;
+  proposed: Readonly<Record<string, unknown>>,
+): readonly (readonly [string, string])[] {
+  return (
+    FACETS
+      // Derived facets are worked out from the recipe, never taken from the model.
+      .filter((f) => !f.derived)
+      .flatMap((f) => {
+        const accepted = acceptedValues(f, proposed[f.key]);
+        if (accepted.length === 0) {
+          return [];
+        }
+        // A multi-valued facet is emitted comma-joined so it stays one
+        // metadata line.
+        return [[f.key, accepted.join(', ')] as const];
+      })
+  );
 }

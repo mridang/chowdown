@@ -16,7 +16,7 @@ import { recipeDisplayName } from './cook-text';
  * reference.
  */
 export function matchFile(
-  files: DriveFile[],
+  files: readonly DriveFile[],
   reference: string,
 ): DriveFile | undefined {
   const ref = reference.trim();

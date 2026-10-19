@@ -377,3 +377,35 @@ describe('replaceNote and removeNote', () => {
     expect(removeNote('>> title: T\n', 0)).toBeUndefined();
   });
 });
+
+describe('upsertMetadata with repeated keys', () => {
+  it('rewrites only the first line for a key and leaves later repeats alone', () => {
+    const source = '>> time: 10\n>> time: 20\n\nCook.\n';
+    expect(upsertMetadata(source, [['time', '5']])).toBe(
+      '>> time: 5\n>> time: 20\n\nCook.\n',
+    );
+  });
+
+  it('inserts after the last metadata line of the leading block, past blank lines', () => {
+    expect(upsertMetadata('>> a: 1\n\n>> b: 2\n\nCook.\n', [['c', '3']])).toBe(
+      '>> a: 1\n\n>> b: 2\n>> c: 3\n\nCook.\n',
+    );
+  });
+
+  it('puts new metadata at the very top of a file with none', () => {
+    expect(upsertMetadata('Cook.\n', [['a', '1']])).toBe('>> a: 1\nCook.\n');
+  });
+});
+
+describe('replaceNote and removeNote with out-of-range positions', () => {
+  const source = '-- [note] one\nCook.\n-- [note] two\n';
+
+  it('refuses a negative or fractional position', () => {
+    for (const index of [-1, 0.5]) {
+      expect(removeNote(source, index)).toBeUndefined();
+      expect(
+        replaceNote(source, index, { scope: 'general', key: '', text: 'x' }),
+      ).toBeUndefined();
+    }
+  });
+});

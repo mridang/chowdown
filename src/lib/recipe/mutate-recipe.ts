@@ -23,17 +23,22 @@ export interface MutateDeps {
 
 /** What an edit function decides. */
 export type Edit<T> =
-  | { ok: true; source: string; value: T }
-  | { ok: false; errors: string[] }
+  | { readonly ok: true; readonly source: string; readonly value: T }
+  | { readonly ok: false; readonly errors: readonly string[] }
   /** The thing being edited (say, one note) doesn't exist. */
-  | { ok: false; missing: true };
+  | { readonly ok: false; readonly missing: true };
 
 /** The outcome of a mutation. */
 export type MutateOutcome<T> =
-  | { kind: 'done'; source: string; etag: string; value: T }
-  | { kind: 'not-found' }
-  | { kind: 'precondition-failed' }
-  | { kind: 'invalid'; errors: string[] };
+  | {
+      readonly kind: 'done';
+      readonly source: string;
+      readonly etag: string;
+      readonly value: T;
+    }
+  | { readonly kind: 'not-found' }
+  | { readonly kind: 'precondition-failed' }
+  | { readonly kind: 'invalid'; readonly errors: readonly string[] };
 
 /**
  * Change one recipe. `edit` turns the current source into the new one (or

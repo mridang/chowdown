@@ -16,7 +16,7 @@ const FETCH_HEADERS = {
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
     '(KHTML, like Gecko) Chrome/125.0 Safari/537.36',
   Accept: 'text/html,application/xhtml+xml',
-};
+} as const;
 
 /** Max characters of HTML kept, so a huge page can't blow a request up. */
 const MAX_HTML = 200_000;

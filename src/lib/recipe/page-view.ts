@@ -33,7 +33,7 @@ export const MAX_SERVINGS = 99;
  * The facts grid uses this so it never shows a made-up serving count.
  */
 export function declaredServings(
-  metadata: [string, string][],
+  metadata: readonly (readonly [string, string])[],
 ): number | undefined {
   const value = metadata.find(([key]) => {
     const lower = key.toLowerCase();
@@ -50,7 +50,9 @@ export function declaredServings(
  * The number the servings stepper starts on: what the recipe says, or
  * {@link DEFAULT_SERVINGS} when it doesn't, so amounts can still be scaled.
  */
-export function servingsOf(metadata: [string, string][]): number {
+export function servingsOf(
+  metadata: readonly (readonly [string, string])[],
+): number {
   return declaredServings(metadata) ?? DEFAULT_SERVINGS;
 }
 
@@ -85,18 +87,65 @@ export function displayQuantity(
 /** A note as the page shows it in the Notes section. */
 export interface GeneralNote {
   /** What it is attached to, when it didn't land beside an ingredient or step. */
-  label?: string;
-  text: string;
+  readonly label?: string;
+  readonly text: string;
 }
 
 /** Every note, sorted to the place it is shown. */
 export interface GroupedNotes {
   /** Note texts per ingredient, in the same order as the ingredient list. */
-  byIngredient: string[][];
+  readonly byIngredient: readonly (readonly string[])[];
   /** Note texts per step, in the same order as the method. */
-  byStep: string[][];
+  readonly byStep: readonly (readonly string[])[];
   /** Whole-recipe notes, plus any note whose target can't be found. */
-  general: GeneralNote[];
+  readonly general: readonly GeneralNote[];
+}
+
+/** Where one note ends up on the page. */
+type Placement =
+  | {
+      readonly kind: 'ingredient';
+      readonly text: string;
+      readonly ingredientIndexes: readonly number[];
+    }
+  | { readonly kind: 'step'; readonly text: string; readonly index: number }
+  | { readonly kind: 'general'; readonly note: GeneralNote };
+
+/** Whether an ingredient name and a note's target name refer to the same thing. */
+function namesMatch(ingredient: string, target: string): boolean {
+  return (
+    target !== '' &&
+    (ingredient === target ||
+      ingredient.includes(target) ||
+      target.includes(ingredient))
+  );
+}
+
+/** Decide where one note goes; `lowered` are the lower-cased ingredient names. */
+function placeNote(
+  note: Readonly<Note>,
+  lowered: readonly string[],
+  stepCount: number,
+): Placement {
+  if (note.scope === 'general') {
+    return { kind: 'general', note: { text: note.text } };
+  }
+  if (note.scope === 'step') {
+    const index = Number.parseInt(note.key, 10) - 1;
+    return index >= 0 && index < stepCount
+      ? { kind: 'step', text: note.text, index }
+      : {
+          kind: 'general',
+          note: { label: `Step ${note.key}`, text: note.text },
+        };
+  }
+  const target = note.key.trim().toLowerCase();
+  const ingredientIndexes = lowered.flatMap((name, index) =>
+    namesMatch(name, target) ? [index] : [],
+  );
+  return ingredientIndexes.length > 0
+    ? { kind: 'ingredient', text: note.text, ingredientIndexes }
+    : { kind: 'general', note: { label: note.key, text: note.text } };
 }
 
 /**
@@ -107,44 +156,31 @@ export interface GroupedNotes {
  * nothing the user wrote ever disappears.
  */
 export function groupNotes(
-  notes: Note[],
-  ingredientNames: string[],
+  notes: readonly Readonly<Note>[],
+  ingredientNames: readonly string[],
   stepCount: number,
 ): GroupedNotes {
-  const byIngredient: string[][] = ingredientNames.map(() => []);
-  const byStep: string[][] = Array.from({ length: stepCount }, () => []);
-  const general: GeneralNote[] = [];
   const lowered = ingredientNames.map((name) => name.toLowerCase());
-
-  for (const note of notes) {
-    if (note.scope === 'general') {
-      general.push({ text: note.text });
-    } else if (note.scope === 'step') {
-      const index = Number.parseInt(note.key, 10) - 1;
-      if (index >= 0 && index < stepCount) {
-        byStep[index]!.push(note.text);
-      } else {
-        general.push({ label: `Step ${note.key}`, text: note.text });
-      }
-    } else {
-      const key = note.key.trim().toLowerCase();
-      let placed = false;
-      lowered.forEach((name, index) => {
-        if (key && (name === key || name.includes(key) || key.includes(name))) {
-          byIngredient[index]!.push(note.text);
-          placed = true;
-        }
-      });
-      if (!placed) {
-        general.push({ label: note.key, text: note.text });
-      }
-    }
-  }
-  return { byIngredient, byStep, general };
+  const placements = notes.map((note) => placeNote(note, lowered, stepCount));
+  return {
+    byIngredient: ingredientNames.map((_, i) =>
+      placements.flatMap((p) =>
+        p.kind === 'ingredient' && p.ingredientIndexes.includes(i)
+          ? [p.text]
+          : [],
+      ),
+    ),
+    byStep: Array.from({ length: stepCount }, (_, i) =>
+      placements.flatMap((p) =>
+        p.kind === 'step' && p.index === i ? [p.text] : [],
+      ),
+    ),
+    general: placements.flatMap((p) => (p.kind === 'general' ? [p.note] : [])),
+  };
 }
 
 /** The words of a step as plain text, ingredient and timer names included. */
-export function stepText(tokens: StepToken[]): string {
+export function stepText(tokens: readonly StepToken[]): string {
   return tokens
     .map((token) => {
       switch (token.kind) {
@@ -162,7 +198,7 @@ export function stepText(tokens: StepToken[]): string {
 }
 
 /** Metadata keys the page shows some other way, or never shows. */
-const HANDLED_KEYS = new Set([
+const HANDLED_KEYS: ReadonlySet<string> = new Set([
   ...MEDIA_META_KEYS,
   FAVOURITE_KEY,
   'servings',
@@ -179,8 +215,8 @@ const HANDLED_KEYS = new Set([
  * line of a recipe's file is hidden from the page.
  */
 export function extraMetadata(
-  metadata: [string, string][],
-): [string, string][] {
+  metadata: readonly (readonly [string, string])[],
+): readonly (readonly [string, string])[] {
   return metadata.filter(([key, value]) => {
     const lower = key.toLowerCase();
     return !HANDLED_KEYS.has(lower) && !facet(lower) && value.trim() !== '';

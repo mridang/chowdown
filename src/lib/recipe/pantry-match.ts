@@ -15,11 +15,12 @@
 
 import { foldText } from '../intl';
 import { toBaseAmount, type BaseAmount } from './units';
+import { own } from '../util/own';
 
 /** Something the person has, with an amount when they gave one. */
 export interface PantryItem {
-  name: string;
-  quantity?: string;
+  readonly name: string;
+  readonly quantity?: string;
 }
 
 /** Words that name a unit or a container rather than the thing itself. */
@@ -50,7 +51,8 @@ const CONTAINERS = new Set([
   ...['box', 'boxes'],
 ]);
 
-const NUMBER_WORDS: Record<string, number> = {
+/** The number words people type for small counts. */
+const NUMBER_WORDS: Readonly<Record<string, number>> = {
   one: 1,
   two: 2,
   three: 3,
@@ -83,7 +85,7 @@ function numberFromWords(text: string): string {
     )
     .replace(
       /^(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/i,
-      (_, word: string) => String(NUMBER_WORDS[word.toLowerCase()]),
+      (_, word: string) => String(own(NUMBER_WORDS, word.toLowerCase())),
     );
 }
 
@@ -101,13 +103,13 @@ function leadingAmount(
     `^(\\d+)\\s*[x×]\\s*(${NUM})\\s*([a-zA-Z]+\\.?)?\\s*(.*)$`,
   ).exec(text);
   if (packs) {
-    const size = packs[2]!.trim();
+    const size = (packs[2] ?? '').trim();
     const unit = unitWord(packs[3] ?? '');
     const total = Number(packs[1]) * Number(size.replace(',', '.'));
     if (UNIT_WORDS.has(unit) && Number.isFinite(total)) {
       return {
         quantity: `${total} ${unit}`,
-        name: withoutContainer(packs[4]!),
+        name: withoutContainer(packs[4] ?? ''),
       };
     }
   }
@@ -115,12 +117,13 @@ function leadingAmount(
   if (!lead || !lead[2]) {
     return undefined;
   }
-  const amount = lead[1]!.trim();
+  const amount = (lead[1] ?? '').trim();
   const words = lead[2].trim().split(/\s+/);
-  if (words.length > 1 && UNIT_WORDS.has(unitWord(words[0]!))) {
+  const [firstWord = ''] = words;
+  if (words.length > 1 && UNIT_WORDS.has(unitWord(firstWord))) {
     const rest = words.slice(1).join(' ');
     return {
-      quantity: `${amount} ${unitWord(words[0]!)}`,
+      quantity: `${amount} ${unitWord(firstWord)}`,
       name: rest.replace(/^of\s+/i, ''),
     };
   }
@@ -132,7 +135,7 @@ function leadingAmount(
 function withoutContainer(text: string): string {
   const words = text.trim().split(/\s+/);
   const rest =
-    words.length > 1 && CONTAINERS.has(unitWord(words[0]!))
+    words.length > 1 && CONTAINERS.has(unitWord(words[0] ?? ''))
       ? words.slice(1).join(' ')
       : text.trim();
   return rest.replace(/^of\s+/i, '');
@@ -157,7 +160,10 @@ export function parsePantryItem(text: string): PantryItem {
     `^(.+?)\\s*(?:\\(\\s*(${NUM})\\s*\\)|,\\s*(${NUM}))$`,
   ).exec(trimmed);
   if (after) {
-    return { name: after[1]!.trim(), quantity: (after[2] ?? after[3])!.trim() };
+    return {
+      name: (after[1] ?? '').trim(),
+      quantity: (after[2] ?? after[3] ?? '').trim(),
+    };
   }
   return { name: /[a-z]/i.test(trimmed) ? trimmed : '' };
 }
@@ -172,7 +178,7 @@ const DESCRIPTORS = new Set([
 ]);
 
 /** Words that mean the same thing, mapped to one. */
-const SYNONYMS: Record<string, string> = {
+const SYNONYMS: Readonly<Record<string, string>> = {
   aubergine: 'eggplant',
   courgette: 'zucchini',
   capsicum: 'pepper',
@@ -201,7 +207,7 @@ const SYNONYMS: Record<string, string> = {
  * "ramen" is a noodle, so each side of a comparison gains the word it implies
  * and "cheddar" meets "cheddar cheese".
  */
-const IMPLIES: Record<string, string> = {
+const IMPLIES: Readonly<Record<string, string>> = {
   cheddar: 'cheese',
   parmesan: 'cheese',
   mozzarella: 'cheese',
@@ -262,7 +268,7 @@ const DIFFERENT_THING = new Set([
 ]);
 
 /** Plurals that don't follow the rules. */
-const IRREGULAR: Record<string, string> = {
+const IRREGULAR: Readonly<Record<string, string>> = {
   leaves: 'leaf',
   loaves: 'loaf',
   halves: 'half',
@@ -275,54 +281,91 @@ const IRREGULAR: Record<string, string> = {
  * "cloves", "chilies" and "chili", "radishes" and "radish" all meet.
  */
 function stem(word: string): string {
-  let w = IRREGULAR[word] ?? word;
-  if (w.length > 3) {
-    if (w.endsWith('ies') && w.length > 4) {
-      w = `${w.slice(0, -3)}y`;
-    } else if (/(?:ch|sh|x|z|ss|o)es$/.test(w)) {
-      w = w.slice(0, -2);
-    } else if (w.endsWith('ss') || w.endsWith('us') || w.endsWith('is')) {
-      // "molasses", "hummus", "asparagus" are already singular
-    } else if (w.endsWith('s')) {
-      w = w.slice(0, -1);
-    }
-  }
+  const w = singular(own(IRREGULAR, word) ?? word);
   // chili / chilli / chilly and cookie / cooky all end the same way
   return w.length > 3 && /(?:ie|y)$/.test(w) ? w.replace(/(?:ie|y)$/, 'i') : w;
 }
 
-const MEATS = new Set(['beef', 'pork', 'lamb', 'chicken', 'turkey', 'mutton']);
+/** A word with a regular plural ending taken off, if it has one. */
+function singular(w: string): string {
+  if (w.length <= 3) {
+    return w;
+  }
+  if (w.endsWith('ies') && w.length > 4) {
+    return `${w.slice(0, -3)}y`;
+  }
+  if (/(?:ch|sh|x|z|ss|o)es$/.test(w)) {
+    return w.slice(0, -2);
+  }
+  if (w.endsWith('ss') || w.endsWith('us') || w.endsWith('is')) {
+    return w; // "molasses", "hummus", "asparagus" are already singular
+  }
+  return w.endsWith('s') ? w.slice(0, -1) : w;
+}
+
+/** Meats that turn "mince" into ground meat. */
+const MEATS: ReadonlySet<string> = new Set([
+  'beef',
+  'pork',
+  'lamb',
+  'chicken',
+  'turkey',
+  'mutton',
+]);
+
+/** Spring and green onions are scallions, not onions. */
+function withScallions(words: readonly string[]): readonly string[] {
+  return words.includes('onion') &&
+    (words.includes('spring') || words.includes('green'))
+    ? [
+        ...words.filter((w) => !['onion', 'spring', 'green'].includes(w)),
+        'scallion',
+      ]
+    : words;
+}
+
+/**
+ * Coriander on its own is the herb, but "ground coriander" and the seeds are
+ * the spice.
+ */
+function withHerbCoriander(words: readonly string[]): readonly string[] {
+  const isSpice = ['seed', 'ground', 'powder'].some((w) => words.includes(w));
+  return words.includes('coriander') && !isSpice
+    ? words.map((w) => (w === 'coriander' ? 'cilantro' : w))
+    : words;
+}
+
+/** Mince is ground meat; on its own it stays "mince". */
+function withGroundMeat(words: readonly string[]): readonly string[] {
+  return words.includes('mince') && words.some((w) => MEATS.has(w))
+    ? words.map((w) => (w === 'mince' ? 'ground' : w))
+    : words;
+}
+
+/** Each word followed by the word it implies ("cheddar" also says "cheese"). */
+function withImplied(words: readonly string[]): readonly string[] {
+  return [
+    ...words,
+    ...words.flatMap((w) => {
+      const implied = own(IMPLIES, w);
+      return implied ? [implied] : [];
+    }),
+  ];
+}
 
 /** The meaningful words of an ingredient name: singular, synonyms folded. */
-export function ingredientWords(name: string): string[] {
-  let words = foldText(name.replace(/\([^)]*\)/g, ' '))
+export function ingredientWords(name: string): readonly string[] {
+  const words = foldText(name.replace(/\([^)]*\)/g, ' '))
     .split(/[^a-z]+/)
     .filter((w) => w && !DESCRIPTORS.has(w))
     .map((w) => stem(w))
-    .map((w) => stem(SYNONYMS[w] ?? w));
-  words = words.filter((w) => !DESCRIPTORS.has(w));
-  const has = (w: string) => words.includes(w);
-  // Spring and green onions are scallions, not onions.
-  if (has('onion') && (has('spring') || has('green'))) {
-    words = words.filter((w) => !['onion', 'spring', 'green'].includes(w));
-    words.push('scallion');
-  }
-  // Coriander on its own is the herb, but "ground coriander" and the seeds are
-  // the spice.
-  if (has('coriander') && !['seed', 'ground', 'powder'].some(has)) {
-    words = words.map((w) => (w === 'coriander' ? 'cilantro' : w));
-  }
-  // Mince is ground meat; on its own it stays "mince".
-  if (has('mince') && words.some((w) => MEATS.has(w))) {
-    words = words.map((w) => (w === 'mince' ? 'ground' : w));
-  }
-  for (const w of [...words]) {
-    const implied = IMPLIES[w];
-    if (implied) {
-      words.push(implied);
-    }
-  }
-  return [...new Set(words)];
+    .map((w) => stem(own(SYNONYMS, w) ?? w))
+    .filter((w) => !DESCRIPTORS.has(w));
+  return [
+    ...new Set(
+      withImplied(withGroundMeat(withHerbCoriander(withScallions(words)))),
+    ),
+  ];
 }
 
 /**
@@ -385,20 +428,27 @@ export function isStaple(name: string): boolean {
 
 /** A recipe's ingredient as the matcher needs it. */
 export interface RecipeIngredient {
-  name: string;
-  quantity: string;
+  readonly name: string;
+  readonly quantity: string;
+}
+
+/** An ingredient the person has some of, but less than the recipe wants. */
+export interface ShortIngredient {
+  readonly name: string;
+  readonly have: string;
+  readonly need: string;
 }
 
 /** How a recipe fares against what the person has. */
 export interface PantryMatch {
   /** Ingredients the person has, by the recipe's name for them. */
-  covered: string[];
+  readonly covered: readonly string[];
   /** Ingredients they lack. */
-  missing: string[];
+  readonly missing: readonly string[];
   /** Ingredients they have, but not enough of. */
-  short: { name: string; have: string; need: string }[];
+  readonly short: readonly ShortIngredient[];
   /** How many of the person's own items the recipe uses. */
-  used: number;
+  readonly used: number;
 }
 
 /** Whether two amounts count the same thing and so can be added or compared. */
@@ -427,7 +477,7 @@ function describeAmount(amount: BaseAmount): string {
 }
 
 /** The sum of amounts that can be added, or undefined if any can't. */
-function total(amounts: BaseAmount[]): BaseAmount | undefined {
+function total(amounts: readonly BaseAmount[]): BaseAmount | undefined {
   const [first, ...rest] = amounts;
   if (!first || rest.some((a) => !comparable(first, a))) {
     return undefined;
@@ -443,72 +493,126 @@ function similarity(a: string, b: string): number {
   return shared / new Set([...x, ...y]).size;
 }
 
+/** What matching one (possibly repeated) recipe ingredient came to. */
+type IngredientOutcome =
+  | { readonly kind: 'missing'; readonly name: string }
+  | { readonly kind: 'staple' }
+  | {
+      readonly kind: 'covered';
+      readonly name: string;
+      /** Which of the person's items covered it, by position. */
+      readonly itemIndexes: readonly number[];
+      readonly short?: ShortIngredient;
+    };
+
+/** A pantry item that has an amount, with that amount already parsed. */
+interface MeasuredItem {
+  readonly quantity: string;
+  readonly amount: BaseAmount;
+}
+
+/**
+ * Whether the person has enough of an ingredient, given the items that cover
+ * it: their amounts are added up (when they said how much) and compared with
+ * everything the recipe wants of it. Returns what is short, or undefined when
+ * there is enough or the amounts can't be compared.
+ */
+function shortfall(
+  lines: readonly RecipeIngredient[],
+  first: RecipeIngredient,
+  matching: readonly PantryItem[],
+): ShortIngredient | undefined {
+  // A recipe that lists tomatoes twice needs both amounts.
+  const needs = lines.flatMap((l) => {
+    const amount = toBaseAmount(l.quantity);
+    return amount ? [amount] : [];
+  });
+  const need = needs.length === lines.length ? total(needs) : undefined;
+  const measured = matching
+    .flatMap((item) =>
+      item.quantity ? [{ item, quantity: item.quantity }] : [],
+    )
+    .toSorted(
+      (p, q) =>
+        similarity(q.item.name, first.name) -
+        similarity(p.item.name, first.name),
+    )
+    .flatMap((h): readonly MeasuredItem[] => {
+      const amount = toBaseAmount(h.quantity);
+      return amount ? [{ quantity: h.quantity, amount }] : [];
+    });
+  const usable = measured.filter((h) => need && comparable(h.amount, need));
+  const have = total(usable.map((h) => h.amount));
+  if (!need || !have || have.amount >= need.amount * 0.99) {
+    return undefined;
+  }
+  return {
+    name: first.name,
+    have: usable.map((h) => h.quantity).join(' + '),
+    need: lines.length === 1 ? first.quantity : describeAmount(need),
+  };
+}
+
+/** Match one ingredient, listed on one or more lines, against the pantry. */
+function matchIngredient(
+  lines: readonly RecipeIngredient[],
+  pantry: readonly PantryItem[],
+  assumeStaples: boolean,
+): IngredientOutcome {
+  const [first] = lines;
+  if (!first) {
+    return { kind: 'staple' };
+  }
+  const matching = pantry
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => sameIngredient(item.name, first.name));
+  if (matching.length === 0) {
+    return assumeStaples && isStaple(first.name)
+      ? { kind: 'staple' }
+      : { kind: 'missing', name: first.name };
+  }
+  const short = shortfall(
+    lines,
+    first,
+    matching.map(({ item }) => item),
+  );
+  return {
+    kind: 'covered',
+    name: first.name,
+    itemIndexes: matching.map(({ index }) => index),
+    ...(short ? { short } : {}),
+  };
+}
+
 /** Match one recipe's ingredients against the person's items. */
 export function matchRecipe(
   ingredients: readonly RecipeIngredient[],
   pantry: readonly PantryItem[],
-  options: { assumeStaples?: boolean } = {},
+  options: Readonly<{ assumeStaples?: boolean }> = {},
 ): PantryMatch {
   const assumeStaples = options.assumeStaples ?? true;
-  const result: PantryMatch = { covered: [], missing: [], short: [], used: 0 };
-  const usedItems = new Set<number>();
-
-  // A recipe that lists tomatoes twice needs both amounts.
-  const groups = new Map<string, RecipeIngredient[]>();
-  for (const ingredient of ingredients) {
-    const key =
-      ingredientWords(ingredient.name).sort().join(' ') || ingredient.name;
-    groups.set(key, [...(groups.get(key) ?? []), ingredient]);
-  }
-
-  for (const lines of groups.values()) {
-    const first = lines[0]!;
-    const matching = pantry
-      .map((item, index) => ({ item, index }))
-      .filter(({ item }) => sameIngredient(item.name, first.name));
-    if (matching.length === 0) {
-      if (!(assumeStaples && isStaple(first.name))) {
-        result.missing.push(first.name);
-      }
-      continue;
-    }
-    matching.forEach(({ index }) => usedItems.add(index));
-    result.covered.push(first.name);
-
-    // Add up what the person has of it across their items, when they said how
-    // much, and compare that with everything the recipe wants of it.
-    const needs = lines.map((l) => toBaseAmount(l.quantity));
-    const need = needs.every(Boolean)
-      ? total(needs as BaseAmount[])
-      : undefined;
-    const haves = matching
-      .map(({ item }) => item)
-      .filter((item) => item.quantity)
-      .sort(
-        (p, q) =>
-          similarity(q.name, first.name) - similarity(p.name, first.name),
-      );
-    const amounts = haves.map((h) => toBaseAmount(h.quantity!));
-    const usable = haves.filter(
-      (_, i) => amounts[i] && need && comparable(amounts[i]!, need),
-    );
-    const have = total(usable.map((h) => toBaseAmount(h.quantity!)!));
-    if (need && have && have.amount < need.amount * 0.99) {
-      result.short.push({
-        name: first.name,
-        have: usable.map((h) => h.quantity!).join(' + '),
-        need: lines.length === 1 ? first.quantity : describeAmount(need),
-      });
-    }
-  }
-  result.used = usedItems.size;
-  return result;
+  // The same ingredient listed twice (in any word order) is one ingredient.
+  const groups = Map.groupBy(
+    ingredients,
+    (ingredient) =>
+      ingredientWords(ingredient.name).toSorted().join(' ') || ingredient.name,
+  );
+  const outcomes = [...groups.values()].map((lines) =>
+    matchIngredient(lines, pantry, assumeStaples),
+  );
+  const covered = outcomes.flatMap((o) => (o.kind === 'covered' ? [o] : []));
+  return {
+    covered: covered.map((o) => o.name),
+    missing: outcomes.flatMap((o) => (o.kind === 'missing' ? [o.name] : [])),
+    short: covered.flatMap((o) => (o.short ? [o.short] : [])),
+    used: new Set(covered.flatMap((o) => o.itemIndexes)).size,
+  };
 }
 
 /** A recipe with its match, ready to rank. */
 export interface RankedMatch<T> {
-  recipe: T;
-  match: PantryMatch;
+  readonly recipe: T;
+  readonly match: PantryMatch;
 }
 
 /**
@@ -516,18 +620,21 @@ export interface RankedMatch<T> {
  * first. A recipe must use at least one of the person's items to count.
  */
 export function rankMatches<T>(
-  matches: RankedMatch<T>[],
+  matches: readonly RankedMatch<T>[],
   allowMissing: number,
-): { canMake: RankedMatch<T>[]; almost: RankedMatch<T>[] } {
+): {
+  readonly canMake: readonly RankedMatch<T>[];
+  readonly almost: readonly RankedMatch<T>[];
+} {
   const usable = matches.filter((m) => m.match.used > 0);
   const gap = (m: RankedMatch<T>) =>
     m.match.missing.length + m.match.short.length;
   const byFit = (a: RankedMatch<T>, b: RankedMatch<T>) =>
     gap(a) - gap(b) || b.match.used - a.match.used;
   return {
-    canMake: usable.filter((m) => gap(m) === 0).sort(byFit),
+    canMake: usable.filter((m) => gap(m) === 0).toSorted(byFit),
     almost: usable
       .filter((m) => gap(m) > 0 && gap(m) <= allowMissing)
-      .sort(byFit),
+      .toSorted(byFit),
   };
 }

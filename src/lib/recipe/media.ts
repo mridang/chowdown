@@ -16,11 +16,11 @@ import type { ParsedRecipe } from './cooklang';
 /** A recipe's media for display. */
 export interface RecipeMedia {
   /** The cover image (first image), if any. */
-  cover?: string;
+  readonly cover?: string;
   /** Additional images beyond the cover. */
-  rest: string[];
+  readonly rest: readonly string[];
   /** A video URL, if any. */
-  video?: string;
+  readonly video?: string;
 }
 
 /** True for a well-formed http(s) URL. */
@@ -34,15 +34,18 @@ function isHttpUrl(value: string): boolean {
 }
 
 /** Read a single metadata value by key (case-insensitive). */
-function meta(recipe: ParsedRecipe, key: string): string | undefined {
+function meta(recipe: Readonly<ParsedRecipe>, key: string): string | undefined {
   return recipe.metadata.find(([k]) => k.toLowerCase() === key)?.[1];
 }
 
 /** Metadata keys whose values are media URLs (hidden from the meta text row). */
-export const MEDIA_META_KEYS = new Set(['images', 'video']);
+export const MEDIA_META_KEYS: ReadonlySet<string> = new Set([
+  'images',
+  'video',
+]);
 
 /** Extract the gallery media from a parsed recipe's metadata. */
-export function extractMedia(recipe: ParsedRecipe): RecipeMedia {
+export function extractMedia(recipe: Readonly<ParsedRecipe>): RecipeMedia {
   // Split on whitespace, not commas: image URLs commonly contain commas (e.g.
   // a `?resize=440,400` query), but never spaces, so whitespace is safe.
   const images = (meta(recipe, 'images') ?? '')
@@ -71,7 +74,7 @@ export function normalizeImageUrl(raw: string): string | undefined {
     return undefined;
   }
   const url = new URL(trimmed);
-  const last = url.pathname.split('/').filter(Boolean).pop() ?? '';
+  const last = url.pathname.split('/').filter(Boolean).at(-1) ?? '';
   if (/^(undefined|null|nan|false)$/i.test(last)) {
     return undefined;
   }
@@ -83,17 +86,13 @@ export function normalizeImageUrl(raw: string): string | undefined {
  * order. Anything else (relative paths, `javascript:` URIs, placeholders) is
  * dropped.
  */
-export function validImageUrls(urls: readonly string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const raw of urls) {
+export function validImageUrls(urls: readonly string[]): readonly string[] {
+  const usable = urls.flatMap((raw) => {
     const url = normalizeImageUrl(raw);
-    if (url && !seen.has(url)) {
-      seen.add(url);
-      out.push(url);
-    }
-  }
-  return out;
+    return url ? [url] : [];
+  });
+  // A Set keeps the first occurrence of each address, in order.
+  return [...new Set(usable)];
 }
 
 /**

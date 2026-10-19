@@ -10,54 +10,116 @@
 
 import { getUserAccessToken } from '../auth/current-user';
 import { isDriveConnected } from '../auth/drive-access';
+import type { Database } from '../db/client';
 import { setFavourite } from '../db/favourites';
 import { getRecipeByFileId } from '../db/recipes';
-import { getUserById } from '../db/users';
+import { getUserById, type User } from '../db/users';
 import { getFileContent, updateRecipeFile } from '../drive/drive-client';
 import { getDatabase, runInBackground } from '../util';
 import { withFavouriteTag } from './favourite-tag';
 import { indexRecipeWrite } from './tag-index';
 
+/**
+ * What hearting a recipe reaches out to, gathered in one place so a test can
+ * hand in small fakes. The default is the real database, Drive and background
+ * queue.
+ */
+export interface FavouriteDeps {
+  /** The D1 database. */
+  readonly database: () => Database;
+  /** Record the heart in the favourites table; resolves to the new state. */
+  readonly saveHeart: (
+    db: Database,
+    userId: number,
+    fileId: string,
+    on: boolean,
+  ) => Promise<boolean>;
+  /** The user row, if the account still exists. */
+  readonly findUser: (db: Database, id: number) => Promise<User | undefined>;
+  /** A Drive access token for the user. */
+  readonly accessToken: (user: Readonly<User>) => Promise<string>;
+  /** Read a file's text from Drive. */
+  readonly readFile: (fileId: string, token: string) => Promise<string>;
+  /** Overwrite a file's text in Drive. */
+  readonly writeFile: (
+    fileId: string,
+    source: string,
+    token: string,
+  ) => Promise<unknown>;
+  /** The cached row for one of the user's recipes, if they have it. */
+  readonly findRecipe: (
+    db: Database,
+    userId: number,
+    fileId: string,
+  ) => Promise<{ readonly name: string } | undefined>;
+  /** Refresh the cached row after the file changed (no re-embedding). */
+  readonly index: (
+    db: Database,
+    userId: number,
+    fileId: string,
+    name: string,
+    source: string,
+  ) => Promise<unknown>;
+  /** Run work after the response, without waiting for it. */
+  readonly background: (work: Promise<unknown>) => void;
+}
+
+/** The real thing. */
+const liveDeps: FavouriteDeps = {
+  database: getDatabase,
+  saveHeart: setFavourite,
+  findUser: getUserById,
+  accessToken: getUserAccessToken,
+  readFile: getFileContent,
+  writeFile: updateRecipeFile,
+  findRecipe: getRecipeByFileId,
+  // A one-line metadata change doesn't alter what the recipe means, so skip
+  // re-embedding it.
+  index: (db, userId, fileId, name, source) =>
+    indexRecipeWrite(db, userId, fileId, name, source, null, { embed: false }),
+  background: runInBackground,
+};
+
 /** Mirror the favourite marker into the recipe's file and refresh the cache. */
 async function writeFavouriteTag(
+  deps: FavouriteDeps,
   userId: number,
   driveFileId: string,
   on: boolean,
 ): Promise<void> {
-  const db = getDatabase();
-  const user = await getUserById(db, userId);
+  const db = deps.database();
+  const user = await deps.findUser(db, userId);
   if (!user || !isDriveConnected(user)) {
     // Without Drive the heart lives in the app only; the file marker is added
     // once the person has connected it and hearts the recipe again.
     return;
   }
-  const token = await getUserAccessToken(user);
-  const original = await getFileContent(driveFileId, token);
+  const token = await deps.accessToken(user);
+  const original = await deps.readFile(driveFileId, token);
   const updated = withFavouriteTag(original, on);
   if (updated === original) {
     return;
   }
-  await updateRecipeFile(driveFileId, updated, token);
-  const row = await getRecipeByFileId(db, userId, driveFileId);
+  await deps.writeFile(driveFileId, updated, token);
+  const row = await deps.findRecipe(db, userId, driveFileId);
   if (row) {
-    // A one-line metadata change doesn't alter what the recipe means, so skip
-    // re-embedding it.
-    await indexRecipeWrite(db, userId, driveFileId, row.name, updated, null, {
-      embed: false,
-    });
+    await deps.index(db, userId, driveFileId, row.name, updated);
   }
 }
 
 /**
  * Heart or un-heart a recipe. Returns as soon as the table is updated; the file
  * marker follows in the background. Idempotent.
+ *
+ * @param deps Collaborators; leave out to use the real ones.
  */
 export async function setFavouriteAndTag(
   userId: number,
   driveFileId: string,
   on: boolean,
+  deps: FavouriteDeps = liveDeps,
 ): Promise<boolean> {
-  const state = await setFavourite(getDatabase(), userId, driveFileId, on);
-  runInBackground(writeFavouriteTag(userId, driveFileId, on));
+  const state = await deps.saveHeart(deps.database(), userId, driveFileId, on);
+  deps.background(writeFavouriteTag(deps, userId, driveFileId, on));
   return state;
 }

@@ -16,24 +16,27 @@ import type { ParsedRecipe } from './cooklang';
 
 /** The subset of schema.org/Recipe we emit. All fields optional but `name`. */
 export interface RecipeJsonLd {
-  '@context': 'https://schema.org';
-  '@type': 'Recipe';
-  name: string;
-  recipeIngredient?: string[];
-  recipeInstructions?: { '@type': 'HowToStep'; text: string }[];
-  recipeCuisine?: string;
-  recipeCategory?: string;
-  cookingMethod?: string;
-  recipeYield?: string;
-  cookTime?: string;
-  prepTime?: string;
-  totalTime?: string;
-  keywords?: string;
-  suitableForDiet?: string[];
-  author?: { '@type': 'Person'; name: string };
-  datePublished?: string;
-  isBasedOn?: string;
-  url?: string;
+  readonly '@context': 'https://schema.org';
+  readonly '@type': 'Recipe';
+  readonly name: string;
+  readonly recipeIngredient?: readonly string[];
+  readonly recipeInstructions?: readonly {
+    readonly '@type': 'HowToStep';
+    readonly text: string;
+  }[];
+  readonly recipeCuisine?: string;
+  readonly recipeCategory?: string;
+  readonly cookingMethod?: string;
+  readonly recipeYield?: string;
+  readonly cookTime?: string;
+  readonly prepTime?: string;
+  readonly totalTime?: string;
+  readonly keywords?: string;
+  readonly suitableForDiet?: readonly string[];
+  readonly author?: { readonly '@type': 'Person'; readonly name: string };
+  readonly datePublished?: string;
+  readonly isBasedOn?: string;
+  readonly url?: string;
 }
 
 /** Normalise a metadata key: lowercase, strip spaces/underscores/hyphens. */
@@ -41,25 +44,18 @@ function normKey(key: string): string {
   return key.toLowerCase().replace(/[\s_-]+/g, '');
 }
 
+/** Looks up the first of several metadata keys that has a value. */
+type MetaLookup = (keys: readonly string[]) => string | undefined;
+
 /** Build a case-/separator-insensitive lookup over the recipe's metadata. */
-function metaLookup(
-  recipe: ParsedRecipe,
-): (keys: string[]) => string | undefined {
-  const map = new Map<string, string>();
-  for (const [k, v] of recipe.metadata) {
-    if (v && v.trim()) {
-      map.set(normKey(k), v.trim());
-    }
-  }
-  return (keys) => {
-    for (const k of keys) {
-      const hit = map.get(normKey(k));
-      if (hit) {
-        return hit;
-      }
-    }
-    return undefined;
-  };
+function metaLookup(recipe: Readonly<ParsedRecipe>): MetaLookup {
+  const map = new Map(
+    recipe.metadata
+      .filter(([, v]) => v && v.trim())
+      .map(([k, v]) => [normKey(k), v.trim()] as const),
+  );
+  // The first key (in the order asked for) that has a non-empty value wins.
+  return (keys) => keys.map((k) => map.get(normKey(k))).find(Boolean);
 }
 
 /**
@@ -70,21 +66,18 @@ function metaLookup(
 export function toIsoDuration(value: string): string | undefined {
   const hours = /(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b/i.exec(value);
   const mins = /(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)\b/i.exec(value);
-  let h = hours ? Number(hours[1]) : 0;
-  let m = mins ? Number(mins[1]) : 0;
   // A bare number with no unit is read as minutes ("prep: 20").
-  if (!hours && !mins) {
-    const bare = /^\s*(\d+(?:\.\d+)?)\s*$/.exec(value);
-    if (!bare) {
-      return undefined;
-    }
-    m = Number(bare[1]);
+  const bare = hours || mins ? null : /^\s*(\d+(?:\.\d+)?)\s*$/.exec(value);
+  if (!hours && !mins && !bare) {
+    return undefined;
   }
+  const rawHours = hours ? Number(hours[1]) : 0;
+  const rawMinutes = Number((bare ?? mins)?.[1] ?? 0);
   // Fold fractional hours into minutes so "1.5 hours" → PT1H30M.
-  if (!Number.isInteger(h)) {
-    m += Math.round((h - Math.floor(h)) * 60);
-    h = Math.floor(h);
-  }
+  const h = Math.floor(rawHours);
+  const m = Number.isInteger(rawHours)
+    ? rawMinutes
+    : rawMinutes + Math.round((rawHours - h) * 60);
   if (h === 0 && m === 0) {
     return undefined;
   }
@@ -92,11 +85,20 @@ export function toIsoDuration(value: string): string | undefined {
 }
 
 /** Split a comma/semicolon-separated metadata value into trimmed parts. */
-function splitList(value: string): string[] {
+function splitList(value: string): readonly string[] {
   return value
     .split(/[,;]/)
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+/** The ISO duration of whichever of `keys` the recipe has, if it reads as one. */
+function durationOf(
+  get: MetaLookup,
+  keys: readonly string[],
+): string | undefined {
+  const value = get(keys);
+  return value ? toIsoDuration(value) : undefined;
 }
 
 /**
@@ -106,88 +108,72 @@ function splitList(value: string): string[] {
  * @param url - The canonical URL of this recipe's page (for `url`).
  */
 export function recipeToJsonLd(
-  recipe: ParsedRecipe,
+  recipe: Readonly<ParsedRecipe>,
   url?: string,
 ): RecipeJsonLd {
   const get = metaLookup(recipe);
-
-  const ld: RecipeJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Recipe',
-    name: recipe.title,
-  };
-
-  if (recipe.ingredients.length > 0) {
-    ld.recipeIngredient = recipe.ingredients.map((i) =>
-      i.quantity ? `${i.quantity} ${i.name}`.trim() : i.name,
-    );
-  }
-
-  if (recipe.steps.length > 0) {
-    ld.recipeInstructions = recipe.steps.map((step) => ({
-      '@type': 'HowToStep',
-      text: step
-        .map((t) => {
-          if (t.kind === 'text') return t.text;
-          if (t.kind === 'timer') return t.label;
-          return t.name;
-        })
-        .join('')
-        .trim(),
-    }));
-  }
-
   const cuisine = get(['cuisine', 'recipeCuisine']);
-  if (cuisine) ld.recipeCuisine = cuisine;
-
   const category = get(['category', 'course', 'recipeCategory']);
-  if (category) ld.recipeCategory = category;
-
   const method = get(['method', 'cookingMethod']);
-  if (method) ld.cookingMethod = method;
-
   const servings = get(['servings', 'serves', 'yield', 'recipeYield']);
-  if (servings) ld.recipeYield = servings;
-
-  const cook = get(['cook time', 'cooktime', 'cook']);
-  if (cook) {
-    const iso = toIsoDuration(cook);
-    if (iso) ld.cookTime = iso;
-  }
-
-  const prep = get(['prep time', 'preptime', 'prep']);
-  if (prep) {
-    const iso = toIsoDuration(prep);
-    if (iso) ld.prepTime = iso;
-  }
-
-  const total = get(['total time', 'totaltime', 'time', 'duration']);
-  if (total) {
-    const iso = toIsoDuration(total);
-    if (iso) ld.totalTime = iso;
-  }
-
+  const cookTime = durationOf(get, ['cook time', 'cooktime', 'cook']);
+  const prepTime = durationOf(get, ['prep time', 'preptime', 'prep']);
+  const totalTime = durationOf(get, [
+    'total time',
+    'totaltime',
+    'time',
+    'duration',
+  ]);
   const keywords = get(['tags', 'keywords']);
-  if (keywords) ld.keywords = splitList(keywords).join(', ');
-
   const diet = get(['diet', 'suitableForDiet']);
-  if (diet) ld.suitableForDiet = splitList(diet);
-
   const author = get(['author', 'by']);
-  if (author) ld.author = { '@type': 'Person', name: author };
-
   const published = get([
     'date published',
     'datepublished',
     'published',
     'date',
   ]);
-  if (published) ld.datePublished = published;
-
   const source = get(['source', 'source url', 'sourceurl', 'url', 'original']);
-  if (source) ld.isBasedOn = source;
 
-  if (url) ld.url = url;
-
-  return ld;
+  // Every field below is left out entirely when the recipe doesn't have it.
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Recipe',
+    name: recipe.title,
+    ...(recipe.ingredients.length > 0
+      ? {
+          recipeIngredient: recipe.ingredients.map((i) =>
+            i.quantity ? `${i.quantity} ${i.name}`.trim() : i.name,
+          ),
+        }
+      : {}),
+    ...(recipe.steps.length > 0
+      ? {
+          recipeInstructions: recipe.steps.map((step) => ({
+            '@type': 'HowToStep' as const,
+            text: step
+              .map((t) => {
+                if (t.kind === 'text') return t.text;
+                if (t.kind === 'timer') return t.label;
+                return t.name;
+              })
+              .join('')
+              .trim(),
+          })),
+        }
+      : {}),
+    ...(cuisine ? { recipeCuisine: cuisine } : {}),
+    ...(category ? { recipeCategory: category } : {}),
+    ...(method ? { cookingMethod: method } : {}),
+    ...(servings ? { recipeYield: servings } : {}),
+    ...(cookTime ? { cookTime } : {}),
+    ...(prepTime ? { prepTime } : {}),
+    ...(totalTime ? { totalTime } : {}),
+    ...(keywords ? { keywords: splitList(keywords).join(', ') } : {}),
+    ...(diet ? { suitableForDiet: splitList(diet) } : {}),
+    ...(author ? { author: { '@type': 'Person' as const, name: author } } : {}),
+    ...(published ? { datePublished: published } : {}),
+    ...(source ? { isBasedOn: source } : {}),
+    ...(url ? { url } : {}),
+  };
 }

@@ -23,15 +23,18 @@ import { validImageUrls } from './media';
 /** A loose JSON value — JSON-LD arrives without a fixed shape. */
 type Json = unknown;
 
+/** A JSON object whose members are not yet known to be anything in particular. */
+type JsonObject = Readonly<Record<string, Json>>;
+
 /** A parsed ingredient: an optional quantity and unit plus the ingredient name. */
 export interface ParsedIngredientLine {
-  quantity?: string;
-  unit?: string;
-  name: string;
+  readonly quantity?: string;
+  readonly unit?: string;
+  readonly name: string;
 }
 
 /** Units we recognise as the token right after a leading quantity. */
-const KNOWN_UNITS = new Set([
+const KNOWN_UNITS: ReadonlySet<string> = new Set([
   'g',
   'kg',
   'mg',
@@ -79,8 +82,8 @@ export function parseIngredientLine(raw: string): ParsedIngredientLine {
   if (!quantityMatch) {
     return { name: text };
   }
-  const quantity = quantityMatch[1]!.replace(/\s+/g, '');
-  let rest = text.slice(quantityMatch[0].length).trim();
+  const quantity = (quantityMatch[1] ?? '').replace(/\s+/g, '');
+  const rest = text.slice(quantityMatch[0].length).trim();
 
   const [maybeUnit, ...tail] = rest.split(' ');
   if (maybeUnit && KNOWN_UNITS.has(maybeUnit.toLowerCase()) && tail.length) {
@@ -90,7 +93,7 @@ export function parseIngredientLine(raw: string): ParsedIngredientLine {
 }
 
 /** Render a parsed ingredient as a Cooklang token: `@name{qty%unit}`. */
-export function toCookIngredient(ing: ParsedIngredientLine): string {
+export function toCookIngredient(ing: Readonly<ParsedIngredientLine>): string {
   const amount =
     ing.quantity && ing.unit
       ? `${ing.quantity}%${ing.unit}`
@@ -104,22 +107,22 @@ export function humaniseDuration(iso: string): string | undefined {
   if (!match || (!match[1] && !match[2])) {
     return undefined;
   }
-  const parts: string[] = [];
-  if (match[1]) {
-    parts.push(`${match[1]} hr`);
-  }
-  if (match[2]) {
-    parts.push(`${match[2]} min`);
-  }
-  return parts.join(' ');
+  return [match[1] ? `${match[1]} hr` : '', match[2] ? `${match[2]} min` : '']
+    .filter(Boolean)
+    .join(' ');
+}
+
+/** Whether a parsed JSON value is an object (arrays count: they are objects too). */
+function isObject(value: Json): value is JsonObject {
+  return typeof value === 'object' && value !== null;
 }
 
 /** True if a JSON-LD node's `@type` is (or includes) `Recipe`. */
-function isRecipeNode(node: Json): node is Record<string, Json> {
-  if (typeof node !== 'object' || node === null) {
+function isRecipeNode(node: Json): node is JsonObject {
+  if (!isObject(node)) {
     return false;
   }
-  const type = (node as Record<string, Json>)['@type'];
+  const type = node['@type'];
   return Array.isArray(type) ? type.includes('Recipe') : type === 'Recipe';
 }
 
@@ -128,7 +131,7 @@ function isRecipeNode(node: Json): node is Record<string, Json> {
  * bare object, an array of nodes, or a `@graph` wrapper (all three occur in
  * the wild).
  */
-export function findRecipeNode(input: Json): Record<string, Json> | null {
+export function findRecipeNode(input: Json): JsonObject | null {
   if (Array.isArray(input)) {
     for (const item of input) {
       const found = findRecipeNode(item);
@@ -138,11 +141,11 @@ export function findRecipeNode(input: Json): Record<string, Json> | null {
     }
     return null;
   }
-  if (typeof input === 'object' && input !== null) {
+  if (isObject(input)) {
     if (isRecipeNode(input)) {
       return input;
     }
-    const graph = (input as Record<string, Json>)['@graph'];
+    const graph = input['@graph'];
     if (graph) {
       return findRecipeNode(graph);
     }
@@ -151,7 +154,7 @@ export function findRecipeNode(input: Json): Record<string, Json> | null {
 }
 
 /** Coerce schema.org's many instruction shapes into a flat list of step texts. */
-function normaliseInstructions(value: Json): string[] {
+function normaliseInstructions(value: Json): readonly string[] {
   if (typeof value === 'string') {
     return value
       .split(/\r?\n+/)
@@ -163,13 +166,12 @@ function normaliseInstructions(value: Json): string[] {
       if (typeof item === 'string') {
         return [item.trim()];
       }
-      if (typeof item === 'object' && item !== null) {
-        const node = item as Record<string, Json>;
+      if (isObject(item)) {
         // HowToSection wraps further steps in itemListElement.
-        if (node['itemListElement']) {
-          return normaliseInstructions(node['itemListElement']);
+        if (item['itemListElement']) {
+          return normaliseInstructions(item['itemListElement']);
         }
-        const text = node['text'] ?? node['name'];
+        const text = item['text'] ?? item['name'];
         if (typeof text === 'string') {
           return [text.trim()];
         }
@@ -202,8 +204,8 @@ function authorName(value: Json): string | undefined {
   if (typeof node === 'string') {
     return node.trim();
   }
-  if (typeof node === 'object' && node !== null) {
-    const name = (node as Record<string, Json>)['name'];
+  if (isObject(node)) {
+    const name = node['name'];
     if (typeof name === 'string') {
       return name.trim();
     }
@@ -212,25 +214,23 @@ function authorName(value: Json): string | undefined {
 }
 
 /** Image URLs from schema.org `image` (string, ImageObject, or arrays thereof). */
-export function imageUrls(value: Json): string[] {
-  const items = Array.isArray(value)
-    ? value
-    : value === undefined
-      ? []
-      : [value];
-  const urls: string[] = [];
-  for (const item of items) {
-    if (typeof item === 'string') {
-      urls.push(item);
-    } else if (typeof item === 'object' && item !== null) {
-      const node = item as Record<string, Json>;
-      const url = node['url'] ?? node['contentUrl'];
-      if (typeof url === 'string') {
-        urls.push(url);
+export function imageUrls(value: Json): readonly string[] {
+  return validImageUrls(
+    listOf(value).flatMap((item) => {
+      if (typeof item === 'string') {
+        return [item];
       }
-    }
-  }
-  return validImageUrls(urls);
+      const url = isObject(item)
+        ? (item['url'] ?? item['contentUrl'])
+        : undefined;
+      return typeof url === 'string' ? [url] : [];
+    }),
+  );
+}
+
+/** A value as a list: itself if it is one, nothing if it is missing, else just it. */
+function listOf(value: Json): readonly Json[] {
+  return Array.isArray(value) ? value : value === undefined ? [] : [value];
 }
 
 /** Video URL from schema.org `video` (VideoObject contentUrl/embedUrl/url). */
@@ -239,9 +239,8 @@ function videoUrl(value: Json): string | undefined {
   if (typeof node === 'string') {
     return node.trim();
   }
-  if (typeof node === 'object' && node !== null) {
-    const v = node as Record<string, Json>;
-    const url = v['contentUrl'] ?? v['embedUrl'] ?? v['url'];
+  if (isObject(node)) {
+    const url = node['contentUrl'] ?? node['embedUrl'] ?? node['url'];
     if (typeof url === 'string') {
       return url.trim();
     }
@@ -251,12 +250,7 @@ function videoUrl(value: Json): string | undefined {
 
 /** Join `suitableForDiet` values, stripping the schema.org URL/`Diet` decorations. */
 export function dietNames(value: Json): string | undefined {
-  const items = Array.isArray(value)
-    ? value
-    : value === undefined
-      ? []
-      : [value];
-  const names = items
+  const names = listOf(value)
     .filter((i): i is string => typeof i === 'string')
     .map((s) =>
       s
@@ -269,6 +263,50 @@ export function dietNames(value: Json): string | undefined {
 }
 
 /**
+ * The `>>` metadata lines for the facts a Recipe node states directly. A fact
+ * the node doesn't state (or states emptily) gets no line.
+ */
+function metadataLines(
+  recipe: JsonObject,
+  sourceUrl: string | undefined,
+): readonly string[] {
+  const servings = recipe['recipeYield'];
+  // Times (prep + total/cook). The LLM tagging pass later adds the Quick/Med/Long bucket.
+  const prep = firstString(recipe['prepTime']);
+  const total =
+    firstString(recipe['totalTime']) ?? firstString(recipe['cookTime']);
+  // Media references (may be mirrored to R2/Images/Stream for permanence later).
+  // Space-separated: image URLs can contain commas (e.g. `?resize=440,400`) but
+  // never spaces, so whitespace is a safe delimiter (see media.ts).
+  const images = imageUrls(recipe['image']);
+
+  const fields: readonly (readonly [string, string | undefined])[] = [
+    [
+      'servings',
+      typeof servings === 'number' ? String(servings) : firstString(servings),
+    ],
+    ['prep', prep ? humaniseDuration(prep) : undefined],
+    ['time', total ? humaniseDuration(total) : undefined],
+    // Taxonomy that schema.org carries directly (protein/difficulty/equipment
+    // come from the model pass since schema.org has no such fields).
+    ['cuisine', firstString(recipe['recipeCuisine'])],
+    ['category', firstString(recipe['recipeCategory'])],
+    ['diet', dietNames(recipe['suitableForDiet'])],
+    ['method', firstString(recipe['cookingMethod'])],
+    ['keywords', firstString(recipe['keywords'])],
+    // Provenance — preserve where the recipe came from.
+    ['author', authorName(recipe['author'])],
+    ['published', firstString(recipe['datePublished'])],
+    ['source', sourceUrl ?? firstString(recipe['url'])],
+    ['images', images.join(' ')],
+    ['video', videoUrl(recipe['video'])],
+  ];
+  return fields.flatMap(([key, value]) =>
+    value ? [`>> ${key}: ${value}`] : [],
+  );
+}
+
+/**
  * Convert a schema.org `Recipe` node into Cooklang source. Ingredients are
  * emitted as a leading block of `@name{qty%unit}` tokens (so the parser and
  * the ingredients panel pick them up), followed by one step per instruction.
@@ -278,51 +316,11 @@ export function dietNames(value: Json): string | undefined {
  * @param sourceUrl - The page it came from, recorded as `>> source:`.
  */
 export function schemaOrgToCook(
-  recipe: Record<string, Json>,
+  recipe: JsonObject,
   sourceUrl?: string,
 ): string {
   const title = firstString(recipe['name']) ?? 'Imported Recipe';
-  const meta: string[] = [`>> title: ${title}`];
-  const add = (key: string, value: string | undefined): void => {
-    if (value) {
-      meta.push(`>> ${key}: ${value}`);
-    }
-  };
-
-  const servings = recipe['recipeYield'];
-  add(
-    'servings',
-    typeof servings === 'number' ? String(servings) : firstString(servings),
-  );
-
-  // Times (prep + total/cook). The LLM tagging pass later adds the Quick/Med/Long bucket.
-  const prep = firstString(recipe['prepTime']);
-  add('prep', prep ? humaniseDuration(prep) : undefined);
-  const total =
-    firstString(recipe['totalTime']) ?? firstString(recipe['cookTime']);
-  add('time', total ? humaniseDuration(total) : undefined);
-
-  // Taxonomy that schema.org carries directly (protein/difficulty/equipment come
-  // from the model pass since schema.org has no such fields).
-  add('cuisine', firstString(recipe['recipeCuisine']));
-  add('category', firstString(recipe['recipeCategory']));
-  add('diet', dietNames(recipe['suitableForDiet']));
-  add('method', firstString(recipe['cookingMethod']));
-  add('keywords', firstString(recipe['keywords']));
-
-  // Provenance — preserve where the recipe came from.
-  add('author', authorName(recipe['author']));
-  add('published', firstString(recipe['datePublished']));
-  add('source', sourceUrl ?? firstString(recipe['url']));
-
-  // Media references (may be mirrored to R2/Images/Stream for permanence later).
-  // Space-separated: image URLs can contain commas (e.g. `?resize=440,400`) but
-  // never spaces, so whitespace is a safe delimiter (see media.ts).
-  const images = imageUrls(recipe['image']);
-  if (images.length) {
-    add('images', images.join(' '));
-  }
-  add('video', videoUrl(recipe['video']));
+  const meta = [`>> title: ${title}`, ...metadataLines(recipe, sourceUrl)];
 
   const rawIngredients = recipe['recipeIngredient'] ?? recipe['ingredients'];
   const ingredientLines = Array.isArray(rawIngredients)
@@ -333,15 +331,13 @@ export function schemaOrgToCook(
 
   const steps = normaliseInstructions(recipe['recipeInstructions']);
 
-  const blocks: string[] = [meta.join('\n')];
-  if (ingredientLines.length) {
+  const blocks = [
+    meta.join('\n'),
     // One paragraph of ingredient tokens → a single "gather" step the parser
     // reads for the ingredients panel. The user curates it into the method.
-    blocks.push(ingredientLines.join('\n'));
-  }
-  for (const step of steps) {
-    blocks.push(step);
-  }
+    ...(ingredientLines.length ? [ingredientLines.join('\n')] : []),
+    ...steps,
+  ];
   return `${blocks.join('\n\n')}\n`;
 }
 
@@ -376,29 +372,23 @@ export function extractOgImage(
   }
 }
 
-/** Collect every object that carries an `@id`, anywhere in the parsed JSON-LD. */
-function collectById(
-  root: Json,
-  into: Map<string, Record<string, Json>>,
-): void {
+/**
+ * Every object that carries an `@id` (and something besides it), anywhere in
+ * the parsed JSON-LD, as `[id, object]` pairs in document order.
+ */
+function collectById(root: Json): readonly (readonly [string, JsonObject])[] {
   if (Array.isArray(root)) {
-    for (const item of root) {
-      collectById(item, into);
-    }
-  } else if (typeof root === 'object' && root !== null) {
-    const node = root as Record<string, Json>;
-    const id = node['@id'];
-    if (
-      typeof id === 'string' &&
-      !into.has(id) &&
-      Object.keys(node).length > 1
-    ) {
-      into.set(id, node);
-    }
-    for (const value of Object.values(node)) {
-      collectById(value, into);
-    }
+    return root.flatMap(collectById);
   }
+  if (!isObject(root)) {
+    return [];
+  }
+  const id = root['@id'];
+  const own =
+    typeof id === 'string' && Object.keys(root).length > 1
+      ? [[id, root] as const]
+      : [];
+  return [...own, ...Object.values(root).flatMap(collectById)];
 }
 
 /**
@@ -409,17 +399,16 @@ function collectById(
  * Recipe and the image often live in different `<script>` tags.
  */
 export function resolveImageRefs(
-  node: Record<string, Json>,
-  byId: Map<string, Record<string, Json>>,
-): Record<string, Json> {
+  node: JsonObject,
+  byId: ReadonlyMap<string, JsonObject>,
+): JsonObject {
   const resolve = (value: Json): Json => {
     if (Array.isArray(value)) {
       return value.map(resolve);
     }
-    if (typeof value === 'object' && value !== null) {
-      const ref = value as Record<string, Json>;
-      const id = ref['@id'];
-      if (typeof id === 'string' && Object.keys(ref).length === 1) {
+    if (isObject(value)) {
+      const id = value['@id'];
+      if (typeof id === 'string' && Object.keys(value).length === 1) {
         return byId.get(id) ?? value;
       }
     }
@@ -440,24 +429,18 @@ export function extractRecipeFromHtml(
 ): string | null {
   const scriptRe =
     /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
-  const blocks: Json[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = scriptRe.exec(html)) !== null) {
-    try {
-      blocks.push(JSON.parse(match[1]!.trim()) as Json);
-    } catch {
-      continue;
-    }
-  }
-  const byId = new Map<string, Record<string, Json>>();
-  for (const block of blocks) {
-    collectById(block, byId);
-  }
-  for (const block of blocks) {
-    const node = findRecipeNode(block);
-    if (node) {
-      return schemaOrgToCook(resolveImageRefs(node, byId), sourceUrl);
-    }
-  }
-  return null;
+  const blocks = [...html.matchAll(scriptRe)].flatMap(
+    (match): readonly Json[] => {
+      try {
+        return [JSON.parse((match[1] ?? '').trim())];
+      } catch {
+        return [];
+      }
+    },
+  );
+  // The first block to define an id wins, so the entries are reversed on the
+  // way into the Map (a later entry overwrites an earlier one).
+  const byId = new Map(blocks.flatMap(collectById).toReversed());
+  const node = blocks.map(findRecipeNode).find((found) => found !== null);
+  return node ? schemaOrgToCook(resolveImageRefs(node, byId), sourceUrl) : null;
 }

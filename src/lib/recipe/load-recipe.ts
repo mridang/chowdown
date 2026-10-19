@@ -15,17 +15,15 @@ import {
   getUserAccessToken,
 } from '../auth/current-user';
 import { DriveNotConnectedError, isDriveConnected } from '../auth/drive-access';
+import type { Database } from '../db/client';
 import { getRecipePageRows, type RecipePageRows } from '../db/recipe-page';
-import { setRecipesFolderId } from '../db/users';
-import {
-  ensureRecipesFolder,
-  getFileContent,
-  listRecipeFiles,
-} from '../drive/drive-client';
+import type { User } from '../db/users';
+import { getFileContent, listRecipeFiles } from '../drive/drive-client';
 import { getDatabase } from '../util';
 import { toCardRecipe, toneFor, type CardRecipe, type Tone } from './card-data';
 import { extractNotes, sourceUrlOf, type Note } from './cook-text';
 import { parseRecipe, type ParsedRecipe } from './cooklang';
+import { recipesFolderOf } from './drive-sync';
 import { minutesOf } from './minutes';
 import { initialUnits, type UnitChoice } from './page-view';
 import { parseSimilar } from './similar';
@@ -36,21 +34,21 @@ export const ALSO_LIKE_COUNT = 4;
 
 /** What `loadRecipe` resolves to. */
 export interface RecipePageData {
-  recipe: ParsedRecipe;
-  notes: Note[];
-  favourite: boolean;
+  readonly recipe: ParsedRecipe;
+  readonly notes: readonly Note[];
+  readonly favourite: boolean;
   /** The recipe's curated tags, worked out from its source. */
-  tags: RecipeTags;
+  readonly tags: RecipeTags;
   /** Total time in minutes, when the recipe says. */
-  minutes?: number;
+  readonly minutes?: number;
   /** The address the recipe was saved from, when it has one. */
-  sourceUrl?: string;
+  readonly sourceUrl?: string;
   /** A soft colour for the photo tile when there is no photo. */
-  tone: Tone;
+  readonly tone: Tone;
   /** Where the units switch starts (the user's saved preference, if any). */
-  units: UnitChoice;
+  readonly units: UnitChoice;
   /** Similar recipes, best first, ready to render as cards. */
-  similar: CardRecipe[];
+  readonly similar: readonly CardRecipe[];
 }
 
 /**
@@ -61,12 +59,14 @@ export interface RecipePageData {
  * (a recipe deleted since) are skipped, and at most `limit` cards come back.
  */
 export function similarCards(
-  rows: Pick<
-    RecipePageRows,
-    'similarJson' | 'similarRecipes' | 'similarFavouriteIds'
+  rows: Readonly<
+    Pick<
+      RecipePageRows,
+      'similarJson' | 'similarRecipes' | 'similarFavouriteIds'
+    >
   >,
   limit: number = ALSO_LIKE_COUNT,
-): CardRecipe[] {
+): readonly CardRecipe[] {
   const similarById = new Map(
     rows.similarRecipes.map((row) => [row.drive_file_id, row]),
   );
@@ -77,6 +77,78 @@ export function similarCards(
       return row ? [toCardRecipe(row, hearted.has(s.id))] : [];
     })
     .slice(0, limit);
+}
+
+/** What reading a recipe the cache didn't have from Drive came to. */
+type DriveLookup =
+  | { readonly status: 'loaded'; readonly rows: RecipePageRows }
+  /** Not in Drive either, or Drive failed for a passing reason. */
+  | { readonly status: 'missing' }
+  /** Google stopped accepting the login while we looked. */
+  | { readonly status: 'lapsed' };
+
+/**
+ * Read one recipe the cache has never seen from Drive, index it so the next
+ * view is fast, and re-read the page rows. (The redirects stay with the
+ * caller: a redirect thrown inside a `try` would be swallowed.)
+ */
+async function lookUpInDrive(
+  db: Database,
+  uid: number,
+  user: Readonly<User>,
+  id: string,
+): Promise<DriveLookup> {
+  try {
+    const token = await getUserAccessToken(user);
+    const folderId = await recipesFolderOf(db, user, token);
+    const files = await listRecipeFiles(folderId, token);
+    const file = files.find((f) => f.id === id);
+    if (!file) {
+      return { status: 'missing' };
+    }
+    const source = await getFileContent(file.id, token);
+    await indexRecipeWrite(
+      db,
+      user.id,
+      id,
+      file.name,
+      source,
+      file.modifiedTime ?? null,
+    );
+    return { status: 'loaded', rows: await getRecipePageRows(db, uid, id) };
+  } catch (error) {
+    return error instanceof DriveNotConnectedError
+      ? { status: 'lapsed' }
+      : { status: 'missing' };
+  }
+}
+
+/**
+ * The page rows for a recipe, falling back to Drive once when the cache has
+ * never seen it. Redirects when there is no way to look (signed out, or no
+ * Drive connected) and returns null when the recipe can't be found.
+ */
+async function pageRowsFor(
+  db: Database,
+  uid: number,
+  id: string,
+): Promise<RecipePageRows | null> {
+  const cached = await getRecipePageRows(db, uid, id);
+  if (cached.recipe) {
+    return cached;
+  }
+  // Cold cache: read from Drive once and index it, then re-read.
+  const user = (await getCurrentUser()) ?? redirect('/');
+  if (!isDriveConnected(user)) {
+    // Nothing cached and no Drive to look in: the list explains how to connect.
+    redirect('/app');
+  }
+  const found = await lookUpInDrive(db, uid, user, id);
+  if (found.status === 'lapsed') {
+    // Google stopped accepting the login while we looked.
+    redirect('/app');
+  }
+  return found.status === 'loaded' ? found.rows : null;
 }
 
 /**
@@ -95,59 +167,9 @@ export function similarCards(
  */
 export const loadRecipe = cache(
   async (id: string): Promise<RecipePageData | null> => {
-    const uid = await getSessionUid();
-    if (uid === null) {
-      redirect('/');
-    }
-    const db = getDatabase();
-
-    let rows = await getRecipePageRows(db, uid, id);
-    if (!rows.recipe) {
-      // Cold cache: read from Drive once and index it, then re-read. (The
-      // redirects sit outside the try, which would otherwise swallow them.)
-      const user = await getCurrentUser();
-      if (!user) {
-        redirect('/');
-      }
-      if (!isDriveConnected(user)) {
-        // Nothing cached and no Drive to look in: the list explains how to connect.
-        redirect('/app');
-      }
-      let lapsed = false;
-      try {
-        const token = await getUserAccessToken(user);
-        const folderId =
-          user.recipes_folder_id ?? (await ensureRecipesFolder(token));
-        if (!user.recipes_folder_id) {
-          await setRecipesFolderId(db, user.id, folderId);
-        }
-        const files = await listRecipeFiles(folderId, token);
-        const file = files.find((f) => f.id === id);
-        if (!file) {
-          return null;
-        }
-        const source = await getFileContent(file.id, token);
-        await indexRecipeWrite(
-          db,
-          user.id,
-          id,
-          file.name,
-          source,
-          file.modifiedTime ?? null,
-        );
-        rows = await getRecipePageRows(db, uid, id);
-      } catch (error) {
-        if (!(error instanceof DriveNotConnectedError)) {
-          return null;
-        }
-        lapsed = true;
-      }
-      if (lapsed) {
-        // Google stopped accepting the login while we looked.
-        redirect('/app');
-      }
-    }
-    if (!rows.recipe) {
+    const uid = (await getSessionUid()) ?? redirect('/');
+    const rows = await pageRowsFor(getDatabase(), uid, id);
+    if (!rows?.recipe) {
       return null;
     }
 

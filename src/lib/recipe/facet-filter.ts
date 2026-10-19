@@ -17,13 +17,13 @@ import type { RecipeTags } from './tag-index';
 
 /** Parsed filter state from the query string. */
 export interface FilterState {
-  q: string;
+  readonly q: string;
   /** Show only hearted recipes (`?fav=1`). */
-  favouritesOnly: boolean;
+  readonly favouritesOnly: boolean;
   /** `{ facetKey: selectedValue[] }`. */
-  selected: Record<string, string[]>;
+  readonly selected: Readonly<Record<string, readonly string[]>>;
   /** Source sites to show (`?site=a.com,b.com`), already lower-cased. */
-  domains: string[];
+  readonly domains: readonly string[];
 }
 
 /** The query-string key (and facet key) for the source-site filter. */
@@ -33,11 +33,15 @@ export const DOMAIN_KEY = 'site';
 export const MIN_DOMAIN_RECIPES = 2;
 
 /** A query-string params bag (Next's `searchParams`, already awaited). */
-export type SearchParams = Record<string, string | string[] | undefined>;
+export type SearchParams = Readonly<
+  Record<string, string | readonly string[] | undefined>
+>;
 
 /** Split a param (string, CSV, or repeated) into trimmed, non-empty values. */
-function paramValues(raw: string | string[] | undefined): string[] {
-  const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+function paramValues(
+  raw: string | readonly string[] | undefined,
+): readonly string[] {
+  const list = typeof raw === 'string' ? [raw] : (raw ?? []);
   return list
     .flatMap((s) => s.split(','))
     .map((s) => s.trim())
@@ -47,13 +51,12 @@ function paramValues(raw: string | string[] | undefined): string[] {
 /** Read the free-text query and selected facet values from the query string. */
 export function parseFilters(params: SearchParams): FilterState {
   const q = typeof params['q'] === 'string' ? params['q'].trim() : '';
-  const selected: Record<string, string[]> = {};
-  for (const f of FACETS) {
-    const vals = paramValues(params[f.key]);
-    if (vals.length > 0) {
-      selected[f.key] = vals;
-    }
-  }
+  const selected = Object.fromEntries(
+    FACETS.flatMap((f) => {
+      const vals = paramValues(params[f.key]);
+      return vals.length > 0 ? [[f.key, vals] as const] : [];
+    }),
+  );
   const fav = params['fav'];
   const favouritesOnly = fav === '1' || fav === 'true';
   const domains = paramValues(params[DOMAIN_KEY]).map((d) => d.toLowerCase());
@@ -62,18 +65,18 @@ export function parseFilters(params: SearchParams): FilterState {
 
 /** A recipe as far as filtering cares: a display name and its tags. */
 export interface FilterableRecipe {
-  display: string;
+  readonly display: string;
   /** Whether the user has hearted it. */
-  favourite?: boolean;
+  readonly favourite?: boolean;
   /** The site its `>> source:` came from, e.g. `seriouseats.com`. */
-  domain?: string;
-  tags: RecipeTags;
+  readonly domain?: string;
+  readonly tags: RecipeTags;
 }
 
 /** Whether a recipe passes the filter state (AND across facets, OR within). */
 export function matchesFilters(
-  recipe: FilterableRecipe,
-  state: FilterState,
+  recipe: Readonly<FilterableRecipe>,
+  state: Readonly<FilterState>,
 ): boolean {
   if (state.favouritesOnly && !recipe.favourite) {
     return false;
@@ -112,36 +115,45 @@ export function matchesFilters(
   return true;
 }
 
+/** How many times each value appears, by value, in order of first appearance. */
+function tally(values: readonly string[]): Readonly<Record<string, number>> {
+  return Object.fromEntries(
+    Object.entries(Object.groupBy(values, (v) => v)).map(([value, same]) => [
+      value,
+      same?.length ?? 0,
+    ]),
+  );
+}
+
+/** Per-facet value counts: `{ facetKey: { value: howManyRecipes } }`. */
+export type FacetCounts = Readonly<
+  Record<string, Readonly<Record<string, number>>>
+>;
+
 /** Count how many recipes carry each value, per facet (for the sidebar). */
 export function facetCounts(
-  recipes: FilterableRecipe[],
-): Record<string, Record<string, number>> {
-  const counts: Record<string, Record<string, number>> = {};
-  for (const f of FACETS) {
-    counts[f.key] = {};
-  }
-  for (const r of recipes) {
-    for (const f of FACETS) {
-      for (const v of r.tags[f.key] ?? []) {
-        counts[f.key]![v] = (counts[f.key]![v] ?? 0) + 1;
-      }
-    }
-  }
-  return counts;
+  recipes: readonly Readonly<FilterableRecipe>[],
+): FacetCounts {
+  return Object.fromEntries(
+    FACETS.map((f) => [
+      f.key,
+      tally(recipes.flatMap((r) => r.tags[f.key] ?? [])),
+    ]),
+  );
 }
 
 /** A facet value as the sidebar renders it. */
 export interface FacetValueView {
-  value: string;
-  count: number;
-  active: boolean;
+  readonly value: string;
+  readonly count: number;
+  readonly active: boolean;
 }
 
 /** A facet as the sidebar renders it. */
 export interface FacetView {
-  key: string;
-  label: string;
-  values: FacetValueView[];
+  readonly key: string;
+  readonly label: string;
+  readonly values: readonly FacetValueView[];
 }
 
 /**
@@ -150,36 +162,37 @@ export interface FacetView {
  * The open `keywords` facet is excluded — it's free-form, not a good facet UI.
  */
 export function buildFacetView(
-  counts: Record<string, Record<string, number>>,
-  state: FilterState,
-): FacetView[] {
-  const views: FacetView[] = [];
-  for (const f of FACETS) {
-    if (f.values === null) {
-      continue; // skip open keywords facet
+  counts: FacetCounts,
+  state: Readonly<FilterState>,
+): readonly FacetView[] {
+  return FACETS.flatMap((f): readonly FacetView[] => {
+    const allowed = f.values;
+    if (allowed === null) {
+      return []; // skip open keywords facet
     }
     const entries = Object.entries(counts[f.key] ?? {});
     if (entries.length === 0) {
-      continue;
+      return [];
     }
     const active = state.selected[f.key] ?? [];
-    views.push({
-      key: f.key,
-      label: f.label,
-      values: entries
-        .sort(([a], [b]) =>
-          f.ordered
-            ? f.values!.indexOf(a) - f.values!.indexOf(b)
-            : a.localeCompare(b),
-        )
-        .map(([value, count]) => ({
-          value,
-          count,
-          active: active.some((v) => v.toLowerCase() === value.toLowerCase()),
-        })),
-    });
-  }
-  return views;
+    return [
+      {
+        key: f.key,
+        label: f.label,
+        values: entries
+          .toSorted(([a], [b]) =>
+            f.ordered
+              ? allowed.indexOf(a) - allowed.indexOf(b)
+              : a.localeCompare(b),
+          )
+          .map(([value, count]) => ({
+            value,
+            count,
+            active: active.some((v) => v.toLowerCase() === value.toLowerCase()),
+          })),
+      },
+    ];
+  });
 }
 
 /**
@@ -189,21 +202,18 @@ export function buildFacetView(
  * worth offering.
  */
 export function buildDomainFacet(
-  recipes: FilterableRecipe[],
-  state: FilterState,
+  recipes: readonly Readonly<FilterableRecipe>[],
+  state: Readonly<FilterState>,
 ): FacetView | null {
-  const counts = new Map<string, number>();
-  for (const r of recipes) {
-    if (r.domain) {
-      counts.set(r.domain, (counts.get(r.domain) ?? 0) + 1);
-    }
-  }
+  const domains = recipes.flatMap((r) => (r.domain ? [r.domain] : []));
+  const counts = Map.groupBy(domains, (domain) => domain);
   const values = [...counts.entries()]
+    .map(([domain, same]) => [domain, same.length] as const)
     .filter(
       ([domain, count]) =>
         count >= MIN_DOMAIN_RECIPES || state.domains.includes(domain),
     )
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .toSorted((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([value, count]) => ({
       value,
       count,

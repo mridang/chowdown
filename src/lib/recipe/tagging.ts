@@ -41,18 +41,27 @@ function systemPrompt(): string {
 }
 
 /** Pull the first JSON object out of a model response, tolerating stray text. */
-function extractJson(text: string): Record<string, unknown> | null {
+function extractJson(text: string): Readonly<Record<string, unknown>> | null {
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
   if (start === -1 || end <= start) {
     return null;
   }
   try {
-    return JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>;
+    const parsed: unknown = JSON.parse(text.slice(start, end + 1));
+    return isObject(parsed) ? parsed : null;
   } catch {
     return null;
   }
 }
+
+/** Whether a value is an object we can look facets up in. */
+function isObject(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === 'object' && value !== null;
+}
+
+/** A tag as `[facetKey, value]`, ready to write as `>> key: value`. */
+export type TagPair = readonly [string, string];
 
 /**
  * Suggest taxonomy tags for a recipe. Returns validated `[key, value]` pairs
@@ -60,10 +69,10 @@ function extractJson(text: string): Record<string, unknown> | null {
  * the model gives nothing usable, so a tagging pass can never corrupt a recipe.
  */
 export async function suggestTags(
-  recipe: ParsedRecipe,
+  recipe: Readonly<ParsedRecipe>,
   env: CloudflareEnv,
-): Promise<[string, string][]> {
-  const result = (await env.AI.run(MODEL, {
+): Promise<readonly TagPair[]> {
+  const result: unknown = await env.AI.run(MODEL, {
     messages: [
       { role: 'system', content: systemPrompt() },
       {
@@ -71,15 +80,14 @@ export async function suggestTags(
         content: `Tag this recipe:\n\n${buildEmbeddingText(recipe)}`,
       },
     ],
-  })) as { response?: unknown };
+  });
 
   // Workers AI usually returns `response` as a JSON string, but some models
   // hand back an already-parsed object — accept either.
-  const raw = result.response;
-  const proposed =
-    raw && typeof raw === 'object'
-      ? (raw as Record<string, unknown>)
-      : extractJson(typeof raw === 'string' ? raw : '');
+  const raw = isObject(result) ? result['response'] : undefined;
+  const proposed = isObject(raw)
+    ? raw
+    : extractJson(typeof raw === 'string' ? raw : '');
   if (!proposed) {
     return [];
   }
@@ -97,7 +105,7 @@ export async function tagCookSource(
   source: string,
   filename: string,
   env: CloudflareEnv,
-): Promise<{ source: string; tags: [string, string][] }> {
+): Promise<{ readonly source: string; readonly tags: readonly TagPair[] }> {
   const tags = await suggestTags(parseRecipe(source, filename), env);
   if (tags.length === 0) {
     return { source, tags: [] };

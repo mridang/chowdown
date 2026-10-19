@@ -11,6 +11,7 @@
  */
 
 import { getUserAccessToken } from '../auth/current-user';
+import type { Database } from '../db/client';
 import { deleteRecipeData, getRecipeByFileId } from '../db/recipes';
 import type { User } from '../db/users';
 import { trashRecipeFile } from '../drive/drive-client';
@@ -46,23 +47,68 @@ export async function deleteRecipe(
   return 'deleted';
 }
 
-/** Delete a recipe for a signed-in user using the real Drive and D1. */
+/**
+ * What {@link deleteRecipeForUser} reaches out to, gathered in one place so a
+ * test can hand in small fakes. The default is the real database and Drive.
+ */
+export interface DeleteLiveDeps {
+  /** The D1 database. */
+  readonly database: () => Database;
+  /** A Drive access token for the user. */
+  readonly accessToken: (user: Readonly<User>) => Promise<string>;
+  /** The cached row for one of the user's recipes, if they have it. */
+  readonly findRecipe: (
+    db: Database,
+    userId: number,
+    fileId: string,
+  ) => Promise<unknown>;
+  /** Move a Drive file to the trash. */
+  readonly trashFile: (
+    fileId: string,
+    token: string,
+  ) => Promise<'trashed' | 'missing'>;
+  /** Remove the recipe's cached row, embedding and favourite. */
+  readonly deleteData: (
+    db: Database,
+    userId: number,
+    fileId: string,
+  ) => Promise<unknown>;
+  /** Recompute everyone's similar lists. */
+  readonly refreshSimilar: (db: Database, userId: number) => Promise<unknown>;
+}
+
+/** The real thing. */
+const liveDeps: DeleteLiveDeps = {
+  database: getDatabase,
+  accessToken: getUserAccessToken,
+  findRecipe: getRecipeByFileId,
+  trashFile: trashRecipeFile,
+  deleteData: deleteRecipeData,
+  refreshSimilar: refreshSimilarLists,
+};
+
+/**
+ * Delete a recipe for a signed-in user using the real Drive and D1.
+ *
+ * @param deps Collaborators; leave out to use the real ones.
+ */
 export async function deleteRecipeForUser(
-  user: User,
+  user: Readonly<User>,
   id: string,
+  deps: DeleteLiveDeps = liveDeps,
 ): Promise<DeleteOutcome> {
-  const db = getDatabase();
-  const token = await getUserAccessToken(user);
+  const db = deps.database();
+  const token = await deps.accessToken(user);
   return deleteRecipe(
     {
       owns: async (fileId) =>
-        Boolean(await getRecipeByFileId(db, user.id, fileId)),
-      trash: (fileId) => trashRecipeFile(fileId, token),
+        Boolean(await deps.findRecipe(db, user.id, fileId)),
+      trash: (fileId) => deps.trashFile(fileId, token),
       forget: async (fileId) => {
-        await deleteRecipeData(db, user.id, fileId);
+        await deps.deleteData(db, user.id, fileId);
         // Other recipes may list this one as similar; recompute so none link
         // to a page that no longer exists.
-        await refreshSimilarLists(db, user.id);
+        await deps.refreshSimilar(db, user.id);
       },
     },
     id,

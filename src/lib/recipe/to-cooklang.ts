@@ -36,6 +36,23 @@ Cooklang rules:
 - Mark timers inline as ~{10%minutes} or ~name{1%hour}.
 Stay faithful to the source; never invent ingredients or steps. If the content is not a recipe, output just ">> title: Unknown" and nothing else.`;
 
+/** What the caller already knows about the content it hands us. */
+export type ConversionOptions = Readonly<{
+  /** The page the content came from. */
+  sourceUrl?: string;
+  /** The recipe's name, if known. */
+  name?: string;
+}>;
+
+/** The text of a page, or null if it can't be fetched (never throws). */
+async function fetchPageOrNull(url: string): Promise<string | null> {
+  try {
+    return await fetchPage(url);
+  } catch {
+    return null;
+  }
+}
+
 /** Strip accidental markdown code fences a model may wrap the output in. */
 function stripFences(text: string): string {
   return text
@@ -54,7 +71,7 @@ function stripFences(text: string): string {
 export async function convertToCooklang(
   content: string,
   env: CloudflareEnv,
-  opts: { sourceUrl?: string; name?: string } = {},
+  opts: ConversionOptions = {},
 ): Promise<string> {
   // 1. Deterministic: schema.org Recipe JSON-LD, if the HTML still carries it.
   // Only trust it when it really holds a recipe: some sites ship JSON-LD with
@@ -76,14 +93,18 @@ export async function convertToCooklang(
     .filter(Boolean)
     .join('\n');
 
-  const result = (await env.AI.run(MODEL, {
+  const result: unknown = await env.AI.run(MODEL, {
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: userMessage },
     ],
-  })) as { response?: string };
+  });
 
-  const cooklang = stripFences(result.response ?? '');
+  const response =
+    typeof result === 'object' && result !== null && 'response' in result
+      ? result.response
+      : undefined;
+  const cooklang = stripFences(typeof response === 'string' ? response : '');
   if (!cooklang) {
     throw new Error('Recipe conversion produced no output');
   }
@@ -106,21 +127,14 @@ export async function convertToCooklang(
 export async function convertImport(
   content: string,
   env: CloudflareEnv,
-  opts: { sourceUrl?: string; name?: string } = {},
+  opts: ConversionOptions = {},
 ): Promise<string> {
   const direct = extractRecipeFromHtml(content, opts.sourceUrl);
   if (direct && hasRecipeBody(direct)) {
     return direct;
   }
 
-  let page: string | null = null;
-  if (opts.sourceUrl) {
-    try {
-      page = await fetchPage(opts.sourceUrl);
-    } catch {
-      page = null;
-    }
-  }
+  const page = opts.sourceUrl ? await fetchPageOrNull(opts.sourceUrl) : null;
 
   // The page's structured data wins only if it contains a recipe; a metadata-
   // only record (empty ingredient/instruction lists) still donates its image.
@@ -154,10 +168,8 @@ export async function addMissingCover(source: string): Promise<string> {
   if (!url) {
     return source;
   }
-  let page: string;
-  try {
-    page = await fetchPage(url);
-  } catch {
+  const page = await fetchPageOrNull(url);
+  if (page === null) {
     return source;
   }
   const fromJsonLd = extractRecipeFromHtml(page, url);

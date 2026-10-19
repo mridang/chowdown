@@ -17,18 +17,20 @@
  * "'nduja", "kimchi").
  */
 
+/** One of the four common eating styles a recipe can be sorted into. */
 export type DietType =
   | 'Vegan'
   | 'Vegetarian'
   | 'Pescatarian'
   | 'Non-vegetarian';
 
-export const DIET_TYPES: DietType[] = [
+/** Every eating style, strictest first. */
+export const DIET_TYPES = [
   'Vegan',
   'Vegetarian',
   'Pescatarian',
   'Non-vegetarian',
-];
+] as const satisfies readonly DietType[];
 
 const MEAT_NOUNS =
   'bacon|ham|chorizo|sausages?|pepperoni|meatballs?|mince|jerky|burgers?|nuggets?|steaks?|wings|chicken|beef|pork|meat|fish|shrimp|prawns?|tuna|salmon|crab|scallops?';
@@ -73,7 +75,7 @@ const LOOK_ALIKES = new RegExp(
 );
 
 /** Animal words that stand for an ingredient that is really something else. */
-const REWRITES: [RegExp, string][] = [
+const REWRITES = [
   [/\bgoat'?s?\s+(milk|cheese|butter|yogh?urt|cream)\b/g, '$1'],
   [/\b(?:quail|duck|goose)\s+eggs?\b/g, 'egg'],
   [
@@ -81,7 +83,7 @@ const REWRITES: [RegExp, string][] = [
     '$1',
   ],
   [/\b(tuna|salmon|swordfish|cod|halibut|fish)\s+steaks?\b/g, '$1'],
-];
+] as const satisfies readonly (readonly [RegExp, string])[];
 
 /**
  * "chicken or vegetable stock": the meat is one choice among several, so the
@@ -106,23 +108,25 @@ const DAIRY_OR_EGG =
 
 /** An ingredient name with accents, case and plant-based look-alikes taken out. */
 function prepare(name: string): string {
-  let n = name
+  const plain = name
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[\u2018\u2019]/g, "'")
     .toLowerCase();
-  if (/\b(?:stock|broth|bouillon|cubes?)\b/.test(n)) {
-    n = n.replace(OPTIONAL_MEAT_STOCK, ' ');
-  }
-  n = n
+  // The "chicken or vegetable" escape hatch only makes sense for stock-style
+  // ingredients; "chicken or vegetable pie" really does contain chicken.
+  const withoutChoices = /\b(?:stock|broth|bouillon|cubes?)\b/.test(plain)
+    ? plain.replace(OPTIONAL_MEAT_STOCK, ' ')
+    : plain;
+  const withoutLookAlikes = withoutChoices
     .replace(FREE_FROM, ' ')
     .replace(PLANT_MEAT, ' ')
     .replace(PLANT_DAIRY, ' ')
     .replace(LOOK_ALIKES, ' ');
-  for (const [pattern, replacement] of REWRITES) {
-    n = n.replace(pattern, replacement);
-  }
-  return n;
+  return REWRITES.reduce(
+    (text, [pattern, replacement]) => text.replace(pattern, replacement),
+    withoutLookAlikes,
+  );
 }
 
 /**
@@ -136,20 +140,20 @@ export function classifyDietType(
   protein: readonly string[] = [],
 ): DietType | undefined {
   const names = ingredientNames.filter((n) => n.trim() !== '').map(prepare);
-  const any = (pattern: RegExp) => names.some((n) => pattern.test(n));
+  const mentions = (pattern: RegExp) => names.some((n) => pattern.test(n));
 
   const meatProtein = protein.some((p) =>
     ['chicken', 'beef', 'pork', 'lamb'].includes(p),
   );
-  if (any(MEAT) || meatProtein) {
+  if (mentions(MEAT) || meatProtein) {
     return 'Non-vegetarian';
   }
   const fishProtein = protein.some((p) => ['fish', 'seafood'].includes(p));
-  if (any(FISH) || fishProtein) {
+  if (mentions(FISH) || fishProtein) {
     return 'Pescatarian';
   }
   const dairyProtein = protein.some((p) => ['egg', 'paneer'].includes(p));
-  if (any(DAIRY_OR_EGG) || dairyProtein) {
+  if (mentions(DAIRY_OR_EGG) || dairyProtein) {
     return 'Vegetarian';
   }
   // No ingredients to go on (an uncurated import, say) and nothing in the tags
@@ -162,7 +166,7 @@ export function classifyDietType(
  * vegan dishes, a pescatarian vegan and vegetarian ones too, and a vegan only
  * vegan. "Non-vegetarian" means meat is wanted, so it stands alone.
  */
-export function suitableFor(style: DietType): DietType[] {
+export function suitableFor(style: DietType): readonly DietType[] {
   switch (style) {
     case 'Vegan':
       return ['Vegan'];

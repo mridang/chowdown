@@ -14,10 +14,58 @@ import { listRecipesByUser } from '../db/recipes';
 import { recipeDisplayName } from './cook-text';
 import { parseRecipe } from './cooklang';
 import { buildEmbeddingText, embedText } from './embeddings';
+import { mapSequentially } from './map-sequentially';
 import { refreshSimilarLists } from './similar';
+
+/**
+ * What embedding reaches out to, gathered in one place so a test can hand in
+ * small fakes. The default is the real database and Workers AI.
+ */
+export interface EmbedWriteDeps {
+  /** The user's cached recipes. */
+  readonly listRecipes: (
+    db: Database,
+    userId: number,
+  ) => Promise<
+    readonly {
+      readonly drive_file_id: string;
+      readonly name: string;
+      readonly source: string;
+      readonly modified_time: string | null;
+      readonly parse_error?: unknown;
+    }[]
+  >;
+  /** The user's cached embeddings. */
+  readonly listEmbeddings: (
+    db: Database,
+    userId: number,
+  ) => Promise<readonly { readonly drive_file_id: string }[]>;
+  /** Store (or update) one embedding. */
+  readonly save: (
+    db: Database,
+    row: Parameters<typeof upsertEmbedding>[1],
+  ) => Promise<unknown>;
+  /** Turn text into an embedding vector. */
+  readonly embed: (
+    env: CloudflareEnv,
+    text: string,
+  ) => Promise<readonly number[]>;
+  /** Recompute and store the similar lists. */
+  readonly refreshLists: (db: Database, userId: number) => Promise<unknown>;
+}
+
+/** The real thing. */
+const liveDeps: EmbedWriteDeps = {
+  listRecipes: listRecipesByUser,
+  listEmbeddings,
+  save: upsertEmbedding,
+  embed: embedText,
+  refreshLists: refreshSimilarLists,
+};
 
 /** Embed one recipe's source and store the vector (no similar-list refresh). */
 async function embedAndStore(
+  deps: EmbedWriteDeps,
   db: Database,
   env: CloudflareEnv,
   userId: number,
@@ -26,11 +74,11 @@ async function embedAndStore(
   source: string,
   modifiedTime: string | null,
 ): Promise<void> {
-  const vector = await embedText(
+  const vector = await deps.embed(
     env,
     buildEmbeddingText(parseRecipe(source, name)),
   );
-  await upsertEmbedding(db, {
+  await deps.save(db, {
     user_id: userId,
     drive_file_id: driveFileId,
     title: recipeDisplayName(name),
@@ -39,7 +87,11 @@ async function embedAndStore(
   });
 }
 
-/** Embed a just-written recipe and refresh everyone's similar lists. */
+/**
+ * Embed a just-written recipe and refresh everyone's similar lists.
+ *
+ * @param deps Collaborators; leave out to use the real ones.
+ */
 export async function embedRecipe(
   db: Database,
   env: CloudflareEnv,
@@ -48,32 +100,47 @@ export async function embedRecipe(
   name: string,
   source: string,
   modifiedTime: string | null = null,
+  deps: EmbedWriteDeps = liveDeps,
 ): Promise<void> {
-  await embedAndStore(db, env, userId, driveFileId, name, source, modifiedTime);
-  await refreshSimilarLists(db, userId);
+  await embedAndStore(
+    deps,
+    db,
+    env,
+    userId,
+    driveFileId,
+    name,
+    source,
+    modifiedTime,
+  );
+  await deps.refreshLists(db, userId);
 }
 
 /**
  * Embed up to `limit` cached recipes that have no embedding yet, then refresh
  * the similar lists. Bounded so one request stays within the Worker's limits;
  * call it again to continue. Returns how many were embedded.
+ *
+ * @param deps Collaborators; leave out to use the real ones.
  */
 export async function backfillEmbeddings(
   db: Database,
   env: CloudflareEnv,
   userId: number,
   limit = 20,
+  deps: EmbedWriteDeps = liveDeps,
 ): Promise<number> {
   const [recipes, embedded] = await Promise.all([
-    listRecipesByUser(db, userId),
-    listEmbeddings(db, userId),
+    deps.listRecipes(db, userId),
+    deps.listEmbeddings(db, userId),
   ]);
   const have = new Set(embedded.map((e) => e.drive_file_id));
   const missing = recipes
     .filter((r) => !have.has(r.drive_file_id) && !r.parse_error)
     .slice(0, limit);
-  for (const r of missing) {
-    await embedAndStore(
+  // One at a time: each calls Workers AI, which has tight concurrency limits.
+  await mapSequentially(missing, (r) =>
+    embedAndStore(
+      deps,
       db,
       env,
       userId,
@@ -81,10 +148,10 @@ export async function backfillEmbeddings(
       r.name,
       r.source,
       r.modified_time,
-    );
-  }
+    ),
+  );
   if (missing.length > 0) {
-    await refreshSimilarLists(db, userId);
+    await deps.refreshLists(db, userId);
   }
   return missing.length;
 }

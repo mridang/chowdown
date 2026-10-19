@@ -130,3 +130,11 @@ describe('toBaseAmount', () => {
     expect(toBaseAmount('')).toBeUndefined();
   });
 });
+
+describe('units named like JavaScript built-ins', () => {
+  it('are not units, and so leave the quantity alone', () => {
+    for (const unit of ['constructor', 'toString', '__proto__']) {
+      expect(convertQuantity(`2 ${unit}`, 'metric')).toBe(`2 ${unit}`);
+    }
+  });
+});

@@ -87,12 +87,14 @@ function asComment(text: string): string {
  * a recipe the calling assistant generated) is included as the method when
  * provided; otherwise a gentle placeholder stands in until the user curates it.
  */
-export function buildStubSource(input: {
-  name: string;
-  prompt: string;
-  draft?: string;
-  when?: Date;
-}): string {
+export function buildStubSource(
+  input: Readonly<{
+    name: string;
+    prompt: string;
+    draft?: string;
+    when?: Date;
+  }>,
+): string {
   const title = sanitiseName(input.name) || 'Untitled';
   const lines = [
     `>> title: ${title}`,
@@ -102,12 +104,10 @@ export function buildStubSource(input: {
     '-- Captured idea — original request preserved verbatim:',
     asComment(input.prompt),
     '',
-  ];
-  lines.push(
     input.draft?.trim()
       ? input.draft.trim()
       : '-- No method yet. Curate this recipe to fill it in.',
-  );
+  ];
   return `${lines.join('\n')}\n`;
 }
 
@@ -124,49 +124,59 @@ export function buildStubSource(input: {
  */
 export function upsertMetadata(
   source: string,
-  pairs: [string, string][],
+  pairs: readonly (readonly [string, string])[],
 ): string {
   const lines = source.split(/\r?\n/);
-  const applied = new Set<string>();
   const byLowerKey = new Map(
     pairs.map(([k, v]) => [k.trim().toLowerCase(), { k: k.trim(), v }]),
   );
 
+  // For each line, the lower-cased key it sets if it is a metadata line for
+  // one of the keys we were given.
+  const keyOfLine = lines.map((line) => {
+    const key = /^>>\s*([^:]+):\s*(.*)$/.exec(line)?.[1]?.trim().toLowerCase();
+    return key !== undefined && byLowerKey.has(key) ? key : undefined;
+  });
+  // Only the first line for a key is rewritten; later repeats are left as they
+  // were. Reversing means the first index is the one the Map keeps.
+  const firstLineOfKey = new Map(
+    keyOfLine
+      .flatMap((key, i) => (key === undefined ? [] : [[key, i] as const]))
+      .toReversed(),
+  );
+
   // Rewrite existing metadata lines in place.
-  for (let i = 0; i < lines.length; i++) {
-    const m = /^>>\s*([^:]+):\s*(.*)$/.exec(lines[i]!);
-    if (!m) {
-      continue;
-    }
-    const lk = m[1]!.trim().toLowerCase();
-    const entry = byLowerKey.get(lk);
-    if (entry && !applied.has(lk)) {
-      lines[i] = `>> ${entry.k}: ${entry.v}`;
-      applied.add(lk);
-    }
-  }
+  const rewritten = lines.map((line, i) => {
+    const key = keyOfLine[i];
+    const entry = key === undefined ? undefined : byLowerKey.get(key);
+    return entry && key !== undefined && firstLineOfKey.get(key) === i
+      ? `>> ${entry.k}: ${entry.v}`
+      : line;
+  });
 
   // Insert the keys that weren't already present.
   const toInsert = pairs
-    .filter(([k]) => !applied.has(k.trim().toLowerCase()))
+    .filter(([k]) => !firstLineOfKey.has(k.trim().toLowerCase()))
     .map(([k, v]) => `>> ${k.trim()}: ${v}`);
-  if (toInsert.length > 0) {
-    let lastMeta = -1;
-    for (let i = 0; i < lines.length; i++) {
-      if (/^>>/.test(lines[i]!)) {
-        lastMeta = i;
-        continue;
-      }
-      if (lines[i]!.trim() === '') {
-        continue;
-      }
-      break;
-    }
-    lines.splice(lastMeta + 1, 0, ...toInsert);
-  }
-
-  const out = lines.join('\n');
+  const out = (
+    toInsert.length > 0
+      ? rewritten.toSpliced(lastMetadataLine(rewritten) + 1, 0, ...toInsert)
+      : rewritten
+  ).join('\n');
   return out.endsWith('\n') ? out : `${out}\n`;
+}
+
+/**
+ * The index of the last `>>` metadata line in the block at the top of the file
+ * (blank lines allowed between them), or -1 if the file doesn't start with
+ * one. The block ends at the first line that is neither metadata nor blank.
+ */
+function lastMetadataLine(lines: readonly string[]): number {
+  const blockEnd = lines.findIndex(
+    (line) => !/^>>/.test(line) && line.trim() !== '',
+  );
+  const block = blockEnd === -1 ? lines : lines.slice(0, blockEnd);
+  return block.findLastIndex((line) => /^>>/.test(line));
 }
 
 /**
@@ -178,8 +188,8 @@ export function removeMetadata(source: string, key: string): string {
   return source
     .split(/\r?\n/)
     .filter((line) => {
-      const m = /^>>\s*([^:]+):/.exec(line);
-      return !m || m[1]!.trim().toLowerCase() !== target;
+      const key = /^>>\s*([^:]+):/.exec(line)?.[1];
+      return key === undefined || key.trim().toLowerCase() !== target;
     })
     .join('\n');
 }
@@ -198,8 +208,8 @@ export function removeEmptyMetadata(source: string): string {
   return source
     .split(/\r?\n/)
     .filter((line) => {
-      const m = /^>>\s*[^:]+:\s*(.*)$/.exec(line);
-      return !m || !EMPTY_VALUE.test(m[1]!.trim());
+      const value = /^>>\s*[^:]+:\s*(.*)$/.exec(line)?.[1];
+      return value === undefined || !EMPTY_VALUE.test(value.trim());
     })
     .join('\n');
 }
@@ -252,7 +262,7 @@ export function normalizeSourceUrl(url: string): string {
     const host = u.hostname.toLowerCase().replace(/^www\./, '');
     const kept = [...u.searchParams.entries()]
       .filter(([key]) => !TRACKING_PARAM.test(key))
-      .sort(([a], [b]) => a.localeCompare(b));
+      .toSorted(([a], [b]) => a.localeCompare(b));
     const query = kept.length
       ? `?${kept.map(([k, v]) => `${k}=${v}`).join('&')}`
       : '';
@@ -274,10 +284,10 @@ export function normalizeSourceUrl(url: string): string {
  *   - `scope: 'general'` — a free note shown in a Notes section.
  */
 export interface Note {
-  scope: 'general' | 'ingredient' | 'step';
+  readonly scope: 'general' | 'ingredient' | 'step';
   /** Ingredient name or step number; empty for a general note. */
-  key: string;
-  text: string;
+  readonly key: string;
+  readonly text: string;
 }
 
 /** Matches a note comment: `-- [note]`, `-- [note ingredient:x]`, `-- [note step:2]`. */
@@ -288,23 +298,21 @@ const NOTE_LINE = /^-- \[note(?:\s+(ingredient|step):([^\]]+))?\]\s*(.*)$/;
  * flattened to one line (so it stays a valid Cooklang comment) and a trailing
  * newline is ensured. The original method is never modified.
  */
-export function appendNote(source: string, note: Note): string {
+export function appendNote(source: string, note: Readonly<Note>): string {
   const base = source.endsWith('\n') ? source : `${source}\n`;
   return `${base}${noteLine(note)}\n`;
 }
 
 /** Extract all personal notes from a recipe's source, in file order. */
-export function extractNotes(source: string): Note[] {
-  const notes: Note[] = [];
-  for (const line of source.split(/\r?\n/)) {
+export function extractNotes(source: string): readonly Note[] {
+  return source.split(/\r?\n/).flatMap((line): readonly Note[] => {
     const m = NOTE_LINE.exec(line);
     if (!m) {
-      continue;
+      return [];
     }
-    const scope = (m[1] as 'ingredient' | 'step' | undefined) ?? 'general';
-    notes.push({ scope, key: (m[2] ?? '').trim(), text: m[3]!.trim() });
-  }
-  return notes;
+    const scope = m[1] === 'ingredient' || m[1] === 'step' ? m[1] : 'general';
+    return [{ scope, key: (m[2] ?? '').trim(), text: (m[3] ?? '').trim() }];
+  });
 }
 
 /**
@@ -317,7 +325,7 @@ export function flatNoteKey(key: string): string {
 }
 
 /** The text of one note as a comment line (the format {@link appendNote} writes). */
-function noteLine(note: Note): string {
+function noteLine(note: Readonly<Note>): string {
   const flat = note.text.replace(/\s*\r?\n\s*/g, ' ').trim();
   // A line break or a `]` in the key would end the marker early or start a
   // line of its own.
@@ -333,17 +341,13 @@ function noteLine(note: Note): string {
 export function replaceNote(
   source: string,
   index: number,
-  note: Note,
+  note: Readonly<Note>,
 ): string | undefined {
   const lines = source.split(/\r?\n/);
-  let seen = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (NOTE_LINE.test(lines[i]!) && ++seen === index) {
-      lines[i] = noteLine(note);
-      return lines.join('\n');
-    }
-  }
-  return undefined;
+  const at = noteLineIndex(lines, index);
+  return at === undefined
+    ? undefined
+    : lines.with(at, noteLine(note)).join('\n');
 }
 
 /**
@@ -352,20 +356,28 @@ export function replaceNote(
  */
 export function removeNote(source: string, index: number): string | undefined {
   const lines = source.split(/\r?\n/);
-  let seen = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (NOTE_LINE.test(lines[i]!) && ++seen === index) {
-      lines.splice(i, 1);
-      return lines.join('\n');
-    }
-  }
-  return undefined;
+  const at = noteLineIndex(lines, index);
+  return at === undefined ? undefined : lines.toSpliced(at, 1).join('\n');
+}
+
+/**
+ * Which line holds the `index`-th note (0-based, in file order), or undefined
+ * when there are fewer notes than that or `index` is negative.
+ */
+function noteLineIndex(
+  lines: readonly string[],
+  index: number,
+): number | undefined {
+  const noteLines = lines.flatMap((line, i) =>
+    NOTE_LINE.test(line) ? [i] : [],
+  );
+  return index >= 0 ? noteLines[index] : undefined;
 }
 
 /** A single dated cooking-log entry parsed back out of a `.cook` file. */
 export interface CookingLogEntry {
-  date: string;
-  note: string;
+  readonly date: string;
+  readonly note: string;
 }
 
 /** Matches a cooking-log comment line: `-- [cook YYYY-MM-DD] note`. */
@@ -388,13 +400,9 @@ export function appendCookingLog(
 }
 
 /** Extract all cooking-log entries from a recipe's source, in file order. */
-export function extractCookingLogs(source: string): CookingLogEntry[] {
-  const entries: CookingLogEntry[] = [];
-  for (const line of source.split(/\r?\n/)) {
+export function extractCookingLogs(source: string): readonly CookingLogEntry[] {
+  return source.split(/\r?\n/).flatMap((line): readonly CookingLogEntry[] => {
     const match = LOG_LINE.exec(line);
-    if (match) {
-      entries.push({ date: match[1]!, note: match[2]! });
-    }
-  }
-  return entries;
+    return match ? [{ date: match[1] ?? '', note: match[2] ?? '' }] : [];
+  });
 }

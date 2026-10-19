@@ -15,6 +15,7 @@
 
 import { formatQuantityNumber } from '../intl';
 import type { ParsedIngredient, ParsedRecipe, StepToken } from './cooklang';
+import { own } from '../util/own';
 
 /** Supported measurement systems. */
 export type UnitSystem = 'metric' | 'us' | 'imperial';
@@ -25,7 +26,7 @@ export function isUnitSystem(value: string): value is UnitSystem {
 }
 
 /** Mass units → grams. */
-const MASS_TO_G: Record<string, number> = {
+const MASS_TO_G: Readonly<Record<string, number>> = {
   g: 1,
   gram: 1,
   grams: 1,
@@ -49,7 +50,7 @@ const MASS_TO_G: Record<string, number> = {
 };
 
 /** Volume units → millilitres (cup/tbsp/tsp assumed US when used as a source). */
-const VOL_TO_ML: Record<string, number> = {
+const VOL_TO_ML: Readonly<Record<string, number>> = {
   ml: 1,
   milliliter: 1,
   millilitre: 1,
@@ -82,8 +83,13 @@ const VOL_TO_ML: Record<string, number> = {
   quarts: 946.353,
 };
 
-/** Target volume unit sizes (ml) per system, largest first. */
-const VOL_TARGETS: Record<UnitSystem, [string, number][]> = {
+/** A unit name and its size in millilitres. */
+type VolumeTarget = readonly [unit: string, ml: number];
+
+/** Target volume unit sizes (ml) per system, largest first, at least one each. */
+const VOL_TARGETS: Readonly<
+  Record<UnitSystem, readonly [VolumeTarget, ...VolumeTarget[]]>
+> = {
   metric: [
     ['l', 1000],
     ['ml', 1],
@@ -129,16 +135,18 @@ function formatMass(grams: number, system: UnitSystem): string {
 
 /** Format a volume given in millilitres for the target system. */
 function formatVolume(ml: number, system: UnitSystem): string {
-  for (const [unit, size] of VOL_TARGETS[system]) {
-    if (ml >= size) {
-      const step =
-        unit === 'ml' ? 1 : unit === 'l' ? 0.01 : unit === 'cup' ? 0.25 : 0.5;
-      const amount = roundTo(ml / size, step);
-      return `${amount} ${unit === 'cup' && Number(amount) > 1 ? 'cups' : unit}`;
-    }
+  const targets = VOL_TARGETS[system];
+  const fitting = targets.find(([, size]) => ml >= size);
+  if (fitting) {
+    const [unit, size] = fitting;
+    const step =
+      unit === 'ml' ? 1 : unit === 'l' ? 0.01 : unit === 'cup' ? 0.25 : 0.5;
+    const amount = roundTo(ml / size, step);
+    return `${amount} ${unit === 'cup' && Number(amount) > 1 ? 'cups' : unit}`;
   }
-  const smallest = VOL_TARGETS[system][VOL_TARGETS[system].length - 1]!;
-  return `${roundTo(ml / smallest[1], 0.5)} ${smallest[0]}`;
+  // Smaller than every unit on offer: use the smallest one, in halves.
+  const [smallestUnit, smallestSize] = targets.at(-1) ?? targets[0];
+  return `${roundTo(ml / smallestSize, 0.5)} ${smallestUnit}`;
 }
 
 /**
@@ -151,8 +159,8 @@ export function convertQuantity(quantity: string, system: UnitSystem): string {
   if (!match) {
     return quantity;
   }
-  const value = parseNumber(match[1]!.trim());
-  const unit = match[2]!
+  const value = parseNumber((match[1] ?? '').trim());
+  const unit = (match[2] ?? '')
     .trim()
     .toLowerCase()
     .replace(/\./g, '')
@@ -160,11 +168,13 @@ export function convertQuantity(quantity: string, system: UnitSystem): string {
   if (value === null || !unit) {
     return quantity;
   }
-  if (unit in MASS_TO_G) {
-    return formatMass(value * MASS_TO_G[unit]!, system);
+  const gramsPerUnit = own(MASS_TO_G, unit);
+  if (gramsPerUnit !== undefined) {
+    return formatMass(value * gramsPerUnit, system);
   }
-  if (unit in VOL_TO_ML) {
-    return formatVolume(value * VOL_TO_ML[unit]!, system);
+  const mlPerUnit = own(VOL_TO_ML, unit);
+  if (mlPerUnit !== undefined) {
+    return formatVolume(value * mlPerUnit, system);
   }
   if (unit === 'c' || unit === '°c' || unit === 'celsius') {
     return system === 'metric'
@@ -181,14 +191,16 @@ export function convertQuantity(quantity: string, system: UnitSystem): string {
 
 /** Convert every quantity in a parsed recipe to the target system. */
 export function convertRecipe(
-  recipe: ParsedRecipe,
+  recipe: Readonly<ParsedRecipe>,
   system: UnitSystem,
 ): ParsedRecipe {
-  const ingredients: ParsedIngredient[] = recipe.ingredients.map((i) => ({
-    ...i,
-    quantity: i.quantity ? convertQuantity(i.quantity, system) : i.quantity,
-  }));
-  const steps: StepToken[][] = recipe.steps.map((step) =>
+  const ingredients: readonly ParsedIngredient[] = recipe.ingredients.map(
+    (i) => ({
+      ...i,
+      quantity: i.quantity ? convertQuantity(i.quantity, system) : i.quantity,
+    }),
+  );
+  const steps: readonly (readonly StepToken[])[] = recipe.steps.map((step) =>
     step.map((token) =>
       token.kind === 'ingredient' && token.quantity
         ? { ...token, quantity: convertQuantity(token.quantity, system) }
@@ -199,7 +211,7 @@ export function convertRecipe(
 }
 
 /** Fractions worth showing as fractions: `[value, label]`. */
-const NICE_FRACTIONS: [number, string][] = [
+const NICE_FRACTIONS: readonly (readonly [number, string])[] = [
   [0.125, '1/8'],
   [0.25, '1/4'],
   [1 / 3, '1/3'],
@@ -232,7 +244,7 @@ const SCALABLE = new RegExp(
 );
 
 /** Vulgar-fraction characters and what they are worth. */
-const FRACTION_GLYPHS: Record<string, number> = {
+const FRACTION_GLYPHS: Readonly<Record<string, number>> = {
   '½': 1 / 2,
   '⅓': 1 / 3,
   '⅔': 2 / 3,
@@ -252,7 +264,7 @@ function amountValue(text: string): number | undefined {
   }
   const glyph = /^(\d+)?\s*([½⅓⅔¼¾⅛⅜⅝⅞])$/.exec(text);
   if (glyph) {
-    return Number(glyph[1] ?? 0) + FRACTION_GLYPHS[glyph[2]!]!;
+    return Number(glyph[1] ?? 0) + (FRACTION_GLYPHS[glyph[2] ?? ''] ?? 0);
   }
   const mixed = /^(\d+)\s+(\d+)\s*\/\s*(\d+)$/.exec(text);
   if (mixed) {
@@ -279,7 +291,7 @@ export function scaleQuantity(quantity: string, factor: number): string {
   if (!match) {
     return quantity;
   }
-  const low = amountValue(match[1]!.trim());
+  const low = amountValue((match[1] ?? '').trim());
   const high = match[2] ? amountValue(match[2].trim()) : undefined;
   if (low === undefined || (match[2] && high === undefined)) {
     return quantity;
@@ -288,17 +300,17 @@ export function scaleQuantity(quantity: string, factor: number): string {
     high === undefined
       ? formatAmount(low * factor)
       : `${formatAmount(low * factor)}-${formatAmount(high * factor)}`;
-  const unit = match[3]!.trim();
+  const unit = (match[3] ?? '').trim();
   return unit ? `${amount} ${unit}` : amount;
 }
 
 /** How much of something, in a base unit, so two quantities can be compared. */
 export interface BaseAmount {
-  dimension: 'mass' | 'volume' | 'count';
+  readonly dimension: 'mass' | 'volume' | 'count';
   /** Grams, millilitres, or a plain count. */
-  amount: number;
+  readonly amount: number;
   /** For a count: what is being counted ("cloves", "cans"), if anything. */
-  unit?: string;
+  readonly unit?: string;
 }
 
 /**
@@ -314,20 +326,22 @@ export function toBaseAmount(quantity: string): BaseAmount | undefined {
   if (!match) {
     return undefined;
   }
-  const value = amountValue(match[1]!.trim());
+  const value = amountValue((match[1] ?? '').trim());
   if (value === undefined) {
     return undefined;
   }
-  const unit = match[2]!
+  const unit = (match[2] ?? '')
     .trim()
     .toLowerCase()
     .replace(/\./g, '')
     .replace('fl oz', 'floz');
-  if (unit in MASS_TO_G) {
-    return { dimension: 'mass', amount: value * MASS_TO_G[unit]! };
+  const gramsPerUnit = own(MASS_TO_G, unit);
+  if (gramsPerUnit !== undefined) {
+    return { dimension: 'mass', amount: value * gramsPerUnit };
   }
-  if (unit in VOL_TO_ML) {
-    return { dimension: 'volume', amount: value * VOL_TO_ML[unit]! };
+  const mlPerUnit = own(VOL_TO_ML, unit);
+  if (mlPerUnit !== undefined) {
+    return { dimension: 'volume', amount: value * mlPerUnit };
   }
   return unit
     ? { dimension: 'count', amount: value, unit }

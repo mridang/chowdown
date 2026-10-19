@@ -12,25 +12,26 @@
 import { parseRecipe } from './cooklang';
 import { fetchPage } from './fetch-page';
 import { planImport, type ImportUnit } from './import-blob';
+import { mapSequentially } from './map-sequentially';
 import { tagCookSourceBestEffort } from './tagging';
 import { convertToCooklang } from './to-cooklang';
 
 /** One prepared unit of an import. */
 export interface ImportItem {
   /** The page it came from, for links. */
-  source_url?: string;
+  readonly source_url?: string;
   /** Suggested name (the parsed title), or the link/label when it failed. */
-  title: string;
-  status: 'DRAFT' | 'FAILED';
+  readonly title: string;
+  readonly status: 'DRAFT' | 'FAILED';
   /** The generated Cooklang, editable before it is saved as a recipe. */
-  cooklang?: string;
+  readonly cooklang?: string;
   /** Why it failed, for a failed item. */
-  problem?: string;
+  readonly problem?: string;
 }
 
 /** Convert one planned unit into an item, capturing any failure as `FAILED`. */
 async function prepareUnit(
-  unit: ImportUnit,
+  unit: Readonly<ImportUnit>,
   env: CloudflareEnv,
 ): Promise<ImportItem> {
   const sourceUrl = unit.kind === 'url' ? unit.url : undefined;
@@ -43,28 +44,22 @@ async function prepareUnit(
         : await convertToCooklang(unit.text, env);
     // Tag the draft so imported recipes arrive ready to filter by facet.
     const cooklang = await tagCookSourceBestEffort(raw, 'Imported Recipe', env);
-    const item: ImportItem = {
+    return {
       title: parseRecipe(cooklang, 'Imported Recipe').title,
       status: 'DRAFT',
       cooklang,
+      ...(sourceUrl ? { source_url: sourceUrl } : {}),
     };
-    if (sourceUrl) {
-      item.source_url = sourceUrl;
-    }
-    return item;
   } catch (err) {
     const where = sourceUrl ?? 'pasted text';
-    const item: ImportItem = {
+    return {
       title: sourceUrl ?? 'Pasted recipe',
       status: 'FAILED',
       problem: `Couldn't import ${where}: ${
         err instanceof Error ? err.message : 'unknown error'
       }. Paste the recipe text directly instead.`,
+      ...(sourceUrl ? { source_url: sourceUrl } : {}),
     };
-    if (sourceUrl) {
-      item.source_url = sourceUrl;
-    }
-    return item;
   }
 }
 
@@ -76,10 +71,6 @@ async function prepareUnit(
 export async function prepareImport(
   input: string,
   env: CloudflareEnv,
-): Promise<ImportItem[]> {
-  const items: ImportItem[] = [];
-  for (const unit of planImport(input)) {
-    items.push(await prepareUnit(unit, env));
-  }
-  return items;
+): Promise<readonly ImportItem[]> {
+  return mapSequentially(planImport(input), (unit) => prepareUnit(unit, env));
 }

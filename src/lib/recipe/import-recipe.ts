@@ -16,23 +16,23 @@
 
 import { parseRecipe } from './cooklang';
 import { withImages } from './media';
-import { hasRecipeBody } from './to-cooklang';
+import { hasRecipeBody, type ConversionOptions } from './to-cooklang';
 
 /** What an import ended up doing. */
 export type ImportOutcome =
-  | { kind: 'refused' }
+  | { readonly kind: 'refused' }
   | {
-      kind: 'existing' | 'created' | 'repaired';
-      id: string;
-      name: string;
-      source: string;
+      readonly kind: 'existing' | 'created' | 'repaired';
+      readonly id: string;
+      readonly name: string;
+      readonly source: string;
     };
 
 /** A recipe already saved for this link. */
 export interface ExistingRecipe {
-  id: string;
-  name: string;
-  source: string;
+  readonly id: string;
+  readonly name: string;
+  readonly source: string;
 }
 
 /** The side effects an import needs, injected so the logic is testable. */
@@ -40,14 +40,14 @@ export interface ImportDeps {
   /** The saved recipe imported from this URL, if any. */
   findExisting(url: string): Promise<ExistingRecipe | undefined>;
   /** Convert assistant-supplied content to Cooklang. */
-  convert(
-    content: string,
-    opts: { sourceUrl?: string; name?: string },
-  ): Promise<string>;
+  convert(content: string, opts: ConversionOptions): Promise<string>;
   /** Tag the Cooklang (best effort; returns it unchanged on failure). */
   tag(source: string, name: string): Promise<string>;
   /** Create a new recipe file. */
-  create(name: string, source: string): Promise<{ id: string; name: string }>;
+  create(
+    name: string,
+    source: string,
+  ): Promise<{ readonly id: string; readonly name: string }>;
   /** Replace an existing recipe file's contents. */
   update(id: string, source: string): Promise<void>;
   /** Refresh the D1 cache for a written recipe. */
@@ -57,13 +57,13 @@ export interface ImportDeps {
 /** Import one recipe's content, deduplicating, repairing or refusing as needed. */
 export async function importRecipe(
   deps: ImportDeps,
-  input: {
+  input: Readonly<{
     content: string;
     url?: string;
     name?: string;
     /** Image URLs the caller saw on the page; the first is the cover. */
-    images?: string[];
-  },
+    images?: readonly string[];
+  }>,
 ): Promise<ImportOutcome> {
   const existing = input.url ? await deps.findExisting(input.url) : undefined;
   if (existing && hasRecipeBody(existing.source)) {

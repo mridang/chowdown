@@ -11,50 +11,54 @@ import { Recipe } from '@cooklang/cooklang-ts';
 
 /** A measured thing: an ingredient, a piece of cookware, or a timer. */
 interface RawQuantity {
-  name?: string;
-  quantity?: string | number;
-  units?: string;
+  readonly name?: string;
+  readonly quantity?: string | number;
+  readonly units?: string;
 }
 
 /** One token inside a step, as emitted by the parser. */
 type RawStepItem =
-  | { type: 'text'; value: string }
-  | ({ type: 'ingredient' } & RawQuantity)
-  | ({ type: 'cookware' } & RawQuantity)
-  | ({ type: 'timer' } & RawQuantity);
+  | { readonly type: 'text'; readonly value: string }
+  | ({ readonly type: 'ingredient' } & RawQuantity)
+  | ({ readonly type: 'cookware' } & RawQuantity)
+  | ({ readonly type: 'timer' } & RawQuantity);
 
 /** Structural view of a parsed `Recipe`, decoupled from the lib's types. */
 interface RawRecipe {
-  metadata: Record<string, string>;
-  ingredients: RawQuantity[];
-  cookwares: RawQuantity[];
-  steps: RawStepItem[][];
+  readonly metadata: Readonly<Record<string, string>>;
+  readonly ingredients: readonly RawQuantity[];
+  readonly cookwares: readonly RawQuantity[];
+  readonly steps: readonly (readonly RawStepItem[])[];
 }
 
 /** An ingredient line for the ingredients panel. */
 export interface ParsedIngredient {
-  name: string;
-  quantity: string;
+  readonly name: string;
+  readonly quantity: string;
 }
 
 /** A presentation-ready token within a method step. */
 export type StepToken =
-  | { kind: 'text'; text: string }
-  | { kind: 'ingredient'; name: string; quantity: string }
-  | { kind: 'cookware'; name: string }
-  | { kind: 'timer'; label: string };
+  | { readonly kind: 'text'; readonly text: string }
+  | {
+      readonly kind: 'ingredient';
+      readonly name: string;
+      readonly quantity: string;
+    }
+  | { readonly kind: 'cookware'; readonly name: string }
+  | { readonly kind: 'timer'; readonly label: string };
 
 /** A fully parsed recipe, ready to render. */
 export interface ParsedRecipe {
-  title: string;
-  metadata: [string, string][];
-  ingredients: ParsedIngredient[];
-  cookware: string[];
-  steps: StepToken[][];
+  readonly title: string;
+  readonly metadata: readonly (readonly [string, string])[];
+  readonly ingredients: readonly ParsedIngredient[];
+  readonly cookware: readonly string[];
+  readonly steps: readonly (readonly StepToken[])[];
 }
 
 /** Format a quantity + units into a single label (`200 g`, `2`, ``). */
-export function formatQuantity(item: RawQuantity): string {
+export function formatQuantity(item: Readonly<RawQuantity>): string {
   const { quantity, units } = item;
   const hasQuantity =
     quantity !== undefined &&
@@ -69,7 +73,7 @@ export function formatQuantity(item: RawQuantity): string {
 }
 
 /** Turn a single parser step item into a render token. */
-function toToken(item: RawStepItem): StepToken {
+function toToken(item: Readonly<RawStepItem>): StepToken {
   switch (item.type) {
     case 'text':
       return { kind: 'text', text: item.value };

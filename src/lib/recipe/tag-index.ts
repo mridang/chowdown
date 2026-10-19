@@ -13,52 +13,61 @@
 
 import type { Database } from '../db/client';
 import type { User } from '../db/users';
-import { listRecipesByUser, upsertRecipe } from '../db/recipes';
+import { listRecipesByUser, upsertRecipe, type Recipe } from '../db/recipes';
 import { getFileContent, type DriveFile } from '../drive/drive-client';
 import { getDatabase, getEnv, runInBackground } from '../util';
 import { parseRecipe, type ParsedRecipe } from './cooklang';
 import { embedRecipe } from './embed-write';
+import { mapSequentially } from './map-sequentially';
 import { classifyDietType } from './diet-type';
 import { canonicalValue, facet } from './taxonomy';
 
 /** A recipe's tags as `{ facetKey: canonicalValue[] }`. */
-export type RecipeTags = Record<string, string[]>;
+export type RecipeTags = Readonly<Record<string, readonly string[]>>;
+
+/**
+ * The `[facetKey, canonicalValue]` pairs written in a recipe's metadata, in
+ * the order they appear. Unknown and derived facets and out-of-vocabulary
+ * values are left out; a multi-valued line is split on commas.
+ */
+function facetPairs(
+  metadata: ParsedRecipe['metadata'],
+): readonly (readonly [string, string])[] {
+  return metadata.flatMap(([key, value]) => {
+    const f = facet(key.trim().toLowerCase());
+    if (!f || f.derived) {
+      return [];
+    }
+    return value
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .flatMap((part) => {
+        const canon = canonicalValue(f.key, part);
+        return canon ? [[f.key, canon] as const] : [];
+      });
+  });
+}
 
 /**
  * Pull the curated facet tags out of a parsed recipe's metadata, canonicalised
  * to the vocabulary. Multi-valued facets are comma-split; unknown facet keys
  * and out-of-vocabulary values are dropped.
  */
-export function extractFacetTags(recipe: ParsedRecipe): RecipeTags {
-  const out: RecipeTags = {};
-  for (const [key, value] of recipe.metadata) {
-    const f = facet(key.trim().toLowerCase());
-    if (!f || f.derived) {
-      continue;
-    }
-    const parts = value
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    for (const part of parts) {
-      const canon = canonicalValue(f.key, part);
-      if (!canon) {
-        continue;
-      }
-      const list = (out[f.key] ??= []);
-      if (!list.includes(canon)) {
-        list.push(canon);
-      }
-    }
-  }
+export function extractFacetTags(recipe: Readonly<ParsedRecipe>): RecipeTags {
+  const byFacet = Object.groupBy(facetPairs(recipe.metadata), ([key]) => key);
+  const written: RecipeTags = Object.fromEntries(
+    Object.entries(byFacet).map(([key, pairs]) => [
+      key,
+      // A value written twice counts once, keeping the order it first appeared.
+      [...new Set((pairs ?? []).map(([, value]) => value))],
+    ]),
+  );
   const diet = classifyDietType(
     recipe.ingredients.map((i) => i.name),
-    out['protein'] ?? [],
+    written['protein'] ?? [],
   );
-  if (diet) {
-    out['diet_type'] = [diet];
-  }
-  return out;
+  return diet ? { ...written, diet_type: [diet] } : written;
 }
 
 /**
@@ -70,8 +79,8 @@ export function extractFacetTags(recipe: ParsedRecipe): RecipeTags {
  * it to save a second parse.
  */
 export function rowTags(
-  row: { source: string; name: string },
-  parsed?: ParsedRecipe,
+  row: Readonly<{ source: string; name: string }>,
+  parsed?: Readonly<ParsedRecipe>,
 ): RecipeTags {
   return extractFacetTags(parsed ?? parseRecipe(row.source, row.name));
 }
@@ -90,7 +99,7 @@ export async function indexRecipeWrite(
   name: string,
   source: string,
   modifiedTime: string | null = null,
-  options: { embed?: boolean } = {},
+  options: Readonly<{ embed?: boolean }> = {},
 ): Promise<void> {
   const parsed = parseRecipe(source, name);
   await upsertRecipe(db, {
@@ -119,6 +128,19 @@ export async function indexRecipeWrite(
   }
 }
 
+/** Whether a parsed JSON value is a `{ facetKey: string[] }` object. */
+function isRecipeTags(value: unknown): value is RecipeTags {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.values(value).every(
+      (list) =>
+        Array.isArray(list) && list.every((item) => typeof item === 'string'),
+    )
+  );
+}
+
 /** Safely parse a stored tags JSON string back into {@link RecipeTags}. */
 function parseStoredTags(json: string | null): RecipeTags | null {
   if (!json) {
@@ -126,32 +148,64 @@ function parseStoredTags(json: string | null): RecipeTags | null {
   }
   try {
     const parsed: unknown = JSON.parse(json);
-    return typeof parsed === 'object' &&
-      parsed !== null &&
-      !Array.isArray(parsed)
-      ? (parsed as RecipeTags)
-      : null;
+    return isRecipeTags(parsed) ? parsed : null;
   } catch {
     return null;
   }
 }
 
 /**
+ * Where {@link syncRecipeTags} reads and writes. The default is the real D1
+ * database and Google Drive; a test hands in small fakes instead.
+ */
+export interface TagSyncDeps {
+  /** The D1 database holding the recipe cache. */
+  readonly database: () => Database;
+  /** The user's cached recipe rows. */
+  readonly listCached: (
+    db: Database,
+    userId: number,
+  ) => Promise<
+    readonly Pick<Recipe, 'drive_file_id' | 'modified_time' | 'tags'>[]
+  >;
+  /** Download a file's text from Drive. */
+  readonly readFile: (fileId: string, token: string) => Promise<string>;
+  /** Write one recipe row into the cache. */
+  readonly save: (db: Database, row: RecipeRow) => Promise<unknown>;
+}
+
+/** The fields {@link upsertRecipe} takes for one cached recipe. */
+type RecipeRow = Parameters<typeof upsertRecipe>[1];
+
+/** The real database and Drive. */
+const liveSyncDeps: TagSyncDeps = {
+  database: getDatabase,
+  listCached: listRecipesByUser,
+  readFile: getFileContent,
+  save: upsertRecipe,
+};
+
+/**
  * Ensure every file has a current cached tag set and return a map of Drive
  * file id → tags. Reads (and re-parses) only files that are new, changed, or
  * not yet indexed; everything else is served from the D1 cache.
+ *
+ * @param deps Where to read and write; leave out for the real thing.
  */
 export async function syncRecipeTags(
-  user: User,
-  files: DriveFile[],
+  user: Readonly<User>,
+  files: readonly DriveFile[],
   token: string,
-): Promise<Map<string, RecipeTags>> {
-  const db = getDatabase();
-  const existing = await listRecipesByUser(db, user.id);
+  deps: TagSyncDeps = liveSyncDeps,
+): Promise<ReadonlyMap<string, RecipeTags>> {
+  const db = deps.database();
+  const existing = await deps.listCached(db, user.id);
   const byId = new Map(existing.map((r) => [r.drive_file_id, r]));
-  const result = new Map<string, RecipeTags>();
 
-  for (const file of files) {
+  /** The tags of one file: from the cache if it is current, else re-read. */
+  const tagsOf = async (
+    file: DriveFile,
+  ): Promise<readonly [string, RecipeTags]> => {
     const cached = byId.get(file.id);
     const cachedTags = cached ? parseStoredTags(cached.tags) : null;
     if (
@@ -159,14 +213,13 @@ export async function syncRecipeTags(
       cachedTags &&
       cached.modified_time === (file.modifiedTime ?? null)
     ) {
-      result.set(file.id, cachedTags);
-      continue;
+      return [file.id, cachedTags];
     }
     // New, changed, or never-indexed: read and re-extract.
-    const source = await getFileContent(file.id, token);
+    const source = await deps.readFile(file.id, token);
     const parsed = parseRecipe(source, file.name);
     const tags = extractFacetTags(parsed);
-    await upsertRecipe(db, {
+    await deps.save(db, {
       user_id: user.id,
       drive_file_id: file.id,
       name: file.name,
@@ -175,8 +228,8 @@ export async function syncRecipeTags(
       modified_time: file.modifiedTime ?? null,
       tags: JSON.stringify(tags),
     });
-    result.set(file.id, tags);
-  }
+    return [file.id, tags];
+  };
 
-  return result;
+  return new Map(await mapSequentially(files, tagsOf));
 }

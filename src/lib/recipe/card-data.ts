@@ -22,46 +22,50 @@ import { rowTags } from './tag-index';
 /** A soft colour a recipe without a photo wears instead. */
 export type Tone = 'flame' | 'marigold' | 'forest' | 'sand' | 'ink';
 
+/** How hard a recipe is to cook, as the recipe's own `difficulty` tag says. */
 export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
 
 /** One recipe as the pages show it. Missing facts are empty, never invented. */
 export interface CardRecipe {
-  id: string;
-  title: string;
+  readonly id: string;
+  readonly title: string;
   /** The site it was saved from, e.g. `seriouseats.com`; empty if typed in. */
-  site: string;
+  readonly site: string;
   /** Total time, when the recipe says. */
-  minutes?: number;
-  servings?: number;
-  difficulty?: DifficultyLevel;
-  cuisine: string;
-  protein: string;
-  category: string;
+  readonly minutes?: number;
+  readonly servings?: number;
+  readonly difficulty?: DifficultyLevel;
+  readonly cuisine: string;
+  readonly protein: string;
+  readonly category: string;
   /** Dietary needs such as Gluten-free. */
-  diet: string[];
+  readonly diet: readonly string[];
   /** Vegan, vegetarian, pescatarian or non-vegetarian, worked out from the ingredients. */
-  dietType?: string;
-  method: string[];
-  keywords: string[];
-  favourite: boolean;
+  readonly dietType?: string;
+  readonly method: readonly string[];
+  readonly keywords: readonly string[];
+  readonly favourite: boolean;
   /** A stub the assistant or user jotted down but never curated (shown as an "idea"). */
-  uncurated?: boolean;
-  tone: Tone;
+  readonly uncurated?: boolean;
+  readonly tone: Tone;
   /** A cover photo address; without one the card shows a colour tile. */
-  cover?: string;
+  readonly cover?: string;
   /** The recipe's Cooklang source, for pages that show it. */
-  cooklang?: string;
+  readonly cooklang?: string;
 }
 
-const TONES: Tone[] = ['flame', 'marigold', 'forest', 'sand', 'ink'];
+/** The placeholder colours, in the order a hash picks from them. */
+const TONES = ['flame', 'marigold', 'forest', 'sand', 'ink'] as const;
 
 /** A stable tone for a recipe, so its placeholder colour doesn't change. */
 export function toneFor(text: string): Tone {
-  let hash = 0;
-  for (const char of text) {
-    hash = (hash * 31 + char.charCodeAt(0)) % 997;
-  }
-  return TONES[hash % TONES.length]!;
+  // A small rolling hash over the characters; kept below 997 so it never
+  // outgrows a safe integer however long the text is.
+  const hash = [...text].reduce(
+    (sum, char) => (sum * 31 + char.charCodeAt(0)) % 997,
+    0,
+  );
+  return TONES.at(hash % TONES.length) ?? TONES[0];
 }
 
 /**
@@ -70,9 +74,10 @@ export function toneFor(text: string): Tone {
  * before the first separator.
  */
 export function cleanTitle(title: string): string {
-  return title.split(/\s+[|–—]\s+/)[0]!.trim() || title;
+  return (title.split(/\s+[|–—]\s+/)[0] ?? title).trim() || title;
 }
 
+/** The difficulty a tag value names, or nothing if it isn't one of the three. */
 function levelOf(value: string | undefined): DifficultyLevel | undefined {
   return value === 'Easy' || value === 'Medium' || value === 'Hard'
     ? value
@@ -81,11 +86,13 @@ function levelOf(value: string | undefined): DifficultyLevel | undefined {
 
 /** A cached row as a card, with the heart state the caller already knows. */
 export function toCardRecipe(
-  row: Pick<Recipe, 'drive_file_id' | 'name' | 'source'> & {
-    tags?: string | null;
-  },
+  row: Readonly<
+    Pick<Recipe, 'drive_file_id' | 'name' | 'source'> & {
+      tags?: string | null;
+    }
+  >,
   favourite: boolean,
-  options: { withSource?: boolean } = {},
+  options: Readonly<{ withSource?: boolean }> = {},
 ): CardRecipe {
   const parsed = parseRecipe(row.source, row.name);
   const tags = rowTags({ source: row.source, name: row.name }, parsed);

@@ -1,8 +1,12 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
+import type { Database } from '../../../src/lib/db/client';
+import type { User } from '../../../src/lib/db/users';
 import {
   deleteRecipe,
+  deleteRecipeForUser,
   type DeleteDeps,
+  type DeleteLiveDeps,
 } from '../../../src/lib/recipe/delete-recipe';
 
 /** Fake dependencies; `overrides` swap individual behaviours. */
@@ -46,5 +50,47 @@ describe('deleteRecipe', () => {
     });
     await expect(deleteRecipe(d, 'abc')).rejects.toThrow('403');
     expect(d.calls.forget).not.toHaveBeenCalled();
+  });
+});
+
+describe('deleteRecipeForUser', () => {
+  const db = {} as Database;
+  const user = { id: 5 } as unknown as User;
+
+  /** Fake collaborators; the user owns the ids in `owned`. */
+  function liveDeps(owned: readonly string[] = ['abc']) {
+    const calls: string[] = [];
+    const deps: DeleteLiveDeps = {
+      database: () => db,
+      accessToken: async () => 'tok',
+      findRecipe: async (_db, _uid, id) =>
+        owned.includes(id) ? {} : undefined,
+      trashFile: jest.fn<DeleteLiveDeps['trashFile']>(async () => {
+        calls.push('trash');
+        return 'trashed' as const;
+      }),
+      deleteData: jest.fn<DeleteLiveDeps['deleteData']>(async () => {
+        calls.push('deleteData');
+      }),
+      refreshSimilar: jest.fn<DeleteLiveDeps['refreshSimilar']>(async () => {
+        calls.push('refreshSimilar');
+      }),
+    };
+    return { deps, calls };
+  }
+
+  it('trashes the file, then forgets the cache and refreshes similar lists', async () => {
+    const { deps, calls } = liveDeps();
+    expect(await deleteRecipeForUser(user, 'abc', deps)).toBe('deleted');
+    expect(calls).toEqual(['trash', 'deleteData', 'refreshSimilar']);
+    expect(deps.trashFile).toHaveBeenCalledWith('abc', 'tok');
+    expect(deps.deleteData).toHaveBeenCalledWith(expect.anything(), 5, 'abc');
+    expect(deps.refreshSimilar).toHaveBeenCalledWith(expect.anything(), 5);
+  });
+
+  it('touches nothing for a recipe the user does not have', async () => {
+    const { deps, calls } = liveDeps([]);
+    expect(await deleteRecipeForUser(user, 'abc', deps)).toBe('not-found');
+    expect(calls).toEqual([]);
   });
 });
