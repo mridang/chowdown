@@ -142,10 +142,7 @@ export function classify(
   if (pathname === '/api/recipe-imports' && method === 'POST') {
     return 'import';
   }
-  if (
-    pathname === '/rpc/tag-recipe' ||
-    pathname === '/api/recipe-suggestions'
-  ) {
+  if (pathname === '/api/recipe-suggestions') {
     return 'expensive';
   }
   if (pathname === '/api/cover-images') {

@@ -16,7 +16,7 @@
 
 import { removeEmptyMetadata, sourceUrlOf, upsertMetadata } from './cook-text';
 import { parseRecipe } from './cooklang';
-import { hasAuthor, withAuthor } from './author';
+import { withAuthor } from './author';
 import { withoutScriptsAndStyles } from './html-text';
 import { fetchPage } from './fetch-page';
 import { extractOgImage, extractRecipeFromHtml } from './import-schema-org';
@@ -210,23 +210,6 @@ export async function addMissingCover(source: string): Promise<string> {
     (fromJsonLd && /^>>\s*images:\s*(\S+)/im.exec(fromJsonLd)?.[1]) ||
     extractOgImage(page, url);
   return image ? upsertMetadata(source, [['images', image]]) : source;
-}
-
-/**
- * Backfill a missing author. If the recipe names no author but does record a
- * `>> source:` page, make one best-effort fetch of it and have the author read
- * from it (what the page declares, else what the model finds in it; see
- * `author.ts`). Returns the source unchanged when it already has an author, has
- * no source, the page can't be fetched, or no credible name is found — so it is
- * always safe to call.
- */
-export async function addMissingAuthor(
-  source: string,
-  env: Pick<CloudflareEnv, 'AI'>,
-): Promise<string> {
-  const url = hasAuthor(source) ? undefined : sourceUrlOf(source);
-  const page = url ? await fetchPageOrNull(url) : null;
-  return page === null ? source : withAuthor(source, page, env);
 }
 
 /**

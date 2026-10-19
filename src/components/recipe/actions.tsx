@@ -1,17 +1,14 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 
 import {
   CheckIcon,
   PrinterIcon,
   ShareIcon,
-  SparkIcon,
   TrashIcon,
 } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { problemError, problemText } from '@/lib/problem-message';
 import {
   POPOVER_ITEM,
   Popover,
@@ -111,54 +108,8 @@ export function focusMoreActionsButton(
 }
 
 /**
- * Whether the auto-tag endpoint's answer says the recipe was tagged. The body
- * comes off the network, so it is checked rather than trusted: anything but
- * `{ "tagged": true }` counts as "not tagged".
- */
-export function wasTagged(body: unknown): boolean {
-  return (
-    typeof body === 'object' &&
-    body !== null &&
-    'tagged' in body &&
-    body.tagged === true
-  );
-}
-
-/** How auto-tagging ended, and the sentence to show for it. */
-export type AutoTagOutcome = Readonly<{ tagged: boolean; message: string }>;
-
-/**
- * Ask the server to tag a recipe (`POST /rpc/tag-recipe`) and say how it went.
- * Never throws: a refusal carries the server's own words, anything else a fixed
- * sentence.
- */
-export async function requestAutoTag(
-  recipeId: string,
-): Promise<AutoTagOutcome> {
-  try {
-    const res = await fetch('/rpc/tag-recipe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recipe_id: recipeId }),
-    });
-    if (!res.ok) {
-      throw await problemError(res);
-    }
-    return wasTagged(await res.json())
-      ? { tagged: true, message: 'Tags updated.' }
-      : { tagged: false, message: "Couldn't tag this one." };
-  } catch (error) {
-    return { tagged: false, message: problemText(error, 'Tagging failed.') };
-  }
-}
-
-/**
- * The less-used actions, tucked in a menu: auto-tag the recipe (Workers AI
- * classifies it against the curated taxonomy and writes the tags into the
- * `.cook` file), print it, or delete it after a confirmation.
- *
- * Progress and failures are announced in a small status message at the foot of
- * the screen, since the menu closes as soon as an item is chosen.
+ * The less-used actions, tucked in a menu: print the recipe, or delete it after
+ * a confirmation.
  */
 export function MoreMenu({
   recipeId,
@@ -167,21 +118,9 @@ export function MoreMenu({
   recipeId: string;
   title: string;
 }>): ReactElement {
-  const router = useRouter();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [status, setStatus] = useState('');
-  const [tagging, setTagging] = useState(false);
-  const clear = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const menuRoot = useRef<HTMLDivElement>(null);
   const deleteWasOpen = useRef(false);
-
-  // Show a message for a few seconds, then let it go.
-  const say = (message: string) => {
-    clearTimeout(clear.current);
-    setStatus(message);
-    clear.current = setTimeout(() => setStatus(''), 4000);
-  };
-  useEffect(() => () => clearTimeout(clear.current), []);
 
   // When the delete dialog closes, give focus back to the menu button. This is
   // an effect, not part of the close handler, so it runs after the dialog has
@@ -193,17 +132,6 @@ export function MoreMenu({
     deleteWasOpen.current = confirmingDelete;
   }, [confirmingDelete]);
 
-  const autoTag = async () => {
-    setTagging(true);
-    say('Tagging this recipe…');
-    const outcome = await requestAutoTag(recipeId);
-    say(outcome.message);
-    if (outcome.tagged) {
-      router.refresh();
-    }
-    setTagging(false);
-  };
-
   return (
     <>
       {/* `contents` keeps this wrapper out of the layout; it only gives the ref. */}
@@ -214,15 +142,6 @@ export function MoreMenu({
           buttonClassName="rounded-control border-field hover:border-ink grid h-10 w-10 place-items-center border bg-white text-xl leading-none transition focus-ring"
           panelClassName="print:hidden"
         >
-          <button
-            type="button"
-            disabled={tagging}
-            onClick={() => void autoTag()}
-            className={POPOVER_ITEM}
-          >
-            <SparkIcon size="menu" className="text-subtle" />
-            Auto-tag
-          </button>
           <button
             type="button"
             // Let the menu finish closing so it isn't in the printed page.
@@ -250,17 +169,6 @@ export function MoreMenu({
         open={confirmingDelete}
         onOpenChange={setConfirmingDelete}
       />
-
-      <p
-        role="status"
-        className={
-          status
-            ? 'rounded-control bg-ink fixed bottom-4 left-1/2 z-50 -translate-x-1/2 px-4 py-2 text-sm font-medium text-white print:hidden'
-            : 'sr-only'
-        }
-      >
-        {status}
-      </p>
     </>
   );
 }

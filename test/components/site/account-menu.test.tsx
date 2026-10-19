@@ -59,20 +59,3 @@ describe('AccountMenu’s destructive item', () => {
     expect(out).not.toContain('Delete your account?');
   });
 });
-
-describe('AccountMenu’s bulk author search', () => {
-  const menu = (driveConnected: boolean) =>
-    htmlAt(
-      <AccountMenu
-        firstName="Ada"
-        name="Ada Lovelace"
-        email="ada@example.com"
-        drive={driveLink({ driveConnected })}
-      />,
-    );
-
-  it('keeps its dialog outside the menu, closed, until it is asked for', () => {
-    expect(menu(true)).not.toContain('Find missing authors');
-    expect(menu(true).match(/<dialog/g)).toHaveLength(2);
-  });
-});

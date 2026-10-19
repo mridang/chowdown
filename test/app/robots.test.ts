@@ -43,7 +43,6 @@ describe('robots.txt', () => {
     '/connect',
     '/api/mcp',
     '/oauth/authorize',
-    '/rpc/tag-recipe',
   ])('asks them to stay out of %s', (target) => {
     expect(allowed(target)).toBe(false);
   });

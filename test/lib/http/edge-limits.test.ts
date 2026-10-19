@@ -48,7 +48,6 @@ describe('classify', () => {
     ['DELETE', '/api/sessions/self', 'auth'],
     ['POST', '/api/recipe-imports', 'import'],
     ['GET', '/api/recipe-imports', 'api'],
-    ['POST', '/rpc/tag-recipe', 'expensive'],
     ['GET', '/api/recipe-suggestions', 'expensive'],
     ['GET', '/api/cover-images', 'cover'],
     ['GET', '/api/recipes', 'api'],

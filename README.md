@@ -154,8 +154,7 @@ and `/api/recipe-suggestions` answer `409 /problems/drive-not-connected` until
 the person has connected it in the browser. Everything that is not a resource stays out
 of the API: MCP (`/api/mcp`), OAuth (`/oauth/*`, `/.well-known/*`), the Google
 sign-in and Drive-connection redirects (`/api/auth/*`), the health check, the
-cover-image proxy (`/api/cover-images`) and auto-tagging (`POST /rpc/tag-recipe`,
-a model call).
+cover-image proxy (`/api/cover-images`).
 
 ## Deploy
 
@@ -194,7 +193,7 @@ client call `/api/mcp`; leave it unset for assistants that run on a server.
    Security, WAF, Rate limiting rules) to stop a flood before the Worker is
    invoked at all.
 2. Exact, durable counters in D1: OAuth client registration, token endpoint,
-   per-user MCP calls, and the daily budgets for imports, tagging, suggestions
+   per-user MCP calls, and the daily budgets for imports, suggestions
    and the assistant tools that call a model (`src/lib/util/daily-budget.ts`).
 3. Hard caps inside a request: ten links or recipes per import, body sizes,
    page and image byte caps, 5,000 Cooklang lines.

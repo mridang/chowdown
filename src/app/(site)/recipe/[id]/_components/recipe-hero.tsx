@@ -12,11 +12,7 @@ import { sentenceCase } from '@/lib/format';
 import type { Tone } from '@/lib/recipe/card-data';
 import type { StepToken } from '@/lib/recipe/cooklang';
 
-import { driveConnectHref } from '@/lib/auth/drive-access';
-import { domainOf } from '@/lib/recipe/cook-text';
-
 import { AuthorLine, SourceLine } from './byline';
-import { FindAuthorButton } from './find-author-button';
 
 /**
  * The trail above the title: always "Recipes", plus the recipe's cuisine (a
@@ -80,7 +76,6 @@ export function RecipeHero({
   sourceText,
   sourceUrl,
   author,
-  driveConnected = false,
   video,
   steps,
   favourite,
@@ -99,24 +94,14 @@ export function RecipeHero({
   sourceUrl?: string;
   /** Who wrote the recipe, shown under the title in a handwriting face. */
   author?: string;
-  /** Whether Google Drive is connected, which "Find the author" needs to save what it finds. */
-  driveConnected?: boolean;
   /** A video for the recipe, when it links one. */
   video?: string;
   steps: readonly (readonly StepToken[])[];
   favourite: boolean;
 }>): ReactElement {
   const eyebrow = heroEyebrow(cuisine, course);
-  // Where the author line goes: the name, or (when the recipe has a source
-  // page to read it from, and a Drive to save it to) the button that finds it.
-  const authorSlot = author ? (
-    <AuthorLine name={author} />
-  ) : driveConnected && sourceUrl && domainOf(sourceUrl) ? (
-    <FindAuthorButton
-      recipeId={recipeId}
-      connectHref={driveConnectHref(`/recipe/${recipeId}`)}
-    />
-  ) : null;
+  // Where the author line goes: the name, when the recipe has one.
+  const authorSlot = author ? <AuthorLine name={author} /> : null;
   const source = (
     <>
       <SourceLine value={sourceText} url={sourceUrl} />

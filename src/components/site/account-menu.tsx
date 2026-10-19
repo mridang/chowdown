@@ -7,7 +7,6 @@ import {
   ChevronIcon,
   LogoutIcon,
   PlugIcon,
-  SearchIcon,
   SparkIcon,
   TrashIcon,
 } from '@/components/icons';
@@ -20,7 +19,6 @@ import {
 
 import { MenuLink } from './menu-link';
 import { DeleteAccountDialog } from './delete-account-dialog';
-import { FindAuthorsDialog } from './find-authors-dialog';
 import type { DriveLink } from './drive-link';
 import { InstallIosHint } from './install-ios-hint';
 import { useInstallPrompt } from './use-install-prompt';
@@ -75,10 +73,10 @@ async function signOut(): Promise<void> {
 /**
  * The signed-in account control. Closed, it is the person's photo and "Hi
  * Mridang"; opened, it says which account you are in and offers only what the
- * header doesn't already (connecting an assistant, installing the app, and
- * "Find missing authors" once Drive is connected), Sign
- * out, and Delete account (which asks first). The recipe links live in the header itself. Google Drive shows here
- * as the same entry as the header's button: "Connect Google Drive", then "Open Drive" once connected.
+ * header doesn't already (connecting an assistant, installing the app), Sign
+ * out, and Delete account (which asks first). The recipe links live in the
+ * header itself. Google Drive shows here as the same entry as the header's
+ * button: "Connect Google Drive", then "Open Drive" once connected.
  */
 export function AccountMenu({
   firstName,
@@ -96,7 +94,6 @@ export function AccountMenu({
 }>): ReactElement {
   const [busy, setBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [findingAuthors, setFindingAuthors] = useState(false);
   const { install } = useInstallPrompt();
   return (
     <>
@@ -126,18 +123,6 @@ export function AccountMenu({
           Connect an assistant
         </Link>
         <MenuLink {...drive} icon="drive" />
-        {drive.external ? (
-          // Only once Drive is connected: authors are saved into the recipe
-          // files there, so there is nothing to do before that.
-          <button
-            type="button"
-            onClick={() => setFindingAuthors(true)}
-            className={POPOVER_ITEM}
-          >
-            <SearchIcon size="menu" className="text-subtle" />
-            Find missing authors
-          </button>
-        ) : null}
         {install ? (
           <button
             type="button"
@@ -173,10 +158,6 @@ export function AccountMenu({
         </button>
       </Popover>
       {/* Outside the popover: the menu unmounts its items the moment one is chosen. */}
-      <FindAuthorsDialog
-        open={findingAuthors}
-        onOpenChange={setFindingAuthors}
-      />
       <DeleteAccountDialog
         open={confirmingDelete}
         onOpenChange={setConfirmingDelete}

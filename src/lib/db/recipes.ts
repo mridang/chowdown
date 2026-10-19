@@ -8,18 +8,7 @@
  * upserted during sync.
  */
 
-import {
-  and,
-  asc,
-  count,
-  eq,
-  gt,
-  inArray,
-  isNotNull,
-  isNull,
-  ne,
-  notLike,
-} from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import { normalizeSourceUrl, sourceUrlOf } from '../recipe/cook-text';
 import { chunked } from './chunk';
@@ -124,50 +113,6 @@ export async function getRecipeByFileId(
       eq(recipes.drive_file_id, driveFileId),
     ),
   });
-}
-
-/** A recipe that has a source page but names no author. */
-export type AuthorlessRecipe = Pick<Recipe, 'drive_file_id' | 'name'>;
-
-/**
- * The next recipes of a person that have a source page but no `>> author:` (or
- * `>> by:`) line, in a stable order (by Drive file id) after `after`, and how
- * many such recipes are left after the last one returned. These are the ones
- * the author can still be looked up for.
- *
- * @param after - The last file id already handled, or '' to start from the beginning.
- * @param limit - The most recipes to return.
- */
-export async function listAuthorlessRecipes(
-  db: Database,
-  userId: number,
-  after: string,
-  limit: number,
-): Promise<{
-  readonly rows: readonly AuthorlessRecipe[];
-  readonly remaining: number;
-}> {
-  const wanted = (from: string) =>
-    and(
-      eq(recipes.user_id, userId),
-      isNotNull(recipes.source_url),
-      ne(recipes.source_url, ''),
-      gt(recipes.drive_file_id, from),
-      notLike(recipes.source, '%>> author:%'),
-      notLike(recipes.source, '%>> by:%'),
-    );
-  const rows = await db
-    .select({ drive_file_id: recipes.drive_file_id, name: recipes.name })
-    .from(recipes)
-    .where(wanted(after))
-    .orderBy(asc(recipes.drive_file_id))
-    .limit(limit);
-  const last = rows.at(-1)?.drive_file_id ?? after;
-  const [left] = await db
-    .select({ n: count() })
-    .from(recipes)
-    .where(wanted(last));
-  return { rows, remaining: left?.n ?? 0 };
 }
 
 /** Statements per D1 batch when filling in `source_url` (well under D1's limit). */

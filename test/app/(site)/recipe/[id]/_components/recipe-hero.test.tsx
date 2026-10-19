@@ -150,49 +150,5 @@ describe('RecipeHero', () => {
     const out = markup();
     expect(out).not.toContain('font-hand');
     expect(out).not.toContain('From');
-    expect(out).not.toContain('Find the author');
-  });
-});
-
-describe('RecipeHero\'s "Find the author"', () => {
-  const steps = [[{ kind: 'text' as const, text: 'Chop.' }]];
-  const markup = (over: Partial<Parameters<typeof RecipeHero>[0]> = {}) =>
-    htmlAt(
-      <RecipeHero
-        recipeId="dal"
-        title="Dal"
-        images={[]}
-        tone="forest"
-        steps={steps}
-        favourite={false}
-        sourceUrl="https://cookwell.com/recipe/dal"
-        driveConnected
-        {...over}
-      />,
-      { pathname: '/recipe/dal' },
-    );
-
-  it('stands where the author line would, under the title and before the actions', () => {
-    const out = markup();
-    expect(out.indexOf('</h1>')).toBeLessThan(out.indexOf('Find the author'));
-    expect(out.indexOf('Find the author')).toBeLessThan(
-      out.indexOf('Cook mode'),
-    );
-    expect(out.indexOf('Cook mode')).toBeLessThan(out.indexOf('>From<'));
-  });
-
-  it('is left out once the recipe has an author', () => {
-    expect(markup({ author: 'Ada' })).not.toContain('Find the author');
-  });
-
-  it('is left out when there is no source page to read', () => {
-    expect(markup({ sourceUrl: undefined })).not.toContain('Find the author');
-    expect(
-      markup({ sourceUrl: 'not a url', sourceText: 'Grandma' }),
-    ).not.toContain('Find the author');
-  });
-
-  it('is left out when Drive is not connected', () => {
-    expect(markup({ driveConnected: false })).not.toContain('Find the author');
   });
 });

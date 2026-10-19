@@ -33,8 +33,7 @@ info:
 
     Not part of this API: the MCP endpoint (`/api/mcp`, JSON-RPC), the OAuth
     endpoints (`/oauth/*`, `/.well-known/*`), the Google sign-in redirects
-    (`/api/auth/*`) and the health check. Auto-tagging (`POST /rpc/tag-recipe`)
-    is a model call rather than a resource, so it lives outside the API too.
+    (`/api/auth/*`) and the health check.
   contact:
     name: chowdown
     url: https://chowdown.apps.mrida.ng

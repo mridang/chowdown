@@ -1,12 +1,10 @@
-import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 
 import {
   focusMoreActionsButton,
   MoreMenu,
-  requestAutoTag,
   ShareButton,
   shareLink,
-  wasTagged,
 } from '../../../src/components/recipe/actions';
 import { htmlAt } from '../render';
 
@@ -55,7 +53,6 @@ describe('MoreMenu', () => {
   });
 
   it('keeps the actions out of the page until the menu is opened', () => {
-    expect(out).not.toContain('Auto-tag');
     expect(out).not.toContain('Print');
   });
 
@@ -63,22 +60,9 @@ describe('MoreMenu', () => {
     expect(out).not.toContain('Delete this recipe?');
   });
 
-  it('has a status line for progress and failures, empty to begin with', () => {
-    expect(out).toMatch(/<p role="status"[^>]*><\/p>/);
-  });
-});
-
-describe('wasTagged', () => {
-  it('is true only for { tagged: true }', () => {
-    expect(wasTagged({ tagged: true })).toBe(true);
-    expect(wasTagged({ tagged: false })).toBe(false);
-  });
-
-  it('is false for anything else the network might hand back', () => {
-    expect(wasTagged(null)).toBe(false);
-    expect(wasTagged('tagged')).toBe(false);
-    expect(wasTagged({})).toBe(false);
-    expect(wasTagged({ tagged: 'yes' })).toBe(false);
+  it('offers only what is still a recipe action: nothing that is a one-off job', () => {
+    expect(out).not.toContain('Auto-tag');
+    expect(out).not.toContain('role="status"');
   });
 });
 
@@ -125,60 +109,5 @@ describe('shareLink', () => {
 
   it('fails quietly when there is neither a share sheet nor a clipboard', async () => {
     await expect(shareLink({}, link)).resolves.toBe('failed');
-  });
-});
-
-describe('requestAutoTag', () => {
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
-  it('posts the recipe id as JSON and reports the tags updated', async () => {
-    const fetcher = jest
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(Response.json({ tagged: true }));
-    await expect(requestAutoTag('dal')).resolves.toEqual({
-      tagged: true,
-      message: 'Tags updated.',
-    });
-    const [url, init] = fetcher.mock.calls[0] ?? [];
-    expect(url).toBe('/rpc/tag-recipe');
-    expect(init?.method).toBe('POST');
-    expect(JSON.parse(String(init?.body))).toEqual({ recipe_id: 'dal' });
-  });
-
-  it('says so when the model found nothing to tag', async () => {
-    jest
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(Response.json({ tagged: false }));
-    await expect(requestAutoTag('dal')).resolves.toEqual({
-      tagged: false,
-      message: "Couldn't tag this one.",
-    });
-  });
-
-  it('shows the server’s own words when it refuses', async () => {
-    jest
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(
-        Response.json(
-          { detail: 'Connect Google Drive first.' },
-          { status: 409 },
-        ),
-      );
-    await expect(requestAutoTag('dal')).resolves.toEqual({
-      tagged: false,
-      message: 'Connect Google Drive first.',
-    });
-  });
-
-  it('shows a plain sentence when the request fails outright', async () => {
-    jest
-      .spyOn(globalThis, 'fetch')
-      .mockRejectedValue(new TypeError('Failed to fetch'));
-    await expect(requestAutoTag('dal')).resolves.toEqual({
-      tagged: false,
-      message: 'Tagging failed.',
-    });
   });
 });

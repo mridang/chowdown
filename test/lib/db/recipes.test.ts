@@ -5,7 +5,6 @@ import {
   deleteRecipeData,
   findRecipeBySourceUrl,
   getRecipeByFileId,
-  listAuthorlessRecipes,
   staleRecipeIds,
   upsertRecipe,
 } from '../../../src/lib/db/recipes';
@@ -211,64 +210,5 @@ describe('staleRecipeIds', () => {
         '2026-01-03T00:00:00.000Z',
       ),
     ).toEqual([]);
-  });
-});
-
-describe('listAuthorlessRecipes', () => {
-  const sourced = '>> source: https://a.test/x\n\nCook.\n';
-
-  it("lists a person's recipes that have a source page and no author, in file id order", async () => {
-    const made = seeded();
-    await save(made, 1, 'c', sourced);
-    await save(made, 1, 'a', sourced);
-    await save(made, 1, 'b', sourced);
-    const { rows, remaining } = await listAuthorlessRecipes(made.db, 1, '', 2);
-    expect(rows.map((r) => r.drive_file_id)).toEqual(['a', 'b']);
-    expect(remaining).toBe(1);
-  });
-
-  it('starts after the given file id', async () => {
-    const made = seeded();
-    await Promise.all(['a', 'b', 'c'].map((id) => save(made, 1, id, sourced)));
-    const { rows, remaining } = await listAuthorlessRecipes(made.db, 1, 'a', 5);
-    expect(rows.map((r) => r.drive_file_id)).toEqual(['b', 'c']);
-    expect(remaining).toBe(0);
-  });
-
-  it('counts what is left after the cursor when no rows are asked for', async () => {
-    const made = seeded();
-    await Promise.all(['a', 'b', 'c'].map((id) => save(made, 1, id, sourced)));
-    expect(await listAuthorlessRecipes(made.db, 1, 'a', 0)).toEqual({
-      rows: [],
-      remaining: 2,
-    });
-  });
-
-  it.each([
-    [
-      'one with an author',
-      '>> source: https://a.test/x\n>> author: Jane Cook\n\nCook.\n',
-    ],
-    [
-      'one with a by line',
-      '>> source: https://a.test/x\n>> by: Jane Cook\n\nCook.\n',
-    ],
-    ['one with no source page', '>> title: T\n\nCook.\n'],
-  ])('leaves out %s', async (_label, source) => {
-    const made = seeded();
-    await save(made, 1, 'a', source);
-    expect(await listAuthorlessRecipes(made.db, 1, '', 5)).toEqual({
-      rows: [],
-      remaining: 0,
-    });
-  });
-
-  it("never lists another person's recipes", async () => {
-    const made = seeded();
-    await save(made, 2, 'theirs', sourced);
-    expect(await listAuthorlessRecipes(made.db, 1, '', 5)).toEqual({
-      rows: [],
-      remaining: 0,
-    });
   });
 });
