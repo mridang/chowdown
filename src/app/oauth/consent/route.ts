@@ -7,14 +7,19 @@
 
 import { NextResponse } from 'next/server';
 
-import { getSessionUid } from '@/lib/auth/current-user';
+import { getLiveSessionUid } from '@/lib/auth/current-user';
 import { createOAuthStore, resolveClient } from '@/lib/db/oauth';
+import { readFormBody } from '@/lib/http/body';
 import {
   authorizeParamsFrom,
+  grantedScope,
   redirectWith,
   validateAuthorizeRequest,
 } from '@/lib/oauth/authorize-request';
 import { isSameOriginPost } from '@/lib/oauth/csrf';
+import { MAX_OAUTH_FORM_BYTES } from '@/lib/oauth/http';
+import { clientAddress } from '@/lib/oauth/limits';
+import { logSecurityEvent } from '@/lib/oauth/security-log';
 import { issueAuthorizationCode } from '@/lib/oauth/token-endpoint';
 import { appOrigin, getDatabase } from '@/lib/util';
 
@@ -39,28 +44,37 @@ const refuse = (
  * cancelled or when the request has a problem after the address was checked),
  * 400 with a plain message when the client or redirect address cannot be
  * trusted or the form is unreadable, 401 when nobody is signed in, 403 for a
- * cross-site post and 429 when too many client metadata documents are being
- * fetched at the moment.
+ * cross-site post, 413 for a form over 16 KiB and 429 when too many client
+ * metadata documents are being fetched at the moment. An `access` field of
+ * `read` approves the app with read-only access even if it asked to edit.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const origin = appOrigin(request);
   if (!isSameOriginPost(request.headers, origin)) {
     return refuse('Cross-site request refused.', 403);
   }
-  const uid = await getSessionUid();
+  // The live check, not the cookie alone: approving hands out a token that
+  // outlives the browser session, so a session the person has ended
+  // ("sign out everywhere") must not be able to approve.
+  const uid = await getLiveSessionUid();
   if (uid === null) {
     return refuse('Sign in first.', 401);
   }
 
-  const form = await request.formData().catch(() => null);
-  if (!form) {
+  const body = await readFormBody(request, MAX_OAUTH_FORM_BYTES);
+  if (body.kind === 'too-large') {
+    return refuse('The form is too large.', 413);
+  }
+  if (body.kind !== 'ok') {
     return refuse('The form could not be read.', 400);
   }
+  const { form } = body;
   const db = getDatabase();
+  const address = clientAddress(request.headers);
   const check = await validateAuthorizeRequest(
     authorizeParamsFrom(form),
     origin,
-    (id) => resolveClient(db, id),
+    (id) => resolveClient(db, id, fetch, { origin, address }),
   );
   if (!check.ok) {
     // Only redirect when the redirect target was verified.
@@ -80,21 +94,42 @@ export async function POST(request: Request): Promise<NextResponse> {
       : refuse(check.description, 429, check.retryAfterSeconds);
   }
 
-  const { client, redirectUri, state, codeChallenge, scope, resource } =
-    check.request;
+  const {
+    client,
+    redirectUri,
+    redirectUriSent,
+    state,
+    codeChallenge,
+    scope: requested,
+    resource,
+  } = check.request;
   if (form.get('decision') !== 'approve') {
+    logSecurityEvent('oauth.consent_denied', {
+      clientId: client.clientId,
+      userId: uid,
+    });
     return NextResponse.redirect(
       redirectWith(redirectUri, { error: 'access_denied', state, iss: origin }),
       303,
     );
   }
 
+  const scope = grantedScope(requested, form.get('access'));
+  if (scope.join(' ') !== requested.join(' ')) {
+    logSecurityEvent('oauth.scope_narrowed', {
+      clientId: client.clientId,
+      userId: uid,
+      requested: requested.join(' '),
+      granted: scope.join(' '),
+    });
+  }
   const code = await issueAuthorizationCode(
     createOAuthStore(db),
     {
       clientId: client.clientId,
       userId: uid,
       redirectUri,
+      redirectUriSent,
       codeChallenge,
       scope,
       resource,

@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   APP_SCHEME_WARNING,
   LOOPBACK_WARNING,
+  PRIVATE_WARNING,
   MAX_DISPLAY_NAME_LENGTH,
   NEUTRAL_CLIENT_NAME,
   clientIdentity,
@@ -109,6 +110,7 @@ describe('describeRedirect', () => {
         kind: 'web',
         short: 'claude.ai',
         warning: undefined,
+        note: undefined,
       },
     );
   });
@@ -149,8 +151,96 @@ describe('describeRedirect', () => {
     );
   });
 
-  it('shows an unreadable address as written', () => {
-    expect(describeRedirect('not a url').short).toBe('not a url');
+  it('shows the ASCII form of an international host, so a look-alike cannot pass for the real one', () => {
+    const redirect = describeRedirect('https://xn--clude-5ve.ai/cb');
+    expect(redirect.address).toBe('https://xn--clude-5ve.ai/cb');
+    expect(redirect.short).toBe('xn--clude-5ve.ai');
+    // `URL` itself turns a Unicode host into this form.
+    expect(describeRedirect('https://cl\u0430ude.ai/cb').address).toBe(
+      'https://xn--clude-5ve.ai/cb',
+    );
+  });
+
+  it('never lets a direction-changing or invisible character reach the screen', () => {
+    const address = describeRedirect(
+      'https://claude.ai/\u202efoo\u200b',
+    ).address;
+    expect(address).not.toMatch(/[^\x21-\x7e]/);
+    expect(address).toBe('https://claude.ai/%E2%80%AEfoo%E2%80%8B');
+    const unreadable = describeRedirect('not a url \u202e');
+    expect(unreadable.address).not.toMatch(/[^\x21-\x7e]/);
+    expect(unreadable.address).toContain('\\u{202e}');
+  });
+
+  it.each([
+    'https://localhost/cb',
+    'https://127.0.0.1:8443/cb',
+    'https://foo.localhost/cb',
+  ])('warns that %s is the person own computer, whatever the scheme', (uri) => {
+    expect(describeRedirect(uri)).toMatchObject({
+      kind: 'loopback',
+      warning: LOOPBACK_WARNING,
+    });
+  });
+
+  it.each([
+    'https://192.168.1.5/cb',
+    'https://printer.local/cb',
+    'https://[fd00::1]/cb',
+  ])('warns that %s is on a private network', (uri) => {
+    expect(describeRedirect(uri)).toMatchObject({
+      kind: 'private',
+      warning: PRIVATE_WARNING,
+    });
+  });
+
+  describe('the note about a different site', () => {
+    const published = { kind: 'domain', domain: 'claude.ai' } as const;
+
+    it('stays quiet when the redirect is on the publishing domain or one of its subdomains', () => {
+      for (const uri of [
+        'https://claude.ai/cb',
+        'https://app.claude.ai/cb',
+        'https://claude.ai:8443/cb',
+      ]) {
+        expect(describeRedirect(uri, published).note).toBeUndefined();
+      }
+    });
+
+    it('stays quiet when the publishing domain is a subdomain of the redirect host', () => {
+      expect(
+        describeRedirect('https://claude.ai/cb', {
+          kind: 'domain',
+          domain: 'app.claude.ai',
+        }).note,
+      ).toBeUndefined();
+    });
+
+    it('says so, neutrally, when the redirect is on an unrelated site', () => {
+      const { note } = describeRedirect(
+        'https://elsewhere.example/cb',
+        published,
+      );
+      expect(note).toContain('claude.ai');
+      expect(note).toContain('not on');
+    });
+
+    it('does not apply to an app address, to this computer or to an unverified client', () => {
+      expect(
+        describeRedirect('cursor://x.y/cb', published).note,
+      ).toBeUndefined();
+      expect(
+        describeRedirect('http://localhost:1/cb', published).note,
+      ).toBeUndefined();
+      expect(
+        describeRedirect('https://elsewhere.example/cb', { kind: 'unverified' })
+          .note,
+      ).toBeUndefined();
+    });
+  });
+
+  it('shows an unreadable address as written, with anything outside printable ASCII spelled out', () => {
+    expect(describeRedirect('not-a-url').short).toBe('not-a-url');
   });
 });
 

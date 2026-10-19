@@ -13,6 +13,7 @@ import {
   type OAuthClient,
 } from './client';
 import { OAUTH_LIMITS, retryAfterIfLimited } from './limits';
+import type { TextBody } from '../http/body';
 import type { RateLimitStore } from '../util/rate-limit';
 
 /** What a registration request came to. */
@@ -46,10 +47,11 @@ export interface RegistrationDeps {
  * Register a client from the text of a request body. `address` is who is asking
  * (see `clientAddress`). Every attempt counts against the limit, valid or not,
  * so a flood of garbage is throttled as well as a flood of clients; the body is
- * only read once the caller is within the limit.
+ * only read once the caller is within the limit, and `readBody` is expected to
+ * stop reading at a size cap (see `readBodyText`).
  */
 export async function handleRegistration(
-  readBody: () => Promise<string>,
+  readBody: () => Promise<TextBody>,
   address: string,
   deps: Readonly<RegistrationDeps>,
 ): Promise<RegistrationResult> {
@@ -62,7 +64,18 @@ export async function handleRegistration(
   if (wait !== undefined) {
     return { ok: false, limited: true, retryAfter: wait };
   }
-  const parsed = parseRegistrationText(await readBody());
+  const body = await readBody();
+  const parsed =
+    body.kind === 'ok'
+      ? parseRegistrationText(body.text)
+      : {
+          ok: false as const,
+          error: 'invalid_client_metadata' as const,
+          description:
+            body.kind === 'too-large'
+              ? 'The request is too large.'
+              : 'The request is not valid JSON.',
+        };
   if (!parsed.ok) {
     return {
       ok: false,

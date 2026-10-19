@@ -8,6 +8,8 @@
 
 import { NextResponse } from 'next/server';
 
+import { readFormBody, type FormBody } from '../http/body';
+
 /**
  * CORS for endpoints a browser-based client may call. The MCP headers are
  * spelled as the spec writes them (names are case-insensitive to a browser).
@@ -43,7 +45,11 @@ export function preflight(): NextResponse {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }
 
-/** A JSON response that must never be cached or stored. */
+/**
+ * A JSON response that must never be cached or stored. RFC 6749 §5.1 asks for
+ * both `Cache-Control: no-store` and `Pragma: no-cache` on token responses (the
+ * second is for HTTP/1.0 caches), so every response here carries both.
+ */
 export function noStoreJson(
   body: unknown,
   status = 200,
@@ -51,7 +57,12 @@ export function noStoreJson(
 ): NextResponse {
   return NextResponse.json(body, {
     status,
-    headers: { ...CORS_HEADERS, 'Cache-Control': 'no-store', ...extra },
+    headers: {
+      ...CORS_HEADERS,
+      'Cache-Control': 'no-store',
+      Pragma: 'no-cache',
+      ...extra,
+    },
   });
 }
 
@@ -70,4 +81,44 @@ export function bearerToken(request: Request): string | undefined {
   const header = request.headers.get('authorization') ?? '';
   const match = /^Bearer\s+(\S+)$/i.exec(header);
   return match?.[1];
+}
+
+/** Anything that looks up a submitted form field by name (`URLSearchParams` and `FormData` both do). */
+export type FormFields = Readonly<{ get(name: string): unknown }>;
+
+/** The most a token, revocation or consent form may weigh. Real ones are a few hundred bytes; the PKCE verifier, code and tokens are the bulk. */
+export const MAX_OAUTH_FORM_BYTES = 16_384;
+
+/** What reading an OAuth form request came to: the form, or why it could not be used. */
+export type OAuthForm = FormBody | { readonly kind: 'wrong-type' };
+
+/**
+ * Read a request body as the URL-encoded form OAuth requires (RFC 6749 §3.2 and
+ * §5), refusing a different declared content type, and anything over
+ * {@link MAX_OAUTH_FORM_BYTES} without buffering it. A request that declares no
+ * content type is read as a form, as lenient servers do.
+ */
+export async function readOAuthForm(request: Request): Promise<OAuthForm> {
+  const type = request.headers.get('content-type')?.toLowerCase();
+  if (type && !type.startsWith('application/x-www-form-urlencoded')) {
+    return { kind: 'wrong-type' };
+  }
+  return readFormBody(request, MAX_OAUTH_FORM_BYTES);
+}
+
+/** The OAuth error response for a form that could not be used (the `ok` case is not a failure). */
+export function formFailure(
+  form: Exclude<OAuthForm, { readonly kind: 'ok' }>,
+): NextResponse {
+  switch (form.kind) {
+    case 'wrong-type':
+      return oauthError(
+        'invalid_request',
+        'Send the request as application/x-www-form-urlencoded.',
+      );
+    case 'too-large':
+      return oauthError('invalid_request', 'The request is too large.');
+    case 'unreadable':
+      return oauthError('invalid_request', 'The request body is not readable.');
+  }
 }

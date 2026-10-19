@@ -7,6 +7,8 @@
  */
 
 import { oauthSweeps, saveClient } from '@/lib/db/oauth';
+import { readBodyText } from '@/lib/http/body';
+import { MAX_REGISTRATION_BYTES } from '@/lib/oauth/client';
 import { noStoreJson, oauthError, preflight } from '@/lib/oauth/http';
 import { clientAddress, tooManyRequests } from '@/lib/oauth/limits';
 import { handleRegistration } from '@/lib/oauth/register-request';
@@ -18,14 +20,14 @@ import { getDatabase, runInBackground } from '@/lib/util';
  * `POST /oauth/register`: register a public client from a JSON body. Anyone
  * may call it, up to a limit per address. Answers 201 with the new `client_id`
  * and its details, 429 (with `Retry-After`) when the address has registered too
- * much lately, or 400 with an OAuth error for a body that is too large, not
- * JSON, or not an acceptable client.
+ * much lately, or 400 with an OAuth error for a body that is too large (the
+ * body is read only up to the cap), not JSON, or not an acceptable client.
  */
 export async function POST(request: Request) {
   const db = getDatabase();
   const now = Math.floor(Date.now() / 1000);
   const result = await handleRegistration(
-    () => request.text(),
+    () => readBodyText(request, MAX_REGISTRATION_BYTES),
     clientAddress(request.headers),
     {
       rateLimits: d1RateLimitStore(db.$client),
@@ -38,7 +40,7 @@ export async function POST(request: Request) {
     return noStoreJson(result.body, 201);
   }
   return result.limited
-    ? tooManyRequests(result.retryAfter)
+    ? tooManyRequests(result.retryAfter, 'register')
     : oauthError(result.error, result.description);
 }
 

@@ -6,7 +6,7 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireUid } from '@/lib/api/auth';
+import { requireLiveUid } from '@/lib/api/auth';
 import { pageBody } from '@/lib/api/pagination';
 import { connectedAppResource } from '@/lib/connected-apps';
 import { listConnectedApps } from '@/lib/db/oauth';
@@ -18,7 +18,7 @@ import { getDatabase } from '@/lib/util';
  * nobody is signed in.
  */
 export async function GET(request: Request): Promise<NextResponse> {
-  const auth = await requireUid(request);
+  const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
   }

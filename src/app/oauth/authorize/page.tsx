@@ -16,6 +16,7 @@ import {
   type AuthorizeParams,
 } from '@/lib/oauth/authorize-request';
 import { clientIdentity, describeRedirect } from '@/lib/oauth/display';
+import { clientAddress } from '@/lib/oauth/limits';
 import { appOriginFromHeaders, getDatabase } from '@/lib/util';
 
 import { ConsentCard } from './consent-card';
@@ -36,10 +37,44 @@ function flatten(
 }
 
 /**
+ * A way back to an app that registered itself without any check. The error is
+ * not sent to it automatically (that would turn this site into a redirector
+ * anyone can aim at an address of their choosing); the person sees the address
+ * and decides.
+ */
+function ReturnToApp({
+  address,
+  href,
+}: Readonly<{ address: string; href: string }>): ReactElement {
+  return (
+    <p className="text-muted mt-5 text-sm leading-relaxed">
+      The app asked to be told about this at{' '}
+      <code className="font-semibold break-all">{address}</code>. It registered
+      itself without any check, so only go back if you started this connection
+      and trust it.{' '}
+      <a
+        href={href}
+        rel="noreferrer"
+        className="focus-ring rounded-control text-ember hover:text-ink underline underline-offset-4"
+      >
+        Return to the app
+      </a>
+    </p>
+  );
+}
+
+/**
  * The screen an assistant sends people to when they connect it: it shows who is
  * asking and what for, and the user approves or declines. Signing in (with
  * Google, as for the rest of the app) happens first if needed, then returns
  * here. The decision is posted to `/oauth/consent`, which re-checks everything.
+ *
+ * A problem with the request is shown on this page, not sent to the app's
+ * redirect address, unless the app's addresses come from a document its own
+ * domain published (see `AuthorizeCheck`). The page is served with status 200
+ * even for an error: a Server Component cannot set a status, and the error is
+ * for a person to read, not a program (a program is told about problems by the
+ * redirect, or at the token endpoint).
  */
 export default async function AuthorizePage({
   searchParams,
@@ -50,22 +85,25 @@ export default async function AuthorizePage({
 }>): Promise<ReactElement> {
   const raw = await searchParams;
   const params = flatten(raw);
-  const origin = appOriginFromHeaders(await headers());
+  const requestHeaders = await headers();
+  const origin = appOriginFromHeaders(requestHeaders);
+  const address = clientAddress(requestHeaders);
   const db = getDatabase();
 
   const check = await validateAuthorizeRequest(params, origin, (id) =>
-    resolveClient(db, id),
+    resolveClient(db, id, fetch, { origin, address }),
   );
   if (!check.ok) {
-    if (check.redirect) {
-      redirect(
-        redirectWith(check.redirect.uri, {
+    const errorUrl = check.redirect
+      ? redirectWith(check.redirect.uri, {
           error: check.error,
           error_description: check.description,
           state: check.redirect.state,
           iss: origin,
-        }),
-      );
+        })
+      : undefined;
+    if (check.redirect?.automatic && errorUrl) {
+      redirect(errorUrl);
     }
     return (
       <CenteredCard>
@@ -77,6 +115,12 @@ export default async function AuthorizePage({
         <p className="text-subtle mt-5 font-mono text-sm">
           Error: {check.error}
         </p>
+        {check.redirect && errorUrl ? (
+          <ReturnToApp
+            address={describeRedirect(check.redirect.uri).address}
+            href={errorUrl}
+          />
+        ) : null}
       </CenteredCard>
     );
   }
@@ -112,7 +156,7 @@ export default async function AuthorizePage({
       <ConsentCard
         clientName={client.name}
         identity={clientIdentity(client)}
-        redirect={describeRedirect(redirectUri)}
+        redirect={describeRedirect(redirectUri, clientIdentity(client))}
         scopes={scope}
         email={user.email}
         fields={AUTHORIZE_FIELDS.flatMap((name) => {

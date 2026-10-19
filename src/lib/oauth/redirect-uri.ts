@@ -46,8 +46,81 @@ const KNOWN_APP_SCHEMES: ReadonlySet<string> = new Set([
   'zed:',
 ]);
 
-/** How a redirect address reaches the client: over the web, to this computer, or to an installed app. */
-export type RedirectKind = 'web' | 'loopback' | 'app';
+/**
+ * How a redirect address reaches the client: over the web, to this computer
+ * (`loopback`), to a machine on a private network (`private`), or to an
+ * installed app.
+ */
+export type RedirectKind = 'web' | 'loopback' | 'private' | 'app';
+
+/** Name endings that only resolve inside a private network (mDNS, split-horizon DNS, home routers). */
+const PRIVATE_SUFFIXES = [
+  '.local',
+  '.internal',
+  '.lan',
+  '.home.arpa',
+  '.localdomain',
+  '.intranet',
+] as const;
+
+/** The four numbers of a dotted IPv4 address, or undefined if the host is not one. */
+function ipv4Octets(host: string): readonly number[] | undefined {
+  const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+  return match ? match.slice(1).map(Number) : undefined;
+}
+
+/** The IPv4 address an IPv4-mapped IPv6 host (`[::ffff:7f00:1]`, as `URL` writes it) stands for, as a dotted string. */
+function mappedIpv4(host: string): string | undefined {
+  const match = /^\[::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})\]$/.exec(host);
+  if (!match) {
+    return undefined;
+  }
+  const [high = 0, low = 0] = match.slice(1).map((g) => Number.parseInt(g, 16));
+  return [high >> 8, high & 255, low >> 8, low & 255].join('.');
+}
+
+/**
+ * Whether a host (as `URL.hostname` writes it: lower case, IPv4 in dotted form,
+ * IPv6 in brackets) is this very computer: `localhost` and its subdomains, the
+ * whole `127.0.0.0/8` block, `0.0.0.0` and `[::1]`.
+ */
+export function isLoopbackHost(host: string): boolean {
+  const ipv4 = ipv4Octets(mappedIpv4(host) ?? host);
+  return (
+    host === 'localhost' ||
+    host.endsWith('.localhost') ||
+    host === '[::1]' ||
+    host === '[::]' ||
+    (ipv4 !== undefined && (ipv4[0] === 127 || ipv4.every((n) => n === 0)))
+  );
+}
+
+/**
+ * Whether a host is on a private network rather than the public internet: the
+ * RFC 1918 blocks, link-local and carrier-grade-NAT addresses, IPv6 unique-local
+ * and link-local addresses, names that only resolve inside a network (`.local`
+ * and friends), and single-word names such as `nas`.
+ */
+export function isPrivateHost(host: string): boolean {
+  const ipv4 = ipv4Octets(mappedIpv4(host) ?? host);
+  if (ipv4) {
+    const [a = 0, b = 0] = ipv4;
+    return (
+      a === 10 ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 169 && b === 254) ||
+      (a === 100 && b >= 64 && b <= 127)
+    );
+  }
+  if (host.startsWith('[')) {
+    return /^\[(f[cd][0-9a-f]{2}|fe[89ab][0-9a-f]):/.test(host);
+  }
+  return (
+    !host.includes('.') ||
+    PRIVATE_SUFFIXES.some((suffix) => host.endsWith(suffix))
+  );
+}
 
 /** Whether a URL is plain http to this machine. */
 function isLoopbackHttp(url: Readonly<URL>): boolean {
@@ -77,9 +150,16 @@ function isAcceptableAppScheme(protocol: string): boolean {
  *    or one of a few known assistants' own schemes (see {@link KNOWN_APP_SCHEMES});
  *  - nothing else (`http:` to a real host, `ws:`, `mailto:`, `javascript:`, …).
  *
- * Fragments and embedded credentials are never allowed.
+ * Fragments, embedded credentials and anything but printable ASCII (spaces and
+ * look-alike or direction-changing characters included) are never allowed.
  */
 export function isAcceptableRedirectUri(uri: string): boolean {
+  // Printable ASCII only. RFC 3986 requires anything else to be percent-encoded,
+  // and a raw look-alike letter or direction-changing character would make the
+  // address we show differ from the one a person reads.
+  if (!/^[\x21-\x7e]+$/.test(uri)) {
+    return false;
+  }
   const url = parseUrl(uri);
   if (!url || url.hash || url.username || url.password) {
     return false;
@@ -95,17 +175,23 @@ export function isAcceptableRedirectUri(uri: string): boolean {
 
 /**
  * How a redirect address reaches the client, for the approval screen:
- * `loopback` means a web server on the user's own computer, `app` means an
- * installed app's own scheme, `web` is everything else.
+ * `loopback` means a web server on the user's own computer (whatever the
+ * scheme: `https://localhost` is as local as `http://127.0.0.1`), `private`
+ * means a machine on a private network, `app` means an installed app's own
+ * scheme, `web` is everything else.
  */
 export function redirectKind(uri: string): RedirectKind {
   const url = parseUrl(uri);
-  if (url && isLoopbackHttp(url)) {
+  if (!url) {
+    return 'web';
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+    return 'app';
+  }
+  if (isLoopbackHost(url.hostname)) {
     return 'loopback';
   }
-  return url && url.protocol !== 'https:' && url.protocol !== 'http:'
-    ? 'app'
-    : 'web';
+  return isPrivateHost(url.hostname) ? 'private' : 'web';
 }
 
 /**

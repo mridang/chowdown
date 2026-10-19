@@ -25,7 +25,8 @@ import {
   hashSecret,
   newSecret,
 } from './secrets';
-import { isSupportedScope } from './scopes';
+import { SCOPE_OFFLINE_ACCESS, hasScope, isSupportedScope } from './scopes';
+import { logSecurityEvent } from './security-log';
 
 /** Access tokens live an hour; refresh tokens thirty days, renewed on use. */
 export const ACCESS_TTL_SECONDS = 60 * 60;
@@ -54,7 +55,10 @@ export const CODE_TTL_SECONDS = 60 * 2;
  * independently with no reuse detected. A minute is long enough for a retry or
  * a parallel refresh and short enough that a token replayed later (the real
  * signature of theft: the thief uses it after the owner has moved on) still
- * revokes the grant (RFC 9700 §4.14 allows such leeway).
+ * revokes the grant. This is a common practice among identity providers (often
+ * called a "reuse interval"), not something RFC 9700 prescribes; every retry
+ * inside the window is logged (`oauth.refresh_grace_retry`) as the compensating
+ * control for the weaker detection.
  */
 export const REFRESH_GRACE_SECONDS = 60;
 
@@ -63,6 +67,12 @@ export interface CodeRecord {
   readonly clientId: string;
   readonly userId: number;
   readonly redirectUri: string;
+  /**
+   * Whether the authorization request carried a `redirect_uri` (rather than the
+   * client's only registered address being assumed). OAuth 2.1 §4.1.3 asks for
+   * the parameter at the token endpoint only when it was sent.
+   */
+  readonly redirectUriSent: boolean;
   readonly codeChallenge: string;
   readonly scope: readonly string[];
   readonly resource: string;
@@ -140,10 +150,10 @@ export interface OAuthFailure {
 
 /** A successful token response body. */
 export interface TokenResponse {
-  access_token: string;
-  token_type: 'Bearer';
-  expires_in: number;
-  refresh_token: string;
+  readonly access_token: string;
+  readonly token_type: 'Bearer';
+  readonly expires_in: number;
+  readonly refresh_token: string;
   readonly scope: string;
 }
 
@@ -233,6 +243,11 @@ export async function exchangeAuthorizationCode(
   if (code.grantId) {
     // A used code coming back means someone copied it: revoke what it made.
     await store.revokeGrant(code.grantId);
+    logSecurityEvent('oauth.code_replay_detected', {
+      grantId: code.grantId,
+      clientId: code.clientId,
+      userId: code.userId,
+    });
     return fail('invalid_grant', 'The authorization code was already used.');
   }
   if (code.expiresAt <= now) {
@@ -241,7 +256,13 @@ export async function exchangeAuthorizationCode(
   if (code.clientId !== request.clientId) {
     return fail('invalid_grant', 'The code was issued to a different client.');
   }
-  if (request.redirectUri !== code.redirectUri) {
+  // A client that left the address out of the authorization request may leave
+  // it out here too; one that sent it must send the same one again.
+  const redirectMismatch = code.redirectUriSent
+    ? request.redirectUri !== code.redirectUri
+    : request.redirectUri !== undefined &&
+      request.redirectUri !== code.redirectUri;
+  if (redirectMismatch) {
     return fail(
       'invalid_grant',
       'The redirect_uri does not match the request.',
@@ -272,6 +293,12 @@ export async function exchangeAuthorizationCode(
     },
     minted.rows,
   );
+  logSecurityEvent('oauth.grant_created', {
+    grantId,
+    clientId: code.clientId,
+    userId: code.userId,
+    scope: code.scope.join(' '),
+  });
   return minted.response;
 }
 
@@ -281,6 +308,8 @@ export interface RefreshExchange {
   readonly clientId: string;
   /** The scope asked for, which may not exceed the grant (and does not narrow it). */
   readonly scope: string | undefined;
+  /** The `resource` in the request, if sent (RFC 8707 allows it on a refresh too). */
+  readonly resource?: string | undefined;
 }
 
 /** Whether a refresh token used at `usedAt` may still be presented again (see {@link REFRESH_GRACE_SECONDS}). */
@@ -315,6 +344,7 @@ async function usedWithinGrace(
 export async function exchangeRefreshToken(
   store: OAuthStore,
   request: RefreshExchange,
+  isOurResource: (resource: string) => boolean,
   now: number,
 ): Promise<TokenResponse | OAuthFailure> {
   const hash = await hashSecret(request.refreshToken);
@@ -336,15 +366,23 @@ export async function exchangeRefreshToken(
   if (spent && !withinRefreshGrace(token.usedAt, now)) {
     // An already-rotated token came back late: assume theft and end the grant.
     await store.revokeGrant(grant.id);
+    logReuse(grant, token.usedAt, now);
     return fail('invalid_grant', 'The refresh token was already used.');
   }
   if (token.expiresAt <= now) {
     return fail('invalid_grant', 'The refresh token has expired.');
   }
 
+  if (request.resource !== undefined && !isOurResource(request.resource)) {
+    return fail('invalid_target', 'The resource is not this MCP server.');
+  }
   if (request.scope) {
-    const asked = request.scope.split(/\s+/).filter(Boolean);
-    if (!asked.every((s) => grant.scope.includes(s) && isSupportedScope(s))) {
+    // Covered by the grant, not merely listed in it: a grant of `recipes:write`
+    // covers `recipes:read`. `offline_access` asks for what a refresh already is.
+    const asked = request.scope
+      .split(/\s+/)
+      .filter((s) => s !== '' && s !== SCOPE_OFFLINE_ACCESS);
+    if (!asked.every((s) => isSupportedScope(s) && hasScope(grant.scope, s))) {
       return fail(
         'invalid_scope',
         'Cannot widen the scope of a refresh token.',
@@ -356,17 +394,37 @@ export async function exchangeRefreshToken(
   // have narrowed it.
   const minted = await mintTokens(grant.id, grant.scope, now);
   if (!spent && (await store.rotateRefreshToken(hash, now, minted.rows))) {
+    await store.touchGrant(grant.id, now);
     return minted.response;
   }
   if (!spent && !(await usedWithinGrace(store, hash, now))) {
     // Not a retry and not a lost race either: nothing explains the reuse.
     await store.revokeGrant(grant.id);
+    logReuse(grant, null, now);
     return fail('invalid_grant', 'The refresh token was already used.');
   }
   // A retry inside the grace window, or a parallel refresh that lost the race
   // by moments: give this caller its own pair without touching the grant.
+  logSecurityEvent('oauth.refresh_grace_retry', {
+    grantId: grant.id,
+    clientId: grant.clientId,
+  });
   await store.saveTokens(minted.rows);
   return minted.response;
+}
+
+/** Log that a spent refresh token came back too late (`usedAt` is when it was spent, if known). */
+function logReuse(
+  grant: Readonly<GrantRecord>,
+  usedAt: number | null,
+  now: number,
+): void {
+  logSecurityEvent('oauth.refresh_reuse_detected', {
+    grantId: grant.id,
+    clientId: grant.clientId,
+    userId: grant.userId,
+    secondsSinceUse: usedAt === null ? null : now - usedAt,
+  });
 }
 
 /** Who a valid access token speaks for. */
@@ -414,5 +472,10 @@ export async function revokeToken(
   const found = await store.findToken(await hashSecret(token));
   if (found) {
     await store.revokeGrant(found.grant.id);
+    logSecurityEvent('oauth.grant_revoked', {
+      grantId: found.grant.id,
+      clientId: found.grant.clientId,
+      reason: 'token_revoked_by_client',
+    });
   }
 }

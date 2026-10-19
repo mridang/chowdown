@@ -13,6 +13,8 @@
  */
 
 import { oauthError } from './http';
+import { logSecurityEvent } from './security-log';
+import { clientSubject } from '../http/client-address';
 import {
   rateLimit,
   type RateLimit,
@@ -23,29 +25,29 @@ import {
  * The limits. Registration is generous per hour (a legitimate assistant
  * registers once) but tight enough to stop a flood of throwaway client rows;
  * metadata fetches are limited per host (one misbehaving client cannot make us
- * hammer its server) and overall (nobody can make us a fetch proxy); the token
- * endpoint allows far more than any real client uses per address, since an
- * assistant's servers share addresses between many users.
+ * hammer its server), per asking address (so one caller with many hostnames
+ * cannot use up the overall allowance for everyone else) and overall (nobody can
+ * make us a fetch proxy); the token and revoke endpoints allow far more than any
+ * real client uses per address, since an assistant's servers share addresses
+ * between many users.
  */
 export const OAUTH_LIMITS = {
   register: { name: 'oauth-register', limit: 20, windowSeconds: 60 * 60 },
   cimdHost: { name: 'oauth-cimd-host', limit: 10, windowSeconds: 60 },
+  cimdAddress: { name: 'oauth-cimd-address', limit: 20, windowSeconds: 60 },
   cimdAll: { name: 'oauth-cimd-all', limit: 60, windowSeconds: 60 },
+  revoke: { name: 'oauth-revoke', limit: 60, windowSeconds: 60 },
   token: { name: 'oauth-token', limit: 120, windowSeconds: 60 },
 } as const satisfies Readonly<Record<string, RateLimit>>;
 
 /**
- * Who is asking, as a rate-limit subject: the address Cloudflare saw
- * (`CF-Connecting-IP`), else the first hop of `X-Forwarded-For`, else a shared
- * `unknown` bucket (local development, where neither header exists).
+ * Who is asking, as a rate-limit subject: the address Cloudflare saw, with an
+ * IPv6 address reduced to its /64 so a caller cannot get a fresh counter by
+ * rotating through the addresses of their own network. The rule itself lives in
+ * `http/client-address`, shared with the rest of the API.
  */
 export function clientAddress(headers: Headers): string {
-  const cloudflare = headers.get('cf-connecting-ip')?.trim();
-  if (cloudflare) {
-    return cloudflare;
-  }
-  const forwarded = headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  return forwarded || 'unknown';
+  return clientSubject(headers);
 }
 
 /**
@@ -97,9 +99,11 @@ export async function firstRetryAfter(
 /**
  * The OAuth answer for a request over a limit: HTTP 429 with a
  * `Retry-After` and the `temporarily_unavailable` error (RFC 6749 §4.1.2.1's
- * code for a server that cannot handle the request right now).
+ * code for a server that cannot handle the request right now). `endpoint`
+ * names the route, for the log line.
  */
-export function tooManyRequests(retryAfterSeconds: number) {
+export function tooManyRequests(retryAfterSeconds: number, endpoint: string) {
+  logSecurityEvent('oauth.rate_limited', { endpoint, retryAfterSeconds });
   return oauthError(
     'temporarily_unavailable',
     `Too many requests. Try again in ${retryAfterSeconds} seconds.`,

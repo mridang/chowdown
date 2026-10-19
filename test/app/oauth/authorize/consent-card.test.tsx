@@ -29,11 +29,12 @@ function card(
     redirect = 'https://claude.ai/api/mcp/auth_callback',
     scopes = ['recipes:read', 'recipes:write'],
   } = overrides;
+  const identity = clientIdentity({ clientId, kind });
   return html(
     <ConsentCard
       clientName={name}
-      identity={clientIdentity({ clientId, kind })}
-      redirect={describeRedirect(redirect)}
+      identity={identity}
+      redirect={describeRedirect(redirect, identity)}
       scopes={scopes}
       email="cook@example.com"
       fields={FIELDS}
@@ -63,8 +64,61 @@ describe('ConsentCard', () => {
     expect(markup).not.toContain('Published by');
   });
 
-  it('shows the full redirect address, not only its host', () => {
-    expect(card()).toContain('https://claude.ai/api/mcp/auth_callback</code>');
+  it('shows the full redirect address and, bold on its own line, the host', () => {
+    const markup = card();
+    expect(markup).toContain('https://claude.ai/api/mcp/auth_callback</code>');
+    expect(markup).toMatch(
+      /<span class="[^"]*font-semibold[^"]*">claude\.ai<\/span><code/,
+    );
+  });
+
+  it('shows the ASCII form of an international host, never the look-alike letters', () => {
+    const markup = card({ redirect: 'https://cl\u0430ude.ai/cb' });
+    expect(markup).toContain('xn--clude-5ve.ai');
+    expect(markup).not.toContain('\u0430');
+  });
+
+  it('warns that https://localhost is the person own computer too', () => {
+    expect(card({ redirect: 'https://localhost:8443/cb' })).toContain(
+      'This app runs on your own computer',
+    );
+  });
+
+  it('warns about an address on a private network', () => {
+    expect(card({ redirect: 'https://192.168.1.5/cb' })).toContain(
+      'private network',
+    );
+  });
+
+  it('notes a redirect on a site other than the one that published the app', () => {
+    const markup = card({ redirect: 'https://elsewhere.example/cb' });
+    expect(markup).toContain('is not on claude.ai');
+    expect(card()).not.toContain('is not on');
+  });
+
+  it('offers a read-only choice when the app asked to change recipes, with everything as the default', () => {
+    const markup = card();
+    expect(markup).toContain('<legend');
+    expect(markup).toMatch(/<input[^>]*name="access"[^>]*value="write"/);
+    expect(markup).toMatch(/<input[^>]*name="access"[^>]*value="read"/);
+    expect(markup.match(/name="access"[^>]*checked/g)).toHaveLength(1);
+    expect(markup).toMatch(
+      /value="write"[^>]*checked|checked=""[^>]*value="write"/,
+    );
+  });
+
+  it('offers no choice when the app asked only to read', () => {
+    expect(card({ scopes: ['recipes:read'] })).not.toContain('name="access"');
+  });
+
+  it('puts the choice before the buttons, so Enter still defaults to Cancel', () => {
+    const markup = card();
+    expect(markup.indexOf('name="access"')).toBeLessThan(
+      markup.indexOf('value="deny"'),
+    );
+    expect(markup.indexOf('value="deny"')).toBeLessThan(
+      markup.indexOf('value="approve"'),
+    );
   });
 
   it('warns that a loopback redirect is the person own computer', () => {

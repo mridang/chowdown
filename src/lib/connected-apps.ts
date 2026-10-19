@@ -13,11 +13,15 @@ export interface ConnectedApp {
   readonly id: string;
   readonly name: string;
   readonly scopes: readonly string[];
+  /** How many separate installs of the app are connected (each approved on its own). */
+  readonly installs: number;
+  /** The domain that published the app; absent for an app that registered itself without any check. */
+  readonly domain?: string;
   readonly connected_at: string;
   readonly last_used_at?: string;
 }
 
-/** The wire form of a stored grant: snake_case members, and no `last_used_at` for an app never used. */
+/** The wire form of a stored connection: snake_case members, no `last_used_at` for an app never used and no `domain` for an unverified one. */
 export function connectedAppResource(
   app: Readonly<StoredConnectedApp>,
 ): ConnectedApp {
@@ -25,6 +29,8 @@ export function connectedAppResource(
     id: app.grantId,
     name: app.name,
     scopes: app.scope,
+    installs: app.installs,
+    ...(app.domain ? { domain: app.domain } : {}),
     connected_at: app.connectedAt,
     ...(app.lastUsedAt ? { last_used_at: app.lastUsedAt } : {}),
   };
@@ -35,7 +41,15 @@ export function mcpUrl(origin: string): string {
   return `${origin.replace(/\/+$/, '')}/api/mcp`;
 }
 
-/** What an app may do, in words: the write scope means it can change recipes. */
-export function accessLabel(scopes: readonly string[]): string {
-  return scopes.includes('recipes:write') ? 'Can edit' : 'Read only';
+/**
+ * What an app may do, in words: the write scope means it can change recipes. An
+ * app connected more than once says so ("Can edit (2 installs)"): the scopes
+ * shown are the widest of any install, and disconnecting ends all of them.
+ */
+export function accessLabel(
+  scopes: readonly string[],
+  installs: number = 1,
+): string {
+  const access = scopes.includes('recipes:write') ? 'Can edit' : 'Read only';
+  return installs > 1 ? `${access} (${installs} installs)` : access;
 }

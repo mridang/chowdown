@@ -8,18 +8,24 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
+import { quietSecurityLogs } from '../../../../../../lib/oauth/quiet-logs';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../../../../../lib/db/sqlite-d1';
 
 /** Who is signed in; null means nobody. */
-const session: { uid: number | null } = { uid: 7 };
+/** `ended`: the person signed out everywhere, though the cookie itself still verifies. */
+const session: { uid: number | null; ended: boolean } = {
+  uid: 7,
+  ended: false,
+};
 
 jest.unstable_mockModule(
   '../../../../../../../src/lib/auth/current-user',
   () => ({
     getSessionUid: async () => session.uid,
+    getLiveSessionUid: async () => (session.ended ? null : session.uid),
     getCurrentUser: async () => null,
   }),
 );
@@ -27,12 +33,19 @@ jest.unstable_mockModule(
 const { DELETE } =
   await import('../../../../../../../src/app/api/users/self/connected-apps/[grant-id]/route');
 
+quietSecurityLogs();
+
 let raw: DatabaseSync;
 let restore: () => void;
 
 beforeEach(() => {
   session.uid = 7;
-  const made = sqliteD1('0008_oauth.sql', '0012_oauth_housekeeping.sql');
+  session.ended = false;
+  const made = sqliteD1(
+    '0008_oauth.sql',
+    '0012_oauth_housekeeping.sql',
+    '0016_oauth_redirect_uri_sent.sql',
+  );
   raw = made.raw;
   restore = installCloudflareContext(made.d1);
   const client = raw.prepare(
@@ -92,6 +105,51 @@ describe('DELETE /api/users/self/connected-apps/:grant-id', () => {
 
   it('answers 404 for a grant that does not exist', async () => {
     expect((await del('nope')).status).toBe(404);
+  });
+
+  it('revokes an app with a newer read-only install and an older edit-capable one in one go', async () => {
+    raw
+      .prepare(
+        "INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g1-edit', 7, 'c1', 'recipes:write', 'r', '2026-01-15T00:00:00.000Z')",
+      )
+      .run();
+    expect((await del('g1')).status).toBe(204);
+    expect(
+      raw
+        .prepare(
+          "SELECT COUNT(*) AS n FROM oauth_grants WHERE client_id = 'c1' AND user_id = 7 AND revoked_at IS NULL",
+        )
+        .get(),
+    ).toEqual({ n: 0 });
+  });
+
+  it('logs the disconnection', async () => {
+    const info = jest.spyOn(console, 'info').mockImplementation(() => {});
+    await del('g1');
+    expect(
+      info.mock.calls.map(([line]) => JSON.parse(String(line))),
+    ).toContainEqual(
+      expect.objectContaining({
+        event: 'oauth.grant_revoked',
+        grantId: 'g1',
+        userId: 7,
+        grants: 2,
+        reason: 'disconnected_by_user',
+      }),
+    );
+    info.mockRestore();
+  });
+
+  it('answers 401 for a session that was ended everywhere, and revokes nothing', async () => {
+    session.ended = true;
+    expect((await del('g1')).status).toBe(401);
+    expect(
+      raw
+        .prepare(
+          'SELECT COUNT(*) AS n FROM oauth_grants WHERE revoked_at IS NULL',
+        )
+        .get(),
+    ).toEqual({ n: 4 });
   });
 
   it('answers 401 when nobody is signed in', async () => {

@@ -1,13 +1,19 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 
 import {
   AUTHORIZE_FIELDS,
   authorizeParamsFrom,
+  grantedScope,
   redirectWith,
   validateAuthorizeRequest,
   type AuthorizeParams,
 } from '../../../src/lib/oauth/authorize-request';
-import type { OAuthClient } from '../../../src/lib/oauth/client';
+import {
+  MAX_CLIENT_ID_LENGTH,
+  type OAuthClient,
+} from '../../../src/lib/oauth/client';
+
+import { quietSecurityLogs } from './quiet-logs';
 
 const ORIGIN = 'https://chowdown.example';
 const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
@@ -17,6 +23,8 @@ const client: OAuthClient = {
   redirectUris: ['https://claude.ai/cb'],
   kind: 'dcr',
 };
+quietSecurityLogs();
+
 const resolve = async (id: string) =>
   id === client.clientId ? client : undefined;
 
@@ -160,6 +168,103 @@ describe('validateAuthorizeRequest', () => {
   });
 });
 
+describe('which errors may be sent to the redirect address without the person choosing', () => {
+  const cimd: OAuthClient = {
+    ...client,
+    clientId: 'https://claude.ai/oauth/meta.json',
+    kind: 'cimd',
+  };
+  const against = (chosen: OAuthClient) =>
+    validateAuthorizeRequest(
+      { ...good, client_id: chosen.clientId, response_type: 'token' },
+      ORIGIN,
+      async () => chosen,
+    );
+
+  it('keeps an anonymously registered client away from automatic redirects, so this server cannot be aimed at an address of its choosing', async () => {
+    expect(await against(client)).toMatchObject({
+      ok: false,
+      redirect: { uri: 'https://claude.ai/cb', automatic: false },
+    });
+  });
+
+  it('allows it for a client whose addresses come from a document its own domain published', async () => {
+    expect(await against(cimd)).toMatchObject({
+      ok: false,
+      redirect: { uri: 'https://claude.ai/cb', automatic: true },
+    });
+  });
+});
+
+describe('what the request said about its redirect address', () => {
+  it('knows whether it was sent', async () => {
+    expect(await check()).toMatchObject({
+      ok: true,
+      request: { redirectUriSent: true },
+    });
+    expect(await check({ redirect_uri: undefined })).toMatchObject({
+      ok: true,
+      request: { redirectUriSent: false },
+    });
+  });
+});
+
+describe('client_id length', () => {
+  it('refuses an id longer than the limit before looking anything up', async () => {
+    const lookup = jest.fn(async () => client);
+    const result = await validateAuthorizeRequest(
+      { ...good, client_id: 'x'.repeat(MAX_CLIENT_ID_LENGTH + 1) },
+      ORIGIN,
+      lookup,
+    );
+    expect(result).toMatchObject({ ok: false, error: 'invalid_request' });
+    expect(lookup).not.toHaveBeenCalled();
+  });
+});
+
+describe('security events from the authorization request', () => {
+  it('warns about an unknown client, with the id cut short', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    await check({ client_id: 'n'.repeat(500) });
+    const line = JSON.parse(String(warn.mock.calls[0]?.[0])) as {
+      event: string;
+      clientId: string;
+    };
+    expect(line.event).toBe('oauth.invalid_client');
+    expect(line.clientId).toHaveLength(200);
+    warn.mockRestore();
+  });
+
+  it('warns when the client lookup is rate limited', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    await validateAuthorizeRequest(good, ORIGIN, async () => ({
+      busy: true,
+      retryAfterSeconds: 9,
+    }));
+    expect(JSON.parse(String(warn.mock.calls[0]?.[0]))).toMatchObject({
+      event: 'oauth.rate_limited',
+      endpoint: 'authorize',
+    });
+    warn.mockRestore();
+  });
+});
+
+describe('grantedScope', () => {
+  it('grants what was asked unless the person chose read only', () => {
+    const asked = ['recipes:read', 'recipes:write'] as const;
+    expect(grantedScope(asked, 'write')).toEqual(asked);
+    expect(grantedScope(asked, null)).toEqual(asked);
+    expect(grantedScope(asked, undefined)).toEqual(asked);
+    expect(grantedScope(asked, 'anything else')).toEqual(asked);
+    expect(grantedScope(asked, 'read')).toEqual(['recipes:read']);
+  });
+
+  it('never grants more than was asked', () => {
+    expect(grantedScope(['recipes:read'], 'write')).toEqual(['recipes:read']);
+    expect(grantedScope(['recipes:read'], 'read')).toEqual(['recipes:read']);
+  });
+});
+
 describe('redirectWith', () => {
   it('adds parameters, keeps existing ones and skips undefined', () => {
     const url = redirectWith('https://a.com/cb?keep=1', {
@@ -205,5 +310,24 @@ describe('authorizeParamsFrom', () => {
       'scope',
       'resource',
     ]);
+  });
+});
+
+describe('error_description is printable ASCII without quotes or backslashes (RFC 6749 4.1.2.1)', () => {
+  it.each([
+    { client_id: undefined },
+    { client_id: 'nobody' },
+    { redirect_uri: 'https://evil.example/cb' },
+    { response_type: 'token' },
+    { code_challenge: undefined },
+    { code_challenge: 'short' },
+    { resource: 'https://other.example/api/mcp' },
+    { scope: 'admin' },
+  ])('for %j', async (overrides) => {
+    const result = await check(overrides);
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.description).toMatch(
+      /^[\x20\x21\x23-\x5b\x5d-\x7e]+$/,
+    );
   });
 });

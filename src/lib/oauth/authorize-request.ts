@@ -8,20 +8,29 @@
  * problem is reported to the client by redirecting back with an `error`.
  */
 
-import { isClientBusy, type ClientBusy, type OAuthClient } from './client';
+import type { FormFields } from './http';
+import {
+  MAX_CLIENT_ID_LENGTH,
+  isClientBusy,
+  type ClientBusy,
+  type OAuthClient,
+} from './client';
 import { isWellFormedChallenge } from './pkce';
 import { isOurResource, resourceUri } from './metadata';
 import { isAcceptableRedirectUri, redirectUriMatches } from './redirect-uri';
-import { normaliseScope } from './scopes';
+import { SCOPE_READ, normaliseScope, type Scope } from './scopes';
+import { logSecurityEvent } from './security-log';
 import { withQueryParams } from '../util/url';
 
 /** A validated authorization request. */
 export interface AuthorizeRequest {
   readonly client: OAuthClient;
   readonly redirectUri: string;
+  /** Whether the request named the redirect address (as opposed to the client's only one being assumed). */
+  readonly redirectUriSent: boolean;
   readonly state: string | undefined;
   readonly codeChallenge: string;
-  readonly scope: readonly string[];
+  readonly scope: readonly Scope[];
   readonly resource: string;
 }
 
@@ -45,6 +54,15 @@ export type AuthorizeCheck =
       readonly redirect?: {
         readonly uri: string;
         readonly state: string | undefined;
+        /**
+         * Whether the error may be sent there without the person choosing to go.
+         * True only for a client whose redirect addresses come from a document
+         * its own domain published; an anonymously registered client picked its
+         * addresses itself, so redirecting to one before the person has seen
+         * anything would make this server an open redirector for phishing
+         * (MCP security considerations, "Open Redirection").
+         */
+        readonly automatic: boolean;
       };
     };
 
@@ -64,13 +82,26 @@ export const AUTHORIZE_FIELDS = [
 export type AuthorizeParams = Readonly<Record<string, string | undefined>>;
 
 /** The authorization parameters present in a submitted form (text fields only; files and unknown fields are ignored). */
-export function authorizeParamsFrom(form: FormData): AuthorizeParams {
+export function authorizeParamsFrom(form: FormFields): AuthorizeParams {
   return Object.fromEntries(
     AUTHORIZE_FIELDS.flatMap((name): [string, string][] => {
       const value = form.get(name);
       return typeof value === 'string' ? [[name, value]] : [];
     }),
   );
+}
+
+/**
+ * The scopes to grant once the person has chosen how much to allow. `choice` is
+ * the consent form's `access` field: `read` narrows whatever was asked for to
+ * read-only, anything else (including no choice, as from a form posted before
+ * the choice existed) grants what was asked. Never grants more than asked.
+ */
+export function grantedScope(
+  requested: readonly Scope[],
+  choice: string | null | undefined,
+): readonly Scope[] {
+  return choice === 'read' ? [SCOPE_READ] : requested;
 }
 
 /**
@@ -92,8 +123,19 @@ export async function validateAuthorizeRequest(
       description: 'The request has no client_id.',
     };
   }
+  if (clientId.length > MAX_CLIENT_ID_LENGTH) {
+    return {
+      ok: false,
+      error: 'invalid_request',
+      description: 'The client_id is too long.',
+    };
+  }
   const client = await resolveClient(clientId);
   if (isClientBusy(client)) {
+    logSecurityEvent('oauth.rate_limited', {
+      endpoint: 'authorize',
+      retryAfterSeconds: client.retryAfterSeconds,
+    });
     return {
       ok: false,
       error: 'temporarily_unavailable',
@@ -102,6 +144,10 @@ export async function validateAuthorizeRequest(
     };
   }
   if (!client) {
+    // The id is the caller's own text: cut it short so a log line stays small.
+    logSecurityEvent('oauth.invalid_client', {
+      clientId: clientId.slice(0, 200),
+    });
     return {
       ok: false,
       error: 'invalid_client',
@@ -140,7 +186,7 @@ export async function validateAuthorizeRequest(
     ok: false,
     error,
     description,
-    redirect: { uri: redirectUri, state },
+    redirect: { uri: redirectUri, state, automatic: client.kind === 'cimd' },
   });
 
   if (params['response_type'] !== 'code') {
@@ -176,6 +222,7 @@ export async function validateAuthorizeRequest(
     request: {
       client,
       redirectUri,
+      redirectUriSent: requested !== undefined,
       state,
       codeChallenge,
       scope,

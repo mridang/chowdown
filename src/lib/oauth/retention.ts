@@ -25,8 +25,16 @@ export const MAX_LIVE_GRANTS_PER_APP = 10;
 /** How long a revoked grant is kept: it anchors its client's registration, so a disconnected app can reconnect. */
 export const REVOKED_GRANT_KEEP_SECONDS = 90 * DAY;
 
-/** How long a dynamically registered client that nobody ever approved is kept. */
-export const UNUSED_DCR_CLIENT_KEEP_SECONDS = 7 * DAY;
+/**
+ * How long a dynamically registered client that nobody ever approved is kept.
+ * Once it is deleted the client's authorization link answers "not known", an
+ * HTML page a program cannot read, so the window is generous: a person may
+ * well come back to a half-finished connection a few weeks later.
+ */
+export const UNUSED_DCR_CLIENT_KEEP_SECONDS = 30 * DAY;
+
+/** How long a live grant may go unused before it is ended (half a year; its refresh tokens expire after thirty days of disuse anyway). */
+export const IDLE_GRANT_SECONDS = 180 * DAY;
 
 /** How long a cached client metadata document that nobody ever approved is kept. */
 export const UNUSED_CIMD_CLIENT_KEEP_SECONDS = 30 * DAY;
@@ -48,6 +56,8 @@ export interface PurgeCutoffs {
   readonly revokedTokensBefore: string;
   /** Grants revoked before this are deleted. */
   readonly revokedGrantsBefore: string;
+  /** Live grants last used (or created, if never used) before this are revoked. */
+  readonly idleGrantsBefore: string;
   /** Dynamically registered clients created before this, with no grant, are deleted. */
   readonly unusedDcrClientsBefore: string;
   /** Cached metadata documents fetched before this, with no grant, are deleted. */
@@ -65,6 +75,7 @@ export function purgeCutoffs(now: number): PurgeCutoffs {
     tokensExpiredBefore: now - EXPIRED_ROW_GRACE_SECONDS,
     revokedTokensBefore: isoAgo(now, EXPIRED_ROW_GRACE_SECONDS),
     revokedGrantsBefore: isoAgo(now, REVOKED_GRANT_KEEP_SECONDS),
+    idleGrantsBefore: isoAgo(now, IDLE_GRANT_SECONDS),
     unusedDcrClientsBefore: isoAgo(now, UNUSED_DCR_CLIENT_KEEP_SECONDS),
     unusedCimdClientsBefore: isoAgo(now, UNUSED_CIMD_CLIENT_KEEP_SECONDS),
   };

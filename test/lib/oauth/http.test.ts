@@ -2,10 +2,13 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   CORS_HEADERS,
+  MAX_OAUTH_FORM_BYTES,
   bearerToken,
+  formFailure,
   noStoreJson,
   oauthError,
   preflight,
+  readOAuthForm,
 } from '../../../src/lib/oauth/http';
 
 const withAuth = (value?: string) =>
@@ -117,4 +120,84 @@ describe('oauthError', () => {
   it('can carry another status', () => {
     expect(oauthError('invalid_client', 'x', 401).status).toBe(401);
   });
+});
+
+describe('Pragma: no-cache on every JSON answer (RFC 6749 5.1)', () => {
+  it('goes with Cache-Control: no-store on successes and errors', () => {
+    for (const response of [
+      noStoreJson({}),
+      oauthError('invalid_request', 'No.'),
+    ]) {
+      expect(response.headers.get('cache-control')).toBe('no-store');
+      expect(response.headers.get('pragma')).toBe('no-cache');
+    }
+  });
+});
+
+describe('readOAuthForm', () => {
+  const post = (body: BodyInit, type?: string) =>
+    new Request('https://chowdown.test/oauth/token', {
+      method: 'POST',
+      body,
+      ...(type ? { headers: { 'content-type': type } } : {}),
+    });
+
+  it('reads a URL-encoded form', async () => {
+    const result = await readOAuthForm(
+      post('a=1&b=%20x', 'application/x-www-form-urlencoded; charset=UTF-8'),
+    );
+    expect(result.kind === 'ok' && result.form.get('b')).toBe(' x');
+  });
+
+  it('reads a body that declares no type at all', async () => {
+    const bytes = new TextEncoder().encode('a=1');
+    const result = await readOAuthForm(post(bytes));
+    expect(result.kind === 'ok' && result.form.get('a')).toBe('1');
+    const plain = await readOAuthForm(post(new URLSearchParams({ a: '1' })));
+    expect(plain.kind).toBe('ok');
+  });
+
+  it.each([
+    'application/json',
+    'multipart/form-data; boundary=x',
+    'text/plain',
+  ])('refuses a body declared as %s', async (type) => {
+    expect(await readOAuthForm(post('a=1', type))).toEqual({
+      kind: 'wrong-type',
+    });
+  });
+
+  it('refuses a form over the limit', async () => {
+    const result = await readOAuthForm(
+      post(
+        `a=${'x'.repeat(MAX_OAUTH_FORM_BYTES)}`,
+        'application/x-www-form-urlencoded',
+      ),
+    );
+    expect(result.kind).toBe('too-large');
+  });
+
+  it('refuses a body that is not text', async () => {
+    expect((await readOAuthForm(post(new Uint8Array([0xff, 0xfe])))).kind).toBe(
+      'unreadable',
+    );
+  });
+});
+
+describe('formFailure', () => {
+  it.each([
+    ['wrong-type', 'Send the request as application/x-www-form-urlencoded.'],
+    ['too-large', 'The request is too large.'],
+    ['unreadable', 'The request body is not readable.'],
+  ] as const)(
+    'answers 400 invalid_request for %s',
+    async (kind, description) => {
+      const response = formFailure({ kind });
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({
+        error: 'invalid_request',
+        error_description: description,
+      });
+    },
+  );
 });

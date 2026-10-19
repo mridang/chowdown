@@ -2,6 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import {
   DEFAULT_DOCUMENT_TTL_SECONDS,
+  FETCH_USER_AGENT,
   MAX_DOCUMENT_BYTES,
   MAX_DOCUMENT_TTL_SECONDS,
   MAX_STALE_DOCUMENT_SECONDS,
@@ -177,14 +178,8 @@ describe('parseRegistration', () => {
     }
   });
 
-  it('rejects confidential clients and unsupported grants', () => {
+  it('rejects unsupported grants', () => {
     const base = { redirect_uris: ['https://a.com/cb'] };
-    expect(
-      parseRegistration({
-        ...base,
-        token_endpoint_auth_method: 'client_secret_post',
-      }).ok,
-    ).toBe(false);
     expect(parseRegistration({ ...base, grant_types: ['implicit'] }).ok).toBe(
       false,
     );
@@ -294,6 +289,89 @@ describe('isMetadataDocumentUrl with a query', () => {
   it('rejects a client_id URL that has a query string', () => {
     expect(isMetadataDocumentUrl('https://a.com/client.json?x=1')).toBe(false);
     expect(isMetadataDocumentUrl('https://a.com/client.json?')).toBe(false);
+  });
+});
+
+describe('isMetadataDocumentUrl, own site, trailing dot and length', () => {
+  it('never takes a document on this very site for a client', () => {
+    const own = 'https://chowdown.example';
+    expect(
+      isMetadataDocumentUrl(
+        `${own}/.well-known/oauth-authorization-server`,
+        own,
+      ),
+    ).toBe(false);
+    expect(isMetadataDocumentUrl(`${own}/client.json`)).toBe(true);
+    expect(isMetadataDocumentUrl(URL_ID, own)).toBe(true);
+  });
+
+  it('rejects a host spelled with a trailing dot, which is the same host under a second name', () => {
+    expect(isMetadataDocumentUrl('https://chatgpt.com./client.json')).toBe(
+      false,
+    );
+  });
+
+  it('rejects an id longer than 2048 characters', () => {
+    const long = `https://a.com/${'x'.repeat(2048)}`;
+    expect(isMetadataDocumentUrl(long)).toBe(false);
+    expect(isMetadataDocumentUrl(`https://a.com/${'x'.repeat(100)}`)).toBe(
+      true,
+    );
+  });
+});
+
+describe('fetchClientMetadata details', () => {
+  const respond = (body: string, status = 200) =>
+    jest.fn(
+      async () => new Response(body, { status }),
+    ) as unknown as typeof fetch;
+
+  it('introduces itself with a User-Agent that says whom to ask', async () => {
+    const fetchImpl = respond(JSON.stringify(goodDoc));
+    await fetchClientMetadata(URL_ID, fetchImpl);
+    const init = (fetchImpl as unknown as jest.Mock).mock.calls[0]?.[1] as
+      | RequestInit
+      | undefined;
+    expect(init?.headers).toMatchObject({ 'User-Agent': FETCH_USER_AGENT });
+    expect(FETCH_USER_AGENT).toMatch(/^chowdown-oauth\/1 \(\+https:\/\//);
+  });
+
+  it('does not fetch a document hosted on this very site', async () => {
+    const fetchImpl = respond(JSON.stringify(goodDoc));
+    const result = await fetchClientMetadata(
+      URL_ID,
+      fetchImpl,
+      'https://chatgpt.com',
+    );
+    expect(result.ok).toBe(false);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('counts a redirect as a failed fetch: the document must be served at the client_id itself', async () => {
+    const redirected = jest.fn(
+      async () =>
+        new Response(null, {
+          status: 302,
+          headers: { location: 'https://elsewhere.example/doc' },
+        }),
+    ) as unknown as typeof fetch;
+    expect(await fetchClientMetadata(URL_ID, redirected)).toMatchObject({
+      ok: false,
+    });
+  });
+
+  it('accepts a document with no client_name, using the host as its name', async () => {
+    const nameless = Object.fromEntries(
+      Object.entries(goodDoc).filter(([key]) => key !== 'client_name'),
+    );
+    const result = await fetchClientMetadata(
+      URL_ID,
+      respond(JSON.stringify(nameless)),
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      client: { name: 'chatgpt.com' },
+    });
   });
 });
 
@@ -550,24 +628,99 @@ describe('parseRegistration token_endpoint_auth_method (RFC 7591)', () => {
   });
 
   it.each(['client_secret_basic', 'client_secret_post', 'private_key_jwt'])(
-    'rejects %s with invalid_client_metadata',
+    'registers a client that asks for %s as the public client it will be (RFC 7591 3.2.1)',
     (method) => {
       expect(
         parseRegistration({ ...base, token_endpoint_auth_method: method }),
-      ).toMatchObject({ ok: false, error: 'invalid_client_metadata' });
+      ).toMatchObject({ ok: true, client: { kind: 'dcr' } });
     },
   );
 
-  it('accepts response_types ["code"] and rejects anything else', () => {
+  it('refuses an auth method that is not text', () => {
+    expect(
+      parseRegistration({ ...base, token_endpoint_auth_method: 7 }),
+    ).toMatchObject({ ok: false, error: 'invalid_client_metadata' });
+  });
+
+  it('answers with what was registered, whatever the request asked for', () => {
+    const result = parseRegistration({
+      ...base,
+      token_endpoint_auth_method: 'client_secret_post',
+      grant_types: ['authorization_code', 'client_credentials'],
+    });
+    expect(result.ok && registrationResponse(result.client, 1)).toMatchObject({
+      token_endpoint_auth_method: 'none',
+      grant_types: ['authorization_code', 'refresh_token'],
+      response_types: ['code'],
+    });
+  });
+
+  it('accepts grant types that include authorization_code and rejects those that do not', () => {
+    expect(
+      parseRegistration({
+        ...base,
+        grant_types: ['authorization_code', 'refresh_token'],
+      }).ok,
+    ).toBe(true);
+    expect(
+      parseRegistration({ ...base, grant_types: ['client_credentials'] }),
+    ).toMatchObject({ ok: false, error: 'invalid_client_metadata' });
+    expect(parseRegistration({ ...base, grant_types: [] }).ok).toBe(false);
+    expect(parseRegistration({ ...base, grant_types: 'code' }).ok).toBe(false);
+  });
+
+  it('accepts response_types that include "code" and rejects those that do not', () => {
     expect(parseRegistration({ ...base, response_types: ['code'] }).ok).toBe(
       true,
     );
     expect(
-      parseRegistration({ ...base, response_types: ['code', 'token'] }),
+      parseRegistration({ ...base, response_types: ['code', 'token'] }).ok,
+    ).toBe(true);
+    expect(
+      parseRegistration({ ...base, response_types: ['token'] }),
     ).toMatchObject({ ok: false, error: 'invalid_client_metadata' });
     expect(parseRegistration({ ...base, response_types: [] }).ok).toBe(false);
     expect(parseRegistration({ ...base, response_types: 'code' }).ok).toBe(
       false,
     );
+  });
+});
+
+describe('error_description is printable ASCII without quotes or backslashes (RFC 6749 5.2, RFC 7591 3.2.2)', () => {
+  const allowed = /^[\x20\x21\x23-\x5b\x5d-\x7e]+$/;
+  const base = { redirect_uris: ['https://a.com/cb'] };
+
+  it.each([
+    ['a body that is not an object', 'x'],
+    ['no redirect_uris', {}],
+    ['redirect_uris that are not acceptable', { redirect_uris: ['ftp://a/b'] }],
+    ['a non-text auth method', { ...base, token_endpoint_auth_method: 7 }],
+    ['grant types without authorization_code', { ...base, grant_types: ['x'] }],
+    ['response types without code', { ...base, response_types: ['token'] }],
+  ])('for a registration with %s', (_name, body) => {
+    const result = parseRegistration(body);
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.description).toMatch(allowed);
+  });
+
+  it.each([
+    ['not an object', 'x'],
+    ['another client_id', { ...goodDoc, client_id: 'https://other.example/x' }],
+    ['no redirect_uris', { ...goodDoc, redirect_uris: [] }],
+    [
+      'a shared-secret method',
+      { ...goodDoc, token_endpoint_auth_method: 'client_secret_basic' },
+    ],
+  ])('for a client metadata document that is %s', (_name, document) => {
+    const result = parseClientMetadataDocument(document, URL_ID);
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.description).toMatch(allowed);
+  });
+
+  it('for a registration request that is too large or not JSON', () => {
+    for (const text of ['x'.repeat(MAX_REGISTRATION_BYTES + 1), 'nope']) {
+      const result = parseRegistrationText(text);
+      expect(!result.ok && result.description).toMatch(allowed);
+    }
   });
 });

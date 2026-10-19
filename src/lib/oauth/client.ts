@@ -16,6 +16,7 @@
 import { sanitiseDisplayName } from './display';
 import { isAcceptableRedirectUri } from './redirect-uri';
 import { bytesToBase64Url } from '../util/base64';
+import { SITE_URL } from '../site';
 import { parseUrl } from '../util/url';
 
 /** A client as the authorization server uses it. */
@@ -27,8 +28,28 @@ export interface OAuthClient {
   readonly kind: 'dcr' | 'cimd';
 }
 
-/** Largest metadata document we will read, in bytes (CIMD draft §6.6 asks implementations to limit the size). */
+/**
+ * Largest metadata document we will read, in bytes (CIMD draft §6.6 asks
+ * implementations to limit the size and suggests 5 KB). We allow twice that: a
+ * document may list twenty redirect addresses of a couple of hundred characters
+ * each, and a client that legitimately needs more than the suggestion would
+ * otherwise simply not connect. The cap is enforced while streaming, so the
+ * larger figure costs nothing.
+ */
 export const MAX_DOCUMENT_BYTES = 10_000;
+
+/**
+ * The longest `client_id` we look up or accept as a metadata-document address.
+ * The id is a database key and a rate-limit subject; nothing legitimate needs
+ * more.
+ */
+export const MAX_CLIENT_ID_LENGTH = 2048;
+
+/**
+ * How we introduce ourselves when fetching a client's document, so its host can
+ * recognise and allow-list us and knows whom to ask about the traffic.
+ */
+export const FETCH_USER_AGENT = `chowdown-oauth/1 (+${SITE_URL})`;
 
 /** How long to wait for a client's metadata document. */
 const FETCH_TIMEOUT_MS = 5000;
@@ -42,11 +63,21 @@ export const MIN_DOCUMENT_TTL_SECONDS = 5 * 60;
 /** The longest time a fetched document is kept, however long-lived the server says it is (one day). */
 export const MAX_DOCUMENT_TTL_SECONDS = 24 * 60 * 60;
 
-/** Whether a `client_id` is a metadata-document URL rather than a plain id. */
-export function isMetadataDocumentUrl(clientId: string): boolean {
-  const url = parseUrl(clientId);
+/**
+ * Whether a `client_id` is a metadata-document URL rather than a plain id.
+ * `ownOrigin`, when given, is this server's own origin: a document "hosted" by
+ * ourselves would make every lookup a request to ourselves, so it is never a
+ * client.
+ */
+export function isMetadataDocumentUrl(
+  clientId: string,
+  ownOrigin?: string,
+): boolean {
+  const url =
+    clientId.length <= MAX_CLIENT_ID_LENGTH ? parseUrl(clientId) : undefined;
   return (
     url !== undefined &&
+    url.origin !== ownOrigin &&
     url.protocol === 'https:' &&
     url.pathname.length > 1 &&
     // CIMD draft §3: the URL SHOULD NOT have a query string.
@@ -55,6 +86,9 @@ export function isMetadataDocumentUrl(clientId: string): boolean {
     !url.username &&
     !url.password &&
     url.hostname.includes('.') &&
+    // `example.com.` and `example.com` are one host with two spellings; only
+    // the plain one may name a client.
+    !url.hostname.endsWith('.') &&
     // A bare IP address is never a client's public home.
     !/^[\d.]+$/.test(url.hostname) &&
     !url.hostname.startsWith('[') &&
@@ -188,9 +222,13 @@ export function parseClientMetadataDocument(
   const method = doc['token_endpoint_auth_method'];
   if (method !== undefined && method !== 'none') {
     return bad(
-      'Only public clients (token_endpoint_auth_method "none") are supported.',
+      'Only public clients (token_endpoint_auth_method none) are supported.',
     );
   }
+  // `client_name` is among the properties the CIMD draft lists, but a document
+  // without one is still unambiguous (the approval screen leads with the domain
+  // that published it), so the host stands in for it rather than turning the
+  // client away.
   return {
     ok: true,
     client: {
@@ -300,18 +338,22 @@ export async function readCappedText(
 export async function fetchClientMetadata(
   url: string,
   fetchImpl: typeof fetch = fetch,
+  ownOrigin?: string,
 ): Promise<ClientFetch> {
   const bad = (description: string): ClientFetch => ({
     ok: false,
     error: 'invalid_client',
     description,
   });
-  if (!isMetadataDocumentUrl(url)) {
+  if (!isMetadataDocumentUrl(url, ownOrigin)) {
     return bad('The client_id is not a usable metadata document URL.');
   }
+  // Redirects are not followed: the document must be served at the `client_id`
+  // itself (a 3xx counts as a failed fetch), so the address we fetched is the
+  // address the client claims.
   const response = await fetchImpl(url, {
     redirect: 'manual',
-    headers: { Accept: 'application/json' },
+    headers: { Accept: 'application/json', 'User-Agent': FETCH_USER_AGENT },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   }).catch(() => undefined);
   if (!response) {
@@ -400,7 +442,17 @@ export function registrationResponse(
   };
 }
 
-/** Validate an RFC 7591 registration request and mint a client id. */
+/** A registration refused because of its metadata (as opposed to its redirect addresses). */
+function invalidMetadata(description: string): Registration {
+  return { ok: false, error: 'invalid_client_metadata', description };
+}
+
+/**
+ * Validate an RFC 7591 registration request and mint a client id. Every client
+ * registered here is a public client using the authorization-code grant with
+ * refresh tokens; requests for more (a secret, other grants) are answered with
+ * what was registered instead of being refused.
+ */
 export function parseRegistration(body: unknown): Registration {
   if (!isRecord(body)) {
     return {
@@ -416,45 +468,32 @@ export function parseRegistration(body: unknown): Registration {
       ok: false,
       error: 'invalid_redirect_uri',
       description:
-        'redirect_uris must list 1–20 https URIs, loopback http URIs (localhost, 127.0.0.1 or [::1]) or reverse-domain app-scheme URIs.',
+        'redirect_uris must list 1 to 20 https URIs, loopback http URIs (localhost, 127.0.0.1 or [::1]) or reverse-domain app-scheme URIs.',
     };
   }
+  // RFC 7591 §3.2.1 lets the server replace metadata it does not support
+  // rather than refuse the client, and the answer (`registrationResponse`)
+  // states what was registered. Generic client libraries ask for things like a
+  // client secret by default; they work fine as the public client they will be.
   const method = data['token_endpoint_auth_method'];
-  if (method !== undefined && method !== 'none') {
-    return {
-      ok: false,
-      error: 'invalid_client_metadata',
-      description:
-        'Only public clients (token_endpoint_auth_method "none") are supported.',
-    };
+  if (method !== undefined && typeof method !== 'string') {
+    return invalidMetadata('token_endpoint_auth_method must be a string.');
   }
   const grants = data['grant_types'];
   if (
     grants !== undefined &&
-    (!Array.isArray(grants) ||
-      !grants.every((g) => g === 'authorization_code' || g === 'refresh_token'))
+    !(Array.isArray(grants) && grants.includes('authorization_code'))
   ) {
-    return {
-      ok: false,
-      error: 'invalid_client_metadata',
-      description:
-        'Only the authorization_code and refresh_token grants are supported.',
-    };
+    return invalidMetadata(
+      'grant_types must include authorization_code, the grant this server offers.',
+    );
   }
   const responseTypes = data['response_types'];
   if (
     responseTypes !== undefined &&
-    !(
-      Array.isArray(responseTypes) &&
-      responseTypes.length > 0 &&
-      responseTypes.every((type) => type === 'code')
-    )
+    !(Array.isArray(responseTypes) && responseTypes.includes('code'))
   ) {
-    return {
-      ok: false,
-      error: 'invalid_client_metadata',
-      description: 'Only the code response type is supported.',
-    };
+    return invalidMetadata('response_types must include code.');
   }
   const id = bytesToBase64Url(crypto.getRandomValues(new Uint8Array(18)));
   return {

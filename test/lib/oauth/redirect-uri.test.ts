@@ -2,6 +2,8 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   isAcceptableRedirectUri,
+  isLoopbackHost,
+  isPrivateHost,
   redirectKind,
   redirectUriMatches,
 } from '../../../src/lib/oauth/redirect-uri';
@@ -54,6 +56,22 @@ describe('isAcceptableRedirectUri', () => {
     expect(isAcceptableRedirectUri(uri)).toBe(false);
   });
 
+  it.each([
+    ['a look-alike letter in the host', 'https://cl\u0430ude.ai/cb'],
+    ['a right-to-left override in the path', 'https://claude.ai/\u202efoo'],
+    ['a zero-width space', 'https://claude.ai/c\u200bb'],
+    ['an accented letter in the path', 'https://claude.ai/caf\u00e9'],
+    ['a space', 'https://claude.ai/a b'],
+    ['a line break', 'https://claude.ai/a\nb'],
+  ])('rejects %s, so what is shown is what is stored', (_name, uri) => {
+    expect(isAcceptableRedirectUri(uri)).toBe(false);
+  });
+
+  it('accepts the percent-encoded form of the same characters', () => {
+    expect(isAcceptableRedirectUri('https://claude.ai/caf%C3%A9')).toBe(true);
+    expect(isAcceptableRedirectUri('https://xn--clude-5ve.ai/cb')).toBe(true);
+  });
+
   it('rejects fragments, credentials and junk', () => {
     expect(isAcceptableRedirectUri('https://a.com/cb#frag')).toBe(false);
     expect(isAcceptableRedirectUri('https://user:pw@a.com/cb')).toBe(false);
@@ -69,6 +87,61 @@ describe('redirectKind', () => {
     expect(redirectKind('http://[::1]:1/')).toBe('loopback');
     expect(redirectKind('cursor://anysphere.cursor-retrieval/x')).toBe('app');
     expect(redirectKind('not a url')).toBe('web');
+  });
+
+  it.each([
+    'https://localhost/cb',
+    'https://localhost:8443/cb',
+    'https://127.0.0.1:8443/cb',
+    'https://127.5.6.7/cb',
+    'https://foo.localhost/cb',
+    'https://[::1]/cb',
+    'http://0.0.0.0:3000/cb',
+    'https://[::ffff:127.0.0.1]/cb',
+    'https://2130706433/cb',
+  ])('treats %s as this computer whatever the scheme', (uri) => {
+    expect(redirectKind(uri)).toBe('loopback');
+  });
+
+  it.each([
+    'https://192.168.1.5/cb',
+    'https://10.0.0.8:8443/cb',
+    'https://172.16.0.1/cb',
+    'https://172.31.255.255/cb',
+    'https://169.254.10.10/cb',
+    'https://100.64.0.1/cb',
+    'https://[fd12:3456::1]/cb',
+    'https://[fe80::1]/cb',
+    'https://[::ffff:192.168.1.5]/cb',
+    'https://printer.local/cb',
+    'https://nas.home.arpa/cb',
+    'https://build.internal/cb',
+    'https://router.lan/cb',
+    'https://nas/cb',
+  ])('treats %s as a private network', (uri) => {
+    expect(redirectKind(uri)).toBe('private');
+  });
+
+  it.each([
+    'https://172.15.0.1/cb',
+    'https://172.32.0.1/cb',
+    'https://100.128.0.1/cb',
+    'https://8.8.8.8/cb',
+    'https://[2001:db8::1]/cb',
+    'https://example.com/cb',
+    'https://localhost.evil.com/cb',
+    'https://notlocal.example/cb',
+  ])('treats %s as the ordinary web', (uri) => {
+    expect(redirectKind(uri)).toBe('web');
+  });
+});
+
+describe('isLoopbackHost and isPrivateHost', () => {
+  it('never call a public address either', () => {
+    expect(isLoopbackHost('example.com')).toBe(false);
+    expect(isPrivateHost('example.com')).toBe(false);
+    expect(isLoopbackHost('192.168.1.1')).toBe(false);
+    expect(isPrivateHost('127.0.0.1')).toBe(false);
   });
 });
 

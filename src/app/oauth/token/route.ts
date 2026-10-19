@@ -6,7 +6,13 @@
  */
 
 import { createOAuthStore, oauthSweeps } from '@/lib/db/oauth';
-import { noStoreJson, oauthError, preflight } from '@/lib/oauth/http';
+import {
+  formFailure,
+  noStoreJson,
+  oauthError,
+  preflight,
+  readOAuthForm,
+} from '@/lib/oauth/http';
 import {
   OAUTH_LIMITS,
   clientAddress,
@@ -24,7 +30,10 @@ import { appOrigin, getDatabase, runInBackground } from '@/lib/util';
  * new access and refresh token. Anyone may call it, up to a generous limit per
  * address; the code, verifier and client decide whether it works. Answers 200
  * with the tokens (never cached), 429 (with `Retry-After`) over the limit, 401
- * for a missing `client_id`, and 400 with an OAuth error for anything else.
+ * (with a `WWW-Authenticate` challenge) for a request that tried to identify
+ * itself with an `Authorization: Basic` header instead of `client_id`, and 400
+ * with an OAuth error for anything else, including a missing `client_id` or
+ * `grant_type`, a form that is not URL-encoded and a body over 16 KiB.
  */
 export async function POST(request: Request) {
   const db = getDatabase();
@@ -36,22 +45,34 @@ export async function POST(request: Request) {
     now,
   );
   if (wait !== undefined) {
-    return tooManyRequests(wait);
+    return tooManyRequests(wait, 'token');
   }
-  const form = await request.formData().catch(() => null);
-  if (!form) {
-    return oauthError('invalid_request', 'Send the request as a form.');
+  const body = await readOAuthForm(request);
+  if (body.kind !== 'ok') {
+    return formFailure(body);
   }
   const result = await handleTokenRequest(
-    form,
+    body.form,
     createOAuthStore(db),
     appOrigin(request),
     now,
+    {
+      basicAuthAttempted: /^basic\s/i.test(
+        request.headers.get('authorization') ?? '',
+      ),
+    },
   );
   sweepSometimes(oauthSweeps(db), runInBackground);
   return result.ok
     ? noStoreJson(result.tokens)
-    : oauthError(result.error, result.description, result.status);
+    : oauthError(
+        result.error,
+        result.description,
+        result.status,
+        result.wwwAuthenticate
+          ? { 'WWW-Authenticate': result.wwwAuthenticate }
+          : {},
+      );
 }
 
 /** `OPTIONS /oauth/token`: the CORS preflight for browser-based assistants. Answers 204. */

@@ -14,6 +14,9 @@ import { MAX_LIVE_GRANTS_PER_APP } from '../../../src/lib/oauth/retention';
 import type { RateLimitStore } from '../../../src/lib/util/rate-limit';
 import { fakeDb } from './fake-db';
 import { sqliteDatabase } from './sqlite-db';
+import { quietSecurityLogs } from '../oauth/quiet-logs';
+
+quietSecurityLogs();
 
 /** A rate-limit store that never refuses. */
 const open: RateLimitStore = {
@@ -185,6 +188,7 @@ describe('createOAuthStore', () => {
           client_id: 'c',
           user_id: 7,
           redirect_uri: 'https://app.example/cb',
+          redirect_uri_sent: false,
           code_challenge: 'ch',
           scope: 'recipes:read recipes:write',
           resource: 'r',
@@ -197,6 +201,7 @@ describe('createOAuthStore', () => {
       clientId: 'c',
       userId: 7,
       redirectUri: 'https://app.example/cb',
+      redirectUriSent: false,
       codeChallenge: 'ch',
       scope: ['recipes:read', 'recipes:write'],
       resource: 'r',
@@ -385,6 +390,8 @@ describe('listConnectedApps', () => {
         grantId: 'g1',
         name: 'Claude',
         scope: ['recipes:read', 'recipes:write'],
+        installs: 1,
+        domain: null,
         connectedAt: '2026-01-01T00:00:00.000Z',
         lastUsedAt: null,
       },
@@ -445,21 +452,13 @@ function seedGrant(
   createdAt: string,
   revokedAt: string | null = null,
   lastUsedAt: string | null = null,
+  scope = 'recipes:read recipes:write',
 ) {
   raw
     .prepare(
       'INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at, last_used_at, revoked_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     )
-    .run(
-      id,
-      userId,
-      clientId,
-      'recipes:read recipes:write',
-      'r',
-      createdAt,
-      lastUsedAt,
-      revokedAt,
-    );
+    .run(id, userId, clientId, scope, 'r', createdAt, lastUsedAt, revokedAt);
 }
 
 /** The ids of every row in a table, sorted. */
@@ -474,9 +473,51 @@ function ids(
     .map((row) => String(row['id']));
 }
 
-const MIGRATIONS = ['0008_oauth.sql', '0012_oauth_housekeeping.sql'] as const;
+const MIGRATIONS = [
+  '0008_oauth.sql',
+  '0012_oauth_housekeeping.sql',
+  '0016_oauth_redirect_uri_sent.sql',
+] as const;
 
 describe('against a real SQLite database', () => {
+  describe('authorization codes', () => {
+    const code = (redirectUriSent: boolean) => ({
+      clientId: 'c1',
+      userId: 7,
+      redirectUri: 'https://app.example/cb',
+      redirectUriSent,
+      codeChallenge: 'ch',
+      scope: ['recipes:read'],
+      resource: 'r',
+      expiresAt: 99,
+      grantId: null,
+    });
+
+    it.each([true, false])(
+      'remembers whether the request sent the redirect address (%s)',
+      async (sent) => {
+        const { db } = sqliteDatabase(...MIGRATIONS);
+        const store = createOAuthStore(db);
+        await store.saveCode('h', code(sent));
+        expect(await store.findCode('h')).toMatchObject({
+          redirectUriSent: sent,
+        });
+      },
+    );
+
+    it('reads a code saved before the column existed as one whose address was sent', async () => {
+      const { db, raw } = sqliteDatabase(...MIGRATIONS);
+      raw
+        .prepare(
+          'INSERT INTO oauth_codes (code_hash, client_id, user_id, redirect_uri, code_challenge, scope, resource, expires_at) VALUES (?, ?, 1, ?, ?, ?, ?, 99)',
+        )
+        .run('old', 'c1', 'u', 'ch', 'recipes:read', 'r');
+      expect(await createOAuthStore(db).findCode('old')).toMatchObject({
+        redirectUriSent: true,
+      });
+    });
+  });
+
   const tokenRows = (...hashes: readonly string[]) =>
     hashes.map((hash, i) => ({
       hash,
@@ -659,10 +700,63 @@ describe('against a real SQLite database', () => {
           grantId: 'g-new',
           name: 'Name of c1',
           scope: ['recipes:read', 'recipes:write'],
+          installs: 2,
+          domain: null,
           connectedAt: '2026-03-01T00:00:00.000Z',
           lastUsedAt: '2026-03-05T00:00:00.000Z',
         },
-        expect.objectContaining({ grantId: 'g-other', lastUsedAt: null }),
+        expect.objectContaining({
+          grantId: 'g-other',
+          installs: 1,
+          lastUsedAt: null,
+        }),
+      ]);
+    });
+
+    it('shows the widest access of any install: an older edit-capable install is not hidden behind a newer read-only one', async () => {
+      const { db, raw } = sqliteDatabase(...MIGRATIONS);
+      seedClient(raw, 'c1', 'dcr', '2026-01-01T00:00:00.000Z');
+      seedGrant(
+        raw,
+        'g-edit',
+        7,
+        'c1',
+        '2026-02-01T00:00:00.000Z',
+        null,
+        null,
+        'recipes:write',
+      );
+      seedGrant(
+        raw,
+        'g-read',
+        7,
+        'c1',
+        '2026-03-01T00:00:00.000Z',
+        null,
+        null,
+        'recipes:read',
+      );
+      expect(await listConnectedApps(db, 7)).toEqual([
+        expect.objectContaining({
+          grantId: 'g-read',
+          scope: ['recipes:read', 'recipes:write'],
+          installs: 2,
+        }),
+      ]);
+    });
+
+    it('names the publishing domain of a metadata-document app, and cleans a name saved before the current rules', async () => {
+      const { db, raw } = sqliteDatabase(...MIGRATIONS);
+      seedClient(raw, CIMD, 'cimd', '2026-01-01T00:00:00.000Z');
+      raw
+        .prepare('UPDATE oauth_clients SET client_name = ?')
+        .run('Cl\u202eaude\n  Desktop');
+      seedGrant(raw, 'g1', 7, CIMD, '2026-03-01T00:00:00.000Z');
+      expect(await listConnectedApps(db, 7)).toEqual([
+        expect.objectContaining({
+          name: 'Claude Desktop',
+          domain: 'app.example',
+        }),
       ]);
     });
 
@@ -724,6 +818,9 @@ describe('against a real SQLite database', () => {
       seedGrant(raw, 'revoked-recent', 1, 'granted', day(10), day(2));
       seedGrant(raw, 'revoked-today', 1, 'granted', day(10), day(0.5));
       seedGrant(raw, 'revoked-ancient', 1, 'gone', day(200), day(100));
+      seedGrant(raw, 'idle', 1, 'granted', day(200), null, day(190));
+      seedGrant(raw, 'never-used-old', 1, 'granted', day(200));
+      seedGrant(raw, 'old-but-used', 1, 'granted', day(200), null, day(10));
       const token = raw.prepare(
         'INSERT INTO oauth_tokens (token_hash, kind, grant_id, expires_at) VALUES (?, ?, ?, ?)',
       );
@@ -739,7 +836,8 @@ describe('against a real SQLite database', () => {
       token.run('tok-revoked-today', 'refresh', 'revoked-today', NOW + 86_400);
       seedClient(raw, 'granted', 'dcr', day(300));
       seedClient(raw, 'gone', 'dcr', day(300));
-      seedClient(raw, 'dcr-old-unused', 'dcr', day(8));
+      seedClient(raw, 'dcr-old-unused', 'dcr', day(31));
+      seedClient(raw, 'dcr-week-old-unused', 'dcr', day(8));
       seedClient(raw, 'dcr-new-unused', 'dcr', day(1));
       seedClient(raw, 'cimd-old-unused', 'cimd', day(90), day(31));
       seedClient(raw, 'cimd-recent-unused', 'cimd', day(90), day(2));
@@ -759,22 +857,40 @@ describe('against a real SQLite database', () => {
         'tok-revoked-today',
       ]);
       expect(ids(raw, 'oauth_grants', 'id')).toEqual([
+        'idle',
         'live',
+        'never-used-old',
+        'old-but-used',
         'revoked-recent',
         'revoked-today',
       ]);
       expect(ids(raw, 'oauth_clients', 'client_id')).toEqual([
         'cimd-recent-unused',
         'dcr-new-unused',
+        'dcr-week-old-unused',
         'granted',
       ]);
+    });
+
+    it('ends a connection nobody has used for half a year, and one never used since it was made that long ago, but not one in use', async () => {
+      const { db, raw } = seed();
+      await purgeOAuthData(db, NOW);
+      const revoked = raw
+        .prepare('SELECT id FROM oauth_grants WHERE revoked_at IS NOT NULL')
+        .all()
+        .map((row) => row['id']);
+      expect(revoked).toEqual(
+        expect.arrayContaining(['idle', 'never-used-old']),
+      );
+      expect(revoked).not.toContain('old-but-used');
+      expect(revoked).not.toContain('live');
     });
 
     it('is safe to run twice', async () => {
       const { db, raw } = seed();
       await purgeOAuthData(db, NOW);
       await purgeOAuthData(db, NOW);
-      expect(ids(raw, 'oauth_grants', 'id')).toHaveLength(3);
+      expect(ids(raw, 'oauth_grants', 'id')).toHaveLength(6);
     });
 
     it('works without a clock argument', async () => {
@@ -851,6 +967,65 @@ describe('against a real SQLite database', () => {
         `${OAUTH_LIMITS.cimdHost.name}:app.example`,
         `${OAUTH_LIMITS.cimdAll.name}:all`,
       ]);
+    });
+
+    it('counts the asking address between the host and the overall allowance', async () => {
+      const { db } = sqliteDatabase(...MIGRATIONS);
+      const keys: string[] = [];
+      const counting: RateLimitStore = {
+        async hit(key, now) {
+          keys.push(key);
+          return { count: 1, windowStart: now };
+        },
+        async purge() {},
+      };
+      await resolveClient(db, CIMD, serve(), {
+        rateLimits: counting,
+        address: '203.0.113.7',
+      });
+      expect(keys).toEqual([
+        `${OAUTH_LIMITS.cimdHost.name}:app.example`,
+        `${OAUTH_LIMITS.cimdAddress.name}:203.0.113.7`,
+        `${OAUTH_LIMITS.cimdAll.name}:all`,
+      ]);
+    });
+
+    it('does not use up the shared allowance for a caller already over its own', async () => {
+      const { db } = sqliteDatabase(...MIGRATIONS);
+      const keys: string[] = [];
+      const store: RateLimitStore = {
+        async hit(key, now) {
+          keys.push(key);
+          return key.startsWith(OAUTH_LIMITS.cimdAddress.name)
+            ? { count: 10_000, windowStart: now }
+            : { count: 1, windowStart: now };
+        },
+        async purge() {},
+      };
+      expect(
+        await resolveClient(db, CIMD, serve(), {
+          rateLimits: store,
+          address: '203.0.113.7',
+        }),
+      ).toMatchObject({ busy: true });
+      expect(keys.some((k) => k.startsWith(OAUTH_LIMITS.cimdAll.name))).toBe(
+        false,
+      );
+    });
+
+    it('treats an id on this very site as unknown, without a fetch or a limiter hit', async () => {
+      const { db } = sqliteDatabase(...MIGRATIONS);
+      const fetchImpl = serve();
+      const own = 'https://app.example/.well-known/oauth-authorization-server';
+      const hits = jest.fn(async () => ({ count: 1, windowStart: 0 }));
+      expect(
+        await resolveClient(db, own, fetchImpl, {
+          rateLimits: { hit: hits, async purge() {} },
+          origin: 'https://app.example',
+        }),
+      ).toBeUndefined();
+      expect(fetchImpl).not.toHaveBeenCalled();
+      expect(hits).not.toHaveBeenCalled();
     });
 
     it('does not fetch when rate limited, and falls back to a copy under a week old', async () => {

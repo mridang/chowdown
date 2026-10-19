@@ -4,6 +4,7 @@ import { CheckIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { Eyebrow, Heading } from '@/components/ui/layout';
+import { SCOPE_WRITE } from '@/lib/oauth/scopes';
 import {
   NEUTRAL_CLIENT_NAME,
   describeScopes,
@@ -40,10 +41,53 @@ function IdentityLine({
 }
 
 /**
+ * How much to allow, offered only when the app asked to change recipes: the
+ * person may approve it as read-only instead. Editing is the default so an app
+ * that needs it keeps working, and the choice is posted as the `access` field,
+ * which `/oauth/consent` narrows the grant by.
+ */
+function AccessChoice(): ReactElement {
+  return (
+    <fieldset className="mb-6">
+      <legend className="text-sm font-semibold">How much to allow</legend>
+      <div className="mt-2 flex flex-col gap-2">
+        <label className="flex items-start gap-3">
+          <input
+            type="radio"
+            name="access"
+            value="write"
+            defaultChecked
+            className="focus-ring mt-1"
+          />
+          <span className="leading-relaxed">
+            <span className="font-medium">Everything it asked for</span>, as
+            listed above
+          </span>
+        </label>
+        <label className="flex items-start gap-3">
+          <input
+            type="radio"
+            name="access"
+            value="read"
+            className="focus-ring mt-1"
+          />
+          <span className="leading-relaxed">
+            <span className="font-medium">Read only</span>: see and search
+            recipes, but change nothing
+          </span>
+        </label>
+      </div>
+    </fieldset>
+  );
+}
+
+/**
  * The approval screen's content: who is asking (their name, which they chose
  * themselves, next to the domain they are published on, which they cannot
  * fake), what they may do, and exactly where approving sends the person,
- * with a warning when that is their own computer or an installed app.
+ * with a warning when that is their own computer, a private network or an
+ * installed app, and a choice to allow read-only access when the app asked to
+ * change recipes.
  *
  * The client's name is cleaned again here (it may have been saved before the
  * current rules) and is only ever rendered as text. The form posts the original
@@ -86,14 +130,22 @@ export function ConsentCard({
       </ul>
       <Callout className="mt-5">
         After you approve, you&apos;ll be sent back to{' '}
-        <code className="font-semibold break-all">{redirect.address}</code>.
-        Only approve apps you trust. You can disconnect it any time from
-        chowdown.
+        <span className="block text-base font-semibold break-all">
+          {redirect.short}
+        </span>
+        <code className="block break-all">{redirect.address}</code>
+        <span className="mt-1 block">
+          Only approve apps you trust. You can disconnect it any time from
+          chowdown.
+        </span>
       </Callout>
       {redirect.warning ? (
         <Callout tone="highlight" className="mt-3">
           <span className="font-semibold">Be careful.</span> {redirect.warning}
         </Callout>
+      ) : null}
+      {redirect.note ? (
+        <Callout className="mt-3">{redirect.note}</Callout>
       ) : null}
       <form
         action="/oauth/consent"
@@ -101,6 +153,7 @@ export function ConsentCard({
         aria-label={`Approve or cancel connecting ${name}`}
         className="mt-6"
       >
+        {scopes.includes(SCOPE_WRITE) ? <AccessChoice /> : null}
         {fields.map((field) => (
           <input
             key={field.name}

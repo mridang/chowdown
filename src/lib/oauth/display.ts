@@ -81,7 +81,12 @@ export function clientIdentity(
 
 /** What approving does to the browser: where it goes and what to be careful of. */
 export interface RedirectDescription {
-  /** The whole address the person is sent back to, exactly as it will be used. */
+  /**
+   * The whole address the person is sent back to, in its safe written form:
+   * the host in ASCII (an international name shows as its `xn--` form, so a
+   * look-alike letter cannot pass for the real one) and anything unusual in the
+   * path percent-encoded, so what is shown is what a browser will use.
+   */
   readonly address: string;
   /** How it reaches the client. */
   readonly kind: RedirectKind;
@@ -89,31 +94,81 @@ export interface RedirectDescription {
   readonly short: string;
   /** A sentence of warning for the person, or undefined when the address is ordinary. */
   readonly warning: string | undefined;
+  /** A neutral remark to read before approving, or undefined when there is nothing to remark on. */
+  readonly note: string | undefined;
 }
 
 /** The warning shown for an address on the person's own computer (the MCP spec's localhost SHOULD). */
 export const LOOPBACK_WARNING =
   'This app runs on your own computer. Anything running on your computer could answer this request, so approve only if you just started this connection yourself.';
 
+/** The warning shown for an address on a private network. */
+export const PRIVATE_WARNING =
+  'This address is on a private network, such as your home or office. Approve only if you recognise the machine and just started this connection yourself.';
+
 /** The note shown for an address that opens an installed app. */
 export const APP_SCHEME_WARNING =
   'This opens an app installed on your device. Approve only if you just started this connection from that app.';
 
 /**
- * Describe the address approving will send the person to: the full text, how it
- * reaches the client, a short form for headlines and a warning where the kind
- * of address deserves one.
+ * The address written with only printable ASCII: any other character becomes
+ * its `\u{...}` code, so even an address that could not be parsed cannot carry
+ * a look-alike or a direction-changing character onto the screen.
  */
-export function describeRedirect(redirectUri: string): RedirectDescription {
+function asciiOnly(text: string): string {
+  return [...text]
+    .map((ch) =>
+      /^[\x21-\x7e]$/.test(ch)
+        ? ch
+        : `\\u{${(ch.codePointAt(0) ?? 0).toString(16)}}`,
+    )
+    .join('');
+}
+
+/** Whether one host is the other or a subdomain of it, so a site and its own app subdomain count as related. */
+function sameSite(a: string, b: string): boolean {
+  return a === b || a.endsWith(`.${b}`) || b.endsWith(`.${a}`);
+}
+
+/**
+ * Describe the address approving will send the person to: the full text in its
+ * safe form, how it reaches the client, a short form for headlines and a
+ * warning where the kind of address deserves one. Given the client's identity,
+ * a published-by domain that has nothing to do with the redirect host earns a
+ * neutral note, since the domain is the one thing about the app that is
+ * verified.
+ */
+export function describeRedirect(
+  redirectUri: string,
+  identity: Readonly<ClientIdentity> = { kind: 'unverified' },
+): RedirectDescription {
   const kind = redirectKind(redirectUri);
   const url = parseUrl(redirectUri);
-  const short = url ? url.host || url.protocol : redirectUri;
+  const short = url ? url.host || url.protocol : asciiOnly(redirectUri);
   const warnings: Readonly<Record<RedirectKind, string | undefined>> = {
     web: undefined,
     loopback: LOOPBACK_WARNING,
+    private: PRIVATE_WARNING,
     app: APP_SCHEME_WARNING,
   };
-  return { address: redirectUri, kind, short, warning: warnings[kind] };
+  const elsewhere =
+    identity.kind === 'domain' &&
+    url !== undefined &&
+    (kind === 'web' || kind === 'private') &&
+    !sameSite(
+      url.hostname,
+      parseUrl(`https://${identity.domain}`)?.hostname ?? '',
+    );
+  return {
+    address: url ? url.href : asciiOnly(redirectUri),
+    kind,
+    short,
+    warning: warnings[kind],
+    note:
+      elsewhere && identity.kind === 'domain'
+        ? `This address is not on ${identity.domain}, the site that published the app. Some apps do work that way; approve only if you expect it.`
+        : undefined,
+  };
 }
 
 /** What each scope lets the app do, in plain words. */

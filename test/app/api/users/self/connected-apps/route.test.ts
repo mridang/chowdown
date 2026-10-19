@@ -14,10 +14,15 @@ import {
 } from '../../../../../lib/db/sqlite-d1';
 
 /** Who is signed in; null means nobody. */
-const session: { uid: number | null } = { uid: 7 };
+/** `ended`: the person signed out everywhere, though the cookie itself still verifies. */
+const session: { uid: number | null; ended: boolean } = {
+  uid: 7,
+  ended: false,
+};
 
 jest.unstable_mockModule('../../../../../../src/lib/auth/current-user', () => ({
   getSessionUid: async () => session.uid,
+  getLiveSessionUid: async () => (session.ended ? null : session.uid),
   getCurrentUser: async () => null,
 }));
 
@@ -29,7 +34,12 @@ let restore: () => void;
 
 beforeEach(() => {
   session.uid = 7;
-  const made = sqliteD1('0008_oauth.sql', '0012_oauth_housekeeping.sql');
+  session.ended = false;
+  const made = sqliteD1(
+    '0008_oauth.sql',
+    '0012_oauth_housekeeping.sql',
+    '0016_oauth_redirect_uri_sent.sql',
+  );
   raw = made.raw;
   restore = installCloudflareContext(made.d1);
   const client = raw.prepare(
@@ -67,6 +77,7 @@ describe('GET /api/users/self/connected-apps', () => {
         id: 'g1',
         name: 'Claude',
         scopes: ['recipes:read'],
+        installs: 2,
         connected_at: '2026-03-01T00:00:00.000Z',
         last_used_at: '2026-03-02T00:00:00.000Z',
       },
@@ -74,9 +85,49 @@ describe('GET /api/users/self/connected-apps', () => {
         id: 'g2',
         name: 'ChatGPT',
         scopes: ['recipes:read'],
+        installs: 1,
         connected_at: '2026-02-15T00:00:00.000Z',
       },
     ]);
+  });
+
+  it('shows the widest access of an app, and says how many installs there are', async () => {
+    raw
+      .prepare(
+        "INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g1-edit', 7, 'c1', 'recipes:write', 'r', '2026-01-15T00:00:00.000Z')",
+      )
+      .run();
+    const body = (await (await GET(new Request(URL))).json()) as {
+      items: { id: string; scopes: string[]; installs: number }[];
+    };
+    expect(body.items[0]).toMatchObject({
+      id: 'g1',
+      scopes: ['recipes:read', 'recipes:write'],
+      installs: 3,
+    });
+  });
+
+  it('names the publishing domain of a metadata-document app and leaves it out for an unverified one', async () => {
+    raw
+      .prepare(
+        "INSERT INTO oauth_clients (client_id, kind, client_name, redirect_uris, created_at) VALUES ('https://claude.ai/meta.json', 'cimd', 'Claude (web)', '[]', '2026-01-01T00:00:00.000Z')",
+      )
+      .run();
+    raw
+      .prepare(
+        "INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g4', 7, 'https://claude.ai/meta.json', 'recipes:read', 'r', '2026-04-01T00:00:00.000Z')",
+      )
+      .run();
+    const body = (await (await GET(new Request(URL))).json()) as {
+      items: { id: string; domain?: string }[];
+    };
+    expect(body.items.find((a) => a.id === 'g4')?.domain).toBe('claude.ai');
+    expect(body.items.find((a) => a.id === 'g1')).not.toHaveProperty('domain');
+  });
+
+  it('answers 401 for a session that was ended everywhere', async () => {
+    session.ended = true;
+    expect((await GET(new Request(URL))).status).toBe(401);
   });
 
   it('answers 401 when nobody is signed in', async () => {

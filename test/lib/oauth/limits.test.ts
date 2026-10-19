@@ -51,6 +51,28 @@ describe('clientAddress', () => {
     ).toBe('198.51.100.1');
   });
 
+  it.each([
+    ['2001:db8:1:2:aaaa:bbbb:cccc:dddd', '2001:db8:1:2::/64'],
+    ['2001:db8:1:2:1111:2222:3333:4444', '2001:db8:1:2::/64'],
+    ['2001:DB8::1', '2001:db8:0:0::/64'],
+  ])(
+    'puts IPv6 address %s in its /64 so a network shares one counter',
+    (address, subject) => {
+      expect(clientAddress(new Headers({ 'cf-connecting-ip': address }))).toBe(
+        subject,
+      );
+      expect(clientAddress(new Headers({ 'x-forwarded-for': address }))).toBe(
+        subject,
+      );
+    },
+  );
+
+  it('leaves an IPv4 address as it is', () => {
+    expect(
+      clientAddress(new Headers({ 'cf-connecting-ip': '203.0.113.7' })),
+    ).toBe('203.0.113.7');
+  });
+
   it('shares one bucket when there is no address at all', () => {
     expect(clientAddress(new Headers())).toBe('unknown');
     expect(clientAddress(new Headers({ 'cf-connecting-ip': ' ' }))).toBe(
@@ -123,7 +145,16 @@ describe('firstRetryAfter', () => {
 
 describe('tooManyRequests', () => {
   it('answers 429 with Retry-After and an OAuth error body', async () => {
-    const response = tooManyRequests(42);
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const response = tooManyRequests(42, 'token');
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({
+        event: 'oauth.rate_limited',
+        endpoint: 'token',
+        retryAfterSeconds: 42,
+      }),
+    );
+    warn.mockRestore();
     expect(response.status).toBe(429);
     expect(response.headers.get('retry-after')).toBe('42');
     expect(response.headers.get('cache-control')).toBe('no-store');

@@ -29,6 +29,12 @@ describe('accessLabel', () => {
     expect(accessLabel(['recipes:read'])).toBe('Read only');
   });
 
+  it('says how many installs there are when there is more than one', () => {
+    expect(accessLabel(['recipes:write'], 2)).toBe('Can edit (2 installs)');
+    expect(accessLabel(['recipes:read'], 3)).toBe('Read only (3 installs)');
+    expect(accessLabel(['recipes:write'], 1)).toBe('Can edit');
+  });
+
   it('treats an app with no scopes as read only', () => {
     expect(accessLabel([])).toBe('Read only');
   });
@@ -39,6 +45,8 @@ describe('connectedAppResource', () => {
     grantId: 'g1',
     name: 'Claude',
     scope: ['recipes:read'],
+    installs: 1,
+    domain: 'claude.ai',
     connectedAt: '2026-01-01T00:00:00.000Z',
     lastUsedAt: '2026-02-01T00:00:00.000Z',
   };
@@ -48,9 +56,17 @@ describe('connectedAppResource', () => {
       id: 'g1',
       name: 'Claude',
       scopes: ['recipes:read'],
+      installs: 1,
+      domain: 'claude.ai',
       connected_at: '2026-01-01T00:00:00.000Z',
       last_used_at: '2026-02-01T00:00:00.000Z',
     });
+  });
+
+  it('leaves domain out for an unverified app', () => {
+    expect(
+      connectedAppResource({ ...stored, domain: null }),
+    ).not.toHaveProperty('domain');
   });
 
   it('leaves last_used_at out for an app that was never used', () => {

@@ -6,7 +6,16 @@
  * interface the token logic is written against.
  */
 
-import { and, desc, eq, inArray, isNull, lt, notInArray } from 'drizzle-orm';
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  lt,
+  notInArray,
+  sql,
+} from 'drizzle-orm';
 
 import {
   fetchClientMetadata,
@@ -17,7 +26,14 @@ import {
   type OAuthClient,
 } from '../oauth/client';
 import { OAUTH_LIMITS, firstRetryAfter } from '../oauth/limits';
+import {
+  clientIdentity,
+  NEUTRAL_CLIENT_NAME,
+  sanitiseDisplayName,
+} from '../oauth/display';
 import { MAX_LIVE_GRANTS_PER_APP, purgeCutoffs } from '../oauth/retention';
+import { SUPPORTED_SCOPES } from '../oauth/scopes';
+import { logSecurityEvent } from '../oauth/security-log';
 import type { Sweeps } from '../oauth/sweep';
 import type {
   OAuthStore,
@@ -105,6 +121,18 @@ export interface ResolveDeps {
   readonly rateLimits?: RateLimitStore;
   /** The current time in milliseconds. */
   readonly now?: number;
+  /**
+   * This server's own origin. A `client_id` on it is never fetched: the
+   * "document" would be one of our own pages, and every lookup would cost a
+   * request to ourselves.
+   */
+  readonly origin?: string;
+  /**
+   * Who is asking (see `clientAddress`). Fetches are counted per asking
+   * address before the overall allowance, so one caller naming many hosts
+   * cannot use up the allowance everyone else shares.
+   */
+  readonly address?: string;
 }
 
 /** The cache timestamps of a registry row. */
@@ -131,7 +159,7 @@ export async function resolveClient(
   const row = await db.query.oauthClients.findFirst({
     where: eq(oauthClients.client_id, clientId),
   });
-  if (!isMetadataDocumentUrl(clientId)) {
+  if (!isMetadataDocumentUrl(clientId, deps.origin)) {
     return row ? toClient(row) : undefined;
   }
   const nowMs = deps.now ?? Date.now();
@@ -144,6 +172,9 @@ export async function resolveClient(
     deps.rateLimits ?? d1RateLimitStore(db.$client),
     [
       { limit: OAUTH_LIMITS.cimdHost, subject: new URL(clientId).host },
+      ...(deps.address === undefined
+        ? []
+        : [{ limit: OAUTH_LIMITS.cimdAddress, subject: deps.address }]),
       { limit: OAUTH_LIMITS.cimdAll, subject: 'all' },
     ],
     Math.floor(nowMs / 1000),
@@ -151,7 +182,7 @@ export async function resolveClient(
   if (wait !== undefined) {
     return fallback ?? { busy: true, retryAfterSeconds: wait };
   }
-  const fetched = await fetchClientMetadata(clientId, fetchImpl);
+  const fetched = await fetchClientMetadata(clientId, fetchImpl, deps.origin);
   if (fetched.ok) {
     await saveClient(db, fetched.client, fetched.ttlSeconds);
     return fetched.client;
@@ -193,6 +224,7 @@ export function createOAuthStore(db: Database): OAuthStore {
         client_id: code.clientId,
         user_id: code.userId,
         redirect_uri: code.redirectUri,
+        redirect_uri_sent: code.redirectUriSent,
         code_challenge: code.codeChallenge,
         scope: code.scope.join(' '),
         resource: code.resource,
@@ -210,6 +242,7 @@ export function createOAuthStore(db: Database): OAuthStore {
             clientId: row.client_id,
             userId: row.user_id,
             redirectUri: row.redirect_uri,
+            redirectUriSent: row.redirect_uri_sent,
             codeChallenge: row.code_challenge,
             scope: row.scope.split(' '),
             resource: row.resource,
@@ -343,24 +376,49 @@ export function createOAuthStore(db: Database): OAuthStore {
 export interface ConnectedApp {
   /** The newest grant for the app: pass it to {@link revokeConnectedApp}. */
   readonly grantId: string;
+  /** The app's name, cleaned for showing (it may have been saved before the current rules). */
   readonly name: string;
+  /**
+   * The most the app may do through any of its installs: the union of the
+   * scopes of all its live grants, so an older edit-capable install is not
+   * hidden behind a newer read-only one.
+   */
   readonly scope: readonly string[];
+  /** How many separate installs (live grants) of the app there are. */
+  readonly installs: number;
+  /** The domain that published the app, or null for an app that registered itself unverified. */
+  readonly domain: string | null;
   readonly connectedAt: string;
   readonly lastUsedAt: string | null;
+}
+
+/** The scopes of several grants as one list: the supported scopes in their usual order, then anything else once. */
+function unionOfScopes(scopes: readonly string[]): readonly string[] {
+  const all = new Set(scopes.flatMap((scope) => scope.split(' ')));
+  return [
+    ...SUPPORTED_SCOPES.filter((scope) => all.has(scope)),
+    ...[...all].filter(
+      (scope) => !(SUPPORTED_SCOPES as readonly string[]).includes(scope),
+    ),
+  ];
 }
 
 /**
  * The applications a user has approved and not revoked, newest first. An app is
  * listed once: each install of an app has its own grant, and the grants of one
- * app are shown as one connection (the newest grant's details, the latest use
- * of any).
+ * app are shown as one connection (the newest grant's date, the widest access
+ * of any, the latest use of any, and how many installs there are).
  */
 export async function listConnectedApps(
   db: Database,
   userId: number,
 ): Promise<readonly ConnectedApp[]> {
   const rows = await db
-    .select({ grant: oauthGrants, name: oauthClients.client_name })
+    .select({
+      grant: oauthGrants,
+      name: oauthClients.client_name,
+      kind: oauthClients.kind,
+    })
     .from(oauthGrants)
     .leftJoin(oauthClients, eq(oauthClients.client_id, oauthGrants.client_id))
     .where(and(eq(oauthGrants.user_id, userId), isNull(oauthGrants.revoked_at)))
@@ -370,15 +428,25 @@ export async function listConnectedApps(
       if (!newest) {
         return [];
       }
-      const lastUsed = [newest, ...older]
+      const all = [newest, ...older];
+      const lastUsed = all
         .flatMap((r) => (r.grant.last_used_at ? [r.grant.last_used_at] : []))
         .toSorted()
         .at(-1);
+      const identity = clientIdentity({
+        clientId: newest.grant.client_id,
+        kind: newest.kind === 'cimd' ? 'cimd' : 'dcr',
+      });
       return [
         {
           grantId: newest.grant.id,
-          name: newest.name ?? newest.grant.client_id,
-          scope: newest.grant.scope.split(' '),
+          name: sanitiseDisplayName(
+            newest.name ?? newest.grant.client_id,
+            NEUTRAL_CLIENT_NAME,
+          ),
+          scope: unionOfScopes(all.map((r) => r.grant.scope)),
+          installs: all.length,
+          domain: identity.kind === 'domain' ? identity.domain : null,
           connectedAt: newest.grant.created_at,
           lastUsedAt: lastUsed ?? null,
         },
@@ -412,13 +480,23 @@ export async function revokeConnectedApp(
       ),
     )
     .run();
-  return (result.meta.changes ?? 0) > 0;
+  const revoked = result.meta.changes ?? 0;
+  if (revoked > 0) {
+    logSecurityEvent('oauth.grant_revoked', {
+      grantId,
+      userId,
+      grants: revoked,
+      reason: 'disconnected_by_user',
+    });
+  }
+  return revoked > 0;
 }
 
 /**
  * Delete OAuth rows that are stale at `now` (Unix seconds): expired codes and
- * tokens, the tokens and old rows of revoked grants, and clients nobody ever
- * approved. What counts as stale is decided by {@link purgeCutoffs}. Safe to
+ * tokens, the tokens and old rows of revoked grants, grants nobody has used for
+ * a long time (which are revoked, then removed once they have been revoked long
+ * enough), and clients nobody ever approved. What counts as stale is decided by {@link purgeCutoffs}. Safe to
  * run at any time and by several requests at once; it is one batch.
  */
 export async function purgeOAuthData(
@@ -435,6 +513,22 @@ export async function purgeOAuthData(
     .select({ clientId: oauthGrants.client_id })
     .from(oauthGrants);
   await db.batch([
+    // Connections nobody has used for half a year end quietly: their refresh
+    // tokens ran out long ago, and they would otherwise sit in the list of
+    // connected apps for ever. (Using a connection, including refreshing its
+    // tokens, counts as use.)
+    db
+      .update(oauthGrants)
+      .set({ revoked_at: new Date(now * 1000).toISOString() })
+      .where(
+        and(
+          isNull(oauthGrants.revoked_at),
+          lt(
+            sql`coalesce(${oauthGrants.last_used_at}, ${oauthGrants.created_at})`,
+            cutoffs.idleGrantsBefore,
+          ),
+        ),
+      ),
     db
       .delete(oauthCodes)
       .where(lt(oauthCodes.expires_at, cutoffs.codesExpiredBefore)),

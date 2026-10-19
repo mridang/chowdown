@@ -6,7 +6,7 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireUid } from '@/lib/api/auth';
+import { requireLiveUid } from '@/lib/api/auth';
 import { problems } from '@/lib/api/problem';
 import { revokeConnectedApp } from '@/lib/db/oauth';
 import { getDatabase } from '@/lib/util';
@@ -20,7 +20,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ 'grant-id': string }> },
 ): Promise<NextResponse> {
-  const auth = await requireUid(request);
+  const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
   }

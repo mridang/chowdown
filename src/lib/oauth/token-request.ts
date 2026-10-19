@@ -7,6 +7,7 @@
  * answer; the rules live here, where a fake store can test them.
  */
 
+import type { FormFields } from './http';
 import { isOurResource } from './metadata';
 import {
   exchangeAuthorizationCode,
@@ -26,10 +27,26 @@ export type TokenRequestResult =
       readonly error: string;
       readonly description: string;
       readonly status: 400 | 401;
+      /** The `WWW-Authenticate` challenge that must accompany a 401 (RFC 9110 §15.5.2). */
+      readonly wwwAuthenticate?: string;
     };
 
+/**
+ * What the request said about itself outside the form. A client that sends an
+ * `Authorization` header has tried to authenticate; refusing it takes a 401
+ * with a challenge (RFC 6749 §5.2), where a request that tried nothing is
+ * simply malformed.
+ */
+export interface TokenRequestContext {
+  /** Whether the request had an `Authorization: Basic …` header. */
+  readonly basicAuthAttempted?: boolean;
+}
+
+/** The challenge sent with a 401 from the token endpoint. This server only has public clients, so Basic is offered only to say it is not accepted as the way to identify. */
+const CLIENT_CHALLENGE = 'Basic realm="chowdown", charset="UTF-8"';
+
 /** A form field's text, or undefined when it is missing or empty. */
-export function formField(form: FormData, name: string): string | undefined {
+export function formField(form: FormFields, name: string): string | undefined {
   const value = form.get(name);
   return typeof value === 'string' && value !== '' ? value : undefined;
 }
@@ -40,19 +57,31 @@ export function formField(form: FormData, name: string): string | undefined {
  * in Unix seconds.
  */
 export async function handleTokenRequest(
-  form: FormData,
+  form: FormFields,
   store: OAuthStore,
   origin: string,
   now: number,
+  context: Readonly<TokenRequestContext> = {},
 ): Promise<TokenRequestResult> {
   const clientId = formField(form, 'client_id');
   if (!clientId) {
-    return {
-      ok: false,
-      error: 'invalid_client',
-      description: 'The request has no client_id.',
-      status: 401,
-    };
+    // Every client here is public and names itself with `client_id`. A request
+    // that tried to authenticate some other way gets the 401 and challenge the
+    // RFC requires; one that simply left the parameter out is malformed.
+    return context.basicAuthAttempted
+      ? {
+          ok: false,
+          error: 'invalid_client',
+          description: 'Identify the client with the client_id parameter.',
+          status: 401,
+          wwwAuthenticate: CLIENT_CHALLENGE,
+        }
+      : {
+          ok: false,
+          error: 'invalid_request',
+          description: 'The request has no client_id.',
+          status: 400,
+        };
   }
   const result = await exchange(
     formField(form, 'grant_type'),
@@ -80,7 +109,7 @@ function failure(error: string, description: string): OAuthFailure {
 /** Run the exchange the grant type names, or refuse a grant type we do not offer. */
 async function exchange(
   grantType: string | undefined,
-  form: FormData,
+  form: FormFields,
   clientId: string,
   store: OAuthStore,
   origin: string,
@@ -108,13 +137,23 @@ async function exchange(
     return refreshToken
       ? exchangeRefreshToken(
           store,
-          { refreshToken, clientId, scope: formField(form, 'scope') },
+          {
+            refreshToken,
+            clientId,
+            scope: formField(form, 'scope'),
+            resource: formField(form, 'resource'),
+          },
+          (resource) => isOurResource(resource, origin),
           now,
         )
       : failure('invalid_request', 'The request has no refresh_token.');
   }
-  return failure(
-    'unsupported_grant_type',
-    'Use authorization_code or refresh_token.',
-  );
+  // A missing parameter is a malformed request (RFC 6749 §5.2); only a grant
+  // type that was named and is not offered is "unsupported".
+  return grantType === undefined
+    ? failure('invalid_request', 'The request has no grant_type.')
+    : failure(
+        'unsupported_grant_type',
+        'Use authorization_code or refresh_token.',
+      );
 }

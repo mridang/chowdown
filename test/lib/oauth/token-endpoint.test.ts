@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
 import { MemoryStore } from './memory-store';
+import { quietSecurityLogs, type LogSpy } from './quiet-logs';
 import { s256 } from '../../../src/lib/oauth/pkce';
 import { MAX_LIVE_GRANTS_PER_APP } from '../../../src/lib/oauth/retention';
 import { hashSecret } from '../../../src/lib/oauth/secrets';
@@ -10,7 +11,7 @@ import {
   REFRESH_GRACE_SECONDS,
   authenticateAccessToken,
   exchangeAuthorizationCode,
-  exchangeRefreshToken,
+  exchangeRefreshToken as exchangeRefresh,
   issueAuthorizationCode,
   revokeToken,
   withinRefreshGrace,
@@ -27,6 +28,15 @@ const isFailure = (r: TokenResponse | OAuthFailure): r is OAuthFailure =>
   'ok' in r;
 const isOurs = (r: string) => r === RESOURCE;
 
+/** Exchange a refresh token, with this suite's idea of "our resource". */
+const exchangeRefreshToken = (
+  store: MemoryStore,
+  request: Parameters<typeof exchangeRefresh>[1],
+  now: number,
+) => exchangeRefresh(store, request, isOurs, now);
+
+const logs = quietSecurityLogs();
+
 let store: MemoryStore;
 let code: string;
 
@@ -37,6 +47,7 @@ async function newCode(overrides: Partial<CodeRecord> = {}) {
       clientId: 'client-1',
       userId: 7,
       redirectUri: 'https://app.example/cb',
+      redirectUriSent: true,
       codeChallenge: await s256(VERIFIER),
       scope: ['recipes:read', 'recipes:write'],
       resource: RESOURCE,
@@ -623,5 +634,153 @@ describe('several installs of one app', () => {
         NOW + 10,
       ),
     ).toMatchObject({ userId: 7 });
+  });
+});
+
+describe('redirect_uri at the token endpoint (OAuth 2.1 4.1.3)', () => {
+  it('is required when the authorization request carried one', async () => {
+    const sent = await newCode({ redirectUriSent: true });
+    expect(await redeem(sent, { redirectUri: undefined })).toMatchObject({
+      ok: false,
+      error: 'invalid_grant',
+      description: 'The redirect_uri does not match the request.',
+    });
+  });
+
+  it('may be left out when the client let the only registered address stand in', async () => {
+    const assumed = await newCode({ redirectUriSent: false });
+    const tokens = await redeem(assumed, { redirectUri: undefined });
+    expect(isFailure(tokens)).toBe(false);
+  });
+
+  it('still has to match when it is sent after being assumed', async () => {
+    const assumed = await newCode({ redirectUriSent: false });
+    expect(
+      await redeem(assumed, { redirectUri: 'https://evil.example/cb' }),
+    ).toMatchObject({ ok: false, error: 'invalid_grant' });
+    expect(
+      isFailure(
+        await redeem(await newCode({ redirectUriSent: false }), {
+          redirectUri: 'https://app.example/cb',
+        }),
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('refresh scope and resource', () => {
+  const refreshWith = (
+    token: string,
+    extra: { scope?: string; resource?: string },
+  ) =>
+    exchangeRefreshToken(
+      store,
+      { refreshToken: token, clientId: 'client-1', scope: undefined, ...extra },
+      NOW + 100,
+    );
+
+  it('lets a grant of write refresh with read, which write covers', async () => {
+    const first = (await redeem(
+      await newCode({ scope: ['recipes:write'] }),
+    )) as TokenResponse;
+    const second = await refreshWith(first.refresh_token, {
+      scope: 'recipes:read',
+    });
+    expect(isFailure(second)).toBe(false);
+  });
+
+  it('accepts offline_access, which a refresh already is, and refuses unknown scopes', async () => {
+    const first = (await redeem(code)) as TokenResponse;
+    expect(
+      isFailure(
+        await refreshWith(first.refresh_token, {
+          scope: 'recipes:read offline_access',
+        }),
+      ),
+    ).toBe(false);
+    const again = (await redeem(await newCode())) as TokenResponse;
+    expect(
+      await refreshWith(again.refresh_token, { scope: 'admin' }),
+    ).toMatchObject({ ok: false, error: 'invalid_scope' });
+  });
+
+  it('refuses a resource that is not this server, and accepts ours', async () => {
+    const first = (await redeem(code)) as TokenResponse;
+    expect(
+      await refreshWith(first.refresh_token, {
+        resource: 'https://elsewhere.example/api/mcp',
+      }),
+    ).toMatchObject({ ok: false, error: 'invalid_target' });
+    expect(
+      isFailure(await refreshWith(first.refresh_token, { resource: RESOURCE })),
+    ).toBe(false);
+  });
+
+  it('counts a refresh as use of the grant, so a connection that only refreshes is not taken for idle', async () => {
+    const first = (await redeem(code)) as TokenResponse;
+    await refreshWith(first.refresh_token, {});
+    expect(store.touched).toHaveLength(1);
+  });
+});
+
+describe('security events', () => {
+  const lines = (spy: LogSpy) =>
+    spy.mock.calls.map(
+      ([line]) => JSON.parse(String(line)) as { event: string },
+    );
+
+  it('logs the grant when a code is redeemed, with identifiers and no secret', async () => {
+    const tokens = (await redeem(code)) as TokenResponse;
+    expect(lines(logs.info())).toEqual([
+      expect.objectContaining({
+        event: 'oauth.grant_created',
+        clientId: 'client-1',
+        userId: 7,
+        scope: 'recipes:read recipes:write',
+      }),
+    ]);
+    const text = JSON.stringify(logs.info().mock.calls);
+    expect(text).not.toContain(tokens.access_token);
+    expect(text).not.toContain(tokens.refresh_token);
+    expect(text).not.toContain(code);
+  });
+
+  it('warns when a used code comes back', async () => {
+    await redeem(code);
+    await redeem(code);
+    expect(lines(logs.warn()).map((l) => l.event)).toEqual([
+      'oauth.code_replay_detected',
+    ]);
+  });
+
+  it('warns when a spent refresh token is replayed after the grace window, and notes a retry inside it', async () => {
+    const first = (await redeem(code)) as TokenResponse;
+    const rotate = (at: number) =>
+      exchangeRefreshToken(
+        store,
+        {
+          refreshToken: first.refresh_token,
+          clientId: 'client-1',
+          scope: undefined,
+        },
+        at,
+      );
+    await rotate(NOW + 100);
+    await rotate(NOW + 110);
+    expect(lines(logs.info()).map((l) => l.event)).toContain(
+      'oauth.refresh_grace_retry',
+    );
+    await rotate(NOW + 100 + REFRESH_GRACE_SECONDS + 1);
+    expect(lines(logs.warn())).toEqual([
+      expect.objectContaining({ event: 'oauth.refresh_reuse_detected' }),
+    ]);
+  });
+
+  it('logs a revocation made by the client', async () => {
+    const tokens = (await redeem(code)) as TokenResponse;
+    await revokeToken(store, tokens.access_token);
+    expect(lines(logs.info()).map((l) => l.event)).toContain(
+      'oauth.grant_revoked',
+    );
   });
 });
