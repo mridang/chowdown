@@ -32,6 +32,7 @@ import {
   type ConversionOptions,
 } from '../recipe/to-cooklang';
 import type { UnitSystem } from '../recipe/units';
+import { DAILY_BUDGETS, spendBudget } from '../util/daily-budget';
 import { getDatabase, getEnv, runInBackground } from '../util';
 import type { ScenarioDeps } from './scenarios';
 import type { FileOps } from './tool-calls';
@@ -223,6 +224,12 @@ export interface ToolServices {
   ) => Promise<void>;
   /** Remember a user's measurement system. */
   readonly setUnits: (userId: number, system: UnitSystem) => Promise<void>;
+  /**
+   * Spend one unit of the person's daily allowance for tools that call a model
+   * on an assistant's behalf. The seconds until it renews if it is used up,
+   * else undefined.
+   */
+  readonly spendModelBudget: (userId: number) => Promise<number | undefined>;
   /** Where the browse, pantry and filter tools read the user's cached recipes. */
   readonly scenario: (user: Readonly<User>) => ScenarioDeps;
 }
@@ -269,6 +276,8 @@ export const liveToolServices: ToolServices = {
     guarded('the recipe database', () =>
       setUserUnits(getDatabase(), userId, system),
     ),
+  spendModelBudget: (userId) =>
+    spendBudget(DAILY_BUDGETS.assistantModel, userId),
   scenario: (user) => ({
     rows: () =>
       guarded('the recipe database', () =>

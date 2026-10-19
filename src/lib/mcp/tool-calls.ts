@@ -208,6 +208,13 @@ export async function createToolContext(
   };
 }
 
+/** The tools that call a model on the person's behalf, and so spend their daily allowance. */
+const MODEL_TOOLS: ReadonlySet<string> = new Set([
+  'import_recipe',
+  'add_recipe',
+  'tag_recipe',
+]);
+
 /** Whether a tool reads a recipe or is about to change it. */
 type Intent = 'read' | 'write';
 
@@ -1024,6 +1031,15 @@ export async function callTool(
   if (!isDriveTool(name)) {
     // Advertised but not implemented: a bug here, not something to tell the caller.
     throw new Error(`Tool ${name} is listed but has no implementation.`);
+  }
+  // Checked before Drive is opened, so a refusal costs nothing.
+  if (MODEL_TOOLS.has(name)) {
+    const wait = await services.spendModelBudget(user.id);
+    if (wait !== undefined) {
+      return errorResult(
+        `The daily allowance for importing, adding and tagging recipes through an assistant is used up. It renews in about ${Math.ceil(wait / 3600)} hour(s). Everything that only reads recipes still works.`,
+      );
+    }
   }
   return DRIVE_TOOLS[name](args, await openContext(user), services);
 }

@@ -13,6 +13,7 @@ import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/api/auth';
 import { isObject, readJson } from '@/lib/api/json';
 import { driveFailure } from '@/lib/api/drive-failure';
+import { budgetRefusal } from '@/lib/api/daily-budget';
 import { problems } from '@/lib/api/problem';
 import { getUserAccessToken } from '@/lib/auth/current-user';
 import { getRecipeByFileId } from '@/lib/db/recipes';
@@ -21,6 +22,7 @@ import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 import { tagCookSource } from '@/lib/recipe/tagging';
 import { addMissingCover } from '@/lib/recipe/to-cooklang';
 import { getDatabase, getEnv } from '@/lib/util';
+import { DAILY_BUDGETS } from '@/lib/util/daily-budget';
 
 /**
  * `POST /rpc/tag-recipe`: classify one of the user's recipes and write the tags
@@ -48,6 +50,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   const row = await getRecipeByFileId(db, user.id, id);
   if (!row) {
     return problems.notFound('recipe');
+  }
+  const spent = await budgetRefusal(DAILY_BUDGETS.tag, user.id, 'tagging');
+  if (spent) {
+    return spent;
   }
   try {
     const token = await getUserAccessToken(user);

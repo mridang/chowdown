@@ -146,6 +146,9 @@ export function fakeServices(overrides: Partial<ToolServices> = {}) {
     })),
     embedQuery: jest.fn<ToolServices['embedQuery']>(async () => [1, 0]),
     findImported: jest.fn<ToolServices['findImported']>(async () => undefined),
+    spendModelBudget: jest.fn<ToolServices['spendModelBudget']>(
+      async () => undefined,
+    ),
     convertImport: jest.fn<ToolServices['convertImport']>(
       async (content) =>
         `>> title: Imported\n\nMix @flour{100%g}.\n\n${content}\n`,

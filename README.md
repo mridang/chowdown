@@ -174,6 +174,39 @@ GitHub Actions (`deploy.yml`) deploys on pushes to `master`. It needs a
 `CLOUDFLARE_API_TOKEN` secret and a `CLOUDFLARE_ACCOUNT_ID` variable in the
 `production` environment.
 
+## Operations
+
+**Settings.** `SESSION_SECRET` signs the session cookie and `TOKEN_ENCRYPTION_KEY`
+seals Drive refresh tokens; both are Worker secrets. `APP_URL` is the public
+origin: set it in production, because when it is missing the origin is read from
+the request's `Host` header. `MCP_ALLOWED_ORIGINS` (comma-separated, exact
+origins such as `chrome-extension://abcdef`) lets a browser-based or webview MCP
+client call `/api/mcp`; leave it unset for assistants that run on a server.
+
+**Rate limits.** Three layers, cheapest first:
+
+1. Cloudflare Workers Rate Limiting bindings (`ratelimits` in `wrangler.jsonc`,
+   twelve of them), checked in the Worker before the app runs. Which request
+   counts against which binding is in `src/lib/http/edge-limits.ts`, and a test
+   keeps the two in step. They are per Cloudflare location and eventually
+   consistent: a cost guard that refuses floods, not an accounting system.
+   Optionally add one Cloudflare WAF rate-limiting rule on top (dashboard:
+   Security, WAF, Rate limiting rules) to stop a flood before the Worker is
+   invoked at all.
+2. Exact, durable counters in D1: OAuth client registration, token endpoint,
+   per-user MCP calls, and the daily budgets for imports, tagging, suggestions
+   and the assistant tools that call a model (`src/lib/util/daily-budget.ts`).
+3. Hard caps inside a request: ten links or recipes per import, body sizes,
+   page and image byte caps, 5,000 Cooklang lines.
+
+A refused call answers `429` with `Retry-After`.
+
+**Checks.** `npm run conformance` runs the official MCP conformance suite against
+the server's request handling for 2026-07-28 (`conformance:legacy` for
+2025-11-25); known gaps are listed with reasons in
+`scripts/conformance/expected-failures-*.yml`. MCP 2024-11-05 clients work over
+streamable HTTP only (no HTTP+SSE transport is hosted).
+
 ## Agent skills
 
 Skills are folders an AI agent can load to carry out a task end to end. They

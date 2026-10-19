@@ -16,6 +16,7 @@ import { NextResponse } from 'next/server';
 import { requireUser } from '@/lib/api/auth';
 import { driveFailure } from '@/lib/api/drive-failure';
 import { pageBody, parseLimit } from '@/lib/api/pagination';
+import { budgetRefusal } from '@/lib/api/daily-budget';
 import { problems } from '@/lib/api/problem';
 import { getUserAccessToken } from '@/lib/auth/current-user';
 import { listRecipeFiles } from '@/lib/drive/drive-client';
@@ -24,6 +25,7 @@ import { recipeDisplayName } from '@/lib/recipe/cook-text';
 import { embedText } from '@/lib/recipe/embeddings';
 import { ensureEmbeddings, topSimilar } from '@/lib/recipe/similar';
 import { getEnv } from '@/lib/util';
+import { DAILY_BUDGETS } from '@/lib/util/daily-budget';
 
 /** How many suggestions to give when the client does not say. */
 const DEFAULT_SUGGESTIONS = 8;
@@ -59,6 +61,14 @@ export async function GET(request: Request): Promise<NextResponse> {
   const limit = parseLimit(query.get('limit'), DEFAULT_SUGGESTIONS);
   if (typeof limit !== 'number') {
     return limit;
+  }
+  const spent = await budgetRefusal(
+    DAILY_BUDGETS.suggest,
+    auth.value.id,
+    'search',
+  );
+  if (spent) {
+    return spent;
   }
 
   try {

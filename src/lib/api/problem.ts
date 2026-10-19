@@ -55,6 +55,11 @@ export const problems = {
   unauthorized: () =>
     problem(401, '/problems/unauthorized', 'Unauthorized', 'Sign in first.'),
 
+  rateLimited: (detail: string, retryAfterSeconds: number) =>
+    problem(429, '/problems/rate-limited', 'Too many requests', detail, {
+      headers: { 'Retry-After': String(retryAfterSeconds) },
+    }),
+
   forbidden: (detail: string) =>
     problem(403, '/problems/forbidden', 'Forbidden', detail),
 

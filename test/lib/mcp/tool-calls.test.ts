@@ -472,6 +472,52 @@ describe('add_recipe', () => {
   });
 });
 
+describe('the daily allowance for tools that call a model', () => {
+  const used = (wait: number | undefined) =>
+    fakeServices({
+      spendModelBudget: jest.fn(async () => wait),
+    });
+
+  it.each([
+    ['import_recipe', { content: 'A page' }],
+    ['add_recipe', { name: 'Toast', content: 'Toast @bread{2}.' }],
+    ['tag_recipe', { recipe: 'Pancakes' }],
+  ])(
+    'refuses %s once the allowance is used up, saying when it renews, before Drive is opened',
+    async (name, args) => {
+      const fake = folder();
+      const opened = jest.fn(async () => fake.ctx);
+      const result = await callTool(
+        USER,
+        { name, arguments: args },
+        opened,
+        used(7200),
+      );
+      expect(result.isError).toBe(true);
+      expect(said(result)).toMatch(/allowance.*used up.*2 hour/);
+      expect(opened).not.toHaveBeenCalled();
+      expect(fake.created).toEqual([]);
+    },
+  );
+
+  it('lets them through while there is allowance left', async () => {
+    const result = await call(
+      'import_recipe',
+      { content: 'A page about bread' },
+      folder(),
+      used(undefined),
+    );
+    expect(result.isError).not.toBe(true);
+  });
+
+  it('does not spend it on tools that only read', async () => {
+    const services = used(7200);
+    const result = await call('list_recipes', {}, folder(), services);
+    expect(result.isError).not.toBe(true);
+    expect(services.spendModelBudget).not.toHaveBeenCalled();
+  });
+});
+
 describe('import_recipe', () => {
   it('converts the content, saves it and shows the card', async () => {
     const fake = folder();

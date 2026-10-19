@@ -14,6 +14,7 @@
 import { NextResponse } from 'next/server';
 
 import { requireLiveUid } from '@/lib/api/auth';
+import { budgetRefusal } from '@/lib/api/daily-budget';
 import { readJson } from '@/lib/api/json';
 import {
   absoluteUrl,
@@ -34,13 +35,14 @@ import { createRecipeImport, listRecipeImports } from '@/lib/db/recipe-imports';
 import { MAX_IMPORT_UNITS, planImport } from '@/lib/recipe/import-blob';
 import { prepareImport } from '@/lib/recipe/prepare-import';
 import { getDatabase, getEnv } from '@/lib/util';
+import { DAILY_BUDGETS } from '@/lib/util/daily-budget';
 
 /**
  * `POST /api/recipe-imports`: read the links and recipe text in `{ input }`
  * and make drafts of them. Answers 201 with the import and its `Location`, or
  * 400 for a missing or oversized `input`, when nothing in it looks like a link
  * or a recipe, or when it holds more than ten of them; 413 for a request body
- * over 1 MiB; 415 for a body that is not JSON. Needs a signed-in user: 401
+ * over 1 MiB; 429 once the person has used the day's import allowance; 415 for a body that is not JSON. Needs a signed-in user: 401
  * without a session.
  */
 export async function POST(request: Request): Promise<NextResponse> {
@@ -73,6 +75,14 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
+  const spent = await budgetRefusal(
+    DAILY_BUDGETS.import,
+    auth.value,
+    'recipe import',
+  );
+  if (spent) {
+    return spent;
+  }
   const items = await prepareImport(units, getEnv());
   const created = await createRecipeImport(getDatabase(), auth.value, items);
   return NextResponse.json(created, {

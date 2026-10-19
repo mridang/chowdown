@@ -8,6 +8,7 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
+import { DAILY_BUDGETS } from '../../../../src/lib/util/daily-budget';
 import type { ImportUnit } from '../../../../src/lib/recipe/import-blob';
 import type { ImportItem } from '../../../../src/lib/recipe/prepare-import';
 import { APP_MIGRATIONS } from '../../../lib/db/migrations';
@@ -85,6 +86,25 @@ describe('POST /api/recipe-imports', () => {
     session.uid = null;
     expect((await postInput('https://a.example.com/r')).status).toBe(401);
     expect(prepareImport).not.toHaveBeenCalled();
+  });
+
+  it("answers 429 with Retry-After once the day's import allowance is used, without doing the work", async () => {
+    for (let i = 0; i < DAILY_BUDGETS.import.limit; i += 1) {
+      expect((await postInput('https://a.example.com/r')).status).toBe(201);
+    }
+    prepareImport.mockClear();
+    const res = await postInput('https://a.example.com/r');
+    expect(res.status).toBe(429);
+    expect(Number(res.headers.get('retry-after'))).toBeGreaterThan(0);
+    expect(prepareImport).not.toHaveBeenCalled();
+  });
+
+  it('counts the allowance per person', async () => {
+    for (let i = 0; i < DAILY_BUDGETS.import.limit; i += 1) {
+      await postInput('https://a.example.com/r');
+    }
+    session.uid = 8;
+    expect((await postInput('https://a.example.com/r')).status).toBe(201);
   });
 
   it('answers 415 to a body that is not JSON', async () => {
