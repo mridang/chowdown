@@ -8,17 +8,27 @@
   // Cloudflare auto-routes the Worker to the colo closest to D1
   // (avoids the worst-case ~70 ms hop). Free on all plans.
   "placement": { "mode": "smart" },
-  // Workers Observability: the app's own log lines and metrics, sampled at 100%
-  // (the volume is tiny and the data is what debugging needs). The automatic
-  // per-request invocation logs are off: they record the full URL, and URLs here
-  // carry search text, cover-image addresses and sign-in codes.
+  // Wrangler's own usage telemetry for this project (anonymous CLI usage; the
+  // setting overrides each developer's personal preference).
+  "send_metrics": true,
+  // Workers Observability, everything on at 100% (the volume is tiny and the data
+  // is what debugging needs): the app's own log lines, the automatic per-request
+  // invocation logs, distributed traces, and real-time Issues. Query strings are
+  // stripped from the URLs in logs and traces, because here they carry search
+  // text, cover-image addresses and sign-in codes.
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,
+    "redact_query_string": true,
+    "issues": { "enabled": true },
     "logs": {
       "enabled": true,
       "head_sampling_rate": 1,
-      "invocation_logs": false,
+      "invocation_logs": true,
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 1,
     },
   },
   // Custom domain — the workers.dev subdomain is disabled so the
