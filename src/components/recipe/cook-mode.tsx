@@ -5,7 +5,6 @@ import { useEffect, useState, type ReactElement } from 'react';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
-  ClockIcon,
   ExpandIcon,
 } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -21,55 +20,11 @@ import { NumberBadge } from '@/components/ui/number-badge';
 import type { StepToken } from '@/lib/recipe/cooklang';
 import { stepText } from '@/lib/recipe/page-view';
 
-import { useRecipeState } from './recipe-state';
-
-/**
- * The current step in large type. Ingredients are underlined and followed by
- * the amount for the servings and units chosen, so the number is right there at
- * the stove; timers get a clock.
- */
-export function StepBody({
-  tokens,
-}: Readonly<{ tokens: readonly StepToken[] }>): ReactElement {
-  const { quantity } = useRecipeState();
-  return (
-    <>
-      {tokens.map((token, index) => {
-        switch (token.kind) {
-          case 'text':
-            return <span key={index}>{token.text}</span>;
-          case 'ingredient':
-            return (
-              <span key={index}>
-                <span className="decoration-marigold underline decoration-4 underline-offset-4">
-                  {token.name}
-                </span>
-                {token.quantity ? (
-                  <span className="text-subtle text-[0.6em] font-normal">
-                    {' '}
-                    ({quantity(token.quantity)})
-                  </span>
-                ) : null}
-              </span>
-            );
-          case 'cookware':
-            return (
-              <span key={index} className="text-forest">
-                {token.name}
-              </span>
-            );
-          case 'timer':
-            return (
-              <span key={index} className="text-ember whitespace-nowrap">
-                <ClockIcon className="mr-1 inline-block h-[0.8em] w-[0.8em] -translate-y-px" />
-                {token.label}
-              </span>
-            );
-        }
-      })}
-    </>
-  );
-}
+import { ReadAloudButton } from './read-aloud';
+import { StepBody } from './step-body';
+import { TimerTray } from './timer-tray';
+import { useStepTimers, StepTimersContext } from './use-step-timers';
+import { useWakeLock } from './use-wake-lock';
 
 /**
  * The step to show after a move: `index` clamped to the steps there are, so
@@ -142,26 +97,11 @@ export function stepOffsetForEvent(
 }
 
 /**
- * Ask the browser to keep the screen awake and return the function that lets
- * it sleep again. Safe to call at any moment: if the lock is not granted yet
- * when it is released, it is given back the moment it is granted, and if the
- * browser refuses, releasing does nothing.
- *
- * @param wakeLock The browser's wake lock (`navigator.wakeLock`).
- */
-export function keepScreenAwake(
-  wakeLock: Pick<WakeLock, 'request'>,
-): () => void {
-  const granted = wakeLock.request('screen').catch(() => undefined);
-  return () => {
-    void granted.then((sentinel) => sentinel?.release());
-  };
-}
-
-/**
  * Cook mode: a full-screen view for use at the stove. One step at a time in
  * large type, the other steps dimmed within reach, a progress bar, arrow-key
- * and button navigation, and the screen kept awake while it is open.
+ * and button navigation, the screen kept awake while it is open (and again
+ * after the tab has been hidden), step timers that count down and ring, and a
+ * button that reads the step aloud where the browser can speak.
  */
 export function CookMode({
   title,
@@ -174,12 +114,10 @@ export function CookMode({
   const [index, setIndex] = useState(0);
 
   // Keep the screen from sleeping while cooking, where the browser allows it.
-  useEffect(() => {
-    if (!open || !('wakeLock' in navigator)) {
-      return;
-    }
-    return keepScreenAwake(navigator.wakeLock);
-  }, [open]);
+  useWakeLock(open);
+  // The timers live here, above the dialog, so they carry on while the cook
+  // moves between steps; they are cleared when cook mode closes.
+  const timers = useStepTimers(title);
 
   // Left and right arrows move between steps.
   useEffect(() => {
@@ -197,114 +135,138 @@ export function CookMode({
   }, [open, steps.length]);
 
   const last = steps.length - 1;
+  const changeOpen = (next: boolean): void => {
+    setOpen(next);
+    if (next) {
+      setIndex(0);
+    } else {
+      timers.clear();
+    }
+  };
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (next) {
-          setIndex(0);
-        }
-      }}
-    >
-      <DialogTrigger asChild>
-        <Button variant="accent" size="lg">
-          <ExpandIcon size="menu" />
-          Cook mode
-        </Button>
-      </DialogTrigger>
-      <DialogContent closeLabel="Leave cook mode">
-        <div className="mx-auto flex min-h-full max-w-5xl flex-col px-5 pt-5 pb-8 sm:px-10">
-          <div className="pr-12">
-            <DialogTitle className="font-display text-xl font-semibold sm:text-2xl">
-              {title}
-            </DialogTitle>
-            <DialogDescription className="text-subtle mt-1 text-sm">
-              Step {index + 1} of {steps.length}. Use the arrow keys or the
-              buttons.
-            </DialogDescription>
-          </div>
-          {/*
+    <StepTimersContext.Provider value={timers}>
+      <Dialog open={open} onOpenChange={changeOpen}>
+        <DialogTrigger asChild>
+          <Button variant="accent" size="lg">
+            <ExpandIcon size="menu" />
+            Cook mode
+          </Button>
+        </DialogTrigger>
+        <DialogContent closeLabel="Leave cook mode">
+          <div className="mx-auto flex min-h-full max-w-5xl flex-col px-5 pt-5 pb-8 sm:px-10">
+            <div className="pr-12">
+              <DialogTitle className="font-display text-xl font-semibold sm:text-2xl">
+                {title}
+              </DialogTitle>
+              <DialogDescription className="text-subtle mt-1 text-sm">
+                Step {index + 1} of {steps.length}. Use the arrow keys or the
+                buttons.
+              </DialogDescription>
+            </div>
+            {/*
             One segment per step, filled up to the current one. (Segments rather
             than a bar whose width is set inline, which the Content Security
             Policy would refuse.)
           */}
-          <div
-            className="mt-4 flex gap-1"
-            role="progressbar"
-            aria-label="Step"
-            aria-valuemin={1}
-            aria-valuemax={steps.length}
-            aria-valuenow={index + 1}
-          >
-            {steps.map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  'h-1.5 flex-1 rounded-full transition-colors',
-                  i <= index ? 'bg-flame' : 'bg-ink/10',
-                )}
-              />
-            ))}
-          </div>
-
-          <ol className="my-auto flex flex-col gap-6 py-10">
-            {steps.map((step, i) => (
-              <li
-                key={i}
-                aria-current={i === index ? 'step' : undefined}
-                className={cn(
-                  'flex gap-5 transition-opacity',
-                  i === index ? 'opacity-100' : 'hidden opacity-30 sm:flex',
-                  Math.abs(i - index) > 1 && 'sm:hidden',
-                )}
-              >
-                <NumberBadge
-                  value={i + 1}
-                  size={i === index ? 'lg' : 'md'}
-                  tone={i === index ? 'flame' : 'quiet'}
-                />
-                <p
+            <div
+              className="mt-4 flex gap-1"
+              role="progressbar"
+              aria-label="Step"
+              aria-valuemin={1}
+              aria-valuemax={steps.length}
+              aria-valuenow={index + 1}
+            >
+              {steps.map((_, i) => (
+                <div
+                  key={i}
                   className={cn(
-                    'font-display leading-snug font-medium',
-                    i === index ? 'text-3xl sm:text-5xl' : 'text-xl text-muted',
+                    'h-1.5 flex-1 rounded-full transition-colors',
+                    i <= index ? 'bg-flame' : 'bg-ink/10',
+                  )}
+                />
+              ))}
+            </div>
+
+            <ol className="my-auto flex flex-col gap-6 py-10">
+              {steps.map((step, i) => (
+                <li
+                  key={i}
+                  aria-current={i === index ? 'step' : undefined}
+                  className={cn(
+                    'flex gap-5 transition-opacity',
+                    i === index ? 'opacity-100' : 'hidden opacity-30 sm:flex',
+                    Math.abs(i - index) > 1 && 'sm:hidden',
                   )}
                 >
-                  {/* The number badge is decorative, and the list may have lost its numbering. */}
-                  <span className="sr-only">Step {i + 1}: </span>
-                  {i === index ? <StepBody tokens={step} /> : stepText(step)}
-                </p>
-              </li>
-            ))}
-          </ol>
+                  <NumberBadge
+                    value={i + 1}
+                    size={i === index ? 'lg' : 'md'}
+                    tone={i === index ? 'flame' : 'quiet'}
+                  />
+                  <p
+                    className={cn(
+                      'font-display leading-snug font-medium',
+                      i === index
+                        ? 'text-3xl sm:text-5xl'
+                        : 'text-xl text-muted',
+                    )}
+                  >
+                    {/* The number badge is decorative, and the list may have lost its numbering. */}
+                    <span className="sr-only">Step {i + 1}: </span>
+                    {i === index ? (
+                      <StepBody tokens={step} stepIndex={i} />
+                    ) : (
+                      stepText(step)
+                    )}
+                  </p>
+                </li>
+              ))}
+            </ol>
 
-          <div className="flex items-center justify-between gap-3">
-            <Button
-              variant="outline"
-              size="lg"
-              disabled={index === 0}
-              onClick={() => setIndex((i) => clampStep(i - 1, steps.length))}
-              className="disabled:opacity-40"
-            >
-              <ChevronLeftIcon size="md" />
-              Back
-            </Button>
-            {index === last ? (
-              <Button size="lg" onClick={() => setOpen(false)}>
-                Done cooking
-              </Button>
-            ) : (
+            <div className="mb-4 flex">
+              <ReadAloudButton
+                key={index}
+                tokens={steps[index] ?? []}
+                number={index + 1}
+              />
+            </div>
+
+            <TimerTray timers={timers} />
+            {/* Told to screen readers politely when a timer finishes. */}
+            <p role="status" className="sr-only">
+              {timers.announcement}
+            </p>
+
+            <div className="flex items-center justify-between gap-3">
               <Button
+                variant="outline"
                 size="lg"
-                onClick={() => setIndex((i) => clampStep(i + 1, steps.length))}
+                disabled={index === 0}
+                onClick={() => setIndex((i) => clampStep(i - 1, steps.length))}
+                className="disabled:opacity-40"
               >
-                Next
-                <ChevronRightIcon size="md" />
+                <ChevronLeftIcon size="md" />
+                Back
               </Button>
-            )}
+              {index === last ? (
+                <Button size="lg" onClick={() => changeOpen(false)}>
+                  Done cooking
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  onClick={() =>
+                    setIndex((i) => clampStep(i + 1, steps.length))
+                  }
+                >
+                  Next
+                  <ChevronRightIcon size="md" />
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </StepTimersContext.Provider>
   );
 }

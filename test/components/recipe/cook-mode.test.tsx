@@ -1,10 +1,8 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 
 import {
   clampStep,
   CookMode,
-  keepScreenAwake,
-  StepBody,
   stepOffsetForEvent,
   stepOffsetForKey,
   usesArrowKeys,
@@ -59,45 +57,6 @@ describe('stepOffsetForKey', () => {
   it('ignores every other key', () => {
     expect(stepOffsetForKey('Enter')).toBe(0);
     expect(stepOffsetForKey('ArrowUp')).toBe(0);
-  });
-});
-
-describe('keepScreenAwake', () => {
-  it('asks for a screen lock and gives it back when released', async () => {
-    const release = jest.fn(async () => undefined);
-    const request = jest
-      .fn<(type: 'screen') => Promise<{ release: typeof release }>>()
-      .mockResolvedValue({ release });
-    const stop = keepScreenAwake({ request } as never);
-    expect(request).toHaveBeenCalledWith('screen');
-    stop();
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(release).toHaveBeenCalledTimes(1);
-  });
-
-  it('gives the lock straight back if it is released before it was granted', async () => {
-    const release = jest.fn(async () => undefined);
-    const request = jest.fn(
-      () =>
-        new Promise<{ release: () => Promise<void> }>((grant) => {
-          setTimeout(() => grant({ release }), 0);
-        }),
-    );
-    const stop = keepScreenAwake({ request } as never);
-    stop();
-    expect(release).not.toHaveBeenCalled();
-    await new Promise((done) => setTimeout(done, 5));
-    expect(release).toHaveBeenCalledTimes(1);
-  });
-
-  it('does nothing, without error, when the browser refuses', async () => {
-    const request = jest.fn(async () => {
-      throw new Error('denied');
-    });
-    const stop = keepScreenAwake({ request } as never);
-    expect(() => stop()).not.toThrow();
-    await new Promise((done) => setTimeout(done, 0));
   });
 });
 
@@ -165,44 +124,5 @@ describe('stepOffsetForEvent', () => {
 
   it('ignores every other key', () => {
     expect(stepOffsetForEvent(press('Enter'))).toBe(0);
-  });
-});
-
-describe('StepBody', () => {
-  const body = htmlAt(
-    <RecipeStateProvider servings={4} initialUnits="original">
-      <StepBody
-        tokens={[
-          { kind: 'text', text: 'Fry ' },
-          { kind: 'ingredient', name: 'onion', quantity: '2' },
-          { kind: 'text', text: ' in a ' },
-          { kind: 'cookware', name: 'pan' },
-          { kind: 'text', text: ' for ' },
-          { kind: 'timer', label: '5 minutes' },
-        ]}
-      />
-    </RecipeStateProvider>,
-  );
-
-  it('underlines ingredients and shows the amount for the servings chosen', () => {
-    expect(body).toMatch(/<span class="[^"]*underline[^"]*">onion<\/span>/);
-    expect(body).toContain('(2)');
-  });
-
-  it('colours cookware, and gives a timer a clock', () => {
-    expect(body).toMatch(/<span class="text-forest">pan<\/span>/);
-    expect(body).toMatch(/<svg[^>]*>.*<\/svg>5 minutes/s);
-  });
-
-  it('leaves out the amount of an ingredient that has none', () => {
-    const out = htmlAt(
-      <RecipeStateProvider servings={4} initialUnits="original">
-        <StepBody
-          tokens={[{ kind: 'ingredient', name: 'salt', quantity: '' }]}
-        />
-      </RecipeStateProvider>,
-    );
-    expect(out).toContain('salt');
-    expect(out).not.toContain('(');
   });
 });
