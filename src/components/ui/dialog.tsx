@@ -123,6 +123,86 @@ export function DialogDescription(
   return <p id={descriptionId} {...props} />;
 }
 
+/**
+ * Bring a `<dialog>` element into step with whether it should be open. Showing
+ * it modally (not just setting `open`) is what traps focus and makes the page
+ * behind it inert; asking for what it already is does nothing.
+ */
+export function syncModal(
+  dialog: Pick<HTMLDialogElement, 'open' | 'showModal' | 'close'>,
+  open: boolean,
+): void {
+  if (open && !dialog.open) {
+    dialog.showModal();
+  } else if (!open && dialog.open) {
+    dialog.close();
+  }
+}
+
+/**
+ * The click handler for the dialog element, which is also its own backdrop: a
+ * click that lands on the dialog itself, rather than on something inside it, is
+ * a click outside, and closes it.
+ */
+export function backdropClickHandler(
+  dialog: EventTarget,
+  close: () => void,
+): (event: Readonly<Pick<Event, 'target'>>) => void {
+  return (event) => {
+    if (event.target === dialog) {
+      close();
+    }
+  };
+}
+
+/**
+ * The handler for the dialog's `cancel` event (Escape). The browser would close
+ * the dialog itself; this stops that and routes it through the dialog's own
+ * state, so the two never disagree and a busy dialog can refuse to close.
+ */
+export function cancelHandler(
+  dismissable: boolean,
+  close: () => void,
+): (event: Readonly<Pick<Event, 'preventDefault'>>) => void {
+  return (event) => {
+    event.preventDefault();
+    if (dismissable) {
+      close();
+    }
+  };
+}
+
+/**
+ * Stop the page behind a modal from scrolling, and return the function that
+ * lets it scroll again. The page's own `overflow` is put back exactly as it was
+ * (not simply cleared), in case something else had set it.
+ */
+export function lockScroll(
+  style: Pick<CSSStyleDeclaration, 'getPropertyValue' | 'setProperty'>,
+): () => void {
+  const before = style.getPropertyValue('overflow');
+  style.setProperty('overflow', 'hidden');
+  return () => style.setProperty('overflow', before);
+}
+
+/**
+ * Whether a {@link DialogDescription} appears anywhere in `children`.
+ *
+ * The dialog points `aria-describedby` at its description, but only if there is
+ * one: a reference to an id that is not on the page is an error that some screen
+ * readers answer by saying nothing at all. It looks through the elements written
+ * in the JSX, so a description hidden inside another component's own output is
+ * not seen; the dialog then simply goes without one, which is safe.
+ */
+export function hasDescription(children: ReactNode): boolean {
+  return Children.toArray(children).some(
+    (child) =>
+      isValidElement<{ children?: ReactNode }>(child) &&
+      (child.type === DialogDescription ||
+        hasDescription(child.props.children)),
+  );
+}
+
 /** The shape and position of each kind of dialog. */
 const VARIANTS = {
   /** Fills the whole screen. */
@@ -156,6 +236,8 @@ export function DialogContent({
   } & Omit<ComponentProps<'dialog'>, 'open'>
 >): ReactElement {
   const { open, setOpen, titleId, descriptionId } = useDialog();
+  // Closed, nothing of the content is rendered, so there is nothing to point at.
+  const described = open && hasDescription(children);
   const ref = useRef<HTMLDialogElement>(null);
 
   // Keep the element in step with the state: showing it modally is what traps
@@ -165,11 +247,7 @@ export function DialogContent({
     if (!dialog) {
       return;
     }
-    if (open && !dialog.open) {
-      dialog.showModal();
-    } else if (!open && dialog.open) {
-      dialog.close();
-    }
+    syncModal(dialog, open);
   }, [open]);
 
   // The dialog element is also its own backdrop: a click that lands on it,
@@ -179,11 +257,7 @@ export function DialogContent({
     if (!dialog || !dismissable) {
       return;
     }
-    const onClick = (event: Event) => {
-      if (event.target === dialog) {
-        setOpen(false);
-      }
-    };
+    const onClick = backdropClickHandler(dialog, () => setOpen(false));
     dialog.addEventListener('click', onClick);
     return () => dialog.removeEventListener('click', onClick);
   }, [dismissable, setOpen]);
@@ -194,25 +268,17 @@ export function DialogContent({
     if (!open) {
       return;
     }
-    const { style } = document.body;
-    const before = style.getPropertyValue('overflow');
-    style.setProperty('overflow', 'hidden');
-    return () => style.setProperty('overflow', before);
+    return lockScroll(document.body.style);
   }, [open]);
 
   return (
     <dialog
       ref={ref}
       aria-labelledby={titleId}
-      aria-describedby={descriptionId}
+      aria-describedby={described ? descriptionId : undefined}
       // Escape: the browser would close it itself; route it through our state so
       // the two never disagree (and so a busy dialog can refuse).
-      onCancel={(event) => {
-        event.preventDefault();
-        if (dismissable) {
-          setOpen(false);
-        }
-      }}
+      onCancel={cancelHandler(dismissable, () => setOpen(false))}
       className={cn(
         'bg-paper text-ink fixed m-0 overflow-y-auto p-0 backdrop:bg-ink/50',
         VARIANTS[variant],

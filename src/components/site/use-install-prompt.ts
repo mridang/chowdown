@@ -3,14 +3,26 @@
 import { useCallback, useEffect, useState } from 'react';
 
 /** Chrome's install prompt event, which TypeScript's DOM types don't include. */
-interface InstallPromptEvent extends Event {
+/** The install prompt event: Chrome's `beforeinstallprompt`. */
+export interface InstallPromptEvent extends Event {
   prompt(): Promise<void>;
   readonly userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
 /** Whether an event is Chrome's install prompt: the one that carries a `prompt` method. */
-function isInstallPromptEvent(event: Event): event is InstallPromptEvent {
+export function isInstallPromptEvent(
+  event: Event,
+): event is InstallPromptEvent {
   return 'prompt' in event && typeof event.prompt === 'function';
+}
+
+/**
+ * Show the browser's install prompt and wait for the person's answer. Either
+ * answer uses the event up (a prompt can be shown once), so the caller drops it.
+ */
+export async function runInstall(event: InstallPromptEvent): Promise<void> {
+  await event.prompt();
+  await event.userChoice;
 }
 
 /**
@@ -47,8 +59,7 @@ export function useInstallPrompt(): Readonly<{
     if (!event) {
       return;
     }
-    await event.prompt();
-    await event.userChoice;
+    await runInstall(event);
     setEvent(null);
   }, [event]);
 

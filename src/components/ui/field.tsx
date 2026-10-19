@@ -53,19 +53,21 @@ export function SearchField({
 
 /** The look of a text box, shared by the single-line and multi-line ones. */
 const BOX =
-  'w-full rounded-control border border-field bg-white px-3.5 text-base text-ink transition placeholder:text-subtle hover:border-ink/50 focus:border-ink focus:outline-2 focus:outline-offset-0 focus:outline-ink/15';
+  'w-full rounded-control border border-field bg-white px-3.5 text-base text-ink transition placeholder:text-subtle hover:border-ink focus:border-ink focus:outline-2 focus:outline-offset-0 focus:outline-ink/15';
 
 /**
  * A labelled form control: the visible label above, an optional line of help
  * under it, then the control itself. The label is tied to the control by `id`,
- * so clicking it focuses the field and screen readers announce it; when there
- * is help text the control is also pointed at it (`aria-describedby`), so the
- * help is read out with the field. Pass the control as the single child.
+ * so clicking it focuses the field and screen readers announce it. When there
+ * is help text, or an error, the control is also pointed at them
+ * (`aria-describedby`) so they are read out with the field, and an error marks
+ * the control `aria-invalid`. Pass the control as the single child.
  */
 export function FormField({
   id,
   label,
   hint,
+  error,
   children,
 }: Readonly<{
   /** The control's `id`: the label points at it. */
@@ -73,12 +75,25 @@ export function FormField({
   label: string;
   /** A line of help under the label, read out with the field. */
   hint?: string;
+  /** What is wrong with the value, shown under the control and announced as it appears. */
+  error?: string;
   children: ReactNode;
 }>): ReactElement {
   const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  const describedBy = describedByIds([
+    hint ? hintId : undefined,
+    error ? errorId : undefined,
+  ]);
   const control =
-    hint && isValidElement<{ 'aria-describedby'?: string }>(children)
-      ? cloneElement(children, { 'aria-describedby': hintId })
+    describedBy &&
+    isValidElement<{ 'aria-describedby'?: string; 'aria-invalid'?: boolean }>(
+      children,
+    )
+      ? cloneElement(children, {
+          'aria-describedby': describedBy,
+          ...(error ? { 'aria-invalid': true } : {}),
+        })
       : children;
   return (
     <div>
@@ -91,8 +106,29 @@ export function FormField({
         </p>
       ) : null}
       <div className="mt-2">{control}</div>
+      {error ? (
+        <p
+          id={errorId}
+          role="alert"
+          className="mt-2 text-sm font-medium text-ember"
+        >
+          {error}
+        </p>
+      ) : null}
     </div>
   );
+}
+
+/**
+ * The value for an `aria-describedby`: the ids that are present, joined by
+ * spaces, or `undefined` when there are none (so the attribute is left off
+ * rather than pointing at nothing).
+ */
+export function describedByIds(
+  ids: readonly (string | undefined)[],
+): string | undefined {
+  const present = ids.filter((id): id is string => Boolean(id));
+  return present.length > 0 ? present.join(' ') : undefined;
 }
 
 /** A single-line text box. */

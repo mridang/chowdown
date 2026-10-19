@@ -1,4 +1,4 @@
-import type { ElementType, ReactElement, ReactNode } from 'react';
+import type { ElementType, ReactElement, ReactNode, Ref } from 'react';
 
 import { cn } from '@/components/ui/cn';
 
@@ -107,20 +107,31 @@ const HEADINGS = {
   h4: 'text-xl leading-snug',
 } as const;
 
-/** A heading in the display serif. `variant` sets the size, `as` the HTML tag. */
+/**
+ * A heading in the display serif. `variant` sets the size, `as` the HTML tag.
+ * `ref` and `tabIndex` are for a page that moves focus to its heading when its
+ * content changes (give it `tabIndex={-1}` so a script can focus it without
+ * adding it to the Tab order).
+ */
 export function Heading({
   variant = 'h2',
   as: Tag = 'h2',
   children,
   className,
+  ref,
+  tabIndex,
 }: Readonly<{
   variant?: keyof typeof HEADINGS;
   as?: ElementType;
   children: ReactNode;
   className?: string;
+  ref?: Ref<HTMLHeadingElement>;
+  tabIndex?: number;
 }>): ReactElement {
   return (
     <Tag
+      ref={ref}
+      tabIndex={tabIndex}
       className={cn(
         'font-display font-semibold tracking-tight',
         HEADINGS[variant],

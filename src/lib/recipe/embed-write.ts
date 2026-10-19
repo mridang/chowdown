@@ -4,7 +4,7 @@
  * Keep recipe embeddings current without making anyone wait. A recipe is
  * embedded in the background right after it is written (create, import, tag,
  * note…), and a bounded backfill embeds any recipe that has none yet. Both end
- * by refreshing the stored similar lists, which is what makes the recipe page's
+ * by updating the stored similar lists, which is what makes the recipe page's
  * "Find similar" row a single cheap read.
  */
 
@@ -50,8 +50,12 @@ export interface EmbedWriteDeps {
     env: CloudflareEnv,
     text: string,
   ) => Promise<readonly number[]>;
-  /** Recompute and store the similar lists. */
-  readonly refreshLists: (db: Database, userId: number) => Promise<unknown>;
+  /** Bring the similar lists up to date after these recipes' embeddings changed. */
+  readonly refreshLists: (
+    db: Database,
+    userId: number,
+    changedIds: readonly string[],
+  ) => Promise<unknown>;
 }
 
 /** The real thing. */
@@ -88,7 +92,7 @@ async function embedAndStore(
 }
 
 /**
- * Embed a just-written recipe and refresh everyone's similar lists.
+ * Embed a just-written recipe and update the similar lists it affects.
  *
  * @param deps Collaborators; leave out to use the real ones.
  */
@@ -112,7 +116,7 @@ export async function embedRecipe(
     source,
     modifiedTime,
   );
-  await deps.refreshLists(db, userId);
+  await deps.refreshLists(db, userId, [driveFileId]);
 }
 
 /**
@@ -151,7 +155,11 @@ export async function backfillEmbeddings(
     ),
   );
   if (missing.length > 0) {
-    await deps.refreshLists(db, userId);
+    await deps.refreshLists(
+      db,
+      userId,
+      missing.map((r) => r.drive_file_id),
+    );
   }
   return missing.length;
 }

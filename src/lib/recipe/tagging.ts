@@ -11,6 +11,7 @@
  * shape the recipe page and facet filter read back.
  */
 
+import { isObject } from '../api/json';
 import { upsertMetadata } from './cook-text';
 import { parseRecipe, type ParsedRecipe } from './cooklang';
 import { buildEmbeddingText } from './embeddings';
@@ -53,11 +54,6 @@ function extractJson(text: string): Readonly<Record<string, unknown>> | null {
   } catch {
     return null;
   }
-}
-
-/** Whether a value is an object we can look facets up in. */
-function isObject(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === 'object' && value !== null;
 }
 
 /** A tag as `[facetKey, value]`, ready to write as `>> key: value`. */

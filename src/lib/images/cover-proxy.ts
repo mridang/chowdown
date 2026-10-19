@@ -10,7 +10,13 @@
  * addresses, deciding which addresses are safe to fetch, and fetching one.
  */
 
-import { parseUrl } from '../util/url';
+import {
+  fetchCapped,
+  isPublicWebUrl,
+  type FetchFailure,
+  type SafeFetcher,
+  type SafeRequestInit,
+} from '../http/safe-fetch';
 
 /** The largest width a page may ask for, in pixels. */
 const LARGEST_WIDTH = 1280;
@@ -39,59 +45,15 @@ export function coverSrcSet(
   return widths.map((w) => `${coverSrc(url, w)} ${snapWidth(w)}w`).join(', ');
 }
 
-/** Whether an IPv4 address is private, loopback or otherwise not for the web. */
-function isPrivateIPv4(host: string): boolean {
-  const parts = host.split('.').map(Number);
-  if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n))) {
-    return false;
-  }
-  const [a = NaN, b = NaN] = parts;
-  return (
-    a === 0 ||
-    a === 10 ||
-    a === 127 ||
-    (a === 169 && b === 254) ||
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168) ||
-    (a === 100 && b >= 64 && b <= 127) ||
-    a >= 224
-  );
-}
-
 /**
  * Whether an address is a public web image we are willing to fetch: http or
  * https on the usual ports, with a real hostname — not an IP address, not
  * `localhost` and not an internal name. This keeps the proxy from being aimed
- * at anything inside a network.
+ * at anything inside a network. (The same rule every outbound fetch follows,
+ * see `http/safe-fetch.ts`.)
  */
 export function isFetchableImageUrl(value: string): boolean {
-  const url = parseUrl(value);
-  if (!url) {
-    return false;
-  }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    return false;
-  }
-  if (url.port && url.port !== '80' && url.port !== '443') {
-    return false;
-  }
-  if (url.username || url.password) {
-    return false;
-  }
-  const host = url.hostname.toLowerCase();
-  if (
-    !host.includes('.') ||
-    host.startsWith('[') ||
-    /^[\d.]+$/.test(host) ||
-    isPrivateIPv4(host) ||
-    /\.(local|localhost|internal|lan|home|corp|test|invalid|example)$/.test(
-      host,
-    ) ||
-    host === 'localhost'
-  ) {
-    return false;
-  }
-  return true;
+  return isPublicWebUrl(value);
 }
 
 /** How long a photo may be kept, by us and by the browser. */
@@ -107,18 +69,10 @@ export type CoverResult =
     };
 
 /** Request options plus Cloudflare's `cf` extension, which other runtimes ignore. */
-export type CoverRequestInit = RequestInit & {
-  readonly cf?: {
-    readonly cacheEverything: boolean;
-    readonly cacheTtl: number;
-  };
-};
+export type CoverRequestInit = SafeRequestInit;
 
 /** The fetch function, narrowed to what the proxy needs, so tests can fake it. */
-export type CoverFetch = (
-  url: string,
-  init: CoverRequestInit,
-) => Promise<Response>;
+export type CoverFetch = SafeFetcher;
 
 /**
  * The part of Cloudflare's Images binding the proxy uses (scale an image, encode
@@ -161,9 +115,6 @@ function coverHeaders(type: string): HeadersInit {
   };
 }
 
-/** The real `fetch`, as the proxy's narrowed type. */
-const defaultFetch: CoverFetch = (url, init) => fetch(url, init);
-
 /** The outcome of `work`, or undefined if it threw: a failed step is an answer here, not a crash. */
 async function attempt<T>(work: () => Promise<T>): Promise<T | undefined> {
   try {
@@ -204,57 +155,65 @@ async function scaledCopy(
     : undefined;
 }
 
+/** How long the photo's site gets to answer and send the photo, in all. */
+const FETCH_TIMEOUT_MS = 8000;
+
+/** What we ask the photo's site for, best format first. */
+const ACCEPT_IMAGES = 'image/avif,image/webp,image/apng,image/*;q=0.8';
+
+/** Whether a media type is a raster image: any image except SVG, which can carry script. */
+function isRasterImage(mediaType: string): boolean {
+  return mediaType.startsWith('image/') && !mediaType.startsWith('image/svg');
+}
+
+/** The refusal that answers a fetch that gave no photo. */
+function refusalFor(failure: FetchFailure): CoverResult {
+  switch (failure.reason) {
+    case 'blocked':
+      return refusal(400, 'Not a fetchable image address.');
+    case 'type':
+      return refusal(415, 'That address is not a photo.');
+    case 'too-large':
+      return refusal(413, 'The photo is too large.');
+    case 'status':
+      return failure.status === 404 || failure.status === 410
+        ? refusal(404, 'The image is gone.')
+        : refusal(502, 'The image site refused.');
+    case 'redirects':
+    case 'timeout':
+    case 'unreachable':
+      return refusal(502, 'The image site did not answer.');
+  }
+}
+
 /**
  * Fetch one cover photo for the proxy. Only real, reasonably small raster images
- * are accepted: never SVG (which can carry script), never an HTML page. Where the
- * Images binding is available the photo is scaled down to `width` and sent as
- * WebP, typically a tenth of the original's weight; if scaling fails the
- * original is passed through, so a photo is never lost to an optimisation.
+ * are accepted: never SVG (which can carry script), never an HTML page. The
+ * fetch is the shared safe one (`http/safe-fetch.ts`): the photo is read with a
+ * hard byte limit however its site behaves, and a redirect is followed only to
+ * another public address. Where the Images binding is available the photo is
+ * scaled down to `width` and sent as WebP, typically a tenth of the original's
+ * weight; if scaling fails the original is passed through, so a photo is never
+ * lost to an optimisation.
  */
 export async function fetchCover(
   url: string,
   width: number,
   deps: Readonly<{ fetcher?: CoverFetch; images?: ImagesLike }> = {},
 ): Promise<CoverResult> {
-  const fetcher = deps.fetcher ?? defaultFetch;
-  if (!isFetchableImageUrl(url)) {
-    return refusal(400, 'Not a fetchable image address.');
+  const fetched = await fetchCapped(url, {
+    maxBytes: MAX_COVER_BYTES,
+    timeoutMs: FETCH_TIMEOUT_MS,
+    accept: ACCEPT_IMAGES,
+    acceptsType: isRasterImage,
+    // Cloudflare-only: keep the original at the edge, ignored elsewhere.
+    edgeCache: { cacheEverything: true, cacheTtl: KEEP_SECONDS },
+    fetcher: deps.fetcher,
+  });
+  if (!fetched.ok) {
+    return refusalFor(fetched);
   }
-  const upstream = await attempt(() =>
-    fetcher(url, {
-      headers: {
-        Accept: 'image/avif,image/webp,image/apng,image/*;q=0.8',
-        'User-Agent': 'chowdown-cover-proxy/1.0',
-      },
-      redirect: 'follow',
-      signal: AbortSignal.timeout(8000),
-      // Cloudflare-only: keep the original at the edge, ignored elsewhere.
-      cf: { cacheEverything: true, cacheTtl: KEEP_SECONDS },
-    }),
-  );
-  if (!upstream) {
-    return refusal(502, 'The image site did not answer.');
-  }
-  if (upstream.status === 404 || upstream.status === 410) {
-    return refusal(404, 'The image is gone.');
-  }
-  if (!upstream.ok) {
-    return refusal(502, 'The image site refused.');
-  }
-  const [essence = ''] = (upstream.headers.get('content-type') ?? '')
-    .toLowerCase()
-    .split(';');
-  const type = essence.trim();
-  if (!type.startsWith('image/') || type.startsWith('image/svg')) {
-    return refusal(415, 'That address is not a photo.');
-  }
-  if (Number(upstream.headers.get('content-length') ?? 0) > MAX_COVER_BYTES) {
-    return refusal(413, 'The photo is too large.');
-  }
-  const bytes = await upstream.arrayBuffer();
-  if (bytes.byteLength > MAX_COVER_BYTES) {
-    return refusal(413, 'The photo is too large.');
-  }
+  const { bytes, type } = fetched;
   const scaled =
     deps.images && SCALABLE.test(type) && bytes.byteLength > SCALE_FROM_BYTES
       ? await scaledCopy(deps.images, bytes, width)

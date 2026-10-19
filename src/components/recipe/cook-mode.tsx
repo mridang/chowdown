@@ -28,7 +28,7 @@ import { useRecipeState } from './recipe-state';
  * the amount for the servings and units chosen, so the number is right there at
  * the stove; timers get a clock.
  */
-function StepBody({
+export function StepBody({
   tokens,
 }: Readonly<{ tokens: readonly StepToken[] }>): ReactElement {
   const { quantity } = useRecipeState();
@@ -98,6 +98,50 @@ export function stepOffsetForKey(key: string): -1 | 0 | 1 {
 }
 
 /**
+ * Whether the target of a key press is somewhere the person is typing or
+ * choosing with the arrow keys (a text box, a list, a slider, rich text), where
+ * the arrows belong to that control and must not also turn the recipe's page.
+ * Looks at the element's shape rather than its class, so it needs no DOM
+ * classes and can be checked with a plain object.
+ */
+export function usesArrowKeys(target: EventTarget | null): boolean {
+  if (typeof target !== 'object' || target === null) {
+    return false;
+  }
+  const tag =
+    'tagName' in target && typeof target.tagName === 'string'
+      ? target.tagName.toUpperCase()
+      : '';
+  return (
+    tag === 'INPUT' ||
+    tag === 'TEXTAREA' ||
+    tag === 'SELECT' ||
+    ('isContentEditable' in target && target.isContentEditable === true)
+  );
+}
+
+/**
+ * How far a key press moves through the steps in cook mode. Like
+ * {@link stepOffsetForKey}, but zero as well when the key is meant for
+ * something else: a modified press (Alt+Left is the browser's Back), one
+ * already handled, or one aimed at a control that uses the arrows itself.
+ */
+export function stepOffsetForEvent(
+  event: Readonly<
+    Pick<
+      KeyboardEvent,
+      'key' | 'altKey' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'defaultPrevented'
+    > & { target: EventTarget | null }
+  >,
+): -1 | 0 | 1 {
+  const modified =
+    event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
+  return modified || event.defaultPrevented || usesArrowKeys(event.target)
+    ? 0
+    : stepOffsetForKey(event.key);
+}
+
+/**
  * Ask the browser to keep the screen awake and return the function that lets
  * it sleep again. Safe to call at any moment: if the lock is not granted yet
  * when it is released, it is given back the moment it is granted, and if the
@@ -143,7 +187,7 @@ export function CookMode({
       return;
     }
     const onKey = (event: KeyboardEvent) => {
-      const offset = stepOffsetForKey(event.key);
+      const offset = stepOffsetForEvent(event);
       if (offset !== 0) {
         setIndex((i) => clampStep(i + offset, steps.length));
       }

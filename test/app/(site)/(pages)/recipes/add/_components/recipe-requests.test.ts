@@ -48,6 +48,15 @@ describe('postImport', () => {
   });
 });
 
+describe('postImport and cancelling', () => {
+  it('hands the abort signal to the request, so a slow import can be given up on', async () => {
+    const fetchSpy = stubFetch();
+    const controller = new AbortController();
+    await postImport('text', controller.signal);
+    expect(fetchSpy.mock.calls[0]?.[1]?.signal).toBe(controller.signal);
+  });
+});
+
 describe('discardImport', () => {
   it('asks the server to delete the import', () => {
     const fetchSpy = stubFetch();

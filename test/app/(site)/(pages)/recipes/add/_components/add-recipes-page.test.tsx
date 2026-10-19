@@ -11,6 +11,10 @@ describe('AddRecipesPage', () => {
     expect(out).toMatch(/<h1[^>]*>Add recipes<\/h1>/);
   });
 
+  it('lets focus come back to the heading when the choices are shown again', () => {
+    expect(out).toMatch(/<h1 tabindex="-1"[^>]*>Add recipes<\/h1>/);
+  });
+
   it('links back to all the recipes', () => {
     expect(out).toMatch(/<a [^>]*href="\/app"[^>]*>.*All recipes<\/a>/);
   });

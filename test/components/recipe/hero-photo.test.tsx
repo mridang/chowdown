@@ -34,4 +34,21 @@ describe('HeroPhoto', () => {
     expect(out).toContain('aria-label="Photos"');
     expect(out).toContain('Show photo 2 of 2');
   });
+
+  it('scrolls the strip inside itself and snaps the thumbnails, rather than widening the page', () => {
+    const out = html(
+      <HeroPhoto
+        images={['https://example.com/1.jpg', 'https://example.com/2.jpg']}
+        title="Dal"
+        tone="sand"
+      />,
+    );
+    const strip =
+      /<div[^>]*aria-label="Photos"[^>]*class="([^"]*)"/.exec(out)?.[1] ??
+      /<div[^>]*class="([^"]*)"[^>]*aria-label="Photos"/.exec(out)?.[1];
+    expect(strip).toContain('overflow-x-auto');
+    expect(strip).toContain('max-w-max');
+    expect(strip).toContain('snap-x');
+    expect(out).toContain('snap-start');
+  });
 });

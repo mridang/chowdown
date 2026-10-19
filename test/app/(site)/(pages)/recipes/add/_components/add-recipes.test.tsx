@@ -11,8 +11,26 @@ describe('AddRecipes', () => {
   it('is a section named by its heading', () => {
     expect(out).toMatch(/<section[^>]*aria-labelledby="add-recipes-heading"/);
     expect(out).toMatch(
-      /<h2 id="add-recipes-heading"[^>]*>Import links or text<\/h2>/,
+      /<h2[^>]*id="add-recipes-heading"[^>]*>Import links or text<\/h2>/,
     );
+  });
+
+  it('lets script move focus to the heading, without putting it in the Tab order', () => {
+    expect(out).toMatch(/<h2[^>]*tabindex="-1"[^>]*id="add-recipes-heading"/);
+  });
+
+  it('has an empty polite live region ready, so progress can be announced', () => {
+    expect(out).toMatch(
+      /<p role="status" aria-live="polite"[^>]*empty:hidden[^>]*><\/p>/,
+    );
+  });
+
+  it('offers no Cancel until something is running', () => {
+    expect(out).not.toContain('>Cancel<');
+  });
+
+  it('shows no field error and does not mark the box invalid', () => {
+    expect(out).not.toContain('aria-invalid');
   });
 
   it('starts by asking for links or text, in a labelled box', () => {

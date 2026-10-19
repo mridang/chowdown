@@ -15,7 +15,9 @@ import type { Tone } from '@/lib/recipe/card-data';
  * The first photo is the page's hero, so it loads straight away at high
  * priority. When a recipe has more than one photo a strip of thumbnails sits
  * over the bottom edge to switch between them; a recipe without any gets a soft
- * colour tile instead.
+ * colour tile instead. The strip is as wide as the photo at most and scrolls
+ * sideways inside itself when there are more thumbnails than fit (a phone), so
+ * it never widens the page; the thumbnails snap into place as it scrolls.
  */
 export function HeroPhoto({
   images,
@@ -56,7 +58,7 @@ export function HeroPhoto({
         <div
           role="group"
           aria-label="Photos"
-          className="bg-paper/90 rounded-card absolute right-3 bottom-3 left-3 flex max-w-max gap-1.5 overflow-x-auto p-1.5 print:hidden"
+          className="bg-paper/90 rounded-card absolute right-3 bottom-3 left-3 flex max-w-max snap-x gap-1.5 overflow-x-auto p-1.5 print:hidden"
         >
           {images.map((src, i) => (
             <button
@@ -66,7 +68,7 @@ export function HeroPhoto({
               aria-pressed={i === index}
               onClick={() => setIndex(i)}
               className={cn(
-                'rounded-control focus-visible:outline-ink relative h-12 w-12 shrink-0 overflow-hidden border-2 transition focus-visible:outline-2 focus-visible:outline-offset-1',
+                'rounded-control focus-visible:outline-ink relative h-12 w-12 shrink-0 snap-start overflow-hidden border-2 transition focus-visible:outline-2 focus-visible:outline-offset-1',
                 i === index ? 'border-flame' : 'border-transparent',
               )}
             >

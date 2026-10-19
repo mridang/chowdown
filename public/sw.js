@@ -11,6 +11,7 @@ const OFFLINE_PAGE = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#ffb100">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
 <title>Offline · chowdown</title>
 <style>
   body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #fbf8f2; color: #15120e; font: 16px/1.5 system-ui, sans-serif; text-align: center; padding: 24px; }
@@ -33,16 +34,31 @@ self.addEventListener('install', () => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  // Navigation preload starts the network request while the worker boots, so
+  // having a worker adds no start-up delay to a page load (the consent page
+  // included). Not every browser has it.
+  event.waitUntil(
+    Promise.all([
+      self.clients.claim(),
+      self.registration.navigationPreload
+        ? self.registration.navigationPreload.enable()
+        : undefined,
+    ]),
+  );
 });
 
+/** The page from the network: the preloaded response if there is one, else a fresh fetch. */
+async function fromNetwork(event) {
+  const preloaded = await event.preloadResponse;
+  return preloaded ?? fetch(event.request);
+}
+
 self.addEventListener('fetch', (event) => {
-  const request = event.request;
-  if (request.mode !== 'navigate') {
+  if (event.request.mode !== 'navigate') {
     return;
   }
   event.respondWith(
-    fetch(request).catch(
+    fromNetwork(event).catch(
       () =>
         new Response(OFFLINE_PAGE, {
           status: 503,

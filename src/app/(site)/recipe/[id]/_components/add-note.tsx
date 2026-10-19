@@ -17,7 +17,8 @@ import {
   SelectField,
   TextArea,
 } from '@/components/ui/field';
-import { problemError, problemText } from '@/lib/problem-message';
+
+import { postNote } from './note-request';
 
 /**
  * "Add a note" control on a recipe page. Lets the user attach a personal note
@@ -54,27 +55,16 @@ export function AddNote({
     }
     setBusy(true);
     setError(null);
-    try {
-      const res = await fetch(`/api/recipes/${recipeId}/notes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: text.trim(),
-          ingredient: target || undefined,
-        }),
-      });
-      if (!res.ok) {
-        throw await problemError(res);
-      }
-      setText('');
-      setTarget('');
-      setOpen(false);
-      router.refresh();
-    } catch (error) {
-      setError(problemText(error, 'Could not save the note.'));
-    } finally {
-      setBusy(false);
+    const result = await postNote(recipeId, text, target);
+    setBusy(false);
+    if (!result.saved) {
+      setError(result.message);
+      return;
     }
+    setText('');
+    setTarget('');
+    setOpen(false);
+    router.refresh();
   }, [text, target, recipeId, router]);
 
   if (!open) {

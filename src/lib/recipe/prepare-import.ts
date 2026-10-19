@@ -1,20 +1,20 @@
 /**
  * @packageDocumentation
  *
- * Preparing a recipe import: plan the pasted text into units (one per link, one
- * per block of prose), fetch each link server-side and convert each unit to
- * Cooklang with our own converter — so the Cooklang format stays ours to govern.
- * Nothing is saved here; the result is a draft per unit, or a problem for a
+ * Preparing a recipe import: take the planned units (one per link, one per
+ * block of prose, see `import-blob.ts`), fetch each link server-side and
+ * convert each unit to Cooklang with our own converter, so the Cooklang format
+ * stays ours to govern. Nothing is saved here; the result is a draft per unit, or a problem for a
  * unit that couldn't be fetched or converted, so one bad link never fails the
  * whole import.
  */
 
 import { parseRecipe } from './cooklang';
-import { fetchPage } from './fetch-page';
-import { planImport, type ImportUnit } from './import-blob';
+import { fetchPage, PageFetchError } from './fetch-page';
+import { MAX_IMPORT_UNITS, type ImportUnit } from './import-blob';
 import { mapSequentially } from './map-sequentially';
 import { tagCookSourceBestEffort } from './tagging';
-import { convertToCooklang } from './to-cooklang';
+import { ConversionError, convertToCooklang } from './to-cooklang';
 
 /** One prepared unit of an import. */
 export interface ImportItem {
@@ -27,6 +27,20 @@ export interface ImportItem {
   readonly cooklang?: string;
   /** Why it failed, for a failed item. */
   readonly problem?: string;
+}
+
+/**
+ * Why a unit failed, in a fixed vocabulary: `fetch failed (403)`, `timed out`,
+ * `blocked`, `not a web page`, `unreachable`, `not a recipe`, `converter
+ * unavailable`, or `unexpected error`. The words of whatever threw (a fetch
+ * library, the model service) are for the logs, not for the person looking at
+ * the result.
+ */
+function failureReason(error: unknown): string {
+  if (error instanceof PageFetchError || error instanceof ConversionError) {
+    return error.failure;
+  }
+  return 'unexpected error';
 }
 
 /** Convert one planned unit into an item, capturing any failure as `FAILED`. */
@@ -55,22 +69,24 @@ async function prepareUnit(
     return {
       title: sourceUrl ?? 'Pasted recipe',
       status: 'FAILED',
-      problem: `Couldn't import ${where}: ${
-        err instanceof Error ? err.message : 'unknown error'
-      }. Paste the recipe text directly instead.`,
+      problem: `Couldn't import ${where}: ${failureReason(err)}. Paste the recipe text directly instead.`,
       ...(sourceUrl ? { source_url: sourceUrl } : {}),
     };
   }
 }
 
 /**
- * Prepare every unit in what the user pasted, one after another (Workers AI has
+ * Prepare the planned units of an import, one after another (Workers AI has
  * tight concurrency limits, and an import is a deliberate, occasional action).
- * Returns an empty list when the text holds no links or recipe text.
+ * At most {@link MAX_IMPORT_UNITS} are prepared: callers refuse a longer plan
+ * before getting here, and this is the second lock on the door, since each
+ * unit costs a fetch and model calls.
  */
 export async function prepareImport(
-  input: string,
+  units: readonly ImportUnit[],
   env: CloudflareEnv,
 ): Promise<readonly ImportItem[]> {
-  return mapSequentially(planImport(input), (unit) => prepareUnit(unit, env));
+  return mapSequentially(units.slice(0, MAX_IMPORT_UNITS), (unit) =>
+    prepareUnit(unit, env),
+  );
 }

@@ -36,6 +36,26 @@ describe('IngredientsPanel', () => {
     expect(panel([])).toContain('doesn&#x27;t list any ingredients yet');
   });
 
+  it('labels the servings group with an id that is not shared with a second panel', () => {
+    const two = html(
+      <RecipeStateProvider servings={4} initialUnits="original">
+        <IngredientsPanel ingredients={[]} cookware={[]} />
+        <IngredientsPanel ingredients={[]} cookware={[]} />
+      </RecipeStateProvider>,
+    );
+    const ids = [...two.matchAll(/id="([^"]+)">Servings</g)].map((m) => m[1]);
+    expect(ids).toHaveLength(2);
+    expect(ids[0]).not.toBe(ids[1]);
+    expect(two).toContain(`aria-labelledby="${ids[0]}"`);
+    expect(two).toContain(`aria-labelledby="${ids[1]}"`);
+    expect(two).not.toContain('servings-label');
+  });
+
+  it('draws the tick circle with the control-border token', () => {
+    const out = panel([{ name: 'onion', quantity: '1' }]);
+    expect(out).toContain('border-field bg-white');
+  });
+
   it('names the cookware under "You will need"', () => {
     expect(panel([])).toContain('You will need');
   });

@@ -19,6 +19,7 @@ import {
   TextInput,
 } from '@/components/ui/field';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
+import { useFocusOnChange } from '@/components/ui/use-focus-on-change';
 import { problemError, problemText } from '@/lib/problem-message';
 
 import { AddRecipes } from './add-recipes';
@@ -43,6 +44,8 @@ function ManualEditor({
   const [content, setContent] = useState(STARTER);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Opened by pressing a card that has just gone, so focus starts on the heading.
+  const heading = useFocusOnChange<HTMLHeadingElement>('write', null);
 
   const save = useCallback(async () => {
     if (!name.trim()) {
@@ -71,8 +74,10 @@ function ManualEditor({
   return (
     <Card as="section" aria-labelledby="write-recipe-heading">
       <h2
+        ref={heading}
+        tabIndex={-1}
         id="write-recipe-heading"
-        className="font-display text-2xl font-semibold tracking-tight"
+        className="font-display text-2xl font-semibold tracking-tight outline-none"
       >
         Write a recipe
       </h2>
@@ -160,6 +165,12 @@ function ChoiceCard({
 export function AddRecipesPage(): ReactElement {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>('choose');
+  // Coming back to the two choices (Back, from the editor) replaces the button
+  // that was pressed, so focus goes to the page's own heading. Going the other
+  // way, the section that opens takes focus itself.
+  const heading = useFocusOnChange<HTMLHeadingElement>(
+    mode === 'choose' ? 'choose' : null,
+  );
 
   return (
     <Container className="py-8 sm:py-12">
@@ -173,7 +184,13 @@ export function AddRecipesPage(): ReactElement {
         </Link>
 
         <Eyebrow className="mt-6">Grow your collection</Eyebrow>
-        <Heading as="h1" variant="h1" className="mt-2">
+        <Heading
+          as="h1"
+          variant="h1"
+          className="mt-2 outline-none"
+          ref={heading}
+          tabIndex={-1}
+        >
           Add recipes
         </Heading>
 

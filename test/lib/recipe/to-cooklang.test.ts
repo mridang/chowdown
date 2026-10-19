@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import {
   addMissingCover,
+  ConversionError,
   convertImport,
   convertToCooklang,
   hasRecipeBody,
@@ -131,6 +132,104 @@ describe('convertToCooklang', () => {
     expect(cook).toContain('>> title: T');
     expect(cook).not.toContain('servings');
     expect(cook).not.toContain('unknown');
+  });
+});
+
+describe('what the model is shown', () => {
+  /** The user message the model was sent. */
+  function sentTo(env: CloudflareEnv): string {
+    const run = env.AI.run as unknown as jest.Mock<
+      (model: string, input: { messages: { content: string }[] }) => unknown
+    >;
+    return run.mock.calls[0]?.[1].messages.at(-1)?.content ?? '';
+  }
+
+  it('is the page without its scripts and style sheets, so a long script cannot push the recipe out', async () => {
+    const env = envWith('Mix @egg{1}.');
+    await convertToCooklang(
+      `<script>${'x'.repeat(30_000)}</script><style>p{}</style><p>Boil the pasta for ten minutes.</p>`,
+      env,
+    );
+    expect(sentTo(env)).toContain('Boil the pasta for ten minutes.');
+    expect(sentTo(env)).not.toContain('xxxx');
+    expect(sentTo(env)).not.toContain('p{}');
+  });
+
+  it('drops everything after a script that is never closed', async () => {
+    const env = envWith('Mix @egg{1}.');
+    await convertToCooklang('<p>Boil.</p><script>var a = 1;', env);
+    expect(sentTo(env)).toContain('Boil.');
+    expect(sentTo(env)).not.toContain('var a');
+  });
+
+  it('leaves plain text alone', async () => {
+    const env = envWith('Mix @egg{1}.');
+    await convertToCooklang('2 eggs, 100 g flour. Mix.', env);
+    expect(sentTo(env)).toContain('2 eggs, 100 g flour. Mix.');
+  });
+});
+
+describe('when the model cannot convert', () => {
+  /** Why converting `content` with `env` failed, in the words import shows. */
+  async function failure(env: CloudflareEnv): Promise<string> {
+    const error = await convertToCooklang('Boil an egg.', env).catch(
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(ConversionError);
+    return (error as ConversionError).failure;
+  }
+
+  it('says not a recipe when it answers with nothing', async () => {
+    expect(await failure(envWith('   '))).toBe('not a recipe');
+    expect(await failure(envWith('```\n```'))).toBe('not a recipe');
+  });
+
+  it('says converter unavailable, in fixed words, when the call fails', async () => {
+    const env = {
+      AI: {
+        run: jest.fn(async () => {
+          throw new Error('AiError: 3040: capacity exceeded for account 1234');
+        }),
+      },
+    } as unknown as CloudflareEnv;
+    expect(await failure(env)).toBe('converter unavailable');
+  });
+
+  it('says converter unavailable when the call throws before it returns anything', async () => {
+    const env = {
+      AI: {
+        run: () => {
+          throw new Error('binding gone');
+        },
+      },
+    } as unknown as CloudflareEnv;
+    expect(await failure(env)).toBe('converter unavailable');
+  });
+
+  it('carries the failure as its message', () => {
+    const error = new ConversionError('not a recipe');
+    expect(error.message).toBe('not a recipe');
+    expect(error.name).toBe('ConversionError');
+  });
+});
+
+describe('hostile pages', () => {
+  const hostile = '<meta content="a" '.repeat(2000) + '<script '.repeat(25_000);
+
+  it('are read in well under a second by every path that reads a page', async () => {
+    global.fetch = (async () =>
+      new Response(hostile)) as unknown as typeof fetch;
+    const started = performance.now();
+    await convertImport(
+      'article text',
+      envWith('>> title: M\n\nMix @egg{1}.\n'),
+      {
+        sourceUrl: 'https://a.com/x',
+      },
+    );
+    await addMissingCover('>> title: X\n>> source: https://a.com/x\n\nBoil.');
+    await convertToCooklang(hostile, envWith('>> title: M\n\nMix @egg{1}.\n'));
+    expect(performance.now() - started).toBeLessThan(300);
   });
 });
 

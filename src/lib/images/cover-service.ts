@@ -27,6 +27,12 @@ export interface CoverServiceDeps {
   readonly images?: ImagesLike;
   /** Fetch the photo from its site; the real `fetch` when left out. */
   readonly fetcher?: CoverFetch;
+  /**
+   * Whether the person asking may have the proxy fetch this address (see
+   * `cover-ownership.ts`). Asked only when the edge has no copy, since a copy
+   * costs nothing and is a public photo anyway.
+   */
+  readonly mayFetch: (url: string) => Promise<boolean>;
   /** Run work after the response is sent (storing the copy). */
   readonly background: (work: Promise<unknown>) => void;
 }
@@ -51,7 +57,8 @@ export function withBrowserCaching(response: Response): Response {
 /**
  * The response for a request for the photo at `url`, scaled to `width`: the
  * photo (200), 400 for an address that is not a public image, 404 when the
- * photo is gone, or 502 when its site cannot be reached or refuses.
+ * person has no recipe with that photo or when the photo is gone, or 502 when
+ * its site cannot be reached or refuses.
  */
 export async function serveCover(
   url: string,
@@ -66,6 +73,12 @@ export async function serveCover(
   const hit = await deps.cache?.match(key);
   if (hit) {
     return withBrowserCaching(hit);
+  }
+
+  // Only photos the person's own recipes list are fetched on their behalf;
+  // anything else would make the proxy a free relay for the whole web.
+  if (!(await deps.mayFetch(url))) {
+    return problems.notFound('cover image');
   }
 
   const result = await fetchCover(url, width, {

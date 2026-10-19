@@ -25,6 +25,25 @@ const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 /** Max characters of source content sent to the model (keeps within context). */
 const MAX_CONTENT = 12000;
 
+/**
+ * The page without its scripts and style sheets. A real page spends most of its
+ * first kilobytes on them, and the model sees only the first
+ * {@link MAX_CONTENT} characters, so the recipe itself could be cut off. An
+ * unterminated script drops everything after it. Linear in the page's size.
+ */
+function withoutScriptsAndStyles(html: string): string {
+  const [head = '', ...rest] = html.split(/<(?:script|style)\b/i);
+  return (
+    head +
+    rest
+      .map((part) => {
+        const closer = /<\/(?:script|style)\s*>/i.exec(part);
+        return closer ? part.slice(closer.index + closer[0].length) : '';
+      })
+      .join('')
+  );
+}
+
 /** Our Cooklang authoring rules — the single place the format is defined. */
 const SYSTEM_PROMPT = `You convert recipes into Cooklang. Output ONLY valid Cooklang — no commentary, no explanations, no markdown code fences.
 
@@ -44,12 +63,46 @@ export type ConversionOptions = Readonly<{
   name?: string;
 }>;
 
+/** The ways converting content to Cooklang fails, in the fixed words import shows people. */
+export type ConversionFailure = 'not a recipe' | 'converter unavailable';
+
+/** Content that could not be converted, and which way it failed. */
+export class ConversionError extends Error {
+  override readonly name = 'ConversionError';
+
+  /** @param failure Which way it failed, in words that are safe to show. */
+  constructor(readonly failure: ConversionFailure) {
+    super(failure);
+  }
+}
+
 /** The text of a page, or null if it can't be fetched (never throws). */
 async function fetchPageOrNull(url: string): Promise<string | null> {
   try {
     return await fetchPage(url);
   } catch {
     return null;
+  }
+}
+
+/**
+ * Ask the model to convert. What the model service says when it fails is not
+ * for people to read, so any failure of the call itself becomes one fixed
+ * outcome.
+ */
+async function askModel(
+  env: CloudflareEnv,
+  userMessage: string,
+): Promise<unknown> {
+  try {
+    return await env.AI.run(MODEL, {
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userMessage },
+      ],
+    });
+  } catch {
+    throw new ConversionError('converter unavailable');
   }
 }
 
@@ -88,17 +141,12 @@ export async function convertToCooklang(
     opts.sourceUrl ? `Source URL: ${opts.sourceUrl}` : '',
     'Convert the following recipe content into Cooklang:',
     '',
-    content.slice(0, MAX_CONTENT),
+    withoutScriptsAndStyles(content).slice(0, MAX_CONTENT),
   ]
     .filter(Boolean)
     .join('\n');
 
-  const result: unknown = await env.AI.run(MODEL, {
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: userMessage },
-    ],
-  });
+  const result = await askModel(env, userMessage);
 
   const response =
     typeof result === 'object' && result !== null && 'response' in result
@@ -106,7 +154,7 @@ export async function convertToCooklang(
       : undefined;
   const cooklang = stripFences(typeof response === 'string' ? response : '');
   if (!cooklang) {
-    throw new Error('Recipe conversion produced no output');
+    throw new ConversionError('not a recipe');
   }
   return `${removeEmptyMetadata(cooklang)}\n`;
 }

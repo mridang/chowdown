@@ -17,10 +17,14 @@ import {
   sessionHintStale,
   wasDriveConnected,
 } from '../auth/drive-access';
-import type { SessionPayload } from '../auth/session';
+import {
+  ENDED_SESSION_PATH,
+  sessionIsCurrent,
+  type SessionPayload,
+} from '../auth/session';
 import type { Database } from '../db/client';
 import { getAppPageRows, type AppPageRows } from '../db/recipe-page';
-import type { User } from '../db/users';
+import { claimBackfillLease, claimDriveSync, type User } from '../db/users';
 import { getDatabase, getEnv, runInBackground } from '../util';
 import { syncFromDrive } from './drive-sync';
 import { backfillEmbeddings } from './embed-write';
@@ -55,8 +59,18 @@ export interface CollectionDeps {
   readonly database: () => Database;
   /** The user, cached recipes, embedding count and favourites in one read. */
   readonly pageRows: (db: Database, userId: number) => Promise<AppPageRows>;
+  /**
+   * Take the turn to start a Drive sync for the person; false when one started
+   * within the last minute and this view should leave it alone.
+   */
+  readonly claimSync: (db: Database, userId: number) => Promise<boolean>;
   /** Bring the cache in line with Drive. */
   readonly sync: (user: Readonly<User>) => Promise<unknown>;
+  /**
+   * Take the lease on the embeddings top-up; false when another request holds
+   * it and is already doing the job.
+   */
+  readonly claimBackfill: (db: Database, userId: number) => Promise<boolean>;
   /** Embed up to `limit` recipes that have no embedding yet. */
   readonly backfill: (
     db: Database,
@@ -74,7 +88,9 @@ const liveDeps: CollectionDeps = {
   session: getSession,
   database: getDatabase,
   pageRows: getAppPageRows,
+  claimSync: claimDriveSync,
   sync: syncFromDrive,
+  claimBackfill: claimBackfillLease,
   backfill: (db, userId, limit) =>
     backfillEmbeddings(db, getEnv(), userId, limit),
   background: runInBackground,
@@ -87,13 +103,19 @@ const BACKFILL_PER_VISIT = 20;
 /**
  * Sync a first-time visitor's Drive and wait for it, since there is nothing
  * cached to show yet. A rejected login was cleared by the sync; anything else
- * (a network blip) just leaves the list empty until the next visit.
+ * (a network blip) just leaves the list empty until the next visit. If a sync
+ * started within the last minute (a second tab, or an empty library being
+ * reloaded) this view does not begin another and shows what is cached.
  */
 async function syncFirstVisit(
   deps: CollectionDeps,
+  db: Database,
   user: Readonly<User>,
 ): Promise<{ readonly connected: boolean; readonly unreachable: boolean }> {
   try {
+    if (!(await deps.claimSync(db, user.id))) {
+      return { connected: true, unreachable: false };
+    }
     await deps.sync(user);
     return { connected: true, unreachable: false };
   } catch (error) {
@@ -103,11 +125,39 @@ async function syncFirstVisit(
 }
 
 /**
+ * Refresh the cache from Drive unless a sync started within the last minute.
+ * Runs in the background, so the check costs the view nothing; a refresh loop
+ * or a second open tab finds the turn taken and does no work.
+ */
+async function syncIfDue(
+  deps: CollectionDeps,
+  db: Database,
+  user: Readonly<User>,
+): Promise<void> {
+  if (await deps.claimSync(db, user.id)) {
+    await deps.sync(user);
+  }
+}
+
+/** Embed missing recipes unless another request is already doing it. */
+async function backfillIfFree(
+  deps: CollectionDeps,
+  db: Database,
+  userId: number,
+): Promise<void> {
+  if (await deps.claimBackfill(db, userId)) {
+    await deps.backfill(db, userId, BACKFILL_PER_VISIT);
+  }
+}
+
+/**
  * Load the collection for the signed-in person, or redirect.
  *
- * Identity comes from the signed cookie (no database read), and the user, the
- * cached recipes and the embedding count come back in ONE D1 round trip; no
- * Google or Drive call sits on the fast path. Someone signed out goes home.
+ * Identity comes from the signed cookie, and the user, the cached recipes and
+ * the embedding count come back in ONE D1 round trip (the same read confirms
+ * the session has not been ended); no Google or Drive call sits on the fast
+ * path. Someone signed out goes home; a session that has been ended goes
+ * through the route that clears it.
  * Someone signed in without a Drive connection (never made, or Google rejected
  * it) gets whatever is cached and a `drive` status the page turns into an offer
  * to connect; nothing is synced for them.
@@ -122,27 +172,31 @@ export async function loadCollection(
   const session = (await deps.session()) ?? deps.redirect('/');
   const db = deps.database();
   const first = await deps.pageRows(db, session.uid);
-  // The account is gone: start over.
-  const user = first.user ?? deps.redirect('/');
+  // The account is gone, or the session was ended: start over.
+  const user =
+    first.user && sessionIsCurrent(session, first.user.session_epoch)
+      ? first.user
+      : deps.redirect(ENDED_SESSION_PATH);
 
   const hasDrive = isDriveConnected(user);
   const isFirstVisit = hasDrive && first.recipes.length === 0;
   // First visit: nothing cached yet, so sync once, wait for it, and read again.
   const status = isFirstVisit
-    ? await syncFirstVisit(deps, user)
+    ? await syncFirstVisit(deps, db, user)
     : { connected: hasDrive, unreachable: false };
   const { recipes, embeddedCount, favouriteIds } = isFirstVisit
     ? await deps.pageRows(db, session.uid)
     : first;
 
   if (hasDrive && !isFirstVisit) {
-    // Otherwise show the cache now and refresh it from Drive afterwards, so a
-    // recipe added or removed directly in Drive appears on the next view.
-    deps.background(deps.sync(user));
+    // Otherwise show the cache now and refresh it from Drive afterwards (at
+    // most once a minute), so a recipe added or removed directly in Drive
+    // appears on a later view.
+    deps.background(syncIfDue(deps, db, user));
   }
   if (embeddedCount < recipes.length) {
     // Top up missing embeddings (bounded per visit) so "find similar" fills in.
-    deps.background(deps.backfill(db, session.uid, BACKFILL_PER_VISIT));
+    deps.background(backfillIfFree(deps, db, session.uid));
   }
   if (sessionHintStale(session.drive, status.connected)) {
     // The header's idea of the Drive connection (kept in the session) is out of

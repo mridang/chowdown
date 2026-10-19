@@ -50,12 +50,21 @@ export function createdRecipeId(body: unknown): string | undefined {
   return isRecord(body) ? textOf(body['id']) : undefined;
 }
 
-/** Ask the server to fetch and convert whatever the person pasted (links, markdown, text). */
-export function postImport(input: string): Promise<Response> {
+/**
+ * Ask the server to fetch and convert whatever the person pasted (links,
+ * markdown, text). Preparing can take minutes, so `signal` lets the person
+ * give up: aborting it ends the wait (the server may still finish; nothing is
+ * saved until they review it).
+ */
+export function postImport(
+  input: string,
+  signal?: AbortSignal,
+): Promise<Response> {
   return fetch('/api/recipe-imports', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ input }),
+    signal,
   });
 }
 

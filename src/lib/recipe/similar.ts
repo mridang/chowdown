@@ -37,20 +37,26 @@ import { mapSequentially } from './map-sequentially';
 export const SIMILAR_COUNT = 6;
 
 /**
- * Recompute and store every recipe's similar list for a user. Only rows whose
- * list actually changed are written, so a no-op refresh costs a single read.
- * Call whenever embeddings are added, changed or removed.
+ * Bring the stored similar lists up to date after the embeddings of
+ * `changedIds` were added or changed (or, with none given, after recipes were
+ * removed). Only the lists that can have changed are worked out and only those
+ * that did change are written, so a refresh after one saved recipe costs one
+ * read of the vectors and a handful of comparisons per recipe, not a
+ * comparison of every pair. Call whenever embeddings are added, changed or
+ * removed.
  */
 export async function refreshSimilarLists(
   db: Database,
   userId: number,
+  changedIds: readonly string[] = [],
 ): Promise<void> {
   const rows = await listEmbeddings(db, userId);
-  const lists = computeSimilarLists(rows, SIMILAR_COUNT);
+  const lists = updateSimilarLists(rows, changedIds, SIMILAR_COUNT);
+  const byId = new Map(rows.map((row) => [row.drive_file_id, row]));
   const changed = new Map(
-    rows.flatMap((row) => {
-      const next = serializeSimilar(lists.get(row.drive_file_id) ?? []);
-      return next === row.similar ? [] : [[row.drive_file_id, next] as const];
+    [...lists].flatMap(([id, list]) => {
+      const next = serializeSimilar(list);
+      return next === byId.get(id)?.similar ? [] : [[id, next] as const];
     }),
   );
   if (changed.size > 0) {
@@ -91,8 +97,12 @@ export interface EmbeddingDeps {
     env: CloudflareEnv,
     text: string,
   ) => Promise<readonly number[]>;
-  /** Recompute and store the similar lists. */
-  readonly refreshLists: (db: Database, userId: number) => Promise<unknown>;
+  /** Bring the similar lists up to date after these recipes' embeddings changed. */
+  readonly refreshLists: (
+    db: Database,
+    userId: number,
+    changedIds: readonly string[],
+  ) => Promise<unknown>;
 }
 
 /** The real thing: D1, Drive and Workers AI. */
@@ -182,7 +192,10 @@ export async function ensureEmbeddings(
     files.map((f) => f.id),
   );
   if (outcomes.includes('embedded') || stale) {
-    await deps.refreshLists(db, user.id);
+    const embeddedIds = files.flatMap((file, i) =>
+      outcomes[i] === 'embedded' ? [file.id] : [],
+    );
+    await deps.refreshLists(db, user.id, embeddedIds);
   }
   return deps.listCached(db, user.id);
 }
@@ -246,38 +259,104 @@ export function similarFromRows(
   );
 }
 
+/** A row prepared for comparing: its vector measured once, plus the list stored with it. */
+interface Prepared {
+  readonly id: string;
+  readonly title: string;
+  readonly vector: ReturnType<typeof measure>;
+  readonly stored: readonly SimilarRecipe[];
+}
+
+/** The `n` entries of `candidates` most similar to `a`, best first. */
+function nearestTo(
+  a: Prepared,
+  candidates: readonly Prepared[],
+  n: number,
+): readonly SimilarRecipe[] {
+  return bestOf(
+    candidates
+      .filter((b) => b.id !== a.id)
+      .map((b) => ({
+        id: b.id,
+        title: b.title,
+        score: cosineBetween(a.vector, b.vector),
+      })),
+    n,
+  );
+}
+
+/** Whether a row's stored list is shorter than it should be, so was never worked out (or not fully). */
+function hasShortList(row: Prepared, rowCount: number, n: number): boolean {
+  return row.stored.length < Math.min(n, rowCount - 1);
+}
+
 /**
- * Compute every recipe's nearest neighbours in one pass: for each row, the `n`
- * most similar *other* rows, best first. Vectors are parsed once, so this is a
- * single O(rows²) sweep — cheap at per-user recipe counts — and its result is
- * stored on the rows (see {@link serializeSimilar}) so page views never repeat
- * it.
+ * Whether a row's stored list can no longer be trusted as "the best `n` of the
+ * others" and must be worked out from scratch: the row itself changed, or its
+ * list names a recipe that is gone or changed (a changed recipe may no longer
+ * rank where it did).
  */
-export function computeSimilarLists(
+function needsFullRecompute(
+  row: Prepared,
+  changed: ReadonlySet<string>,
+  known: ReadonlySet<string>,
+): boolean {
+  return (
+    changed.has(row.id) ||
+    row.stored.some((entry) => !known.has(entry.id) || changed.has(entry.id))
+  );
+}
+
+/**
+ * The similar lists that need to change after the embeddings of `changedIds`
+ * were added or changed, as `id -> list` for just the rows that were looked at
+ * (the caller writes whichever differ from what is stored). Rows whose stored
+ * list is unaffected are left out of the answer.
+ *
+ * Exact, not approximate: a row that changed, or whose list names a removed
+ * or changed recipe, is compared with every other row. Every other row's stored
+ * list is still the best `n` of the unchanged rows, so only the changed rows
+ * can displace one of its entries, and the new list is the best `n` of its old
+ * entries and the changed rows. A row whose list is missing or short has never
+ * been worked out (its refresh was lost, or it is new), so it counts as
+ * changed too, which keeps the lists healing themselves. Vectors are parsed and
+ * measured once. With every id in `changedIds` this is the full all-pairs
+ * sweep.
+ */
+export function updateSimilarLists(
   rows: readonly EmbeddingRow[],
+  changedIds: readonly string[],
   n: number,
 ): ReadonlyMap<string, readonly SimilarRecipe[]> {
-  const parsed = rows.map((r) => ({
+  const prepared: readonly Prepared[] = rows.map((r) => ({
     id: r.drive_file_id,
     title: r.title,
-    // Measured once here, not once per pair: the sweep below compares every
-    // vector with every other.
+    // Measured once here, not once per pair.
     vector: measure(parseVector(r.vector)),
+    stored: parseSimilar(r.similar),
   }));
+  const known = new Set(prepared.map((p) => p.id));
+  const changed = new Set([
+    ...changedIds.filter((id) => known.has(id)),
+    ...prepared
+      .filter((p) => hasShortList(p, prepared.length, n))
+      .map((p) => p.id),
+  ]);
+  const changedRows = prepared.filter((p) => changed.has(p.id));
+  const byId = new Map(prepared.map((p) => [p.id, p]));
   return new Map(
-    parsed.map((a) => [
-      a.id,
-      bestOf(
-        parsed
-          .filter((b) => b.id !== a.id)
-          .map((b) => ({
-            id: b.id,
-            title: b.title,
-            score: cosineBetween(a.vector, b.vector),
-          })),
-        n,
-      ),
-    ]),
+    prepared.flatMap((row): [string, readonly SimilarRecipe[]][] => {
+      if (needsFullRecompute(row, changed, known)) {
+        return [[row.id, nearestTo(row, prepared, n)]];
+      }
+      if (changedRows.length === 0) {
+        return [];
+      }
+      // Its stored entries are all unchanged rows (checked above): the best
+      // `n` of those and the changed rows is the best `n` of everything.
+      const kept = row.stored.flatMap((entry) => byId.get(entry.id) ?? []);
+      return [[row.id, nearestTo(row, [...kept, ...changedRows], n)]];
+    }),
   );
 }
 

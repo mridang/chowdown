@@ -72,6 +72,16 @@ describe('Eyebrow', () => {
 });
 
 describe('Heading', () => {
+  it('can be made focusable by script, for moving focus to it between steps', () => {
+    const out = html(
+      <Heading as="h1" tabIndex={-1}>
+        Title
+      </Heading>,
+    );
+    expect(out).toMatch(/<h1 tabindex="-1" class=/);
+    expect(html(<Heading>Title</Heading>)).not.toContain('tabindex');
+  });
+
   it('is an h2 in the display face unless told otherwise', () => {
     const out = html(<Heading>Title</Heading>);
     expect(out.startsWith('<h2')).toBe(true);

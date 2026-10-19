@@ -10,16 +10,18 @@ import {
   LogoutIcon,
   PlugIcon,
   SparkIcon,
+  TrashIcon,
 } from '@/components/icons';
-import { cn } from '@/components/ui/cn';
 import {
   POPOVER_ITEM,
   Popover,
   PopoverLabel,
   PopoverSeparator,
+  PopoverStatus,
 } from '@/components/ui/popover';
 import { driveConnectHref } from '@/lib/auth/drive-access';
 
+import { DeleteAccountDialog } from './delete-account-dialog';
 import { useInstallPrompt } from './use-install-prompt';
 
 /**
@@ -72,9 +74,9 @@ async function signOut(): Promise<void> {
 /**
  * The signed-in account control. Closed, it is the person's photo and "Hi
  * Mridang"; opened, it says which account you are in and offers only what the
- * header doesn't already (connecting an assistant, installing the app) and Sign
- * out. The recipe links live in the header itself. Google Drive shows here as
- * an action until it is connected, then as a greyed-out "connected" line.
+ * header doesn't already (connecting an assistant, installing the app), Sign
+ * out, and Delete account (which asks first). The recipe links live in the header itself. Google Drive shows here as
+ * an action until it is connected, then as a plain "connected" status line.
  */
 export function AccountMenu({
   firstName,
@@ -90,71 +92,83 @@ export function AccountMenu({
   driveConnected: boolean;
 }>): ReactElement {
   const [busy, setBusy] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const { install } = useInstallPrompt();
   return (
-    <Popover
-      button={
-        <>
-          <Avatar name={name} picture={picture} />
-          <span className="hidden text-sm font-semibold sm:block">
-            Hi {firstName}
-          </span>
-          <ChevronIcon
-            size="sm"
-            className="text-subtle hidden transition group-data-[state=open]:rotate-180 sm:block"
-          />
-          <span className="sr-only sm:hidden">
-            Account menu, signed in as {firstName}
-          </span>
-        </>
-      }
-      buttonClassName="group rounded-control hover:bg-ink/5 data-[state=open]:bg-ink/5 flex h-10 items-center gap-2 pr-2 pl-1 transition sm:pr-3 focus-ring-flush"
-      panelClassName="w-64"
-    >
-      <PopoverLabel caption="Signed in as">{email}</PopoverLabel>
-      <PopoverSeparator />
-      <Link href="/connect" className={POPOVER_ITEM}>
-        <PlugIcon size="menu" className="text-subtle" />
-        Connect an assistant
-      </Link>
-      {driveConnected ? (
+    <>
+      <Popover
+        button={
+          <>
+            <Avatar name={name} picture={picture} />
+            <span className="hidden text-sm font-semibold sm:block">
+              Hi {firstName}
+            </span>
+            <ChevronIcon
+              size="sm"
+              className="text-subtle hidden transition group-data-[state=open]:rotate-180 sm:block"
+            />
+            <span className="sr-only sm:hidden">
+              Account menu, signed in as {firstName}
+            </span>
+          </>
+        }
+        buttonClassName="group rounded-control hover:bg-ink/5 data-[state=open]:bg-ink/5 flex h-10 items-center gap-2 pr-2 pl-1 transition sm:pr-3 focus-ring-flush"
+        panelClassName="w-64"
+      >
+        <PopoverLabel caption="Signed in as">{email}</PopoverLabel>
+        <PopoverSeparator />
+        <Link href="/connect" className={POPOVER_ITEM}>
+          <PlugIcon size="menu" className="text-subtle" />
+          Connect an assistant
+        </Link>
+        {driveConnected ? (
+          <PopoverStatus>
+            <CheckIcon size="menu" className="text-forest" />
+            Google Drive connected
+          </PopoverStatus>
+        ) : (
+          <a href={driveConnectHref()} className={POPOVER_ITEM}>
+            <DriveIcon size="menu" className="text-subtle" />
+            Connect Google Drive
+          </a>
+        )}
+        {install ? (
+          <button
+            type="button"
+            onClick={() => void install()}
+            className={POPOVER_ITEM}
+          >
+            <SparkIcon size="menu" className="text-subtle" />
+            Install app
+          </button>
+        ) : null}
+        <PopoverSeparator />
         <button
           type="button"
-          disabled
-          className={cn(POPOVER_ITEM, 'cursor-default hover:bg-transparent')}
-        >
-          <CheckIcon size="menu" className="text-forest" />
-          Google Drive connected
-        </button>
-      ) : (
-        <a href={driveConnectHref()} className={POPOVER_ITEM}>
-          <DriveIcon size="menu" className="text-subtle" />
-          Connect Google Drive
-        </a>
-      )}
-      {install ? (
-        <button
-          type="button"
-          onClick={() => void install()}
+          disabled={busy}
+          onClick={() => {
+            setBusy(true);
+            void signOut();
+          }}
           className={POPOVER_ITEM}
         >
-          <SparkIcon size="menu" className="text-subtle" />
-          Install app
+          <LogoutIcon size="menu" className="text-subtle" />
+          Sign out
         </button>
-      ) : null}
-      <PopoverSeparator />
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => {
-          setBusy(true);
-          void signOut();
-        }}
-        className={POPOVER_ITEM}
-      >
-        <LogoutIcon size="menu" className="text-subtle" />
-        Sign out
-      </button>
-    </Popover>
+        <button
+          type="button"
+          className={`${POPOVER_ITEM} text-ember`}
+          onClick={() => setConfirmingDelete(true)}
+        >
+          <TrashIcon size="menu" />
+          Delete account
+        </button>
+      </Popover>
+      {/* Outside the popover: the menu unmounts its items the moment one is chosen. */}
+      <DeleteAccountDialog
+        open={confirmingDelete}
+        onOpenChange={setConfirmingDelete}
+      />
+    </>
   );
 }

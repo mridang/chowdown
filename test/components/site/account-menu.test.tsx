@@ -43,3 +43,18 @@ describe('AccountMenu', () => {
     expect(out).not.toContain('Sign out');
   });
 });
+
+describe('AccountMenu’s destructive item', () => {
+  it('stays out of the page, with its confirmation, until the menu is opened', () => {
+    const out = htmlAt(
+      <AccountMenu
+        firstName="Ada"
+        name="Ada Lovelace"
+        email="ada@example.com"
+        driveConnected={false}
+      />,
+    );
+    expect(out).not.toContain('Delete account');
+    expect(out).not.toContain('Delete your account?');
+  });
+});

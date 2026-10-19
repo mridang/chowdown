@@ -294,3 +294,90 @@ describe('image references', () => {
     });
   });
 });
+
+/** How long `work` takes, in milliseconds. */
+function milliseconds(work: () => unknown): number {
+  const started = performance.now();
+  work();
+  return performance.now() - started;
+}
+
+describe('hostile pages', () => {
+  const pages: Readonly<Record<string, string>> = {
+    'meta tags with a content and nothing else': '<meta content="a" '.repeat(
+      2000,
+    ),
+    'script starts that never end': '<script '.repeat(25_000),
+    'script starts with attributes': '<script a=b '.repeat(16_000),
+    'ld+json scripts that never close':
+      '<script type="application/ld+json">'.repeat(30_000),
+    'a megabyte of unterminated ld+json': `<script type="application/ld+json">${'{'.repeat(1_000_000)}`,
+  };
+
+  it.each(Object.entries(pages))(
+    'extractOgImage reads %s in under 100 ms',
+    (_name, page) => {
+      expect(milliseconds(() => extractOgImage(page))).toBeLessThan(100);
+      expect(extractOgImage(page)).toBeUndefined();
+    },
+  );
+
+  it.each(Object.entries(pages))(
+    'extractRecipeFromHtml reads %s in under 100 ms',
+    (_name, page) => {
+      expect(milliseconds(() => extractRecipeFromHtml(page))).toBeLessThan(100);
+      expect(extractRecipeFromHtml(page)).toBeNull();
+    },
+  );
+
+  it('still finds the recipe in a page that also holds hostile tags', () => {
+    const page = `${'<script '.repeat(1000)}<script type="application/ld+json">${JSON.stringify(
+      { '@type': 'Recipe', name: 'Found' },
+    )}</script>`;
+    expect(extractRecipeFromHtml(page)).toContain('>> title: Found');
+  });
+
+  it('gives up on JSON-LD nested far deeper than any real page, without crashing', () => {
+    const deep = `${'['.repeat(100_000)}${']'.repeat(100_000)}`;
+    const page = `<script type="application/ld+json">${deep}</script>`;
+    expect(milliseconds(() => extractRecipeFromHtml(page))).toBeLessThan(500);
+    expect(extractRecipeFromHtml(page)).toBeNull();
+  });
+
+  it('finds a recipe in a @graph a few levels down', () => {
+    const page = `<script type="application/ld+json">${JSON.stringify([
+      { '@graph': [{ '@graph': [{ '@type': 'Recipe', name: 'Nested' }] }] },
+    ])}</script>`;
+    expect(extractRecipeFromHtml(page)).toContain('>> title: Nested');
+  });
+});
+
+describe('extractOgImage markup', () => {
+  it('accepts name= as well as property=, unquoted values and any case', () => {
+    expect(
+      extractOgImage('<META NAME=og:IMAGE CONTENT=https://a.com/p.jpg>'),
+    ).toBe('https://a.com/p.jpg');
+  });
+
+  it('prefers og:image:secure_url when it comes first', () => {
+    const html =
+      '<meta property="og:image:secure_url" content="https://a.com/s.jpg"><meta property="og:image" content="https://a.com/p.jpg">';
+    expect(extractOgImage(html)).toBe('https://a.com/s.jpg');
+  });
+
+  it('ignores og:image:width and empty content', () => {
+    expect(
+      extractOgImage(
+        '<meta property="og:image:width" content="600"><meta property="og:image" content="">',
+      ),
+    ).toBeUndefined();
+  });
+
+  it('does not read a tag that sits inside a script', () => {
+    expect(
+      extractOgImage(
+        '<script>x = \'<meta property="og:image" content="https://a.com/p.jpg">\'</script>',
+      ),
+    ).toBeUndefined();
+  });
+});

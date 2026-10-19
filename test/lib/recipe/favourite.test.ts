@@ -7,6 +7,7 @@ import {
   setFavouriteAndTag,
   type FavouriteDeps,
 } from '../../../src/lib/recipe/favourite';
+import { createKeyedQueue } from '../../../src/lib/recipe/keyed-queue';
 
 const db = {} as Database;
 
@@ -24,11 +25,19 @@ function fakes(
 ) {
   const background: Promise<unknown>[] = [];
   const hasUser = 'user' in options;
+  // The heart table: the last state saved is what the file update reads.
+  const heart = { on: false };
+  const queue = createKeyedQueue();
   const deps: FavouriteDeps = {
     database: () => db,
     saveHeart: jest.fn<FavouriteDeps['saveHeart']>(
-      async (_db, _uid, _id, on) => on,
+      async (_db, _uid, _id, on) => {
+        heart.on = on;
+        return on;
+      },
     ),
+    readHeart: async () => heart.on,
+    serialise: queue.run,
     findUser: async () => (hasUser ? options.user : user('sealed')),
     accessToken: async () => 'tok',
     readFile: jest.fn(async () => options.file ?? '>> title: A\n\nCook.\n'),
@@ -40,7 +49,7 @@ function fakes(
       background.push(work);
     },
   };
-  return { deps, settle: () => Promise.all(background) };
+  return { deps, settle: () => Promise.all(background), heart };
 }
 
 describe('setFavouriteAndTag', () => {
@@ -113,5 +122,62 @@ describe('setFavouriteAndTag', () => {
     await settle();
     expect(deps.writeFile).toHaveBeenCalled();
     expect(asCalls(deps.index)).not.toHaveBeenCalled();
+  });
+});
+
+describe('setFavouriteAndTag with quick repeated clicks', () => {
+  it('writes the state the person ended on, once, however many times they toggled', async () => {
+    const { deps, settle } = fakes();
+    await setFavouriteAndTag(3, 'f1', true, deps);
+    await setFavouriteAndTag(3, 'f1', false, deps);
+    await setFavouriteAndTag(3, 'f1', true, deps);
+    await settle();
+    expect(asCalls(deps.writeFile)).toHaveBeenCalledTimes(1);
+    expect(asCalls(deps.writeFile)).toHaveBeenCalledWith(
+      'f1',
+      expect.stringContaining('>> favourite: true'),
+      'tok',
+    );
+  });
+
+  it('ends with the marker off when the last click un-hearted', async () => {
+    const { deps, settle } = fakes({ file: '>> favourite: true\n\nCook.\n' });
+    await setFavouriteAndTag(3, 'f1', true, deps);
+    await setFavouriteAndTag(3, 'f1', false, deps);
+    await settle();
+    expect(asCalls(deps.writeFile)).toHaveBeenLastCalledWith(
+      'f1',
+      '\nCook.\n',
+      'tok',
+    );
+  });
+
+  it('never runs two updates of the same file at once', async () => {
+    const running = { now: 0, most: 0 };
+    const { deps, settle } = fakes();
+    const slow: FavouriteDeps = {
+      ...deps,
+      readFile: async () => {
+        running.now += 1;
+        running.most = Math.max(running.most, running.now);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        running.now -= 1;
+        return '>> title: A\n';
+      },
+    };
+    await setFavouriteAndTag(3, 'f1', true, slow);
+    await new Promise((resolve) => setTimeout(resolve, 1));
+    await setFavouriteAndTag(3, 'f1', false, slow);
+    await setFavouriteAndTag(3, 'f1', true, slow);
+    await settle();
+    expect(running.most).toBe(1);
+  });
+
+  it('keeps different recipes independent', async () => {
+    const { deps, settle } = fakes();
+    await setFavouriteAndTag(3, 'f1', true, deps);
+    await setFavouriteAndTag(3, 'f2', true, deps);
+    await settle();
+    expect(asCalls(deps.writeFile)).toHaveBeenCalledTimes(2);
   });
 });

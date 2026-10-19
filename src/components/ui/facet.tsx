@@ -66,7 +66,7 @@ function FacetOption({
           'grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[4px] border transition',
           option.active
             ? 'border-ink bg-ink text-white'
-            : 'border-ink/40 bg-white',
+            : 'border-field bg-white',
         )}
       >
         {option.active ? <CheckIcon size="xs" strokeWidth={3} /> : null}

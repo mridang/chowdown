@@ -11,13 +11,18 @@ import { cache } from 'react';
 
 import {
   getCurrentUser,
-  getSessionUid,
+  getSession,
   getUserAccessToken,
 } from '../auth/current-user';
 import { DriveNotConnectedError, isDriveConnected } from '../auth/drive-access';
+import {
+  ENDED_SESSION_PATH,
+  sessionIsCurrent,
+  type SessionPayload,
+} from '../auth/session';
 import type { Database } from '../db/client';
 import { getRecipePageRows, type RecipePageRows } from '../db/recipe-page';
-import type { User } from '../db/users';
+import { claimDriveSync, type User } from '../db/users';
 import { getFileContent, listRecipeFiles } from '../drive/drive-client';
 import { getDatabase } from '../util';
 import { toCardRecipe, toneFor, type CardRecipe, type Tone } from './card-data';
@@ -80,7 +85,7 @@ export function similarCards(
 }
 
 /** What reading a recipe the cache didn't have from Drive came to. */
-type DriveLookup =
+export type DriveLookup =
   | { readonly status: 'loaded'; readonly rows: RecipePageRows }
   /** Not in Drive either, or Drive failed for a passing reason. */
   | { readonly status: 'missing' }
@@ -124,29 +129,94 @@ async function lookUpInDrive(
 }
 
 /**
- * The page rows for a recipe, falling back to Drive once when the cache has
- * never seen it. Redirects when there is no way to look (signed out, or no
- * Drive connected) and returns null when the recipe can't be found.
+ * What {@link loadRecipePageRows} reaches out to, gathered in one place so a
+ * test can hand in small fakes. The default is the real session, database and
+ * Drive.
  */
-async function pageRowsFor(
-  db: Database,
-  uid: number,
+export interface RecipeLoadDeps {
+  /** The signed-in session from the cookie, if any. */
+  readonly session: () => Promise<SessionPayload | null>;
+  /** The D1 database. */
+  readonly database: () => Database;
+  /** The recipe page's rows, in one round trip. */
+  readonly pageRows: (
+    db: Database,
+    userId: number,
+    id: string,
+  ) => Promise<RecipePageRows>;
+  /** The full signed-in user, for the Drive fallback. */
+  readonly currentUser: () => Promise<User | null>;
+  /**
+   * Take the turn to read Drive for the person; false when a Drive listing
+   * started within the last minute, so an id the cache lacks really is
+   * unknown rather than just new.
+   */
+  readonly claimLookup: (db: Database, userId: number) => Promise<boolean>;
+  /** Look the recipe up in Drive and index it. */
+  readonly lookUp: (
+    db: Database,
+    uid: number,
+    user: Readonly<User>,
+    id: string,
+  ) => Promise<DriveLookup>;
+  /** Send the visitor elsewhere; never returns. */
+  readonly redirect: (to: string) => never;
+}
+
+/** The real thing. */
+const liveDeps: RecipeLoadDeps = {
+  session: getSession,
+  database: getDatabase,
+  pageRows: getRecipePageRows,
+  currentUser: getCurrentUser,
+  claimLookup: claimDriveSync,
+  lookUp: lookUpInDrive,
+  redirect,
+};
+
+/**
+ * The page rows for a recipe, falling back to Drive once when the cache has
+ * never seen it. Redirects when there is no way to look (signed out, the
+ * session ended, or no Drive connected) and returns null when the recipe can't
+ * be found.
+ *
+ * The Drive fallback lists the whole folder, so it is only taken when the
+ * person's last Drive sync started over a minute ago: otherwise the cache is as
+ * fresh as Drive would be, the id is simply unknown, and a stranger's
+ * made-up ids cannot be used to make us list the folder over and over.
+ *
+ * @param deps Collaborators; leave out to use the real ones.
+ */
+export async function loadRecipePageRows(
   id: string,
+  deps: RecipeLoadDeps = liveDeps,
 ): Promise<RecipePageRows | null> {
-  const cached = await getRecipePageRows(db, uid, id);
+  const session = (await deps.session()) ?? deps.redirect('/');
+  const db = deps.database();
+  const cached = await deps.pageRows(db, session.uid, id);
+  // The batch carried the account's session epoch, so this check is free.
+  if (
+    cached.sessionEpoch === undefined ||
+    !sessionIsCurrent(session, cached.sessionEpoch)
+  ) {
+    deps.redirect(ENDED_SESSION_PATH);
+  }
   if (cached.recipe) {
     return cached;
   }
   // Cold cache: read from Drive once and index it, then re-read.
-  const user = (await getCurrentUser()) ?? redirect('/');
+  const user = (await deps.currentUser()) ?? deps.redirect('/');
   if (!isDriveConnected(user)) {
     // Nothing cached and no Drive to look in: the list explains how to connect.
-    redirect('/app');
+    deps.redirect('/app');
   }
-  const found = await lookUpInDrive(db, uid, user, id);
+  if (!(await deps.claimLookup(db, user.id))) {
+    return null;
+  }
+  const found = await deps.lookUp(db, session.uid, user, id);
   if (found.status === 'lapsed') {
     // Google stopped accepting the login while we looked.
-    redirect('/app');
+    deps.redirect('/app');
   }
   return found.status === 'loaded' ? found.rows : null;
 }
@@ -167,8 +237,7 @@ async function pageRowsFor(
  */
 export const loadRecipe = cache(
   async (id: string): Promise<RecipePageData | null> => {
-    const uid = (await getSessionUid()) ?? redirect('/');
-    const rows = await pageRowsFor(getDatabase(), uid, id);
+    const rows = await loadRecipePageRows(id);
     if (!rows?.recipe) {
       return null;
     }

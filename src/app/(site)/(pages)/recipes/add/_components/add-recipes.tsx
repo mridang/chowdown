@@ -1,6 +1,12 @@
 'use client';
 
-import { useCallback, useRef, useState, type ReactElement } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 
 import { CloseIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -11,19 +17,17 @@ import {
   TextArea,
   TextInput,
 } from '@/components/ui/field';
+import { useFocusOnChange } from '@/components/ui/use-focus-on-change';
 import { countOf } from '@/lib/intl';
 import { problemMessage } from '@/lib/problem-message';
 
 import {
-  discardImport,
-  postImport,
-  postRecipe,
-  readImport,
-  type ImportDraft,
-} from './recipe-requests';
-
-/** Where the wizard is: pasting, stepping through the drafts, or finished. */
-type Phase = 'input' | 'review' | 'done';
+  ANNOUNCEMENTS,
+  missingFieldErrors,
+  prepareImport,
+  type Phase,
+} from './import-flow';
+import { discardImport, postRecipe, type ImportDraft } from './recipe-requests';
 
 /** The wizard's heading for each phase. */
 const HEADINGS: Readonly<Record<Phase, string>> = {
@@ -43,6 +47,11 @@ const HEADINGS: Readonly<Record<Phase, string>> = {
  *
  * Saving reuses POST /api/recipes; `onSaved` runs after each recipe is saved,
  * so the parent can refresh its list.
+ *
+ * Each phase replaces the one before, taking the button that was pressed with
+ * it, so focus moves to the new phase's heading (otherwise it falls back to the
+ * top of the page and a screen reader says nothing). Preparing can run for
+ * minutes, so it announces itself in a live region and can be cancelled.
  */
 export function AddRecipes({
   onClose,
@@ -60,10 +69,26 @@ export function AddRecipes({
   const [name, setName] = useState('');
   const [cook, setCook] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  /** Why the pasted text could not be prepared; shown with the text box. */
+  const [prepareError, setPrepareError] = useState<string | null>(null);
+  /** Why a recipe could not be saved (the server's words); shown under the form. */
+  const [saveError, setSaveError] = useState<string | null>(null);
+  /** Whether Save was pressed on this draft, which is when empty fields become errors. */
+  const [attempted, setAttempted] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
+  /** What the live region says, for screen readers. */
+  const [announcement, setAnnouncement] = useState('');
   /** The import the drafts came from; discarded once the wizard finishes. */
   const importId = useRef<string | null>(null);
+  /** The request being waited on, so Cancel (or leaving) can end it. */
+  const inflight = useRef<AbortController | null>(null);
+  const heading = useFocusOnChange<HTMLHeadingElement>(phase, null);
+
+  // Leaving the page ends a request nobody is waiting for any more.
+  useEffect(() => {
+    const pending = inflight;
+    return () => pending.current?.abort();
+  }, []);
 
   /** Load draft `i` into the editable fields, or finish when past the end. */
   const seek = useCallback((list: readonly ImportDraft[], i: number) => {
@@ -80,44 +105,50 @@ export function AddRecipes({
     setIndex(i);
     setName(draft.title);
     setCook(draft.cook);
-    setError(null);
+    setSaveError(null);
+    setAttempted(false);
   }, []);
 
   const prepare = useCallback(async () => {
     if (!input.trim()) {
       return;
     }
+    const controller = new AbortController();
+    inflight.current = controller;
     setBusy(true);
-    setError(null);
-    try {
-      const res = await postImport(input);
-      if (!res.ok) {
-        throw new Error(await problemMessage(res));
-      }
-      const prepared = readImport(await res.json());
-      if (!prepared) {
-        throw new Error('Could not prepare those recipes.');
-      }
-      importId.current = prepared.id;
-      setDrafts(prepared.drafts);
-      setPhase('review');
-      seek(prepared.drafts, 0);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Could not prepare those recipes.',
-      );
-    } finally {
-      setBusy(false);
+    setPrepareError(null);
+    setAnnouncement(ANNOUNCEMENTS.preparing);
+    const outcome = await prepareImport(input, controller.signal);
+    inflight.current = null;
+    setBusy(false);
+    switch (outcome.kind) {
+      case 'cancelled':
+        setAnnouncement(ANNOUNCEMENTS.cancelled);
+        return;
+      case 'failed':
+        setAnnouncement('');
+        setPrepareError(outcome.message);
+        return;
+      case 'prepared':
+        setAnnouncement('');
+        importId.current = outcome.prepared.id;
+        setDrafts(outcome.prepared.drafts);
+        setPhase('review');
+        seek(outcome.prepared.drafts, 0);
     }
   }, [input, seek]);
 
+  /** Give up on the import being prepared; the pasted text is kept. */
+  const cancel = useCallback(() => inflight.current?.abort(), []);
+
   const saveCurrent = useCallback(async () => {
-    if (!name.trim() || !cook.trim()) {
-      setError('A name and some Cooklang are needed to save.');
+    if (Object.keys(missingFieldErrors(name, cook)).length > 0) {
+      setAttempted(true);
       return;
     }
     setBusy(true);
-    setError(null);
+    setSaveError(null);
+    setAnnouncement(ANNOUNCEMENTS.saving);
     try {
       const res = await postRecipe(name, cook);
       if (!res.ok) {
@@ -127,8 +158,14 @@ export function AddRecipes({
       // Each saved recipe changes the list, even if they stop part-way through.
       onSaved();
       seek(drafts, index + 1);
+      setAnnouncement(
+        index + 1 < drafts.length
+          ? ANNOUNCEMENTS.savedNext(index + 2, drafts.length)
+          : '',
+      );
     } catch (err) {
-      setError(
+      setAnnouncement('');
+      setSaveError(
         err instanceof Error ? err.message : 'Could not save that recipe.',
       );
     } finally {
@@ -142,13 +179,19 @@ export function AddRecipes({
   );
 
   const current = drafts[index];
+  // Empty fields only count as errors once Save has been pressed, and stop
+  // counting as soon as they are filled in.
+  const fieldErrors = attempted ? missingFieldErrors(name, cook) : {};
 
   return (
     <Card as="section" aria-labelledby="add-recipes-heading">
       <div className="flex items-center justify-between gap-4">
         <h2
+          ref={heading}
+          // Focusable by script only, so focus can be moved here between steps.
+          tabIndex={-1}
           id="add-recipes-heading"
-          className="font-display text-2xl font-semibold tracking-tight"
+          className="font-display text-2xl font-semibold tracking-tight outline-none"
         >
           {HEADINGS[phase]}
         </h2>
@@ -166,7 +209,11 @@ export function AddRecipes({
             walk you through saving them one at a time.
           </p>
           <div className="mt-5">
-            <FormField id="import-input" label="Links or recipe text">
+            <FormField
+              id="import-input"
+              label="Links or recipe text"
+              error={prepareError ?? undefined}
+            >
               <TextArea
                 id="import-input"
                 mono
@@ -179,8 +226,7 @@ export function AddRecipes({
               />
             </FormField>
           </div>
-          {error ? <FormMessage tone="error">{error}</FormMessage> : null}
-          <div className="mt-5">
+          <div className="mt-5 flex flex-wrap gap-3">
             <Button
               size="lg"
               onClick={prepare}
@@ -190,6 +236,11 @@ export function AddRecipes({
             >
               {busy ? 'Preparing…' : 'Prepare recipes'}
             </Button>
+            {busy ? (
+              <Button variant="outline" size="lg" onClick={cancel}>
+                Cancel
+              </Button>
+            ) : null}
           </div>
         </>
       ) : null}
@@ -211,7 +262,11 @@ export function AddRecipes({
           ) : null}
 
           <div className="mt-5 flex flex-col gap-5">
-            <FormField id="draft-name" label="Recipe name">
+            <FormField
+              id="draft-name"
+              label="Recipe name"
+              error={fieldErrors.name}
+            >
               <TextInput
                 id="draft-name"
                 value={name}
@@ -223,6 +278,7 @@ export function AddRecipes({
               id="draft-cook"
               label="Cooklang source"
               hint="Paste or edit the recipe here."
+              error={fieldErrors.cook}
             >
               <TextArea
                 id="draft-cook"
@@ -235,7 +291,9 @@ export function AddRecipes({
               />
             </FormField>
           </div>
-          {error ? <FormMessage tone="error">{error}</FormMessage> : null}
+          {saveError ? (
+            <FormMessage tone="error">{saveError}</FormMessage>
+          ) : null}
           <div className="mt-5 flex flex-wrap gap-3">
             <Button
               size="lg"
@@ -275,6 +333,15 @@ export function AddRecipes({
           </div>
         </>
       ) : null}
+
+      {/* Always present, so screen readers are already listening when it fills. */}
+      <p
+        role="status"
+        aria-live="polite"
+        className="text-muted mt-4 text-sm empty:hidden"
+      >
+        {announcement}
+      </p>
     </Card>
   );
 }

@@ -20,6 +20,43 @@ import {
 
 import { DeleteDialog } from './delete-dialog';
 
+/** What the parts of the browser used to share a link look like, so they can be stood in for. */
+type ShareEnvironment = Readonly<{
+  share?: (data: { title: string; url: string }) => Promise<void>;
+  clipboard?: Readonly<{ writeText: (text: string) => Promise<void> }>;
+}>;
+
+/**
+ * Share a link with the device's own share sheet where there is one, otherwise
+ * copy it to the clipboard.
+ *
+ * Resolves to what happened: `shared` (the sheet was used, or was dismissed,
+ * which needs no reply), `copied` (the caller should say so), or `failed` (the
+ * clipboard refused: an insecure page, a denied prompt).
+ *
+ * @param environment The browser's `navigator`, or a stand-in.
+ * @param link The title and address to share.
+ */
+export async function shareLink(
+  environment: ShareEnvironment,
+  link: Readonly<{ title: string; url: string }>,
+): Promise<'shared' | 'copied' | 'failed'> {
+  if (typeof environment.share === 'function') {
+    try {
+      await environment.share(link);
+    } catch {
+      // The share sheet was dismissed; nothing to do.
+    }
+    return 'shared';
+  }
+  try {
+    await environment.clipboard?.writeText(link.url);
+  } catch {
+    return 'failed';
+  }
+  return environment.clipboard ? 'copied' : 'failed';
+}
+
 /**
  * Share the recipe using the device's own share sheet where there is one (phones,
  * and many desktops); otherwise copy the address and say so.
@@ -29,23 +66,14 @@ export function ShareButton({
 }: Readonly<{ title: string }>): ReactElement {
   const [copied, setCopied] = useState(false);
   const share = async () => {
-    const url = window.location.href;
-    if (typeof navigator.share === 'function') {
-      try {
-        await navigator.share({ title, url });
-      } catch {
-        // The share sheet was dismissed; nothing to do.
-      }
-      return;
+    const outcome = await shareLink(navigator, {
+      title,
+      url: window.location.href,
+    });
+    if (outcome === 'copied') {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
     }
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      // Clipboard access can be refused (an insecure page, a denied prompt).
-      return;
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
   };
   return (
     <Button
@@ -96,6 +124,34 @@ export function wasTagged(body: unknown): boolean {
   );
 }
 
+/** How auto-tagging ended, and the sentence to show for it. */
+export type AutoTagOutcome = Readonly<{ tagged: boolean; message: string }>;
+
+/**
+ * Ask the server to tag a recipe (`POST /rpc/tag-recipe`) and say how it went.
+ * Never throws: a refusal carries the server's own words, anything else a fixed
+ * sentence.
+ */
+export async function requestAutoTag(
+  recipeId: string,
+): Promise<AutoTagOutcome> {
+  try {
+    const res = await fetch('/rpc/tag-recipe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipe_id: recipeId }),
+    });
+    if (!res.ok) {
+      throw await problemError(res);
+    }
+    return wasTagged(await res.json())
+      ? { tagged: true, message: 'Tags updated.' }
+      : { tagged: false, message: "Couldn't tag this one." };
+  } catch (error) {
+    return { tagged: false, message: problemText(error, 'Tagging failed.') };
+  }
+}
+
 /**
  * The less-used actions, tucked in a menu: auto-tag the recipe (Workers AI
  * classifies it against the curated taxonomy and writes the tags into the
@@ -140,26 +196,12 @@ export function MoreMenu({
   const autoTag = async () => {
     setTagging(true);
     say('Tagging this recipe…');
-    try {
-      const res = await fetch('/rpc/tag-recipe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipe_id: recipeId }),
-      });
-      if (!res.ok) {
-        throw await problemError(res);
-      }
-      if (wasTagged(await res.json())) {
-        say('Tags updated.');
-        router.refresh();
-      } else {
-        say("Couldn't tag this one.");
-      }
-    } catch (error) {
-      say(problemText(error, 'Tagging failed.'));
-    } finally {
-      setTagging(false);
+    const outcome = await requestAutoTag(recipeId);
+    say(outcome.message);
+    if (outcome.tagged) {
+      router.refresh();
     }
+    setTagging(false);
   };
 
   return (

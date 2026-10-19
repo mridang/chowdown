@@ -18,6 +18,7 @@
  * pure and unit-tested.
  */
 
+import { scanHtml, type Attributes } from './import-html-scan';
 import { validImageUrls } from './media';
 
 /** A loose JSON value — JSON-LD arrives without a fixed shape. */
@@ -112,45 +113,61 @@ export function humaniseDuration(iso: string): string | undefined {
     .join(' ');
 }
 
-/** Whether a parsed JSON value is an object (arrays count: they are objects too). */
-function isObject(value: Json): value is JsonObject {
+/**
+ * How deep the walks over parsed JSON-LD go. Real structured data is a few
+ * levels deep (`@graph`, then a node, then its parts); a hostile page can nest
+ * arrays a hundred thousand deep, which would otherwise end the walk in a stack
+ * overflow.
+ */
+const MAX_DEPTH = 24;
+
+/** Whether a parsed JSON value is a container (arrays count: they hold members too). */
+function isJsonContainer(value: Json): value is JsonObject {
   return typeof value === 'object' && value !== null;
 }
 
 /** True if a JSON-LD node's `@type` is (or includes) `Recipe`. */
 function isRecipeNode(node: Json): node is JsonObject {
-  if (!isObject(node)) {
+  if (!isJsonContainer(node)) {
     return false;
   }
   const type = node['@type'];
   return Array.isArray(type) ? type.includes('Recipe') : type === 'Recipe';
 }
 
-/**
- * Find the first `Recipe` node anywhere in a parsed JSON-LD value — handling a
- * bare object, an array of nodes, or a `@graph` wrapper (all three occur in
- * the wild).
- */
-export function findRecipeNode(input: Json): JsonObject | null {
+/** {@link findRecipeNode}, `depth` levels down. */
+function findRecipeNodeAt(input: Json, depth: number): JsonObject | null {
+  if (depth > MAX_DEPTH) {
+    return null;
+  }
   if (Array.isArray(input)) {
     for (const item of input) {
-      const found = findRecipeNode(item);
+      const found = findRecipeNodeAt(item, depth + 1);
       if (found) {
         return found;
       }
     }
     return null;
   }
-  if (isObject(input)) {
+  if (isJsonContainer(input)) {
     if (isRecipeNode(input)) {
       return input;
     }
     const graph = input['@graph'];
     if (graph) {
-      return findRecipeNode(graph);
+      return findRecipeNodeAt(graph, depth + 1);
     }
   }
   return null;
+}
+
+/**
+ * Find the first `Recipe` node anywhere in a parsed JSON-LD value — handling a
+ * bare object, an array of nodes, or a `@graph` wrapper (all three occur in
+ * the wild). Gives up on structure nested deeper than any real page's.
+ */
+export function findRecipeNode(input: Json): JsonObject | null {
+  return findRecipeNodeAt(input, 0);
 }
 
 /** Coerce schema.org's many instruction shapes into a flat list of step texts. */
@@ -166,7 +183,7 @@ function normaliseInstructions(value: Json): readonly string[] {
       if (typeof item === 'string') {
         return [item.trim()];
       }
-      if (isObject(item)) {
+      if (isJsonContainer(item)) {
         // HowToSection wraps further steps in itemListElement.
         if (item['itemListElement']) {
           return normaliseInstructions(item['itemListElement']);
@@ -204,7 +221,7 @@ function authorName(value: Json): string | undefined {
   if (typeof node === 'string') {
     return node.trim();
   }
-  if (isObject(node)) {
+  if (isJsonContainer(node)) {
     const name = node['name'];
     if (typeof name === 'string') {
       return name.trim();
@@ -220,7 +237,7 @@ export function imageUrls(value: Json): readonly string[] {
       if (typeof item === 'string') {
         return [item];
       }
-      const url = isObject(item)
+      const url = isJsonContainer(item)
         ? (item['url'] ?? item['contentUrl'])
         : undefined;
       return typeof url === 'string' ? [url] : [];
@@ -239,7 +256,7 @@ function videoUrl(value: Json): string | undefined {
   if (typeof node === 'string') {
     return node.trim();
   }
-  if (isObject(node)) {
+  if (isJsonContainer(node)) {
     const url = node['contentUrl'] ?? node['embedUrl'] ?? node['url'];
     if (typeof url === 'string') {
       return url.trim();
@@ -341,24 +358,33 @@ export function schemaOrgToCook(
   return `${blocks.join('\n\n')}\n`;
 }
 
+/** The `property`/`name` values that mark a page's share-card image. */
+const OG_IMAGE_KEYS: ReadonlySet<string> = new Set([
+  'og:image',
+  'og:image:secure_url',
+]);
+
+/** The share-card image address a `<meta>` tag carries, if it is that tag. */
+function ogImageOf(meta: Attributes): string | undefined {
+  const marksImage = [meta.get('property'), meta.get('name')].some(
+    (key) => key !== undefined && OG_IMAGE_KEYS.has(key.trim().toLowerCase()),
+  );
+  const content = meta.get('content')?.replace(/&amp;/g, '&').trim();
+  return marksImage && content ? content : undefined;
+}
+
 /**
  * The page's `og:image` (the share-card image), resolved against `baseUrl` and
  * restricted to http(s). A good-enough cover for pages with no Recipe JSON-LD.
- * Handles both attribute orders (`property` before or after `content`).
+ * Handles both attribute orders (`property` before or after `content`). The
+ * page is read by the linear scanner in `import-html-scan.ts`, so a hostile
+ * page cannot make this slow.
  */
 export function extractOgImage(
   html: string,
   baseUrl?: string,
 ): string | undefined {
-  const forward =
-    /<meta[^>]+(?:property|name)=["']og:image(?::secure_url)?["'][^>]*?content=["']([^"']+)["']/i.exec(
-      html,
-    );
-  const backward =
-    /<meta[^>]+content=["']([^"']+)["'][^>]*?(?:property|name)=["']og:image(?::secure_url)?["']/i.exec(
-      html,
-    );
-  const raw = (forward ?? backward)?.[1]?.replace(/&amp;/g, '&').trim();
+  const raw = scanHtml(html).metas.map(ogImageOf).find(Boolean);
   if (!raw) {
     return undefined;
   }
@@ -372,15 +398,18 @@ export function extractOgImage(
   }
 }
 
-/**
- * Every object that carries an `@id` (and something besides it), anywhere in
- * the parsed JSON-LD, as `[id, object]` pairs in document order.
- */
-function collectById(root: Json): readonly (readonly [string, JsonObject])[] {
-  if (Array.isArray(root)) {
-    return root.flatMap(collectById);
+/** {@link collectById}, `depth` levels down. */
+function collectByIdAt(
+  root: Json,
+  depth: number,
+): readonly (readonly [string, JsonObject])[] {
+  if (depth > MAX_DEPTH) {
+    return [];
   }
-  if (!isObject(root)) {
+  if (Array.isArray(root)) {
+    return root.flatMap((item) => collectByIdAt(item, depth + 1));
+  }
+  if (!isJsonContainer(root)) {
     return [];
   }
   const id = root['@id'];
@@ -388,7 +417,20 @@ function collectById(root: Json): readonly (readonly [string, JsonObject])[] {
     typeof id === 'string' && Object.keys(root).length > 1
       ? [[id, root] as const]
       : [];
-  return [...own, ...Object.values(root).flatMap(collectById)];
+  return [
+    ...own,
+    ...Object.values(root).flatMap((member) =>
+      collectByIdAt(member, depth + 1),
+    ),
+  ];
+}
+
+/**
+ * Every object that carries an `@id` (and something besides it), anywhere in
+ * the parsed JSON-LD, as `[id, object]` pairs in document order.
+ */
+function collectById(root: Json): readonly (readonly [string, JsonObject])[] {
+  return collectByIdAt(root, 0);
 }
 
 /**
@@ -402,11 +444,14 @@ export function resolveImageRefs(
   node: JsonObject,
   byId: ReadonlyMap<string, JsonObject>,
 ): JsonObject {
-  const resolve = (value: Json): Json => {
-    if (Array.isArray(value)) {
-      return value.map(resolve);
+  const resolve = (value: Json, depth: number): Json => {
+    if (depth > MAX_DEPTH) {
+      return value;
     }
-    if (isObject(value)) {
+    if (Array.isArray(value)) {
+      return value.map((item) => resolve(item, depth + 1));
+    }
+    if (isJsonContainer(value)) {
       const id = value['@id'];
       if (typeof id === 'string' && Object.keys(value).length === 1) {
         return byId.get(id) ?? value;
@@ -415,29 +460,27 @@ export function resolveImageRefs(
     return value;
   };
   const image = node['image'];
-  return image === undefined ? node : { ...node, image: resolve(image) };
+  return image === undefined ? node : { ...node, image: resolve(image, 0) };
 }
 
 /**
  * Pull `Recipe` JSON-LD out of a page's HTML and convert it. Returns null when
- * the page has no parseable recipe. Kept regex-based (no DOM) so it runs in the
- * Worker; malformed JSON-LD blocks are skipped rather than throwing.
+ * the page has no parseable recipe. Needs no DOM, so it runs in the Worker; the
+ * page is read by the linear scanner in `import-html-scan.ts` (a page is
+ * untrusted input), and malformed JSON-LD blocks are skipped rather than
+ * throwing.
  */
 export function extractRecipeFromHtml(
   html: string,
   sourceUrl?: string,
 ): string | null {
-  const scriptRe =
-    /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
-  const blocks = [...html.matchAll(scriptRe)].flatMap(
-    (match): readonly Json[] => {
-      try {
-        return [JSON.parse((match[1] ?? '').trim())];
-      } catch {
-        return [];
-      }
-    },
-  );
+  const blocks = scanHtml(html).jsonLd.flatMap((text): readonly Json[] => {
+    try {
+      return [JSON.parse(text.trim())];
+    } catch {
+      return [];
+    }
+  });
   // The first block to define an id wins, so the entries are reversed on the
   // way into the Map (a later entry overwrites an earlier one).
   const byId = new Map(blocks.flatMap(collectById).toReversed());

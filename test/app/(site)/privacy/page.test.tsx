@@ -15,12 +15,51 @@ describe('PrivacyPage', () => {
     for (const heading of [
       'What we access',
       'What we store',
+      'Artificial intelligence',
+      'Links you paste',
+      'Connected assistants',
+      'Cookies and logs',
       'What we don’t do',
       'Deleting your data',
       'Contact',
     ]) {
       expect(out).toMatch(new RegExp(`<h2[^>]*>${heading}</h2>`));
     }
+  });
+
+  it('says recipe text goes to Cloudflare Workers AI, and what for', () => {
+    expect(out).toContain('Cloudflare Workers AI');
+    expect(out).toContain('picks tags, and makes the embeddings');
+  });
+
+  it('says embeddings are stored', () => {
+    expect(out).toContain('embedding');
+  });
+
+  it('says pasted links are fetched by the server', () => {
+    expect(out).toContain('chowdown’s server fetches that page');
+  });
+
+  it('describes connected assistants and where to disconnect them', () => {
+    expect(out).toContain('consent screen');
+    expect(out).toContain('disconnect any of them');
+  });
+
+  it('names the session cookie and says there are no tracking cookies', () => {
+    expect(out).toContain('chowdown_session');
+    expect(out).toContain('No advertising or analytics cookies');
+  });
+
+  it('mentions Cloudflare’s request logs', () => {
+    expect(out).toContain(
+      'Cloudflare, which hosts chowdown, records each request',
+    );
+  });
+
+  it('offers self-service account deletion rather than asking people to email', () => {
+    expect(out).toContain('Delete account');
+    expect(out).not.toContain('and email us to delete your stored record');
+    expect(out).toContain('Your <code');
   });
 
   it('names the narrow Drive permission', () => {

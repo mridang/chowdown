@@ -28,11 +28,14 @@
   --color-muted: color-mix(in srgb, var(--color-ink) 75%, transparent);
   --color-subtle: color-mix(in srgb, var(--color-ink) 65%, transparent);
 
-  /* Edges: `border-line` for a hairline between areas and around cards,
-   * `border-field` for the edge of something you can act on (an input, a
-   * button, a chip). */
+  /* Edges: `border-line` for a hairline between areas and around cards (purely
+   * decorative, so it may be faint), `border-field` for the edge of something
+   * you can act on (an input, a button, a chip). A control's border is often
+   * the only thing that shows where it is, so WCAG 1.4.11 asks 3:1 of it
+   * against what it sits on: ink at 50% measures 3.5:1 on white, 3.5:1 on
+   * paper and 3.4:1 on sand. (test/app/globals.test.ts keeps it honest.) */
   --color-line: color-mix(in srgb, var(--color-ink) 10%, transparent);
-  --color-field: color-mix(in srgb, var(--color-ink) 25%, transparent);
+  --color-field: color-mix(in srgb, var(--color-ink) 50%, transparent);
 
   /* Shape and type tokens: every component draws from these. */
   --text-label: 0.6875rem;
@@ -65,6 +68,25 @@
 body {
   background: var(--color-paper);
   color: var(--color-ink);
+}
+
+/*
+ * For people who ask their system for less motion: every transition and
+ * animation collapses to an instant change (not removed, so anything waiting
+ * for an `animationend` or `transitionend` still gets it). One rule here covers
+ * every component, including ones added later. It needs no `!important`: this
+ * rule is outside every cascade layer, and unlayered styles beat the layered
+ * utility classes Tailwind generates.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+    scroll-behavior: auto;
+  }
 }
 
 /*

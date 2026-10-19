@@ -48,6 +48,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: TITLE,
+    locale: 'en_US',
     title: DEFAULT_TITLE,
     description: DESCRIPTION,
     url: SITE_URL,
@@ -70,6 +71,9 @@ export const viewport: Viewport = {
   // The marigold of the header strip, so Chrome's address bar on Android and
   // the installed app's title bar take the brand colour.
   themeColor: '#ffb100',
+  // The site has no dark theme. Saying so stops Android's "auto dark" from
+  // inverting the pages and keeps form controls and scrollbars light.
+  colorScheme: 'only light',
 };
 
 /**
@@ -88,7 +92,7 @@ export default function RootLayout({
       lang="en"
       className={`${sans.variable} ${display.variable} h-full antialiased`}
     >
-      <body className="bg-paper text-ink flex min-h-full flex-col overflow-x-hidden font-sans">
+      <body className="bg-paper text-ink flex min-h-full flex-col font-sans">
         {children}
         <ServiceWorker />
       </body>

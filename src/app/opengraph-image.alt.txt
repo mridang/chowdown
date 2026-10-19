@@ -1,1 +1,1 @@
-chowdown: your recipes, kept as plain text in your own Google Drive
+chowdown, recipe keeper. Your recipes. Your Drive. Your rules.

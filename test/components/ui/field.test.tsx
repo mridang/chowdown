@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   FormField,
+  describedByIds,
   FormMessage,
   Select,
   SelectField,
@@ -44,6 +45,38 @@ describe('FormField', () => {
     expect(out).not.toContain('aria-describedby');
   });
 
+  it('marks the control invalid and points it at the error, which is announced', () => {
+    const out = html(
+      <FormField id="name" label="Recipe name" error="A name is needed.">
+        <TextInput id="name" />
+      </FormField>,
+    );
+    expect(out).toMatch(/<input[^>]*aria-invalid="true"/);
+    expect(out).toMatch(/<input[^>]*aria-describedby="name-error"/);
+    expect(out).toMatch(
+      /<p id="name-error" role="alert"[^>]*>A name is needed\.<\/p>/,
+    );
+  });
+
+  it('points the control at both its help text and its error', () => {
+    const out = html(
+      <FormField id="cook" label="Cooklang" hint="Paste it." error="Empty.">
+        <TextArea id="cook" />
+      </FormField>,
+    );
+    expect(out).toContain('aria-describedby="cook-hint cook-error"');
+  });
+
+  it('does not mark a valid control invalid', () => {
+    const out = html(
+      <FormField id="cook" label="Cooklang" hint="Paste it.">
+        <TextArea id="cook" />
+      </FormField>,
+    );
+    expect(out).not.toContain('aria-invalid');
+    expect(out).not.toContain('role="alert"');
+  });
+
   it('leaves the help line out when there is none', () => {
     expect(
       html(
@@ -55,10 +88,30 @@ describe('FormField', () => {
   });
 });
 
+describe('describedByIds', () => {
+  it('joins the ids that are present', () => {
+    expect(describedByIds(['a-hint', undefined, 'a-error'])).toBe(
+      'a-hint a-error',
+    );
+  });
+
+  it('is nothing when none are present, so no attribute is written', () => {
+    expect(describedByIds([undefined, undefined])).toBeUndefined();
+    expect(describedByIds([])).toBeUndefined();
+  });
+});
+
 describe('TextInput and TextArea', () => {
   it('share one look', () => {
     expect(classOf(html(<TextInput />), 'input')).toContain('border-field');
     expect(classOf(html(<TextArea />), 'textarea')).toContain('border-field');
+  });
+
+  it('darken their edge on hover as well as focus, since the resting edge is now clear', () => {
+    expect(classOf(html(<TextInput />), 'input')).toContain('hover:border-ink');
+    expect(classOf(html(<TextInput />), 'input')).not.toContain(
+      'hover:border-ink/50',
+    );
   });
 
   it('show code-like text in a monospace face on request', () => {

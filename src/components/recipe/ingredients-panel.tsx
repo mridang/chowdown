@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactElement } from 'react';
+import { useId, useState, type ReactElement } from 'react';
 
 import { CheckIcon, MinusIcon, PanIcon, PlusIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
@@ -46,6 +46,8 @@ export function IngredientsPanel({
 }>): ReactElement {
   const { people, setPeople, units, setUnits, quantity } = useRecipeState();
   const [done, setDone] = useState<ReadonlySet<number>>(new Set());
+  // Unique per panel: cook mode and print can render a second one on the page.
+  const servingsLabelId = useId();
   // Only reserve a column for amounts when some ingredient has one, so a recipe
   // that writes them into the name doesn't get a blank gap.
   const hasAmounts = ingredients.some((ingredient) => ingredient.quantity);
@@ -75,13 +77,13 @@ export function IngredientsPanel({
       </div>
 
       <div className="rounded-control border-line mt-4 flex items-center justify-between border bg-white px-3 py-2">
-        <span className="text-muted text-sm" id="servings-label">
+        <span className="text-muted text-sm" id={servingsLabelId}>
           Servings
         </span>
         <span
           className="flex items-center gap-1"
           role="group"
-          aria-labelledby="servings-label"
+          aria-labelledby={servingsLabelId}
         >
           <button
             type="button"
@@ -127,7 +129,7 @@ export function IngredientsPanel({
                       'grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border transition',
                       ticked
                         ? 'border-ink bg-ink text-white'
-                        : 'border-ink/50 bg-white',
+                        : 'border-field bg-white',
                     )}
                   >
                     {ticked ? <CheckIcon size="xs" strokeWidth={3} /> : null}

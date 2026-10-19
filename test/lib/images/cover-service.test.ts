@@ -16,6 +16,9 @@ const serving: CoverFetch = async () =>
     headers: { 'content-type': 'image/jpeg' },
   });
 
+/** Everyone may have every photo (the ownership rule has its own tests). */
+const allowed = async () => true;
+
 /** A cache that remembers what it is given. */
 function fakeCache(initial: Response | undefined = undefined) {
   const stored: [string, Response][] = [];
@@ -56,6 +59,7 @@ describe('serveCover', () => {
   it('refuses an address that is not a public image with 400', async () => {
     const response = await serveCover('http://localhost/x.png', 640, {
       background: () => undefined,
+      mayFetch: allowed,
     });
     expect(response.status).toBe(400);
   });
@@ -69,6 +73,7 @@ describe('serveCover', () => {
       cache,
       fetcher,
       background: () => undefined,
+      mayFetch: allowed,
     });
     expect(await response.text()).toBe('cached');
     expect(fetcher).not.toHaveBeenCalled();
@@ -82,6 +87,7 @@ describe('serveCover', () => {
       cache,
       fetcher: serving,
       background,
+      mayFetch: allowed,
     });
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toBe('image/jpeg');
@@ -99,6 +105,7 @@ describe('serveCover', () => {
     const response = await serveCover(PHOTO, 640, {
       fetcher: serving,
       background,
+      mayFetch: allowed,
     });
     expect(response.status).toBe(200);
     expect(background).not.toHaveBeenCalled();
@@ -109,6 +116,7 @@ describe('serveCover', () => {
     const response = await serveCover(PHOTO, 640, {
       fetcher: gone,
       background: () => undefined,
+      mayFetch: allowed,
     });
     expect(response.status).toBe(404);
   });
@@ -120,7 +128,47 @@ describe('serveCover', () => {
     const response = await serveCover(PHOTO, 640, {
       fetcher: down,
       background: () => undefined,
+      mayFetch: allowed,
     });
     expect(response.status).toBe(502);
+  });
+
+  it('refuses a photo the person has no recipe for, without fetching it', async () => {
+    const fetcher = jest.fn(serving);
+    const asked: string[] = [];
+    const response = await serveCover(PHOTO, 640, {
+      fetcher,
+      background: () => undefined,
+      mayFetch: async (url) => {
+        asked.push(url);
+        return false;
+      },
+    });
+    expect(response.status).toBe(404);
+    expect(asked).toEqual([PHOTO]);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('does not ask about a photo the edge already has', async () => {
+    const mayFetch = jest.fn(async () => false);
+    const { cache } = fakeCache(
+      new Response('cached', { headers: { 'content-type': 'image/webp' } }),
+    );
+    const response = await serveCover(PHOTO, 640, {
+      cache,
+      background: () => undefined,
+      mayFetch,
+    });
+    expect(response.status).toBe(200);
+    expect(mayFetch).not.toHaveBeenCalled();
+  });
+
+  it('does not ask about an address that is not a public image', async () => {
+    const mayFetch = jest.fn(async () => true);
+    await serveCover('http://127.0.0.1/x.png', 640, {
+      background: () => undefined,
+      mayFetch,
+    });
+    expect(mayFetch).not.toHaveBeenCalled();
   });
 });

@@ -11,12 +11,13 @@
 import { getUserAccessToken } from '../auth/current-user';
 import { isDriveConnected } from '../auth/drive-access';
 import type { Database } from '../db/client';
-import { setFavourite } from '../db/favourites';
+import { isFavourite, setFavourite } from '../db/favourites';
 import { getRecipeByFileId } from '../db/recipes';
 import { getUserById, type User } from '../db/users';
 import { getFileContent, updateRecipeFile } from '../drive/drive-client';
 import { getDatabase, runInBackground } from '../util';
 import { withFavouriteTag } from './favourite-tag';
+import { createKeyedQueue } from './keyed-queue';
 import { indexRecipeWrite } from './tag-index';
 
 /**
@@ -34,6 +35,20 @@ export interface FavouriteDeps {
     fileId: string,
     on: boolean,
   ) => Promise<boolean>;
+  /** Whether the recipe is hearted right now, read when the file is updated. */
+  readonly readHeart: (
+    db: Database,
+    userId: number,
+    fileId: string,
+  ) => Promise<boolean>;
+  /**
+   * Run a job after any earlier job for the same key, never alongside it
+   * (see {@link createKeyedQueue}).
+   */
+  readonly serialise: (
+    key: string,
+    job: () => Promise<void>,
+  ) => Promise<unknown>;
   /** The user row, if the account still exists. */
   readonly findUser: (db: Database, id: number) => Promise<User | undefined>;
   /** A Drive access token for the user. */
@@ -64,10 +79,15 @@ export interface FavouriteDeps {
   readonly background: (work: Promise<unknown>) => void;
 }
 
+/** Orders the Drive updates for one recipe within this server instance. */
+const fileUpdates = createKeyedQueue();
+
 /** The real thing. */
 const liveDeps: FavouriteDeps = {
   database: getDatabase,
   saveHeart: setFavourite,
+  readHeart: isFavourite,
+  serialise: fileUpdates.run,
   findUser: getUserById,
   accessToken: getUserAccessToken,
   readFile: getFileContent,
@@ -80,12 +100,16 @@ const liveDeps: FavouriteDeps = {
   background: runInBackground,
 };
 
-/** Mirror the favourite marker into the recipe's file and refresh the cache. */
+/**
+ * Mirror the heart's CURRENT state into the recipe's file and refresh the
+ * cache. The state is read from the table when the job runs, not taken from
+ * the request that queued it: with quick on/off/on clicks the jobs may run
+ * late, and whichever runs last must write what the person last chose.
+ */
 async function writeFavouriteTag(
   deps: FavouriteDeps,
   userId: number,
   driveFileId: string,
-  on: boolean,
 ): Promise<void> {
   const db = deps.database();
   const user = await deps.findUser(db, userId);
@@ -94,6 +118,7 @@ async function writeFavouriteTag(
     // once the person has connected it and hearts the recipe again.
     return;
   }
+  const on = await deps.readHeart(db, userId, driveFileId);
   const token = await deps.accessToken(user);
   const original = await deps.readFile(driveFileId, token);
   const updated = withFavouriteTag(original, on);
@@ -109,7 +134,7 @@ async function writeFavouriteTag(
 
 /**
  * Heart or un-heart a recipe. Returns as soon as the table is updated; the file
- * marker follows in the background. Idempotent.
+ * marker follows in the background, one update per recipe at a time. Idempotent.
  *
  * @param deps Collaborators; leave out to use the real ones.
  */
@@ -120,6 +145,10 @@ export async function setFavouriteAndTag(
   deps: FavouriteDeps = liveDeps,
 ): Promise<boolean> {
   const state = await deps.saveHeart(deps.database(), userId, driveFileId, on);
-  deps.background(writeFavouriteTag(deps, userId, driveFileId, on));
+  deps.background(
+    deps.serialise(`${userId}:${driveFileId}`, () =>
+      writeFavouriteTag(deps, userId, driveFileId),
+    ),
+  );
   return state;
 }

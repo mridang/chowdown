@@ -17,11 +17,15 @@
   Cache-Control: public, max-age=31536000, immutable
 
 # Un-hashed public files — cache for a day; they change rarely. The icons and
-# llms.txt are also files other sites load or fetch on purpose.
+# llms.txt and the security policy are also files other sites load or fetch on purpose.
 /icons/*
   Cache-Control: public, max-age=86400
   Cross-Origin-Resource-Policy: cross-origin
 /llms.txt
+  Cross-Origin-Resource-Policy: cross-origin
+# The disclosure policy that security.txt points researchers to.
+/security-policy.txt
+  Cache-Control: public, max-age=86400
   Cross-Origin-Resource-Policy: cross-origin
 /*.svg
   Cache-Control: public, max-age=86400

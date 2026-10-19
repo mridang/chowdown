@@ -19,6 +19,8 @@ const STILL_ROUTER = Object.freeze({
   push: () => undefined,
   replace: () => undefined,
   prefetch: () => undefined,
+  // Next 16.4 lets a form key itself on this so it resets with the page.
+  bfcacheId: 'test',
 });
 
 /**

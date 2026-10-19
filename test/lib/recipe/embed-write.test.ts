@@ -56,7 +56,7 @@ describe('embedRecipe', () => {
       modified_time: 'mt',
       vector: '[0.5,0.25]',
     });
-    expect(asCalls(deps.refreshLists)).toHaveBeenCalledWith(db, 1);
+    expect(asCalls(deps.refreshLists)).toHaveBeenCalledWith(db, 1, ['f1']);
   });
 
   it('leaves the modified time empty when none is known', async () => {
@@ -91,6 +91,8 @@ describe('backfillEmbeddings', () => {
     );
     expect(saved).toEqual(['a', 'c']);
     expect(asCalls(deps.refreshLists)).toHaveBeenCalledTimes(1);
+    // Only the lists these two recipes can affect are worked out.
+    expect(asCalls(deps.refreshLists)).toHaveBeenCalledWith(db, 1, ['a', 'c']);
   });
 
   it('is bounded by the limit', async () => {

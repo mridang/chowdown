@@ -22,6 +22,9 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: '#fbf8f2',
     theme_color: '#ffb100',
     categories: ['food', 'lifestyle'],
+    // Chromium on desktop: a second launch (a shortcut, a link) reuses the open
+    // window instead of stacking another.
+    launch_handler: { client_mode: 'navigate-existing' },
     icons: [
       {
         src: '/icons/icon-192.png',
@@ -40,6 +43,14 @@ export default function manifest(): MetadataRoute.Manifest {
         sizes: '512x512',
         type: 'image/png',
         purpose: 'maskable',
+      },
+      // Android 13+ themed icons colour this one themselves: only its shape
+      // (the alpha channel) is used.
+      {
+        src: '/icons/icon-monochrome-512.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'monochrome',
       },
     ],
     shortcuts: [

@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   extractUrls,
+  MAX_IMPORT_UNITS,
   planImport,
   splitTextBlocks,
 } from '../../../src/lib/recipe/import-blob';
@@ -63,5 +64,58 @@ describe('planImport', () => {
   });
   it('is empty for whitespace', () => {
     expect(planImport('   \n  ')).toEqual([]);
+  });
+});
+
+/** How long `work` takes, in milliseconds. */
+function milliseconds(work: () => unknown): number {
+  const started = performance.now();
+  work();
+  return performance.now() - started;
+}
+
+describe('hostile text', () => {
+  it('trims a long run of trailing punctuation in linear time', () => {
+    const text = `see http://a.com/${'.'.repeat(90_000)}x and http://b.com/${'.'.repeat(5000)}`;
+    expect(milliseconds(() => extractUrls(text))).toBeLessThan(100);
+    expect(extractUrls(text)).toEqual([
+      `http://a.com/${'.'.repeat(90_000)}x`,
+      'http://b.com/',
+    ]);
+  });
+
+  it('plans thousands of links in linear time', () => {
+    const text = Array.from({ length: 5000 }, (_, i) => `http://a.b/${i}`).join(
+      ' ',
+    );
+    expect(milliseconds(() => planImport(text))).toBeLessThan(200);
+    expect(planImport(text)).toHaveLength(5000);
+  });
+
+  it('splits whitespace-heavy text in linear time', () => {
+    const text = `\n${' '.repeat(90_000)}x\n${' \t'.repeat(5000)}y`;
+    expect(milliseconds(() => splitTextBlocks(text))).toBeLessThan(100);
+  });
+});
+
+describe('MAX_IMPORT_UNITS', () => {
+  it('is a handful, so one request cannot start unbounded work', () => {
+    expect(MAX_IMPORT_UNITS).toBe(10);
+  });
+});
+
+describe('planImport leftovers', () => {
+  it('keeps the punctuation that followed a link in the prose', () => {
+    expect(
+      planImport(
+        'https://a.com/x. Boil water and add the pasta to it, then drain.',
+      ),
+    ).toEqual([
+      { kind: 'url', url: 'https://a.com/x' },
+      {
+        kind: 'text',
+        text: '. Boil water and add the pasta to it, then drain.',
+      },
+    ]);
   });
 });

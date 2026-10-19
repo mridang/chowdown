@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { problemError, problemText } from '@/lib/problem-message';
+import { requestDeletion } from '@/components/ui/request-deletion';
 import {
   Dialog,
   DialogContent,
@@ -48,22 +48,19 @@ export function DeleteDialog({
   const confirm = async () => {
     setBusy(true);
     setError(null);
-    try {
-      const res = await fetch(`/api/recipes/${recipeId}`, { method: 'DELETE' });
-      if (!res.ok) {
-        throw await problemError(res);
-      }
-      onOpenChange(false);
-      // Drop cached pages so the deleted recipe disappears from the list.
-      router.push('/app');
-      router.refresh();
-    } catch (error) {
-      setError(
-        problemText(error, "Couldn't delete this recipe. Nothing was changed."),
-      );
-    } finally {
-      setBusy(false);
+    const result = await requestDeletion(
+      `/api/recipes/${recipeId}`,
+      "Couldn't delete this recipe. Nothing was changed.",
+    );
+    setBusy(false);
+    if (!result.deleted) {
+      setError(result.message);
+      return;
     }
+    onOpenChange(false);
+    // Drop cached pages so the deleted recipe disappears from the list.
+    router.push('/app');
+    router.refresh();
   };
 
   return (
