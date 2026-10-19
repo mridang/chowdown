@@ -5,7 +5,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { PlusIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { SelectField } from '@/components/ui/field';
+import {
+  FormField,
+  FormMessage,
+  SelectField,
+  TextArea,
+} from '@/components/ui/field';
 import { problemError, problemText } from '@/lib/problem-message';
 
 /**
@@ -77,18 +82,16 @@ export function AddNote({
 
   return (
     <div className="rounded-card border-ink/15 w-full max-w-xl border bg-white p-4">
-      <label htmlFor="note-text" className="text-sm font-semibold">
-        Your note
-      </label>
-      <textarea
-        id="note-text"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={3}
-        ref={field}
-        placeholder="e.g. use 3 avocados instead of 2"
-        className="rounded-control border-ink/25 focus:border-ink placeholder:text-subtle mt-1.5 w-full border bg-white px-3 py-2 text-base outline-none"
-      />
+      <FormField id="note-text" label="Your note">
+        <TextArea
+          id="note-text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={3}
+          ref={field}
+          placeholder="e.g. use 3 avocados instead of 2"
+        />
+      </FormField>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <SelectField
           label="Attach to"
@@ -115,11 +118,7 @@ export function AddNote({
           </Button>
         </div>
       </div>
-      {error ? (
-        <p role="alert" className="text-ember mt-2 text-sm font-medium">
-          {error}
-        </p>
-      ) : null}
+      {error ? <FormMessage tone="error">{error}</FormMessage> : null}
     </div>
   );
 }

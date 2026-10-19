@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 import { CheckIcon, ProteinIcon } from '@/components/icons';
 import type {
   FacetData,
@@ -12,6 +10,7 @@ import {
 } from '@/components/ui/accordion';
 import { cn } from '@/components/ui/cn';
 import { Difficulty } from '@/components/ui/difficulty';
+import { ToggleLink } from '@/components/ui/toggle-link';
 
 /** One filter option: a tick box, the label (or a meter) and how many recipes match. */
 function FacetOption({
@@ -22,11 +21,9 @@ function FacetOption({
   option: FacetOptionData;
 }) {
   return (
-    <Link
+    <ToggleLink
       href={option.href}
-      scroll={false}
-      role="checkbox"
-      aria-checked={option.active}
+      active={option.active}
       className="rounded-control hover:bg-ink/5 focus-visible:outline-ink flex min-h-9 items-center gap-3 px-2 text-[15px] transition focus-visible:outline-2"
     >
       <span
@@ -61,7 +58,7 @@ function FacetOption({
         )}
       </span>
       <span className="text-subtle text-xs tabular-nums">{option.count}</span>
-    </Link>
+    </ToggleLink>
   );
 }
 

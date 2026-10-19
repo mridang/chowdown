@@ -2,6 +2,7 @@
 
 import { ClockIcon } from '@/components/icons';
 import { Heading } from '@/components/ui/layout';
+import { NumberBadge } from '@/components/ui/number-badge';
 import type { StepToken } from '@/lib/recipe/cooklang';
 
 import { NoteChip } from './note-chip';
@@ -65,12 +66,7 @@ export function Method({
         <ol className="mt-5 flex max-w-3xl flex-col gap-8">
           {steps.map((step, index) => (
             <li key={index} className="flex items-start gap-5">
-              <span
-                aria-hidden="true"
-                className="bg-flame text-ink grid h-9 w-9 shrink-0 place-items-center rounded-full text-base font-semibold"
-              >
-                {index + 1}
-              </span>
+              <NumberBadge value={index + 1} size="md" />
               <div className="min-w-0 pt-1">
                 <p className="text-lg leading-relaxed">
                   <span className="sr-only">Step {index + 1}: </span>

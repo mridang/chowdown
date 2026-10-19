@@ -3,18 +3,8 @@
 import { useState } from 'react';
 
 import { CoverImage } from '@/components/cover-image';
-import { PanIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
-import type { Tone } from '@/lib/recipe/card-data';
-
-/** The soft tint a recipe without a photo (or with a broken one) wears. */
-const TINTS: Record<Tone, string> = {
-  flame: 'bg-flame/15 text-flame',
-  marigold: 'bg-marigold/30 text-ink',
-  forest: 'bg-forest/15 text-forest',
-  sand: 'bg-sand text-muted',
-  ink: 'bg-ink/10 text-ink',
-};
+import { TintTile, type Tone } from '@/components/ui/tint-tile';
 
 /**
  * The recipe's big photo. The caller sets the shape with `className` (an aspect
@@ -39,11 +29,8 @@ export function HeroPhoto({
   className?: string;
 }) {
   const [index, setIndex] = useState(0);
-  const tile = (
-    <div className={cn('grid h-full w-full place-items-center', TINTS[tone])}>
-      <PanIcon className="h-1/4 w-1/4 opacity-40" strokeWidth={1.1} />
-    </div>
-  );
+  // What a recipe without a photo (or with a broken one) shows instead.
+  const tile = <TintTile tone={tone} className="h-full w-full" />;
   const current = images[index];
   return (
     <div className={cn('relative overflow-hidden', className)}>

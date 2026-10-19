@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { CheckIcon, MinusIcon, PanIcon, PlusIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
+import { Heading } from '@/components/ui/layout';
 import { Segmented } from '@/components/ui/segmented';
 import type { UnitChoice } from '@/lib/recipe/page-view';
 
@@ -50,9 +51,9 @@ export function IngredientsPanel({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-2xl leading-tight font-semibold tracking-tight">
+        <Heading as="h2" variant="h3">
           Ingredients
-        </h2>
+        </Heading>
         {ingredients.length > 0 ? (
           <Segmented<UnitChoice>
             label="Units"

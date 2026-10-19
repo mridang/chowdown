@@ -1,14 +1,8 @@
 'use client';
 
-import { useCallback, useState, useSyncExternalStore } from 'react';
-
 import { HeartIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
-import {
-  getFavouriteOverride,
-  setFavouriteOverride,
-  subscribeFavourites,
-} from '@/lib/favourites-store';
+import { useFavourite } from '@/components/recipes/use-favourite';
 
 /**
  * The heart on a recipe card. It saves for real, through the same favourites
@@ -27,37 +21,13 @@ export function CardHeart({
   /** Whether the recipe is a favourite according to the server. */
   initial: boolean;
 }) {
-  const on = useSyncExternalStore(
-    subscribeFavourites,
-    () => getFavouriteOverride(recipeId) ?? initial,
-    () => initial,
-  );
-  const [busy, setBusy] = useState(false);
-
-  const toggle = useCallback(async () => {
-    const next = !on;
-    setFavouriteOverride(recipeId, next); // optimistic
-    setBusy(true);
-    try {
-      // Favouriting creates the resource, un-favouriting deletes it.
-      const res = await fetch(`/api/users/self/favourite-recipes/${recipeId}`, {
-        method: next ? 'PUT' : 'DELETE',
-      });
-      if (!res.ok) {
-        throw new Error(String(res.status));
-      }
-    } catch {
-      setFavouriteOverride(recipeId, !next); // roll back
-    } finally {
-      setBusy(false);
-    }
-  }, [on, recipeId]);
+  const { on, busy, toggle } = useFavourite(recipeId, initial);
 
   const label = on ? 'Remove from favourites' : 'Add to favourites';
   return (
     <button
       type="button"
-      onClick={toggle}
+      onClick={() => void toggle()}
       disabled={busy}
       aria-pressed={on}
       aria-label={label}

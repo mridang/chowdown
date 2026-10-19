@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { NumberBadge } from '@/components/ui/number-badge';
 import type { StepToken } from '@/lib/recipe/cooklang';
 import { stepText } from '@/lib/recipe/page-view';
 
@@ -186,16 +187,11 @@ export function CookMode({
                   Math.abs(i - index) > 1 && 'sm:hidden',
                 )}
               >
-                <span
-                  className={cn(
-                    'grid shrink-0 place-items-center rounded-full font-semibold',
-                    i === index
-                      ? 'h-12 w-12 bg-flame text-xl text-ink'
-                      : 'h-9 w-9 bg-ink/10 text-base text-muted',
-                  )}
-                >
-                  {i + 1}
-                </span>
+                <NumberBadge
+                  value={i + 1}
+                  size={i === index ? 'lg' : 'md'}
+                  tone={i === index ? 'flame' : 'quiet'}
+                />
                 <p
                   className={cn(
                     'font-display leading-snug font-medium',

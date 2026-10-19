@@ -1,14 +1,8 @@
 'use client';
 
-import { useCallback, useState, useSyncExternalStore } from 'react';
-
 import { HeartIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
-import {
-  getFavouriteOverride,
-  setFavouriteOverride,
-  subscribeFavourites,
-} from '@/lib/favourites-store';
+import { useFavourite } from '@/components/recipes/use-favourite';
 
 // Re-exported so the older import path keeps working.
 export { HeartIcon };
@@ -73,44 +67,17 @@ export function FavouriteButton({
   /** Extra classes, typically positioning for the overlay variant. */
   className?: string;
 }) {
-  const on = useSyncExternalStore(
-    subscribeFavourites,
-    () => getFavouriteOverride(recipeId) ?? initial,
-    () => initial,
-  );
-  const [busy, setBusy] = useState(false);
-
-  const toggle = useCallback(
-    async (event: React.MouseEvent) => {
-      // The button can sit over a link; don't navigate when it's clicked.
-      event.preventDefault();
-      event.stopPropagation();
-      const next = !on;
-      setFavouriteOverride(recipeId, next); // optimistic
-      setBusy(true);
-      try {
-        // Favouriting creates the resource, un-favouriting deletes it.
-        const res = await fetch(
-          `/api/users/self/favourite-recipes/${recipeId}`,
-          { method: next ? 'PUT' : 'DELETE' },
-        );
-        if (!res.ok) {
-          throw new Error(String(res.status));
-        }
-        setFavouriteOverride(recipeId, next);
-      } catch {
-        setFavouriteOverride(recipeId, !next); // roll back
-      } finally {
-        setBusy(false);
-      }
-    },
-    [on, recipeId],
-  );
+  const { on, busy, toggle } = useFavourite(recipeId, initial);
 
   return (
     <button
       type="button"
-      onClick={toggle}
+      onClick={(event) => {
+        // The button can sit over a link; don't navigate when it's clicked.
+        event.preventDefault();
+        event.stopPropagation();
+        void toggle();
+      }}
       disabled={busy}
       aria-pressed={on}
       aria-label={

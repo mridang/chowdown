@@ -7,26 +7,15 @@ import {
   ClockIcon,
   FlameIcon,
   HeartIcon,
-  PanIcon,
   ProteinIcon,
 } from '@/components/icons';
+import { CardFact } from '@/components/recipes/card-fact';
 import { CardHeart } from '@/components/recipes/card-heart';
 import { cn } from '@/components/ui/cn';
 import { Heading } from '@/components/ui/layout';
+import { TintTile, type Tone } from '@/components/ui/tint-tile';
 import { duration, sentenceCase } from '@/lib/format';
-import type { CardRecipe, Tone } from '@/lib/recipe/card-data';
-
-/**
- * Soft tints for the photo placeholder, so a recipe without a cover still gets
- * a quiet block of colour rather than a loud one.
- */
-const TINTS: Record<Tone, string> = {
-  flame: 'bg-flame/15 text-flame',
-  marigold: 'bg-marigold/30 text-ink',
-  forest: 'bg-forest/15 text-forest',
-  sand: 'bg-sand text-muted',
-  ink: 'bg-ink/10 text-ink',
-};
+import type { CardRecipe } from '@/lib/recipe/card-data';
 
 /**
  * A recipe photo. With a cover it shows the photo (falling back to the tint if
@@ -45,11 +34,8 @@ export function PhotoBlock({
   /** The photo is above the fold, so load it straight away. */
   priority?: boolean;
 }) {
-  const tile = (
-    <div className={cn('grid h-full w-full place-items-center', TINTS[tone])}>
-      <PanIcon className="h-1/4 w-1/4 opacity-40" strokeWidth={1.1} />
-    </div>
-  );
+  // A recipe without a cover still gets a quiet block of colour.
+  const tile = <TintTile tone={tone} className="h-full w-full" />;
   return (
     <div className={cn('relative overflow-hidden', className)}>
       {cover ? (
@@ -67,16 +53,6 @@ export function PhotoBlock({
         <div className="absolute inset-0">{tile}</div>
       )}
     </div>
-  );
-}
-
-/** An icon with a short value, used for the facts on a card. */
-function Fact({ icon, children }: { icon: ReactNode; children: ReactNode }) {
-  return (
-    <span className="text-subtle inline-flex items-center gap-1.5 text-[13px]">
-      {icon}
-      {children}
-    </span>
   );
 }
 
@@ -137,17 +113,21 @@ export function RecipeCard({
           </Heading>
           <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-3.5">
             {recipe.minutes !== undefined ? (
-              <Fact icon={<ClockIcon size="sm" />}>
+              <CardFact icon={<ClockIcon size="sm" />}>
                 {duration(recipe.minutes)}
-              </Fact>
+              </CardFact>
             ) : null}
             {recipe.difficulty ? (
-              <Fact icon={<FlameIcon size="sm" />}>{recipe.difficulty}</Fact>
+              <CardFact icon={<FlameIcon size="sm" />}>
+                {recipe.difficulty}
+              </CardFact>
             ) : null}
             {recipe.protein ? (
-              <Fact icon={<ProteinIcon size="sm" protein={recipe.protein} />}>
+              <CardFact
+                icon={<ProteinIcon size="sm" protein={recipe.protein} />}
+              >
                 {sentenceCase(recipe.protein)}
-              </Fact>
+              </CardFact>
             ) : null}
           </div>
         </div>
