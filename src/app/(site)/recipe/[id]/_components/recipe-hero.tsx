@@ -12,7 +12,7 @@ import { sentenceCase } from '@/lib/format';
 import type { Tone } from '@/lib/recipe/card-data';
 import type { StepToken } from '@/lib/recipe/cooklang';
 
-import { SourceLine } from './source-line';
+import { Byline } from './byline';
 
 /**
  * The trail above the title: always "Recipes", plus the recipe's cuisine (a
@@ -49,8 +49,8 @@ export function heroEyebrow(
 }
 
 /**
- * The top of the recipe page: a split hero with the title, source and actions
- * beside the photo (stacked, photo first, on phones).
+ * The top of the recipe page: a split hero with the title, byline (source and
+ * author) and actions beside the photo (stacked, photo first, on phones).
  *
  * The text column must start exactly where the page container does, so the
  * title, the facts and the ingredients share one left edge. The photo bleeds to
@@ -66,6 +66,7 @@ export function RecipeHero({
   course,
   sourceText,
   sourceUrl,
+  author,
   video,
   steps,
   favourite,
@@ -82,6 +83,8 @@ export function RecipeHero({
   sourceText?: string;
   /** The web address the recipe was saved from. */
   sourceUrl?: string;
+  /** Who wrote the recipe, shown beside the source in a handwriting face. */
+  author?: string;
   /** A video for the recipe, when it links one. */
   video?: string;
   steps: readonly (readonly StepToken[])[];
@@ -103,7 +106,7 @@ export function RecipeHero({
           <Heading as="h1" variant="h1" className="mt-3 lg:text-6xl">
             {title}
           </Heading>
-          <SourceLine value={sourceText} url={sourceUrl} />
+          <Byline value={sourceText} url={sourceUrl} author={author} />
           {video ? (
             <TextLink
               href={video}

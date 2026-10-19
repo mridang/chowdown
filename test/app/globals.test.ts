@@ -100,3 +100,9 @@ describe('reduced motion', () => {
     expect(opened).toBe(0);
   });
 });
+
+describe('the handwriting font token', () => {
+  it('is exposed as a theme font, so `font-hand` is a utility', () => {
+    expect(css).toMatch(/--font-hand:\s*var\(--font-hand-face\)/);
+  });
+});

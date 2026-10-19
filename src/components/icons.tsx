@@ -391,10 +391,63 @@ export const PlusCircleIcon = (p: IconProps) => (
   </Icon>
 );
 
-/** Google Drive: the triangle of three sloped sides, in the line style of the rest. */
-export const DriveIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <path d="M8 3h8l6 10.5-4 7H6l-4-7zM8 3l6 10.5h8M14 13.500l-4 7M2 13.500h12" />
+/**
+ * The Google Drive logo: the familiar triangle of six coloured facets, in
+ * Google's own brand colours (they do not follow `currentColor`, which is the
+ * point of a logo). Use it only on something that opens or connects Google
+ * Drive, which is the use Google's brand guidance allows. Its artwork is wider
+ * than tall, so it sits centred in the square the size classes give it.
+ */
+export function DriveIcon({
+  size,
+  className,
+  ...props
+}: IconProps): React.ReactElement {
+  return (
+    <svg
+      viewBox="0 0 87.3 78"
+      width="1em"
+      height="1em"
+      aria-hidden="true"
+      className={iconClass(size, className)}
+      {...props}
+    >
+      <path
+        fill="#0066da"
+        d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z"
+      />
+      <path
+        fill="#00ac47"
+        d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z"
+      />
+      <path
+        fill="#ea4335"
+        d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z"
+      />
+      <path
+        fill="#00832d"
+        d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z"
+      />
+      <path
+        fill="#2684fc"
+        d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z"
+      />
+      <path
+        fill="#ffba00"
+        d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Two four-pointed stars, the mark for "AI" that assistants and chat products
+ * have settled on. Filled, so it stays legible at the small sizes of a button.
+ */
+export const SparklesIcon = (p: IconProps) => (
+  <Icon {...p} fill="currentColor" stroke="none">
+    <path d="M10 4Q11 12 19 13Q11 14 10 22Q9 14 1 13Q9 12 10 4Z" />
+    <path d="M19 1Q19.5 4.5 23 5Q19.5 5.5 19 9Q18.5 5.5 15 5Q18.5 4.5 19 1Z" />
   </Icon>
 );
 

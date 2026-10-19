@@ -4,9 +4,7 @@ import Link from 'next/link';
 import { useState, type ReactElement } from 'react';
 
 import {
-  CheckIcon,
   ChevronIcon,
-  DriveIcon,
   LogoutIcon,
   PlugIcon,
   SparkIcon,
@@ -17,11 +15,11 @@ import {
   Popover,
   PopoverLabel,
   PopoverSeparator,
-  PopoverStatus,
 } from '@/components/ui/popover';
-import { driveConnectHref } from '@/lib/auth/drive-access';
 
+import { MenuLink } from './menu-link';
 import { DeleteAccountDialog } from './delete-account-dialog';
+import type { DriveLink } from './drive-link';
 import { useInstallPrompt } from './use-install-prompt';
 
 /**
@@ -75,21 +73,22 @@ async function signOut(): Promise<void> {
  * The signed-in account control. Closed, it is the person's photo and "Hi
  * Mridang"; opened, it says which account you are in and offers only what the
  * header doesn't already (connecting an assistant, installing the app), Sign
- * out, and Delete account (which asks first). The recipe links live in the header itself. Google Drive shows here as
- * an action until it is connected, then as a plain "connected" status line.
+ * out, and Delete account (which asks first). The recipe links live in the header itself. Google Drive shows here
+ * as the same entry as the header's button: "Connect Google Drive", then "Open Drive" once connected.
  */
 export function AccountMenu({
   firstName,
   name,
   email,
   picture,
-  driveConnected,
+  drive,
 }: Readonly<{
   firstName: string;
   name: string;
   email: string;
   picture?: string;
-  driveConnected: boolean;
+  /** The Drive entry: connect it, or open it once connected. */
+  drive: DriveLink;
 }>): ReactElement {
   const [busy, setBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -121,17 +120,7 @@ export function AccountMenu({
           <PlugIcon size="menu" className="text-subtle" />
           Connect an assistant
         </Link>
-        {driveConnected ? (
-          <PopoverStatus>
-            <CheckIcon size="menu" className="text-forest" />
-            Google Drive connected
-          </PopoverStatus>
-        ) : (
-          <a href={driveConnectHref()} className={POPOVER_ITEM}>
-            <DriveIcon size="menu" className="text-subtle" />
-            Connect Google Drive
-          </a>
-        )}
+        <MenuLink {...drive} icon="drive" />
         {install ? (
           <button
             type="button"

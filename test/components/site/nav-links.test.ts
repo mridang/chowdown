@@ -55,24 +55,52 @@ describe('menuLinks', () => {
     ]);
   });
 
-  it('gives someone signed in the app links, starting with the header ones', () => {
+  it('gives someone signed in the app links, starting with the header ones, then Drive', () => {
     const labels = menuLinks(ADA).map(({ label }) => label);
     expect(labels).toEqual([
       'Recipes',
       'Favourites',
       'Add recipes',
       'Cook with AI',
+      'Open Drive',
     ]);
   });
 
+  it('gives each signed-in link a picture, and the visitor links none', () => {
+    expect(menuLinks(ADA).map(({ icon }) => icon)).toEqual([
+      'recipes',
+      'favourites',
+      'add',
+      'ai',
+      'drive',
+    ]);
+    expect(VISITOR_NAV.every((link) => !('icon' in link))).toBe(true);
+  });
+
   it('offers to connect Google Drive until that is done', () => {
-    const links = menuLinks({ ...ADA, driveConnected: false });
-    expect(links.at(-1)).toEqual({
+    expect(menuLinks({ ...ADA, driveConnected: false }).at(-1)).toEqual({
       label: 'Connect Google Drive',
       href: '/api/auth/drive',
+      external: false,
+      icon: 'drive',
     });
-    expect(menuLinks(ADA).map(({ label }) => label)).not.toContain(
-      'Connect Google Drive',
+  });
+
+  it('opens Drive in a new tab once it is connected, at the Recipes folder if known', () => {
+    expect(menuLinks(ADA).at(-1)).toEqual({
+      label: 'Open Drive',
+      href: 'https://drive.google.com/drive/my-drive',
+      external: true,
+      icon: 'drive',
+    });
+    expect(
+      menuLinks({ ...ADA, recipesFolderId: 'folder-1' }).at(-1)?.href,
+    ).toBe('https://drive.google.com/drive/folders/folder-1');
+  });
+
+  it('never links to a folder id that is not a Drive id', () => {
+    expect(menuLinks({ ...ADA, recipesFolderId: '../evil' }).at(-1)?.href).toBe(
+      'https://drive.google.com/drive/my-drive',
     );
   });
 });

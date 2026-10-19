@@ -1,12 +1,11 @@
 'use client';
 
-import Link from 'next/link';
 import type { ReactElement } from 'react';
 
 import { MenuIcon } from '@/components/icons';
-import { isApiHref } from '@/components/ui/button';
-import { POPOVER_ITEM, Popover } from '@/components/ui/popover';
+import { Popover } from '@/components/ui/popover';
 
+import { MenuLink } from './menu-link';
 import type { NavLink } from './nav-links';
 
 /**
@@ -25,17 +24,9 @@ export function MobileNav({
         panelClassName="w-56"
       >
         <nav aria-label="Menu">
-          {links.map(({ label, href }) =>
-            isApiHref(href) ? (
-              <a key={label} href={href} className={POPOVER_ITEM}>
-                {label}
-              </a>
-            ) : (
-              <Link key={label} href={href} className={POPOVER_ITEM}>
-                {label}
-              </Link>
-            ),
-          )}
+          {links.map((link) => (
+            <MenuLink key={link.label} {...link} />
+          ))}
         </nav>
       </Popover>
     </div>

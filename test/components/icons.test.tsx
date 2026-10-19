@@ -2,10 +2,12 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   ClockIcon,
+  DriveIcon,
   GoogleIcon,
   HeartIcon,
   PlayIcon,
   ProteinIcon,
+  SparklesIcon,
 } from '../../src/components/icons';
 import { classOf, html } from './render';
 
@@ -62,5 +64,29 @@ describe('icons', () => {
         html(<ProteinIcon protein="dragon" />),
       );
     }
+  });
+
+  it('draws Drive as Google’s logo in its own colours, sized like the others', () => {
+    const out = html(<DriveIcon size="md" />);
+    expect(classOf(out, 'svg')).toBe('h-5 w-5');
+    expect(out).toContain('aria-hidden="true"');
+    for (const colour of [
+      '#0066da',
+      '#00ac47',
+      '#ea4335',
+      '#00832d',
+      '#2684fc',
+      '#ffba00',
+    ]) {
+      expect(out).toContain(`fill="${colour}"`);
+    }
+    expect(out).not.toContain('currentColor');
+  });
+
+  it('draws the AI sparkles filled, in the text colour, hidden from assistive technology', () => {
+    const out = html(<SparklesIcon size="sm" />);
+    expect(classOf(out, 'svg')).toBe('h-4 w-4');
+    expect(out).toContain('aria-hidden="true"');
+    expect(out).toContain('fill="currentColor"');
   });
 });

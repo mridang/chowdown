@@ -6,10 +6,13 @@ import { html } from '../components/render';
 
 // next/font only works inside the Next compiler, and the stylesheet and the
 // service-worker component are not what is under test.
-const font = () => ({ variable: 'font-variable' });
+const font = (options: { readonly variable: string }) => ({
+  variable: `class-for${options.variable}`,
+});
 jest.unstable_mockModule('next/font/google', () => ({
   Inter: font,
   Bricolage_Grotesque: font,
+  Caveat: font,
 }));
 jest.unstable_mockModule('../../src/app/globals.css', () => ({}));
 jest.unstable_mockModule('../../src/components/site/service-worker', () => ({
@@ -47,6 +50,11 @@ describe('RootLayout', () => {
     expect(viewport).toMatchObject({ width: 'device-width', initialScale: 1 });
     expect(viewport).not.toHaveProperty('maximumScale');
     expect(viewport).not.toHaveProperty('userScalable');
+  });
+
+  it('makes the handwriting face available to the whole page, for the author byline', () => {
+    const out = html(<RootLayout>{null}</RootLayout>);
+    expect(out).toContain('class-for--font-hand-face');
   });
 
   it('lets an overflowing child show, rather than hiding it on the body', () => {

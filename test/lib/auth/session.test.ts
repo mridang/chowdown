@@ -105,6 +105,22 @@ describe('session profile', () => {
     expect(payload?.picture).toBe('https://lh3.googleusercontent.com/a/abc');
   });
 
+  it('carries the Recipes folder id for the header’s Open Drive link, and omits it when unknown', async () => {
+    const withFolder = await verifySessionToken(
+      await createSessionToken(
+        { uid: 1, email: 'x@y.com', folder: '1AbC-dEf_9' },
+        SECRET,
+      ),
+      SECRET,
+    );
+    expect(withFolder?.folder).toBe('1AbC-dEf_9');
+    const without = await verifySessionToken(
+      await createSessionToken({ uid: 1, email: 'x@y.com' }, SECRET),
+      SECRET,
+    );
+    expect(without).not.toHaveProperty('folder');
+  });
+
   it('leaves out a photo address too long for a cookie, and still verifies', async () => {
     const token = await createSessionToken(
       {
@@ -160,6 +176,16 @@ describe('a correctly signed token with the wrong contents', () => {
   it('is refused when it has no expiry', async () => {
     expect(
       await verifySessionToken(await signed('{"uid":1}'), SECRET),
+    ).toBeNull();
+  });
+
+  it('is refused when the folder is not text', async () => {
+    const exp = Math.floor(Date.now() / 1000) + 60;
+    expect(
+      await verifySessionToken(
+        await signed(`{"uid":1,"folder":7,"exp":${exp}}`),
+        SECRET,
+      ),
     ).toBeNull();
   });
 

@@ -52,6 +52,14 @@ export interface SessionPayload {
    */
   readonly drive?: boolean;
   /**
+   * The Drive id of the person's Recipes folder, if they have one, so the
+   * header's "Open Drive" button can open that folder without a database read.
+   * Like `drive`, a hint for the header only (it is checked as a Drive id
+   * before being put in a link). Absent on sessions issued before it was
+   * added, which then open Drive's home page instead.
+   */
+  readonly folder?: string;
+  /**
    * The session epoch the person had when this was issued (`users.session_epoch`).
    * The session is honoured only while the database still holds the same
    * number, which is how "sign out everywhere" ends a stolen or forgotten
@@ -90,6 +98,7 @@ export async function createSessionToken(
       ? { picture: payload.picture }
       : {}),
     ...(payload.drive !== undefined ? { drive: payload.drive } : {}),
+    ...(payload.folder ? { folder: payload.folder } : {}),
     ...(payload.ep !== undefined ? { ep: payload.ep } : {}),
     exp: payload.exp ?? Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
   };
@@ -168,7 +177,8 @@ function isSessionPayload(value: unknown): value is SessionPayload {
     'exp' in value &&
     typeof value.exp === 'number' &&
     // Optional, but a wrong type means the token is not one of ours.
-    (!('ep' in value) || typeof value.ep === 'number')
+    (!('ep' in value) || typeof value.ep === 'number') &&
+    (!('folder' in value) || typeof value.folder === 'string')
   );
 }
 

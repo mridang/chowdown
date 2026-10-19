@@ -26,6 +26,11 @@ export interface ShellUser {
   readonly picture?: string;
   /** Whether they have connected Google Drive (a hint; pages check for real). */
   readonly driveConnected: boolean;
+  /**
+   * The Drive id of their Recipes folder, when the session knows it (not yet
+   * checked: the header validates it before using it in a link).
+   */
+  readonly recipesFolderId?: string;
 }
 
 /** The first word of a name, or the part of an email before the "@". */
@@ -42,6 +47,7 @@ interface Profile {
   readonly name?: string;
   readonly picture?: string;
   readonly drive?: boolean;
+  readonly folder?: string;
 }
 
 /**
@@ -55,7 +61,7 @@ async function completeProfile(
   profile: Profile,
   uid: number,
 ): Promise<Profile> {
-  const { name, picture, drive } = profile;
+  const { name, picture, drive, folder } = profile;
   if (drive !== undefined && (name !== undefined || picture !== undefined)) {
     return profile;
   }
@@ -65,6 +71,7 @@ async function completeProfile(
       name: name ?? user?.name ?? undefined,
       picture: picture ?? user?.picture ?? undefined,
       drive: drive ?? (user ? isDriveConnected(user) : false),
+      folder: folder ?? user?.recipes_folder_id ?? undefined,
     };
   } catch {
     return profile;
@@ -81,12 +88,16 @@ export const getShellUser = cache(async (): Promise<ShellUser | null> => {
   if (!payload) {
     return null;
   }
-  const { name, picture, drive } = await completeProfile(payload, payload.uid);
+  const { name, picture, drive, folder } = await completeProfile(
+    payload,
+    payload.uid,
+  );
   return {
     firstName: firstNameOf(name, payload.email),
     name: name ?? payload.email,
     email: payload.email,
     picture,
     driveConnected: drive === true,
+    recipesFolderId: folder,
   };
 });

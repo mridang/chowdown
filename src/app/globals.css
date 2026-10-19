@@ -42,6 +42,8 @@
   --text-label--line-height: 1rem;
   --text-label--letter-spacing: 0.16em;
   --font-sans: var(--font-sans-face);
+  /* Handwriting, for a recipe author's name and nothing else (`font-hand`). */
+  --font-hand: var(--font-hand-face);
 }
 
 /*

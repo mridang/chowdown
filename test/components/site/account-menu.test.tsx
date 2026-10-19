@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { AccountMenu, Avatar } from '../../../src/components/site/account-menu';
+import { driveLink } from '../../../src/components/site/drive-link';
 import { htmlAt } from '../render';
 
 describe('Avatar', () => {
@@ -26,7 +27,7 @@ describe('AccountMenu', () => {
       firstName="Ada"
       name="Ada Lovelace"
       email="ada@example.com"
-      driveConnected
+      drive={driveLink({ driveConnected: true })}
     />,
   );
 
@@ -51,7 +52,7 @@ describe('AccountMenu’s destructive item', () => {
         firstName="Ada"
         name="Ada Lovelace"
         email="ada@example.com"
-        driveConnected={false}
+        drive={driveLink({ driveConnected: false })}
       />,
     );
     expect(out).not.toContain('Delete account');

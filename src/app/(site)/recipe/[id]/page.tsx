@@ -26,6 +26,7 @@ import { SITE_URL } from '@/lib/site';
 
 import { AlsoLike } from './_components/also-like';
 import { buildFacts, RecipeFacts } from './_components/recipe-facts';
+import { authorOf } from './_components/byline';
 import { RecipeHero } from './_components/recipe-hero';
 import { RecipeExtras } from './_components/recipe-extras';
 import { RecipeNotes } from './_components/recipe-notes';
@@ -126,6 +127,7 @@ export default async function RecipePage({
         course={firstTag(tags, 'category')}
         sourceText={sourceText}
         sourceUrl={data.sourceUrl}
+        author={authorOf(recipe.metadata)}
         video={media.video}
         steps={recipe.steps}
         favourite={data.favourite}

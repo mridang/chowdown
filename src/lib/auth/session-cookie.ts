@@ -39,6 +39,8 @@ export async function setSessionCookie(
       name: user.name ?? undefined,
       picture: user.picture ?? undefined,
       drive: options.drive ?? isDriveConnected(user),
+      // For the header's "Open Drive" link; null (no folder yet) is left out.
+      folder: user.recipes_folder_id ?? undefined,
       ep: user.session_epoch,
       exp: options.exp,
     },

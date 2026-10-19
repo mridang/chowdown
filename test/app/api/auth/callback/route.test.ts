@@ -268,6 +268,19 @@ describe('GET /api/auth/callback connecting Drive', () => {
     expect(session).toMatchObject({ drive: true, exp: soon });
   });
 
+  it('puts the folder it made in the new session, for the header’s Open Drive link', async () => {
+    await signIn(world);
+    googleConnects();
+    const res = await connect({
+      [SESSION_COOKIE]: await sessionTokenFor({ id: 1 }),
+    });
+    const session = await verifySessionToken(
+      cookiesOf(res)[SESSION_COOKIE] ?? '',
+      SESSION_SECRET,
+    );
+    expect(session?.folder).toBe('new-folder');
+  });
+
   it('reuses the folder it already knows', async () => {
     await signIn(world);
     world.raw

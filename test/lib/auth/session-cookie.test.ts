@@ -14,6 +14,7 @@ const user = (overrides: Partial<User> = {}) =>
     picture: null,
     refresh_token_enc: null,
     session_epoch: 0,
+    recipes_folder_id: null,
     ...overrides,
   }) as User;
 
@@ -53,6 +54,13 @@ describe('setSessionCookie', () => {
       (await issued(user({ refresh_token_enc: 'sealed' }))).payload?.drive,
     ).toBe(true);
     expect((await issued(user(), { drive: true })).payload?.drive).toBe(true);
+  });
+
+  it('carries the Recipes folder, so the header can open it, and leaves it out when there is none', async () => {
+    expect(
+      (await issued(user({ recipes_folder_id: 'folder-1' }))).payload?.folder,
+    ).toBe('folder-1');
+    expect((await issued(user())).payload).not.toHaveProperty('folder');
   });
 
   it("stamps the session with the account's epoch, so signing out everywhere can end it", async () => {

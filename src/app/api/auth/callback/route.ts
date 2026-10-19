@@ -124,12 +124,10 @@ async function completeDriveConnect(
   }
   // The fresh access token is used directly (no refresh round trip). The
   // folder comes first so a failure here leaves nothing half-connected.
+  const recipesFolderId =
+    user.recipes_folder_id ?? (await ensureRecipesFolder(tokens.access_token));
   if (!user.recipes_folder_id) {
-    await setRecipesFolderId(
-      db,
-      user.id,
-      await ensureRecipesFolder(tokens.access_token),
-    );
+    await setRecipesFolderId(db, user.id, recipesFolderId);
   }
   await setRefreshToken(
     db,
@@ -137,12 +135,17 @@ async function completeDriveConnect(
     await encryptSecret(grant.refreshToken, env.TOKEN_ENCRYPTION_KEY),
   );
   const response = finishFlow(origin, returnTo ?? '/app');
-  await setSessionCookie(response, user, {
-    secret: env.SESSION_SECRET,
-    secure: origin.startsWith('https'),
-    drive: true,
-    exp: session?.exp,
-  });
+  // `user` is the row from before the folder existed: the cookie needs the new id.
+  await setSessionCookie(
+    response,
+    { ...user, recipes_folder_id: recipesFolderId },
+    {
+      secret: env.SESSION_SECRET,
+      secure: origin.startsWith('https'),
+      drive: true,
+      exp: session?.exp,
+    },
+  );
   return response;
 }
 

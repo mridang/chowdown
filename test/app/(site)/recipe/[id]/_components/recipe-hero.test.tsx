@@ -94,4 +94,33 @@ describe('RecipeHero', () => {
   it('shows the heart as pressed for a favourite', () => {
     expect(markup({ favourite: true })).toContain('>Favourited</button>');
   });
+
+  it('puts the source and the author in the hero, under the title', () => {
+    const out = markup({
+      sourceUrl: 'https://cookwell.com/recipe/dal',
+      author: 'Ethan Chlebowski',
+    });
+    expect(out).toMatch(
+      /<\/h1>.*From.*cookwell\.com.*by.*Ethan Chlebowski.*More from cookwell\.com/,
+    );
+  });
+
+  it('sets only the author in the handwriting face', () => {
+    const out = markup({
+      sourceUrl: 'https://cookwell.com/recipe/dal',
+      author: 'Ethan Chlebowski',
+    });
+    expect(out.match(/font-hand/g)).toHaveLength(1);
+    expect(out).toMatch(/class="font-hand[^"]*"[^>]*>Ethan Chlebowski</);
+  });
+
+  it('shows the source alone, the author alone, or neither', () => {
+    expect(markup({ sourceUrl: 'https://cookwell.com/x' })).not.toContain(
+      'font-hand',
+    );
+    expect(markup({ author: 'Ethan' })).toContain('>By<');
+    const neither = markup();
+    expect(neither).not.toContain('font-hand');
+    expect(neither).not.toContain('From');
+  });
 });
