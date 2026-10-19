@@ -10,6 +10,28 @@ import {
 } from '@/lib/images/cover-proxy';
 
 /**
+ * The `sizes` attribute for an image: for one that loads lazily, `auto` first,
+ * so a browser that supports it (Chrome 126, Firefox 150, Safari 27) picks the
+ * file from the width the image really has once laid out, which is always right
+ * and needs no hand-kept list; `fallback` follows it for every other browser,
+ * which skips the keyword they do not know and reads the list. `auto` is only
+ * allowed on a lazy image that states its width and height (without them the
+ * browser has no layout to measure before the file arrives), and the eager
+ * hero photo is chosen before layout exists, so those keep the plain list.
+ *
+ * @param fallback The media-condition list that describes the layout.
+ * @param lazy Whether the image loads lazily.
+ * @param sized Whether the image states its width and height.
+ */
+export function sizesFor(
+  fallback: string,
+  lazy: boolean,
+  sized: boolean,
+): string {
+  return lazy && sized ? `auto, ${fallback}` : fallback;
+}
+
+/**
  * A recipe cover image that degrades gracefully. Covers belong to the recipe's
  * source site, so they are loaded through our own `/api/cover-images` (scaled,
  * cached, and without handing the site your cookies or referrer), at the widths
@@ -44,7 +66,11 @@ export function CoverImage({
   height?: number;
   /** The widths to offer the browser, in pixels. */
   widths?: readonly number[];
-  /** How wide the image is laid out, so the browser can pick one. */
+  /**
+   * How wide the image is laid out, so the browser can pick one. Lazy images
+   * with a stated size get `auto` in front of it (see {@link sizesFor}), so this
+   * list is what browsers without `sizes="auto"` use.
+   */
   sizes?: string;
 }>): ReactElement {
   const [failed, setFailed] = useState(false);
@@ -69,7 +95,15 @@ export function CoverImage({
     <img
       src={largest}
       srcSet={proxied ? coverSrcSet(src, widths) : undefined}
-      sizes={proxied ? sizes : undefined}
+      sizes={
+        proxied
+          ? sizesFor(
+              sizes,
+              !priority,
+              width !== undefined && height !== undefined,
+            )
+          : undefined
+      }
       alt={alt}
       width={width}
       height={height}

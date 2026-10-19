@@ -162,9 +162,18 @@ function ChoiceCard({
  * hand), then run that flow. Import reuses the review wizard; writing opens the
  * editor. Both save to Drive and land you on the recipe (or back on the grid).
  */
-export function AddRecipesPage(): ReactElement {
+export function AddRecipesPage({
+  sharedInput = '',
+}: Readonly<{
+  /**
+   * What was shared to the installed app, if anything. A share skips the two
+   * choices (there is already something to import) and opens the importer with
+   * it filled in.
+   */
+  sharedInput?: string;
+}>): ReactElement {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>('choose');
+  const [mode, setMode] = useState<Mode>(sharedInput ? 'import' : 'choose');
   // Coming back to the two choices (Back, from the editor) replaces the button
   // that was pressed, so focus goes to the page's own heading. Going the other
   // way, the section that opens takes focus itself.
@@ -214,6 +223,7 @@ export function AddRecipesPage(): ReactElement {
         {mode === 'import' ? (
           <div className="mt-8">
             <AddRecipes
+              initialInput={sharedInput}
               onClose={() => router.push('/app')}
               // The list is cached by the router for a few minutes; make it
               // look again so the new recipes are in it when we get there.

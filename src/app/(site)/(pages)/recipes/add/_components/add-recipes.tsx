@@ -28,6 +28,7 @@ import {
   type Phase,
 } from './import-flow';
 import { discardImport, postRecipe, type ImportDraft } from './recipe-requests';
+import { SHARED_HINT } from './shared-input';
 
 /** The wizard's heading for each phase. */
 const HEADINGS: Readonly<Record<Phase, string>> = {
@@ -54,16 +55,23 @@ const HEADINGS: Readonly<Record<Phase, string>> = {
  * minutes, so it announces itself in a live region and can be cancelled.
  */
 export function AddRecipes({
+  initialInput = '',
   onClose,
   onSaved,
 }: Readonly<{
+  /**
+   * Text to start the box with: a link or recipe shared to the installed app.
+   * When present the box takes focus, but nothing is prepared until the person
+   * presses the button, because preparing spends AI budget.
+   */
+  initialInput?: string;
   /** Told when the person is finished with the wizard (Close, or Done). */
   onClose: () => void;
   /** Told after each recipe is saved, so the parent can refresh its list. */
   onSaved: () => void;
 }>): ReactElement {
   const [phase, setPhase] = useState<Phase>('input');
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(initialInput);
   const [drafts, setDrafts] = useState<readonly ImportDraft[]>([]);
   const [index, setIndex] = useState(0);
   const [name, setName] = useState('');
@@ -83,6 +91,16 @@ export function AddRecipes({
   /** The request being waited on, so Cancel (or leaving) can end it. */
   const inflight = useRef<AbortController | null>(null);
   const heading = useFocusOnChange<HTMLHeadingElement>(phase, null);
+  /** The box the person pastes into; focused straight away when it arrives filled in. */
+  const inputBox = useRef<HTMLTextAreaElement>(null);
+
+  // A share arrives with the box already filled in. Put the person in it, ready
+  // to read what came and press the button, but do not press it for them.
+  useEffect(() => {
+    if (initialInput) {
+      inputBox.current?.focus();
+    }
+  }, [initialInput]);
 
   // Leaving the page ends a request nobody is waiting for any more.
   useEffect(() => {
@@ -212,11 +230,15 @@ export function AddRecipes({
             <FormField
               id="import-input"
               label="Links or recipe text"
+              hint={initialInput ? SHARED_HINT : undefined}
               error={prepareError ?? undefined}
             >
               <TextArea
                 id="import-input"
+                ref={inputBox}
                 mono
+                grow
+                className="[--autogrow-rows:8]"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 rows={10}

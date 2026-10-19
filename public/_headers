@@ -21,6 +21,10 @@
 /icons/*
   Cache-Control: public, max-age=86400
   Cross-Origin-Resource-Policy: cross-origin
+# The install screenshots are loaded by the browser's install dialog, not by a page of ours.
+/screenshots/*
+  Cache-Control: public, max-age=86400
+  Cross-Origin-Resource-Policy: cross-origin
 /llms.txt
   Cross-Origin-Resource-Policy: cross-origin
 # The disclosure policy that security.txt points researchers to.

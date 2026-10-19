@@ -1,9 +1,22 @@
 import { describe, expect, it } from '@jest/globals';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 import manifest from '../../src/app/manifest';
 import { pngSize } from '../png';
+
+/** The names of the chunks a PNG file is made of, in order. */
+function pngChunks(file: string): readonly string[] {
+  const bytes = readFileSync(file);
+  const walk = (offset: number): readonly string[] =>
+    offset >= bytes.length
+      ? []
+      : [
+          bytes.toString('ascii', offset + 4, offset + 8),
+          ...walk(offset + 12 + bytes.readUInt32BE(offset)),
+        ];
+  return walk(8);
+}
 
 describe('web app manifest', () => {
   const m = manifest();
@@ -81,6 +94,67 @@ describe('web app manifest', () => {
       );
       expect(ratios.size).toBeLessThanOrEqual(1);
     }
+  });
+
+  it('shows Chrome its richer install dialog: screenshots for both form factors, each a real PNG', () => {
+    const shots = m.screenshots ?? [];
+    expect(shots.filter((s) => s.form_factor === 'wide')).toHaveLength(2);
+    expect(shots.filter((s) => s.form_factor === 'narrow')).toHaveLength(3);
+    expect(shots.length).toBeLessThanOrEqual(8);
+    for (const shot of shots) {
+      expect(shot.type).toBe('image/png');
+      expect(shot.label).toBeTruthy();
+      expect(shot.src.startsWith('/screenshots/')).toBe(true);
+      expect(existsSync(path.join(process.cwd(), 'public', shot.src))).toBe(
+        true,
+      );
+    }
+  });
+
+  it('carries no text or camera metadata in the screenshots, which are public', () => {
+    const allowed = new Set(['IHDR', 'PLTE', 'tRNS', 'pHYs', 'IDAT', 'IEND']);
+    for (const shot of m.screenshots ?? []) {
+      const chunks = pngChunks(path.join(process.cwd(), 'public', shot.src));
+      expect(chunks.filter((c) => !allowed.has(c))).toEqual([]);
+    }
+  });
+
+  it('keeps each screenshot below the weight of the page it advertises', () => {
+    for (const shot of m.screenshots ?? []) {
+      const bytes = statSync(path.join(process.cwd(), 'public', shot.src)).size;
+      expect(bytes).toBeLessThan(300 * 1024);
+    }
+  });
+
+  it('gives every shortcut an icon that exists, at the size the file really has', () => {
+    for (const shortcut of m.shortcuts ?? []) {
+      expect(shortcut.icons).toHaveLength(1);
+      for (const icon of shortcut.icons ?? []) {
+        const { width, height } = pngSize(
+          path.join(process.cwd(), 'public', icon.src),
+        );
+        expect(icon.sizes).toBe(`${width}x${height}`);
+        // web.dev: a single 192px icon is the size to ship when one has to do.
+        expect(width).toBeGreaterThanOrEqual(96);
+      }
+    }
+  });
+
+  it('can be shared to: a GET to the add-recipes page carrying title, text and url', () => {
+    expect(m.share_target).toEqual({
+      action: '/recipes/add',
+      method: 'GET',
+      params: { title: 'title', text: 'text', url: 'url' },
+    });
+  });
+
+  it('keeps the share target inside its scope, on a page that exists', () => {
+    expect(m.share_target?.action.startsWith(m.scope!)).toBe(true);
+    expect(
+      existsSync(
+        path.join(process.cwd(), 'src/app/(site)/(pages)/recipes/add/page.tsx'),
+      ),
+    ).toBe(true);
   });
 
   it('starts inside its own scope', () => {

@@ -37,3 +37,18 @@ describe('AddRecipesPage', () => {
     expect(out).not.toContain('role="alert"');
   });
 });
+
+describe('AddRecipesPage with something shared to the app', () => {
+  const out = htmlAt(
+    <AddRecipesPage sharedInput="https://example.com/pancakes" />,
+    {
+      pathname: '/recipes/add',
+    },
+  );
+
+  it('skips the two choices and opens the importer with the share in it', () => {
+    expect(out).not.toContain('Write it myself');
+    expect(out).toContain('Links or recipe text');
+    expect(out).toContain('https://example.com/pancakes</textarea>');
+  });
+});

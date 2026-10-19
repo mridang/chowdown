@@ -8,6 +8,11 @@ import { getCurrentUser } from '@/lib/auth/current-user';
 import { isDriveConnected, wasDriveConnected } from '@/lib/auth/drive-access';
 
 import { AddRecipesPage } from './_components/add-recipes-page';
+import {
+  addRecipesPath,
+  sharedImportInput,
+  type ShareParams,
+} from './_components/shared-input';
 
 /** The tab title of the Add recipes page. */
 export const metadata: Metadata = { title: 'Add recipes · chowdown' };
@@ -19,11 +24,20 @@ export const metadata: Metadata = { title: 'Add recipes · chowdown' };
  * nowhere to save a recipe until they have), then hands off to the client flow
  * that lets the user choose how to add recipes (import links/text, or write
  * one by hand).
+ *
+ * It is also where the installed app's share target lands (`?title=&text=&url=`,
+ * see `src/app/manifest.ts`): whatever was shared becomes the importer's
+ * starting text, and is kept through signing in and connecting Drive. It is
+ * never imported on its own; the person presses the button.
  */
-export default async function AddRecipesRoute(): Promise<ReactElement> {
+export default async function AddRecipesRoute({
+  searchParams,
+}: Readonly<{ searchParams: Promise<ShareParams> }>): Promise<ReactElement> {
+  const shared = sharedImportInput(await searchParams);
+  const here = addRecipesPath(shared);
   const user = await getCurrentUser();
   if (!user) {
-    redirect(`/api/auth/login?returnTo=${encodeURIComponent('/recipes/add')}`);
+    redirect(`/api/auth/login?returnTo=${encodeURIComponent(here)}`);
   }
   if (!isDriveConnected(user)) {
     return (
@@ -31,10 +45,10 @@ export default async function AddRecipesRoute(): Promise<ReactElement> {
         <DriveConnectPanel
           heading="h1"
           reconnect={wasDriveConnected(user)}
-          returnTo="/recipes/add"
+          returnTo={here}
         />
       </Container>
     );
   }
-  return <AddRecipesPage />;
+  return <AddRecipesPage sharedInput={shared} />;
 }

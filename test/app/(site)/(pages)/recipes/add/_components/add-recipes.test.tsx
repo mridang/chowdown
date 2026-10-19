@@ -57,3 +57,39 @@ describe('AddRecipes', () => {
     expect(out).not.toContain('All done');
   });
 });
+
+describe('AddRecipes with something shared to the app', () => {
+  const out = html(
+    <AddRecipes
+      initialInput="https://example.com/pancakes"
+      onClose={() => undefined}
+      onSaved={() => undefined}
+    />,
+  );
+
+  it('starts the box with what was shared', () => {
+    expect(out).toMatch(
+      /<textarea[^>]*id="import-input"[^>]*>https:\/\/example.com\/pancakes<\/textarea>/,
+    );
+  });
+
+  it('says where it came from, and that pressing the button is up to the person', () => {
+    expect(out).toContain(
+      'Shared from another app. Check it, then press Prepare recipes.',
+    );
+  });
+
+  it('does not start preparing: nothing is busy and no Cancel is offered', () => {
+    expect(out).toContain('Prepare recipes');
+    expect(out).not.toContain('Preparing…');
+    expect(out).not.toContain('>Cancel<');
+  });
+
+  it('has no hint, and an empty box, when nothing was shared', () => {
+    const plain = html(
+      <AddRecipes onClose={() => undefined} onSaved={() => undefined} />,
+    );
+    expect(plain).not.toContain('Shared from another app');
+    expect(plain).toMatch(/<textarea[^>]*id="import-input"[^>]*><\/textarea>/);
+  });
+});

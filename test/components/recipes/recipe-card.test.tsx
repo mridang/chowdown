@@ -84,6 +84,36 @@ describe('RecipeCard', () => {
     expect(html(<RecipeCard recipe={recipe} />)).not.toContain('>Idea<');
   });
 
+  it('is not painted until it scrolls near, and keeps its place meanwhile', () => {
+    const out = html(<RecipeCard recipe={recipe} />);
+    expect(out).toContain('[content-visibility:auto]');
+    // Only the height is estimated; a width would widen an automatic column.
+    expect(out).toContain(
+      '[contain-intrinsic-block-size:auto_calc((100vw_-_2rem)*0.75_+_8.5rem)]',
+    );
+    expect(out).toContain('sm:[contain-intrinsic-block-size:auto_22rem]');
+    expect(out).not.toContain('contain-intrinsic-size');
+  });
+
+  it('leaves room inside the skipped box for the focus ring, and takes it back in margin', () => {
+    const out = html(<RecipeCard recipe={recipe} />);
+    expect(out).toContain('<div class="-m-1.5 p-1.5 ');
+  });
+
+  it('paints an above-the-fold card at once', () => {
+    const out = html(<RecipeCard recipe={recipe} priority />);
+    expect(out).not.toContain('content-visibility');
+    expect(out).not.toContain('-m-1.5');
+  });
+
+  it('lets the browser measure its lazy photo, with the grid’s columns as the fallback', () => {
+    const covered = { ...recipe, cover: 'https://cdn.example.com/dal.jpg' };
+    const out = html(<RecipeCard recipe={covered} />);
+    expect(out).toContain(
+      'sizes="auto, (min-width: 1700px) 25vw, (min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"',
+    );
+  });
+
   it('titles the card with the heading level it is given', () => {
     expect(html(<RecipeCard recipe={recipe} headingLevel="h2" />)).toMatch(
       /<h2[^>]*>Dal<\/h2>/,
