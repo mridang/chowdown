@@ -10,25 +10,79 @@
 import type { DriveFile } from '../drive/drive-client';
 import { recipeDisplayName } from './cook-text';
 
+/** What a reference to a recipe turned out to mean. */
+export type FileMatch =
+  /** Nothing in the folder fits. */
+  | { readonly kind: 'none' }
+  /** Exactly one recipe fits. */
+  | { readonly kind: 'one'; readonly file: DriveFile }
+  /** Several fit equally well; `files` has the best first. */
+  | {
+      readonly kind: 'many';
+      readonly files: readonly [DriveFile, ...DriveFile[]];
+    };
+
+/** One file, several, or none, from the files that matched at one level. */
+function outcome(files: readonly DriveFile[]): FileMatch {
+  const [first, ...rest] = files;
+  if (!first) {
+    return { kind: 'none' };
+  }
+  return rest.length === 0
+    ? { kind: 'one', file: first }
+    : { kind: 'many', files: [first, ...rest] };
+}
+
+/**
+ * Work out which recipe a reference points at, and whether it is certain: an
+ * exact file id first, then recipes whose display name equals the reference
+ * (case-insensitive), then recipes whose display name contains it. The first
+ * level that matches anything decides, and if it matches more than one recipe
+ * the answer is {@link FileMatch} `many` so a caller that must not guess (one
+ * that is about to change a file) can ask which was meant.
+ *
+ * A blank reference points at nothing: every name "contains" the empty string,
+ * so without this a missing recipe argument would silently pick the first recipe
+ * in the folder, and a write tool would change the wrong file.
+ */
+export function resolveFile(
+  files: readonly DriveFile[],
+  reference: string,
+): FileMatch {
+  const ref = reference.trim();
+  if (!ref) {
+    return { kind: 'none' };
+  }
+  const byId = files.find((f) => f.id === ref);
+  if (byId) {
+    return { kind: 'one', file: byId };
+  }
+  const target = ref.toLowerCase();
+  const named = (f: DriveFile): string =>
+    recipeDisplayName(f.name).toLowerCase();
+  const exact = files.filter((f) => named(f) === target);
+  return exact.length > 0
+    ? outcome(exact)
+    : outcome(files.filter((f) => named(f).includes(target)));
+}
+
 /**
  * Find the file a reference points at: an exact file id first, then an exact
  * (case-insensitive) display name, then the first display name containing the
- * reference. A blank reference points at nothing: every name "contains" the
- * empty string, so without this a missing recipe argument would silently pick
- * the first recipe in the folder, and a write tool would change the wrong file.
+ * reference. When several fit this takes the best; use {@link resolveFile} to
+ * tell that apart from a certain match.
  */
 export function matchFile(
   files: readonly DriveFile[],
   reference: string,
 ): DriveFile | undefined {
-  const ref = reference.trim();
-  if (!ref) {
-    return undefined;
+  const match = resolveFile(files, reference);
+  switch (match.kind) {
+    case 'one':
+      return match.file;
+    case 'many':
+      return match.files[0];
+    case 'none':
+      return undefined;
   }
-  const target = ref.toLowerCase();
-  return (
-    files.find((f) => f.id === ref) ??
-    files.find((f) => recipeDisplayName(f.name).toLowerCase() === target) ??
-    files.find((f) => recipeDisplayName(f.name).toLowerCase().includes(target))
-  );
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { DriveFile } from '../../../src/lib/drive/drive-client';
-import { matchFile } from '../../../src/lib/recipe/match';
+import { matchFile, resolveFile } from '../../../src/lib/recipe/match';
 
 const files = [
   { id: 'a1', name: 'Chicken Ghee Roast.cook' },
@@ -46,5 +46,50 @@ describe('matchFile with a blank reference', () => {
   it('points at nothing, so a missing recipe argument never picks the first recipe', () => {
     expect(matchFile(files, '')).toBeUndefined();
     expect(matchFile(files, '   ')).toBeUndefined();
+  });
+});
+
+describe('resolveFile', () => {
+  const pies = [
+    { id: 'a', name: 'Apple pie.cook' },
+    { id: 'b', name: 'Pie crust.cook' },
+    { id: 'c', name: 'Key lime pie.cook' },
+    { id: 'd', name: 'Soup.cook' },
+    { id: 'e', name: 'Soup.cook' },
+  ] as DriveFile[];
+
+  it('is certain about an id, even when the same text is also a name', () => {
+    expect(resolveFile(pies, 'a')).toEqual({ kind: 'one', file: pies[0] });
+  });
+
+  it('is certain about an exact name that only one recipe has, even if others contain it', () => {
+    expect(resolveFile(pies, 'Pie crust')).toEqual({
+      kind: 'one',
+      file: pies[1],
+    });
+  });
+
+  it('is certain about a part of a name that only one recipe contains', () => {
+    expect(resolveFile(pies, 'lime')).toEqual({ kind: 'one', file: pies[2] });
+  });
+
+  it('is unsure when several names contain the text, listing the best first', () => {
+    expect(resolveFile(pies, 'pie')).toEqual({
+      kind: 'many',
+      files: [pies[0], pies[1], pies[2]],
+    });
+  });
+
+  it('is unsure when several recipes have exactly that name', () => {
+    expect(resolveFile(pies, 'soup')).toEqual({
+      kind: 'many',
+      files: [pies[3], pies[4]],
+    });
+  });
+
+  it('finds nothing for a blank reference or a name nobody has', () => {
+    expect(resolveFile(pies, '')).toEqual({ kind: 'none' });
+    expect(resolveFile(pies, '  ')).toEqual({ kind: 'none' });
+    expect(resolveFile(pies, 'pizza')).toEqual({ kind: 'none' });
   });
 });

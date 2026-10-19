@@ -1,5 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
+import {
+  CARD_RESOURCE_URI,
+  LIST_RESOURCE_URI,
+} from '../../../src/lib/mcp/ui-resources';
 import { uncuratedFilename } from '../../../src/lib/recipe/cook-text';
 import {
   buildRecipeCardData,
@@ -7,6 +11,7 @@ import {
   errorResult,
   recipeCardResult,
   recipeListResult,
+  recipeListSummaryResult,
   textResult,
 } from '../../../src/lib/mcp/tool-results';
 
@@ -79,23 +84,54 @@ describe('buildRecipeListData', () => {
   });
 });
 
-describe('recipeCardResult and recipeListResult', () => {
+describe('recipeCardResult, recipeListResult and recipeListSummaryResult', () => {
   it('point the host at the card template', () => {
     const result = recipeCardResult('id1', 'Soup.cook', SOURCE, 'Here');
-    expect(result.content[0]?.text).toBe('Here');
+    expect(result.content[0]?.text.startsWith('Here\n\n')).toBe(true);
     expect(result._meta).toEqual({
-      'openai/outputTemplate': 'ui://recipe/card.html',
+      'openai/outputTemplate': CARD_RESOURCE_URI,
     });
     expect(result.structuredContent).toMatchObject({ id: 'id1' });
   });
 
-  it('point the host at the list template', () => {
+  it('put the recipe itself in the text a model reads', () => {
+    const text =
+      recipeCardResult('id1', 'Soup.cook', SOURCE, 'Here').content[0]?.text ??
+      '';
+    expect(text).toContain('Soup (id: id1)');
+    expect(text).toContain('servings: 4');
+    expect(text).toContain('- 1 l water');
+    expect(text).toContain('1. Boil 1 l water.');
+  });
+
+  it('point the host at the list template and name the recipes in the text', () => {
     const result = recipeListResult([{ id: 'a', name: 'Soup.cook' }], 'Found');
+    expect(result.content[0]?.text).toBe('Found\n\n- Soup (id: a)');
     expect(result._meta).toEqual({
-      'openai/outputTemplate': 'ui://recipe/list.html',
+      'openai/outputTemplate': LIST_RESOURCE_URI,
     });
     expect(result.structuredContent).toMatchObject({
       recipes: [{ id: 'a', title: 'Soup' }],
+    });
+  });
+
+  it('leave the text at the message when the list is empty', () => {
+    expect(recipeListResult([], 'No recipes yet.').content[0]?.text).toBe(
+      'No recipes yet.',
+    );
+  });
+
+  it('keep the text at the message for a message that already lists the recipes', () => {
+    const result = recipeListSummaryResult(
+      [{ id: 'a', name: 'Soup.cook' }],
+      'You can make:\n- Soup',
+    );
+    expect(result.content[0]?.text).toBe('You can make:\n- Soup');
+    expect(result.structuredContent).toMatchObject({
+      recipes: [{ id: 'a', title: 'Soup' }],
+    });
+    expect(result._meta).toEqual({
+      'openai/outputTemplate': LIST_RESOURCE_URI,
     });
   });
 });
