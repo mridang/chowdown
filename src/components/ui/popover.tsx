@@ -114,3 +114,24 @@ export function Popover({
 /** One row in a popover panel; style a link or a button with it. */
 export const POPOVER_ITEM =
   'flex h-10 w-full cursor-pointer items-center gap-3 rounded-control px-3 text-left text-sm font-medium transition hover:bg-ink/5 focus-visible:outline-2 focus-visible:outline-ink disabled:opacity-50';
+
+/** A thin rule between groups of items in a popover panel. */
+export function PopoverSeparator() {
+  return <div className="my-1.5 h-px bg-ink/10" role="separator" />;
+}
+
+/** A small, non-interactive caption in a popover panel (who is signed in, say). */
+export function PopoverLabel({
+  caption,
+  children,
+}: {
+  caption: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="px-3 py-2 text-sm">
+      <span className="block text-xs text-subtle">{caption}</span>
+      <span className="block truncate font-semibold">{children}</span>
+    </div>
+  );
+}

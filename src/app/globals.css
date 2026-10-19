@@ -21,11 +21,24 @@
   --color-ember: #b33700;
   --font-display: var(--font-display-face);
 
+  /* Secondary text, in two strengths: `text-muted` for body copy and
+   * descriptions, `text-subtle` for captions, placeholders and icons. Both are
+   * the ink colour at a fixed strength (so they follow the palette), and both
+   * keep at least 5:1 contrast on paper and sand. */
+  --color-muted: color-mix(in srgb, var(--color-ink) 75%, transparent);
+  --color-subtle: color-mix(in srgb, var(--color-ink) 65%, transparent);
+
   /* Shape and type tokens: every component draws from these. */
   --text-label: 0.6875rem;
   --text-label--line-height: 1rem;
   --text-label--letter-spacing: 0.16em;
   --font-sans: var(--font-sans-face);
+}
+
+/* The focus ring every interactive element shares. */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
 }
 
 body {

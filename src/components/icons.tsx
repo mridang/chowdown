@@ -5,14 +5,37 @@ import type { SVGProps } from 'react';
  * sit well next to the bold display type. Every icon takes the usual SVG props
  * and inherits colour from `currentColor`, so they recolour with the text.
  */
-type IconProps = SVGProps<SVGSVGElement>;
+/** The sizes icons are drawn at; without one an icon is 1em, the text around it. */
+const ICON_SIZES = {
+  xs: 'h-3 w-3',
+  sm: 'h-4 w-4',
+  menu: 'h-[18px] w-[18px]',
+  md: 'h-5 w-5',
+  lg: 'h-6 w-6',
+} as const;
 
-function Icon({ children, ...props }: IconProps) {
+export type IconSize = keyof typeof ICON_SIZES;
+
+type IconProps = SVGProps<SVGSVGElement> & {
+  /** One of the standard sizes, instead of sizing the icon with classes. */
+  size?: IconSize;
+};
+
+/** The class list for an icon of the given size, joined with any of its own. */
+function iconClass(size?: IconSize, className?: string): string | undefined {
+  const joined = [size ? ICON_SIZES[size] : '', className ?? '']
+    .filter(Boolean)
+    .join(' ');
+  return joined || undefined;
+}
+
+function Icon({ children, size, className, ...props }: IconProps) {
   return (
     <svg
       viewBox="0 0 24 24"
       width="1em"
       height="1em"
+      className={iconClass(size, className)}
       fill="none"
       stroke="currentColor"
       strokeWidth="1.75"
@@ -319,13 +342,14 @@ export const DriveIcon = (p: IconProps) => (
 );
 
 /** The multi-colour Google "G", for the sign-in button. */
-export function GoogleIcon(props: IconProps) {
+export function GoogleIcon({ size, className, ...props }: IconProps) {
   return (
     <svg
       viewBox="0 0 24 24"
       width="1em"
       height="1em"
       aria-hidden="true"
+      className={iconClass(size, className)}
       {...props}
     >
       <path
