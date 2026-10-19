@@ -12,7 +12,8 @@
  *  - refresh tokens rotate on every use; presenting an old one again revokes
  *    the whole grant, except for a short grace window right after a rotation
  *    (see {@link REFRESH_GRACE_SECONDS});
- *  - a user has one grant per client: approving again replaces the old one;
+ *  - every approval makes its own grant, so a user's other installs of the same
+ *    app keep working (at most `MAX_LIVE_GRANTS_PER_APP` stay live);
  *  - an access token is only good for the MCP server it was issued for.
  */
 
@@ -105,10 +106,9 @@ export interface OAuthStore {
   claimCode(hash: string, grantId: string): Promise<boolean>;
   /**
    * Record a user's approval of a client together with the first token pair,
-   * as one step. A user has one connection per client, so every other live
-   * grant of the same user and client is revoked in the same step (their tokens
-   * stop working with them): approving an app again replaces the old
-   * connection rather than adding a second one to "Connected apps".
+   * as one step. Other grants of the same user and client are left alone (each
+   * install of an app approves separately); only those beyond
+   * MAX_LIVE_GRANTS_PER_APP are retired in the same step, oldest first.
    */
   createGrant(
     grant: Omit<GrantRecord, 'revoked' | 'lastUsedAt'>,

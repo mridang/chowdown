@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from '@jest/globals';
 
 import { MemoryStore } from './memory-store';
 import { s256 } from '../../../src/lib/oauth/pkce';
+import { MAX_LIVE_GRANTS_PER_APP } from '../../../src/lib/oauth/retention';
 import { hashSecret } from '../../../src/lib/oauth/secrets';
 import {
   ACCESS_TTL_SECONDS,
@@ -537,29 +538,23 @@ describe('withinRefreshGrace', () => {
   });
 });
 
-describe('one connection per user and client', () => {
-  it('replaces the earlier grant when the same user approves the same client again', async () => {
+describe('several installs of one app', () => {
+  it('keeps the earlier grant working when the same user approves the same client again', async () => {
     const first = (await redeem(code)) as TokenResponse;
     const again = (await redeem(await newCode())) as TokenResponse;
     const grants = [...store.grants.values()];
     expect(grants).toHaveLength(2);
-    expect(grants.filter((g) => !g.revoked)).toHaveLength(1);
-    expect(
-      await authenticateAccessToken(
-        store,
-        first.access_token,
-        RESOURCE,
-        NOW + 10,
-      ),
-    ).toBeUndefined();
-    expect(
-      await authenticateAccessToken(
-        store,
-        again.access_token,
-        RESOURCE,
-        NOW + 10,
-      ),
-    ).toMatchObject({ userId: 7 });
+    expect(grants.filter((g) => !g.revoked)).toHaveLength(2);
+    for (const token of [first, again]) {
+      expect(
+        await authenticateAccessToken(
+          store,
+          token.access_token,
+          RESOURCE,
+          NOW + 10,
+        ),
+      ).toMatchObject({ userId: 7 });
+    }
     expect(
       await exchangeRefreshToken(
         store,
@@ -570,10 +565,28 @@ describe('one connection per user and client', () => {
         },
         NOW + 10,
       ),
-    ).toMatchObject({ ok: false, error: 'invalid_grant' });
+    ).toHaveProperty('access_token');
   });
 
-  it('leaves other users and other clients alone', async () => {
+  it('retires the oldest grant once the user has more installs than the cap', async () => {
+    const tokens: unknown[] = [];
+    for (let i = 0; i <= MAX_LIVE_GRANTS_PER_APP; i += 1) {
+      tokens.push(await redeem(await newCode()));
+    }
+    const live = [...store.grants.values()].filter((g) => !g.revoked);
+    expect(live).toHaveLength(MAX_LIVE_GRANTS_PER_APP);
+    const [oldest] = tokens as TokenResponse[];
+    expect(
+      await authenticateAccessToken(
+        store,
+        oldest?.access_token ?? '',
+        RESOURCE,
+        NOW + 10,
+      ),
+    ).toBeUndefined();
+  });
+
+  it('leaves other users and other clients alone, and the first approval working', async () => {
     const mine = (await redeem(code)) as TokenResponse;
     const otherUser = (await redeem(
       await newCode({ userId: 8 }),
@@ -609,6 +622,6 @@ describe('one connection per user and client', () => {
         RESOURCE,
         NOW + 10,
       ),
-    ).toBeUndefined();
+    ).toMatchObject({ userId: 7 });
   });
 });

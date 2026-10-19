@@ -10,6 +10,7 @@ import {
   saveClient,
 } from '../../../src/lib/db/oauth';
 import { OAUTH_LIMITS } from '../../../src/lib/oauth/limits';
+import { MAX_LIVE_GRANTS_PER_APP } from '../../../src/lib/oauth/retention';
 import type { RateLimitStore } from '../../../src/lib/util/rate-limit';
 import { fakeDb } from './fake-db';
 import { sqliteDatabase } from './sqlite-db';
@@ -492,11 +493,11 @@ describe('against a real SQLite database', () => {
   });
 
   describe('createGrant', () => {
-    it("replaces the user's earlier grant for the same client, and only that one", async () => {
+    it("keeps the user's other grants for the same client working, and other users' and clients' too", async () => {
       const { db, raw } = sqliteDatabase(...MIGRATIONS);
       const store = createOAuthStore(db);
-      await store.createGrant(grantRecord('old'), [
-        ...tokenRows('o1', 'o2').map((t) => ({ ...t, grantId: 'old' })),
+      await store.createGrant(grantRecord('laptop'), [
+        ...tokenRows('o1', 'o2').map((t) => ({ ...t, grantId: 'laptop' })),
       ]);
       await store.createGrant(grantRecord('other-user', 8), [
         ...tokenRows('u1', 'u2').map((t) => ({ ...t, grantId: 'other-user' })),
@@ -507,16 +508,47 @@ describe('against a real SQLite database', () => {
           grantId: 'other-client',
         })),
       ]);
-      await store.createGrant(grantRecord('new'), tokenRows('n1', 'n2'));
+      await store.createGrant(
+        grantRecord('desktop'),
+        tokenRows('n1', 'n2').map((t) => ({ ...t, grantId: 'desktop' })),
+      );
+      expect(
+        raw
+          .prepare('SELECT id FROM oauth_grants WHERE revoked_at IS NOT NULL')
+          .all(),
+      ).toEqual([]);
+      for (const token of ['o1', 'n1', 'u1', 'c1']) {
+        expect((await store.findToken(token))?.grant.revoked).toBe(false);
+      }
+    });
+
+    it('retires only the oldest connections beyond the cap', async () => {
+      const { db, raw } = sqliteDatabase(...MIGRATIONS);
+      const store = createOAuthStore(db);
+      const made = Array.from(
+        { length: MAX_LIVE_GRANTS_PER_APP + 2 },
+        (_, i) => `g${String(i).padStart(2, '0')}`,
+      );
+      // Made in order, so the first ones are the oldest (ids break a tie in the clock).
+      for (const id of made) {
+        await store.createGrant(grantRecord(id), [
+          ...tokenRows(`${id}a`, `${id}b`).map((t) => ({ ...t, grantId: id })),
+        ]);
+      }
       const revoked = raw
-        .prepare('SELECT id FROM oauth_grants WHERE revoked_at IS NOT NULL')
+        .prepare(
+          'SELECT id FROM oauth_grants WHERE revoked_at IS NOT NULL ORDER BY id',
+        )
         .all()
         .map((row) => row['id']);
-      expect(revoked).toEqual(['old']);
-      expect((await store.findToken('o1'))?.grant.revoked).toBe(true);
-      expect((await store.findToken('n1'))?.grant.revoked).toBe(false);
-      expect((await store.findToken('u1'))?.grant.revoked).toBe(false);
-      expect((await store.findToken('c1'))?.grant.revoked).toBe(false);
+      expect(revoked).toEqual(made.slice(0, 2));
+      expect(
+        raw
+          .prepare(
+            'SELECT COUNT(*) AS n FROM oauth_grants WHERE revoked_at IS NULL',
+          )
+          .get()?.['n'],
+      ).toBe(MAX_LIVE_GRANTS_PER_APP);
     });
 
     it('does nothing at all if storing the tokens fails', async () => {

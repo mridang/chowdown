@@ -17,7 +17,7 @@ import {
   type OAuthClient,
 } from '../oauth/client';
 import { OAUTH_LIMITS, firstRetryAfter } from '../oauth/limits';
-import { purgeCutoffs } from '../oauth/retention';
+import { MAX_LIVE_GRANTS_PER_APP, purgeCutoffs } from '../oauth/retention';
 import type { Sweeps } from '../oauth/sweep';
 import type {
   OAuthStore,
@@ -230,19 +230,27 @@ export function createOAuthStore(db: Database): OAuthStore {
 
     async createGrant(grant, tokens) {
       const now = new Date().toISOString();
-      // One batch is one transaction: the old connection is retired, the new
-      // one and its first tokens appear, or none of it happens.
+      const sameApp = and(
+        eq(oauthGrants.user_id, grant.userId),
+        eq(oauthGrants.client_id, grant.clientId),
+        isNull(oauthGrants.revoked_at),
+      );
+      // The newest connections that stay: one fewer than the cap, to leave
+      // room for the one being made.
+      const kept = db
+        .select({ id: oauthGrants.id })
+        .from(oauthGrants)
+        .where(sameApp)
+        .orderBy(desc(oauthGrants.created_at), desc(oauthGrants.id))
+        .limit(MAX_LIVE_GRANTS_PER_APP - 1);
+      // One batch is one transaction: the oldest connections beyond the cap are
+      // retired, the new one and its first tokens appear, or none of it happens.
+      // Other installs of the same app keep working.
       await db.batch([
         db
           .update(oauthGrants)
           .set({ revoked_at: now })
-          .where(
-            and(
-              eq(oauthGrants.user_id, grant.userId),
-              eq(oauthGrants.client_id, grant.clientId),
-              isNull(oauthGrants.revoked_at),
-            ),
-          ),
+          .where(and(sameApp, notInArray(oauthGrants.id, kept))),
         db.insert(oauthGrants).values({
           id: grant.id,
           user_id: grant.userId,
@@ -343,9 +351,9 @@ export interface ConnectedApp {
 
 /**
  * The applications a user has approved and not revoked, newest first. An app is
- * listed once: approving an app again replaces its grant, but grants made
- * before that rule existed can still be live side by side, and those are shown
- * as one connection (the newest grant's details, the latest use of any).
+ * listed once: each install of an app has its own grant, and the grants of one
+ * app are shown as one connection (the newest grant's details, the latest use
+ * of any).
  */
 export async function listConnectedApps(
   db: Database,
@@ -380,9 +388,9 @@ export async function listConnectedApps(
 }
 
 /**
- * Revoke one of the user's connections: the grant named, and any other live
- * grant the user has for the same app (see {@link listConnectedApps}). Returns
- * false if the grant isn't theirs.
+ * Disconnect an app: revoke the grant named and every other live grant the user
+ * has for the same app, so every install of it stops working (see
+ * {@link listConnectedApps}). Returns false if the grant isn't theirs.
  */
 export async function revokeConnectedApp(
   db: Database,

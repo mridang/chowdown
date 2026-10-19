@@ -14,6 +14,14 @@ const DAY = 60 * 60 * 24;
 /** How long after expiry a code or token row is kept (a used code is how a replay is recognised). */
 export const EXPIRED_ROW_GRACE_SECONDS = DAY;
 
+/**
+ * How many live connections one user may have to the same app. Each install of
+ * an app (a laptop and a desktop, two editors) approves separately and gets its
+ * own grant, so they must coexist; the cap only stops the table growing without
+ * bound, retiring the oldest connections beyond it.
+ */
+export const MAX_LIVE_GRANTS_PER_APP = 10;
+
 /** How long a revoked grant is kept: it anchors its client's registration, so a disconnected app can reconnect. */
 export const REVOKED_GRANT_KEEP_SECONDS = 90 * DAY;
 

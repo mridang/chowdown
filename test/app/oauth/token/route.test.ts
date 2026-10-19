@@ -173,7 +173,7 @@ describe('POST /oauth/token', () => {
     ).toEqual({ n: 0 });
   });
 
-  it('keeps one connection per user and client when the app is approved again', async () => {
+  it('keeps both connections live when the same app is approved again, as when two devices connect', async () => {
     await redeem();
     await redeem();
     expect(
@@ -182,7 +182,7 @@ describe('POST /oauth/token', () => {
           'SELECT COUNT(*) AS n FROM oauth_grants WHERE revoked_at IS NULL',
         )
         .get(),
-    ).toEqual({ n: 1 });
+    ).toEqual({ n: 2 });
   });
 
   it('answers 429 with Retry-After when an address asks too often, and counts addresses separately', async () => {

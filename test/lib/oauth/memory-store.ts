@@ -1,3 +1,4 @@
+import { MAX_LIVE_GRANTS_PER_APP } from '../../../src/lib/oauth/retention';
 import type {
   CodeRecord,
   GrantRecord,
@@ -39,15 +40,19 @@ export class MemoryStore implements OAuthStore {
     grant: Omit<GrantRecord, 'revoked' | 'lastUsedAt'>,
     tokens: readonly TokenRow[],
   ) {
-    // One connection per (user, client): approving again replaces the old one.
-    for (const [id, other] of this.grants) {
-      if (
+    // Other installs of the same app stay; the oldest beyond the cap go (a Map
+    // keeps insertion order, which is creation order).
+    const live = [...this.grants.values()].filter(
+      (other) =>
         other.userId === grant.userId &&
         other.clientId === grant.clientId &&
-        !other.revoked
-      ) {
-        this.grants.set(id, { ...other, revoked: true });
-      }
+        !other.revoked,
+    );
+    for (const other of live.slice(
+      0,
+      Math.max(0, live.length - (MAX_LIVE_GRANTS_PER_APP - 1)),
+    )) {
+      this.grants.set(other.id, { ...other, revoked: true });
     }
     this.grants.set(grant.id, { ...grant, revoked: false, lastUsedAt: null });
     await this.saveTokens(tokens);
