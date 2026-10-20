@@ -55,25 +55,18 @@ const page = (body: string, nonce: string) =>
     headers: { 'content-type': 'text/html; charset=utf-8' },
   });
 
-describe('serve — the report-only policy', () => {
-  it('sends Trusted Types in report-only mode with an HTML page, but not with other responses', async () => {
+describe('serve — no report-only policy', () => {
+  it('sends only the enforced policy, with an HTML page or without', async () => {
     const { context } = ctx();
     const htmlApp = appAnswering(
       () => new Response('x', { headers: { 'content-type': 'text/html' } }),
     );
-    const jsonApp = appAnswering(() => Response.json({ a: 1 }));
     const a = await serve(new Request('https://app.test/app'), {}, context, {
       app: htmlApp,
       cache: undefined,
     });
-    expect(a.headers.get('content-security-policy-report-only')).toContain(
-      "require-trusted-types-for 'script'",
-    );
-    const b = await serve(new Request('https://app.test/api/x'), {}, context, {
-      app: jsonApp,
-      cache: undefined,
-    });
-    expect(b.headers.has('content-security-policy-report-only')).toBe(false);
+    expect(a.headers.has('content-security-policy')).toBe(true);
+    expect(a.headers.has('content-security-policy-report-only')).toBe(false);
   });
 });
 

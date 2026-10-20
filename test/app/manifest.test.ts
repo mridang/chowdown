@@ -144,6 +144,7 @@ describe('web app manifest', () => {
     expect(m.share_target).toEqual({
       action: '/recipes/add',
       method: 'GET',
+      enctype: 'application/x-www-form-urlencoded',
       params: { title: 'title', text: 'text', url: 'url' },
     });
   });

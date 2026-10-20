@@ -13,13 +13,7 @@
  *  4. whatever goes back carries the site's security and cache headers.
  */
 
-import {
-  buildCsp,
-  buildReportOnlyCsp,
-  cspSurfaceFor,
-  forwardedHeaders,
-  newNonce,
-} from './csp';
+import { buildCsp, cspSurfaceFor, forwardedHeaders, newNonce } from './csp';
 import {
   edgeCache,
   edgeCacheKey,
@@ -29,7 +23,6 @@ import {
 } from './edge-cache';
 import { edgeLimitRefusal, type EdgeLimitEnv } from './edge-limits';
 import { applyResponseHeaders, replacingHeaders } from './headers';
-import { REPORT_ONLY_HEADER } from './reporting';
 
 /** What the Worker is given besides the request. */
 export type ServeEnv = EdgeLimitEnv & {
@@ -99,11 +92,7 @@ export async function serve(
   );
   const response =
     isHtml && !fetched.headers.has('content-security-policy')
-      ? withHeader(
-          withHeader(fetched, 'Content-Security-Policy', csp),
-          REPORT_ONLY_HEADER,
-          buildReportOnlyCsp(),
-        )
+      ? withHeader(fetched, 'Content-Security-Policy', csp)
       : fetched;
   if (cache && key) {
     const copy = storableCopy(response);

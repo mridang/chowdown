@@ -122,6 +122,7 @@ export default function manifest(): MetadataRoute.Manifest {
     share_target: {
       action: '/recipes/add',
       method: 'GET',
+      enctype: 'application/x-www-form-urlencoded',
       params: { title: 'title', text: 'text', url: 'url' },
     },
     shortcuts: [
