@@ -2,8 +2,6 @@
 
 import { useState, useSyncExternalStore, type ReactElement } from 'react';
 
-import { CloseIcon, ShareIcon } from '@/components/icons';
-
 import {
   IOS_HINT_TEXT,
   readInstallEnvironment,
@@ -11,6 +9,45 @@ import {
   shouldOfferIosInstall,
   type InstallHost,
 } from './ios-install';
+
+/**
+ * The Share button as Safari draws it: a square with an arrow leaving it. Kept
+ * here, with the close icon, so the tip stands alone and every app can use it.
+ */
+function ShareGlyph(): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="size-[18px] shrink-0 text-ink"
+    >
+      <path d="M12 15V4M8 8l4-4 4 4M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6" />
+    </svg>
+  );
+}
+
+/** A cross, for dismissing the tip. */
+function CloseGlyph(): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="size-4"
+    >
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  );
+}
 
 /** The live browser, in the shape {@link readInstallEnvironment} reads. */
 function browserHost(): InstallHost {
@@ -57,8 +94,8 @@ export function InstallIosHint(): ReactElement | null {
     return null;
   }
   return (
-    <div className="flex items-center gap-2 rounded-control bg-marigold/20 py-1 pr-1 pl-3">
-      <ShareIcon size="menu" className="shrink-0 text-ink" />
+    <div className="flex items-center gap-2 rounded-control bg-brand/20 py-1 pr-1 pl-3">
+      <ShareGlyph />
       <p className="flex-1 text-sm leading-snug font-medium">{IOS_HINT_TEXT}</p>
       <button
         type="button"
@@ -68,7 +105,7 @@ export function InstallIosHint(): ReactElement | null {
         }}
         className="focus-ring-flush grid size-11 shrink-0 place-items-center rounded-control transition hover:bg-ink/10"
       >
-        <CloseIcon size="sm" />
+        <CloseGlyph />
         <span className="sr-only">Hide the install tip</span>
       </button>
     </div>

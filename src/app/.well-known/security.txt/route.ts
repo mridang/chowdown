@@ -4,7 +4,7 @@
  *   GET /.well-known/security.txt
  */
 
-import { securityTxt } from '@/lib/security-txt';
+import { securityTxt } from '@/app/_security-txt';
 
 /**
  * `GET /.well-known/security.txt`: where to report a security problem, as

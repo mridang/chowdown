@@ -45,7 +45,7 @@ describe('SiteHeader for someone signed in', () => {
   it('offers adding a recipe as the one highlighted button once Drive is connected', () => {
     const out = htmlAt(<SiteHeader user={ADA} />);
     expect(out).toMatch(
-      /<a [^>]*class="[^"]*bg-flame[^"]*"[^>]*href="\/recipes\/add"[^>]*>.*Add recipe<\/a>/,
+      /<a [^>]*class="[^"]*bg-highlight[^"]*"[^>]*href="\/recipes\/add"[^>]*>.*Add recipe<\/a>/,
     );
   });
 

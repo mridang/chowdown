@@ -18,13 +18,9 @@ import {
 } from '@/components/recipes/search-query';
 import { Button } from '@/components/ui/button';
 import { SearchField } from '@/components/ui/field';
-import {
-  Container,
-  Eyebrow,
-  Heading,
-  SectionHeader,
-} from '@/components/ui/layout';
+import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 import { PillLink } from '@/components/ui/pill';
+import { SectionHeader } from '@/components/ui/section';
 import {
   easyAndQuick,
   fromTheShelf,

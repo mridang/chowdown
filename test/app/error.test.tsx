@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { ERROR_REASSURANCE } from '../../src/app/_brand';
 import ErrorPage from '../../src/app/error';
 import { html } from '../components/render';
 
@@ -11,7 +12,7 @@ describe('ErrorPage', () => {
       <ErrorPage error={new Error('boom')} unstable_retry={retry} />,
     );
     expect(out).toMatch(/<h1[^>]*>That didn&#x27;t work<\/h1>/);
-    expect(out).toContain('your recipes will still be in your Drive');
+    expect(out).toContain(ERROR_REASSURANCE);
   });
 
   it('offers to try again, and a way home', () => {

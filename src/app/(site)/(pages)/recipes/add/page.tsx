@@ -15,7 +15,7 @@ import {
 } from './_components/shared-input';
 
 /** The tab title of the Add recipes page. */
-export const metadata: Metadata = { title: 'Add recipes · chowdown' };
+export const metadata: Metadata = { title: 'Add recipes' };
 
 /**
  * The "Add recipes" page, its own route and not a panel on `/app`. Auth-gates

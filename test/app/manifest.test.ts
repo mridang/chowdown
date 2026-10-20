@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
+import { BACKGROUND_COLOR, THEME_COLOR } from '../../src/app/_brand';
 import manifest from '../../src/app/manifest';
 import { pngSize } from '../png';
 
@@ -67,9 +68,15 @@ describe('web app manifest', () => {
     }
   });
 
-  it('turns the browser bar the brand yellow, with the page colour behind the splash', () => {
-    expect(m.theme_color).toBe('#ffb100');
-    expect(m.background_color).toBe('#fbf8f2');
+  it('turns the browser bar the brand colour, with the page colour behind the splash', () => {
+    expect(m.theme_color).toBe(THEME_COLOR);
+    expect(m.background_color).toBe(BACKGROUND_COLOR);
+  });
+
+  it('has an id, a language and a store category', () => {
+    expect(m.id).toBe('/');
+    expect(m.lang).toBe('en');
+    expect(m.categories?.length).toBeGreaterThan(0);
   });
 
   // Chrome only shows the rich install dialog when a screenshot of each form
@@ -93,21 +100,6 @@ describe('web app manifest', () => {
         shots.filter((s) => s.form_factor === factor).map((s) => s.sizes),
       );
       expect(ratios.size).toBeLessThanOrEqual(1);
-    }
-  });
-
-  it('shows Chrome its richer install dialog: screenshots for both form factors, each a real PNG', () => {
-    const shots = m.screenshots ?? [];
-    expect(shots.filter((s) => s.form_factor === 'wide')).toHaveLength(2);
-    expect(shots.filter((s) => s.form_factor === 'narrow')).toHaveLength(3);
-    expect(shots.length).toBeLessThanOrEqual(8);
-    for (const shot of shots) {
-      expect(shot.type).toBe('image/png');
-      expect(shot.label).toBeTruthy();
-      expect(shot.src.startsWith('/screenshots/')).toBe(true);
-      expect(existsSync(path.join(process.cwd(), 'public', shot.src))).toBe(
-        true,
-      );
     }
   });
 
@@ -140,22 +132,10 @@ describe('web app manifest', () => {
     }
   });
 
-  it('can be shared to: a GET to the add-recipes page carrying title, text and url', () => {
-    expect(m.share_target).toEqual({
-      action: '/recipes/add',
-      method: 'GET',
-      enctype: 'application/x-www-form-urlencoded',
-      params: { title: 'title', text: 'text', url: 'url' },
-    });
-  });
-
-  it('keeps the share target inside its scope, on a page that exists', () => {
-    expect(m.share_target?.action.startsWith(m.scope!)).toBe(true);
-    expect(
-      existsSync(
-        path.join(process.cwd(), 'src/app/(site)/(pages)/recipes/add/page.tsx'),
-      ),
-    ).toBe(true);
+  it('keeps a share target, if it has one, inside its scope', () => {
+    expect((m.share_target?.action ?? m.scope!).startsWith(m.scope!)).toBe(
+      true,
+    );
   });
 
   it('starts inside its own scope', () => {

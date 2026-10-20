@@ -42,7 +42,7 @@ const ABOVE_THE_FOLD = 3;
 
 /** The tab title and description of the recipe list. */
 export const metadata: Metadata = {
-  title: 'Your recipes · chowdown',
+  title: 'Your recipes',
   description:
     'Search, filter and sort every recipe in your own Google Drive collection.',
 };

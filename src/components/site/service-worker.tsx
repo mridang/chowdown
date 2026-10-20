@@ -2,6 +2,19 @@
 
 import { useEffect } from 'react';
 
+import { BACKGROUND_COLOR, BRAND_NAME, THEME_COLOR } from '@/app/_brand';
+
+/**
+ * The address the worker is registered at. The one worker file serves every
+ * app, so what makes it this app's (its name and colours, for the offline
+ * page) travels in the query string.
+ */
+export const WORKER_URL = `/sw.js?${new URLSearchParams({
+  name: BRAND_NAME,
+  theme: THEME_COLOR,
+  background: BACKGROUND_COLOR,
+}).toString()}`;
+
 /** The parts of the browser the registration uses, so they can be stood in for. */
 export interface WorkerEnvironment {
   readonly production: boolean;
@@ -28,7 +41,7 @@ export function registerWhenLoaded(
     return undefined;
   }
   const register = () => {
-    void serviceWorker.register('/sw.js', { scope: '/' });
+    void serviceWorker.register(WORKER_URL, { scope: '/' });
   };
   if (environment.readyState === 'complete') {
     register();

@@ -9,7 +9,7 @@ describe('RecipeNotFound', () => {
   const out = html(<RecipeNotFound />);
 
   it('has a title that says the recipe was not found', () => {
-    expect(metadata.title).toBe('Recipe not found · chowdown');
+    expect(metadata.title).toBe('Recipe not found');
   });
 
   it('is a level-one heading saying so', () => {

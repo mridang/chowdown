@@ -5,9 +5,9 @@ import { cn } from '@/components/ui/cn';
 
 /** The colours of each kind of button. */
 const VARIANTS = {
-  primary: 'bg-ink text-white hover:bg-ink/85',
-  accent: 'bg-flame text-ink hover:bg-flame/90',
-  outline: 'border border-field bg-white text-ink hover:border-ink',
+  primary: 'bg-ink text-on-ink hover:bg-ink/85',
+  accent: 'bg-highlight text-on-highlight hover:bg-highlight/90',
+  outline: 'border border-field bg-surface text-ink hover:border-ink',
   ghost: 'text-ink hover:bg-ink/5',
 } as const;
 

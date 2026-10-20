@@ -1,30 +1,32 @@
 import Link from 'next/link';
 import type { ReactElement, ReactNode } from 'react';
 
-import { PanIcon } from '@/components/icons';
-import { HEADER_ROW_CLASS } from '@/components/site/header-height';
+import { BRAND_NAME } from '@/app/_brand';
+import { BrandMark } from '@/components/site/logo';
+import { SkipLink } from '@/components/site/skip-link';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 
 /**
- * A page outside the site frame: the thin marigold strip, the wordmark and a
+ * A page outside the site frame: the thin brand strip, the wordmark and a
  * centred message. Used where the full header would be wrong or unavailable:
- * the not-found and error pages, and the approval screen assistants send people
- * to. It brings its own `<main>` because it does not sit inside the site shell.
+ * the not-found and error pages, and any other page that stands alone. It
+ * brings its own `<main>` because it does not sit inside the site shell.
  */
 export function BarePage({
   children,
 }: Readonly<{ children: ReactNode }>): ReactElement {
   return (
     <div className="flex flex-1 flex-col">
+      <SkipLink />
       <header>
-        <div className="h-1.5 bg-marigold" />
+        <div className="h-1.5 bg-brand" />
         <div className="border-b border-line">
-          <Container className={`flex ${HEADER_ROW_CLASS} items-center`}>
+          <Container className="flex h-17 items-center">
             <Link
               href="/"
               className="focus-ring-wide rounded-control font-display text-[1.7rem] leading-none font-bold tracking-tight text-ink"
             >
-              chowdown
+              {BRAND_NAME}
             </Link>
           </Container>
         </div>
@@ -57,7 +59,7 @@ export function MessagePage({
   return (
     <Container className="py-16 sm:py-24">
       <div className="max-w-xl">
-        <PanIcon className="size-14 text-flame" strokeWidth={1.25} />
+        <BrandMark className="size-14" />
         <Eyebrow className="mt-6">{eyebrow}</Eyebrow>
         <Heading as="h1" variant="h1" className="mt-3">
           {title}

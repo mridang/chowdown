@@ -7,7 +7,8 @@ import { Feature } from '@/components/landing/features/feature';
 import { FilesVisual } from '@/components/landing/features/files-visual';
 import { FiltersVisual } from '@/components/landing/features/filters-visual';
 import { ImportVisual } from '@/components/landing/features/import-visual';
-import { Container, Section } from '@/components/ui/layout';
+import { Container } from '@/components/ui/layout';
+import { Section } from '@/components/ui/section';
 
 /** The product's selling points, one picture each. */
 export function Features({

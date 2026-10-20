@@ -17,7 +17,7 @@ describe('buttonClass', () => {
 
   it('takes its colours from the variant and its height from the size', () => {
     expect(buttonClass({ variant: 'outline' })).toContain('border-field');
-    expect(buttonClass({ variant: 'accent' })).toContain('bg-flame');
+    expect(buttonClass({ variant: 'accent' })).toContain('bg-highlight');
     expect(buttonClass({ size: 'lg' })).toContain('h-12');
     expect(buttonClass({ size: 'sm' })).toContain('h-9');
   });

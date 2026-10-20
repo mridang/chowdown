@@ -46,12 +46,12 @@ export async function generateMetadata({
   try {
     const data = await loadRecipe(id);
     if (data) {
-      return { title: `${data.recipe.title} · chowdown` };
+      return { title: data.recipe.title };
     }
   } catch {
     // Fall through to the default title on any hiccup.
   }
-  return { title: 'Recipe · chowdown' };
+  return { title: 'Recipe' };
 }
 
 /**

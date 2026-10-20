@@ -1,28 +1,26 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
+import {
+  BRAND_URL,
+  COLOR_SCHEME,
+  INDEX_BY_DEFAULT,
+} from '../../src/app/_brand';
 import manifest from '../../src/app/manifest';
-import { SITE_URL } from '../../src/lib/site';
 import { html } from '../components/render';
 
-// next/font only works inside the Next compiler, and the stylesheet and the
-// service-worker component are not what is under test.
-const font = (options: { readonly variable: string }) => ({
-  variable: `class-for${options.variable}`,
-});
-jest.unstable_mockModule('next/font/google', () => ({
-  Inter: font,
-  Bricolage_Grotesque: font,
-  Caveat: font,
-  Kalam: font,
-  Shadows_Into_Light: font,
-  Over_the_Rainbow: font,
-  Indie_Flower: font,
-  Delicious_Handrawn: font,
-  La_Belle_Aurore: font,
-}));
+// The stylesheet, the fonts (which only work inside the Next compiler) and the
+// two scripts are not what is under test: the frame around the page is.
 jest.unstable_mockModule('../../src/app/globals.css', () => ({}));
+jest.unstable_mockModule('../../src/app/_fonts', () => ({
+  HTML_CLASS: 'fonts-on-html',
+  BODY_CLASS: 'classes-on-body',
+  HTML_ATTRIBUTES: { 'data-test': 'yes' },
+}));
 jest.unstable_mockModule('../../src/components/site/service-worker', () => ({
-  ServiceWorker: () => null,
+  ServiceWorker: () => <i id="service-worker" />,
+}));
+jest.unstable_mockModule('../../src/components/site/theme-script', () => ({
+  ThemeScript: () => <i id="theme-script" />,
 }));
 
 const {
@@ -32,20 +30,29 @@ const {
 } = await import('../../src/app/layout');
 
 describe('RootLayout', () => {
-  it('is private by default, so only the public pages opt in to indexing', () => {
-    expect(metadata.robots).toEqual({ index: false, follow: false });
+  it('follows the app’s choice of whether pages may be indexed', () => {
+    expect(metadata.robots).toEqual({
+      index: INDEX_BY_DEFAULT,
+      follow: INDEX_BY_DEFAULT,
+    });
   });
 
   it('resolves relative addresses against the site', () => {
-    expect(new URL(String(metadata.metadataBase)).origin).toBe(SITE_URL);
+    expect(new URL(String(metadata.metadataBase)).origin).toBe(BRAND_URL);
   });
 
   it('says the page language for Open Graph', () => {
     expect(metadata.openGraph).toMatchObject({ locale: 'en_US' });
   });
 
-  it('asks for the light colour scheme, as the site has no dark theme', () => {
-    expect(viewport.colorScheme).toBe('only light');
+  it('puts the app’s name after a page’s own title', () => {
+    expect(metadata.title).toMatchObject({
+      template: expect.stringMatching(/^%s · .+/),
+    });
+  });
+
+  it('asks for the colour scheme the app is drawn in', () => {
+    expect(viewport.colorScheme).toBe(COLOR_SCHEME);
   });
 
   it('colours the browser bar like the installed app', () => {
@@ -58,29 +65,24 @@ describe('RootLayout', () => {
     expect(viewport).not.toHaveProperty('userScalable');
   });
 
-  it('makes all seven handwriting faces available to the whole page, for people’s names', () => {
-    const out = html(<RootLayout>{null}</RootLayout>);
-    [
-      'caveat',
-      'kalam',
-      'shadows',
-      'rainbow',
-      'indie',
-      'handrawn',
-      'aurore',
-    ].forEach((face) =>
-      expect(out).toContain(`class-for--font-hand-${face}-face`),
-    );
-  });
-
-  it('lets an overflowing child show, rather than hiding it on the body', () => {
+  it('is the document: its language, the app’s classes and attributes, the theme script, the page and the worker', () => {
     const out = html(
       <RootLayout>
         <main>hello</main>
       </RootLayout>,
     );
-    expect(out).toMatch(/<html lang="en"/);
+    expect(out).toMatch(
+      /<html lang="en" class="fonts-on-html" data-test="yes"/,
+    );
+    expect(out).toContain('<body class="classes-on-body">');
+    expect(out.indexOf('theme-script')).toBeLessThan(out.indexOf('<main>'));
     expect(out).toContain('<main>hello</main>');
-    expect(out).not.toContain('overflow-x-hidden');
+    expect(out.indexOf('<main>')).toBeLessThan(out.indexOf('service-worker'));
+  });
+
+  it('lets an overflowing child show, rather than hiding it on the body', () => {
+    expect(html(<RootLayout>{null}</RootLayout>)).not.toContain(
+      'overflow-x-hidden',
+    );
   });
 });

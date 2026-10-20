@@ -85,6 +85,7 @@ describe('the privacy page’s metadata', () => {
 
   it('has its own social card', () => {
     expect(metadata.openGraph?.url).toBe('/privacy');
-    expect(metadata.twitter?.title).toBe(metadata.title);
+    expect(metadata.title).toBe('Privacy');
+    expect(metadata.twitter?.title).toBe('Privacy · chowdown');
   });
 });

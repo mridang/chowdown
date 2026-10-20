@@ -18,7 +18,7 @@ import { ConnectedApps } from './_components/connected-apps';
 
 /** The tab title and description of the Cook with AI page. */
 export const metadata: Metadata = {
-  title: 'Cook with AI · chowdown',
+  title: 'Cook with AI',
   description:
     'Connect ChatGPT, Claude or any assistant that supports MCP to your recipes.',
 };

@@ -1,10 +1,13 @@
 @import 'tailwindcss';
 
-/* Non-inline, so a page can override the radii with a data attribute. */
-@theme {
-  --radius-control: 0.5rem;
-  --radius-card: 0.875rem;
+/* ==========================================================================
+ * 1. This app's tokens: they differ per app.
+ *    The shared shell reads these roles: paper, ink, on-ink, surface, brand,
+ *    accent, highlight, on-highlight, and the font-sans / font-display faces.
+ * ======================================================================== */
 
+/* Non-inline, so a page can override the palette with a data attribute. */
+@theme {
   /* Palette. These can be swapped per page with data-palette (design sandbox). */
   --color-paper: #fbf8f2;
   --color-sand: #f0e9dc;
@@ -19,32 +22,21 @@
   --color-flame: #ff4e00;
   /* A deeper flame for small text, which needs more contrast than the fill. */
   --color-ember: #b33700;
-  --font-display: var(--font-display-face);
 
-  /* Secondary text, in two strengths: `text-muted` for body copy and
-   * descriptions, `text-subtle` for captions, placeholders and icons. Both are
-   * the ink colour at a fixed strength (so they follow the palette), and both
-   * keep at least 5:1 contrast on paper and sand. */
-  --color-muted: color-mix(in srgb, var(--color-ink) 75%, transparent);
-  --color-subtle: color-mix(in srgb, var(--color-ink) 65%, transparent);
+  /* The roles the shared shell is written in. */
+  --color-on-ink: #fff;
+  --color-surface: #fff;
+  --color-brand: var(--color-marigold);
+  --color-accent: var(--color-ember);
+  --color-highlight: var(--color-flame);
+  --color-on-highlight: var(--color-ink);
 
-  /* Edges: `border-line` for a hairline between areas and around cards (purely
-   * decorative, so it may be faint), `border-field` for the edge of something
-   * you can act on (an input, a button, a chip). A control's border is often
-   * the only thing that shows where it is, so WCAG 1.4.11 asks 3:1 of it
-   * against what it sits on: ink at 50% measures 3.5:1 on white, 3.5:1 on
-   * paper and 3.4:1 on sand. (test/app/globals.test.ts keeps it honest.) */
-  --color-line: color-mix(in srgb, var(--color-ink) 10%, transparent);
-  --color-field: color-mix(in srgb, var(--color-ink) 50%, transparent);
-
-  /* Shape and type tokens: every component draws from these. */
-  --text-label: 0.6875rem;
-  --text-label--line-height: 1rem;
-  --text-label--letter-spacing: 0.16em;
+  /* Type. The `--font-*-face` variables come from next/font (see `_fonts.ts`). */
   --font-sans: var(--font-sans-face);
+  --font-display: var(--font-display-face);
   /* Handwriting, for people's names and nothing else (see AuthorName): one
    * token per face, each with `cursive` behind it for the moment before the
-   * file arrives. The `--font-hand-*-face` variables come from next/font. */
+   * file arrives. */
   --font-hand-caveat: var(--font-hand-caveat-face), cursive;
   --font-hand-kalam: var(--font-hand-kalam-face), cursive;
   --font-hand-shadows: var(--font-hand-shadows-face), cursive;
@@ -53,6 +45,43 @@
   --font-hand-handrawn: var(--font-hand-handrawn-face), cursive;
   --font-hand-aurore: var(--font-hand-aurore-face), cursive;
 }
+
+/* ==========================================================================
+ * 2. Shared tokens: the same in every app (they derive from the tokens above).
+ * ======================================================================== */
+
+/* Non-inline, so a page can override the radii with a data attribute. */
+@theme {
+  --radius-control: 0.5rem;
+  --radius-card: 0.875rem;
+}
+
+@theme inline {
+  /* Secondary text, in two strengths: `text-muted` for body copy and
+   * descriptions, `text-subtle` for captions, placeholders and icons. Both are
+   * the ink colour at a fixed strength (so they follow the palette), and both
+   * keep at least 5:1 contrast on paper. */
+  --color-muted: color-mix(in srgb, var(--color-ink) 75%, transparent);
+  --color-subtle: color-mix(in srgb, var(--color-ink) 65%, transparent);
+
+  /* Edges: `border-line` for a hairline between areas and around cards (purely
+   * decorative, so it may be faint), `border-field` for the edge of something
+   * you can act on (an input, a button, a chip). A control's border is often
+   * the only thing that shows where it is, so WCAG 1.4.11 asks 3:1 of it
+   * against what it sits on: ink at 50% measures 3.5:1 on white and on paper.
+   * (test/app/globals.test.ts keeps it honest.) */
+  --color-line: color-mix(in srgb, var(--color-ink) 10%, transparent);
+  --color-field: color-mix(in srgb, var(--color-ink) 50%, transparent);
+
+  /* The small tracked-caps label: eyebrows, group labels, facts. */
+  --text-label: 0.6875rem;
+  --text-label--line-height: 1rem;
+  --text-label--letter-spacing: 0.16em;
+}
+
+/* ==========================================================================
+ * 3. Shared base: the same in every app.
+ * ======================================================================== */
 
 /*
  * The focus ring every interactive element shares: two pixels of ink, set off
@@ -100,13 +129,11 @@ body {
 }
 
 /*
- * Printing: the site header and footer have no place on paper (a printed recipe
- * is just the recipe). This lives here, not in a <style> on the page, because
- * the Content Security Policy refuses inline styles.
+ * Printing: the skip link has no place on paper, and the page prints on white.
+ * This lives here, not in a <style> on the page, because the Content Security
+ * Policy refuses inline styles.
  */
 @media print {
-  header,
-  footer,
   a[href='#main'] {
     display: none;
   }
@@ -165,6 +192,21 @@ body {
     html:has(dialog:modal) {
       overflow: hidden;
     }
+  }
+}
+
+/* ==========================================================================
+ * 4. This app's styles.
+ * ======================================================================== */
+
+/*
+ * Printing: the site header and footer have no place on paper (a printed recipe
+ * is just the recipe).
+ */
+@media print {
+  header,
+  footer {
+    display: none;
   }
 }
 

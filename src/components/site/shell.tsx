@@ -5,6 +5,7 @@ import { getShellUser } from '@/lib/auth/shell-user';
 import { MAIN_MIN_HEIGHT_CLASS } from './header-height';
 import { SiteFooter } from './site-footer';
 import { SiteHeader } from './site-header';
+import { SkipLink } from './skip-link';
 
 /** The frame shared by every page: skip link, header, content and footer. */
 export async function SiteShell({
@@ -13,12 +14,7 @@ export async function SiteShell({
   const user = await getShellUser();
   return (
     <>
-      <a
-        href="#main"
-        className="sr-only z-50 bg-ink px-4 py-2 text-sm font-semibold text-white focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:rounded-control"
-      >
-        Skip to content
-      </a>
+      <SkipLink />
       <SiteHeader user={user} />
       {/*
         The content area is at least as tall as the screen below the header, so

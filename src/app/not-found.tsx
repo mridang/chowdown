@@ -4,15 +4,17 @@ import type { ReactElement } from 'react';
 import { BarePage, MessagePage } from '@/components/site/bare-page';
 import { ButtonLink } from '@/components/ui/button';
 
-/** The tab title, and a note to crawlers that this is not a page to index. */
+import { NOT_FOUND_LINK, NOT_FOUND_NOTE } from './_brand';
+
+/** The tab title (the layout's template adds the app's name), and a note to crawlers that this is not a page to index. */
 export const metadata: Metadata = {
-  title: 'Page not found · chowdown',
+  title: 'Page not found',
   robots: { index: false },
 };
 
 /**
- * What anyone sees for an address that leads nowhere (and for a recipe that
- * does not exist): a plain explanation and two ways back.
+ * What anyone sees for an address that leads nowhere: a plain explanation and
+ * a way back (or two, if the app has somewhere else worth sending people).
  */
 export default function NotFound(): ReactElement {
   return (
@@ -25,16 +27,19 @@ export default function NotFound(): ReactElement {
             <ButtonLink href="/" size="lg">
               Back to the home page
             </ButtonLink>
-            <ButtonLink href="/app" variant="outline" size="lg">
-              Browse recipes
-            </ButtonLink>
+            {NOT_FOUND_LINK ? (
+              <ButtonLink
+                href={NOT_FOUND_LINK.href}
+                variant="outline"
+                size="lg"
+              >
+                {NOT_FOUND_LINK.label}
+              </ButtonLink>
+            ) : null}
           </>
         }
       >
-        <p>
-          The link may be out of date, or the recipe may have been moved or
-          deleted.
-        </p>
+        <p>{NOT_FOUND_NOTE}</p>
       </MessagePage>
     </BarePage>
   );

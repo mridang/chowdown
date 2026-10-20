@@ -6,7 +6,7 @@ import { ButtonLink } from '@/components/ui/button';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 
 /** The tab title for the not-found page. */
-export const metadata: Metadata = { title: 'Recipe not found · chowdown' };
+export const metadata: Metadata = { title: 'Recipe not found' };
 
 /**
  * Shown when a recipe link points at nothing: the recipe was deleted, moved out

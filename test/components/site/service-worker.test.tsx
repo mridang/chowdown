@@ -3,6 +3,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import {
   registerWhenLoaded,
   ServiceWorker,
+  WORKER_URL,
   type WorkerEnvironment,
 } from '../../../src/components/site/service-worker';
 import { html } from '../render';
@@ -32,7 +33,7 @@ describe('registerWhenLoaded', () => {
   it('registers at once when the page has already loaded', () => {
     const env = browser({ readyState: 'complete' });
     registerWhenLoaded(env);
-    expect(env.register).toHaveBeenCalledWith('/sw.js', { scope: '/' });
+    expect(env.register).toHaveBeenCalledWith(WORKER_URL, { scope: '/' });
   });
 
   it('waits for the load event when the page is still loading', () => {

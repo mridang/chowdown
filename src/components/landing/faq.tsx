@@ -6,7 +6,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Container, Eyebrow, Heading, Section } from '@/components/ui/layout';
+import { Container, Eyebrow, Heading } from '@/components/ui/layout';
+import { Section } from '@/components/ui/section';
 
 /** The questions and their answers, in the order they are shown. */
 export const FAQ = [

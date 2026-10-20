@@ -6,7 +6,7 @@
  * information can be trusted.
  */
 
-import { SECURITY_CONTACT, SECURITY_POLICY_URL, SITE_URL } from './site';
+import { BRAND_URL, SECURITY_CONTACT, SECURITY_POLICY_URL } from './_brand';
 
 /**
  * How long the file claims to be valid. RFC 9116 section 2.5.5 recommends
@@ -25,7 +25,7 @@ export function securityTxt(now: Date): string {
     `Contact: ${SECURITY_CONTACT}`,
     `Expires: ${expires.toISOString()}`,
     'Preferred-Languages: en',
-    `Canonical: ${SITE_URL}/.well-known/security.txt`,
+    `Canonical: ${BRAND_URL}/.well-known/security.txt`,
     `Policy: ${SECURITY_POLICY_URL}`,
     '',
   ].join('\n');

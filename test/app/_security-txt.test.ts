@@ -1,10 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { BRAND_URL, SECURITY_POLICY_URL } from '../../src/app/_brand';
 import {
   SECURITY_TXT_VALID_DAYS,
   securityTxt,
-} from '../../src/lib/security-txt';
-import { SECURITY_POLICY_URL, SITE_URL } from '../../src/lib/site';
+} from '../../src/app/_security-txt';
 
 describe('securityTxt', () => {
   const now = new Date('2026-10-18T00:00:00Z');
@@ -29,14 +29,12 @@ describe('securityTxt', () => {
   });
 
   it('names its own canonical address', () => {
-    expect(field('Canonical')).toBe(
-      'https://chowdown.apps.mrida.ng/.well-known/security.txt',
-    );
+    expect(field('Canonical')).toBe(`${BRAND_URL}/.well-known/security.txt`);
   });
 
   it('points at a disclosure policy on this site, not at the privacy notice', () => {
     expect(field('Policy')).toBe(SECURITY_POLICY_URL);
-    expect(field('Policy')?.startsWith(`${SITE_URL}/`)).toBe(true);
+    expect(field('Policy')?.startsWith(`${BRAND_URL}/`)).toBe(true);
     expect(field('Policy')).not.toContain('/privacy');
   });
 

@@ -2,12 +2,13 @@ import { describe, expect, it } from '@jest/globals';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
+import { BRAND_NAME } from '../../src/app/_brand';
 import { pngIsOpaque, pngSize } from '../png';
 
 const app = (name: string) => path.join(process.cwd(), 'src/app', name);
 
-// The icon and social-image files under src/app are generated binaries
-// (scripts/build-icons.mjs), so one group checks them all.
+// The icon and social-image files under src/app are binaries, so one group
+// checks them all.
 describe('the icon and social images in src/app', () => {
   it('has a favicon.ico holding 16, 32 and 48 pixel images', () => {
     const ico = readFileSync(app('favicon.ico'));
@@ -46,9 +47,21 @@ describe('the icon and social images in src/app', () => {
     },
   );
 
-  it('describes the card in the alt text of both social images', () => {
+  it('describes the card in the alt text of both social images, which name the app', () => {
     for (const name of ['opengraph-image.alt.txt', 'twitter-image.alt.txt']) {
-      expect(readFileSync(app(name), 'utf8')).toContain('Your recipes.');
+      expect(readFileSync(app(name), 'utf8')).toContain(BRAND_NAME);
     }
+  });
+
+  it('has the same alt text for both social images, as they are the same card', () => {
+    expect(readFileSync(app('twitter-image.alt.txt'), 'utf8')).toBe(
+      readFileSync(app('opengraph-image.alt.txt'), 'utf8'),
+    );
+  });
+
+  it('has a scalable icon', () => {
+    expect(readFileSync(app('icon.svg'), 'utf8')).toMatch(
+      /^<svg [^>]*viewBox=/,
+    );
   });
 });

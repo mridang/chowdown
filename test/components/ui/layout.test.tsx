@@ -3,13 +3,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  Container,
-  Eyebrow,
-  Heading,
-  Section,
-  SectionHeader,
-} from '../../../src/components/ui/layout';
+import { Container, Eyebrow, Heading } from '../../../src/components/ui/layout';
 import { classOf, html } from '../render';
 
 describe('Eyebrow', () => {
@@ -17,7 +11,7 @@ describe('Eyebrow', () => {
     const out = html(<Eyebrow>Your collection</Eyebrow>);
     expect(out.startsWith('<p')).toBe(true);
     expect(classOf(out, 'p')).toContain('uppercase');
-    expect(classOf(out, 'p')).toContain('text-ember');
+    expect(classOf(out, 'p')).toContain('text-accent');
   });
 
   it('takes its colour from the tone, one at a time', () => {
@@ -25,7 +19,7 @@ describe('Eyebrow', () => {
       'text-ink',
     );
     expect(classOf(html(<Eyebrow tone="ink">x</Eyebrow>), 'p')).not.toContain(
-      'text-ember',
+      'text-accent',
     );
     expect(classOf(html(<Eyebrow tone="subtle">x</Eyebrow>), 'p')).toContain(
       'text-subtle',
@@ -59,7 +53,7 @@ describe('Eyebrow', () => {
           for (const match of source.matchAll(
             /<Eyebrow\b[^>]*className="([^"]*)"/g,
           )) {
-            if (/\btext-(ink|ember|subtle|muted|white)\b/.test(match[1]!)) {
+            if (/\btext-(ink|accent|subtle|muted|on-ink)\b/.test(match[1]!)) {
               offenders.push(`${file}: ${match[1]}`);
             }
           }
@@ -99,47 +93,8 @@ describe('Heading', () => {
   });
 });
 
-describe('SectionHeader', () => {
-  it('shows the eyebrow above the title, and an action beside them', () => {
-    const out = html(
-      <SectionHeader
-        eyebrow="Weeknight"
-        title="Easy and quick"
-        action={<a href="/all">All</a>}
-      />,
-    );
-    expect(out.indexOf('Weeknight')).toBeLessThan(
-      out.indexOf('Easy and quick'),
-    );
-    expect(out).toContain('href="/all"');
-  });
-
-  it('has no eyebrow when none is given', () => {
-    expect(html(<SectionHeader title="Only a title" />)).not.toContain(
-      'uppercase',
-    );
-  });
-});
-
 describe('Container', () => {
   it('centres the content in the page column', () => {
     expect(classOf(html(<Container>x</Container>), 'div')).toContain('mx-auto');
-  });
-});
-
-describe('Section', () => {
-  it('is a landmark band that header links can jump to', () => {
-    const out = html(<Section id="faq">x</Section>);
-    expect(out.startsWith('<section')).toBe(true);
-    expect(out).toContain('id="faq"');
-  });
-
-  it('is the page colour unless told otherwise', () => {
-    expect(classOf(html(<Section>x</Section>), 'section')).toContain(
-      'bg-paper',
-    );
-    expect(
-      classOf(html(<Section surface="white">x</Section>), 'section'),
-    ).toContain('bg-white');
   });
 });

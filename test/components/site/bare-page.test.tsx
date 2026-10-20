@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { BRAND_NAME } from '../../../src/app/_brand';
 import { BarePage, MessagePage } from '../../../src/components/site/bare-page';
 import { html } from '../render';
 
@@ -8,12 +9,14 @@ describe('BarePage', () => {
     const out = html(<BarePage>hello</BarePage>);
     expect(out).toContain('<main id="main"');
     expect(out).toContain('href="/"');
-    expect(out).toContain('chowdown');
+    expect(out).toContain(BRAND_NAME);
     expect(out).toContain('hello');
   });
 
-  it('takes the header row height from the shared constant', () => {
-    expect(html(<BarePage>x</BarePage>)).toContain('h-[4.25rem]');
+  it('starts with a skip link to the main landmark', () => {
+    expect(html(<BarePage>x</BarePage>)).toMatch(
+      /^<div[^>]*><a href="#main"[^>]*>Skip to content<\/a>/,
+    );
   });
 });
 

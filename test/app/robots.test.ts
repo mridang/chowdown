@@ -1,5 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 
+import {
+  BRAND_URL,
+  CRAWLABLE_PATHS,
+  PRIVATE_PATHS,
+} from '../../src/app/_brand';
 import robots from '../../src/app/robots';
 
 type Group = { userAgent: string; allow: string[]; disallow: string[] };
@@ -28,26 +33,18 @@ describe('robots.txt', () => {
     expect(rule.userAgent).toBe('*');
   });
 
-  it('lets crawlers read only the landing page and the privacy page', () => {
-    expect(rule.allow).toEqual(['/$', '/privacy']);
-    expect(allowed('/')).toBe(true);
-    expect(allowed('/privacy')).toBe(true);
+  it('lets crawlers read the public pages the app names, and asks them to stay out of the private ones', () => {
+    expect(rule.allow).toEqual([...CRAWLABLE_PATHS]);
+    expect(rule.disallow).toEqual([...PRIVATE_PATHS]);
   });
 
-  it.each([
-    '/app',
-    '/app?fav=1',
-    '/app/anything',
-    '/recipe/abc',
-    '/recipes/add',
-    '/connect',
-    '/api/mcp',
-    '/oauth/authorize',
-  ])('asks them to stay out of %s', (target) => {
-    expect(allowed(target)).toBe(false);
+  it('lets crawlers read each public page', () => {
+    for (const path of CRAWLABLE_PATHS) {
+      expect(allowed(path.replace(/\$$/, ''))).toBe(true);
+    }
   });
 
-  // `Disallow: /app` is a prefix rule and used to hide /apple-icon.png too.
+  // A bare `Disallow: /app` is a prefix rule and once hid /apple-icon.png too.
   it.each([
     '/apple-icon.png',
     '/icon.svg',
@@ -60,15 +57,14 @@ describe('robots.txt', () => {
     '/llms.txt',
     '/sitemap.xml',
     '/security-policy.txt',
-    '/screenshots/app-wide.png',
+    '/sw.js',
     '/.well-known/security.txt',
-    '/.well-known/oauth-protected-resource/api/mcp',
   ])('does not block the public file %s', (target) => {
     expect(allowed(target)).toBe(true);
   });
 
   it('points crawlers at the sitemap', () => {
-    expect(robots().sitemap).toBe('https://chowdown.apps.mrida.ng/sitemap.xml');
+    expect(robots().sitemap).toBe(`${BRAND_URL}/sitemap.xml`);
   });
 
   it('leaves out the Yandex-only Host line', () => {

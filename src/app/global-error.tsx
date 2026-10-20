@@ -4,6 +4,7 @@ import type { ReactElement } from 'react';
 
 import { buttonClass } from '@/components/ui/button';
 
+import { BRAND_NAME, ERROR_REASSURANCE } from './_brand';
 import './globals.css';
 
 /**
@@ -27,21 +28,21 @@ export default function GlobalError({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full flex-col bg-paper font-sans text-ink">
-        <title>Something went wrong · chowdown</title>
-        <div className="h-1.5 bg-marigold" />
+        <title>{`Something went wrong · ${BRAND_NAME}`}</title>
+        <div className="h-1.5 bg-brand" />
         <main
           id="main"
           className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center px-4 py-16 sm:px-6"
         >
-          <p className="text-label font-semibold text-ember uppercase">
+          <p className="text-label font-semibold text-accent uppercase">
             Something went wrong
           </p>
           <h1 className="mt-3 text-4xl leading-tight font-bold tracking-tight sm:text-5xl">
             That didn&apos;t work
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-muted">
-            chowdown hit a problem it could not recover from. Try again in a
-            moment, and your recipes will still be in your Drive either way.
+            {BRAND_NAME} hit a problem it could not recover from.{' '}
+            {ERROR_REASSURANCE}
           </p>
           {error.digest ? (
             <p className="mt-3 font-mono text-sm text-subtle">

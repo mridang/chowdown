@@ -5,6 +5,8 @@ import type { ReactElement } from 'react';
 import { BarePage, MessagePage } from '@/components/site/bare-page';
 import { Button, ButtonLink } from '@/components/ui/button';
 
+import { ERROR_REASSURANCE } from './_brand';
+
 /**
  * The page shown when something breaks while a page is being built or run.
  * "Try again" asks Next to re-render the page, which clears a passing hiccup;
@@ -36,10 +38,7 @@ export default function ErrorPage({
           </>
         }
       >
-        <p>
-          Something went wrong on our side. Try again in a moment, and your
-          recipes will still be in your Drive either way.
-        </p>
+        <p>Something went wrong on our side. {ERROR_REASSURANCE}</p>
         {error.digest ? (
           <p className="mt-3 font-mono text-sm text-subtle">
             Reference: {error.digest}
