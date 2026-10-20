@@ -10,7 +10,7 @@
 import { decryptSecret } from '../crypto';
 import type { User } from '../db/users';
 import { errorMessage, getEnv, logError } from '../util';
-import { revokeToken } from './google-oauth';
+import { revokeToken } from './drive-oauth';
 
 /**
  * Revoke the person's stored Drive refresh token at Google, if they have one.

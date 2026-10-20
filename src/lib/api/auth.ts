@@ -15,7 +15,7 @@ import {
   getSessionUid,
 } from '../auth/current-user';
 import type { User } from '../db/users';
-import { isSameOriginPost } from '../oauth/csrf';
+import { isSameOriginPost } from '../auth/csrf';
 import { appOrigin } from '../util/origin';
 import { problems } from './problem';
 

@@ -12,8 +12,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getCurrentUser, getSession } from '@/lib/auth/current-user';
 import { isDriveConnected } from '@/lib/auth/drive-access';
+import { buildDriveAuthUrl } from '@/lib/auth/drive-oauth';
 import { startFlowCookies } from '@/lib/auth/flow-cookies';
-import { buildAuthUrl } from '@/lib/auth/google-oauth';
 import { newState } from '@/lib/auth/oauth-state';
 import { safeReturnPath } from '@/lib/auth/return-to';
 import { setSessionCookie } from '@/lib/auth/session-cookie';
@@ -54,11 +54,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const state = newState('drive');
   const response = NextResponse.redirect(
-    buildAuthUrl({
+    buildDriveAuthUrl({
       clientId: env.GOOGLE_OAUTH_CLIENT_ID,
       redirectUri: `${origin}/api/auth/callback`,
       state,
-      purpose: 'drive',
       loginHint: user.email,
     }),
   );

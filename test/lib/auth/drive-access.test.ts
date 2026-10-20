@@ -4,6 +4,7 @@ import {
   DriveNotConnectedError,
   driveAttemptOf,
   driveConnectHref,
+  driveResultPath,
   isAuthFailure,
   isDriveConnected,
   sessionHintStale,
@@ -124,5 +125,12 @@ describe('sessionHintStale', () => {
   it('treats a cookie from before the hint existed as stale, to reissue it once', () => {
     expect(sessionHintStale(undefined, true)).toBe(true);
     expect(sessionHintStale(undefined, false)).toBe(true);
+  });
+});
+
+describe('driveResultPath', () => {
+  it('lands on the recipe list with a fixed reason', () => {
+    expect(driveResultPath('denied')).toBe('/app?drive=denied');
+    expect(driveResultPath('error')).toBe('/app?drive=error');
   });
 });

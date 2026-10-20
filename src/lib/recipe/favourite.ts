@@ -8,7 +8,7 @@
  * make a heart wait), which keeps the favourite attached to the recipe in Drive.
  */
 
-import { getUserAccessToken } from '../auth/current-user';
+import { getUserAccessToken } from '../auth/user-access-token';
 import { isDriveConnected } from '../auth/drive-access';
 import type { Database } from '../db/client';
 import { isFavourite, setFavourite } from '../db/favourites';

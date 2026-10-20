@@ -7,10 +7,8 @@
 
 import { NextResponse } from 'next/server';
 
-import { problems } from '@/lib/api/problem';
-import { SESSION_COOKIE } from '@/lib/auth/session';
-import { isSameOriginPost } from '@/lib/oauth/csrf';
-import { appOrigin } from '@/lib/util/origin';
+import { SESSION_COOKIE } from '@/lib/auth/app';
+import { crossSiteRefusal } from '@/lib/auth/guard';
 
 /**
  * `DELETE /api/sessions/self`: sign out by clearing the session cookie. Answers
@@ -18,9 +16,9 @@ import { appOrigin } from '@/lib/util/origin';
  * cannot sign people out).
  */
 export async function DELETE(request: Request): Promise<NextResponse> {
-  // Signing someone out from another site is a nuisance attack; refuse it.
-  if (!isSameOriginPost(request.headers, appOrigin(request))) {
-    return problems.forbidden('Cross-site requests are not allowed.');
+  const refused = crossSiteRefusal(request);
+  if (refused) {
+    return refused;
   }
   const response = new NextResponse(null, { status: 204 });
   response.cookies.delete(SESSION_COOKIE);

@@ -9,17 +9,11 @@
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
-import {
-  getCurrentUser,
-  getSession,
-  getUserAccessToken,
-} from '../auth/current-user';
+import { ENDED_SESSION_PATH } from '../auth/app';
+import { getCurrentUser, getSession } from '../auth/current-user';
 import { DriveNotConnectedError, isDriveConnected } from '../auth/drive-access';
-import {
-  ENDED_SESSION_PATH,
-  sessionIsCurrent,
-  type SessionPayload,
-} from '../auth/session';
+import { sessionIsCurrent, type SessionPayload } from '../auth/session';
+import { getUserAccessToken } from '../auth/user-access-token';
 import type { Database } from '../db/client';
 import { getRecipePageRows, type RecipePageRows } from '../db/recipe-page';
 import { claimDriveSync, type User } from '../db/users';

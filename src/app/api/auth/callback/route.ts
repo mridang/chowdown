@@ -1,161 +1,49 @@
 /**
- * Google's way back into the app, for both asks.
+ * Google's way back into the app.
  *
  * Signing in: validates the `state`, exchanges the code, loads the identity,
- * upserts the user, issues the session cookie and sends them on (to `/app`
- * unless they came from somewhere specific). No Drive access is involved.
+ * records the user, issues the session cookie and sends them on (to the app's
+ * landing page unless they came from somewhere specific).
  *
- * Connecting Drive: the same checks, for someone already signed in. It confirms
- * the Google account that approved is the signed-in one, that Drive was
- * actually granted (Google lets people untick it), seals the refresh token,
- * makes sure the app-managed "Recipes" folder exists and refreshes the session.
+ * An app can have other asks that come back the same way (see `EXTRA_PURPOSES`
+ * in `app.ts`); the `state` says which one this was, and the app's own flow
+ * (see `hooks.ts`) finishes it.
  *
  * Any failure sends them back with a fixed flag rather than leaking details.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { finishFlow } from '@/lib/auth/flow-cookies';
-import { checkDriveGrant } from '@/lib/auth/drive-grant';
 import {
-  exchangeCode,
-  getUserInfo,
-  type AuthPurpose,
-  type GoogleUser,
-  type TokenResponse,
-} from '@/lib/auth/google-oauth';
-import { checkState, STATE_COOKIE } from '@/lib/auth/oauth-state';
-import {
-  driveResultPath,
   RETURN_COOKIE,
-  safeReturnPath,
-} from '@/lib/auth/return-to';
+  SIGN_IN_FAILED_PATH,
+  STATE_COOKIE,
+} from '@/lib/auth/app';
+import { finishFlow } from '@/lib/auth/flow-cookies';
+import { exchangeCode, getUserInfo } from '@/lib/auth/google-oauth';
+import { OTHER_FLOWS } from '@/lib/auth/hooks';
+import { SIGN_IN_PURPOSE, checkState } from '@/lib/auth/oauth-state';
+import { safeReturnPath } from '@/lib/auth/return-to';
 import {
-  SESSION_COOKIE,
-  sessionIsCurrent,
-  verifySessionToken,
-} from '@/lib/auth/session';
-import { setSessionCookie } from '@/lib/auth/session-cookie';
-import { encryptSecret } from '@/lib/crypto';
-import type { Database } from '@/lib/db/client';
-import {
-  getUserById,
-  setRecipesFolderId,
-  setRefreshToken,
-  upsertUser,
-} from '@/lib/db/users';
-import { ensureRecipesFolder } from '@/lib/drive/drive-client';
-import { getDatabase, getEnv, logError, logWarn } from '@/lib/util';
+  completeSignIn,
+  missingSignInSettings,
+  type FlowContext,
+} from '@/lib/auth/sign-in';
+import { getEnv, logError, logWarn } from '@/lib/util';
 import { appOrigin } from '@/lib/util/origin';
 
-/** Where a round trip stands: who is asking, and where it came from. */
-interface Callback {
-  readonly request: NextRequest;
-  readonly env: CloudflareEnv;
-  /** This site's public origin. */
-  readonly origin: string;
-  /** Where to land afterwards, from the cookie set when the trip began. */
-  readonly returnTo: string | undefined;
-}
-
 /** Where to send someone whose round trip failed, by what it was for. */
-function failurePath(purpose: AuthPurpose): string {
-  return purpose === 'drive' ? driveResultPath('error') : '/?error=auth';
-}
-
-/** Finish a sign-in: record the person, issue their session and send them on. */
-async function completeSignIn(
-  { env, origin, returnTo }: Callback,
-  info: GoogleUser,
-  db: Database,
-): Promise<NextResponse> {
-  if (!info.email) {
-    // Signing in asked for the email scope, so Google not sharing one is a
-    // failed sign-in, not an account without an address.
-    throw new Error('Google did not share an email address');
-  }
-  const user = await upsertUser(db, {
-    google_sub: info.sub,
-    email: info.email,
-    name: info.name,
-    picture: info.picture,
-  });
-  const response = finishFlow(origin, returnTo ?? '/app');
-  await setSessionCookie(response, user, {
-    secret: env.SESSION_SECRET,
-    secure: origin.startsWith('https'),
-  });
-  return response;
+function failurePath(purpose: string, kind: 'error' | 'denied'): string {
+  return purpose === SIGN_IN_PURPOSE
+    ? SIGN_IN_FAILED_PATH
+    : (OTHER_FLOWS[purpose]?.failurePath(kind) ?? SIGN_IN_FAILED_PATH);
 }
 
 /**
- * Finish connecting Drive: only for the person who is signed in, and only if
- * the Google account that just approved is theirs.
- */
-async function completeDriveConnect(
-  { request, env, origin, returnTo }: Callback,
-  info: GoogleUser,
-  tokens: TokenResponse,
-  db: Database,
-): Promise<NextResponse> {
-  const session = await verifySessionToken(
-    request.cookies.get(SESSION_COOKIE)?.value ?? '',
-    env.SESSION_SECRET,
-  );
-  const found = session ? await getUserById(db, session.uid) : undefined;
-  // A session the person has since ended (signed out everywhere) cannot be
-  // used to attach a Drive login to the account.
-  const user =
-    session && found && sessionIsCurrent(session, found.session_epoch)
-      ? found
-      : undefined;
-  if (!user) {
-    return finishFlow(origin, '/?error=auth');
-  }
-  const grant = checkDriveGrant({
-    approvedBy: info.sub,
-    signedInAs: user.google_sub,
-    tokens,
-  });
-  if (!grant.ok) {
-    if (grant.log) {
-      logError({ event: 'auth.drive_grant_rejected', detail: grant.log });
-    }
-    return finishFlow(origin, driveResultPath(grant.result));
-  }
-  // The fresh access token is used directly (no refresh round trip). The
-  // folder comes first so a failure here leaves nothing half-connected.
-  const recipesFolderId =
-    user.recipes_folder_id ?? (await ensureRecipesFolder(tokens.access_token));
-  if (!user.recipes_folder_id) {
-    await setRecipesFolderId(db, user.id, recipesFolderId);
-  }
-  await setRefreshToken(
-    db,
-    user.id,
-    await encryptSecret(grant.refreshToken, env.TOKEN_ENCRYPTION_KEY),
-  );
-  const response = finishFlow(origin, returnTo ?? '/app');
-  // `user` is the row from before the folder existed: the cookie needs the new id.
-  await setSessionCookie(
-    response,
-    { ...user, recipes_folder_id: recipesFolderId },
-    {
-      secret: env.SESSION_SECRET,
-      secure: origin.startsWith('https'),
-      drive: true,
-      exp: session?.exp,
-    },
-  );
-  return response;
-}
-
-/**
- * `GET /api/auth/callback`: where Google sends the browser back after sign-in
- * or Drive consent. Open to everyone, but only a request whose `state` matches
- * the cookie set when the trip began is acted on. Always answers a redirect: on
- * to the app on success, or back with a fixed flag (`/?error=auth`, or
- * `/app?drive=denied|error`) on any failure.
+ * `GET /api/auth/callback`: where Google sends the browser back after consent.
+ * Open to everyone, but only a request whose `state` matches the cookie set
+ * when the trip began is acted on. Always answers a redirect: on to the app on
+ * success, or back with a fixed flag on any failure.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const env = getEnv();
@@ -180,20 +68,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // wipe the state of a sign-in that is genuinely in flight. The label in the
     // value is only used to pick the wording, never trusted.
     return NextResponse.redirect(
-      `${origin}${checked.claimed === 'drive' ? driveResultPath('error') : '/?error=auth'}`,
+      `${origin}${failurePath(checked.claimed ?? SIGN_IN_PURPOSE, 'error')}`,
     );
   }
   const { purpose } = checked;
   // Closed the Google window or pressed Cancel.
   if (!code) {
     logWarn({ event: 'auth.callback.no_code', purpose, oauthError });
-    return finishFlow(
-      origin,
-      purpose === 'drive' ? driveResultPath('denied') : '/?error=auth',
-    );
+    return finishFlow(origin, failurePath(purpose, 'denied'));
+  }
+  // Without these nothing can be signed or exchanged: stop before spending the code.
+  const missing = missingSignInSettings(env);
+  if (missing.length > 0) {
+    logError({ event: 'auth.callback.not_configured', missing });
+    return finishFlow(origin, failurePath(purpose, 'error'));
   }
 
-  const callback: Callback = {
+  const context: FlowContext = {
     request,
     env,
     origin,
@@ -207,15 +98,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       redirectUri: `${origin}/api/auth/callback`,
     });
     const info = await getUserInfo(tokens.access_token);
-    const db = getDatabase();
-    return purpose === 'signin'
-      ? await completeSignIn(callback, info, db)
-      : await completeDriveConnect(callback, info, tokens, db);
+    if (purpose === SIGN_IN_PURPOSE) {
+      return await completeSignIn(context, info);
+    }
+    const other = OTHER_FLOWS[purpose];
+    if (!other) {
+      throw new Error(`No flow is registered for "${purpose}"`);
+    }
+    return await other.complete(context, info, tokens);
   } catch (err) {
     logError({
       event: 'auth.callback.failed',
       error: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
     });
-    return finishFlow(origin, failurePath(purpose));
+    return finishFlow(origin, failurePath(purpose, 'error'));
   }
 }

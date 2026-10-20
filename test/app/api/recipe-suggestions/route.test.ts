@@ -49,7 +49,7 @@ const topSimilar = jest.fn<
   ) => readonly DriveFile[]
 >((_rows, _vector, files) => files.slice(0, 1));
 
-jest.unstable_mockModule('../../../../src/lib/auth/current-user', () => ({
+jest.unstable_mockModule('../../../../src/lib/auth/user-access-token', () => ({
   getUserAccessToken,
 }));
 jest.unstable_mockModule('../../../../src/lib/drive/drive-client', () => ({

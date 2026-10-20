@@ -4,7 +4,7 @@
  * Wires {@link mutateRecipe} to the real Drive and D1 for a signed-in user.
  */
 
-import { getUserAccessToken } from '../auth/current-user';
+import { getUserAccessToken } from '../auth/user-access-token';
 import type { Database } from '../db/client';
 import { getRecipeByFileId } from '../db/recipes';
 import type { User } from '../db/users';

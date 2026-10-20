@@ -21,7 +21,7 @@
  * can relay. Only a mistake in this code escapes as an exception.
  */
 
-import { getUserAccessToken } from '../auth/current-user';
+import { getUserAccessToken } from '../auth/user-access-token';
 import { DriveNotConnectedError } from '../auth/drive-access';
 import type { User } from '../db/users';
 import {

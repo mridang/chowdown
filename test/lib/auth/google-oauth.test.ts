@@ -1,56 +1,51 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import {
-  DRIVE_SCOPE,
+  SIGN_IN_SCOPES,
   buildAuthUrl,
   exchangeCode,
   getUserInfo,
-  grantedDrive,
-  refreshAccessToken,
-  revokeToken,
+  isAccessTokenResponse,
+  postToken,
 } from '../../../src/lib/auth/google-oauth';
 
 const base = {
   clientId: 'client-id',
-  redirectUri: 'https://chowdown.test/api/auth/callback',
+  redirectUri: 'https://app.test/api/auth/callback',
   state: 'abc',
+  scopes: SIGN_IN_SCOPES,
 };
 
 describe('buildAuthUrl', () => {
   it('asks only who the person is when signing in', () => {
-    const url = new URL(buildAuthUrl({ ...base, purpose: 'signin' }));
+    const url = new URL(buildAuthUrl(base));
     expect(url.searchParams.get('scope')).toBe('openid email profile');
-    expect(url.searchParams.get('scope')).not.toContain('drive');
   });
 
-  it('asks for no refresh token when signing in', () => {
-    const url = new URL(buildAuthUrl({ ...base, purpose: 'signin' }));
+  it('asks for nothing else unless told to', () => {
+    const url = new URL(buildAuthUrl(base));
     expect(url.searchParams.get('access_type')).toBeNull();
     expect(url.searchParams.get('prompt')).toBeNull();
     expect(url.searchParams.get('include_granted_scopes')).toBeNull();
   });
 
-  it('asks for Drive and a refresh token when connecting Drive', () => {
-    const url = new URL(buildAuthUrl({ ...base, purpose: 'drive' }));
-    expect(url.searchParams.get('scope')).toBe(`openid ${DRIVE_SCOPE}`);
-    expect(url.searchParams.get('access_type')).toBe('offline');
-    expect(url.searchParams.get('prompt')).toBe('consent');
-    expect(url.searchParams.get('include_granted_scopes')).toBe('true');
-  });
-
-  it('points the account chooser at the signed-in account when connecting Drive', () => {
+  it('adds the extra parameters an ask needs, after the scope and before the state', () => {
     const url = new URL(
-      buildAuthUrl({ ...base, purpose: 'drive', loginHint: 'a@b.com' }),
+      buildAuthUrl({ ...base, extra: { access_type: 'offline' } }),
     );
-    expect(url.searchParams.get('login_hint')).toBe('a@b.com');
-    const signIn = new URL(
-      buildAuthUrl({ ...base, purpose: 'signin', loginHint: 'a@b.com' }),
-    );
-    expect(signIn.searchParams.get('login_hint')).toBeNull();
+    expect(url.searchParams.get('access_type')).toBe('offline');
+    expect([...url.searchParams.keys()]).toEqual([
+      'client_id',
+      'redirect_uri',
+      'response_type',
+      'scope',
+      'access_type',
+      'state',
+    ]);
   });
 
   it('carries the client, the callback address and the state', () => {
-    const url = new URL(buildAuthUrl({ ...base, purpose: 'drive' }));
+    const url = new URL(buildAuthUrl(base));
     expect(url.origin + url.pathname).toBe(
       'https://accounts.google.com/o/oauth2/v2/auth',
     );
@@ -58,22 +53,6 @@ describe('buildAuthUrl', () => {
     expect(url.searchParams.get('redirect_uri')).toBe(base.redirectUri);
     expect(url.searchParams.get('state')).toBe('abc');
     expect(url.searchParams.get('response_type')).toBe('code');
-  });
-});
-
-describe('grantedDrive', () => {
-  it('is true when the granted scopes include Drive', () => {
-    expect(grantedDrive(`openid ${DRIVE_SCOPE}`)).toBe(true);
-  });
-
-  it('is false when the person unticked Drive, or Google said nothing', () => {
-    expect(grantedDrive('openid email profile')).toBe(false);
-    expect(grantedDrive('')).toBe(false);
-    expect(grantedDrive(undefined)).toBe(false);
-  });
-
-  it('does not match a longer scope that merely starts the same way', () => {
-    expect(grantedDrive(`${DRIVE_SCOPE}.readonly`)).toBe(false);
   });
 });
 
@@ -93,7 +72,7 @@ describe('exchangeCode', () => {
     code: 'the-code',
     clientId: 'client-id',
     clientSecret: 'client-secret',
-    redirectUri: 'https://chowdown.test/api/auth/callback',
+    redirectUri: 'https://app.test/api/auth/callback',
   };
 
   it('posts the code as a form and returns the tokens', async () => {
@@ -112,7 +91,7 @@ describe('exchangeCode', () => {
       code: 'the-code',
       client_id: 'client-id',
       client_secret: 'client-secret',
-      redirect_uri: 'https://chowdown.test/api/auth/callback',
+      redirect_uri: 'https://app.test/api/auth/callback',
       grant_type: 'authorization_code',
     });
   });
@@ -127,37 +106,6 @@ describe('exchangeCode', () => {
   it('throws when the answer has no access token', async () => {
     answerWith({ nothing: true });
     await expect(exchangeCode(params)).rejects.toThrow(/unexpected response/);
-  });
-});
-
-describe('refreshAccessToken', () => {
-  const params = {
-    refreshToken: 'rt',
-    clientId: 'client-id',
-    clientSecret: 'client-secret',
-  };
-
-  it('posts the refresh token and returns the new access token', async () => {
-    const fetchSpy = answerWith({ access_token: 'new', expires_in: 3599 });
-    await expect(refreshAccessToken(params)).resolves.toEqual({
-      access_token: 'new',
-      expires_in: 3599,
-    });
-    const form = new URLSearchParams(String(fetchSpy.mock.calls[0]?.[1]?.body));
-    expect(form.get('grant_type')).toBe('refresh_token');
-    expect(form.get('refresh_token')).toBe('rt');
-  });
-
-  it('keeps invalid_grant in the message so the login can be recognised as revoked', async () => {
-    answerWith({ error: 'invalid_grant' }, 400);
-    await expect(refreshAccessToken(params)).rejects.toThrow(/invalid_grant/);
-  });
-
-  it('throws when the answer is not a token', async () => {
-    answerWith({ access_token: 5, expires_in: 'soon' });
-    await expect(refreshAccessToken(params)).rejects.toThrow(
-      /Token refresh failed: unexpected response/,
-    );
   });
 });
 
@@ -176,10 +124,8 @@ describe('getUserInfo', () => {
     await expect(getUserInfo('at')).rejects.toThrow('userinfo failed: 401');
   });
 
-  it('accepts an answer with only `sub`, as a Drive-only grant gives', async () => {
-    // Connecting Drive asks for `openid` and `drive.file` only, so if the earlier
-    // identity grant is gone Google names the account and nothing else. That is
-    // all the Drive step needs.
+  it('accepts an answer with only `sub`, as a grant that carries just `openid` gives', async () => {
+    // Google then names the account and nothing else.
     answerWith({ sub: '1' });
     await expect(getUserInfo('at')).resolves.toEqual({ sub: '1' });
   });
@@ -195,20 +141,29 @@ describe('getUserInfo', () => {
   });
 });
 
-describe('revokeToken', () => {
-  it('posts the token to the revocation endpoint', async () => {
-    const fetchSpy = answerWith({});
-    await revokeToken('the-token');
-    const [url, init] = fetchSpy.mock.calls[0] ?? [];
-    expect(url).toBe('https://oauth2.googleapis.com/revoke');
-    expect(init?.method).toBe('POST');
-    expect(new URLSearchParams(String(init?.body)).get('token')).toBe(
-      'the-token',
+describe('postToken', () => {
+  it('posts the form and returns the parsed answer', async () => {
+    const fetchSpy = answerWith({ ok: 1 });
+    await expect(postToken({ a: 'b' }, 'Step')).resolves.toEqual({ ok: 1 });
+    expect(fetchSpy.mock.calls[0]?.[0]).toBe(
+      'https://oauth2.googleapis.com/token',
     );
   });
 
-  it('throws when Google refuses', async () => {
-    answerWith({}, 400);
-    await expect(revokeToken('t')).rejects.toThrow('400');
+  it('names the step when Google refuses', async () => {
+    answerWith({ error: 'nope' }, 400);
+    await expect(postToken({}, 'Step')).rejects.toThrow(/Step failed: 400/);
+  });
+});
+
+describe('isAccessTokenResponse', () => {
+  it('wants an access token and its lifetime', () => {
+    expect(isAccessTokenResponse({ access_token: 'a', expires_in: 1 })).toBe(
+      true,
+    );
+    expect(isAccessTokenResponse({ access_token: 5, expires_in: 'soon' })).toBe(
+      false,
+    );
+    expect(isAccessTokenResponse(null)).toBe(false);
   });
 });

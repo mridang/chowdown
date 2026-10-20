@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { checkDriveGrant } from '../../../src/lib/auth/drive-grant';
-import { DRIVE_SCOPE } from '../../../src/lib/auth/google-oauth';
+import { DRIVE_SCOPE } from '../../../src/lib/auth/drive-oauth';
 
 const granted = {
   approvedBy: 'sub-1',

@@ -18,7 +18,7 @@ import { driveFailure } from '@/lib/api/drive-failure';
 import { pageBody, parseLimit } from '@/lib/api/pagination';
 import { budgetRefusal } from '@/lib/api/daily-budget';
 import { problems } from '@/lib/api/problem';
-import { getUserAccessToken } from '@/lib/auth/current-user';
+import { getUserAccessToken } from '@/lib/auth/user-access-token';
 import { listRecipeFiles } from '@/lib/drive/drive-client';
 import { recipesFolderFor } from '@/lib/drive/recipes-folder';
 import { recipeDisplayName } from '@/lib/recipe/cook-text';

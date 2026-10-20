@@ -1,9 +1,9 @@
 /**
  * @packageDocumentation
  *
- * Cross-site request forgery check for the consent form. The session cookie is
- * `SameSite=Lax`, which already keeps it off cross-site POSTs; this is a second
- * layer that refuses a form posted from another site.
+ * Cross-site request forgery check for requests that change state. The session
+ * cookie is `SameSite=Lax`, which already keeps it off cross-site POSTs; this is
+ * a second layer that refuses a request made from another site.
  *
  * Browsers say where a request came from in `Sec-Fetch-Site` (reliable, and
  * not affected by referrer policy) and `Origin`. A page served with

@@ -6,11 +6,6 @@
  * page becomes an open redirect.
  */
 
-import type { DriveAttempt } from './drive-access';
-
-/** Short-lived cookie holding the path to return to after Google sign-in. */
-export const RETURN_COOKIE = 'chowdown_return_to';
-
 /**
  * The path if it is a safe same-site path (starts with a single `/`, no
  * backslashes or control characters), otherwise undefined.
@@ -29,13 +24,4 @@ export function safeReturnPath(
     }
   }
   return value;
-}
-
-/**
- * Where a failed Drive connection lands: the recipe list, which explains what
- * happened and offers to try again. The reason is a fixed word, never anything
- * Google sent back.
- */
-export function driveResultPath(result: DriveAttempt): string {
-  return `/app?drive=${result}`;
 }

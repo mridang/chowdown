@@ -20,7 +20,7 @@ import { problems } from '@/lib/api/problem';
 import { MAX_RECIPE_BODY_BYTES, parseNewRecipe } from '@/lib/api/recipe-input';
 import { listRecipes } from '@/lib/api/recipe-list';
 import { sendRecipe } from '@/lib/api/recipe-response';
-import { getUserAccessToken } from '@/lib/auth/current-user';
+import { getUserAccessToken } from '@/lib/auth/user-access-token';
 import type { User } from '@/lib/db/users';
 import { findRecipeBySourceUrl } from '@/lib/db/recipes';
 import { createRecipeFile, type DriveFile } from '@/lib/drive/drive-client';

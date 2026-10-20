@@ -7,9 +7,9 @@
  * stored in an httpOnly cookie. The HMAC (keyed by the `SESSION_SECRET`) makes
  * the token tamper-proof; a bad signature or past expiry yields no session.
  *
- * This is deliberately small: it carries identity only. Anything sensitive
- * (the Drive refresh token) stays encrypted in the database, never in the
- * cookie.
+ * This is deliberately small: it carries identity only, plus whatever hints an
+ * app adds (see `sessionClaims` in `app.ts`). Anything sensitive stays in the
+ * database, never in the cookie.
  */
 
 import {
@@ -17,23 +17,34 @@ import {
   bufferSource,
   bytesToBase64Url,
 } from '../util/base64';
+import { SESSION_COOKIE } from './app';
 
-/** Name of the session cookie. */
-export const SESSION_COOKIE = 'chowdown_session';
-
-/**
- * Where a page sends a person whose session cookie still verifies but has been
- * ended (they signed out everywhere, or the account was deleted). The route
- * clears the dead cookie before going home; sending them straight home would
- * find the cookie still there, take it for a signed-in visit, and come back.
- */
-export const ENDED_SESSION_PATH = '/api/auth/refresh';
+// Re-exported so the cookie's name is read from the same place as the token
+// functions that fill it.
+export { SESSION_COOKIE };
 
 /** How long a session stays valid, in seconds (30 days). */
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
+/**
+ * The key that signs sessions. There is no fallback: with no secret, signing in
+ * fails and no session is ever honoured, rather than signing with a value
+ * anyone could guess.
+ */
+export function requireSessionSecret(secret: string | undefined): string {
+  if (!secret) {
+    throw new Error('SESSION_SECRET is not set, so sessions cannot be signed');
+  }
+  return secret;
+}
+
+/** The extra claims an app adds (see `sessionClaims` in `app.ts`): plain values only. */
+interface ExtraClaims {
+  readonly [claim: string]: string | number | boolean | undefined;
+}
+
 /** The claims carried in the session token. */
-export interface SessionPayload {
+export interface SessionPayload extends ExtraClaims {
   /** `users.id` primary key. */
   readonly uid: number;
   readonly email: string;
@@ -45,21 +56,6 @@ export interface SessionPayload {
   readonly name?: string;
   readonly picture?: string;
   /**
-   * Whether Google Drive was connected when the session was issued, so the
-   * header can offer "Connect Google Drive" without a database read. A hint for
-   * the header only: pages that need Drive check the database. Absent on
-   * sessions issued before it was added; those fall back to a lookup.
-   */
-  readonly drive?: boolean;
-  /**
-   * The Drive id of the person's Recipes folder, if they have one, so the
-   * header's "Open Drive" button can open that folder without a database read.
-   * Like `drive`, a hint for the header only (it is checked as a Drive id
-   * before being put in a link). Absent on sessions issued before it was
-   * added, which then open Drive's home page instead.
-   */
-  readonly folder?: string;
-  /**
    * The session epoch the person had when this was issued (`users.session_epoch`).
    * The session is honoured only while the database still holds the same
    * number, which is how "sign out everywhere" ends a stolen or forgotten
@@ -69,6 +65,16 @@ export interface SessionPayload {
   /** Expiry as a Unix timestamp (seconds). */
   readonly exp: number;
 }
+
+/** What goes into a new token: the claims of a payload, with the expiry optional. */
+export type NewSession = ExtraClaims & {
+  readonly uid: number;
+  readonly email: string;
+  readonly name?: string;
+  readonly picture?: string;
+  readonly ep?: number;
+  readonly exp?: number;
+};
 
 /** The HMAC-SHA-256 key for a session secret, usable for signing and verifying. */
 async function hmacKey(secret: string): Promise<CryptoKey> {
@@ -86,21 +92,22 @@ async function hmacKey(secret: string): Promise<CryptoKey> {
  * {@link SESSION_TTL_SECONDS} but can be supplied (e.g. in tests).
  */
 export async function createSessionToken(
-  payload: Omit<SessionPayload, 'exp'> & { readonly exp?: number },
+  payload: NewSession,
   secret: string,
 ): Promise<string> {
+  const { uid, email, name, picture, ep, exp, ...extra } = payload;
   const full: SessionPayload = {
-    uid: payload.uid,
-    email: payload.email,
+    // The app's own claims go first so they can never replace the ones below.
+    ...Object.fromEntries(
+      Object.entries(extra).filter(([, value]) => value !== undefined),
+    ),
+    uid,
+    email,
     // Kept short: the whole token travels in a cookie on every request.
-    ...(payload.name ? { name: payload.name.slice(0, 80) } : {}),
-    ...(payload.picture && payload.picture.length <= 400
-      ? { picture: payload.picture }
-      : {}),
-    ...(payload.drive !== undefined ? { drive: payload.drive } : {}),
-    ...(payload.folder ? { folder: payload.folder } : {}),
-    ...(payload.ep !== undefined ? { ep: payload.ep } : {}),
-    exp: payload.exp ?? Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
+    ...(name ? { name: name.slice(0, 80) } : {}),
+    ...(picture && picture.length <= 400 ? { picture } : {}),
+    ...(ep !== undefined ? { ep } : {}),
+    exp: exp ?? Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
   };
   const body = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(full)));
   const key = await hmacKey(secret);
@@ -177,8 +184,7 @@ function isSessionPayload(value: unknown): value is SessionPayload {
     'exp' in value &&
     typeof value.exp === 'number' &&
     // Optional, but a wrong type means the token is not one of ours.
-    (!('ep' in value) || typeof value.ep === 'number') &&
-    (!('folder' in value) || typeof value.folder === 'string')
+    (!('ep' in value) || typeof value.ep === 'number')
   );
 }
 

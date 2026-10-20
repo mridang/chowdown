@@ -10,6 +10,7 @@
 
 import { redirect } from 'next/navigation';
 
+import { ENDED_SESSION_PATH, driveHint } from '../auth/app';
 import { getSession } from '../auth/current-user';
 import {
   DriveNotConnectedError,
@@ -17,11 +18,7 @@ import {
   sessionHintStale,
   wasDriveConnected,
 } from '../auth/drive-access';
-import {
-  ENDED_SESSION_PATH,
-  sessionIsCurrent,
-  type SessionPayload,
-} from '../auth/session';
+import { sessionIsCurrent, type SessionPayload } from '../auth/session';
 import type { Database } from '../db/client';
 import { getAppPageRows, type AppPageRows } from '../db/recipe-page';
 import { claimBackfillLease, claimDriveSync, type User } from '../db/users';
@@ -198,7 +195,7 @@ export async function loadCollection(
     // Top up missing embeddings (bounded per visit) so "find similar" fills in.
     deps.background(backfillIfFree(deps, db, session.uid));
   }
-  if (sessionHintStale(session.drive, status.connected)) {
+  if (sessionHintStale(driveHint(session), status.connected)) {
     // The header's idea of the Drive connection (kept in the session) is out of
     // date: Google revoked it, it was made on another device, or the cookie
     // predates the hint. A cookie can only be changed by a route, so go through

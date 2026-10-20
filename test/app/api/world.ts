@@ -225,22 +225,4 @@ export function locationOf(response: Response): URL | undefined {
   return target ? new URL(target) : undefined;
 }
 
-/**
- * Replace `fetch` with answers chosen by the start of the address; any other
- * address is a test mistake and throws. Returns the addresses requested.
- */
-export function answerFetch(
-  answers: Readonly<Record<string, (init?: RequestInit) => Response>>,
-): string[] {
-  const requested: string[] = [];
-  jest.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
-    const url = String(input);
-    requested.push(`${init?.method ?? 'GET'} ${url}`);
-    const key = Object.keys(answers).find((prefix) => url.startsWith(prefix));
-    if (!key) {
-      throw new Error(`Unexpected request in a test: ${url}`);
-    }
-    return answers[key]!(init);
-  });
-  return requested;
-}
+export { answerFetch } from '../../lib/auth/auth-test-kit';

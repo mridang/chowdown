@@ -10,7 +10,7 @@
  * forgotten: if Drive refuses, nothing local changes and the recipe stays put.
  */
 
-import { getUserAccessToken } from '../auth/current-user';
+import { getUserAccessToken } from '../auth/user-access-token';
 import type { Database } from '../db/client';
 import { deleteRecipeData, getRecipeByFileId } from '../db/recipes';
 import type { User } from '../db/users';

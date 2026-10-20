@@ -2,24 +2,24 @@
  * @packageDocumentation
  *
  * Writing the signed session cookie onto a response, from a user record. Used
- * wherever the session is (re)issued: signing in, connecting Drive, and the
- * connect route noticing the cookie's Drive flag is out of date.
+ * wherever the session is (re)issued: signing in, and any route that has to
+ * bring the cookie's hints up to date.
  */
 
 import type { NextResponse } from 'next/server';
 
-import type { User } from '../db/users';
-import { isDriveConnected } from './drive-access';
+import { sessionClaims } from './app';
 import {
   SESSION_COOKIE,
   SESSION_TTL_SECONDS,
   createSessionToken,
 } from './session';
+import type { User } from './store';
 
 /**
- * Set a fresh session cookie for `user` on `response`. `drive` overrides what
- * the record says, for the moment Drive has just been connected and `user` is
- * the row from before.
+ * Set a fresh session cookie for `user` on `response`. `claims` replaces the
+ * app's usual extra claims (see `sessionClaims` in `app.ts`), for the moment
+ * something they report has just changed and `user` is the row from before.
  */
 export async function setSessionCookie(
   response: NextResponse,
@@ -27,20 +27,18 @@ export async function setSessionCookie(
   options: Readonly<{
     secret: string;
     secure: boolean;
-    drive?: boolean;
+    claims?: Readonly<Record<string, string | number | boolean>>;
     /** Keep this expiry (Unix seconds) instead of starting a new 30 days. */
     exp?: number;
   }>,
 ): Promise<void> {
   const token = await createSessionToken(
     {
+      ...(options.claims ?? sessionClaims(user)),
       uid: user.id,
       email: user.email,
       name: user.name ?? undefined,
       picture: user.picture ?? undefined,
-      drive: options.drive ?? isDriveConnected(user),
-      // For the header's "Open Drive" link; null (no folder yet) is left out.
-      folder: user.recipes_folder_id ?? undefined,
       ep: user.session_epoch,
       exp: options.exp,
     },

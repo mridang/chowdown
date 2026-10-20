@@ -47,6 +47,7 @@ function configuredOrigin(): string | undefined {
  * deliberately NOT read, because anyone can send it and the answer is shown to
  * people as "the address to add to your assistant". The scheme comes from
  * `x-forwarded-proto` only when it says `http` or `https`.
+ * @public
  */
 export function appOriginFromHeaders(headers: Headers): string {
   const configured = configuredOrigin();

@@ -7,7 +7,7 @@
  * anyone waiting on Google or the Drive API.
  */
 
-import { getUserAccessToken } from '../auth/current-user';
+import { getUserAccessToken } from '../auth/user-access-token';
 import type { Database } from '../db/client';
 import { deleteOrphanEmbeddings } from '../db/embeddings';
 import { deleteRecipesNotIn } from '../db/recipes';

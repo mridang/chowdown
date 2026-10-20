@@ -63,7 +63,7 @@ describe('GET /api/auth/refresh', () => {
       nextRequest('/api/auth/refresh?returnTo=%2Frecipe%2Fx'),
     );
     expect(locationOf(res)?.pathname).toBe('/recipe/x');
-    expect((await reissued(res))?.drive).toBe(true);
+    expect((await reissued(res))?.['drive']).toBe(true);
   });
 
   it('goes to /app when there is no returnTo, or an unsafe one', async () => {

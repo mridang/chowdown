@@ -16,7 +16,7 @@ import {
   redirectWith,
   validateAuthorizeRequest,
 } from '@/lib/oauth/authorize-request';
-import { isSameOriginPost } from '@/lib/oauth/csrf';
+import { isSameOriginPost } from '@/lib/auth/csrf';
 import { MAX_OAUTH_FORM_BYTES } from '@/lib/oauth/http';
 import { clientAddress } from '@/lib/oauth/limits';
 import { logSecurityEvent } from '@/lib/oauth/security-log';

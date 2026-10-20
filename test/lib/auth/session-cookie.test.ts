@@ -1,12 +1,13 @@
 import { describe, expect, it } from '@jest/globals';
 import { NextResponse } from 'next/server';
 
+import { SESSION_COOKIE, sessionClaims } from '../../../src/lib/auth/app';
 import { verifySessionToken } from '../../../src/lib/auth/session';
 import { setSessionCookie } from '../../../src/lib/auth/session-cookie';
-import type { User } from '../../../src/lib/db/users';
+import type { User } from '../../../src/lib/auth/store';
 
 const SECRET = 'test-session-secret-value';
-const user = (overrides: Partial<User> = {}) =>
+const user = (overrides: Record<string, unknown> = {}) =>
   ({
     id: 7,
     email: 'a@b.com',
@@ -16,11 +17,14 @@ const user = (overrides: Partial<User> = {}) =>
     session_epoch: 0,
     recipes_folder_id: null,
     ...overrides,
-  }) as User;
+  }) as unknown as User;
 
 async function issued(
   u: User,
-  options: { drive?: boolean; exp?: number } = {},
+  options: {
+    claims?: Record<string, string | number | boolean>;
+    exp?: number;
+  } = {},
 ) {
   const response = NextResponse.next();
   await setSessionCookie(response, u, {
@@ -28,7 +32,7 @@ async function issued(
     secure: true,
     ...options,
   });
-  const cookie = response.cookies.get('chowdown_session');
+  const cookie = response.cookies.get(SESSION_COOKIE);
   return { cookie, payload: await verifySessionToken(cookie!.value, SECRET) };
 }
 
@@ -48,26 +52,31 @@ describe('setSessionCookie', () => {
     });
   });
 
-  it('takes the Drive hint from the record unless told otherwise', async () => {
-    expect((await issued(user())).payload?.drive).toBe(false);
-    expect(
-      (await issued(user({ refresh_token_enc: 'sealed' }))).payload?.drive,
-    ).toBe(true);
-    expect((await issued(user(), { drive: true })).payload?.drive).toBe(true);
+  it('is not Secure over plain http (local development)', async () => {
+    const response = NextResponse.next();
+    await setSessionCookie(response, user(), {
+      secret: SECRET,
+      secure: false,
+    });
+    expect(response.cookies.get(SESSION_COOKIE)?.secure).toBe(false);
   });
 
-  it('carries the Recipes folder, so the header can open it, and leaves it out when there is none', async () => {
+  it("carries the app's usual extra claims unless told otherwise", async () => {
+    const u = user({ recipes_folder_id: 'folder-1' });
+    expect((await issued(u)).payload).toMatchObject(sessionClaims(u));
     expect(
-      (await issued(user({ recipes_folder_id: 'folder-1' }))).payload?.folder,
-    ).toBe('folder-1');
-    expect((await issued(user())).payload).not.toHaveProperty('folder');
+      (await issued(u, { claims: { custom: 'yes' } })).payload,
+    ).toMatchObject({ custom: 'yes', uid: 7 });
+    expect(
+      (await issued(u, { claims: { custom: 'yes' } })).payload,
+    ).not.toHaveProperty('drive');
   });
 
   it("stamps the session with the account's epoch, so signing out everywhere can end it", async () => {
     expect((await issued(user({ session_epoch: 4 }))).payload?.ep).toBe(4);
   });
 
-  it('keeps an existing expiry, so correcting the hint never lengthens a session', async () => {
+  it('keeps an existing expiry, so correcting a hint never lengthens a session', async () => {
     const soon = Math.floor(Date.now() / 1000) + 3600;
     expect((await issued(user(), { exp: soon })).payload?.exp).toBe(soon);
   });

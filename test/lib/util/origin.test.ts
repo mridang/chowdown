@@ -17,13 +17,13 @@ describe('without a Cloudflare context (tests, scripts)', () => {
 describe('appOriginFromHeaders', () => {
   it('uses the Host the browser used, and https unless told http', () => {
     expect(
-      appOriginFromHeaders(new Headers({ host: 'chowdown.apps.mrida.ng' })),
-    ).toBe('https://chowdown.apps.mrida.ng');
+      appOriginFromHeaders(new Headers({ host: 'app.example.test' })),
+    ).toBe('https://app.example.test');
     expect(
       appOriginFromHeaders(
-        new Headers({ host: 'chowdown.test', 'x-forwarded-proto': 'http' }),
+        new Headers({ host: 'app.test', 'x-forwarded-proto': 'http' }),
       ),
-    ).toBe('http://chowdown.test');
+    ).toBe('http://app.test');
   });
 
   it('is http on localhost, where there is no TLS', () => {
@@ -36,35 +36,35 @@ describe('appOriginFromHeaders', () => {
     expect(
       appOriginFromHeaders(
         new Headers({
-          host: 'chowdown.apps.mrida.ng',
+          host: 'app.example.test',
           'x-forwarded-host': 'evil.example',
         }),
       ),
-    ).toBe('https://chowdown.apps.mrida.ng');
+    ).toBe('https://app.example.test');
   });
 
   it('ignores a forwarded scheme that is not http or https', () => {
     expect(
       appOriginFromHeaders(
         new Headers({
-          host: 'chowdown.apps.mrida.ng',
+          host: 'app.example.test',
           'x-forwarded-proto': 'javascript',
         }),
       ),
-    ).toBe('https://chowdown.apps.mrida.ng');
+    ).toBe('https://app.example.test');
   });
 });
 
 describe('originOfSetting', () => {
   it('reduces a setting to its origin, so no slash or path ends up in absolute URLs', () => {
-    expect(originOfSetting('https://chowdown.apps.mrida.ng')).toBe(
-      'https://chowdown.apps.mrida.ng',
+    expect(originOfSetting('https://app.example.test')).toBe(
+      'https://app.example.test',
     );
-    expect(originOfSetting('https://chowdown.apps.mrida.ng/')).toBe(
-      'https://chowdown.apps.mrida.ng',
+    expect(originOfSetting('https://app.example.test/')).toBe(
+      'https://app.example.test',
     );
-    expect(originOfSetting(' https://chowdown.apps.mrida.ng/app?x=1 ')).toBe(
-      'https://chowdown.apps.mrida.ng',
+    expect(originOfSetting(' https://app.example.test/app?x=1 ')).toBe(
+      'https://app.example.test',
     );
   });
 

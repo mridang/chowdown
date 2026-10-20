@@ -21,7 +21,7 @@ class Redirected extends Error {
 
 /** A signed-in session whose Drive hint can be set. */
 const session = (drive: boolean | undefined = true) =>
-  ({ uid: 1, email: 'a@b.c', drive }) as SessionPayload;
+  ({ uid: 1, email: 'a@b.c', exp: 0, drive }) as SessionPayload;
 
 /** Page rows for a user with the given token, recipes and embedding count. */
 function rows(

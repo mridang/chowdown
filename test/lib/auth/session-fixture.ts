@@ -2,23 +2,9 @@ import type { DatabaseSync } from 'node:sqlite';
 
 import { generateKeyBase64 } from '../../../src/lib/crypto';
 import { createSessionToken } from '../../../src/lib/auth/session';
+import { SESSION_SECRET, fakeCookies, jar } from './auth-test-kit';
 
-/** The session secret every test environment uses. */
-export const SESSION_SECRET = 'test-session-secret-value-0123456789';
-
-/** The request cookies a test "browser" sends; tests set and clear entries. */
-export const jar = new Map<string, string>();
-
-/**
- * Stands in for Next's `cookies()`: answers from {@link jar}. Mock
- * `next/headers` with it before importing code that reads the session.
- */
-export const fakeCookies = async () => ({
-  get: (name: string) => {
-    const value = jar.get(name);
-    return value === undefined ? undefined : { name, value };
-  },
-});
+export { SESSION_SECRET, fakeCookies, jar };
 
 /** The bindings and secrets a Worker would have, for `installCloudflareContext`. */
 export function testEnv(): Record<string, unknown> {

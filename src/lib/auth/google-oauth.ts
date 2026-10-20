@@ -1,50 +1,30 @@
 /**
  * @packageDocumentation
  *
- * Server-side Google OAuth 2.0 (authorization-code flow). Unlike the old
- * browser-only token flow, this runs on the Worker so we obtain a **refresh
- * token** (`access_type=offline`) and can act on the user's Drive while they
- * are away — which is what the headless MCP write tools and background sync
- * need. The refresh token is sealed and stored (see lib/crypto + db/users);
- * only the short-lived access token is used per request.
+ * Server-side Google OAuth 2.0 (authorization-code flow), as far as signing in
+ * needs it: build the consent URL, trade the code for tokens, ask Google who
+ * the person is. It runs on the Worker, so the client secret never reaches a
+ * browser.
  *
- * Signing in and connecting Drive are two separate asks. Signing in requests
- * identity only (`openid`/`email`/`profile`); connecting Drive is a second,
- * deliberate step that adds `drive.file` (per-file Drive access to what the app
- * creates) and the refresh token that goes with it. All scopes are
- * non-sensitive, so the app needs no Google security assessment.
+ * Signing in asks for identity only (`openid`, `email`, `profile`), which is
+ * non-sensitive and needs no Google security assessment. An app that wants more
+ * from Google builds its own request on {@link buildAuthUrl} and
+ * {@link postToken}.
  */
 
 /** What signing in asks Google for: who the person is, nothing else. */
 export const SIGN_IN_SCOPES = ['openid', 'email', 'profile'] as const;
 
-/** The one Drive permission chowdown uses: files the app itself created. */
-export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-
-/**
- * What connecting Drive asks for. `openid` rides along so the answer says which
- * Google account approved it (checked against the signed-in person); Google
- * already holds the identity grant, so it adds nothing to the consent screen.
- */
-export const DRIVE_SCOPES = ['openid', DRIVE_SCOPE] as const;
-
-/** Which of the two asks a Google round trip is for. */
-export type AuthPurpose = 'signin' | 'drive';
-
 /** Where people are sent to approve the request. */
 const AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
 /** Where codes and refresh tokens are traded for access tokens. */
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
-/** Where a token (and the grant behind it) is given back to Google. */
-const REVOKE_ENDPOINT = 'https://oauth2.googleapis.com/revoke';
 /** Who the person behind an access token is. */
 const USERINFO_ENDPOINT = 'https://openidconnect.googleapis.com/v1/userinfo';
 
 /**
  * The identity fields we keep from the OpenID userinfo response. Only `sub` is
- * always there: a grant that carries just `openid` (connecting Drive, when the
- * earlier identity grant has been revoked) answers with nothing else, and the
- * Drive step only needs to know which account approved.
+ * always there: a grant that carries just `openid` answers with nothing else.
  */
 export interface GoogleUser {
   readonly sub: string;
@@ -68,7 +48,10 @@ export interface TokenResponse {
   readonly scope?: string;
 }
 
-/** A short-lived access token minted from a refresh token. */
+/**
+ * A short-lived access token minted from a refresh token.
+ * @public
+ */
 export interface AccessTokenResponse {
   readonly access_token: string;
   readonly expires_in: number;
@@ -79,8 +62,13 @@ function hasString(value: object, key: string): boolean {
   return typeof Reflect.get(value, key) === 'string';
 }
 
-/** Whether a parsed response carries an access token and its lifetime. */
-function isAccessTokenResponse(value: unknown): value is AccessTokenResponse {
+/**
+ * Whether a parsed response carries an access token and its lifetime.
+ * @public
+ */
+export function isAccessTokenResponse(
+  value: unknown,
+): value is AccessTokenResponse {
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -100,52 +88,38 @@ function isGoogleUser(value: unknown): value is GoogleUser {
   );
 }
 
-/** Whether a token response's granted scopes include Drive access. */
-export function grantedDrive(scope: string | undefined): boolean {
-  return (scope ?? '').split(/\s+/).includes(DRIVE_SCOPE);
-}
-
 /**
  * Build the Google consent URL to redirect the user to. `state` is the
- * CSRF/one-time value the callback validates.
- *
- * Signing in asks for identity only, with no refresh token. Connecting Drive
- * asks for `drive.file` on top of what is already granted
- * (`include_granted_scopes`), and `access_type=offline` plus `prompt=consent`
- * guarantee a refresh token is issued (Google omits it on later silent grants
- * otherwise). `loginHint` keeps the account chooser on the signed-in account.
+ * CSRF/one-time value the callback validates. `extra` adds query parameters
+ * for an ask that needs them (for example `access_type=offline`); signing in
+ * needs none.
  */
 export function buildAuthUrl(
   params: Readonly<{
     clientId: string;
     redirectUri: string;
     state: string;
-    purpose: AuthPurpose;
-    loginHint?: string;
+    scopes: readonly string[];
+    extra?: Readonly<Record<string, string>>;
   }>,
 ): string {
-  const purposeParams: Readonly<Record<string, string>> =
-    params.purpose === 'drive'
-      ? {
-          scope: DRIVE_SCOPES.join(' '),
-          access_type: 'offline',
-          prompt: 'consent',
-          include_granted_scopes: 'true',
-          ...(params.loginHint ? { login_hint: params.loginHint } : {}),
-        }
-      : { scope: SIGN_IN_SCOPES.join(' ') };
   const query = new URLSearchParams({
     client_id: params.clientId,
     redirect_uri: params.redirectUri,
     response_type: 'code',
-    ...purposeParams,
+    scope: params.scopes.join(' '),
+    ...params.extra,
     state: params.state,
   });
   return `${AUTH_ENDPOINT}?${query}`;
 }
 
-/** POST a form to Google's token endpoint and return the parsed answer; `what` names the step in the error. */
-async function postToken(
+/**
+ * POST a form to Google's token endpoint and return the parsed answer; `what`
+ * names the step in the error.
+ * @public
+ */
+export async function postToken(
   form: Readonly<Record<string, string>>,
   what: string,
 ): Promise<unknown> {
@@ -162,7 +136,7 @@ async function postToken(
   return response.json();
 }
 
-/** Exchange an authorization code for access + refresh tokens. */
+/** Exchange an authorization code for access (and, if asked for, refresh) tokens. */
 export async function exchangeCode(
   params: Readonly<{
     code: string;
@@ -187,32 +161,6 @@ export async function exchangeCode(
   return tokens;
 }
 
-/**
- * Mint a fresh access token from a stored refresh token. Used per request
- * (access tokens are short-lived) and by the headless MCP/sync paths.
- */
-export async function refreshAccessToken(
-  params: Readonly<{
-    refreshToken: string;
-    clientId: string;
-    clientSecret: string;
-  }>,
-): Promise<AccessTokenResponse> {
-  const tokens = await postToken(
-    {
-      refresh_token: params.refreshToken,
-      client_id: params.clientId,
-      client_secret: params.clientSecret,
-      grant_type: 'refresh_token',
-    },
-    'Token refresh',
-  );
-  if (!isAccessTokenResponse(tokens)) {
-    throw new Error('Token refresh failed: unexpected response');
-  }
-  return tokens;
-}
-
 /** Fetch the signed-in user's identity from the OpenID userinfo endpoint. */
 export async function getUserInfo(accessToken: string): Promise<GoogleUser> {
   const response = await fetch(USERINFO_ENDPOINT, {
@@ -226,22 +174,4 @@ export async function getUserInfo(accessToken: string): Promise<GoogleUser> {
     throw new Error('userinfo failed: unexpected response');
   }
   return user;
-}
-
-/**
- * Give a refresh token back to Google, ending chowdown's access to the
- * person's Drive on Google's side too (revoking a refresh token revokes the
- * access tokens minted from it). Throws if Google refuses; an already-revoked
- * token is an `invalid_token` refusal, which callers deleting an account are
- * free to ignore.
- */
-export async function revokeToken(refreshToken: string): Promise<void> {
-  const response = await fetch(REVOKE_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ token: refreshToken }),
-  });
-  if (!response.ok) {
-    throw new Error(`Token revocation failed: ${response.status}`);
-  }
 }

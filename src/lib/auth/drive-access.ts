@@ -55,6 +55,15 @@ export function driveConnectHref(
 /** Why the last attempt to connect didn't take, from the address it came back to. */
 export type DriveAttempt = 'denied' | 'error';
 
+/**
+ * Where a failed Drive connection lands: the recipe list, which explains what
+ * happened and offers to try again. The reason is a fixed word, never anything
+ * Google sent back.
+ */
+export function driveResultPath(result: DriveAttempt): string {
+  return `/app?drive=${result}`;
+}
+
 /** Reads `?drive=` off a page's query string, ignoring anything unexpected. */
 export function driveAttemptOf(
   value: string | readonly string[] | undefined,

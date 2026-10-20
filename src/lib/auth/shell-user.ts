@@ -12,8 +12,9 @@ import { cache } from 'react';
 
 import { getUserById } from '../db/users';
 import { getDatabase, getEnv } from '../util';
+import { SESSION_COOKIE, driveHint, folderHint } from './app';
 import { isDriveConnected } from './drive-access';
-import { SESSION_COOKIE, verifySessionToken } from './session';
+import { verifySessionToken } from './session';
 
 /** What the header shows about the signed-in person. */
 export interface ShellUser {
@@ -89,7 +90,12 @@ export const getShellUser = cache(async (): Promise<ShellUser | null> => {
     return null;
   }
   const { name, picture, drive, folder } = await completeProfile(
-    payload,
+    {
+      name: payload.name,
+      picture: payload.picture,
+      drive: driveHint(payload),
+      folder: folderHint(payload),
+    },
     payload.uid,
   );
   return {

@@ -8,8 +8,8 @@
 
 import { NextResponse } from 'next/server';
 
-import { STATE_COOKIE, STATE_TTL_SECONDS } from './oauth-state';
-import { RETURN_COOKIE } from './return-to';
+import { RETURN_COOKIE, STATE_COOKIE } from './app';
+import { STATE_TTL_SECONDS } from './oauth-state';
 
 /** What the round trip needs remembered. */
 export interface FlowStart {

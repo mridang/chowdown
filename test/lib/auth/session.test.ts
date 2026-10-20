@@ -2,12 +2,14 @@ import { describe, expect, it } from '@jest/globals';
 
 import { bytesToBase64Url } from '../../../src/lib/util/base64';
 import {
-  ENDED_SESSION_PATH,
+  SESSION_COOKIE,
   SESSION_TTL_SECONDS,
   createSessionToken,
+  requireSessionSecret,
   sessionIsCurrent,
   verifySessionToken,
 } from '../../../src/lib/auth/session';
+import { SESSION_COOKIE as APP_SESSION_COOKIE } from '../../../src/lib/auth/app';
 
 const SECRET = 'test-session-secret-value';
 
@@ -23,28 +25,23 @@ describe('session tokens', () => {
     expect(payload?.exp).toBeGreaterThan(Math.floor(Date.now() / 1000));
   });
 
-  it('carries whether Google Drive was connected, and omits it when unknown', async () => {
-    const connected = await verifySessionToken(
+  it('carries the extra claims an app adds, and leaves out the undefined ones', async () => {
+    const payload = await verifySessionToken(
       await createSessionToken(
-        { uid: 1, email: 'a@b.com', drive: true },
+        {
+          uid: 1,
+          email: 'a@b.com',
+          hint: true,
+          off: false,
+          tag: 'x',
+          gone: undefined,
+        },
         SECRET,
       ),
       SECRET,
     );
-    expect(connected?.drive).toBe(true);
-    const not = await verifySessionToken(
-      await createSessionToken(
-        { uid: 1, email: 'a@b.com', drive: false },
-        SECRET,
-      ),
-      SECRET,
-    );
-    expect(not?.drive).toBe(false);
-    const unknown = await verifySessionToken(
-      await createSessionToken({ uid: 1, email: 'a@b.com' }, SECRET),
-      SECRET,
-    );
-    expect(unknown).not.toHaveProperty('drive');
+    expect(payload).toMatchObject({ hint: true, off: false, tag: 'x' });
+    expect(payload).not.toHaveProperty('gone');
   });
 
   it('rejects a tampered payload', async () => {
@@ -105,22 +102,6 @@ describe('session profile', () => {
     expect(payload?.picture).toBe('https://lh3.googleusercontent.com/a/abc');
   });
 
-  it('carries the Recipes folder id for the header’s Open Drive link, and omits it when unknown', async () => {
-    const withFolder = await verifySessionToken(
-      await createSessionToken(
-        { uid: 1, email: 'x@y.com', folder: '1AbC-dEf_9' },
-        SECRET,
-      ),
-      SECRET,
-    );
-    expect(withFolder?.folder).toBe('1AbC-dEf_9');
-    const without = await verifySessionToken(
-      await createSessionToken({ uid: 1, email: 'x@y.com' }, SECRET),
-      SECRET,
-    );
-    expect(without).not.toHaveProperty('folder');
-  });
-
   it('leaves out a photo address too long for a cookie, and still verifies', async () => {
     const token = await createSessionToken(
       {
@@ -176,16 +157,6 @@ describe('a correctly signed token with the wrong contents', () => {
   it('is refused when it has no expiry', async () => {
     expect(
       await verifySessionToken(await signed('{"uid":1}'), SECRET),
-    ).toBeNull();
-  });
-
-  it('is refused when the folder is not text', async () => {
-    const exp = Math.floor(Date.now() / 1000) + 60;
-    expect(
-      await verifySessionToken(
-        await signed(`{"uid":1,"folder":7,"exp":${exp}}`),
-        SECRET,
-      ),
     ).toBeNull();
   });
 
@@ -249,8 +220,21 @@ describe('session epoch', () => {
     expect(sessionIsCurrent({}, 0)).toBe(true);
     expect(sessionIsCurrent({}, 1)).toBe(false);
   });
+});
 
-  it('names the route that clears a dead session', () => {
-    expect(ENDED_SESSION_PATH).toBe('/api/auth/refresh');
+describe('the session cookie', () => {
+  it('is named by the app and read from the same place as the tokens', () => {
+    expect(SESSION_COOKIE).toBe(APP_SESSION_COOKIE);
+  });
+});
+
+describe('requireSessionSecret', () => {
+  it('hands back a secret that is set', () => {
+    expect(requireSessionSecret('s3cret')).toBe('s3cret');
+  });
+
+  it('refuses when there is none, rather than falling back to a value anyone could guess', () => {
+    expect(() => requireSessionSecret(undefined)).toThrow(/SESSION_SECRET/);
+    expect(() => requireSessionSecret('')).toThrow(/SESSION_SECRET/);
   });
 });

@@ -6,136 +6,215 @@ import {
   it,
   jest,
 } from '@jest/globals';
+import { NextResponse } from 'next/server';
 
 import {
+  EXTRA_PURPOSES,
+  LANDING_PATH,
+  RETURN_COOKIE,
   SESSION_COOKIE,
-  verifySessionToken,
-} from '../../../../../src/lib/auth/session';
-import { decryptSecret } from '../../../../../src/lib/crypto';
+  SIGN_IN_FAILED_PATH,
+  STATE_COOKIE,
+  sessionClaims,
+} from '../../../../../src/lib/auth/app';
+import type { User } from '../../../../../src/lib/auth/store';
+import { verifySessionToken } from '../../../../../src/lib/auth/session';
 import {
   SESSION_SECRET,
-  sessionTokenFor,
-} from '../../../../lib/auth/session-fixture';
-import {
   answerFetch,
-  locationOf,
-  nextRequest,
-  openWorld,
-  signIn,
-  type World,
-} from '../../world';
+  appRequest,
+  installEnv,
+  jar,
+} from '../../../../lib/auth/auth-test-kit';
+
+const person = {
+  id: 4,
+  email: 'ada@example.com',
+  name: 'Ada Lovelace',
+  picture: null,
+  session_epoch: 7,
+  refresh_token_enc: null,
+  recipes_folder_id: null,
+} as unknown as User;
+
+const upsertGoogleUser = jest
+  .fn<(profile: unknown) => Promise<User>>()
+  .mockResolvedValue(person);
+const afterSignIn = jest
+  .fn<(user: unknown) => Promise<void>>()
+  .mockResolvedValue(undefined);
+/** One stand-in flow for each extra ask the app has. */
+const completed = jest
+  .fn<(...args: unknown[]) => Promise<NextResponse>>()
+  .mockResolvedValue(
+    NextResponse.redirect('https://app.test/finished-elsewhere'),
+  );
+const OTHER_FLOWS = Object.fromEntries(
+  EXTRA_PURPOSES.map((purpose) => [
+    purpose,
+    {
+      failurePath: (kind: string) => `/failed/${purpose}/${kind}`,
+      complete: completed,
+    },
+  ]),
+);
+
+jest.unstable_mockModule('../../../../../src/lib/auth/store', () => ({
+  upsertGoogleUser,
+}));
+jest.unstable_mockModule('../../../../../src/lib/auth/hooks', () => ({
+  afterSignIn,
+  OTHER_FLOWS,
+}));
 
 const { GET } = await import('../../../../../src/app/api/auth/callback/route');
 
-let world: World;
+let restore: () => void;
 
 beforeEach(() => {
-  world = openWorld();
+  jar.clear();
+  upsertGoogleUser.mockClear();
+  afterSignIn.mockReset();
+  afterSignIn.mockResolvedValue(undefined);
+  completed.mockClear();
+  restore = installEnv();
   jest.spyOn(console, 'error').mockImplementation(() => undefined);
+  jest.spyOn(console, 'warn').mockImplementation(() => undefined);
 });
 
-afterEach(() => world.close());
+afterEach(() => {
+  restore();
+  jest.restoreAllMocks();
+});
 
 const STATE = 'signin.abc';
-const DRIVE_STATE = 'drive.abc';
+const TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo';
 
 /** The cookies a browser holds partway through a round trip. */
 const trip = (state = STATE, extra: Record<string, string> = {}) => ({
-  chowdown_oauth_state: state,
+  [STATE_COOKIE]: state,
   ...extra,
 });
 
-/** A callback request from Google. */
-const callback = (query: string, cookies: Record<string, string> = trip()) =>
-  GET(nextRequest(`/api/auth/callback?${query}`, cookies));
-
-const TOKEN_URL = 'https://oauth2.googleapis.com/token';
-const USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo';
-const DRIVE_URL = 'https://www.googleapis.com/drive/v3/files';
+/** A callback request from Google, from a browser holding `cookies`. */
+function callback(query: string, cookies: Record<string, string> = trip()) {
+  jar.clear();
+  Object.entries(cookies).forEach(([name, value]) => jar.set(name, value));
+  return GET(appRequest('GET', `/api/auth/callback?${query}`));
+}
 
 const json = (value: unknown, status = 200) =>
   new Response(JSON.stringify(value), { status });
 
-/** Google answering a successful sign-in for `sub`. */
-function googleSignsIn(
-  sub = 'google-sub-1',
-  email: string | null = 'ada@example.com',
-) {
+/** Google answering a successful sign-in. */
+function googleSignsIn(email: string | null = 'ada@example.com') {
   return answerFetch({
     [TOKEN_URL]: () => json({ access_token: 'at', expires_in: 3599 }),
     [USERINFO_URL]: () =>
-      json({ sub, ...(email === null ? {} : { email }), name: 'Ada Lovelace' }),
+      json({
+        sub: 'google-sub-1',
+        ...(email === null ? {} : { email }),
+        name: 'Ada Lovelace',
+        picture: 'https://pics.example/ada',
+      }),
   });
 }
 
+const where = (res: Response) => res.headers.get('location');
+const FAILED = `https://app.test${SIGN_IN_FAILED_PATH}`;
+
 /** Everything the callback set on the response, by cookie name. */
-const cookiesOf = (res: Awaited<ReturnType<typeof callback>>) =>
+const cookiesOf = (res: NextResponse) =>
   Object.fromEntries(res.cookies.getAll().map((c) => [c.name, c.value]));
 
 describe('GET /api/auth/callback with a state that does not check out', () => {
   it('sends a sign-in back with a fixed flag when there is no state cookie', async () => {
     const res = await callback(`code=c&state=${STATE}`, {});
-    expect(locationOf(res)?.href).toBe('https://chowdown.test/?error=auth');
+    expect(where(res)).toBe(FAILED);
   });
 
   it('sends it back when the state differs from the cookie', async () => {
     const res = await callback(`code=c&state=signin.other`);
-    expect(locationOf(res)?.href).toBe('https://chowdown.test/?error=auth');
+    expect(where(res)).toBe(FAILED);
   });
 
-  it('sends a Drive round trip back to the list with an error flag', async () => {
-    const res = await callback(`code=c&state=drive.other`, trip(DRIVE_STATE));
-    expect(locationOf(res)?.href).toBe('https://chowdown.test/app?drive=error');
+  it('sends it back when the state is not one of ours', async () => {
+    const res = await callback(`code=c&state=admin.abc`, trip('admin.abc'));
+    expect(where(res)).toBe(FAILED);
   });
+
+  for (const purpose of EXTRA_PURPOSES) {
+    it(`sends a ${purpose} round trip back to where that ask reports errors`, async () => {
+      const res = await callback(
+        `code=c&state=${purpose}.other`,
+        trip(`${purpose}.abc`),
+      );
+      expect(where(res)).toBe(`https://app.test/failed/${purpose}/error`);
+    });
+  }
 
   it('never calls Google and leaves the cookies of a real round trip alone', async () => {
     const requested = answerFetch({});
     const res = await callback(`code=c&state=signin.forged`);
     expect(requested).toEqual([]);
     expect(res.headers.get('set-cookie')).toBeNull();
+    expect(upsertGoogleUser).not.toHaveBeenCalled();
   });
 });
 
 describe('GET /api/auth/callback when the person did not approve', () => {
   it('sends a cancelled sign-in back with a fixed flag and clears the round-trip cookies', async () => {
+    const requested = answerFetch({});
     const res = await callback(`error=access_denied&state=${STATE}`);
-    expect(locationOf(res)?.href).toBe('https://chowdown.test/?error=auth');
-    expect(res.headers.get('set-cookie')).toContain('chowdown_oauth_state=;');
+    expect(where(res)).toBe(FAILED);
+    expect(res.headers.get('set-cookie')).toContain(`${STATE_COOKIE}=;`);
+    expect(requested).toEqual([]);
   });
 
-  it('sends a cancelled Drive connection back as denied', async () => {
-    const res = await callback(
-      `error=access_denied&state=${DRIVE_STATE}`,
-      trip(DRIVE_STATE),
-    );
-    expect(locationOf(res)?.href).toBe(
-      'https://chowdown.test/app?drive=denied',
-    );
-  });
+  for (const purpose of EXTRA_PURPOSES) {
+    it(`sends a cancelled ${purpose} round trip back as denied`, async () => {
+      const res = await callback(
+        `error=access_denied&state=${purpose}.abc`,
+        trip(`${purpose}.abc`),
+      );
+      expect(where(res)).toBe(`https://app.test/failed/${purpose}/denied`);
+    });
+  }
 });
 
 describe('GET /api/auth/callback signing in', () => {
-  it('creates the person, issues a signed session and lands on /app', async () => {
+  it('records the person by their Google account and lands on the landing page', async () => {
     googleSignsIn();
     const res = await callback(`code=c&state=${STATE}`);
-    expect(locationOf(res)?.href).toBe('https://chowdown.test/app');
-    const row = world.raw
-      .prepare('SELECT id, email, google_sub FROM users')
-      .get();
-    expect(row).toEqual({
-      id: 1,
+    expect(where(res)).toBe(`https://app.test${LANDING_PATH}`);
+    expect(upsertGoogleUser).toHaveBeenCalledWith({
+      sub: 'google-sub-1',
       email: 'ada@example.com',
-      google_sub: 'google-sub-1',
+      name: 'Ada Lovelace',
+      picture: 'https://pics.example/ada',
     });
+  });
+
+  it('asks Google for the token with the callback address registered for the app', async () => {
+    const requested = googleSignsIn();
+    await callback(`code=the-code&state=${STATE}`);
+    expect(requested).toEqual([`POST ${TOKEN_URL}`, `GET ${USERINFO_URL}`]);
+  });
+
+  it('issues a signed session for the person, stamped with their epoch and the app’s claims', async () => {
+    googleSignsIn();
+    const res = await callback(`code=c&state=${STATE}`);
     const session = await verifySessionToken(
       cookiesOf(res)[SESSION_COOKIE] ?? '',
       SESSION_SECRET,
     );
     expect(session).toMatchObject({
-      uid: 1,
+      uid: 4,
       email: 'ada@example.com',
-      drive: false,
-      ep: 0,
+      name: 'Ada Lovelace',
+      ep: 7,
+      ...sessionClaims(person),
     });
   });
 
@@ -150,212 +229,110 @@ describe('GET /api/auth/callback signing in', () => {
     });
   });
 
+  it('runs the app’s hook for the person who signed in, before the session is issued', async () => {
+    googleSignsIn();
+    await callback(`code=c&state=${STATE}`);
+    expect(afterSignIn).toHaveBeenCalledWith(person);
+  });
+
   it('clears the one-time cookies once the trip is over', async () => {
     googleSignsIn();
     const res = await callback(`code=c&state=${STATE}`);
     const header = res.headers.get('set-cookie') ?? '';
-    expect(header).toContain('chowdown_oauth_state=;');
-    expect(header).toContain('chowdown_return_to=;');
+    expect(header).toContain(`${STATE_COOKIE}=;`);
+    expect(header).toContain(`${RETURN_COOKIE}=;`);
   });
 
   it('lands on the safe returnTo the trip began with', async () => {
     googleSignsIn();
     const res = await callback(
       `code=c&state=${STATE}`,
-      trip(STATE, { chowdown_return_to: '/recipe/abc' }),
+      trip(STATE, { [RETURN_COOKIE]: '/somewhere/else' }),
     );
-    expect(locationOf(res)?.href).toBe('https://chowdown.test/recipe/abc');
+    expect(where(res)).toBe('https://app.test/somewhere/else');
   });
 
   it('ignores a returnTo cookie that points off the site', async () => {
     googleSignsIn();
     const res = await callback(
       `code=c&state=${STATE}`,
-      trip(STATE, { chowdown_return_to: '//evil.example' }),
+      trip(STATE, { [RETURN_COOKIE]: '//evil.example' }),
     );
-    expect(locationOf(res)?.href).toBe('https://chowdown.test/app');
-  });
-
-  it('recognises a returning person by their Google id and carries their epoch', async () => {
-    googleSignsIn('google-sub-1', 'new-address@example.com');
-    world.raw
-      .prepare(
-        "INSERT INTO users (id, google_sub, email, session_epoch, created_at, updated_at) VALUES (4, 'google-sub-1', 'old@example.com', 7, 'n', 'n')",
-      )
-      .run();
-    const res = await callback(`code=c&state=${STATE}`);
-    const session = await verifySessionToken(
-      cookiesOf(res)[SESSION_COOKIE] ?? '',
-      SESSION_SECRET,
-    );
-    expect(session).toMatchObject({ uid: 4, ep: 7 });
-    expect(world.raw.prepare('SELECT count(*) AS n FROM users').get()).toEqual({
-      n: 1,
-    });
+    expect(where(res)).toBe(`https://app.test${LANDING_PATH}`);
   });
 
   it('fails the sign-in when Google shares no email address', async () => {
-    googleSignsIn('google-sub-1', null);
+    googleSignsIn(null);
     const res = await callback(`code=c&state=${STATE}`);
-    expect(locationOf(res)?.href).toBe('https://chowdown.test/?error=auth');
+    expect(where(res)).toBe(FAILED);
     expect(res.cookies.get(SESSION_COOKIE)).toBeUndefined();
+    expect(upsertGoogleUser).not.toHaveBeenCalled();
   });
 
   it('fails the sign-in, showing nothing Google said, when the code is refused', async () => {
     answerFetch({ [TOKEN_URL]: () => json({ error: 'invalid_grant' }, 400) });
     const res = await callback(`code=bad&state=${STATE}`);
-    expect(locationOf(res)?.href).toBe('https://chowdown.test/?error=auth');
+    expect(where(res)).toBe(FAILED);
     expect(res.cookies.get(SESSION_COOKIE)).toBeUndefined();
-    expect(world.raw.prepare('SELECT count(*) AS n FROM users').get()).toEqual({
-      n: 0,
-    });
+    expect(upsertGoogleUser).not.toHaveBeenCalled();
+  });
+
+  it('fails the sign-in, issuing no session, when the app’s hook fails', async () => {
+    googleSignsIn();
+    afterSignIn.mockRejectedValue(new Error('boom'));
+    const res = await callback(`code=c&state=${STATE}`);
+    expect(where(res)).toBe(FAILED);
+    expect(res.cookies.get(SESSION_COOKIE)).toBeUndefined();
   });
 });
 
-describe('GET /api/auth/callback connecting Drive', () => {
-  /** Google approving the Drive connection for `sub`, with or without the Drive permission. */
-  function googleConnects(
-    options: { sub?: string; scope?: string; refresh?: boolean } = {},
-  ) {
-    return answerFetch({
-      [TOKEN_URL]: () =>
-        json({
-          access_token: 'at',
-          expires_in: 3599,
-          scope:
-            options.scope ??
-            'openid https://www.googleapis.com/auth/drive.file',
-          ...(options.refresh === false
-            ? {}
-            : { refresh_token: 'the-refresh-token' }),
-        }),
-      [USERINFO_URL]: () => json({ sub: options.sub ?? 'sub-1' }),
-      [DRIVE_URL]: (init) =>
-        init?.method === 'POST'
-          ? json({ id: 'new-folder' })
-          : json({ files: [] }),
+describe('GET /api/auth/callback on a server that is not set up', () => {
+  it('fails closed without a session secret: no code is spent and no session is issued', async () => {
+    restore();
+    restore = installEnv({
+      GOOGLE_OAUTH_CLIENT_ID: 'client-id',
+      GOOGLE_OAUTH_CLIENT_SECRET: 'client-secret',
     });
-  }
-
-  const connect = (cookies: Record<string, string> = {}) =>
-    callback(`code=c&state=${DRIVE_STATE}`, trip(DRIVE_STATE, cookies));
-
-  it('seals the refresh token, makes the folder, and reissues the session with Drive on', async () => {
-    await signIn(world);
-    const soon = Math.floor(Date.now() / 1000) + 3600;
-    googleConnects();
-    const res = await connect({
-      [SESSION_COOKIE]: await sessionTokenFor({ id: 1 }, { exp: soon }),
-    });
-    expect(locationOf(res)?.href).toBe('https://chowdown.test/app');
-    const row = world.raw
-      .prepare(
-        'SELECT refresh_token_enc AS t, recipes_folder_id AS f FROM users',
-      )
-      .get();
-    expect(row?.['f']).toBe('new-folder');
-    expect(row?.['t']).not.toContain('the-refresh-token');
-    expect(
-      await decryptSecret(
-        String(row?.['t']),
-        String(world.env['TOKEN_ENCRYPTION_KEY']),
-      ),
-    ).toBe('the-refresh-token');
-    const session = await verifySessionToken(
-      cookiesOf(res)[SESSION_COOKIE] ?? '',
-      SESSION_SECRET,
-    );
-    expect(session).toMatchObject({ drive: true, exp: soon });
+    const requested = googleSignsIn();
+    const res = await callback(`code=c&state=${STATE}`);
+    expect(where(res)).toBe(FAILED);
+    expect(requested).toEqual([]);
+    expect(upsertGoogleUser).not.toHaveBeenCalled();
+    expect(res.cookies.get(SESSION_COOKIE)).toBeUndefined();
   });
 
-  it('puts the folder it made in the new session, for the header’s Open Drive link', async () => {
-    await signIn(world);
-    googleConnects();
-    const res = await connect({
-      [SESSION_COOKIE]: await sessionTokenFor({ id: 1 }),
-    });
-    const session = await verifySessionToken(
-      cookiesOf(res)[SESSION_COOKIE] ?? '',
-      SESSION_SECRET,
-    );
-    expect(session?.folder).toBe('new-folder');
-  });
-
-  it('reuses the folder it already knows', async () => {
-    await signIn(world);
-    world.raw
-      .prepare("UPDATE users SET recipes_folder_id = 'old-folder'")
-      .run();
-    const requested = googleConnects();
-    await connect({ [SESSION_COOKIE]: await sessionTokenFor({ id: 1 }) });
-    expect(requested.filter((r) => r.includes('/drive/v3/files'))).toEqual([]);
-    expect(
-      world.raw.prepare('SELECT recipes_folder_id AS f FROM users').get(),
-    ).toEqual({ f: 'old-folder' });
-  });
-
-  it('refuses a different Google account than the one signed in, and stores nothing', async () => {
-    await signIn(world);
-    googleConnects({ sub: 'someone-else' });
-    const res = await connect({
-      [SESSION_COOKIE]: await sessionTokenFor({ id: 1 }),
-    });
-    expect(locationOf(res)?.href).toBe('https://chowdown.test/app?drive=error');
-    expect(
-      world.raw.prepare('SELECT refresh_token_enc AS t FROM users').get(),
-    ).toEqual({ t: null });
-  });
-
-  it('answers denied when the Drive permission was unticked', async () => {
-    await signIn(world);
-    googleConnects({ scope: 'openid' });
-    const res = await connect({
-      [SESSION_COOKIE]: await sessionTokenFor({ id: 1 }),
-    });
-    expect(locationOf(res)?.href).toBe(
-      'https://chowdown.test/app?drive=denied',
-    );
-    expect(
-      world.raw.prepare('SELECT refresh_token_enc AS t FROM users').get(),
-    ).toEqual({ t: null });
-  });
-
-  it('answers an error when Google sent no refresh token', async () => {
-    await signIn(world);
-    googleConnects({ refresh: false });
-    const res = await connect({
-      [SESSION_COOKIE]: await sessionTokenFor({ id: 1 }),
-    });
-    expect(locationOf(res)?.href).toBe('https://chowdown.test/app?drive=error');
-  });
-
-  it('sends someone who is not signed in to sign in instead', async () => {
-    googleConnects();
-    const res = await connect();
-    expect(locationOf(res)?.href).toBe('https://chowdown.test/?error=auth');
-    expect(world.raw.prepare('SELECT count(*) AS n FROM users').get()).toEqual({
-      n: 0,
-    });
-  });
-
-  it('will not attach Drive to the account of a session that was ended', async () => {
-    await signIn(world, { epoch: 1 });
-    googleConnects();
-    const res = await connect({
-      [SESSION_COOKIE]: await sessionTokenFor({ id: 1 }, { ep: 0 }),
-    });
-    expect(locationOf(res)?.href).toBe('https://chowdown.test/?error=auth');
-    expect(
-      world.raw.prepare('SELECT refresh_token_enc AS t FROM users').get(),
-    ).toEqual({ t: null });
-  });
-
-  it('answers an error when Google fails during the exchange', async () => {
-    await signIn(world);
-    answerFetch({ [TOKEN_URL]: () => json({ error: 'server_error' }, 500) });
-    const res = await connect({
-      [SESSION_COOKIE]: await sessionTokenFor({ id: 1 }),
-    });
-    expect(locationOf(res)?.href).toBe('https://chowdown.test/app?drive=error');
+  it('fails closed without the Google client, too', async () => {
+    restore();
+    restore = installEnv({ SESSION_SECRET });
+    const requested = googleSignsIn();
+    const res = await callback(`code=c&state=${STATE}`);
+    expect(where(res)).toBe(FAILED);
+    expect(requested).toEqual([]);
   });
 });
+
+for (const purpose of EXTRA_PURPOSES) {
+  describe(`GET /api/auth/callback finishing a ${purpose} round trip`, () => {
+    it('hands the round trip to that ask’s own flow, not to sign-in', async () => {
+      googleSignsIn();
+      const res = await callback(
+        `code=c&state=${purpose}.abc`,
+        trip(`${purpose}.abc`),
+      );
+      expect(where(res)).toBe('https://app.test/finished-elsewhere');
+      expect(completed).toHaveBeenCalledTimes(1);
+      expect(upsertGoogleUser).not.toHaveBeenCalled();
+      expect(afterSignIn).not.toHaveBeenCalled();
+    });
+
+    it('sends the person to where that ask reports errors when its flow fails', async () => {
+      googleSignsIn();
+      completed.mockRejectedValueOnce(new Error('boom'));
+      const res = await callback(
+        `code=c&state=${purpose}.abc`,
+        trip(`${purpose}.abc`),
+      );
+      expect(where(res)).toBe(`https://app.test/failed/${purpose}/error`);
+    });
+  });
+}

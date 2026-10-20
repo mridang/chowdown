@@ -11,10 +11,9 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireUser } from '@/lib/api/auth';
-import { SESSION_COOKIE } from '@/lib/auth/session';
-import { bumpSessionEpoch } from '@/lib/db/users';
-import { getDatabase } from '@/lib/util';
+import { SESSION_COOKIE } from '@/lib/auth/app';
+import { requireSignedIn } from '@/lib/auth/guard';
+import { bumpSessionEpoch } from '@/lib/auth/store';
 
 /**
  * `DELETE /api/sessions`: end every session of the signed-in person, on every
@@ -23,11 +22,11 @@ import { getDatabase } from '@/lib/util';
  * another site.
  */
 export async function DELETE(request: Request): Promise<NextResponse> {
-  const auth = await requireUser(request);
-  if (!auth.ok) {
-    return auth.response;
+  const caller = await requireSignedIn(request);
+  if (!caller.ok) {
+    return caller.response;
   }
-  await bumpSessionEpoch(getDatabase(), auth.value.id);
+  await bumpSessionEpoch(caller.user.id);
   const response = new NextResponse(null, { status: 204 });
   response.cookies.delete(SESSION_COOKIE);
   return response;
