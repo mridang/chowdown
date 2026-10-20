@@ -48,7 +48,7 @@ jobs:
         run: npm ci
 
       - name: Apply local D1 migrations
-        run: npx wrangler d1 migrations apply chowdown-db --local
+        run: npx wrangler d1 migrations apply DB --local
 
       - name: Run Cypress Tests
         uses: cypress-io/github-action@v6

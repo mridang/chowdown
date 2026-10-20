@@ -36,10 +36,6 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      # Type-aware lint and the type check both need the generated widget views.
-      - name: Build widget views
-        run: npm run build:views
-
       - name: Type check
         run: npm run typecheck
 
