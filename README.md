@@ -23,13 +23,12 @@ pages render in one round trip.
 All commands go through devbox (pins Node 24):
 
 ```sh
-devbox run login      # once: wrangler login (the AI binding is remote-only in dev)
-devbox run migrate    # apply D1 migrations locally
-npm run build:views   # once, and after changing src/views: the generated widget pages
-devbox run dev        # next dev on http://localhost:3737
-devbox run test       # jest
-devbox run lint       # eslint
-devbox run check      # test + build + lint
+devbox run -- npx wrangler login   # once: the AI binding is remote-only in dev
+devbox run -- npm run migrate      # apply D1 migrations locally
+devbox run -- npm run build:views  # once, and after changing src/views: the generated widget pages
+devbox run -- npm run dev          # next dev on http://localhost:3737
+devbox run -- npm test             # jest
+devbox run -- npm run lint         # eslint
 ```
 
 `npm run typecheck` runs the TypeScript compiler. Put the secrets listed under
@@ -38,7 +37,7 @@ devbox run check      # test + build + lint
 ### Dev on localhost (simplest)
 
 `http://localhost:3737` needs no cert at all — Google OAuth allows http for
-localhost. Just `devbox run dev` and add
+localhost. Just `devbox run -- npm run dev` and add
 `http://localhost:3737/api/auth/callback` to the OAuth client's redirect URIs.
 
 ## Google setup
@@ -141,7 +140,7 @@ cover-image proxy (`/api/cover-images`).
 wrangler d1 create chowdown-db                         # paste the id into wrangler.jsonc
 wrangler d1 migrations apply chowdown-db --remote      # schema (CI does this too)
 # the four secrets from "Google setup", one `wrangler secret put` each
-devbox run deploy                                      # opennextjs-cloudflare build && wrangler deploy
+devbox run -- npm run deploy                           # opennextjs-cloudflare build && wrangler deploy
 ```
 
 The custom domain `chowdown.apps.mrida.ng` requires the `apps.mrida.ng` zone on
