@@ -23,7 +23,7 @@ import { appOriginFromHeaders } from '@/lib/util/origin';
 import { ConsentCard } from './consent-card';
 
 /** The tab title of the approval screen. */
-export const metadata: Metadata = { title: 'Connect an app · chowdown' };
+export const metadata: Metadata = { title: 'Connect an app' };
 
 /** First value of each query parameter. */
 function flatten(
