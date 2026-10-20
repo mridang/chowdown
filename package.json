@@ -2,7 +2,6 @@
   "name": "chowdown",
   "version": "0.1.0",
   "type": "module",
-  "private": true,
   "scripts": {
     "dev": "next dev --port 3737",
     "pretypecheck": "npm run build:views",
@@ -13,21 +12,46 @@
     "migrate": "wrangler d1 migrations apply DB --local",
     "cf-typegen": "wrangler types && prettier --write worker-configuration.d.ts",
     "deploy": "opennextjs-cloudflare build && wrangler deploy",
+    "pretest": "npm run build:views",
+    "test": "jest --verbose --config=jest.config.mjs",
+    "test:watch": "npm run test -- --watch",
+    "test:debug": "jest --verbose --config=jest.config.mjs --detectOpenHandles",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prelint": "npm run build:views",
     "lint": "npx eslint .",
     "prelint:fix": "npm run build:views",
     "lint:fix": "npx eslint . --fix",
-    "pretest": "npm run build:views",
-    "test": "jest --verbose --config=jest.config.mjs",
-    "test:watch": "npm run test -- --watch",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run --browser chrome"
   },
-  "engines": {
-    "node": ">=24"
+  "keywords": [
+    "cloudflare-workers",
+    "cooklang",
+    "google-drive",
+    "mcp",
+    "nextjs",
+    "opennext",
+    "pwa",
+    "recipes"
+  ],
+  "author": {
+    "name": "Mridang Agarwalla",
+    "email": "mridang.agarwalla@gmail.com",
+    "url": "https://github.com/mridang"
   },
+  "license": "Apache-2.0",
+  "description": "A recipe app that keeps every recipe as a plain Cooklang file in your own Google Drive, with an MCP server for ChatGPT and Claude.",
+  "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mridang/chowdown.git"
+  },
+  "homepage": "https://github.com/mridang/chowdown",
+  "bugs": "https://github.com/mridang/chowdown/issues",
   "dependencies": {
     "@cooklang/cooklang-ts": "^1.1.2",
     "@opennextjs/cloudflare": "^1.20.12",
