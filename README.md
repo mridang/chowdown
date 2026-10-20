@@ -46,7 +46,7 @@ Set up in Google Cloud:
    - `http://localhost:3737/api/auth/callback` (dev)
    - `https://chowdown.apps.mrida.ng/api/auth/callback` (prod)
 
-Secrets, in `.dev.vars` locally and `wrangler secret put <NAME>` in production (see Deploy):
+Secrets, in `.env` locally and `wrangler secret put <NAME>` in production (see Deploy):
 
 ```sh
 GOOGLE_OAUTH_CLIENT_ID=....apps.googleusercontent.com
@@ -127,7 +127,7 @@ devbox run -- npm run typecheck    # tsc --noEmit
 devbox run -- npm run format       # prettier
 ```
 
-Put the secrets listed under [Google setup](#google-setup) in `.dev.vars` (gitignored) before signing in. `http://localhost:3737` needs no certificate, because Google OAuth allows http for localhost: add `http://localhost:3737/api/auth/callback` to the OAuth client's redirect URIs.
+Put the secrets listed under [Google setup](#google-setup) in `.env` (gitignored) before signing in. `http://localhost:3737` needs no certificate, because Google OAuth allows http for localhost: add `http://localhost:3737/api/auth/callback` to the OAuth client's redirect URIs.
 
 ## Deploy
 
