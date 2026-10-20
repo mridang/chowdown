@@ -1,8 +1,7 @@
 # 🍳 chowdown
 
 A recipe app for [Cooklang](https://cooklang.org) `.cook` files, kept in the
-person's own Google Drive. Built as a Next.js app on Cloudflare (OpenNext) — the
-same stack and conventions as [`scenery`](https://github.com/mridang/scenery).
+person's own Google Drive. Built as a Next.js app on Cloudflare Workers (OpenNext).
 
 The Cloudflare Worker does the real work: Google sign-in, a separate "Connect
 Google Drive" step, syncing the Recipes folder into a D1 cache, the REST API,
@@ -12,33 +11,12 @@ pages render in one round trip.
 
 ## Stack
 
-- **Next.js 16** (App Router) + **React 19**, **Tailwind 4**
-- **Cloudflare Workers** via **OpenNext** (`@opennextjs/cloudflare`), with the
-  **D1** (+ **Drizzle**), **Workers AI** and **Images** bindings
-- **devbox** (Node 24), **Jest**, **Cypress**, `@mridang/eslint-defaults`
-- **[`@cooklang/cooklang-ts`](https://github.com/cooklang/cooklang-ts)** for parsing
-
-## Develop
-
-All commands go through devbox (pins Node 24):
-
-```sh
-devbox run -- npx wrangler login   # once: the AI binding is remote-only in dev
-devbox run -- npm run migrate      # apply D1 migrations locally
-devbox run -- npm run build:views  # once, and after changing src/views: the generated widget pages
-devbox run -- npm run dev          # next dev on http://localhost:3737
-devbox run -- npm test             # jest
-devbox run -- npm run lint         # eslint
-```
-
-`npm run typecheck` runs the TypeScript compiler. Put the secrets listed under
-[Google setup](#google-setup) in `.dev.vars` (gitignored) before signing in.
-
-### Dev on localhost (simplest)
-
-`http://localhost:3737` needs no cert at all — Google OAuth allows http for
-localhost. Just `devbox run -- npm run dev` and add
-`http://localhost:3737/api/auth/callback` to the OAuth client's redirect URIs.
+- Next.js 16 (App Router), React 19 and Tailwind 4, on Cloudflare Workers via OpenNext (`@opennextjs/cloudflare`)
+- D1 with Drizzle, plus the Workers AI and Images bindings
+- devbox pins Node 24
+- Jest for unit tests, Cypress for end-to-end tests
+- `@mridang/eslint-defaults` for linting
+- [`@cooklang/cooklang-ts`](https://github.com/cooklang/cooklang-ts) for parsing
 
 ## Google setup
 
@@ -68,7 +46,7 @@ Set up in Google Cloud:
    - `http://localhost:3737/api/auth/callback` (dev)
    - `https://chowdown.apps.mrida.ng/api/auth/callback` (prod)
 
-Secrets, in `.dev.vars` locally and `wrangler secret put <NAME>` in production:
+Secrets, in `.dev.vars` locally and `wrangler secret put <NAME>` in production (see Deploy):
 
 ```sh
 GOOGLE_OAUTH_CLIENT_ID=....apps.googleusercontent.com
@@ -134,22 +112,41 @@ of the API: MCP (`/api/mcp`), OAuth (`/oauth/*`, `/.well-known/*`), the Google
 sign-in and Drive-connection redirects (`/api/auth/*`), the health check, the
 cover-image proxy (`/api/cover-images`).
 
+## Local development
+
+All commands go through devbox, which pins Node 24:
+
+```sh
+devbox run -- npx wrangler login   # once: the AI binding is remote-only in dev
+devbox run -- npm run migrate      # apply D1 migrations to the local database
+devbox run -- npm run build:views  # once, and after changing src/views: the generated widget pages
+devbox run -- npm run dev          # next dev on http://localhost:3737
+devbox run -- npm test             # jest, including the MCP conformance suite
+devbox run -- npm run lint         # eslint
+devbox run -- npm run typecheck    # tsc --noEmit
+devbox run -- npm run format       # prettier
+```
+
+Put the secrets listed under [Google setup](#google-setup) in `.dev.vars` (gitignored) before signing in. `http://localhost:3737` needs no certificate, because Google OAuth allows http for localhost: add `http://localhost:3737/api/auth/callback` to the OAuth client's redirect URIs.
+
 ## Deploy
 
 ```sh
-wrangler d1 create chowdown-db                         # paste the id into wrangler.jsonc
-wrangler d1 migrations apply chowdown-db --remote      # schema (CI does this too)
-# the four secrets from "Google setup", one `wrangler secret put` each
-devbox run -- npm run deploy                           # opennextjs-cloudflare build && wrangler deploy
+# one-time per environment
+devbox run -- npx wrangler d1 create chowdown-db          # paste the id into wrangler.jsonc
+devbox run -- npx wrangler d1 migrations apply DB --remote
+devbox run -- npx wrangler secret put GOOGLE_OAUTH_CLIENT_ID
+devbox run -- npx wrangler secret put GOOGLE_OAUTH_CLIENT_SECRET
+devbox run -- npx wrangler secret put SESSION_SECRET
+devbox run -- npx wrangler secret put TOKEN_ENCRYPTION_KEY
+
+# every release
+devbox run -- npm run deploy                              # opennextjs-cloudflare build && wrangler deploy
 ```
 
-The custom domain `chowdown.apps.mrida.ng` requires the `apps.mrida.ng` zone on
-the Cloudflare account, and the Worker needs the AI and Images bindings
-(declared in `wrangler.jsonc`).
+The custom domain `chowdown.apps.mrida.ng` requires the `apps.mrida.ng` zone on the Cloudflare account, and the Worker needs the AI and Images bindings (declared in `wrangler.jsonc`).
 
-GitHub Actions (`deploy.yml`) deploys on pushes to `master`. It needs a
-`CLOUDFLARE_API_TOKEN` secret and a `CLOUDFLARE_ACCOUNT_ID` variable in the
-`production` environment.
+GitHub Actions (`deploy.yml`) applies the D1 migrations and deploys on pushes to `master` or `main`. It needs a `CLOUDFLARE_API_TOKEN` secret and a `CLOUDFLARE_ACCOUNT_ID` variable in the `production` environment.
 
 ## Operations
 
@@ -163,7 +160,7 @@ client call `/api/mcp`; leave it unset for assistants that run on a server.
 **Rate limits.** Three layers, cheapest first:
 
 1. Cloudflare Workers Rate Limiting bindings (`ratelimits` in `wrangler.jsonc`,
-   twelve of them), checked in the Worker before the app runs. Which request
+   thirteen of them), checked in the Worker before the app runs. Which request
    counts against which binding is in `src/lib/http/edge-limits.ts`, and a test
    keeps the two in step. They are per Cloudflare location and eventually
    consistent: a cost guard that refuses floods, not an accounting system.
@@ -178,7 +175,7 @@ client call `/api/mcp`; leave it unset for assistants that run on a server.
 
 A refused call answers `429` with `Retry-After`.
 
-**Checks.** `npm test` runs the official MCP conformance suite against the
+**Checks.** `devbox run -- npm test` runs the official MCP conformance suite against the
 server's request handling for 2026-07-28 and 2025-11-25
 (`test/e2e/mcp.e2e.test.ts`, which also lists the known gaps with their
 reasons). MCP 2024-11-05 clients work over
