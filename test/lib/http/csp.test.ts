@@ -8,6 +8,10 @@ import {
   newNonce,
   nonceOf,
 } from '../../../src/lib/http/csp';
+import {
+  EXTRA_DIRECTIVES,
+  EXTRA_IMG_SOURCES,
+} from '../../../src/lib/http/site';
 
 describe('newNonce', () => {
   it('is base64 of 16 bytes, and different every time', () => {
@@ -29,8 +33,12 @@ describe('buildCsp', () => {
     );
   });
 
-  it('never allows inline script or eval', () => {
-    expect(csp).not.toContain('unsafe-inline');
+  it('never allows inline script or eval, beyond the directives site.ts names', () => {
+    const rest = csp
+      .split('; ')
+      .filter((d) => !EXTRA_DIRECTIVES.includes(d))
+      .join('; ');
+    expect(rest).not.toContain('unsafe-inline');
     expect(csp).not.toContain('unsafe-eval');
   });
 
@@ -50,12 +58,21 @@ describe('buildCsp', () => {
     expect(directive(name)).toMatch(new RegExp(`^${name} 'self'`));
   });
 
-  it('allows the Google photo and nothing else from other sites', () => {
+  it('allows pictures from this site and the places site.ts names, nothing else', () => {
     expect(directive('img-src')).toBe(
-      "img-src 'self' data: https://lh3.googleusercontent.com",
+      ['img-src', "'self'", 'data:', ...EXTRA_IMG_SOURCES].join(' '),
     );
     expect(directive('connect-src')).toBe("connect-src 'self'");
     expect(directive('font-src')).toBe("font-src 'self'");
+  });
+
+  it('adds the directives site.ts names to both kinds of policy', () => {
+    for (const surface of ['site', 'approval'] as const) {
+      const directives = buildCsp('abc123==', surface).split('; ');
+      for (const extra of EXTRA_DIRECTIVES) {
+        expect(directives).toContain(extra);
+      }
+    }
   });
 
   it('forbids plugins, frames, media and a rewritten <base>', () => {
@@ -123,7 +140,7 @@ describe('cspSurfaceFor', () => {
     expect(cspSurfaceFor('/oauth/authorize')).toBe('approval');
     for (const pathname of [
       '/',
-      '/app',
+      '/some/page',
       '/oauth/consent',
       '/oauth/authorize/x',
       '/api/mcp',

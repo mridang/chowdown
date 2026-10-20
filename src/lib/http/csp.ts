@@ -15,6 +15,7 @@
 import { bytesToBase64 } from '../util/base64';
 import { replacingHeaders } from './headers';
 import { CSP_REPORT_DIRECTIVES } from './reporting';
+import { EXTRA_DIRECTIVES, EXTRA_IMG_SOURCES } from './site';
 
 /** A fresh, unguessable nonce: 16 random bytes, base64. */
 export function newNonce(): string {
@@ -45,9 +46,9 @@ export function buildCsp(nonce: string, surface: CspSurface = 'site'): string {
     // `'self'` only matters to browsers too old to know strict-dynamic.
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
     `style-src 'self' 'nonce-${nonce}'`,
-    // The signed-in person's Google photo is the only picture from elsewhere;
-    // recipe photos come through our own address.
-    "img-src 'self' data: https://lh3.googleusercontent.com",
+    // Pictures come from this site; the few other places the app shows a
+    // picture from are named in `site.ts`.
+    ['img-src', "'self'", 'data:', ...EXTRA_IMG_SOURCES].join(' '),
     "font-src 'self'",
     "connect-src 'self'",
     "manifest-src 'self'",
@@ -59,6 +60,8 @@ export function buildCsp(nonce: string, surface: CspSurface = 'site'): string {
     ...(approval ? [] : ["form-action 'self'"]),
     `frame-ancestors '${approval ? 'none' : 'self'}'`,
     'upgrade-insecure-requests',
+    // Directives only this app adds, if any (see `site.ts`).
+    ...EXTRA_DIRECTIVES,
     ...CSP_REPORT_DIRECTIVES,
   ].join('; ');
 }

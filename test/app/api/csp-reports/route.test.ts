@@ -24,7 +24,7 @@ afterEach(() => {
 
 const send = (body: BodyInit, contentType = 'application/reports+json') =>
   POST(
-    new Request('https://chowdown.test/api/csp-reports', {
+    new Request('https://app.test/api/csp-reports', {
       method: 'POST',
       headers: { 'content-type': contentType },
       body,
@@ -35,7 +35,7 @@ const report = JSON.stringify([
   {
     type: 'csp-violation',
     body: {
-      documentURL: 'https://chowdown.test/app',
+      documentURL: 'https://app.test/app',
       blockedURL: 'https://evil.test/x.js',
       effectiveDirective: 'script-src-elem',
     },

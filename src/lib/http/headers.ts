@@ -9,6 +9,7 @@
  */
 
 import { REPORTING_ENDPOINTS } from './reporting';
+import { OPEN_FILES, PUBLIC_PAGES, RARELY_CHANGING } from './site';
 
 /** Security headers for every response. */
 export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
@@ -29,18 +30,6 @@ export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
   // Keep other windows from reaching into this one.
   'Cross-Origin-Opener-Policy': 'same-origin',
 };
-
-/** The pages search engines may index. Everything else is private. */
-export const PUBLIC_PAGES: ReadonlySet<string> = new Set(['/', '/privacy']);
-
-/**
- * Which other sites may load a file as a picture, script or style. Our pages
- * and data are for this site only (`same-site`); the few files other sites
- * embed or fetch on purpose (the social card, the icons, the manifest and the
- * plain-text files at the root) are open to all.
- */
-const OPEN_FILES =
-  /^\/(opengraph-image\.png|twitter-image\.png|icon\.svg|apple-icon\.png|favicon\.ico|manifest\.webmanifest|robots\.txt|sitemap\.xml|llms\.txt|security-policy\.txt|\.well-known\/.*|icons\/.*|screenshots\/.*)$/;
 
 /** The `Cross-Origin-Resource-Policy` for a path. */
 export function resourcePolicyFor(pathname: string): string {
@@ -79,16 +68,6 @@ export function replacingHeaders(
 
 /** Tells crawlers not to index a page or follow its links. */
 const NOINDEX: HeaderPair = ['X-Robots-Tag', 'noindex, nofollow'];
-
-/** The small files that rarely change, and for which a stale copy is harmless. */
-const RARELY_CHANGING: ReadonlySet<string> = new Set([
-  '/manifest.webmanifest',
-  '/icon.svg',
-  '/apple-icon.png',
-  '/favicon.ico',
-  '/opengraph-image.png',
-  '/twitter-image.png',
-]);
 
 /** Cache rules for the few responses that want something other than the default. */
 function cacheControlFor(pathname: string, response: Response): string | null {

@@ -9,9 +9,15 @@ import {
   replacingHeaders,
   resourcePolicyFor,
 } from '../../../src/lib/http/headers';
+import { PUBLIC_PAGES, RARELY_CHANGING } from '../../../src/lib/http/site';
 
-const at = (pathname: string) =>
-  new Request(`https://chowdown.test${pathname}`);
+const at = (pathname: string) => new Request(`https://app.test${pathname}`);
+
+/** Pages and endpoints no app makes public, whatever its `site.ts` says. */
+const PRIVATE_PATHS = ['/some/page', '/some/page/abc', '/api/things'];
+
+/** The small files the app lists as open to other sites and cacheable. */
+const CACHED_FILES = [...RARELY_CHANGING];
 const html = (headers: Record<string, string> = {}) =>
   new Response('<p>hi</p>', {
     headers: { 'content-type': 'text/html; charset=utf-8', ...headers },
@@ -25,7 +31,7 @@ describe('openerPolicyFor', () => {
   it('cuts other windows off everywhere else', () => {
     for (const pathname of [
       '/',
-      '/app',
+      '/some/page',
       '/oauth/consent',
       '/oauth/token',
       '/api/mcp',
@@ -36,27 +42,23 @@ describe('openerPolicyFor', () => {
 });
 
 describe('applyResponseHeaders — files other sites and browsers fetch', () => {
-  it.each([
-    '/favicon.ico',
-    '/security-policy.txt',
-    '/screenshots/wide.png',
-    '/icons/icon-192.png',
-  ])('serves %s to other sites and does not mark it noindex', (pathname) => {
-    const out = applyResponseHeaders(at(pathname), new Response('x'));
-    expect(out.headers.get('cross-origin-resource-policy')).toBe(
-      'cross-origin',
-    );
-    expect(out.headers.has('x-robots-tag')).toBe(false);
+  it('serves every cached file to other sites and does not mark it noindex', () => {
+    for (const pathname of CACHED_FILES) {
+      const out = applyResponseHeaders(at(pathname), new Response('x'));
+      expect(out.headers.get('cross-origin-resource-policy')).toBe(
+        'cross-origin',
+      );
+      expect(out.headers.has('x-robots-tag')).toBe(false);
+    }
   });
 
-  it.each([
-    '/favicon.ico',
-    '/opengraph-image.png',
-    '/twitter-image.png',
-    '/icon.svg',
-  ])('lets a browser keep %s for a day', (pathname) => {
-    const out = applyResponseHeaders(at(pathname), new Response('x'));
-    expect(out.headers.get('cache-control')).toContain('max-age=86400');
+  it('lets a browser keep every cached file for a day', () => {
+    for (const pathname of CACHED_FILES) {
+      const out = applyResponseHeaders(at(pathname), new Response('x'));
+      expect(out.headers.get('cache-control')).toBe(
+        'public, max-age=86400, stale-while-revalidate=604800',
+      );
+    }
   });
 });
 
@@ -68,14 +70,14 @@ describe('applyResponseHeaders', () => {
       ),
     ).toBe('unsafe-none');
     expect(
-      applyResponseHeaders(at('/app'), html()).headers.get(
+      applyResponseHeaders(at('/some/page'), html()).headers.get(
         'cross-origin-opener-policy',
       ),
     ).toBe('same-origin');
   });
 
   it('adds the security headers to every response', async () => {
-    const out = applyResponseHeaders(at('/app'), html());
+    const out = applyResponseHeaders(at('/some/page'), html());
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
       expect(out.headers.get(name)).toBe(value);
     }
@@ -98,7 +100,7 @@ describe('applyResponseHeaders', () => {
 
   it('lets personal pages be restored by the back button but never shared', () => {
     const out = applyResponseHeaders(
-      at('/recipe/abc'),
+      at('/some/page/abc'),
       html({
         'Cache-Control':
           'private, no-cache, no-store, max-age=0, must-revalidate',
@@ -109,7 +111,7 @@ describe('applyResponseHeaders', () => {
 
   it('leaves the cache rules of the API and the sign-in pages alone', () => {
     const api = applyResponseHeaders(
-      at('/api/recipes'),
+      at('/api/things'),
       new Response('{}', {
         headers: {
           'content-type': 'application/json',
@@ -125,68 +127,52 @@ describe('applyResponseHeaders', () => {
     expect(consent.headers.get('Cache-Control')).toBe('no-store');
   });
 
-  it('lets the manifest and icons be cached for a day', () => {
-    for (const p of ['/manifest.webmanifest', '/icon.svg', '/apple-icon.png']) {
-      const out = applyResponseHeaders(at(p), new Response('x'));
-      expect(out.headers.get('Cache-Control')).toContain('max-age=86400');
-    }
+  it('leaves the cache rule of any other file as the response set it', () => {
+    const out = applyResponseHeaders(
+      at('/some/file.bin'),
+      new Response('x', { headers: { 'Cache-Control': 'max-age=5' } }),
+    );
+    expect(out.headers.get('Cache-Control')).toBe('max-age=5');
   });
 
   it('keeps the status of a redirect', () => {
     const out = applyResponseHeaders(
       at('/'),
-      Response.redirect('https://chowdown.test/app', 307),
+      Response.redirect('https://app.test/some/page', 307),
     );
     expect(out.status).toBe(307);
-    expect(out.headers.get('Location')).toBe('https://chowdown.test/app');
+    expect(out.headers.get('Location')).toBe('https://app.test/some/page');
   });
 });
 
 describe('Cross-Origin-Resource-Policy', () => {
   it('keeps pages and data to this site', () => {
-    for (const path of [
-      '/',
-      '/app',
-      '/recipe/abc',
-      '/api/recipes',
-      '/connect',
-    ]) {
+    for (const path of ['/', '/some/page', '/some/page/abc', '/api/things']) {
       expect(resourcePolicyFor(path)).toBe('same-site');
     }
   });
 
   it('opens the files other sites embed or fetch on purpose', () => {
-    for (const path of [
-      '/opengraph-image.png',
-      '/twitter-image.png',
-      '/icon.svg',
-      '/apple-icon.png',
-      '/manifest.webmanifest',
-      '/robots.txt',
-      '/sitemap.xml',
-      '/llms.txt',
-      '/icons/icon-192.png',
-      '/.well-known/security.txt',
-      '/.well-known/oauth-authorization-server',
-    ]) {
+    for (const path of CACHED_FILES) {
       expect(resourcePolicyFor(path)).toBe('cross-origin');
     }
   });
 
   it('is sent on every response, and a route may set its own', () => {
+    const [cached = '/'] = CACHED_FILES;
     expect(
-      applyResponseHeaders(at('/app'), html()).headers.get(
+      applyResponseHeaders(at('/some/page'), html()).headers.get(
         'Cross-Origin-Resource-Policy',
       ),
     ).toBe('same-site');
     expect(
-      applyResponseHeaders(at('/icon.svg'), html()).headers.get(
+      applyResponseHeaders(at(cached), html()).headers.get(
         'Cross-Origin-Resource-Policy',
       ),
     ).toBe('cross-origin');
     expect(
       applyResponseHeaders(
-        at('/app'),
+        at('/some/page'),
         html({ 'Cross-Origin-Resource-Policy': 'same-origin' }),
       ).headers.get('Cross-Origin-Resource-Policy'),
     ).toBe('same-origin');
@@ -202,20 +188,13 @@ describe('Strict-Transport-Security', () => {
 });
 
 describe('X-Robots-Tag', () => {
-  it('keeps crawlers out of every page except the two public ones', () => {
-    for (const path of [
-      '/app',
-      '/recipe/abc',
-      '/connect',
-      '/recipes/add',
-      '/api/recipes',
-      '/oauth/authorize',
-    ]) {
+  it('keeps crawlers out of every page except the ones the app makes public', () => {
+    for (const path of [...PRIVATE_PATHS, '/oauth/authorize']) {
       expect(
         applyResponseHeaders(at(path), html()).headers.get('X-Robots-Tag'),
       ).toBe('noindex, nofollow');
     }
-    for (const path of ['/', '/privacy']) {
+    for (const path of PUBLIC_PAGES) {
       expect(
         applyResponseHeaders(at(path), html()).headers.get('X-Robots-Tag'),
       ).toBeNull();
@@ -223,12 +202,7 @@ describe('X-Robots-Tag', () => {
   });
 
   it('leaves the files crawlers are meant to read unmarked', () => {
-    for (const path of [
-      '/robots.txt',
-      '/sitemap.xml',
-      '/llms.txt',
-      '/.well-known/security.txt',
-    ]) {
+    for (const path of CACHED_FILES) {
       expect(
         applyResponseHeaders(at(path), html()).headers.get('X-Robots-Tag'),
       ).toBeNull();
@@ -276,7 +250,12 @@ describe('replacingHeaders', () => {
 
 describe('applyResponseHeaders — reporting', () => {
   it('tells the browser where the policies send their reports, on every response', () => {
-    for (const pathname of ['/', '/app', '/api/recipes', '/oauth/authorize']) {
+    for (const pathname of [
+      '/',
+      '/some/page',
+      '/api/things',
+      '/oauth/authorize',
+    ]) {
       expect(
         applyResponseHeaders(at(pathname), html()).headers.get(
           'reporting-endpoints',
