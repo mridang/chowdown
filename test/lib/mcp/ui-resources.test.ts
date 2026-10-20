@@ -5,11 +5,11 @@ import { describe, expect, it } from '@jest/globals';
 import {
   contentHash as cardHash,
   html as cardHtml,
-} from '../../../build/views/recipe-card';
+} from '../../../dist/views/recipe-card';
 import {
   contentHash as listHash,
   html as listHtml,
-} from '../../../build/views/recipe-list';
+} from '../../../dist/views/recipe-list';
 import {
   APP_RESOURCES,
   CARD_RESOURCE_URI,
