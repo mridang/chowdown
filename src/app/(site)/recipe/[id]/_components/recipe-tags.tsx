@@ -28,7 +28,7 @@ export function RecipeTags({
     return null;
   }
   return (
-    <div className="border-line mt-14 flex flex-wrap items-center gap-2 border-t pt-6 print:hidden">
+    <div className="mt-14 flex flex-wrap items-center gap-2 border-t border-line pt-6 print:hidden">
       <Eyebrow as="span" tone="subtle" className="mr-2">
         Tagged
       </Eyebrow>

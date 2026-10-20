@@ -35,26 +35,6 @@ devbox run check      # test + build + lint
 `npm run typecheck` runs the TypeScript compiler. Put the secrets listed under
 [Google setup](#google-setup) in `.dev.vars` (gitignored) before signing in.
 
-### Dev on the real domain (https://chowdown.dev.mrida.ng)
-
-`chowdown.dev.mrida.ng` is a loopback domain (resolves to 127.0.0.1). To serve
-the app there over HTTPS on port 443, with a self-signed cert (no mkcert, no CA
-installed):
-
-```sh
-npm run cert:dev                              # once — generates certs/ (gitignored)
-sudo env "PATH=$PATH" npm run dev:https        # binds 443 (privileged → sudo)
-```
-
-Then in Chrome: clear HSTS once at `chrome://net-internals/#hsts` (delete
-`mrida.ng` — it inherits HSTS, which otherwise blocks the cert click-through),
-open https://chowdown.dev.mrida.ng, and **Advanced → Proceed** past the
-self-signed warning. Add `https://chowdown.dev.mrida.ng/api/auth/callback` to the
-OAuth client's redirect URIs for sign-in to work there.
-
-> Passing the cert explicitly is what stops `--experimental-https` from
-> downloading mkcert and installing a CA.
-
 ### Dev on localhost (simplest)
 
 `http://localhost:3737` needs no cert at all — Google OAuth allows http for
@@ -129,12 +109,11 @@ told so instead of being shown an empty collection.
 
 ## REST API
 
-The app's data is available as a REST API under `/api`, described in
-[`openapi/chowdown.yaml`](openapi/chowdown.yaml) and designed to the
+The app's data is available as a REST API under `/api`, designed to the
 [Zalando RESTful API guidelines](https://opensource.zalando.com/restful-api-guidelines/)
 (plural kebab-case nouns, `snake_case` JSON, RFC 9457 problem details, cursor
 pagination, JSON Merge Patch, `ETag` / `If-Match`). The one deliberate departure
-is the `/api` prefix, which is declared in the spec's `servers` entry.
+is the `/api` prefix.
 
 | Resource                                          | Methods                                     |
 | ------------------------------------------------- | ------------------------------------------- |
@@ -200,10 +179,10 @@ client call `/api/mcp`; leave it unset for assistants that run on a server.
 
 A refused call answers `429` with `Retry-After`.
 
-**Checks.** `npm run conformance` runs the official MCP conformance suite against
-the server's request handling for 2026-07-28 (`conformance:legacy` for
-2025-11-25); known gaps are listed with reasons in
-`scripts/conformance/expected-failures-*.yml`. MCP 2024-11-05 clients work over
+**Checks.** `npm test` runs the official MCP conformance suite against the
+server's request handling for 2026-07-28 and 2025-11-25
+(`test/e2e/mcp.e2e.test.ts`, which also lists the known gaps with their
+reasons). MCP 2024-11-05 clients work over
 streamable HTTP only (no HTTP+SSE transport is hosted).
 
 ## Agent skills

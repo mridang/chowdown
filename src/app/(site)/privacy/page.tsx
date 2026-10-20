@@ -59,9 +59,9 @@ export default function PrivacyPage(): ReactElement {
         <Heading as="h1" variant="h1" className="mt-2">
           Privacy Policy
         </Heading>
-        <p className="text-muted mt-3 text-sm">Last updated: 19 October 2026</p>
+        <p className="mt-3 text-sm text-muted">Last updated: 19 October 2026</p>
 
-        <div className="text-muted mt-8 space-y-9 text-lg leading-relaxed">
+        <div className="mt-8 space-y-9 text-lg leading-relaxed text-muted">
           <p>
             chowdown is a personal recipe app. It stores your recipes as
             Cooklang (<code className="font-mono text-base">.cook</code>) files
@@ -210,7 +210,7 @@ export default function PrivacyPage(): ReactElement {
 
         <Link
           href="/"
-          className="text-muted hover:text-ink mt-12 inline-flex h-10 items-center gap-1 text-sm font-semibold focus-ring"
+          className="focus-ring mt-12 inline-flex h-10 items-center gap-1 text-sm font-semibold text-muted hover:text-ink"
         >
           <ChevronLeftIcon size="sm" />
           Back to chowdown

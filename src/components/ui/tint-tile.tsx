@@ -29,7 +29,7 @@ export function TintTile({
       aria-hidden="true"
       className={cn('grid place-items-center', TINTS[tone], className)}
     >
-      <PanIcon className="h-1/4 w-1/4 opacity-40" strokeWidth={1.1} />
+      <PanIcon className="size-1/4 opacity-40" strokeWidth={1.1} />
     </div>
   );
 }

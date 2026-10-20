@@ -25,7 +25,7 @@ export function Breadcrumb({
   return (
     <nav
       aria-label="Breadcrumb"
-      className={cn('text-subtle text-sm', className)}
+      className={cn('text-sm text-subtle', className)}
     >
       <ol className="m-0 inline list-none p-0">
         {crumbs.map((crumb, index) => (

@@ -21,12 +21,12 @@ function FilterOption({
     <li className="flex items-center gap-2.5 text-sm">
       <span
         className={cn(
-          'grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border',
+          'grid size-4 shrink-0 place-items-center rounded-[4px] border',
           on ? 'border-ink bg-ink text-white' : 'border-ink/30 bg-white',
         )}
       >
         {on ? (
-          <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden="true">
+          <svg viewBox="0 0 12 12" className="size-3" aria-hidden="true">
             <path
               d="M2.5 6.5 5 9l4.5-5.5"
               fill="none"
@@ -37,7 +37,7 @@ function FilterOption({
         ) : null}
       </span>
       <span className={on ? 'font-semibold' : undefined}>{label}</span>
-      <span className="text-subtle ml-auto text-xs">{count}</span>
+      <span className="ml-auto text-xs text-subtle">{count}</span>
     </li>
   );
 }

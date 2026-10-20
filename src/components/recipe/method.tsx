@@ -84,7 +84,7 @@ export function Method({
           ))}
         </ol>
       ) : (
-        <p className="text-subtle mt-4">This recipe has no method yet.</p>
+        <p className="mt-4 text-subtle">This recipe has no method yet.</p>
       )}
     </div>
   );

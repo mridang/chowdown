@@ -37,12 +37,12 @@ function TimerEntry({
   return (
     <li
       className={cn(
-        'rounded-card flex flex-wrap items-center gap-x-3 gap-y-2 border-2 bg-white px-3 py-2',
+        'flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border-2 bg-white px-3 py-2',
         ENTRY_STATES[view.state],
       )}
     >
       <div className="min-w-0">
-        <p className="text-subtle text-sm">
+        <p className="text-sm text-subtle">
           Step {step} <span aria-hidden="true">·</span>{' '}
           <span className="sr-only">timer for </span>
           {timer.label}
@@ -50,7 +50,7 @@ function TimerEntry({
         <p
           role="timer"
           aria-label={`Step ${step} timer`}
-          className="font-display flex items-center gap-1.5 text-2xl font-semibold tabular-nums"
+          className="flex items-center gap-1.5 font-display text-2xl font-semibold tabular-nums"
         >
           {view.state === 'done' ? (
             <CheckIcon size="md" />

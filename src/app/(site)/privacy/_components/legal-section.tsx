@@ -26,7 +26,7 @@ export function LegalItem({
     <li className="flex gap-3">
       <span
         aria-hidden="true"
-        className="bg-flame mt-[0.65rem] h-1.5 w-1.5 shrink-0 rounded-full"
+        className="mt-[0.65rem] size-1.5 shrink-0 rounded-full bg-flame"
       />
       <span>{children}</span>
     </li>

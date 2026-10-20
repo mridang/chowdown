@@ -77,7 +77,7 @@ export function AuthorLine({
 }>): ReactElement {
   return (
     <p className="mt-3 flex max-w-full min-w-0 items-baseline gap-2">
-      <span className="text-subtle text-sm">by</span>
+      <span className="text-sm text-subtle">by</span>
       <AuthorName name={name} size="lg" />
     </p>
   );
@@ -118,7 +118,7 @@ export function SourceLine({
         // underlined one, so it keeps its own look.
         <Link
           href={`/app?site=${encodeURIComponent(domain)}`}
-          className="rounded-control border-field hover:border-ink focus-ring inline-flex h-8 items-center border px-2.5 text-xs font-medium transition print:hidden"
+          className="focus-ring inline-flex h-8 items-center rounded-control border border-field px-2.5 text-xs font-medium transition hover:border-ink print:hidden"
         >
           More from {domain}
         </Link>

@@ -76,8 +76,8 @@ export function IngredientsPanel({
         ) : null}
       </div>
 
-      <div className="rounded-control border-line mt-4 flex items-center justify-between border bg-white px-3 py-2">
-        <span className="text-muted text-sm" id={servingsLabelId}>
+      <div className="mt-4 flex items-center justify-between rounded-control border border-line bg-white px-3 py-2">
+        <span className="text-sm text-muted" id={servingsLabelId}>
           Servings
         </span>
         <span
@@ -90,7 +90,7 @@ export function IngredientsPanel({
             aria-label="Fewer servings"
             disabled={people <= 1}
             onClick={() => setPeople((n) => Math.max(1, n - 1))}
-            className="rounded-control hover:bg-ink/5 grid h-9 w-9 place-items-center transition disabled:opacity-35 focus-ring-flush"
+            className="focus-ring-flush grid size-9 place-items-center rounded-control transition hover:bg-ink/5 disabled:opacity-35"
           >
             <MinusIcon size="sm" />
           </button>
@@ -104,7 +104,7 @@ export function IngredientsPanel({
             type="button"
             aria-label="More servings"
             onClick={() => setPeople((n) => n + 1)}
-            className="rounded-control hover:bg-ink/5 grid h-9 w-9 place-items-center transition focus-ring-flush"
+            className="focus-ring-flush grid size-9 place-items-center rounded-control transition hover:bg-ink/5"
           >
             <PlusIcon size="sm" />
           </button>
@@ -112,7 +112,7 @@ export function IngredientsPanel({
       </div>
 
       {ingredients.length > 0 ? (
-        <ul className="divide-line border-line mt-4 divide-y border-y">
+        <ul className="mt-4 divide-y divide-line border-y border-line">
           {ingredients.map((ingredient, index) => {
             const ticked = done.has(index);
             return (
@@ -122,11 +122,11 @@ export function IngredientsPanel({
                   role="checkbox"
                   aria-checked={ticked}
                   onClick={() => toggle(index)}
-                  className="flex min-h-11 w-full items-center gap-3 py-2 text-left text-base focus-ring-flush"
+                  className="focus-ring-flush flex min-h-11 w-full items-center gap-3 py-2 text-left text-base"
                 >
                   <span
                     className={cn(
-                      'grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border transition',
+                      'grid size-[18px] shrink-0 place-items-center rounded-full border transition',
                       ticked
                         ? 'border-ink bg-ink text-white'
                         : 'border-field bg-white',
@@ -165,7 +165,7 @@ export function IngredientsPanel({
           })}
         </ul>
       ) : (
-        <p className="text-subtle mt-4 text-sm">
+        <p className="mt-4 text-sm text-subtle">
           This recipe doesn&apos;t list any ingredients yet.
         </p>
       )}
@@ -179,7 +179,7 @@ export function IngredientsPanel({
             {cookware.map((item, index) => (
               <li
                 key={`${item}-${index}`}
-                className="border-field inline-flex h-8 items-center gap-2 rounded-full border bg-white px-3 text-sm"
+                className="inline-flex h-8 items-center gap-2 rounded-full border border-field bg-white px-3 text-sm"
               >
                 <PanIcon size="sm" className="text-ember" />
                 {item}

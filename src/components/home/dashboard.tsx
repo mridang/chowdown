@@ -75,7 +75,7 @@ function Row({
         action={
           <Link
             href={href}
-            className="flex h-10 shrink-0 items-center gap-1.5 text-sm font-semibold underline underline-offset-4 focus-ring-flush"
+            className="focus-ring-flush flex h-10 shrink-0 items-center gap-1.5 text-sm font-semibold underline underline-offset-4"
           >
             See all <ArrowIcon size="sm" />
           </Link>
@@ -120,10 +120,10 @@ export async function Dashboard({
 
   return (
     <>
-      <section className="border-line border-b">
+      <section className="border-b border-line">
         <Container className="py-10 sm:py-14">
           <Eyebrow className="flex items-center gap-2">
-            <span className="bg-live h-2 w-2 rounded-full" />
+            <span className="size-2 rounded-full bg-live" />
             Welcome back, {user.firstName}
           </Eyebrow>
           <Heading as="h1" variant="h1" className="mt-3 max-w-3xl">
@@ -159,7 +159,7 @@ export async function Dashboard({
             </>
           )}
           {recipes.length > 0 ? (
-            <p className="text-subtle mt-5 text-sm">
+            <p className="mt-5 text-sm text-subtle">
               {countOf(recipes.length, 'recipe')} ·{' '}
               {countOf(favouriteCount, 'favourite')}
             </p>

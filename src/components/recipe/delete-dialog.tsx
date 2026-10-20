@@ -84,13 +84,13 @@ export function DeleteDialog({
         <DialogTitle className="font-display text-xl font-semibold">
           Delete this recipe?
         </DialogTitle>
-        <DialogDescription className="text-muted mt-2 text-sm leading-relaxed">
-          <span className="text-ink font-semibold">{title}</span> will be
+        <DialogDescription className="mt-2 text-sm leading-relaxed text-muted">
+          <span className="font-semibold text-ink">{title}</span> will be
           removed from chowdown and moved to the trash in your Google Drive,
           where you can restore it for about 30 days.
         </DialogDescription>
         {error ? (
-          <p role="alert" className="text-ember mt-3 text-sm font-medium">
+          <p role="alert" className="mt-3 text-sm font-medium text-ember">
             {error}
           </p>
         ) : null}

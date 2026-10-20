@@ -29,17 +29,17 @@ export function WindowFrame({
       role="img"
       aria-label={label}
       className={cn(
-        'rounded-card border-line overflow-hidden border bg-white',
+        'overflow-hidden rounded-card border border-line bg-white',
         className,
       )}
     >
-      <div className="border-line bg-sand flex items-center gap-1.5 border-b px-4 py-2.5">
+      <div className="flex items-center gap-1.5 border-b border-line bg-sand px-4 py-2.5">
         {/* The three dots of a window's title bar. */}
         {DOTS.map((dot) => (
-          <span key={dot} className="bg-ink/20 h-2.5 w-2.5 rounded-full" />
+          <span key={dot} className="size-2.5 rounded-full bg-ink/20" />
         ))}
         {title ? (
-          <span className="text-subtle ml-3 truncate font-mono text-xs">
+          <span className="ml-3 truncate font-mono text-xs text-subtle">
             {title}
           </span>
         ) : null}

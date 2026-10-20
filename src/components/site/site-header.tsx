@@ -58,9 +58,9 @@ export function SiteHeader({
   user,
 }: Readonly<{ user: ShellUser | null }>): ReactElement {
   return (
-    <header className="bg-paper/95 sticky top-0 z-30 backdrop-blur">
-      <div className="bg-marigold h-1.5" />
-      <div className="border-line border-b">
+    <header className="sticky top-0 z-30 bg-paper/95 backdrop-blur">
+      <div className="h-1.5 bg-marigold" />
+      <div className="border-b border-line">
         <Container
           className={`flex ${HEADER_ROW_CLASS} items-center justify-between gap-4`}
         >
@@ -83,7 +83,7 @@ export function SiteHeader({
                   <Link
                     key={label}
                     href={href}
-                    className="rounded-control text-muted hover:bg-ink/5 flex h-10 items-center px-3 text-sm font-medium transition"
+                    className="flex h-10 items-center rounded-control px-3 text-sm font-medium text-muted transition hover:bg-ink/5"
                   >
                     {label}
                   </Link>

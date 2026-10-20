@@ -16,7 +16,7 @@ const CARDS = [0, 1, 2, 3, 4, 5] as const;
 export default function AppLoading(): ReactElement {
   return (
     <SkeletonFrame label="Loading your recipes">
-      <div className="border-line border-b">
+      <div className="border-b border-line">
         <Container className="py-8 sm:py-12">
           <Skeleton className="h-4 w-32" />
           <Skeleton className="mt-3 h-12 w-48" />

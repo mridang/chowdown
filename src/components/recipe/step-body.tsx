@@ -38,8 +38,8 @@ function TimerToken({
   const durationMs = parseDurationMs(label);
   if (!timers || stepIndex === undefined || durationMs === null) {
     return (
-      <span className="text-ember whitespace-nowrap">
-        <ClockIcon className="mr-1 inline-block h-[0.8em] w-[0.8em] -translate-y-px" />
+      <span className="whitespace-nowrap text-ember">
+        <ClockIcon className="mr-1 inline-block size-[0.8em] -translate-y-px" />
         {label}
       </span>
     );
@@ -56,11 +56,11 @@ function TimerToken({
       onClick={() => timers.toggle({ id, step: stepIndex, label, durationMs })}
       className={cn(
         // `min-h-11`: a 44px target, even in the smaller type of a long step.
-        'text-ember focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-full border-2 px-3 align-middle text-[0.8em] font-semibold whitespace-nowrap tabular-nums transition-colors',
+        'focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-full border-2 px-3 align-middle text-[0.8em] font-semibold whitespace-nowrap text-ember tabular-nums transition-colors',
         CHIP_STATES[view.state],
       )}
     >
-      <ClockIcon className="h-[0.8em] w-[0.8em]" />
+      <ClockIcon className="size-[0.8em]" />
       <span className="sr-only">{view.action} timer: </span>
       {view.time}
     </button>
@@ -95,11 +95,11 @@ export function StepBody({
           case 'ingredient':
             return (
               <span key={index}>
-                <span className="decoration-marigold underline decoration-4 underline-offset-4">
+                <span className="underline decoration-marigold decoration-4 underline-offset-4">
                   {token.name}
                 </span>
                 {token.quantity ? (
-                  <span className="text-subtle text-[0.6em] font-normal">
+                  <span className="text-[0.6em] font-normal text-subtle">
                     {' '}
                     ({quantity(token.quantity)})
                   </span>

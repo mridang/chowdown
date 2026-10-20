@@ -75,14 +75,14 @@ export function DeleteAccountDialog({
         <DialogTitle className="font-display text-xl font-semibold">
           Delete your account?
         </DialogTitle>
-        <DialogDescription className="text-muted mt-2 text-sm leading-relaxed">
+        <DialogDescription className="mt-2 text-sm leading-relaxed text-muted">
           This removes everything chowdown keeps about you: your sign-in, the
           saved copy of your recipes, favourites, search index, connected
           assistants and any imports in progress. Your recipe files stay in your
           Google Drive, untouched. This cannot be undone.
         </DialogDescription>
         {error ? (
-          <p role="alert" className="text-ember mt-3 text-sm font-medium">
+          <p role="alert" className="mt-3 text-sm font-medium text-ember">
             {error}
           </p>
         ) : null}

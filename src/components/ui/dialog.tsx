@@ -324,7 +324,7 @@ export function DialogContent({
       // refuse).
       onCancel={cancelHandler(dismissable, () => setOpen(false))}
       className={cn(
-        'bg-paper text-ink fixed m-0 overflow-y-auto p-0 backdrop:bg-ink/50',
+        'fixed m-0 overflow-y-auto bg-paper p-0 text-ink backdrop:bg-ink/50',
         VARIANTS[variant],
         className,
       )}
@@ -338,7 +338,7 @@ export function DialogContent({
               type="button"
               aria-label={closeLabel}
               onClick={() => setOpen(false)}
-              className="rounded-control hover:bg-ink/5 absolute top-3 right-3 grid h-10 w-10 place-items-center transition focus-ring-flush"
+              className="focus-ring-flush absolute top-3 right-3 grid size-10 place-items-center rounded-control transition hover:bg-ink/5"
             >
               <CloseIcon size="md" />
             </button>

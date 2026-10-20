@@ -43,7 +43,7 @@ export function SearchField({
       <SearchIcon size="md" className="shrink-0 text-subtle" />
       <input
         type="search"
-        className="placeholder:text-subtle h-full min-w-0 flex-1 bg-transparent text-base outline-none"
+        className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-subtle"
         {...props}
       />
       {action}

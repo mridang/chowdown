@@ -18,6 +18,6 @@ describe('the recipe list’s loading shell', () => {
   });
 
   it('sits in the same page column as the list', () => {
-    expect(out).toContain('max-w-[90rem]');
+    expect(out).toContain('max-w-360');
   });
 });

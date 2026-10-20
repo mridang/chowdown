@@ -142,15 +142,15 @@ function ChoiceCard({
       type="button"
       padding="lg"
       onClick={onClick}
-      className="hover:border-ink/40 focus-ring flex flex-1 flex-col items-start text-left transition"
+      className="focus-ring flex flex-1 flex-col items-start text-left transition hover:border-ink/40"
     >
-      <span className="rounded-control bg-marigold/30 grid h-11 w-11 place-items-center">
+      <span className="grid size-11 place-items-center rounded-control bg-marigold/30">
         {icon}
       </span>
-      <span className="font-display mt-5 block text-xl font-semibold">
+      <span className="mt-5 block font-display text-xl font-semibold">
         {title}
       </span>
-      <span className="text-muted mt-2 block leading-relaxed">
+      <span className="mt-2 block leading-relaxed text-muted">
         {description}
       </span>
     </Card>
@@ -186,7 +186,7 @@ export function AddRecipesPage({
       <div className="max-w-4xl">
         <Link
           href="/app"
-          className="text-muted hover:text-ink rounded-control -ml-1 inline-flex h-9 items-center gap-1 px-1 text-sm font-medium transition focus-ring-flush"
+          className="focus-ring-flush -ml-1 inline-flex h-9 items-center gap-1 rounded-control px-1 text-sm font-medium text-muted transition hover:text-ink"
         >
           <ChevronLeftIcon size="sm" />
           All recipes

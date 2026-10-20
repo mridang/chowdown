@@ -128,15 +128,15 @@ export default async function ConnectPage(): Promise<ReactElement> {
       <Container className="grid grid-cols-1 gap-12 pb-4 md:grid-cols-2 md:gap-10">
         <section>
           <Heading variant="h3">What you are allowing</Heading>
-          <dl className="divide-line border-line mt-5 divide-y border-y">
+          <dl className="mt-5 divide-y divide-line border-y border-line">
             {ACCESS.map(({ title, body }) => (
               <div key={title} className="py-4">
                 <dt className="font-semibold">{title}</dt>
-                <dd className="text-muted mt-1">{body}</dd>
+                <dd className="mt-1 text-muted">{body}</dd>
               </div>
             ))}
           </dl>
-          <p className="text-subtle mt-4 text-sm">
+          <p className="mt-4 text-sm text-subtle">
             You approve each assistant&apos;s access when it connects, and you
             can disconnect any of them from the list at any time.
           </p>

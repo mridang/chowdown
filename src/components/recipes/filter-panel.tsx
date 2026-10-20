@@ -28,7 +28,7 @@ export function FilterPanel({
   facets,
 }: Readonly<{ facets: readonly FacetData[] }>): ReactElement {
   return (
-    <Accordion className="border-line border-t">
+    <Accordion className="border-t border-line">
       {facets.map((facet) => (
         <FacetSection
           key={facet.key}

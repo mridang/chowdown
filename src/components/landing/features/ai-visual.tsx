@@ -19,7 +19,7 @@ export function AiVisual({
       title="Your assistant"
     >
       <div className="p-5 sm:p-6">
-        <div className="rounded-card bg-ink ml-auto w-fit max-w-[85%] rounded-br-sm px-4 py-3 text-sm text-white">
+        <div className="ml-auto w-fit max-w-[85%] rounded-card rounded-br-sm bg-ink px-4 py-3 text-sm text-white">
           What can I make with chicken in under 40 minutes?
         </div>
         <div className="mt-4 max-w-[92%]">
@@ -32,7 +32,7 @@ export function AiVisual({
               <MiniCard key={recipe.id} recipe={recipe} />
             ))}
           </div>
-          <p className="rounded-control bg-sand text-muted mt-4 flex items-center gap-2 truncate px-3 py-2 font-mono text-xs">
+          <p className="mt-4 flex items-center gap-2 truncate rounded-control bg-sand px-3 py-2 font-mono text-xs text-muted">
             <PlugIcon size="compact" className="shrink-0" />
             <span className="truncate">{MCP_URL}</span>
           </p>

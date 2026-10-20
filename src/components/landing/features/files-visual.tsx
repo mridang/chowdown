@@ -24,14 +24,14 @@ export function FilesVisual({
             <li
               key={file.id}
               className={cn(
-                'rounded-control flex items-center gap-3 px-3 py-2.5',
+                'flex items-center gap-3 rounded-control px-3 py-2.5',
                 // The first file is the one shown open, so it is highlighted.
                 index === 0 && 'bg-marigold/25',
               )}
             >
               <TintTile
                 tone={file.tone}
-                className="h-8 w-8 shrink-0 rounded-[6px] [&>svg]:h-1/2 [&>svg]:w-1/2"
+                className="size-8 shrink-0 rounded-[6px] [&>svg]:size-1/2"
               />
               <span className="min-w-0 flex-1 truncate font-mono text-xs">
                 {fileSlug(file.title)}.cook

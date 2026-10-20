@@ -55,12 +55,12 @@ export function ConnectedAppItem({
       className="flex items-center justify-between gap-4"
     >
       <div className="flex min-w-0 items-center gap-3">
-        <span className="rounded-control bg-ink/5 grid h-10 w-10 shrink-0 place-items-center">
+        <span className="grid size-10 shrink-0 place-items-center rounded-control bg-ink/5">
           <PlugIcon size="md" />
         </span>
         <p className="min-w-0 leading-tight">
           <span className="block truncate font-semibold">{app.name}</span>
-          <span className="text-muted block text-sm">
+          <span className="block text-sm text-muted">
             {accessLabel(app.scopes, app.installs)}
             {` · ${app.domain ?? 'unverified'}`}
             {app.last_used_at
@@ -139,19 +139,19 @@ export function ConnectedApps(): ReactElement {
 
   if (failed) {
     return (
-      <p className="text-muted mt-5">Could not load your connected apps.</p>
+      <p className="mt-5 text-muted">Could not load your connected apps.</p>
     );
   }
   if (apps === null) {
     return (
-      <p className="text-subtle mt-5" role="status">
+      <p className="mt-5 text-subtle" role="status">
         Loading…
       </p>
     );
   }
   if (apps.length === 0) {
     return (
-      <p className="text-muted mt-5 max-w-md leading-relaxed">
+      <p className="mt-5 max-w-md leading-relaxed text-muted">
         No assistants are connected yet. Once you add the address and approve
         access, they will appear here.
       </p>

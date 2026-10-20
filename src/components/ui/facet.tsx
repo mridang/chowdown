@@ -59,11 +59,11 @@ function FacetOption({
       href={option.href}
       active={option.active}
       activeText="selected"
-      className="rounded-control hover:bg-ink/5 flex min-h-9 items-center gap-3 px-2 text-[15px] transition focus-ring-flush"
+      className="focus-ring-flush flex min-h-9 items-center gap-3 rounded-control px-2 text-[15px] transition hover:bg-ink/5"
     >
       <span
         className={cn(
-          'grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[4px] border transition',
+          'grid size-[18px] shrink-0 place-items-center rounded-[4px] border transition',
           option.active
             ? 'border-ink bg-ink text-white'
             : 'border-field bg-white',
@@ -79,7 +79,7 @@ function FacetOption({
       >
         <OptionLabel facetKey={facet.key} option={option} />
       </span>
-      <span className="text-subtle text-xs tabular-nums">{option.count}</span>
+      <span className="text-xs text-subtle tabular-nums">{option.count}</span>
     </ToggleLink>
   );
 }

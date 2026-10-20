@@ -13,11 +13,11 @@ import { Container } from '@/components/ui/layout';
 export default function RecipeLoading(): ReactElement {
   return (
     <SkeletonFrame label="Loading recipe">
-      <div className="border-line border-b">
+      <div className="border-b border-line">
         <div className="grid grid-cols-1 lg:grid-cols-2">
           <Skeleton
             shape="square"
-            className="aspect-[16/10] lg:order-2 lg:aspect-auto lg:min-h-[32rem]"
+            className="aspect-16/10 lg:order-2 lg:aspect-auto lg:min-h-128"
           />
           <div className="px-4 py-8 sm:px-6 lg:order-1 lg:py-14 lg:pr-16 lg:pl-10">
             <Skeleton className="h-5 w-40" />
@@ -37,7 +37,7 @@ export default function RecipeLoading(): ReactElement {
         <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="flex items-center gap-3.5">
-              <Skeleton className="h-11 w-11 shrink-0" />
+              <Skeleton className="size-11 shrink-0" />
               <div className="flex-1">
                 <Skeleton className="h-3 w-20" />
                 <Skeleton className="mt-2 h-5 w-28" />
@@ -59,7 +59,7 @@ export default function RecipeLoading(): ReactElement {
             <Skeleton className="h-8 w-32" />
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="flex gap-5">
-                <Skeleton shape="circle" className="h-9 w-9 shrink-0" />
+                <Skeleton shape="circle" className="size-9 shrink-0" />
                 <div className="flex-1">
                   <Skeleton className="h-5 w-full" />
                   <Skeleton className="mt-2 h-5 w-3/4" />

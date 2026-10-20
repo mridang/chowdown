@@ -20,7 +20,7 @@ export default function RecipeNotFound(): ReactElement {
       <Heading as="h1" variant="h1" className="mt-3 max-w-2xl">
         We couldn&apos;t find that recipe
       </Heading>
-      <p className="text-muted mt-5 max-w-xl text-lg leading-relaxed">
+      <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted">
         It may have been deleted, or moved out of your Recipes folder in Google
         Drive. The rest of your recipes are right where you left them.
       </p>

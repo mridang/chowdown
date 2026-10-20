@@ -158,7 +158,7 @@ export function CookMode({
               <DialogTitle className="font-display text-xl font-semibold sm:text-2xl">
                 {title}
               </DialogTitle>
-              <DialogDescription className="text-subtle mt-1 text-sm">
+              <DialogDescription className="mt-1 text-sm text-subtle">
                 Step {index + 1} of {steps.length}. Use the arrow keys or the
                 buttons.
               </DialogDescription>

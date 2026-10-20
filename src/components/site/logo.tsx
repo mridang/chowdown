@@ -13,9 +13,9 @@ export function Logo({
   return (
     <Link
       href="/"
-      className={cn('text-ink inline-block leading-none', className)}
+      className={cn('inline-block leading-none text-ink', className)}
     >
-      <span className="font-display block text-[1.7rem] font-bold tracking-tight">
+      <span className="block font-display text-[1.7rem] font-bold tracking-tight">
         chowdown
       </span>
       <span className="mt-1 block text-[10px] font-semibold tracking-[0.24em] uppercase">

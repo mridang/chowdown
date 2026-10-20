@@ -36,7 +36,7 @@ describe('the icon and social images in src/app', () => {
 
   it('has an apple-icon of 180 pixels with no transparent pixel', async () => {
     expect(pngSize(app('apple-icon.png'))).toEqual({ width: 180, height: 180 });
-    expect(await pngIsOpaque(app('apple-icon.png'))).toBe(true);
+    expect(pngIsOpaque(app('apple-icon.png'))).toBe(true);
   });
 
   it.each(['opengraph-image.png', 'twitter-image.png'])(

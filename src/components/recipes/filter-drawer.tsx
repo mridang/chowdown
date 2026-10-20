@@ -28,7 +28,7 @@ export function FilterDrawer({
 }>): ReactElement {
   return (
     <Dialog>
-      <DialogTrigger className="rounded-control border-field flex h-11 w-full items-center justify-between border bg-white px-4 text-sm font-semibold outline-none md:hidden focus-ring-flush">
+      <DialogTrigger className="focus-ring-flush flex h-11 w-full items-center justify-between rounded-control border border-field bg-white px-4 text-sm font-semibold outline-none md:hidden">
         <span className="flex items-center gap-2">
           <SlidersIcon size="menu" />
           Filters
@@ -40,7 +40,7 @@ export function FilterDrawer({
           <DialogTitle className="font-display text-2xl font-semibold">
             Filters
           </DialogTitle>
-          <DialogDescription className="text-subtle mt-1 text-sm">
+          <DialogDescription className="mt-1 text-sm text-subtle">
             Pick as many as you like.
           </DialogDescription>
           <div className="mt-5">{children}</div>

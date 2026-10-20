@@ -1,3 +1,4 @@
+/* eslint-disable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */
 import { describe, expect, it } from '@jest/globals';
 
 import { Card } from '../../../src/components/ui/card';

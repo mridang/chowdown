@@ -57,8 +57,8 @@ export function InstallIosHint(): ReactElement | null {
     return null;
   }
   return (
-    <div className="rounded-control bg-marigold/20 flex items-center gap-2 py-1 pr-1 pl-3">
-      <ShareIcon size="menu" className="text-ink shrink-0" />
+    <div className="flex items-center gap-2 rounded-control bg-marigold/20 py-1 pr-1 pl-3">
+      <ShareIcon size="menu" className="shrink-0 text-ink" />
       <p className="flex-1 text-sm leading-snug font-medium">{IOS_HINT_TEXT}</p>
       <button
         type="button"
@@ -66,7 +66,7 @@ export function InstallIosHint(): ReactElement | null {
           rememberDismissed(browserHost());
           setHidden(true);
         }}
-        className="rounded-control hover:bg-ink/10 grid h-11 w-11 shrink-0 place-items-center transition focus-ring-flush"
+        className="focus-ring-flush grid size-11 shrink-0 place-items-center rounded-control transition hover:bg-ink/10"
       >
         <CloseIcon size="sm" />
         <span className="sr-only">Hide the install tip</span>

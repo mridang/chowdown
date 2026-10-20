@@ -18,7 +18,7 @@ export function NoteChip({
   return (
     <p
       className={cn(
-        'rounded-control bg-marigold/20 text-ink mt-1.5 flex items-start gap-2 px-2.5 py-1.5 text-[13px] leading-snug',
+        'mt-1.5 flex items-start gap-2 rounded-control bg-marigold/20 px-2.5 py-1.5 text-[13px] leading-snug text-ink',
         className,
       )}
     >

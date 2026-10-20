@@ -28,7 +28,7 @@ export function SortSelect({
 }>): ReactElement {
   const router = useRouter();
   return (
-    <label className="text-subtle flex items-center gap-2.5 text-sm">
+    <label className="flex items-center gap-2.5 text-sm text-subtle">
       <span>Sort</span>
       <Select
         value={value}

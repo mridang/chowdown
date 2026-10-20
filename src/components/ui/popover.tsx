@@ -319,7 +319,7 @@ export function Popover({
           }
         }}
         className={cn(
-          'rounded-card border-line text-ink min-w-56 border bg-white p-1.5',
+          'min-w-56 rounded-card border border-line bg-white p-1.5 text-ink',
           panelClassName,
         )}
       >
@@ -344,7 +344,7 @@ export function PopoverStatus({
   return (
     <p
       role="status"
-      className="text-muted flex h-10 items-center gap-3 px-3 text-sm font-medium"
+      className="flex h-10 items-center gap-3 px-3 text-sm font-medium text-muted"
     >
       {children}
     </p>

@@ -42,7 +42,7 @@ export function RecipeNotes({
           ))}
         </ul>
       ) : (
-        <p className="text-subtle mt-3 text-sm print:hidden">
+        <p className="mt-3 text-sm text-subtle print:hidden">
           Jot down what you changed so you can cook it your way next time. Your
           notes never change the original recipe.
         </p>

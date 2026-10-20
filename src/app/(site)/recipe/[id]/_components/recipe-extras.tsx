@@ -20,7 +20,7 @@ export function RecipeExtras({
     return null;
   }
   return (
-    <dl className="text-muted mt-6 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+    <dl className="mt-6 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted">
       {shown.map(([name, value]) => (
         <div key={name} className="flex gap-1.5">
           <dt className="font-semibold capitalize">{name}</dt>

@@ -33,7 +33,7 @@ export function HeroPhoto({
 }>): ReactElement {
   const [index, setIndex] = useState(0);
   // What a recipe without a photo (or with a broken one) shows instead.
-  const tile = <TintTile tone={tone} className="h-full w-full" />;
+  const tile = <TintTile tone={tone} className="size-full" />;
   const current = images[index];
   return (
     <div className={cn('relative overflow-hidden', className)}>
@@ -48,7 +48,7 @@ export function HeroPhoto({
           widths={[640, 960, 1280]}
           sizes="(min-width: 1024px) 50vw, 100vw"
           fallback={<div className="absolute inset-0">{tile}</div>}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 size-full object-cover"
         />
       ) : (
         <div className="absolute inset-0">{tile}</div>
@@ -58,7 +58,7 @@ export function HeroPhoto({
         <div
           role="group"
           aria-label="Photos"
-          className="bg-paper/90 rounded-card absolute right-3 bottom-3 left-3 flex max-w-max snap-x gap-1.5 overflow-x-auto p-1.5 print:hidden"
+          className="absolute inset-x-3 bottom-3 flex max-w-max snap-x gap-1.5 overflow-x-auto rounded-card bg-paper/90 p-1.5 print:hidden"
         >
           {images.map((src, i) => (
             <button
@@ -68,7 +68,7 @@ export function HeroPhoto({
               aria-pressed={i === index}
               onClick={() => setIndex(i)}
               className={cn(
-                'rounded-control focus-visible:outline-ink relative h-12 w-12 shrink-0 snap-start overflow-hidden border-2 transition focus-visible:outline-2 focus-visible:outline-offset-1',
+                'relative size-12 shrink-0 snap-start overflow-hidden rounded-control border-2 transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ink',
                 i === index ? 'border-flame' : 'border-transparent',
               )}
             >
@@ -78,8 +78,8 @@ export function HeroPhoto({
                 height={96}
                 widths={[320]}
                 sizes="48px"
-                fallback={<span className="bg-ink/10 absolute inset-0" />}
-                className="absolute inset-0 h-full w-full object-cover"
+                fallback={<span className="absolute inset-0 bg-ink/10" />}
+                className="absolute inset-0 size-full object-cover"
               />
             </button>
           ))}

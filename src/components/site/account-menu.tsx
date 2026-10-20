@@ -39,7 +39,7 @@ export function Avatar({
 }>): ReactElement {
   const [failed, setFailed] = useState(false);
   return (
-    <span className="bg-ink relative grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full text-sm font-semibold text-white">
+    <span className="relative grid size-8 shrink-0 place-items-center overflow-hidden rounded-full bg-ink text-sm font-semibold text-white">
       {picture && !failed ? (
         <img
           src={picture}
@@ -48,7 +48,7 @@ export function Avatar({
           height={32}
           referrerPolicy="no-referrer"
           onError={() => setFailed(true)}
-          className="h-full w-full object-cover"
+          className="size-full object-cover"
         />
       ) : (
         name.slice(0, 1).toUpperCase()
@@ -106,7 +106,7 @@ export function AccountMenu({
             </span>
             <ChevronIcon
               size="sm"
-              className="text-subtle hidden transition group-data-[state=open]:rotate-180 sm:block"
+              className="hidden text-subtle transition group-data-[state=open]:rotate-180 sm:block"
             />
             <span className="sr-only sm:hidden">
               Account menu, signed in as {firstName}

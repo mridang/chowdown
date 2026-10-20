@@ -28,12 +28,12 @@ function IdentityLine({
   identity,
 }: Readonly<{ identity: ClientIdentity }>): ReactElement {
   return identity.kind === 'domain' ? (
-    <p className="text-muted mt-3">
+    <p className="mt-3 text-muted">
       Published by <span className="font-semibold">{identity.domain}</span>.
       Check that this is the site you expect.
     </p>
   ) : (
-    <p className="text-muted mt-3">
+    <p className="mt-3 text-muted">
       <span className="font-semibold">Unverified app.</span> It registered
       itself without any check, so the name above is only what it calls itself.
     </p>
@@ -112,18 +112,18 @@ export function ConsentCard({
   return (
     <>
       <Eyebrow>Connect an app</Eyebrow>
-      <Heading as="h1" variant="h3" className="mt-2 break-words">
+      <Heading as="h1" variant="h3" className="mt-2 wrap-break-word">
         Connect <span className="text-ember">{name}</span> to chowdown?
       </Heading>
       <IdentityLine identity={identity} />
-      <p className="text-muted mt-3">
+      <p className="mt-3 text-muted">
         Signed in as <span className="font-medium">{email}</span>. This app will
         be able to:
       </p>
       <ul className="mt-4 flex flex-col gap-3">
         {describeScopes(scopes).map((text) => (
           <li key={text} className="flex items-start gap-3">
-            <CheckIcon size="md" className="text-forest mt-0.5 shrink-0" />
+            <CheckIcon size="md" className="mt-0.5 shrink-0 text-forest" />
             <span className="leading-relaxed">{text}</span>
           </li>
         ))}

@@ -10,7 +10,7 @@ export function FinalCta(): ReactElement {
       <Container className="flex flex-col items-start justify-between gap-6 py-14 sm:py-16 md:flex-row md:items-center">
         <div>
           <Heading>Start your collection today</Heading>
-          <p className="text-muted mt-2 text-lg">
+          <p className="mt-2 text-lg text-muted">
             Sign in with Google and add your first recipe.
           </p>
         </div>

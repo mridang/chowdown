@@ -31,7 +31,7 @@ export function PhotoBlock({
   priority?: boolean;
 }>): ReactElement {
   // A recipe without a cover still gets a quiet block of colour.
-  const tile = <TintTile tone={tone} className="h-full w-full" />;
+  const tile = <TintTile tone={tone} className="size-full" />;
   return (
     <div className={cn('relative overflow-hidden', className)}>
       {cover ? (
@@ -47,7 +47,7 @@ export function PhotoBlock({
           sizes="(min-width: 1700px) 25vw, (min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
           fallback={tile}
           priority={priority}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 size-full object-cover"
         />
       ) : (
         <div className="absolute inset-0">{tile}</div>
@@ -126,16 +126,16 @@ export function RecipeCard({
           enabled={live}
           eager={priority}
           href={`/recipe/${recipe.id}`}
-          className="rounded-card border-line group-hover:border-ink/30 flex h-full flex-col overflow-hidden border bg-white transition focus-ring"
+          className="focus-ring flex h-full flex-col overflow-hidden rounded-card border border-line bg-white transition group-hover:border-ink/30"
         >
           <PhotoBlock
             tone={recipe.tone}
             cover={recipe.cover}
             priority={priority}
-            className="aspect-[4/3] w-full shrink-0"
+            className="aspect-4/3 w-full shrink-0"
           />
           <div className="flex flex-1 flex-col p-4">
-            <p className="text-ember h-4 truncate text-[10px] leading-4 font-semibold tracking-[0.14em] uppercase">
+            <p className="h-4 truncate text-[10px] leading-4 font-semibold tracking-[0.14em] text-ember uppercase">
               {kicker ? sentenceCase(kicker) : null}
             </p>
             <Heading
@@ -167,7 +167,7 @@ export function RecipeCard({
           </div>
         </IntentLink>
         {recipe.uncurated ? (
-          <span className="border-line text-ink absolute top-3 left-3 rounded-full border bg-white px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] uppercase">
+          <span className="absolute top-3 left-3 rounded-full border border-line bg-white px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-ink uppercase">
             Idea
           </span>
         ) : null}
@@ -202,7 +202,7 @@ export function RecipeGrid({
         'grid gap-5 sm:grid-cols-2 sm:gap-6',
         columns === 4
           ? 'lg:grid-cols-4'
-          : 'xl:grid-cols-3 min-[1700px]:grid-cols-4',
+          : 'min-[1700px]:grid-cols-4 xl:grid-cols-3',
       )}
     >
       {children}

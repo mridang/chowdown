@@ -29,10 +29,10 @@ export const HEART_BUTTON_BASE = 'disabled:opacity-60 focus-ring';
  */
 export function heartOverlayClass(on: boolean): string {
   return cn(
-    'border-line grid h-9 w-9 place-items-center rounded-full border bg-white transition',
+    'grid size-9 place-items-center rounded-full border border-line bg-white transition',
     on
       ? 'text-ember'
-      : 'text-muted hover:text-ember [@media(hover:hover)]:opacity-0 group-focus-within:opacity-100 group-hover:opacity-100',
+      : 'text-muted group-focus-within:opacity-100 group-hover:opacity-100 hover:text-ember [@media(hover:hover)]:opacity-0',
   );
 }
 

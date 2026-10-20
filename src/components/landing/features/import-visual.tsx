@@ -16,17 +16,17 @@ export function ImportVisual({
     <WindowFrame label="Pasting a link to import a recipe" title="Add recipes">
       <div className="p-5 sm:p-6">
         <p className="text-sm font-semibold">Paste links or text</p>
-        <div className="rounded-control border-field bg-paper text-muted mt-2 border p-3 font-mono text-xs break-all">
+        <div className="mt-2 rounded-control border border-field bg-paper p-3 font-mono text-xs break-all text-muted">
           https://{recipe.site}/{fileSlug(recipe.title)}
         </div>
         <Card padding="xs" className="mt-5 flex items-center gap-4">
           <TintTile
             tone={recipe.tone}
-            className="rounded-control h-20 w-20 shrink-0"
+            className="size-20 shrink-0 rounded-control"
           />
           <div className="min-w-0">
             <Eyebrow>Draft ready to review</Eyebrow>
-            <p className="font-display mt-1 line-clamp-2 text-lg leading-tight font-semibold">
+            <p className="mt-1 line-clamp-2 font-display text-lg leading-tight font-semibold">
               {recipe.title}
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -34,7 +34,7 @@ export function ImportVisual({
                 (tag) => (
                   <span
                     key={tag}
-                    className="bg-sand rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    className="rounded-full bg-sand px-2.5 py-0.5 text-xs font-medium"
                   >
                     {sentenceCase(tag)}
                   </span>

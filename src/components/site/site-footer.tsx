@@ -16,7 +16,7 @@ function ZigZag(): ReactElement {
   return (
     <svg
       viewBox="0 0 1512 240"
-      className="text-flame block h-auto w-full"
+      className="block h-auto w-full text-flame"
       aria-hidden="true"
       preserveAspectRatio="none"
     >
@@ -56,15 +56,15 @@ export function SiteFooter(): ReactElement {
   return (
     <footer className="relative mt-24 sm:mt-32">
       <PanIcon
-        className="text-flame/10 pointer-events-none absolute -top-4 left-[10%] h-28 w-28 sm:-top-14 sm:h-44 sm:w-44"
+        className="pointer-events-none absolute -top-4 left-[10%] size-28 text-flame/10 sm:-top-14 sm:size-44"
         strokeWidth={1}
       />
       <SparkIcon
-        className="text-flame/10 pointer-events-none absolute -top-2 right-[8%] h-20 w-20 sm:-top-10 sm:h-32 sm:w-32"
+        className="pointer-events-none absolute -top-2 right-[8%] size-20 text-flame/10 sm:-top-10 sm:size-32"
         strokeWidth={1}
       />
       <ZigZag />
-      <div className="bg-flame text-ink -mt-px">
+      <div className="-mt-px bg-flame text-ink">
         <Container className="flex flex-col gap-10 pt-2 pb-14 sm:flex-row sm:items-start sm:justify-between md:pb-16">
           <div>
             <Logo className="origin-left scale-125" />

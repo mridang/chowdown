@@ -26,25 +26,25 @@ export default function GlobalError({
 }>): ReactElement {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="bg-paper text-ink flex min-h-full flex-col font-sans">
+      <body className="flex min-h-full flex-col bg-paper font-sans text-ink">
         <title>Something went wrong · chowdown</title>
-        <div className="bg-marigold h-1.5" />
+        <div className="h-1.5 bg-marigold" />
         <main
           id="main"
           className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center px-4 py-16 sm:px-6"
         >
-          <p className="text-label text-ember font-semibold uppercase">
+          <p className="text-label font-semibold text-ember uppercase">
             Something went wrong
           </p>
           <h1 className="mt-3 text-4xl leading-tight font-bold tracking-tight sm:text-5xl">
             That didn&apos;t work
           </h1>
-          <p className="text-muted mt-5 text-lg leading-relaxed">
+          <p className="mt-5 text-lg leading-relaxed text-muted">
             chowdown hit a problem it could not recover from. Try again in a
             moment, and your recipes will still be in your Drive either way.
           </p>
           {error.digest ? (
-            <p className="text-subtle mt-3 font-mono text-sm">
+            <p className="mt-3 font-mono text-sm text-subtle">
               Reference: {error.digest}
             </p>
           ) : null}

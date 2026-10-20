@@ -221,7 +221,7 @@ export function AddRecipes({
 
       {phase === 'input' ? (
         <>
-          <p className="text-muted mt-2 max-w-2xl leading-relaxed">
+          <p className="mt-2 max-w-2xl leading-relaxed text-muted">
             Paste recipe links, markdown, or plain text — mix as many as you
             like. We&apos;ll fetch each link, turn everything into Cooklang, and
             walk you through saving them one at a time.
@@ -269,12 +269,12 @@ export function AddRecipes({
 
       {phase === 'review' ? (
         <>
-          <p className="text-muted mt-2 font-medium">
+          <p className="mt-2 font-medium text-muted">
             Recipe {index + 1} of {drafts.length}
             {current?.source ? (
               <>
                 {' · '}
-                <span className="text-subtle break-all">{current.source}</span>
+                <span className="break-all text-subtle">{current.source}</span>
               </>
             ) : null}
           </p>
@@ -360,7 +360,7 @@ export function AddRecipes({
       <p
         role="status"
         aria-live="polite"
-        className="text-muted mt-4 text-sm empty:hidden"
+        className="mt-4 text-sm text-muted empty:hidden"
       >
         {announcement}
       </p>

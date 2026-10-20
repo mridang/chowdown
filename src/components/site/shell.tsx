@@ -15,7 +15,7 @@ export async function SiteShell({
     <>
       <a
         href="#main"
-        className="bg-ink focus:rounded-control sr-only z-50 px-4 py-2 text-sm font-semibold text-white focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+        className="sr-only z-50 bg-ink px-4 py-2 text-sm font-semibold text-white focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:rounded-control"
       >
         Skip to content
       </a>

@@ -41,14 +41,14 @@ export function Faq(): ReactElement {
           <Eyebrow>Questions</Eyebrow>
           <Heading className="mt-3">Good to know</Heading>
         </div>
-        <Accordion className="border-line border-t">
+        <Accordion className="border-t border-line">
           {FAQ.map(({ question, answer }) => (
             // One shared name makes the items exclusive: opening one closes the rest.
             <AccordionItem key={question} name="faq">
               <AccordionTrigger className="py-1 text-lg font-semibold">
                 {question}
               </AccordionTrigger>
-              <AccordionContent className="text-muted max-w-2xl leading-relaxed">
+              <AccordionContent className="max-w-2xl leading-relaxed text-muted">
                 {answer}
               </AccordionContent>
             </AccordionItem>

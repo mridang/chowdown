@@ -27,9 +27,9 @@ export function HeaderNav(): ReactElement {
           eager={key === 'search'}
           aria-current={active === key ? 'page' : undefined}
           className={cn(
-            'rounded-control hover:bg-ink/5 flex h-10 items-center px-3 text-sm font-medium transition',
+            'flex h-10 items-center rounded-control px-3 text-sm font-medium transition hover:bg-ink/5',
             active === key
-              ? 'text-ink underline decoration-2 underline-offset-[10px]'
+              ? 'text-ink underline decoration-2 underline-offset-10'
               : 'text-muted',
           )}
         >

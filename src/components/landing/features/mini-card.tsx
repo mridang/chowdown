@@ -13,13 +13,13 @@ export function MiniCard({
   recipe,
 }: Readonly<{ recipe: SampleRecipe }>): ReactElement {
   return (
-    <div className="rounded-control border-line overflow-hidden border bg-white">
-      <TintTile tone={recipe.tone} className="aspect-[4/3]" />
+    <div className="overflow-hidden rounded-control border border-line bg-white">
+      <TintTile tone={recipe.tone} className="aspect-4/3" />
       <div className="px-3 py-2.5">
         <p className="line-clamp-2 min-h-[2lh] text-sm leading-snug font-semibold">
           {recipe.title}
         </p>
-        <p className="text-subtle mt-1.5 text-xs">
+        <p className="mt-1.5 text-xs text-subtle">
           {duration(recipe.minutes)} · {recipe.difficulty}
         </p>
       </div>

@@ -5,13 +5,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:https": "next dev --experimental-https --experimental-https-key ./certs/chowdown.dev.mrida.ng-key.pem --experimental-https-cert ./certs/chowdown.dev.mrida.ng.pem -H chowdown.dev.mrida.ng -p 443",
     "typecheck": "tsc --noEmit",
     "build:views": "node scripts/build-views.mjs",
     "build": "node scripts/build-views.mjs && next build",
     "start": "next start",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv",
-    "cert:dev": "mkdir -p certs && openssl req -x509 -newkey rsa:2048 -nodes -keyout certs/chowdown.dev.mrida.ng-key.pem -out certs/chowdown.dev.mrida.ng.pem -days 825 -subj '/CN=chowdown.dev.mrida.ng' -addext 'subjectAltName=DNS:chowdown.dev.mrida.ng'",
     "deploy": "opennextjs-cloudflare build && wrangler deploy",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -20,9 +18,7 @@
     "test": "jest --verbose --config=jest.config.mjs",
     "test:watch": "npm run test -- --watch",
     "cypress:open": "cypress open",
-    "cypress:run": "cypress run --browser chrome",
-    "conformance": "node scripts/conformance/run.mjs",
-    "conformance:legacy": "node scripts/conformance/run.mjs --revision 2025-11-25"
+    "cypress:run": "cypress run --browser chrome"
   },
   "browserslist": [
     "chrome >= 111",
@@ -49,7 +45,7 @@
     "@modelcontextprotocol/conformance": "0.2.0-alpha.12",
     "@modelcontextprotocol/core": "^2.3.1",
     "@modelcontextprotocol/ext-apps": "^2.0.3",
-    "@mridang/eslint-defaults": "^1.6.3",
+    "@mridang/eslint-defaults": "^1.7.0",
     "@tailwindcss/postcss": "^4",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.13.1",
@@ -64,11 +60,9 @@
     "jest-junit": "^17.0.0",
     "knip": "^6.17.1",
     "prettier": "^3.8.3",
-    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.0",
     "typescript": "^6.0.3",
-    "wrangler": "^4.151.1",
-    "yaml": "^2.9.1"
+    "wrangler": "^4.151.1"
   }
 }

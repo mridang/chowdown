@@ -55,7 +55,7 @@ export function AccordionTrigger({
       {children}
       <ChevronIcon
         size="sm"
-        className="text-subtle shrink-0 transition-transform group-open:rotate-180"
+        className="shrink-0 text-subtle transition-transform group-open:rotate-180"
       />
     </summary>
   );

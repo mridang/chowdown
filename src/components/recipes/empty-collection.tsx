@@ -20,7 +20,7 @@ export function EmptyCollection(): ReactElement {
         </ButtonLink>
       }
     >
-      <p className="text-muted mx-auto mt-2 max-w-md">
+      <p className="mx-auto mt-2 max-w-md text-muted">
         Paste a link, drop in a photo or a file, or save a recipe from your
         assistant, and it will show up here.
       </p>

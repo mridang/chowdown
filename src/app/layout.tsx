@@ -93,7 +93,7 @@ export default function RootLayout({
       lang="en"
       className={`${sans.variable} ${display.variable} ${HANDWRITING_VARIABLES} h-full antialiased`}
     >
-      <body className="bg-paper text-ink flex min-h-full flex-col font-sans">
+      <body className="flex min-h-full flex-col bg-paper font-sans text-ink">
         {children}
         <ServiceWorker />
       </body>

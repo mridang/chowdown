@@ -12,15 +12,15 @@ export function CookVisual({
       <div
         role="img"
         aria-label="Cook mode on a phone, showing one large step"
-        className="border-field w-[min(21rem,100%)] rounded-[2.25rem] border bg-white p-3"
+        className="w-[min(21rem,100%)] rounded-[2.25rem] border border-field bg-white p-3"
       >
-        <div className="bg-paper rounded-[1.6rem] p-5">
-          <p className="text-subtle truncate text-xs font-semibold">
+        <div className="rounded-[1.6rem] bg-paper p-5">
+          <p className="truncate text-xs font-semibold text-subtle">
             {recipe.title}
           </p>
           {/* The progress bar, three quarters of the way through the steps. */}
-          <div className="bg-ink/10 mt-3 h-1.5 overflow-hidden rounded-full">
-            <div className="bg-flame h-full w-3/4 rounded-full" />
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink/10">
+            <div className="h-full w-3/4 rounded-full bg-flame" />
           </div>
           <div className="mt-8 flex gap-3">
             <NumberBadge value={3} size="md" />
@@ -29,10 +29,10 @@ export function CookVisual({
             </p>
           </div>
           <div className="mt-10 flex items-center justify-between">
-            <span className="rounded-control border-field inline-flex h-10 items-center border px-4 text-sm font-medium">
+            <span className="inline-flex h-10 items-center rounded-control border border-field px-4 text-sm font-medium">
               Back
             </span>
-            <span className="rounded-control bg-ink inline-flex h-10 items-center gap-2 px-4 text-sm font-semibold text-white">
+            <span className="inline-flex h-10 items-center gap-2 rounded-control bg-ink px-4 text-sm font-semibold text-white">
               Next
             </span>
           </div>

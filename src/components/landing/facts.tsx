@@ -13,13 +13,13 @@ const FIGURES = [
 export function Facts(): ReactElement {
   return (
     <Container className="py-16 sm:py-20">
-      <dl className="border-line grid grid-cols-1 gap-8 border-y py-10 text-center sm:grid-cols-3">
+      <dl className="grid grid-cols-1 gap-8 border-y border-line py-10 text-center sm:grid-cols-3">
         {FIGURES.map(({ value, label }) => (
           <div key={value}>
             <dt className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
               {value}
             </dt>
-            <dd className="text-muted mt-2">{label}</dd>
+            <dd className="mt-2 text-muted">{label}</dd>
           </div>
         ))}
       </dl>

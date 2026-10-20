@@ -18,7 +18,7 @@ export function FilterChip({
     <Link
       href={href}
       scroll={false}
-      className="rounded-control border-field hover:border-ink inline-flex h-8 items-center gap-1.5 border bg-white pr-2 pl-3 text-sm font-medium transition"
+      className="inline-flex h-8 items-center gap-1.5 rounded-control border border-field bg-white pr-2 pl-3 text-sm font-medium transition hover:border-ink"
     >
       {children}
       <CloseIcon size="compact" className="text-subtle" />

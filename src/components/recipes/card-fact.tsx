@@ -13,7 +13,7 @@ export function CardFact({
   children: ReactNode;
 }>): ReactElement {
   return (
-    <span className="text-subtle inline-flex items-center gap-1.5 text-[13px]">
+    <span className="inline-flex items-center gap-1.5 text-[13px] text-subtle">
       {icon}
       {children}
     </span>

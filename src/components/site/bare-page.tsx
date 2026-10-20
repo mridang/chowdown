@@ -17,12 +17,12 @@ export function BarePage({
   return (
     <div className="flex flex-1 flex-col">
       <header>
-        <div className="bg-marigold h-1.5" />
-        <div className="border-line border-b">
+        <div className="h-1.5 bg-marigold" />
+        <div className="border-b border-line">
           <Container className={`flex ${HEADER_ROW_CLASS} items-center`}>
             <Link
               href="/"
-              className="font-display text-ink rounded-control text-[1.7rem] leading-none font-bold tracking-tight focus-ring-wide"
+              className="focus-ring-wide rounded-control font-display text-[1.7rem] leading-none font-bold tracking-tight text-ink"
             >
               chowdown
             </Link>
@@ -57,12 +57,12 @@ export function MessagePage({
   return (
     <Container className="py-16 sm:py-24">
       <div className="max-w-xl">
-        <PanIcon className="text-flame h-14 w-14" strokeWidth={1.25} />
+        <PanIcon className="size-14 text-flame" strokeWidth={1.25} />
         <Eyebrow className="mt-6">{eyebrow}</Eyebrow>
         <Heading as="h1" variant="h1" className="mt-3">
           {title}
         </Heading>
-        <div className="text-muted mt-5 text-lg leading-relaxed">
+        <div className="mt-5 text-lg leading-relaxed text-muted">
           {children}
         </div>
         <div className="mt-8 flex flex-wrap gap-3">{actions}</div>

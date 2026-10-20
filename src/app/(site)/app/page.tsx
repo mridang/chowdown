@@ -169,7 +169,7 @@ export default async function AppPage({
             <section aria-label="Results" className="min-w-0">
               <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                  <p className="text-subtle text-sm" aria-live="polite">
+                  <p className="text-sm text-subtle" aria-live="polite">
                     {countOf(found.length, 'recipe')}
                   </p>
                   {chips.map((chip) => (
@@ -217,7 +217,7 @@ export default async function AppPage({
                     </ButtonLink>
                   }
                 >
-                  <p className="text-muted mt-2">
+                  <p className="mt-2 text-muted">
                     Try removing one, or start over.
                   </p>
                 </EmptyState>

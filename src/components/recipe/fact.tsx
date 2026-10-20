@@ -17,17 +17,19 @@ export function Fact({
   children: ReactNode;
 }>): ReactElement {
   return (
-    <div className="relative min-h-11 pl-[3.625rem] leading-tight">
+    <div className="relative min-h-11 pl-14.5 leading-tight">
       <Eyebrow as="dt" tone="subtle">
         <span
           aria-hidden="true"
-          className="rounded-control absolute top-0 left-0 grid h-11 w-11 place-items-center bg-sand text-ember"
+          className="absolute top-0 left-0 grid size-11 place-items-center rounded-control bg-sand text-ember"
         >
           {icon}
         </span>
         {label}
       </Eyebrow>
-      <dd className="mt-0.5 text-base font-semibold break-words">{children}</dd>
+      <dd className="mt-0.5 text-base font-semibold wrap-break-word">
+        {children}
+      </dd>
     </div>
   );
 }

@@ -21,7 +21,7 @@ export function ConnectBand(): ReactElement {
             Works with ChatGPT and Claude
           </Eyebrow>
           <Heading className="mt-3">Ask your assistant what to cook</Heading>
-          <p className="text-muted mt-4 max-w-xl text-lg leading-relaxed">
+          <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted">
             Add chowdown to your AI assistant with one address. It can search
             your recipes, suggest dinner from what you have saved, and file new
             ones for you.
@@ -34,7 +34,7 @@ export function ConnectBand(): ReactElement {
             <ButtonLink href="/connect" size="lg">
               Set it up <ArrowIcon size="sm" />
             </ButtonLink>
-            <p className="text-muted text-sm">
+            <p className="text-sm text-muted">
               You sign in and approve. No keys to copy.
             </p>
           </div>

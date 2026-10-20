@@ -32,13 +32,13 @@ function CookLine({ line }: Readonly<{ line: string }>): ReactElement {
     <>
       {parts.map((part, i) =>
         part.startsWith('@') ? (
-          <span key={i} className="bg-marigold/40 rounded px-0.5 font-medium">
+          <span key={i} className="rounded bg-marigold/40 px-0.5 font-medium">
             {part}
           </span>
         ) : part.startsWith('#') || part.startsWith('~') ? (
           <span
             key={i}
-            className="bg-forest/15 text-forest rounded px-0.5 font-medium"
+            className="rounded bg-forest/15 px-0.5 font-medium text-forest"
           >
             {part}
           </span>

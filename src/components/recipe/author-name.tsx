@@ -154,7 +154,7 @@ export function AuthorName({
     <Element
       title={name}
       className={cn(
-        'text-ink inline-block max-w-full min-w-0 truncate pr-1 align-bottom',
+        'inline-block max-w-full min-w-0 truncate pr-1 align-bottom text-ink',
         look.face,
         look[size],
       )}

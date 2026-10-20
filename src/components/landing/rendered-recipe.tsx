@@ -14,15 +14,15 @@ export function RenderedRecipe({
 }: Readonly<{ recipe: SampleRecipe }>): ReactElement {
   return (
     <WindowFrame label={`${recipe.title} in chowdown`}>
-      <TintTile tone={recipe.tone} className="aspect-[16/9]" />
+      <TintTile tone={recipe.tone} className="aspect-video" />
       <div className="p-5">
         <Eyebrow>
           {sentenceCase(recipe.cuisine)} · {sentenceCase(recipe.category)}
         </Eyebrow>
-        <p className="font-display mt-1.5 line-clamp-2 text-xl leading-tight font-semibold">
+        <p className="mt-1.5 line-clamp-2 font-display text-xl leading-tight font-semibold">
           {recipe.title}
         </p>
-        <div className="text-muted mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
+        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-muted">
           <span className="inline-flex items-center gap-1.5">
             <ClockIcon size="sm" />
             {duration(recipe.minutes)}

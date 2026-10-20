@@ -17,8 +17,8 @@ describe('TintTile', () => {
   });
 
   it('is decorative and takes its shape from the caller', () => {
-    const out = html(<TintTile tone="sand" className="aspect-[4/3]" />);
+    const out = html(<TintTile tone="sand" className="aspect-4/3" />);
     expect(out).toContain('aria-hidden="true"');
-    expect(classOf(out, 'div')).toContain('aspect-[4/3]');
+    expect(classOf(out, 'div')).toContain('aspect-4/3');
   });
 });

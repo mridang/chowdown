@@ -16,6 +16,6 @@ describe('PageSkeleton', () => {
   });
 
   it('sits in the same page column as the page it stands in for', () => {
-    expect(html(<PageSkeleton />)).toContain('max-w-[90rem]');
+    expect(html(<PageSkeleton />)).toContain('max-w-360');
   });
 });

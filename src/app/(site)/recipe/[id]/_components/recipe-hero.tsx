@@ -131,13 +131,13 @@ export function RecipeHero({
     </div>
   );
   return (
-    <section className="border-line @container border-b print:border-0">
+    <section className="@container border-b border-line print:border-0">
       <div className="grid grid-cols-1 lg:grid-cols-2 print:block">
         <HeroPhoto
           images={images}
           title={title}
           tone={tone}
-          className="aspect-[16/10] lg:order-2 lg:aspect-auto lg:min-h-[32rem] print:hidden"
+          className="aspect-16/10 lg:order-2 lg:aspect-auto lg:min-h-128 print:hidden"
         />
         <div className="px-4 py-8 sm:px-6 lg:order-1 lg:py-14 lg:pr-16 lg:pl-[max(2.5rem,calc((100cqw-90rem)/2+2.5rem))]">
           <Breadcrumb crumbs={heroCrumbs(cuisine)} className="print:hidden" />

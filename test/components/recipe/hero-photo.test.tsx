@@ -7,7 +7,7 @@ describe('HeroPhoto', () => {
   it('shows a tinted tile in the recipe colour when there is no photo', () => {
     const out = html(<HeroPhoto images={[]} title="Dal" tone="forest" />);
     expect(out).toContain('bg-forest/15');
-    expect(out).toContain('h-full w-full');
+    expect(out).toContain('size-full');
     expect(out).not.toContain('<img');
   });
 

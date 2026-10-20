@@ -27,7 +27,7 @@ export function Feature({
       <div className={flip ? 'lg:order-2' : undefined}>
         <Eyebrow>{eyebrow}</Eyebrow>
         <Heading className="mt-3">{title}</Heading>
-        <p className="text-muted mt-5 max-w-md text-lg leading-relaxed">
+        <p className="mt-5 max-w-md text-lg leading-relaxed text-muted">
           {body}
         </p>
       </div>

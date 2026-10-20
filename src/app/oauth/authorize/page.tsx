@@ -47,7 +47,7 @@ function ReturnToApp({
   href,
 }: Readonly<{ address: string; href: string }>): ReactElement {
   return (
-    <p className="text-muted mt-5 text-sm leading-relaxed">
+    <p className="mt-5 text-sm leading-relaxed text-muted">
       The app asked to be told about this at{' '}
       <code className="font-semibold break-all">{address}</code>. It registered
       itself without any check, so only go back if you started this connection
@@ -55,7 +55,7 @@ function ReturnToApp({
       <a
         href={href}
         rel="noreferrer"
-        className="focus-ring rounded-control text-ember hover:text-ink underline underline-offset-4"
+        className="focus-ring rounded-control text-ember underline underline-offset-4 hover:text-ink"
       >
         Return to the app
       </a>
@@ -111,8 +111,8 @@ export default async function AuthorizePage({
         <Heading as="h1" variant="h3" className="mt-2">
           Can&apos;t connect this app
         </Heading>
-        <p className="text-muted mt-3 leading-relaxed">{check.description}</p>
-        <p className="text-subtle mt-5 font-mono text-sm">
+        <p className="mt-3 leading-relaxed text-muted">{check.description}</p>
+        <p className="mt-5 font-mono text-sm text-subtle">
           Error: {check.error}
         </p>
         {check.redirect && errorUrl ? (
