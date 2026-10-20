@@ -57,8 +57,9 @@
   "ai": {
     "binding": "AI",
   },
-  // Scales recipe cover photos down (and re-encodes them as WebP) in the Worker.
-  // Free monthly allowance; see src/lib/images/cover-proxy.ts.
+  // Scales remote pictures down (and re-encodes them as WebP) in the Worker, for
+  // the /api/img proxy. Needs no zone setting. Free monthly allowance; see
+  // src/lib/images/proxy.ts.
   "images": {
     "binding": "IMAGES",
   },

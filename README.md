@@ -110,7 +110,7 @@ and `/api/recipe-suggestions` answer `409 /problems/drive-not-connected` until
 the person has connected it in the browser. Everything that is not a resource stays out
 of the API: MCP (`/api/mcp`), OAuth (`/oauth/*`, `/.well-known/*`), the Google
 sign-in and Drive-connection redirects (`/api/auth/*`), the health check, the
-cover-image proxy (`/api/cover-images`).
+image proxy (`/api/img`).
 
 ## Local development
 

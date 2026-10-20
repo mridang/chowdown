@@ -20,7 +20,7 @@ import { isOurResource, resourceUri } from './metadata';
 import { isAcceptableRedirectUri, redirectUriMatches } from './redirect-uri';
 import { SCOPE_READ, normaliseScope, type Scope } from './scopes';
 import { logSecurityEvent } from './security-log';
-import { withQueryParams } from '../util/url';
+import { withQueryParams } from '../util/query';
 
 /** A validated authorization request. */
 export interface AuthorizeRequest {

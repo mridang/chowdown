@@ -145,7 +145,7 @@ export function classify(
   if (pathname === '/api/recipe-suggestions') {
     return 'expensive';
   }
-  if (pathname === '/api/cover-images') {
+  if (pathname === '/api/img') {
     return 'cover';
   }
   if (pathname.startsWith('/api/') || pathname.startsWith('/rpc/')) {

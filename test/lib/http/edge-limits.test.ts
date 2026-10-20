@@ -49,7 +49,7 @@ describe('classify', () => {
     ['POST', '/api/recipe-imports', 'import'],
     ['GET', '/api/recipe-imports', 'api'],
     ['GET', '/api/recipe-suggestions', 'expensive'],
-    ['GET', '/api/cover-images', 'cover'],
+    ['GET', '/api/img', 'cover'],
     ['GET', '/api/recipes', 'api'],
     ['PUT', '/api/recipes/abc', 'api'],
     ['GET', '/api/health', 'discovery'],

@@ -16,7 +16,7 @@ describe('CoverImage', () => {
         alt="Tacos"
       />,
     );
-    expect(out).toMatch(/<img[^>]*src="\/api\/cover-images\?/);
+    expect(out).toMatch(/<img[^>]*src="\/api\/img\?/);
     expect(out).toMatch(/srcSet="[^"]*320w[^"]*480w[^"]*640w/);
     expect(out).toContain('alt="Tacos"');
     expect(out).toContain('class="cover"');

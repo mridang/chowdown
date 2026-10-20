@@ -3,11 +3,7 @@
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { preload } from 'react-dom';
 
-import {
-  coverSrc,
-  coverSrcSet,
-  isFetchableImageUrl,
-} from '@/lib/images/cover-proxy';
+import { imageSrc, imageSrcSet, isProxyableUrl } from '@/lib/images/address';
 
 /**
  * The `sizes` attribute for an image: for one that loads lazily, `auto` first,
@@ -33,7 +29,7 @@ export function sizesFor(
 
 /**
  * A recipe cover image that degrades gracefully. Covers belong to the recipe's
- * source site, so they are loaded through our own `/api/cover-images` (scaled,
+ * source site, so they are loaded through our own `/api/img` (scaled,
  * cached, and without handing the site your cookies or referrer), at the widths
  * in `widths` so a phone doesn't download a desktop-sized photo. Any of them can
  * still break (the site goes down, the file moves); when the image fails to
@@ -74,16 +70,16 @@ export function CoverImage({
   sizes?: string;
 }>): ReactElement {
   const [failed, setFailed] = useState(false);
-  const proxied = isFetchableImageUrl(src);
+  const proxied = isProxyableUrl(src);
   const largestWidth = widths.at(-1);
   const largest =
-    proxied && largestWidth !== undefined ? coverSrc(src, largestWidth) : src;
+    proxied && largestWidth !== undefined ? imageSrc(src, largestWidth) : src;
   if (priority && !failed) {
     // Tell the browser about the page's main photo in the head, before it has
     // read as far as the <img>, so it starts downloading at once.
     preload(largest, {
       as: 'image',
-      imageSrcSet: proxied ? coverSrcSet(src, widths) : undefined,
+      imageSrcSet: proxied ? imageSrcSet(src, widths) : undefined,
       imageSizes: proxied ? sizes : undefined,
       fetchPriority: 'high',
     });
@@ -94,7 +90,7 @@ export function CoverImage({
   return (
     <img
       src={largest}
-      srcSet={proxied ? coverSrcSet(src, widths) : undefined}
+      srcSet={proxied ? imageSrcSet(src, widths) : undefined}
       sizes={
         proxied
           ? sizesFor(
