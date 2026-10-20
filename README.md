@@ -146,7 +146,7 @@ devbox run -- npm run deploy                              # opennextjs-cloudflar
 
 The custom domain `chowdown.apps.mrida.ng` requires the `apps.mrida.ng` zone on the Cloudflare account, and the Worker needs the AI and Images bindings (declared in `wrangler.jsonc`).
 
-GitHub Actions (`deploy.yml`) applies the D1 migrations and deploys on pushes to `master` or `main`. It needs a `CLOUDFLARE_API_TOKEN` secret and a `CLOUDFLARE_ACCOUNT_ID` variable in the `production` environment.
+GitHub Actions (`deploy.yml`) applies the D1 migrations and deploys on pushes to `master`. It needs a `CLOUDFLARE_API_TOKEN` secret and a `CLOUDFLARE_ACCOUNT_ID` variable in the `production` environment.
 
 ## Operations
 
