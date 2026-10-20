@@ -11,7 +11,7 @@
     "build": "npm run build:views && next build",
     "start": "next start",
     "migrate": "wrangler d1 migrations apply DB --local",
-    "cf-typegen": "wrangler types",
+    "cf-typegen": "wrangler types && prettier --write worker-configuration.d.ts",
     "deploy": "opennextjs-cloudflare build && wrangler deploy",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
