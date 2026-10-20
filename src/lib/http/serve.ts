@@ -5,12 +5,16 @@
  * type-checked, because the app it forwards to is generated at build time) so
  * that it can be checked and tested:
  *
- *  1. a caller over a rate limit is refused at once (`edge-limits.ts`);
+ *  1. a caller over a rate limit is refused at once (`edge-limits.ts`), before
+ *     anything is looked up, so a page that is cached still counts;
  *  2. a public page may come from the edge copy (`edge-cache.ts`), with a fresh
  *     Content Security Policy nonce of its own;
  *  3. everything else goes to the app, with the policy and its nonce on the
  *     request (that is where Next.js looks for it) and on the response;
  *  4. whatever goes back carries the site's security and cache headers.
+ *
+ * This file is the same in every app. What an app counts against its rate
+ * limits is in its own `extras.ts`, which has the same exports everywhere.
  */
 
 import { buildCsp, cspSurfaceFor, forwardedHeaders, newNonce } from './csp';
@@ -21,8 +25,14 @@ import {
   storableCopy,
   withFreshNonce,
 } from './edge-cache';
-import { edgeLimitRefusal, type EdgeLimitEnv } from './edge-limits';
+import {
+  edgeLimitRefusal,
+  type EdgeLimitEnv,
+  type EdgeLimits,
+} from './edge-limits';
+import { EDGE_LIMITS } from './extras';
 import { applyResponseHeaders, replacingHeaders } from './headers';
+import { PUBLIC_PAGES } from './site';
 
 /** What the Worker is given besides the request. */
 export type ServeEnv = EdgeLimitEnv & {
@@ -43,6 +53,10 @@ export interface ServeDeps {
   readonly app: ServeApp;
   /** The edge cache, or undefined where there is none (plain Node). */
   readonly cache?: Cache | undefined;
+  /** What is rate limited, and how; the app's own unless a test supplies another. */
+  readonly limits?: EdgeLimits;
+  /** The pages the edge may keep a copy of; the public pages unless a test supplies others. */
+  readonly pages?: ReadonlySet<string>;
 }
 
 /** The response with one more header (responses from the app are read-only). */
@@ -59,9 +73,14 @@ export async function serve(
   request: Request,
   env: ServeEnv,
   ctx: ExecutionContext,
-  { app, cache = edgeCache() }: ServeDeps,
+  {
+    app,
+    cache = edgeCache(),
+    limits = EDGE_LIMITS,
+    pages = PUBLIC_PAGES,
+  }: ServeDeps,
 ): Promise<Response> {
-  const refused = await edgeLimitRefusal(request, env);
+  const refused = await edgeLimitRefusal(request, env, limits);
   if (refused) {
     return applyResponseHeaders(request, refused);
   }
@@ -71,7 +90,7 @@ export async function serve(
   const nonce = newNonce();
   const csp = buildCsp(nonce, cspSurfaceFor(new URL(request.url).pathname));
   const key =
-    cache !== undefined && isEdgeCacheable(request)
+    cache !== undefined && isEdgeCacheable(request, pages, limits.sessionCookie)
       ? edgeCacheKey(request, env.CF_VERSION_METADATA?.id ?? 'dev')
       : undefined;
   if (cache && key) {

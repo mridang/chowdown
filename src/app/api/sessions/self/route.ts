@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
 import { problems } from '@/lib/api/problem';
 import { SESSION_COOKIE } from '@/lib/auth/session';
 import { isSameOriginPost } from '@/lib/oauth/csrf';
-import { appOrigin } from '@/lib/util';
+import { appOrigin } from '@/lib/util/origin';
 
 /**
  * `DELETE /api/sessions/self`: sign out by clearing the session cookie. Answers

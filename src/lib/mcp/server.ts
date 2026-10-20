@@ -21,6 +21,7 @@
  * `server-info.ts`.
  */
 
+import { errorMessage, logError } from '../util';
 import type { User } from '../db/users';
 import {
   ERROR_INTERNAL,
@@ -258,7 +259,10 @@ async function resourceListResult({
   // One more than a page, to know whether there is a next one.
   const found = await listRecipes(user, offset, RESOURCE_PAGE_SIZE + 1).catch(
     (error: unknown) => {
-      console.error('[mcp] could not list the recipes as resources:', error);
+      logError({
+        event: 'mcp.list_resources_failed',
+        error: errorMessage(error),
+      });
       return [];
     },
   );
@@ -464,7 +468,7 @@ function faultReply(id: ReplyId, error: unknown): JsonRpcResponse {
   // What went wrong stays in our logs: the text can carry Google's replies or
   // database details, which should not travel on to an assistant and the
   // service behind it.
-  console.error('[mcp] request failed:', error);
+  logError({ event: 'mcp.request_failed', error: errorMessage(error) });
   return failed(id, ERROR_INTERNAL, 'Something went wrong on the server.');
 }
 

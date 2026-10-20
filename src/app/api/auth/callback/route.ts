@@ -45,7 +45,8 @@ import {
   upsertUser,
 } from '@/lib/db/users';
 import { ensureRecipesFolder } from '@/lib/drive/drive-client';
-import { appOrigin, getDatabase, getEnv } from '@/lib/util';
+import { getDatabase, getEnv, logError, logWarn } from '@/lib/util';
+import { appOrigin } from '@/lib/util/origin';
 
 /** Where a round trip stands: who is asking, and where it came from. */
 interface Callback {
@@ -118,7 +119,7 @@ async function completeDriveConnect(
   });
   if (!grant.ok) {
     if (grant.log) {
-      console.error(grant.log);
+      logError({ event: 'auth.drive_grant_rejected', detail: grant.log });
     }
     return finishFlow(origin, driveResultPath(grant.result));
   }
@@ -168,7 +169,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // Validate the round-trip before trusting the code.
   const checked = checkState(state, expectedState);
   if (!checked.ok) {
-    console.error('[auth callback] state check failed', {
+    logError({
+      event: 'auth.callback.state_check_failed',
       hasState: Boolean(state),
       hasExpected: Boolean(expectedState),
       match: state === expectedState,
@@ -184,7 +186,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const { purpose } = checked;
   // Closed the Google window or pressed Cancel.
   if (!code) {
-    console.error('[auth callback] no code', { purpose, oauthError });
+    logWarn({ event: 'auth.callback.no_code', purpose, oauthError });
     return finishFlow(
       origin,
       purpose === 'drive' ? driveResultPath('denied') : '/?error=auth',
@@ -210,10 +212,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       ? await completeSignIn(callback, info, db)
       : await completeDriveConnect(callback, info, tokens, db);
   } catch (err) {
-    console.error(
-      '[auth callback] failed:',
-      err instanceof Error ? `${err.name}: ${err.message}` : String(err),
-    );
+    logError({
+      event: 'auth.callback.failed',
+      error: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+    });
     return finishFlow(origin, failurePath(purpose));
   }
 }

@@ -17,7 +17,8 @@ import {
 } from '@/lib/oauth/authorize-request';
 import { clientIdentity, describeRedirect } from '@/lib/oauth/display';
 import { clientAddress } from '@/lib/oauth/limits';
-import { appOriginFromHeaders, getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util';
+import { appOriginFromHeaders } from '@/lib/util/origin';
 
 import { ConsentCard } from './consent-card';
 

@@ -11,21 +11,29 @@
  * guard wants; the exact, durable counters that matter (the daily budgets, the
  * OAuth registration limit) stay in D1 in the app.
  *
- * Every request that is not a static file belongs to one {@link EdgeClass}.
- * Each class has its own binding, whose limit and period are declared in
- * `wrangler.jsonc` (a period is 10 or 60 seconds), and says who is counted:
- * the caller's network address, or, for the signed-in API, the person (a hash
- * of their session cookie, so many people behind one office address do not
- * share a budget). Because a cookie can be made up, those classes are also
- * counted per address in one roomy overall bucket.
+ * Every request that is not a static file belongs to one class. Each class has
+ * its own binding, whose limit and period are declared in `wrangler.jsonc` (a
+ * period is 10 or 60 seconds), and says who is counted: the caller's network
+ * address, or, for the signed-in API, the person (a hash of their session
+ * cookie, so many people behind one office address do not share a budget).
+ * Because a cookie can be made up, those classes are also counted per address
+ * in one roomy overall bucket.
  *
- * The limiter fails open: a missing binding (local development, tests) or one
- * that throws lets the request through.
+ * The limiter runs before the edge copy of a page is looked up, so a page that
+ * is cached still counts against the caller: being cheap to serve does not make
+ * it free to request over and over.
+ *
+ * The classes every app has (pages, the API, pictures, discovery files and
+ * browser reports) are here. An app with more adds its own, and says which
+ * request belongs to which, in its `extras.ts`. The limiter fails open: a
+ * missing binding (local development, tests) or one that throws lets the
+ * request through.
  */
 
-import { SESSION_COOKIE } from '../auth/session';
 import { clientSubject } from './client-address';
 import { CSP_REPORT_PATH } from './reporting';
+import { DISCOVERY_PATHS, STATIC_PREFIXES } from './site';
+import { errorMessage, logError } from '../util/logging';
 
 /** One Workers Rate Limiting binding: `limit` says whether `key` may go ahead. */
 export interface RateLimitBinding {
@@ -34,57 +42,62 @@ export interface RateLimitBinding {
   }): Promise<{ readonly success: boolean }>;
 }
 
-/** The kinds of request the edge counts separately. */
-export type EdgeClass =
-  | 'auth'
-  | 'token'
-  | 'register'
-  | 'mcp'
-  | 'mcpAnonymous'
-  | 'import'
-  | 'expensive'
-  | 'cover'
-  | 'api'
-  | 'discovery'
-  | 'reports'
-  | 'site';
-
 /** Who a class counts. */
-type Counted = 'address' | 'person' | 'token';
+export type Counted = 'address' | 'person' | 'token';
+
+/** How a refusal is worded, so each kind of client can read it. */
+export type RefusalStyle = 'jsonrpc' | 'oauth' | 'problem' | 'text';
 
 /** What the edge knows about a class. */
-interface ClassSpec {
+export interface ClassSpec {
   /** The name of the binding (in `wrangler.jsonc`) that counts it. */
   readonly binding: string;
   /** Who is counted. */
   readonly counted: Counted;
   /** The binding's period in seconds, which is also what a refused caller is told to wait. */
   readonly periodSeconds: 10 | 60;
+  /** How a caller over the limit is told. */
+  readonly style: RefusalStyle;
 }
 
+/** The kinds of request every app counts separately. */
+export type GenericClass = 'site' | 'api' | 'cover' | 'discovery' | 'reports';
+
 /**
- * Every class, with its binding. The limits themselves are in `wrangler.jsonc`
- * (a test keeps the two in step): sign-in and approval flows are slow human
- * actions, the token endpoint serves assistants that share egress addresses,
- * and imports and tagging each cost model calls.
+ * The classes every app has, with their bindings. The limits themselves are in
+ * `wrangler.jsonc` (a test keeps the two in step).
  */
-export const EDGE_CLASSES: Readonly<Record<EdgeClass, ClassSpec>> = {
-  auth: { binding: 'RL_AUTH', counted: 'address', periodSeconds: 60 },
-  token: { binding: 'RL_TOKEN', counted: 'address', periodSeconds: 60 },
-  register: { binding: 'RL_REGISTER', counted: 'address', periodSeconds: 60 },
-  mcp: { binding: 'RL_MCP', counted: 'token', periodSeconds: 60 },
-  mcpAnonymous: {
-    binding: 'RL_MCP_ANONYMOUS',
+export const GENERIC_CLASSES: Readonly<Record<GenericClass, ClassSpec>> = {
+  cover: {
+    binding: 'RL_COVER',
+    counted: 'person',
+    periodSeconds: 60,
+    style: 'problem',
+  },
+  api: {
+    binding: 'RL_API',
+    counted: 'person',
+    periodSeconds: 60,
+    style: 'problem',
+  },
+  discovery: {
+    binding: 'RL_DISCOVERY',
     counted: 'address',
     periodSeconds: 60,
+    style: 'text',
   },
-  import: { binding: 'RL_IMPORT', counted: 'person', periodSeconds: 60 },
-  expensive: { binding: 'RL_EXPENSIVE', counted: 'person', periodSeconds: 60 },
-  cover: { binding: 'RL_COVER', counted: 'person', periodSeconds: 60 },
-  api: { binding: 'RL_API', counted: 'person', periodSeconds: 60 },
-  discovery: { binding: 'RL_DISCOVERY', counted: 'address', periodSeconds: 60 },
-  reports: { binding: 'RL_REPORTS', counted: 'address', periodSeconds: 60 },
-  site: { binding: 'RL_SITE', counted: 'address', periodSeconds: 60 },
+  reports: {
+    binding: 'RL_REPORTS',
+    counted: 'address',
+    periodSeconds: 60,
+    style: 'text',
+  },
+  site: {
+    binding: 'RL_SITE',
+    counted: 'address',
+    periodSeconds: 60,
+    style: 'text',
+  },
 };
 
 /** The overall per-address bucket every request outside the static files also counts against. */
@@ -93,57 +106,26 @@ export const OVERALL_BINDING = 'RL_ADDRESS';
 /** The bindings the Worker may have; absent ones are skipped. */
 export type EdgeLimitEnv = Readonly<Record<string, unknown>>;
 
-/** Paths served as static files: nothing to protect, and a page loads dozens of them. */
-const STATIC_PREFIXES: readonly string[] = [
-  '/_next/',
-  '/icons/',
-  '/screenshots/',
-  '/recipes/',
-];
-
-/** The files at the root that are read by crawlers and installers and cost nothing to serve. */
-const DISCOVERY_PATHS: ReadonlySet<string> = new Set([
-  '/robots.txt',
-  '/sitemap.xml',
-  '/manifest.webmanifest',
-  '/api/health',
-]);
+/** The classes of an app and the rule that sorts a request into one. */
+export interface EdgeLimits {
+  /** Every class the app counts, by name. */
+  readonly classes: Readonly<Record<string, ClassSpec>>;
+  /** The class of a request, or undefined for one that is not counted at all (a static file). */
+  classify(request: Request): string | undefined;
+  /** The name of the cookie that carries a session, or undefined for an app with no sign-in. */
+  readonly sessionCookie: string | undefined;
+}
 
 /**
- * Which class a request belongs to, or undefined for a static file that is not
- * counted at all.
+ * Which of the {@link GenericClass}es a path belongs to, or undefined for a
+ * static file that is not counted at all.
  */
-export function classify(
-  method: string,
-  pathname: string,
-): EdgeClass | undefined {
+export function genericClass(pathname: string): GenericClass | undefined {
   if (STATIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return undefined;
   }
-  if (pathname === '/api/mcp') {
-    return 'mcp';
-  }
   if (pathname === CSP_REPORT_PATH) {
     return 'reports';
-  }
-  if (pathname === '/oauth/token') {
-    return 'token';
-  }
-  if (pathname === '/oauth/register') {
-    return 'register';
-  }
-  if (
-    pathname.startsWith('/oauth/') ||
-    pathname.startsWith('/api/auth/') ||
-    pathname === '/api/sessions/self'
-  ) {
-    return 'auth';
-  }
-  if (pathname === '/api/recipe-imports' && method === 'POST') {
-    return 'import';
-  }
-  if (pathname === '/api/recipe-suggestions') {
-    return 'expensive';
   }
   if (pathname === '/api/img') {
     return 'cover';
@@ -155,6 +137,15 @@ export function classify(
     return 'discovery';
   }
   return 'site';
+}
+
+/** The limits of an app that has only the {@link GENERIC_CLASSES}. */
+export function genericLimits(sessionCookie: string | undefined): EdgeLimits {
+  return {
+    classes: GENERIC_CLASSES,
+    classify: (request) => genericClass(new URL(request.url).pathname),
+    sessionCookie,
+  };
 }
 
 /** A request's `name` cookie, if it has one. */
@@ -187,9 +178,13 @@ async function digestKey(text: string): Promise<string> {
 export async function counterKey(
   counted: Counted,
   headers: Headers,
+  sessionCookie: string | undefined,
 ): Promise<string> {
   if (counted === 'person') {
-    const session = cookieValue(headers, SESSION_COOKIE);
+    const session =
+      sessionCookie === undefined
+        ? undefined
+        : cookieValue(headers, sessionCookie);
     return session
       ? `p:${await digestKey(session)}`
       : `a:${clientSubject(headers)}`;
@@ -228,36 +223,12 @@ async function allowed(
   try {
     return (await candidate.limit({ key })).success;
   } catch (error) {
-    console.error(
-      '[edge-limit] counter failed, letting the request through:',
-      error,
-    );
+    logError({
+      event: 'edge-limit.counter-failed',
+      binding,
+      error: errorMessage(error),
+    });
     return true;
-  }
-}
-
-/** How a refusal is worded, so each kind of client can read it. */
-type RefusalStyle = 'jsonrpc' | 'oauth' | 'problem' | 'text';
-
-/** The wording style for a class. */
-function styleFor(edgeClass: EdgeClass): RefusalStyle {
-  switch (edgeClass) {
-    case 'mcp':
-    case 'mcpAnonymous':
-      return 'jsonrpc';
-    case 'token':
-    case 'register':
-      return 'oauth';
-    case 'import':
-    case 'expensive':
-    case 'cover':
-    case 'api':
-      return 'problem';
-    case 'auth':
-    case 'discovery':
-    case 'reports':
-    case 'site':
-      return 'text';
   }
 }
 
@@ -273,7 +244,7 @@ const TOO_MANY = 'Too many requests. Wait a moment and try again.';
  * the refusal to back off).
  */
 export function tooManyRequests(
-  edgeClass: EdgeClass,
+  style: RefusalStyle,
   retryAfterSeconds: number,
 ): Response {
   const common = {
@@ -284,7 +255,7 @@ export function tooManyRequests(
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Expose-Headers': 'Retry-After',
   };
-  switch (styleFor(edgeClass)) {
+  switch (style) {
     case 'jsonrpc':
       return Response.json(
         {
@@ -328,36 +299,34 @@ export function tooManyRequests(
  * The refusal to send if the request is over a limit, or null if it may go on.
  * A request is counted in its own class and, when the class counts a person or
  * a token (which a caller can make up), in the overall bucket for its address
- * as well. A request with no `Authorization` header sent to the MCP endpoint is
- * only probing, so it is counted in a much tighter class than a real client.
+ * as well.
  */
 export async function edgeLimitRefusal(
   request: Request,
   env: EdgeLimitEnv,
+  limits: EdgeLimits,
 ): Promise<Response | null> {
-  const { pathname } = new URL(request.url);
-  const found = classify(request.method, pathname);
+  const found = limits.classify(request);
   if (found === undefined || request.method === 'OPTIONS') {
     return null;
   }
-  const edgeClass =
-    found === 'mcp' && !request.headers.has('authorization')
-      ? 'mcpAnonymous'
-      : found;
-  const spec = EDGE_CLASSES[edgeClass];
+  const spec = limits.classes[found];
+  if (spec === undefined) {
+    return null;
+  }
   if (
     !(await allowed(
       env,
       spec.binding,
-      await counterKey(spec.counted, request.headers),
+      await counterKey(spec.counted, request.headers, limits.sessionCookie),
     ))
   ) {
-    return tooManyRequests(edgeClass, spec.periodSeconds);
+    return tooManyRequests(spec.style, spec.periodSeconds);
   }
   if (spec.counted !== 'address') {
     const overall = `a:${clientSubject(request.headers)}`;
     if (!(await allowed(env, OVERALL_BINDING, overall))) {
-      return tooManyRequests(edgeClass, spec.periodSeconds);
+      return tooManyRequests(spec.style, spec.periodSeconds);
     }
   }
   return null;

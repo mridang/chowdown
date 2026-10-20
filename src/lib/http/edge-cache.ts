@@ -1,34 +1,39 @@
 /**
  * @packageDocumentation
  *
- * The pages anyone can see (the landing page and the privacy page) are the same
- * for every signed-out visitor, so the Worker keeps a copy of each at the edge
- * and answers from it in a few milliseconds, without waking the app. Anyone with
- * a session cookie bypasses this entirely and always gets the live, personal
+ * The pages anyone can see (the public pages in `site.ts`) are the same for
+ * every signed-out visitor, so the Worker keeps a copy of each at the edge and
+ * answers from it in a few milliseconds, without waking the app. Anyone with a
+ * session cookie bypasses this entirely and always gets the live, personal
  * page. A deploy changes the cache key (the version id is part of it), so a new
- * release never serves HTML that points at old, replaced scripts.
+ * release never serves HTML that points at old, replaced scripts. A copy is not
+ * a way round the rate limits: `serve.ts` counts the request first.
  */
 
-import { SESSION_COOKIE } from '../auth/session';
+import { SITE_NAME } from '../site';
 import { nonceOf } from './csp';
+import { EDGE_LIMITS } from './extras';
 import { replacingHeaders } from './headers';
-
-/** The public pages worth keeping at the edge. */
-export const EDGE_CACHED_PATHS: ReadonlySet<string> = new Set([
-  '/',
-  '/privacy',
-]);
+import { PUBLIC_PAGES } from './site';
 
 /** How long the edge may keep a page before asking the app again. */
 export const EDGE_TTL_SECONDS = 300;
 
-/** Whether this request may be answered from (and added to) the edge copy. */
-export function isEdgeCacheable(request: Request): boolean {
+/**
+ * Whether this request may be answered from (and added to) the edge copy:
+ * a plain GET of one of `pages` (the public pages unless told otherwise) from
+ * someone with no session.
+ */
+export function isEdgeCacheable(
+  request: Request,
+  pages: ReadonlySet<string> = PUBLIC_PAGES,
+  sessionCookie: string | undefined = EDGE_LIMITS.sessionCookie,
+): boolean {
   if (request.method !== 'GET') {
     return false;
   }
   const url = new URL(request.url);
-  if (!EDGE_CACHED_PATHS.has(url.pathname) || url.search) {
+  if (!pages.has(url.pathname) || url.search) {
     return false;
   }
   if (request.headers.has('authorization')) {
@@ -36,14 +41,14 @@ export function isEdgeCacheable(request: Request): boolean {
   }
   // Any session cookie, valid or not, means "treat as someone's own page".
   const cookie = request.headers.get('cookie') ?? '';
-  return !cookie.includes(`${SESSION_COOKIE}=`);
+  return sessionCookie === undefined || !cookie.includes(`${sessionCookie}=`);
 }
 
 /** The cache key for a page at one release. */
 export function edgeCacheKey(request: Request, version: string): Request {
   const { pathname } = new URL(request.url);
   return new Request(
-    `https://edge.chowdown.invalid/${encodeURIComponent(version)}${pathname}`,
+    `https://edge.${SITE_NAME}.invalid/${encodeURIComponent(version)}${pathname}`,
   );
 }
 

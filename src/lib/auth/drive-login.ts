@@ -9,7 +9,7 @@
 
 import { decryptSecret } from '../crypto';
 import type { User } from '../db/users';
-import { getEnv } from '../util';
+import { errorMessage, getEnv, logError } from '../util';
 import { revokeToken } from './google-oauth';
 
 /**
@@ -29,9 +29,9 @@ export async function revokeDriveLogin(user: Readonly<User>): Promise<void> {
     );
     await revokeToken(refreshToken);
   } catch (error) {
-    console.error(
-      '[account deletion] could not revoke the Drive login:',
-      error instanceof Error ? error.message : String(error),
-    );
+    logError({
+      event: 'account.drive_login_revoke_failed',
+      error: errorMessage(error),
+    });
   }
 }

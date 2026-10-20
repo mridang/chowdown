@@ -49,7 +49,7 @@ import { indexRecipeWrite } from '../recipe/tag-index';
 import { parseVector, topSimilar } from '../recipe/similar';
 import { isUnitSystem, type UnitSystem } from '../recipe/units';
 import { SITE_URL } from '../site';
-import { getDatabase } from '../util';
+import { errorMessage, getDatabase, logError } from '../util';
 import { isJsonObject, validateJson, type JsonSchema } from './json-schema';
 import {
   SCENARIO_TOOLS,
@@ -1072,7 +1072,11 @@ export async function callToolOrExplain(
     if (error instanceof BackendFailure) {
       // What actually failed stays in our logs; it can hold Google's replies or
       // database details that should not travel on to an assistant.
-      console.error(`[mcp] ${error.service} failed:`, error.cause);
+      logError({
+        event: 'mcp.backend_failed',
+        service: error.service,
+        error: errorMessage(error.cause),
+      });
       return errorResult(
         `Something went wrong with ${error.service}, so that did not work. Try again in a minute; if it keeps failing, tell the user.`,
       );

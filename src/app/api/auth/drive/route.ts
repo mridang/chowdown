@@ -17,7 +17,8 @@ import { buildAuthUrl } from '@/lib/auth/google-oauth';
 import { newState } from '@/lib/auth/oauth-state';
 import { safeReturnPath } from '@/lib/auth/return-to';
 import { setSessionCookie } from '@/lib/auth/session-cookie';
-import { appOrigin, getEnv } from '@/lib/util';
+import { getEnv } from '@/lib/util';
+import { appOrigin } from '@/lib/util/origin';
 
 /**
  * `GET /api/auth/drive`: connect Google Drive for the signed-in person.

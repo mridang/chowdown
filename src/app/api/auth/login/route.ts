@@ -12,7 +12,8 @@ import { startFlowCookies } from '@/lib/auth/flow-cookies';
 import { buildAuthUrl } from '@/lib/auth/google-oauth';
 import { newState } from '@/lib/auth/oauth-state';
 import { safeReturnPath } from '@/lib/auth/return-to';
-import { appOrigin, getEnv } from '@/lib/util';
+import { getEnv } from '@/lib/util';
+import { appOrigin } from '@/lib/util/origin';
 
 /**
  * `GET /api/auth/login`: send the browser to Google to sign in. Open to

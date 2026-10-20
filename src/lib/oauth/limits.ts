@@ -12,6 +12,7 @@
  * assistant out of the app.
  */
 
+import { errorMessage, logError } from '../util';
 import { oauthError } from './http';
 import { logSecurityEvent } from './security-log';
 import { clientSubject } from '../http/client-address';
@@ -65,10 +66,10 @@ export async function retryAfterIfLimited(
     const decision = await rateLimit(store, limit, subject, now);
     return decision.allowed ? undefined : decision.retryAfterSeconds;
   } catch (error) {
-    console.error(
-      'rate limiter unavailable; letting the request through',
-      error,
-    );
+    logError({
+      event: 'oauth.rate_limiter_unavailable',
+      error: errorMessage(error),
+    });
     return undefined;
   }
 }

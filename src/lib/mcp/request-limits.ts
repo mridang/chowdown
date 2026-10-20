@@ -10,7 +10,7 @@
 
 import type { User } from '../db/users';
 import { readJsonBody as readJsonBodyUpTo, type JsonBody } from '../http/body';
-import { getDatabase, runInBackground } from '../util';
+import { errorMessage, getDatabase, logError, runInBackground } from '../util';
 import {
   d1RateLimitStore,
   purgeRateLimits,
@@ -153,10 +153,10 @@ async function enforce(
     const [first] = over.toSorted((a, b) => b.retryAfter - a.retryAfter);
     return first ? tooManyRequests(first.limit, first.retryAfter, id) : null;
   } catch (error) {
-    console.error(
-      '[mcp] rate limit check failed; letting the request through:',
-      error,
-    );
+    logError({
+      event: 'mcp.rate_limit_check_failed',
+      error: errorMessage(error),
+    });
     return null;
   }
 }

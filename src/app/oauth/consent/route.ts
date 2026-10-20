@@ -21,7 +21,8 @@ import { MAX_OAUTH_FORM_BYTES } from '@/lib/oauth/http';
 import { clientAddress } from '@/lib/oauth/limits';
 import { logSecurityEvent } from '@/lib/oauth/security-log';
 import { issueAuthorizationCode } from '@/lib/oauth/token-endpoint';
-import { appOrigin, getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util';
+import { appOrigin } from '@/lib/util/origin';
 
 /** A plain-text error page response, with a `Retry-After` when the caller should wait. */
 const refuse = (

@@ -33,7 +33,13 @@ import {
 } from '../recipe/to-cooklang';
 import type { UnitSystem } from '../recipe/units';
 import { DAILY_BUDGETS, spendBudget } from '../util/daily-budget';
-import { getDatabase, getEnv, runInBackground } from '../util';
+import {
+  errorMessage,
+  getDatabase,
+  getEnv,
+  logError,
+  runInBackground,
+} from '../util';
 import type { ScenarioDeps } from './scenarios';
 import type { FileOps } from './tool-calls';
 import { BackendFailure } from './tool-errors';
@@ -81,7 +87,11 @@ async function bestEffort(
     if (error instanceof DriveNotConnectedError) {
       throw error;
     }
-    console.error(`[mcp] ${service} could not be refreshed:`, error);
+    logError({
+      event: 'mcp.refresh_failed',
+      service,
+      error: errorMessage(error),
+    });
   }
 }
 

@@ -2,16 +2,14 @@
  * @packageDocumentation
  *
  * What the site calls itself and where it lives, in one place for the page
- * metadata, the structured data, the sitemap and the files under `/.well-known`.
+ * metadata, the structured data and outbound fetches (see `http/safe-fetch.ts`).
+ * The first four constants are in every app; the rest are this app's own.
  */
 
 /** The name of the site, as it appears in titles and structured data. */
 export const SITE_NAME = 'chowdown';
 /** The site's public address, with no trailing slash. */
 export const SITE_URL = 'https://chowdown.apps.mrida.ng';
-
-/** The address assistants connect to (the connect page and the home page's call to action). */
-export const MCP_URL = `${SITE_URL}/api/mcp`;
 
 /** The site's default page title. */
 export const SITE_TITLE =
@@ -20,6 +18,9 @@ export const SITE_TITLE =
 export const SITE_DESCRIPTION =
   'Keep every recipe as a plain text file in your own Google Drive, then ' +
   'search, scale and cook from them, and ask your AI assistant what to make.';
+
+/** The address assistants connect to (the connect page and the home page's call to action). */
+export const MCP_URL = `${SITE_URL}/api/mcp`;
 
 /**
  * Where to report a security problem. It is published in `security.txt` and in

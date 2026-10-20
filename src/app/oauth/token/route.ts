@@ -22,7 +22,8 @@ import {
 import { sweepSometimes } from '@/lib/oauth/sweep';
 import { handleTokenRequest } from '@/lib/oauth/token-request';
 import { d1RateLimitStore } from '@/lib/util/rate-limit';
-import { appOrigin, getDatabase, runInBackground } from '@/lib/util';
+import { getDatabase, runInBackground } from '@/lib/util';
+import { appOrigin } from '@/lib/util/origin';
 
 /**
  * `POST /oauth/token`: trade an authorization code (`grant_type=

@@ -9,35 +9,64 @@ import {
   withFreshNonce,
 } from '../../../src/lib/http/edge-cache';
 
+/** The pages these tests let the edge keep a copy of. */
+const pages: ReadonlySet<string> = new Set(['/', '/privacy']);
+
 const get = (path: string, headers: Record<string, string> = {}) =>
-  new Request(`https://chowdown.test${path}`, { headers });
+  new Request(`https://app.test${path}`, { headers });
 
 describe('isEdgeCacheable', () => {
   it('keeps the public pages for signed-out visitors', () => {
-    expect(isEdgeCacheable(get('/'))).toBe(true);
-    expect(isEdgeCacheable(get('/privacy'))).toBe(true);
+    expect(isEdgeCacheable(get('/'), pages, 'app_session')).toBe(true);
+    expect(isEdgeCacheable(get('/privacy'), pages, 'app_session')).toBe(true);
   });
 
   it('never serves a copy to someone with a session cookie', () => {
     expect(
-      isEdgeCacheable(get('/', { cookie: 'a=b; chowdown_session=abc' })),
+      isEdgeCacheable(
+        get('/', { cookie: 'a=b; app_session=abc' }),
+        pages,
+        'app_session',
+      ),
     ).toBe(false);
   });
 
+  it('keeps a page for everyone in an app that has no sign-in', () => {
+    expect(
+      isEdgeCacheable(
+        get('/', { cookie: 'app_session=abc' }),
+        pages,
+        undefined,
+      ),
+    ).toBe(true);
+  });
+
   it('ignores other cookies', () => {
-    expect(isEdgeCacheable(get('/', { cookie: 'theme=dark' }))).toBe(true);
+    expect(
+      isEdgeCacheable(get('/', { cookie: 'theme=dark' }), pages, 'app_session'),
+    ).toBe(true);
   });
 
   it('leaves personal pages, queries, other methods and authorised calls alone', () => {
-    expect(isEdgeCacheable(get('/app'))).toBe(false);
-    expect(isEdgeCacheable(get('/recipe/abc'))).toBe(false);
-    expect(isEdgeCacheable(get('/?source=pwa'))).toBe(false);
-    expect(isEdgeCacheable(get('/', { authorization: 'Bearer x' }))).toBe(
+    expect(isEdgeCacheable(get('/app'), pages, 'app_session')).toBe(false);
+    expect(isEdgeCacheable(get('/recipe/abc'), pages, 'app_session')).toBe(
+      false,
+    );
+    expect(isEdgeCacheable(get('/?source=pwa'), pages, 'app_session')).toBe(
       false,
     );
     expect(
       isEdgeCacheable(
-        new Request('https://chowdown.test/', { method: 'POST' }),
+        get('/', { authorization: 'Bearer x' }),
+        pages,
+        'app_session',
+      ),
+    ).toBe(false);
+    expect(
+      isEdgeCacheable(
+        new Request('https://app.test/', { method: 'POST' }),
+        pages,
+        'app_session',
       ),
     ).toBe(false);
   });
@@ -86,7 +115,7 @@ describe('storableCopy', () => {
 
   it('never keeps a response that sets a cookie', () => {
     const response = html();
-    response.headers.append('set-cookie', 'chowdown_session=abc');
+    response.headers.append('set-cookie', 'app_session=abc');
     expect(storableCopy(response)).toBeNull();
   });
 });

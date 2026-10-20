@@ -18,6 +18,7 @@ import {
   type RateLimit,
   type RateLimitStore,
 } from './rate-limit';
+import { errorMessage, logError } from './logging';
 import { getDatabase } from './runtime';
 
 /** Seconds in a day. */
@@ -59,7 +60,7 @@ export async function spendBudget(
     const decision = await rateLimit(store, budget, `u:${userId}`, deps.now);
     return decision.allowed ? undefined : decision.retryAfterSeconds;
   } catch (error) {
-    console.error('[budget] counter failed, letting the call through:', error);
+    logError({ event: 'budget.counter_failed', error: errorMessage(error) });
     return undefined;
   }
 }

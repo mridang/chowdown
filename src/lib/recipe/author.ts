@@ -20,6 +20,7 @@
  * readers are linear, and the model is shown data, never instructions.
  */
 
+import { errorMessage, logError, safeJsonParse } from '../util';
 import { upsertMetadata } from './cook-text';
 import { decodeEntities, visibleText } from './html-text';
 import { scanHtml } from './import-html-scan';
@@ -324,11 +325,8 @@ function answerOf(reply: unknown): string | undefined {
 
 /** `JSON.parse` that gives undefined instead of throwing. */
 function safeParse(text: string): Json {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return undefined;
-  }
+  const parsed = safeJsonParse<Json>(text);
+  return parsed.ok ? parsed.value : undefined;
 }
 
 /**
@@ -358,7 +356,7 @@ export async function askForAuthor(
       ? name
       : undefined;
   } catch (error) {
-    console.error('[author] the model could not be asked:', error);
+    logError({ event: 'author.model_failed', error: errorMessage(error) });
     return undefined;
   }
 }

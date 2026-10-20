@@ -10,7 +10,7 @@
 
 import { NextResponse } from 'next/server';
 
-import { appOrigin } from '../util';
+import { appOrigin } from '../util/origin';
 import { base64UrlToBytes, bytesToBase64Url } from '../util/base64';
 import { setSearchParams } from '../util/query';
 import { problems } from './problem';

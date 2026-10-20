@@ -11,4 +11,7 @@ export {
   getDatabase,
   runInBackground,
 } from './runtime';
-export { appOrigin, appOriginFromHeaders } from './origin';
+export { errorMessage, logInfo, logWarn, logError } from './logging';
+export type { LogFields, LogLevel } from './logging';
+export { safeJsonParse } from './json';
+export type { JsonParseResult } from './json';

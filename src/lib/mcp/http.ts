@@ -12,6 +12,7 @@
  * request it answers carries that request's id.
  */
 
+import { errorMessage, logError } from '../util';
 import { NextResponse } from 'next/server';
 
 import type { User } from '../db/users';
@@ -398,7 +399,7 @@ async function admit(
       ? auth
       : unauthorizedResponse(origin, auth.kind === 'invalid-token', cors);
   } catch (error) {
-    console.error('[mcp] could not check the bearer token:', error);
+    logError({ event: 'mcp.bearer_check_failed', error: errorMessage(error) });
     return authFault(cors);
   }
 }
