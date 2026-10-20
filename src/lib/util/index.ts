@@ -9,7 +9,6 @@ export {
   isDatabaseBound,
   getEnv,
   getDatabase,
-  appOrigin,
-  appOriginFromHeaders,
   runInBackground,
 } from './runtime';
+export { appOrigin, appOriginFromHeaders } from './origin';

@@ -1,22 +1,22 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import {
-  appOrigin,
-  appOriginFromHeaders,
+  getDatabase,
+  getDB,
+  getEnv,
   isDatabaseBound,
-  originOfSetting,
   runInBackground,
 } from '../../../src/lib/util/runtime';
+import { installCloudflareContext, sqliteD1 } from '../db/sqlite-d1';
 
 describe('without a Cloudflare context (tests, scripts)', () => {
-  it("uses the request's own origin as the app origin", () => {
-    expect(appOrigin(new Request('http://localhost:3000/a/b?c=d'))).toBe(
-      'http://localhost:3000',
-    );
-  });
-
   it('reports the database as not bound instead of throwing', () => {
     expect(isDatabaseBound()).toBe(false);
+  });
+
+  it('throws when asked for the binding or the environment', () => {
+    expect(() => getDB()).toThrow();
+    expect(() => getEnv()).toThrow();
   });
 
   it('lets background work run on its own', async () => {
@@ -43,73 +43,25 @@ describe('without a Cloudflare context (tests, scripts)', () => {
   });
 });
 
-describe('appOriginFromHeaders', () => {
-  it('uses the Host the browser used, and https unless told http', () => {
-    expect(
-      appOriginFromHeaders(new Headers({ host: 'chowdown.apps.mrida.ng' })),
-    ).toBe('https://chowdown.apps.mrida.ng');
-    expect(
-      appOriginFromHeaders(
-        new Headers({ host: 'chowdown.test', 'x-forwarded-proto': 'http' }),
-      ),
-    ).toBe('http://chowdown.test');
+describe('with a Cloudflare context', () => {
+  let restore: (() => void) | undefined;
+
+  afterEach(() => {
+    restore?.();
+    restore = undefined;
   });
 
-  it('is http on localhost, where there is no TLS', () => {
-    expect(appOriginFromHeaders(new Headers({ host: 'localhost:3737' }))).toBe(
-      'http://localhost:3737',
-    );
+  it("hands out the context's D1 binding and environment", () => {
+    const { d1 } = sqliteD1();
+    restore = installCloudflareContext(d1, { SECRET: 'value' });
+    expect(getDB()).toBe(d1);
+    expect(getEnv()).toMatchObject({ SECRET: 'value', DB: d1 });
+    expect(isDatabaseBound()).toBe(true);
   });
 
-  it('ignores a forwarded host that anyone could have sent', () => {
-    expect(
-      appOriginFromHeaders(
-        new Headers({
-          host: 'chowdown.apps.mrida.ng',
-          'x-forwarded-host': 'evil.example',
-        }),
-      ),
-    ).toBe('https://chowdown.apps.mrida.ng');
-  });
-
-  it('ignores a forwarded scheme that is not http or https', () => {
-    expect(
-      appOriginFromHeaders(
-        new Headers({
-          host: 'chowdown.apps.mrida.ng',
-          'x-forwarded-proto': 'javascript',
-        }),
-      ),
-    ).toBe('https://chowdown.apps.mrida.ng');
-  });
-});
-
-describe('originOfSetting', () => {
-  it('reduces a setting to its origin, so no slash or path ends up in absolute URLs', () => {
-    expect(originOfSetting('https://chowdown.apps.mrida.ng')).toBe(
-      'https://chowdown.apps.mrida.ng',
-    );
-    expect(originOfSetting('https://chowdown.apps.mrida.ng/')).toBe(
-      'https://chowdown.apps.mrida.ng',
-    );
-    expect(originOfSetting(' https://chowdown.apps.mrida.ng/app?x=1 ')).toBe(
-      'https://chowdown.apps.mrida.ng',
-    );
-  });
-
-  it('keeps a port and allows http for local use', () => {
-    expect(originOfSetting('http://localhost:3737/')).toBe(
-      'http://localhost:3737',
-    );
-  });
-
-  it.each([
-    undefined,
-    '',
-    'not a url',
-    'javascript:alert(1)',
-    'ftp://example.com',
-  ])('ignores %p', (value) => {
-    expect(originOfSetting(value)).toBeUndefined();
+  it('wraps the binding in a Drizzle client', () => {
+    const { d1 } = sqliteD1();
+    restore = installCloudflareContext(d1);
+    expect(getDatabase().$client).toBe(d1);
   });
 });

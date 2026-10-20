@@ -8,9 +8,9 @@ export type Database = DrizzleD1Database<typeof schema> & {
 };
 
 /**
- * Wrap a raw D1 binding in a typed Drizzle client. Repositories take a
- * `D1Database` and call this internally, so their constructors and the
- * test harness stay unchanged.
+ * Wrap a raw D1 binding in a typed Drizzle client. Code that has a request
+ * context gets one from `getDatabase()`; code that is handed a binding (a
+ * Workflow, a test) calls this directly.
  *
  * @public
  */
