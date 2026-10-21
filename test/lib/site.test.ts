@@ -28,7 +28,7 @@ describe('site identity', () => {
 
 describe('MCP_URL', () => {
   it('is the MCP endpoint of the site itself', () => {
-    expect(MCP_URL).toBe(`${SITE_URL}/api/mcp`);
+    expect(MCP_URL).toBe(`${SITE_URL}/mcp`);
   });
 });
 

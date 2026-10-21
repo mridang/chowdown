@@ -16,16 +16,16 @@ import {
   SIGN_IN_FAILED_PATH,
   STATE_COOKIE,
   sessionClaims,
-} from '../../../../../src/lib/auth/app';
-import type { User } from '../../../../../src/lib/auth/store';
-import { verifySessionToken } from '../../../../../src/lib/auth/session';
+} from '../../../../src/lib/auth/app';
+import type { User } from '../../../../src/lib/auth/store';
+import { verifySessionToken } from '../../../../src/lib/auth/session';
 import {
   SESSION_SECRET,
   answerFetch,
   appRequest,
   installEnv,
   jar,
-} from '../../../../lib/auth/auth-test-kit';
+} from '../../../lib/auth/auth-test-kit';
 
 const person = {
   id: 4,
@@ -59,15 +59,15 @@ const OTHER_FLOWS = Object.fromEntries(
   ]),
 );
 
-jest.unstable_mockModule('../../../../../src/lib/auth/store', () => ({
+jest.unstable_mockModule('../../../../src/lib/auth/store', () => ({
   upsertGoogleUser,
 }));
-jest.unstable_mockModule('../../../../../src/lib/auth/hooks', () => ({
+jest.unstable_mockModule('../../../../src/lib/auth/hooks', () => ({
   afterSignIn,
   OTHER_FLOWS,
 }));
 
-const { GET } = await import('../../../../../src/app/api/auth/callback/route');
+const { GET } = await import('../../../../src/app/auth/callback/route');
 
 let restore: () => void;
 
@@ -101,7 +101,7 @@ const trip = (state = STATE, extra: Record<string, string> = {}) => ({
 function callback(query: string, cookies: Record<string, string> = trip()) {
   jar.clear();
   Object.entries(cookies).forEach(([name, value]) => jar.set(name, value));
-  return GET(appRequest('GET', `/api/auth/callback?${query}`));
+  return GET(appRequest('GET', `/auth/callback?${query}`));
 }
 
 const json = (value: unknown, status = 200) =>
@@ -128,7 +128,7 @@ const FAILED = `https://app.test${SIGN_IN_FAILED_PATH}`;
 const cookiesOf = (res: NextResponse) =>
   Object.fromEntries(res.cookies.getAll().map((c) => [c.name, c.value]));
 
-describe('GET /api/auth/callback with a state that does not check out', () => {
+describe('GET /auth/callback with a state that does not check out', () => {
   it('sends a sign-in back with a fixed flag when there is no state cookie', async () => {
     const res = await callback(`code=c&state=${STATE}`, {});
     expect(where(res)).toBe(FAILED);
@@ -163,7 +163,7 @@ describe('GET /api/auth/callback with a state that does not check out', () => {
   });
 });
 
-describe('GET /api/auth/callback when the person did not approve', () => {
+describe('GET /auth/callback when the person did not approve', () => {
   it('sends a cancelled sign-in back with a fixed flag and clears the round-trip cookies', async () => {
     const requested = answerFetch({});
     const res = await callback(`error=access_denied&state=${STATE}`);
@@ -183,7 +183,7 @@ describe('GET /api/auth/callback when the person did not approve', () => {
   }
 });
 
-describe('GET /api/auth/callback signing in', () => {
+describe('GET /auth/callback signing in', () => {
   it('records the person by their Google account and lands on the landing page', async () => {
     googleSignsIn();
     const res = await callback(`code=c&state=${STATE}`);
@@ -286,7 +286,7 @@ describe('GET /api/auth/callback signing in', () => {
   });
 });
 
-describe('GET /api/auth/callback on a server that is not set up', () => {
+describe('GET /auth/callback on a server that is not set up', () => {
   it('fails closed without a session secret: no code is spent and no session is issued', async () => {
     restore();
     restore = installEnv({
@@ -312,7 +312,7 @@ describe('GET /api/auth/callback on a server that is not set up', () => {
 });
 
 for (const purpose of EXTRA_PURPOSES) {
-  describe(`GET /api/auth/callback finishing a ${purpose} round trip`, () => {
+  describe(`GET /auth/callback finishing a ${purpose} round trip`, () => {
     it('hands the round trip to that ask’s own flow, not to sign-in', async () => {
       googleSignsIn();
       const res = await callback(

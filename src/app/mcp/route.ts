@@ -4,7 +4,7 @@
  * call it with `Authorization: Bearer <access token>`. Without a valid token it
  * answers 401 with a `WWW-Authenticate` challenge pointing at those documents.
  *
- *   POST /api/mcp  — JSON-RPC 2.0 (one message, or a batch for older clients)
+ *   POST /mcp  — JSON-RPC 2.0 (one message, or a batch for older clients)
  *
  * The routing lives in `respondToMcp` (`src/lib/mcp/http.ts`), which the
  * conformance harness runs too; this file only supplies the real token check
@@ -23,7 +23,7 @@ function respond(request: Request): Promise<NextResponse> {
 }
 
 /**
- * `POST /api/mcp`: handle a JSON-RPC message (or batch) from an assistant.
+ * `POST /mcp`: handle a JSON-RPC message (or batch) from an assistant.
  * Answers 200 with the reply (404 for an unknown method in the newest
  * revision), 202 for notifications, 400 for a malformed message or mismatched
  * headers, 401 without a valid bearer token, 403 for an origin that is not
@@ -34,19 +34,19 @@ function respond(request: Request): Promise<NextResponse> {
 export const POST = respond;
 
 /**
- * `GET /api/mcp`: the server offers no event stream, so a valid caller gets 405
+ * `GET /mcp`: the server offers no event stream, so a valid caller gets 405
  * (`Allow: POST, OPTIONS`); everyone else gets the same 401 or 403 as `POST`.
  */
 export const GET = respond;
 
 /**
- * `DELETE /api/mcp`: there is no session to end, so a valid caller gets 405
+ * `DELETE /mcp`: there is no session to end, so a valid caller gets 405
  * (`Allow: POST, OPTIONS`); everyone else gets the same 401 or 403 as `POST`.
  */
 export const DELETE = respond;
 
 /**
- * `OPTIONS /api/mcp`: the CORS preflight. Answers 204 with the CORS headers for
+ * `OPTIONS /mcp`: the CORS preflight. Answers 204 with the CORS headers for
  * an allowed origin, or 403 for one that is not.
  */
 export const OPTIONS = respond;

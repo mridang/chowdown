@@ -24,7 +24,7 @@ import {
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const { DELETE, GET, PUT } =
-  await import('../../../../../../../src/app/api/users/self/favourite-recipes/[recipe-id]/route');
+  await import('../../../../../../../src/app/api/users/self/favourites/[recipe_id]/route');
 
 let world: World;
 
@@ -34,8 +34,8 @@ beforeEach(() => {
 
 afterEach(() => world.close());
 
-/** The context Next hands a handler for `.../favourite-recipes/:recipe-id`. */
-const ctx = (id: string) => ({ params: Promise.resolve({ 'recipe-id': id }) });
+/** The context Next hands a handler for `.../favourites/:recipe_id`. */
+const ctx = (id: string) => ({ params: Promise.resolve({ recipe_id: id }) });
 const hearts = () =>
   world.raw
     .prepare(
@@ -43,7 +43,7 @@ const hearts = () =>
     )
     .all();
 
-describe('GET /api/users/self/favourite-recipes/:recipe-id', () => {
+describe('GET /api/users/self/favourites/:recipe_id', () => {
   it('answers 401 when nobody is signed in', async () => {
     expect((await GET(fromApp('GET', '/x'), ctx('a'))).status).toBe(401);
   });
@@ -69,7 +69,7 @@ describe('GET /api/users/self/favourite-recipes/:recipe-id', () => {
   });
 });
 
-describe('PUT /api/users/self/favourite-recipes/:recipe-id', () => {
+describe('PUT /api/users/self/favourites/:recipe_id', () => {
   const heart = (id: string, headers: Record<string, string> = {}) =>
     PUT(fromApp('PUT', '/x', { headers }), ctx(id));
 
@@ -126,7 +126,7 @@ describe('PUT /api/users/self/favourite-recipes/:recipe-id', () => {
   });
 });
 
-describe('DELETE /api/users/self/favourite-recipes/:recipe-id', () => {
+describe('DELETE /api/users/self/favourites/:recipe_id', () => {
   const unheart = (id: string) => DELETE(fromApp('DELETE', '/x'), ctx(id));
 
   it('answers 401 when nobody is signed in', async () => {

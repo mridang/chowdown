@@ -91,7 +91,7 @@ describe('loadCollection', () => {
   it('clears the session of an account that is gone, instead of looping home', async () => {
     const { deps } = fakes([rows({ user: false })]);
     await expect(loadCollection('/app', deps)).rejects.toMatchObject({
-      to: '/api/auth/refresh',
+      to: '/auth/refresh',
     });
   });
 
@@ -100,7 +100,7 @@ describe('loadCollection', () => {
       session: async () => ({ ...session(), ep: 0 }),
     });
     await expect(loadCollection('/app', deps)).rejects.toMatchObject({
-      to: '/api/auth/refresh',
+      to: '/auth/refresh',
     });
   });
 
@@ -246,7 +246,7 @@ describe('loadCollection', () => {
   it('reissues the session through a route when its Drive hint is stale', async () => {
     const { deps } = fakes([rows()], { session: async () => session(false) });
     await expect(loadCollection('/app/home?x=1', deps)).rejects.toMatchObject({
-      to: '/api/auth/refresh?returnTo=%2Fapp%2Fhome%3Fx%3D1',
+      to: '/auth/refresh?returnTo=%2Fapp%2Fhome%3Fx%3D1',
     });
   });
 });

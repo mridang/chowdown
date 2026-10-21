@@ -20,7 +20,7 @@ import {
   type TokenResponse,
 } from '../../../src/lib/oauth/token-endpoint';
 
-const RESOURCE = 'https://chowdown.example/api/mcp';
+const RESOURCE = 'https://chowdown.example/mcp';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 const NOW = 1_000_000;
 
@@ -159,7 +159,7 @@ describe('exchangeAuthorizationCode', () => {
 
   it('rejects a resource that is not this server', async () => {
     expect(
-      await redeem(code, { resource: 'https://other.example/api/mcp' }),
+      await redeem(code, { resource: 'https://other.example/mcp' }),
     ).toMatchObject({ ok: false, error: 'invalid_target' });
     expect(isFailure(await redeem(code, { resource: RESOURCE }))).toBe(false);
   });
@@ -211,7 +211,7 @@ describe('authenticateAccessToken', () => {
       await authenticateAccessToken(
         store,
         tokens.access_token,
-        'https://other.example/api/mcp',
+        'https://other.example/mcp',
         NOW + 10,
       ),
     ).toBeUndefined();
@@ -708,7 +708,7 @@ describe('refresh scope and resource', () => {
     const first = (await redeem(code)) as TokenResponse;
     expect(
       await refreshWith(first.refresh_token, {
-        resource: 'https://elsewhere.example/api/mcp',
+        resource: 'https://elsewhere.example/mcp',
       }),
     ).toMatchObject({ ok: false, error: 'invalid_target' });
     expect(

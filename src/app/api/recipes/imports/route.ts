@@ -1,8 +1,8 @@
 /**
  * Recipe imports — turning pasted links and text into recipe drafts.
  *
- *   POST /api/recipe-imports   { input }  → 201 with the import and its drafts
- *   GET  /api/recipe-imports               list the user's imports, newest first
+ *   POST /api/recipes/imports   { input }  → 201 with the import and its drafts
+ *   GET  /api/recipes/imports               list the user's imports, newest first
  *
  * Each link is fetched server-side and converted to Cooklang by our own
  * converter. Nothing becomes a recipe until the client posts a draft to
@@ -38,7 +38,7 @@ import { getDatabase, getEnv } from '@/lib/util';
 import { DAILY_BUDGETS } from '@/lib/util/daily-budget';
 
 /**
- * `POST /api/recipe-imports`: read the links and recipe text in `{ input }`
+ * `POST /api/recipes/imports`: read the links and recipe text in `{ input }`
  * and make drafts of them. Answers 201 with the import and its `Location`, or
  * 400 for a missing or oversized `input`, when nothing in it looks like a link
  * or a recipe, or when it holds more than ten of them; 413 for a request body
@@ -88,13 +88,13 @@ export async function POST(request: Request): Promise<NextResponse> {
   return NextResponse.json(created, {
     status: 201,
     headers: {
-      Location: absoluteUrl(request, `/api/recipe-imports/${created.id}`),
+      Location: absoluteUrl(request, `/api/recipes/imports/${created.id}`),
     },
   });
 }
 
 /**
- * `GET /api/recipe-imports`: the user's imports, newest first, as summaries
+ * `GET /api/recipes/imports`: the user's imports, newest first, as summaries
  * (no drafts). Answers 200 with a page, 400 for a bad `limit` or `cursor`, 401
  * when nobody is signed in.
  */

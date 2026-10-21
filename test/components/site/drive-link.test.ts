@@ -39,7 +39,7 @@ describe('driveLink', () => {
   it('starts connecting Drive, inside the app, until it is connected', () => {
     expect(driveLink({ driveConnected: false })).toEqual({
       label: 'Connect Google Drive',
-      href: '/api/auth/drive',
+      href: '/auth/drive',
       external: false,
     });
   });
@@ -47,7 +47,7 @@ describe('driveLink', () => {
   it('ignores a known folder while not connected', () => {
     expect(
       driveLink({ driveConnected: false, recipesFolderId: 'folder-1' }).href,
-    ).toBe('/api/auth/drive');
+    ).toBe('/auth/drive');
   });
 
   it('opens the Recipes folder in a new tab once connected', () => {

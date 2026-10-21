@@ -69,12 +69,13 @@ export function Button({
 }
 
 /**
- * Whether an address is one of our API routes. Those answer with a redirect to
- * another site (Google), which the client router can't follow, so a link to one
- * must be a plain `<a>` that the browser follows itself.
+ * Whether an address is one of our server routes (`/api/...` or the sign-in
+ * flow under `/auth/...`). Those answer with a redirect to another site
+ * (Google), which the client router can't follow, so a link to one must be a
+ * plain `<a>` that the browser follows itself.
  */
-export function isApiHref(href: string): boolean {
-  return href.startsWith('/api/');
+export function isServerHref(href: string): boolean {
+  return href.startsWith('/api/') || href.startsWith('/auth/');
 }
 
 /** A link that looks like a button. */
@@ -86,7 +87,7 @@ export function ButtonLink({
   children,
 }: Look & Readonly<{ href: string; children: ReactNode }>): ReactElement {
   const classes = buttonClass({ variant, size, className });
-  if (isApiHref(href)) {
+  if (isServerHref(href)) {
     return (
       <a href={href} className={classes}>
         {children}

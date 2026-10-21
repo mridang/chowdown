@@ -11,8 +11,8 @@ chowdown is a single-page-style web app at https://chowdown.apps.mrida.ng. Almos
 
 ## For assistants (MCP)
 
-- MCP server (Streamable HTTP, OAuth 2.1): https://chowdown.apps.mrida.ng/api/mcp
-- Protected resource metadata: https://chowdown.apps.mrida.ng/.well-known/oauth-protected-resource/api/mcp
+- MCP server (Streamable HTTP, OAuth 2.1): https://chowdown.apps.mrida.ng/mcp
+- Protected resource metadata: https://chowdown.apps.mrida.ng/.well-known/oauth-protected-resource/mcp
 - Authorization server metadata: https://chowdown.apps.mrida.ng/.well-known/oauth-authorization-server
 - Tools: the connector lists its own tools. They cover browsing and searching recipes, finding recipes from the ingredients someone has, importing a recipe from a page, adding notes, tagging and favouriting.
 - Add the address as a connector, sign in with Google and approve. No key to copy.

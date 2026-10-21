@@ -24,9 +24,7 @@ describe('SiteHeader for a visitor', () => {
   });
 
   it('offers signing in with a plain link to the sign-in route', () => {
-    expect(out).toMatch(
-      /<a [^>]*href="\/api\/auth\/login"[^>]*>.*Sign in<\/a>/,
-    );
+    expect(out).toMatch(/<a [^>]*href="\/auth\/login"[^>]*>.*Sign in<\/a>/);
   });
 
   it('has no account menu', () => {

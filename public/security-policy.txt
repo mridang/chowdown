@@ -1,7 +1,7 @@
 chowdown security policy
 
 Report a vulnerability in https://chowdown.apps.mrida.ng, including its MCP
-server at /api/mcp, by email to mridang.agarwalla@gmail.com. Please include
+server at /mcp, by email to mridang.agarwalla@gmail.com. Please include
 what you found, the address or request it affects, and the steps to reproduce
 it. Do not include other people's data; a description or a screenshot of your
 own test account is enough.

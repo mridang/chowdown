@@ -141,7 +141,7 @@ describe('the authorize page', () => {
     const result = await visit();
     expect(result).toHaveProperty('redirectedTo');
     const to = (result as { redirectedTo: string }).redirectedTo;
-    expect(to).toMatch(/^\/api\/auth\/login\?returnTo=/);
+    expect(to).toMatch(/^\/auth\/login\?returnTo=/);
     const back = new URL(
       decodeURIComponent(to.split('returnTo=')[1] ?? ''),
       'https://chowdown.test',
@@ -154,7 +154,7 @@ describe('the authorize page', () => {
   it('asks a person without Drive to connect it first, then come back here', async () => {
     state.user = { email: 'cook@example.com', refresh_token_enc: null };
     const { markup } = (await visit()) as { markup: string };
-    expect(markup).toContain('/api/auth/drive');
+    expect(markup).toContain('/auth/drive');
     expect(markup).not.toContain('action="/oauth/consent"');
   });
 

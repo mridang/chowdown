@@ -18,8 +18,8 @@ describe('isAcceptableRedirectUri', () => {
   });
 
   it.each([
-    'https://claude.ai/api/mcp/auth_callback',
-    'https://claude.com/api/mcp/auth_callback',
+    'https://claude.ai/mcp/auth_callback',
+    'https://claude.com/mcp/auth_callback',
     'https://chatgpt.com/connector_platform_oauth_redirect',
     'https://chatgpt.com/connector/oauth/abc123',
     'cursor://anysphere.cursor-retrieval/oauth/user-chowdown/callback',

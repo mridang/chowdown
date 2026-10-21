@@ -393,7 +393,7 @@ describe('redirect rules in client metadata', () => {
         {
           ...goodDoc,
           redirect_uris: [
-            'https://claude.ai/api/mcp/auth_callback',
+            'https://claude.ai/mcp/auth_callback',
             'cursor://anysphere.cursor-retrieval/oauth/user-x/callback',
             'http://127.0.0.1:33418/',
             'http://localhost:6274/oauth/callback',

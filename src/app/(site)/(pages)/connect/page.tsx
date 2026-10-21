@@ -77,7 +77,7 @@ const ACCESS = [
 export default async function ConnectPage(): Promise<ReactElement> {
   const user = await getCurrentUser();
   if (!user) {
-    redirect(`/api/auth/login?returnTo=${encodeURIComponent('/connect')}`);
+    redirect(`/auth/login?returnTo=${encodeURIComponent('/connect')}`);
   }
   const origin = appOriginFromHeaders(await headers());
 

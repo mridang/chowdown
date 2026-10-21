@@ -8,7 +8,7 @@
 
 import type { ConnectedApp as StoredConnectedApp } from './db/oauth';
 
-/** An app the user has connected, as `GET /api/users/self/connected-apps` returns it. */
+/** An app the user has connected, as `GET /api/users/self/connections` returns it. */
 export interface ConnectedApp {
   readonly id: string;
   readonly name: string;
@@ -38,7 +38,7 @@ export function connectedAppResource(
 
 /** The address an assistant connects to, for the site served at `origin`. */
 export function mcpUrl(origin: string): string {
-  return `${origin.replace(/\/+$/, '')}/api/mcp`;
+  return `${origin.replace(/\/+$/, '')}/mcp`;
 }
 
 /**

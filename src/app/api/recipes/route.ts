@@ -56,7 +56,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 /**
  * `POST /api/recipes`: create a recipe from `{ name, cooklang }`. Answers 201
  * with the new recipe and its `Location`, or 200 with the existing recipe (and
- * a `Content-Location`) when its source URL is already saved. Needs a signed-in
+ * a `Location`) when its source URL is already saved. Needs a signed-in
  * user with Drive connected: 401 without a session, 400 for a bad body, 413
  * for a body over 1 MiB, 409 when Drive is not connected, 502 when Drive fails.
  */
@@ -87,10 +87,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     : undefined;
   if (existing) {
     return sendRecipe(request, user.id, existing.drive_file_id, 200, {
-      'Content-Location': absoluteUrl(
-        request,
-        `/api/recipes/${existing.drive_file_id}`,
-      ),
+      Location: absoluteUrl(request, `/api/recipes/${existing.drive_file_id}`),
     });
   }
 

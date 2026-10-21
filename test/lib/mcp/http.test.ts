@@ -24,14 +24,14 @@ const CAPS = 'io.modelcontextprotocol/clientCapabilities';
 
 /** A POST to the endpoint with a JSON body. */
 const post = (body: unknown, headers: Record<string, string> = {}) =>
-  new Request(`${SELF}/api/mcp`, {
+  new Request(`${SELF}/mcp`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...headers },
     body: JSON.stringify(body),
   });
 /** A POST whose body is exactly this text. */
 const postText = (body: string, headers: Record<string, string> = {}) =>
-  new Request(`${SELF}/api/mcp`, { method: 'POST', headers, body });
+  new Request(`${SELF}/mcp`, { method: 'POST', headers, body });
 const user = { id: 1 } as User;
 const modern = (method: string, extra: Record<string, unknown> = {}) => ({
   jsonrpc: '2.0',
@@ -111,7 +111,7 @@ async function send(
 describe('originRefusal / corsFor', () => {
   it('turns away an origin we do not know, before reading anything', async () => {
     const res = originRefusal(
-      new Request(`${SELF}/api/mcp`, {
+      new Request(`${SELF}/mcp`, {
         headers: { origin: 'https://evil.example' },
       }),
       SELF,
@@ -125,11 +125,11 @@ describe('originRefusal / corsFor', () => {
   });
 
   it('lets through no origin, our own and a known assistant', () => {
-    expect(originRefusal(new Request(`${SELF}/api/mcp`), SELF)).toBeNull();
+    expect(originRefusal(new Request(`${SELF}/mcp`), SELF)).toBeNull();
     for (const origin of [SELF, 'https://claude.ai']) {
       expect(
         originRefusal(
-          new Request(`${SELF}/api/mcp`, { headers: { origin } }),
+          new Request(`${SELF}/mcp`, { headers: { origin } }),
           SELF,
         ),
       ).toBeNull();
@@ -138,7 +138,7 @@ describe('originRefusal / corsFor', () => {
 
   it('echoes an allowed caller’s origin instead of allowing everyone', () => {
     const cors = corsFor(
-      new Request(`${SELF}/api/mcp`, {
+      new Request(`${SELF}/mcp`, {
         headers: { origin: 'https://claude.ai' },
       }),
       SELF,
@@ -149,7 +149,7 @@ describe('originRefusal / corsFor', () => {
 
   it('refuses with no CORS headers, so a page from that origin sees only a network error', async () => {
     const res = originRefusal(
-      new Request(`${SELF}/api/mcp`, {
+      new Request(`${SELF}/mcp`, {
         headers: { origin: 'https://evil.example' },
       }),
       SELF,
@@ -161,7 +161,7 @@ describe('originRefusal / corsFor', () => {
   it('lets an origin through that the operator listed, including one the URL parser calls opaque', () => {
     const from = (origin: string, extra?: string) =>
       originRefusal(
-        new Request(`${SELF}/api/mcp`, { headers: { origin } }),
+        new Request(`${SELF}/mcp`, { headers: { origin } }),
         SELF,
         extra,
       );
@@ -176,12 +176,12 @@ describe('originRefusal / corsFor', () => {
   });
 
   it('gives a caller with no Origin the open set, and one with a refused Origin none at all', () => {
-    expect(corsFor(new Request(`${SELF}/api/mcp`), SELF)).toMatchObject({
+    expect(corsFor(new Request(`${SELF}/mcp`), SELF)).toMatchObject({
       'Access-Control-Allow-Origin': '*',
     });
     expect(
       corsFor(
-        new Request(`${SELF}/api/mcp`, {
+        new Request(`${SELF}/mcp`, {
           headers: { origin: 'https://evil.example' },
         }),
         SELF,
@@ -190,7 +190,7 @@ describe('originRefusal / corsFor', () => {
   });
 
   it('echoes the origin of a listed extension and reads the list from the argument', () => {
-    const request = new Request(`${SELF}/api/mcp`, {
+    const request = new Request(`${SELF}/mcp`, {
       headers: { origin: 'chrome-extension://abcdef' },
     });
     expect(corsFor(request, SELF)).toEqual({});
@@ -204,7 +204,7 @@ describe('originRefusal / corsFor', () => {
   it('echoes the headers a preflight asks for, so one more header does not fail it', () => {
     const preflight = (requested: string) =>
       corsFor(
-        new Request(`${SELF}/api/mcp`, {
+        new Request(`${SELF}/mcp`, {
           method: 'OPTIONS',
           headers: {
             origin: 'https://claude.ai',
@@ -912,7 +912,7 @@ describe('unauthorizedResponse', () => {
     expect(res.status).toBe(401);
     const challenge = res.headers.get('www-authenticate') ?? '';
     expect(challenge).toContain(
-      `resource_metadata="${SELF}/.well-known/oauth-protected-resource/api/mcp"`,
+      `resource_metadata="${SELF}/.well-known/oauth-protected-resource/mcp"`,
     );
     expect(challenge).not.toContain('invalid_token');
     expect(await res.json()).toEqual({
@@ -1125,7 +1125,7 @@ describe('respondToMcp', () => {
     body?: string,
   ) =>
     respondToMcp(
-      new Request(`${SELF}/api/mcp`, { method, headers, body }),
+      new Request(`${SELF}/mcp`, { method, headers, body }),
       SELF,
       asked,
       fakeRate().deps,

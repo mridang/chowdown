@@ -11,7 +11,7 @@ import { MemoryStore } from './memory-store';
 import { quietSecurityLogs } from './quiet-logs';
 
 const ORIGIN = 'https://chowdown.example';
-const RESOURCE = `${ORIGIN}/api/mcp`;
+const RESOURCE = `${ORIGIN}/mcp`;
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 const NOW = 1_000_000;
 
@@ -202,7 +202,7 @@ describe('handleTokenRequest', () => {
             code: await newCode(),
             redirect_uri: 'https://app.example/cb',
             code_verifier: VERIFIER,
-            resource: 'https://elsewhere.example/api/mcp',
+            resource: 'https://elsewhere.example/mcp',
           }),
           store,
           ORIGIN,
@@ -272,9 +272,9 @@ describe('handleTokenRequest', () => {
         ORIGIN,
         NOW + 5,
       );
-    expect(
-      refusal(await refresh('https://elsewhere.example/api/mcp')).error,
-    ).toBe('invalid_target');
+    expect(refusal(await refresh('https://elsewhere.example/mcp')).error).toBe(
+      'invalid_target',
+    );
     expect(await refresh(RESOURCE)).toMatchObject({ ok: true });
   });
 });

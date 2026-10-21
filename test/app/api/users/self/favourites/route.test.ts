@@ -19,7 +19,7 @@ import {
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const { GET } =
-  await import('../../../../../../src/app/api/users/self/favourite-recipes/route');
+  await import('../../../../../../src/app/api/users/self/favourites/route');
 
 let world: World;
 
@@ -29,10 +29,10 @@ beforeEach(() => {
 
 afterEach(() => world.close());
 
-describe('GET /api/users/self/favourite-recipes', () => {
+describe('GET /api/users/self/favourites', () => {
   it('answers 401 when nobody is signed in', async () => {
     expect(
-      (await GET(fromApp('GET', '/api/users/self/favourite-recipes'))).status,
+      (await GET(fromApp('GET', '/api/users/self/favourites'))).status,
     ).toBe(401);
   });
 
@@ -45,7 +45,7 @@ describe('GET /api/users/self/favourite-recipes', () => {
         "INSERT INTO favourites (user_id, drive_file_id, created_at) VALUES (?, 'b', 'n')",
       )
       .run(uid);
-    const res = await GET(fromApp('GET', '/api/users/self/favourite-recipes'));
+    const res = await GET(fromApp('GET', '/api/users/self/favourites'));
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
       items: { id: string; favourite: boolean }[];
@@ -57,7 +57,7 @@ describe('GET /api/users/self/favourite-recipes', () => {
     const uid = await signIn(world);
     addRecipe(world, uid, 'a', '>> title: A\n');
     const res = await GET(
-      fromApp('GET', '/api/users/self/favourite-recipes?favourite=false'),
+      fromApp('GET', '/api/users/self/favourites?favourite=false'),
     );
     expect(((await res.json()) as { items: unknown[] }).items).toEqual([]);
   });
@@ -66,7 +66,7 @@ describe('GET /api/users/self/favourite-recipes', () => {
     await signIn(world);
     world.raw.prepare('UPDATE users SET session_epoch = 2').run();
     expect(
-      (await GET(fromApp('GET', '/api/users/self/favourite-recipes'))).status,
+      (await GET(fromApp('GET', '/api/users/self/favourites'))).status,
     ).toBe(401);
   });
 });

@@ -14,7 +14,7 @@ type Send = (
 
 /** Where a recipe's favourite flag lives on the API. */
 export function favouriteUrl(recipeId: string): string {
-  return `/api/users/self/favourite-recipes/${recipeId}`;
+  return `/api/users/self/favourites/${recipeId}`;
 }
 
 /**

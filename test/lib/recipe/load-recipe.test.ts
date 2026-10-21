@@ -135,7 +135,7 @@ describe('loadRecipePageRows', () => {
       pageRows: async () => pageRows({ epoch: 1 }),
     });
     await expect(loadRecipePageRows('r1', deps)).rejects.toMatchObject({
-      to: '/api/auth/refresh',
+      to: '/auth/refresh',
     });
   });
 
@@ -144,7 +144,7 @@ describe('loadRecipePageRows', () => {
       pageRows: async () => pageRows({ epoch: undefined }),
     });
     await expect(loadRecipePageRows('r1', deps)).rejects.toMatchObject({
-      to: '/api/auth/refresh',
+      to: '/auth/refresh',
     });
   });
 

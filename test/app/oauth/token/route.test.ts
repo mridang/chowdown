@@ -43,7 +43,7 @@ async function newCode(): Promise<string> {
       redirectUriSent: true,
       codeChallenge: await s256(VERIFIER),
       scope: ['recipes:read', 'recipes:write'],
-      resource: `${ORIGIN}/api/mcp`,
+      resource: `${ORIGIN}/mcp`,
     },
     Math.floor(Date.now() / 1000),
   );
@@ -153,7 +153,7 @@ describe('POST /oauth/token', () => {
         redirectUriSent: false,
         codeChallenge: await s256(VERIFIER),
         scope: ['recipes:read'],
-        resource: `${ORIGIN}/api/mcp`,
+        resource: `${ORIGIN}/mcp`,
       },
       Math.floor(Date.now() / 1000),
     );

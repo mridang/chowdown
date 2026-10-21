@@ -104,15 +104,13 @@ describe('clientIdentity', () => {
 
 describe('describeRedirect', () => {
   it('gives the whole address and no warning for an https address', () => {
-    expect(describeRedirect('https://claude.ai/api/mcp/auth_callback')).toEqual(
-      {
-        address: 'https://claude.ai/api/mcp/auth_callback',
-        kind: 'web',
-        short: 'claude.ai',
-        warning: undefined,
-        note: undefined,
-      },
-    );
+    expect(describeRedirect('https://claude.ai/mcp/auth_callback')).toEqual({
+      address: 'https://claude.ai/mcp/auth_callback',
+      kind: 'web',
+      short: 'claude.ai',
+      warning: undefined,
+      note: undefined,
+    });
   });
 
   it('warns that a loopback address is the person own computer', () => {

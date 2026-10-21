@@ -7,7 +7,7 @@ describe('SignInButton', () => {
   it('is a plain link to the sign-in route, labelled for Google', () => {
     const out = html(<SignInButton />);
     expect(out.startsWith('<a')).toBe(true);
-    expect(out).toContain('href="/api/auth/login"');
+    expect(out).toContain('href="/auth/login"');
     expect(out).toContain('Continue with Google');
   });
 

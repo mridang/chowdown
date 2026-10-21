@@ -96,7 +96,7 @@ export function SiteHeader({
             {user ? (
               <SignedInActions user={user} />
             ) : (
-              <ButtonLink href="/api/auth/login">
+              <ButtonLink href="/auth/login">
                 <GoogleIcon size="sm" />
                 Sign in
               </ButtonLink>

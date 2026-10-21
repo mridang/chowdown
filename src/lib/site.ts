@@ -20,7 +20,7 @@ export const SITE_DESCRIPTION =
   'search, scale and cook from them, and ask your AI assistant what to make.';
 
 /** The address assistants connect to (the connect page and the home page's call to action). */
-export const MCP_URL = `${SITE_URL}/api/mcp`;
+export const MCP_URL = `${SITE_URL}/mcp`;
 
 /**
  * Where to report a security problem. It is published in `security.txt` and in

@@ -4,7 +4,7 @@
  * The HTTP side of the MCP endpoints: read a JSON-RPC message (or batch), check
  * it is well formed and that the caller's scopes and rate limit cover it, hand
  * it to the MCP server, and write the reply. Used by the OAuth-protected
- * `/api/mcp`.
+ * `/mcp`.
  *
  * The order matters. The size cap comes before the JSON is parsed; envelope and
  * header checks come before anything is run; the scope check comes before the
@@ -411,7 +411,7 @@ async function admit(
  * else (`GET`, `DELETE`) gets 405 with `Allow: POST, OPTIONS` once the caller is
  * known, because the server has no event stream and no session to end.
  *
- * `POST /api/mcp` and the conformance harness both call this, so the harness
+ * `POST /mcp` and the conformance harness both call this, so the harness
  * cannot drift from what runs in production. `rate` is where the counters live.
  */
 export async function respondToMcp(

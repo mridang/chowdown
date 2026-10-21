@@ -200,7 +200,7 @@ export async function loadCollection(
     // date: Google revoked it, it was made on another device, or the cookie
     // predates the hint. A cookie can only be changed by a route, so go through
     // one and come straight back.
-    deps.redirect(`/api/auth/refresh?returnTo=${encodeURIComponent(returnTo)}`);
+    deps.redirect(`/auth/refresh?returnTo=${encodeURIComponent(returnTo)}`);
   }
   return {
     recipes,

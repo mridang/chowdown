@@ -82,7 +82,7 @@ const CLASSES: Readonly<Record<OwnClass, ClassSpec>> = {
  */
 function ownClass(request: Request): OwnClass | undefined {
   const { pathname } = new URL(request.url);
-  if (pathname === '/api/mcp') {
+  if (pathname === '/mcp') {
     return request.headers.has('authorization') ? 'mcp' : 'mcpAnonymous';
   }
   if (pathname === '/oauth/token') {
@@ -93,15 +93,15 @@ function ownClass(request: Request): OwnClass | undefined {
   }
   if (
     pathname.startsWith('/oauth/') ||
-    pathname.startsWith('/api/auth/') ||
+    pathname.startsWith('/auth/') ||
     pathname === '/api/sessions/self'
   ) {
     return 'auth';
   }
-  if (pathname === '/api/recipe-imports' && request.method === 'POST') {
+  if (pathname === '/api/recipes/imports' && request.method === 'POST') {
     return 'import';
   }
-  if (pathname === '/api/recipe-suggestions') {
+  if (pathname === '/api/recipes/suggestions') {
     return 'expensive';
   }
   return undefined;

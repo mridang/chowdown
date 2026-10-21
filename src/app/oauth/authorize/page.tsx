@@ -134,7 +134,7 @@ export default async function AuthorizePage({
   ).toString();
   const here = `/oauth/authorize?${query}`;
   if (!user) {
-    redirect(`/api/auth/login?returnTo=${encodeURIComponent(here)}`);
+    redirect(`/auth/login?returnTo=${encodeURIComponent(here)}`);
   }
   if (!isDriveConnected(user)) {
     // An assistant has nothing to reach until the recipes' Drive is connected;

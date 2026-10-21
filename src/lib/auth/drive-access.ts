@@ -49,7 +49,7 @@ export function driveConnectHref(
     ...(returnTo ? [['returnTo', returnTo]] : []),
     ...(options.force ? [['force', '1']] : []),
   ]).toString();
-  return text ? `/api/auth/drive?${text}` : '/api/auth/drive';
+  return text ? `/auth/drive?${text}` : '/auth/drive';
 }
 
 /** Why the last attempt to connect didn't take, from the address it came back to. */

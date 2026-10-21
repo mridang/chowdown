@@ -18,7 +18,7 @@ import { getEnv } from '@/lib/util';
 import { appOrigin } from '@/lib/util/origin';
 
 /**
- * `GET /api/auth/refresh`: reissue the session cookie from the database and
+ * `GET /auth/refresh`: reissue the session cookie from the database and
  * send the person on to the safe `?returnTo=` path (or `/app`). Answers a
  * redirect; someone who is not signed in goes to the home page with any dead
  * session cookie cleared.

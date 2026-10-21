@@ -8,7 +8,7 @@
  * the server is expected to send.
  */
 
-/** A prepared, not-yet-saved recipe, from an item of POST /api/recipe-imports. */
+/** A prepared, not-yet-saved recipe, from an item of POST /api/recipes/imports. */
 export interface ImportDraft {
   /** The recipe's name, to be edited before saving. */
   readonly title: string;
@@ -60,7 +60,7 @@ export function postImport(
   input: string,
   signal?: AbortSignal,
 ): Promise<Response> {
-  return fetch('/api/recipe-imports', {
+  return fetch('/api/recipes/imports', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ input }),
@@ -73,7 +73,7 @@ export function postImport(
  * the import away. Nothing waits on this and nothing can be done if it fails.
  */
 export function discardImport(id: string): void {
-  void fetch(`/api/recipe-imports/${id}`, { method: 'DELETE' }).catch(
+  void fetch(`/api/recipes/imports/${id}`, { method: 'DELETE' }).catch(
     () => undefined,
   );
 }

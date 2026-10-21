@@ -41,6 +41,7 @@ describe('what crawlers may read', () => {
         '/recipes/',
         '/connect',
         '/api/',
+        '/auth/',
         '/oauth/',
       ]),
     );
@@ -103,7 +104,7 @@ describe('what assistants are told', () => {
   );
 
   it('names the MCP address and does not hand-list tools that may change', () => {
-    expect(llms).toContain(`${BRAND_URL}/api/mcp`);
+    expect(llms).toContain(`${BRAND_URL}/mcp`);
     expect(llms).not.toMatch(/\b[a-z]+(_[a-z]+)+\b/);
   });
 

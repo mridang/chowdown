@@ -82,6 +82,6 @@ describe('the rest of the app’s sign-in settings', () => {
   });
 
   it('names the route that clears a dead session', () => {
-    expect(ENDED_SESSION_PATH).toBe('/api/auth/refresh');
+    expect(ENDED_SESSION_PATH).toBe('/auth/refresh');
   });
 });

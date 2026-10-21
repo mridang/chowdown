@@ -11,7 +11,7 @@ export function SignInButton({
   size = 'lg',
 }: Readonly<{ size?: 'md' | 'lg' }>): ReactElement {
   return (
-    <ButtonLink href="/api/auth/login" size={size}>
+    <ButtonLink href="/auth/login" size={size}>
       <GoogleIcon size="md" />
       Continue with Google
     </ButtonLink>

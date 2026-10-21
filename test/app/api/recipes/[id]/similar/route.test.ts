@@ -19,7 +19,7 @@ import {
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const { GET } =
-  await import('../../../../../../src/app/api/recipes/[id]/similar-recipes/route');
+  await import('../../../../../../src/app/api/recipes/[id]/similar/route');
 
 let world: World;
 
@@ -30,9 +30,9 @@ beforeEach(() => {
 afterEach(() => world.close());
 
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
-const request = () => fromApp('GET', '/api/recipes/f1/similar-recipes');
+const request = () => fromApp('GET', '/api/recipes/f1/similar');
 
-describe('GET /api/recipes/:id/similar-recipes', () => {
+describe('GET /api/recipes/:id/similar', () => {
   it('answers 401 when nobody is signed in', async () => {
     expect((await GET(request(), ctx('f1'))).status).toBe(401);
   });

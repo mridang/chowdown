@@ -1,8 +1,8 @@
 /**
  * One recipe import.
  *
- *   GET    /api/recipe-imports/:id   the import and its drafts
- *   DELETE /api/recipe-imports/:id   discard it
+ *   GET    /api/recipes/imports/:id   the import and its drafts
+ *   DELETE /api/recipes/imports/:id   discard it
  */
 
 import { NextResponse } from 'next/server';
@@ -14,7 +14,7 @@ import { deleteRecipeImport, getRecipeImport } from '@/lib/db/recipe-imports';
 import { getDatabase } from '@/lib/util';
 
 /**
- * `GET /api/recipe-imports/:id`: the import with all its drafts. Answers 200,
+ * `GET /api/recipes/imports/:id`: the import with all its drafts. Answers 200,
  * 404 for an import the user does not have, 401 when nobody is signed in.
  */
 export async function GET(
@@ -38,7 +38,7 @@ export async function GET(
 }
 
 /**
- * `DELETE /api/recipe-imports/:id`: discard the import. Answers 204, 404 for an
+ * `DELETE /api/recipes/imports/:id`: discard the import. Answers 204, 404 for an
  * import the user does not have, 401 when nobody is signed in.
  */
 export async function DELETE(

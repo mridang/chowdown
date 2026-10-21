@@ -37,24 +37,24 @@ describe('DriveNotConnectedError', () => {
 
 describe('driveConnectHref', () => {
   it('starts the connection, optionally coming back to a page', () => {
-    expect(driveConnectHref()).toBe('/api/auth/drive');
+    expect(driveConnectHref()).toBe('/auth/drive');
     expect(driveConnectHref('/recipes/add')).toBe(
-      '/api/auth/drive?returnTo=%2Frecipes%2Fadd',
+      '/auth/drive?returnTo=%2Frecipes%2Fadd',
     );
   });
 
   it('can insist on going to Google even when a login is on record', () => {
     expect(driveConnectHref('/app', { force: true })).toBe(
-      '/api/auth/drive?returnTo=%2Fapp&force=1',
+      '/auth/drive?returnTo=%2Fapp&force=1',
     );
     expect(driveConnectHref(undefined, { force: true })).toBe(
-      '/api/auth/drive?force=1',
+      '/auth/drive?force=1',
     );
   });
 
   it('encodes a return address that has a query of its own', () => {
     expect(driveConnectHref('/oauth/authorize?a=1&b=2')).toBe(
-      '/api/auth/drive?returnTo=%2Foauth%2Fauthorize%3Fa%3D1%26b%3D2',
+      '/auth/drive?returnTo=%2Foauth%2Fauthorize%3Fa%3D1%26b%3D2',
     );
   });
 });

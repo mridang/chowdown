@@ -47,6 +47,11 @@ export async function listRecipes(
   forced: Readonly<Record<string, string>> = {},
 ): Promise<NextResponse> {
   const query = withForced(new URL(request.url).searchParams, forced);
+  if (query.has('favourite') && !('favourite' in forced)) {
+    return problems.badRequest(
+      'favourite is not a filter of this list. Favourites are listed at /api/users/self/favourites.',
+    );
+  }
   const limit = parseLimit(query.get('limit'));
   if (typeof limit !== 'number') {
     return limit;

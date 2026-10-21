@@ -41,7 +41,7 @@ export const EXTRA_PURPOSES: readonly string[] = ['drive'];
  * clears the dead cookie before going home; sending them straight home would
  * find the cookie still there, take it for a signed-in visit, and come back.
  */
-export const ENDED_SESSION_PATH = '/api/auth/refresh';
+export const ENDED_SESSION_PATH = '/auth/refresh';
 
 /**
  * The claims this app's session cookie carries besides who the person is. They

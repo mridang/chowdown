@@ -13,7 +13,7 @@ import {
 } from '../../../src/lib/mcp/request-limits';
 import type { RateLimitStore } from '../../../src/lib/util/rate-limit';
 
-const URL = 'https://chowdown.test/api/mcp';
+const URL = 'https://chowdown.test/mcp';
 
 /** A request whose body is `body`, with extra headers. */
 const post = (body: BodyInit | null, headers: Record<string, string> = {}) =>

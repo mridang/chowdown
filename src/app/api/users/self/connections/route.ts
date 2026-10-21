@@ -1,7 +1,7 @@
 /**
  * The apps (ChatGPT, Claude…) the user has connected with sign-in.
  *
- *   GET /api/users/self/connected-apps
+ *   GET /api/users/self/connections
  */
 
 import { NextResponse } from 'next/server';
@@ -13,7 +13,7 @@ import { listConnectedApps } from '@/lib/db/oauth';
 import { getDatabase } from '@/lib/util';
 
 /**
- * `GET /api/users/self/connected-apps`: the apps the user has approved and not
+ * `GET /api/users/self/connections`: the apps the user has approved and not
  * disconnected, newest first. Answers 200 with a page of apps, or 401 when
  * nobody is signed in.
  */

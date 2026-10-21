@@ -26,7 +26,7 @@ Google consent screen:
 1. **Sign in** asks for identity only (`openid email profile`). It creates the
    account and a signed session cookie, and nothing else.
 2. **Connect Google Drive** (the button in the header, the account menu, and on
-   pages that need it; `GET /api/auth/drive`) adds the `drive.file` scope and an
+   pages that need it; `GET /auth/drive`) adds the `drive.file` scope and an
    offline refresh token, then creates the app-managed "Recipes" folder.
    `drive.file` is non-sensitive and only reaches files chowdown created, so
    there is **no Google verification** and nothing is published to the
@@ -43,8 +43,8 @@ Set up in Google Cloud:
 2. **OAuth consent screen**: External, add the `.../auth/drive.file` scope, add
    your Gmail as a test user (or publish to production — still review-free).
 3. **OAuth client ID** (Web application) → **Authorized redirect URIs**:
-   - `http://localhost:3737/api/auth/callback` (dev)
-   - `https://chowdown.apps.mrida.ng/api/auth/callback` (prod)
+   - `http://localhost:3737/auth/callback` (dev)
+   - `https://chowdown.apps.mrida.ng/auth/callback` (prod)
 
 Secrets, in `.env` locally and `wrangler secret put <NAME>` in production (see Deploy):
 
@@ -59,7 +59,7 @@ TOKEN_ENCRYPTION_KEY=...    # openssl rand -base64 32 — seals Drive refresh to
 
 ## Connecting an assistant (MCP)
 
-chowdown is an MCP server at `https://<your-domain>/api/mcp`, protected with
+chowdown is an MCP server at `https://<your-domain>/mcp`, protected with
 OAuth 2.1 as the [MCP authorization spec](https://modelcontextprotocol.io/specification/latest/basic/authorization)
 describes. Add that URL as a connector in ChatGPT, Claude or any MCP client, sign
 in with Google when asked, and approve. There is no secret to copy. The person
@@ -75,7 +75,7 @@ told so instead of being shown an empty collection.
   vegan, vegetarian, pescatarian or non-vegetarian from its ingredients, so
   results can be grouped and filtered by diet; existing recipes get this without
   being re-tagged.
-- **Discovery:** `/.well-known/oauth-protected-resource/api/mcp` (RFC 9728) and
+- **Discovery:** `/.well-known/oauth-protected-resource/mcp` (RFC 9728) and
   `/.well-known/oauth-authorization-server` (RFC 8414).
 - **Client registration:** Client ID Metadata Documents (preferred) and dynamic
   registration (`/oauth/register`, RFC 7591). Public clients only, PKCE `S256`
@@ -88,29 +88,31 @@ told so instead of being shown an empty collection.
 
 The app's data is available as a REST API under `/api`, designed to the
 [Zalando RESTful API guidelines](https://opensource.zalando.com/restful-api-guidelines/)
-(plural kebab-case nouns, `snake_case` JSON, RFC 9457 problem details, cursor
-pagination, JSON Merge Patch, `ETag` / `If-Match`). The one deliberate departure
-is the `/api` prefix.
+(plural nouns, `snake_case` JSON, RFC 9457 problem details, cursor pagination,
+JSON Merge Patch, `ETag` / `If-Match`, `X-Flow-ID`), described in
+[`openapi/openapi.json`](openapi/openapi.json). The deliberate departures are
+the `/api` prefix and path segments without hyphens (`recipes/imports`, not
+`recipe-imports`).
 
-| Resource                                          | Methods                                     |
-| ------------------------------------------------- | ------------------------------------------- |
-| `/api/recipes`, `/api/recipes/{recipe-id}`        | list, create · read, replace, patch, delete |
-| `/api/recipes/{recipe-id}/notes[/{note-id}]`      | list, create · read, replace, delete        |
-| `/api/recipes/{recipe-id}/similar-recipes`        | list                                        |
-| `/api/recipe-suggestions?q=`                      | list                                        |
-| `/api/recipe-imports[/{import-id}]`               | list, create · read, delete                 |
-| `/api/users/self`                                 | read, patch                                 |
-| `/api/users/self/favourite-recipes[/{recipe-id}]` | list · read, put, delete                    |
-| `/api/users/self/connected-apps[/{grant-id}]`     | list · delete                               |
-| `/api/sessions/self`                              | delete (sign out)                           |
+| Resource                                     | Methods                                     |
+| -------------------------------------------- | ------------------------------------------- |
+| `/api/recipes`, `/api/recipes/{recipe_id}`   | list, create · read, replace, patch, delete |
+| `/api/recipes/{recipe_id}/notes[/{note-id}]` | list, create · read, replace, delete        |
+| `/api/recipes/{recipe_id}/similar`           | list                                        |
+| `/api/recipes/suggestions?q=`                | list                                        |
+| `/api/recipes/imports[/{import-id}]`         | list, create · read, delete                 |
+| `/api/users/self`                            | read, patch                                 |
+| `/api/users/self/favourites[/{recipe_id}]`   | list · read, put, delete                    |
+| `/api/users/self/connections[/{grant_id}]`   | list · delete                               |
+| `/api/sessions/self`                         | delete (sign out)                           |
 
 Auth is the signed session cookie. Writes must come from the app's own pages
 (cross-site writes get `403`). Signing in does not connect Google Drive: writes
-and `/api/recipe-suggestions` answer `409 /problems/drive-not-connected` until
+and `/api/recipes/suggestions` answer `409 /problems/drive-not-connected` until
 the person has connected it in the browser. Everything that is not a resource stays out
-of the API: MCP (`/api/mcp`), OAuth (`/oauth/*`, `/.well-known/*`), the Google
-sign-in and Drive-connection redirects (`/api/auth/*`), the health check, the
-image proxy (`/api/img`).
+of the API: MCP (`/mcp`), OAuth (`/oauth/*`, `/.well-known/*`), the Google
+sign-in and Drive-connection redirects (`/auth/*`), the health check (`/health`), the
+image proxy (`/img`), CSP reports (`/csp/reports`).
 
 ## Local development
 
@@ -127,7 +129,7 @@ devbox run -- npm run typecheck    # tsc --noEmit
 devbox run -- npm run format       # prettier
 ```
 
-Put the secrets listed under [Google setup](#google-setup) in `.env` (gitignored) before signing in. `http://localhost:3737` needs no certificate, because Google OAuth allows http for localhost: add `http://localhost:3737/api/auth/callback` to the OAuth client's redirect URIs.
+Put the secrets listed under [Google setup](#google-setup) in `.env` (gitignored) before signing in. `http://localhost:3737` needs no certificate, because Google OAuth allows http for localhost: add `http://localhost:3737/auth/callback` to the OAuth client's redirect URIs.
 
 ## Deploy
 
@@ -155,7 +157,7 @@ seals Drive refresh tokens; both are Worker secrets. `APP_URL` is the public
 origin: set it in production, because when it is missing the origin is read from
 the request's `Host` header. `MCP_ALLOWED_ORIGINS` (comma-separated, exact
 origins such as `chrome-extension://abcdef`) lets a browser-based or webview MCP
-client call `/api/mcp`; leave it unset for assistants that run on a server.
+client call `/mcp`; leave it unset for assistants that run on a server.
 
 **Rate limits.** Three layers, cheapest first:
 

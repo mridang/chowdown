@@ -18,20 +18,20 @@ describe('GET /.well-known/oauth-protected-resource', () => {
     const res = await get();
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({
-      resource: 'https://chowdown.test/api/mcp',
+      resource: 'https://chowdown.test/mcp',
       authorization_servers: ['https://chowdown.test'],
     });
   });
 
   it('describes the MCP endpoint at its own path', async () => {
-    const res = await get(['api', 'mcp']);
+    const res = await get(['mcp']);
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({
-      resource: 'https://chowdown.test/api/mcp',
+      resource: 'https://chowdown.test/mcp',
     });
   });
 
-  it.each([['anything'], ['api'], ['api', 'other'], ['api', 'mcp', 'x']])(
+  it.each([['anything'], ['api'], ['api', 'other'], ['mcp', 'x']])(
     'answers 404 for the path /%s',
     async (...path) => {
       const res = await get(path);

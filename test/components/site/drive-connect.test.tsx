@@ -13,9 +13,7 @@ describe('DriveConnectPanel', () => {
     expect(out).toContain('One more step');
     expect(out).toMatch(/<h2[^>]*>Connect your Google Drive<\/h2>/);
     expect(out).toContain('Connect Google Drive');
-    expect(out).toContain(
-      '/api/auth/drive?returnTo=%2Frecipes%2Fadd&amp;force=1',
-    );
+    expect(out).toContain('/auth/drive?returnTo=%2Frecipes%2Fadd&amp;force=1');
   });
 
   it('says reconnect for someone whose connection lapsed', () => {
@@ -46,7 +44,7 @@ describe('DriveConnectNotice', () => {
     const out = html(<DriveConnectNotice />);
     expect(out).toContain('Google Drive is not connected');
     expect(out).toContain('Recipes shown here are saved copies');
-    expect(out).toContain('/api/auth/drive?force=1');
+    expect(out).toContain('/auth/drive?force=1');
   });
 
   it('says disconnected after a lapse, and takes its own message', () => {

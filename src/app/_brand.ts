@@ -87,6 +87,7 @@ export const PRIVATE_PATHS: readonly string[] = [
   '/recipes/',
   '/connect',
   '/api/',
+  '/auth/',
   '/oauth/',
   '/rpc/',
 ];

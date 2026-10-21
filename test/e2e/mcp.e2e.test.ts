@@ -131,7 +131,7 @@ const REVISIONS: Readonly<Record<string, readonly string[]>> = {
 /** Whoever the suite is: signed in, with every scope and no Google Drive. */
 const SUITE_USER = { id: 1, refresh_token_enc: null } as Readonly<User>;
 
-/** The MCP endpoint on a loopback port, answering as `/api/mcp` does. */
+/** The MCP endpoint on a loopback port, answering as `/mcp` does. */
 async function listen(): Promise<{ server: Server; url: string }> {
   const server = createServer((incoming, outgoing) => {
     // The server's own address, not the request's `Host` header, so a request
@@ -203,7 +203,7 @@ async function listen(): Promise<{ server: Server; url: string }> {
       resolve(typeof address === 'object' && address ? address.port : 0);
     });
   });
-  return { server, url: `http://127.0.0.1:${port}/api/mcp` };
+  return { server, url: `http://127.0.0.1:${port}/mcp` };
 }
 
 describe('the MCP server against the official conformance suite', () => {

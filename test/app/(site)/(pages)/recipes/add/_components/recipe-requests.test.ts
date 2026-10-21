@@ -40,7 +40,7 @@ describe('postImport', () => {
     const fetchSpy = stubFetch();
     await postImport('https://example.com/pasta');
     const [url, init] = fetchSpy.mock.calls[0] ?? [];
-    expect(url).toBe('/api/recipe-imports');
+    expect(url).toBe('/api/recipes/imports');
     expect(init?.method).toBe('POST');
     expect(JSON.parse(String(init?.body))).toEqual({
       input: 'https://example.com/pasta',
@@ -61,7 +61,7 @@ describe('discardImport', () => {
   it('asks the server to delete the import', () => {
     const fetchSpy = stubFetch();
     discardImport('abc');
-    expect(fetchSpy).toHaveBeenCalledWith('/api/recipe-imports/abc', {
+    expect(fetchSpy).toHaveBeenCalledWith('/api/recipes/imports/abc', {
       method: 'DELETE',
     });
   });

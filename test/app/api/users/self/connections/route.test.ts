@@ -27,7 +27,7 @@ jest.unstable_mockModule('../../../../../../src/lib/auth/current-user', () => ({
 }));
 
 const { GET } =
-  await import('../../../../../../src/app/api/users/self/connected-apps/route');
+  await import('../../../../../../src/app/api/users/self/connections/route');
 
 let raw: DatabaseSync;
 let restore: () => void;
@@ -64,9 +64,9 @@ beforeEach(() => {
 
 afterEach(() => restore());
 
-const URL = 'https://chowdown.test/api/users/self/connected-apps';
+const URL = 'https://chowdown.test/api/users/self/connections';
 
-describe('GET /api/users/self/connected-apps', () => {
+describe('GET /api/users/self/connections', () => {
   it('lists each app once, newest first, with the latest use', async () => {
     const res = await GET(new Request(URL));
     expect(res.status).toBe(200);

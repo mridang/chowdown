@@ -26,7 +26,7 @@ function card(
     name = 'Claude',
     clientId = 'https://claude.ai/oauth/meta',
     kind = 'cimd',
-    redirect = 'https://claude.ai/api/mcp/auth_callback',
+    redirect = 'https://claude.ai/mcp/auth_callback',
     scopes = ['recipes:read', 'recipes:write'],
   } = overrides;
   const identity = clientIdentity({ clientId, kind });
@@ -66,7 +66,7 @@ describe('ConsentCard', () => {
 
   it('shows the full redirect address and, bold on its own line, the host', () => {
     const markup = card();
-    expect(markup).toContain('https://claude.ai/api/mcp/auth_callback</code>');
+    expect(markup).toContain('https://claude.ai/mcp/auth_callback</code>');
     expect(markup).toMatch(
       /<span class="[^"]*font-semibold[^"]*">claude\.ai<\/span><code/,
     );

@@ -9,14 +9,12 @@ import {
 describe('mcpUrl', () => {
   it('puts the MCP path on the origin it is served from', () => {
     expect(mcpUrl('https://chowdown.example')).toBe(
-      'https://chowdown.example/api/mcp',
+      'https://chowdown.example/mcp',
     );
   });
 
   it('does not double the slash when the origin ends with one', () => {
-    expect(mcpUrl('http://localhost:3737/')).toBe(
-      'http://localhost:3737/api/mcp',
-    );
+    expect(mcpUrl('http://localhost:3737/')).toBe('http://localhost:3737/mcp');
   });
 });
 

@@ -37,7 +37,7 @@ export default async function AddRecipesRoute({
   const here = addRecipesPath(shared);
   const user = await getCurrentUser();
   if (!user) {
-    redirect(`/api/auth/login?returnTo=${encodeURIComponent(here)}`);
+    redirect(`/auth/login?returnTo=${encodeURIComponent(here)}`);
   }
   if (!isDriveConnected(user)) {
     return (

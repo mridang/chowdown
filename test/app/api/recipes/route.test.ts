@@ -132,7 +132,7 @@ describe('POST /api/recipes', () => {
     const google = fakeGoogle();
     const res = await create({ name: 'Curry again', cooklang: CURRY });
     expect(res.status).toBe(200);
-    expect(res.headers.get('content-location')).toBe(
+    expect(res.headers.get('location')).toBe(
       'https://chowdown.test/api/recipes/existing',
     );
     expect(google.files.size).toBe(0);

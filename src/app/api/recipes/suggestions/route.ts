@@ -3,7 +3,7 @@
  * The recipes are ranked by how close their meaning is to the text (Workers AI
  * embeddings against the cached recipe embeddings), best first.
  *
- *   GET /api/recipe-suggestions?q=something light with chicken&limit=8
+ *   GET /api/recipes/suggestions?q=something light with chicken&limit=8
  *
  * No page of the app calls this endpoint today: it is part of the documented
  * API for other clients. It is also the most expensive read there is (it can
@@ -37,7 +37,7 @@ const DEFAULT_SUGGESTIONS = 8;
 const MAX_QUERY_LENGTH = 300;
 
 /**
- * `GET /api/recipe-suggestions?q=…&limit=…`: the user's recipes closest in
+ * `GET /api/recipes/suggestions?q=…&limit=…`: the user's recipes closest in
  * meaning to the text in `q`, best first, as `{ id, title }` entries. Answers
  * 200 with a page, 400 for a missing or over-long (300 characters) `q` or a bad
  * `limit`. Needs a signed-in user: 401, and 502 or 409 when Drive or the model

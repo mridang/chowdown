@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { ReactElement } from 'react';
 
 import { DriveIcon, HeartIcon, PlusIcon, SearchIcon } from '@/components/icons';
-import { isApiHref } from '@/components/ui/button';
+import { isServerHref } from '@/components/ui/button';
 import { POPOVER_ITEM } from '@/components/ui/popover';
 
 import { NEW_TAB } from './drive-link';
@@ -42,7 +42,7 @@ export function MenuLink({
       </a>
     );
   }
-  return isApiHref(href) ? (
+  return isServerHref(href) ? (
     <a href={href} className={POPOVER_ITEM}>
       {content}
     </a>

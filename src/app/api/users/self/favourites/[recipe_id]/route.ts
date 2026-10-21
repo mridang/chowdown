@@ -2,9 +2,9 @@
  * One of the user's favourite recipes. Favouriting is creating this resource,
  * un-favouriting is deleting it; both are idempotent.
  *
- *   GET    /api/users/self/favourite-recipes/:recipe-id   the recipe, if favourited
- *   PUT    /api/users/self/favourite-recipes/:recipe-id   favourite it → 204
- *   DELETE /api/users/self/favourite-recipes/:recipe-id   un-favourite it → 204
+ *   GET    /api/users/self/favourites/:recipe_id   the recipe, if favourited
+ *   PUT    /api/users/self/favourites/:recipe_id   favourite it → 204
+ *   DELETE /api/users/self/favourites/:recipe_id   un-favourite it → 204
  */
 
 import { NextResponse } from 'next/server';
@@ -20,7 +20,7 @@ import { getDatabase } from '@/lib/util';
 
 /** The context Next.js hands these handlers: the recipe's id. */
 interface RecipeContext {
-  readonly params: Promise<{ readonly 'recipe-id': string }>;
+  readonly params: Promise<{ readonly recipe_id: string }>;
 }
 
 /** Whether `id` is a well-formed Drive file id of one of this user's recipes. */
@@ -33,7 +33,7 @@ async function ownsRecipe(userId: number, id: string): Promise<boolean> {
 }
 
 /**
- * `GET /api/users/self/favourite-recipes/:recipe-id`: the recipe's summary, if
+ * `GET /api/users/self/favourites/:recipe_id`: the recipe's summary, if
  * the user has hearted it. Answers 200, 404 when it is not one of their
  * favourites, 401 when nobody is signed in.
  */
@@ -48,7 +48,7 @@ export async function GET(
   const rows = await getRecipePageRows(
     getDatabase(),
     auth.value,
-    (await params)['recipe-id'],
+    (await params).recipe_id,
   );
   if (!rows.recipe || !rows.favourite) {
     return problems.notFound('favourite recipe');
@@ -59,7 +59,7 @@ export async function GET(
 }
 
 /**
- * `PUT /api/users/self/favourite-recipes/:recipe-id`: heart a recipe. Hearting
+ * `PUT /api/users/self/favourites/:recipe_id`: heart a recipe. Hearting
  * twice is fine. Answers 204, 404 for a recipe the user does not have, 401
  * when nobody is signed in.
  */
@@ -71,7 +71,7 @@ export async function PUT(
   if (!auth.ok) {
     return auth.response;
   }
-  const id = (await params)['recipe-id'];
+  const id = (await params).recipe_id;
   // Only the user's own recipes can be favourited.
   if (!(await ownsRecipe(auth.value, id))) {
     return problems.notFound('recipe');
@@ -81,7 +81,7 @@ export async function PUT(
 }
 
 /**
- * `DELETE /api/users/self/favourite-recipes/:recipe-id`: remove the heart.
+ * `DELETE /api/users/self/favourites/:recipe_id`: remove the heart.
  * Removing one that is not there is fine, even for a recipe that no longer
  * exists. Answers 204, or 401 when nobody is signed in.
  */
@@ -93,7 +93,7 @@ export async function DELETE(
   if (!auth.ok) {
     return auth.response;
   }
-  const id = (await params)['recipe-id'];
+  const id = (await params).recipe_id;
   if (await ownsRecipe(auth.value, id)) {
     await setFavouriteAndTag(auth.value, id, false);
   } else {

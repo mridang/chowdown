@@ -96,6 +96,17 @@ describe('listRecipes', () => {
     expect(body.items?.map((r) => r.favourite)).toEqual([true, false, false]);
   });
 
+  it('refuses a favourite filter, which belongs to the favourites list', async () => {
+    const { res, body } = await list('?favourite=true');
+    expect(res.status).toBe(400);
+    expect(body.status).toBe(400);
+  });
+
+  it('still lets the favourites list force its own favourite filter', async () => {
+    const { body } = await list('', { favourite: 'true' });
+    expect(body.items?.map((r) => r.id)).toEqual(['a']);
+  });
+
   it('sorts by the sort parameter, newest first with a minus', async () => {
     const { body } = await list('?sort=-modified_at');
     expect(body.items?.map((r) => r.id)).toEqual(['a', 'b', 'c']);
@@ -117,11 +128,6 @@ describe('listRecipes', () => {
   it('filters by source site', async () => {
     const { body } = await list('?source_site=cakes.example.com');
     expect(body.items?.map((r) => r.id)).toEqual(['c']);
-  });
-
-  it('filters to favourites with favourite=true', async () => {
-    const { body } = await list('?favourite=true');
-    expect(body.items?.map((r) => r.id)).toEqual(['a']);
   });
 
   it('pages with a cursor that carries on where the page ended', async () => {

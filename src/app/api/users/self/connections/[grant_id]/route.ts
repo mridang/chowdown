@@ -1,7 +1,7 @@
 /**
  * Disconnect an app: its access and refresh tokens stop working immediately.
  *
- *   DELETE /api/users/self/connected-apps/:grant-id → 204
+ *   DELETE /api/users/self/connections/:grant_id → 204
  */
 
 import { NextResponse } from 'next/server';
@@ -12,13 +12,13 @@ import { revokeConnectedApp } from '@/lib/db/oauth';
 import { getDatabase } from '@/lib/util';
 
 /**
- * `DELETE /api/users/self/connected-apps/:grant-id`: revoke the app's access
+ * `DELETE /api/users/self/connections/:grant_id`: revoke the app's access
  * right away. Answers 204, 404 when the grant is not the user's (or is already
  * revoked), 401 when nobody is signed in.
  */
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ 'grant-id': string }> },
+  { params }: { params: Promise<{ grant_id: string }> },
 ): Promise<NextResponse> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
@@ -27,7 +27,7 @@ export async function DELETE(
   const revoked = await revokeConnectedApp(
     getDatabase(),
     auth.value,
-    (await params)['grant-id'],
+    (await params).grant_id,
   );
   return revoked
     ? new NextResponse(null, { status: 204 })

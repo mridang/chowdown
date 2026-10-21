@@ -5,15 +5,12 @@ import { html } from '../render';
 
 describe('CopyField', () => {
   const out = html(
-    <CopyField
-      value="https://chowdown.test/api/mcp"
-      label="MCP server address"
-    />,
+    <CopyField value="https://chowdown.test/mcp" label="MCP server address" />,
   );
 
   it('shows the value, named for assistive technology', () => {
     expect(out).toMatch(
-      /<code[^>]*aria-label="MCP server address"[^>]*>https:\/\/chowdown\.test\/api\/mcp<\/code>/,
+      /<code[^>]*aria-label="MCP server address"[^>]*>https:\/\/chowdown\.test\/mcp<\/code>/,
     );
   });
 

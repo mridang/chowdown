@@ -10,7 +10,7 @@ import {
 
 const base = {
   clientId: 'client-id',
-  redirectUri: 'https://chowdown.test/api/auth/callback',
+  redirectUri: 'https://chowdown.test/auth/callback',
   state: 'abc',
 };
 

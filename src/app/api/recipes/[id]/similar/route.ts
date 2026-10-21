@@ -2,7 +2,7 @@
  * Recipes similar to this one, most similar first. Precomputed from the
  * recipes' embeddings and read straight from the D1 cache.
  *
- *   GET /api/recipes/:id/similar-recipes
+ *   GET /api/recipes/:id/similar
  */
 
 import { NextResponse } from 'next/server';
@@ -16,7 +16,7 @@ import { parseSimilar } from '@/lib/recipe/similar';
 import { getDatabase } from '@/lib/util';
 
 /**
- * `GET /api/recipes/:id/similar-recipes`: the recipes closest in meaning to
+ * `GET /api/recipes/:id/similar`: the recipes closest in meaning to
  * this one, as `{ id, title }` entries. Answers 200 with a page (empty if the
  * list has not been computed yet), 404 for a recipe the user does not have,
  * 401 when nobody is signed in.

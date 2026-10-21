@@ -67,7 +67,7 @@ function connect(
 ) {
   return completeDriveConnect(
     {
-      request: nextRequest('/api/auth/callback', cookies),
+      request: nextRequest('/auth/callback', cookies),
       env: world.env as unknown as CloudflareEnv,
       origin: ORIGIN,
       returnTo: options.returnTo,

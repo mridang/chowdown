@@ -8,6 +8,6 @@ describe('FinalCta', () => {
 
   it('invites people to start and offers the sign-in link', () => {
     expect(out).toContain('Start your collection today');
-    expect(out).toContain('href="/api/auth/login"');
+    expect(out).toContain('href="/auth/login"');
   });
 });

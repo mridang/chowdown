@@ -7,17 +7,17 @@ import {
   jest,
 } from '@jest/globals';
 
-import { DriveNotConnectedError } from '../../../../src/lib/auth/drive-access';
-import type { DriveFile } from '../../../../src/lib/drive/drive-client';
-import { installCloudflareContext } from '../../../lib/db/sqlite-d1';
+import { DriveNotConnectedError } from '../../../../../src/lib/auth/drive-access';
+import type { DriveFile } from '../../../../../src/lib/drive/drive-client';
+import { installCloudflareContext } from '../../../../lib/db/sqlite-d1';
 
 /** Who is signed in; null means nobody. */
 const session: { user: { id: number } | null } = { user: { id: 7 } };
 
 // The sign-in gate has its own tests (test/lib/api/auth.test.ts); here it just
 // says who is calling, in the shape the routes read.
-const { problems } = await import('../../../../src/lib/api/problem');
-jest.unstable_mockModule('../../../../src/lib/api/auth', () => ({
+const { problems } = await import('../../../../../src/lib/api/problem');
+jest.unstable_mockModule('../../../../../src/lib/api/auth', () => ({
   requireUser: async () =>
     session.user
       ? { ok: true, value: session.user }
@@ -49,25 +49,28 @@ const topSimilar = jest.fn<
   ) => readonly DriveFile[]
 >((_rows, _vector, files) => files.slice(0, 1));
 
-jest.unstable_mockModule('../../../../src/lib/auth/user-access-token', () => ({
-  getUserAccessToken,
-}));
-jest.unstable_mockModule('../../../../src/lib/drive/drive-client', () => ({
+jest.unstable_mockModule(
+  '../../../../../src/lib/auth/user-access-token',
+  () => ({
+    getUserAccessToken,
+  }),
+);
+jest.unstable_mockModule('../../../../../src/lib/drive/drive-client', () => ({
   listRecipeFiles,
 }));
-jest.unstable_mockModule('../../../../src/lib/drive/recipes-folder', () => ({
+jest.unstable_mockModule('../../../../../src/lib/drive/recipes-folder', () => ({
   recipesFolderFor,
 }));
-jest.unstable_mockModule('../../../../src/lib/recipe/embeddings', () => ({
+jest.unstable_mockModule('../../../../../src/lib/recipe/embeddings', () => ({
   embedText,
 }));
-jest.unstable_mockModule('../../../../src/lib/recipe/similar', () => ({
+jest.unstable_mockModule('../../../../../src/lib/recipe/similar', () => ({
   ensureEmbeddings,
   topSimilar,
 }));
 
 const { GET } =
-  await import('../../../../src/app/api/recipe-suggestions/route');
+  await import('../../../../../src/app/api/recipes/suggestions/route');
 
 let restore: () => void;
 
@@ -80,9 +83,9 @@ beforeEach(() => {
 afterEach(() => restore());
 
 const ask = (query: string) =>
-  GET(new Request(`https://chowdown.test/api/recipe-suggestions?${query}`));
+  GET(new Request(`https://chowdown.test/api/recipes/suggestions?${query}`));
 
-describe('GET /api/recipe-suggestions', () => {
+describe('GET /api/recipes/suggestions', () => {
   it('answers 401 when nobody is signed in, touching nothing', async () => {
     session.user = null;
     expect((await ask('q=soup')).status).toBe(401);

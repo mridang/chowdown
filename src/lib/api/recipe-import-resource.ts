@@ -24,7 +24,7 @@ export type ImportInput =
   | { readonly ok: true; readonly input: string }
   | { readonly ok: false; readonly errors: readonly string[] };
 
-/** Check the `input` of `POST /api/recipe-imports`: required, not blank, within the limit. */
+/** Check the `input` of `POST /api/recipes/imports`: required, not blank, within the limit. */
 export function parseImportInput(body: unknown): ImportInput {
   const input =
     typeof body === 'object' && body !== null

@@ -21,7 +21,7 @@ import { getEnv } from '@/lib/util';
 import { appOrigin } from '@/lib/util/origin';
 
 /**
- * `GET /api/auth/drive`: connect Google Drive for the signed-in person.
+ * `GET /auth/drive`: connect Google Drive for the signed-in person.
  * Answers a redirect: to sign-in first when nobody is signed in, straight on
  * (with a corrected session cookie) when Drive is already connected, or to
  * Google's consent screen otherwise.
@@ -34,9 +34,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const user = await getCurrentUser();
   if (!user) {
-    const here = `/api/auth/drive${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`;
+    const here = `/auth/drive${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`;
     return NextResponse.redirect(
-      `${origin}/api/auth/login?returnTo=${encodeURIComponent(here)}`,
+      `${origin}/auth/login?returnTo=${encodeURIComponent(here)}`,
     );
   }
 
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const response = NextResponse.redirect(
     buildDriveAuthUrl({
       clientId: env.GOOGLE_OAUTH_CLIENT_ID,
-      redirectUri: `${origin}/api/auth/callback`,
+      redirectUri: `${origin}/auth/callback`,
       state,
       loginHint: user.email,
     }),

@@ -17,7 +17,7 @@ import { SCOPE_OFFLINE_ACCESS, SUPPORTED_SCOPES } from './scopes';
 import { parseUrl } from '../util/url';
 
 /** Path of the OAuth-protected MCP endpoint. */
-export const MCP_PATH = '/api/mcp';
+export const MCP_PATH = '/mcp';
 
 /** Well-known path of the protected resource metadata for the MCP endpoint. */
 export const RESOURCE_METADATA_PATH = `/.well-known/oauth-protected-resource${MCP_PATH}`;
@@ -38,7 +38,7 @@ const withoutTrailingSlashes = (path: string): string =>
 
 /**
  * Whether a client-supplied `resource` names this MCP server. The value is read
- * as a URL, so an upper-case scheme or host (`HTTPS://Host/api/mcp`) is the same
+ * as a URL, so an upper-case scheme or host (`HTTPS://Host/mcp`) is the same
  * address, as the MCP spec asks implementations to accept; trailing slashes are
  * tolerated, since the spec's own examples vary on them. A query or fragment
  * means it is some other resource (RFC 8707 forbids fragments).

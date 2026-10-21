@@ -9,19 +9,19 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { DELETE, GET, OPTIONS, POST } from '../../../../src/app/api/mcp/route';
-import { createDatabase } from '../../../../src/lib/db/client';
-import { createOAuthStore } from '../../../../src/lib/db/oauth';
-import { s256 } from '../../../../src/lib/oauth/pkce';
+import { DELETE, GET, OPTIONS, POST } from '../../../src/app/mcp/route';
+import { createDatabase } from '../../../src/lib/db/client';
+import { createOAuthStore } from '../../../src/lib/db/oauth';
+import { s256 } from '../../../src/lib/oauth/pkce';
 import {
   exchangeAuthorizationCode,
   issueAuthorizationCode,
   type TokenResponse,
-} from '../../../../src/lib/oauth/token-endpoint';
-import { installCloudflareContext, sqliteD1 } from '../../../lib/db/sqlite-d1';
+} from '../../../src/lib/oauth/token-endpoint';
+import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
 
 const ORIGIN = 'https://chowdown.test';
-const URL = `${ORIGIN}/api/mcp`;
+const URL = `${ORIGIN}/mcp`;
 const OTHER = 'https://evil.example';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 
@@ -105,7 +105,7 @@ const bearer = (token: string, extra: Record<string, string> = {}) => ({
   ...extra,
 });
 
-describe('OPTIONS /api/mcp', () => {
+describe('OPTIONS /mcp', () => {
   it('answers a preflight from an allowed origin with 204 and echoes the origin', async () => {
     const res = await OPTIONS(
       request('OPTIONS', { origin: 'https://claude.ai' }),
@@ -151,7 +151,7 @@ describe('without a token', () => {
     const res = await handler(request(method));
     expect(res.status).toBe(401);
     expect(res.headers.get('www-authenticate')).toContain(
-      'resource_metadata="https://chowdown.test/.well-known/oauth-protected-resource/api/mcp"',
+      'resource_metadata="https://chowdown.test/.well-known/oauth-protected-resource/mcp"',
     );
     expect(res.headers.get('www-authenticate')).not.toContain('invalid_token');
     expect(await res.json()).toMatchObject({

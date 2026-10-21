@@ -18,7 +18,7 @@ const GOOD = newSecret(ACCESS_PREFIX);
 const BAD = newSecret(ACCESS_PREFIX);
 
 const withToken = (token?: string) =>
-  new Request(`${ORIGIN}/api/mcp`, {
+  new Request(`${ORIGIN}/mcp`, {
     method: 'POST',
     headers: token ? { authorization: `Bearer ${token}` } : {},
   });
@@ -58,7 +58,7 @@ describe('authenticateMcpRequest', () => {
     );
     expect(identify).toHaveBeenCalledWith(
       GOOD,
-      'https://chowdown.test/api/mcp',
+      'https://chowdown.test/mcp',
       1000,
     );
   });

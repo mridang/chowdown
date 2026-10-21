@@ -74,11 +74,11 @@ describe('EDGE_LIMITS', () => {
     ['GET', '/oauth/authorize', 'auth'],
     ['POST', '/oauth/consent', 'auth'],
     ['POST', '/oauth/revoke', 'auth'],
-    ['GET', '/api/auth/callback', 'auth'],
+    ['GET', '/auth/callback', 'auth'],
     ['DELETE', '/api/sessions/self', 'auth'],
-    ['POST', '/api/recipe-imports', 'import'],
-    ['GET', '/api/recipe-imports', 'api'],
-    ['GET', '/api/recipe-suggestions', 'expensive'],
+    ['POST', '/api/recipes/imports', 'import'],
+    ['GET', '/api/recipes/imports', 'api'],
+    ['GET', '/api/recipes/suggestions', 'expensive'],
     ['GET', '/img', 'cover'],
     ['GET', '/api/recipes', 'api'],
     ['PUT', '/api/recipes/abc', 'api'],
@@ -95,13 +95,13 @@ describe('EDGE_LIMITS', () => {
   it('counts an MCP request with a bearer token per token, and one without in the tight anonymous class', () => {
     expect(
       EDGE_LIMITS.classify(
-        new Request('https://app.test/api/mcp', {
+        new Request('https://app.test/mcp', {
           method: 'POST',
           headers: { authorization: 'Bearer x' },
         }),
       ),
     ).toBe('mcp');
-    expect(classOf('POST', '/api/mcp')).toBe('mcpAnonymous');
+    expect(classOf('POST', '/mcp')).toBe('mcpAnonymous');
   });
 
   it('keeps the classes every app has, and tells a signed-in person by the session cookie', () => {

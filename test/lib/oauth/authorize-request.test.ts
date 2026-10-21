@@ -48,7 +48,7 @@ describe('validateAuthorizeRequest', () => {
       request: {
         redirectUri: 'https://claude.ai/cb',
         state: 'xyz',
-        resource: `${ORIGIN}/api/mcp`,
+        resource: `${ORIGIN}/mcp`,
         scope: ['recipes:read', 'recipes:write'],
       },
     });
@@ -149,9 +149,9 @@ describe('validateAuthorizeRequest', () => {
 
   it('refuses a resource that is not this MCP server', async () => {
     expect(
-      await check({ resource: 'https://other.example/api/mcp' }),
+      await check({ resource: 'https://other.example/mcp' }),
     ).toMatchObject({ ok: false, error: 'invalid_target' });
-    expect(await check({ resource: `${ORIGIN}/api/mcp` })).toMatchObject({
+    expect(await check({ resource: `${ORIGIN}/mcp` })).toMatchObject({
       ok: true,
     });
   });
@@ -321,7 +321,7 @@ describe('error_description is printable ASCII without quotes or backslashes (RF
     { response_type: 'token' },
     { code_challenge: undefined },
     { code_challenge: 'short' },
-    { resource: 'https://other.example/api/mcp' },
+    { resource: 'https://other.example/mcp' },
     { scope: 'admin' },
   ])('for %j', async (overrides) => {
     const result = await check(overrides);

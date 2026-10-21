@@ -7,13 +7,13 @@ import {
   jest,
 } from '@jest/globals';
 
-import { GET } from '../../../../../src/app/api/auth/login/route';
-import { RETURN_COOKIE, STATE_COOKIE } from '../../../../../src/lib/auth/app';
+import { GET } from '../../../../src/app/auth/login/route';
+import { RETURN_COOKIE, STATE_COOKIE } from '../../../../src/lib/auth/app';
 import {
   SESSION_SECRET,
   appRequest,
   installEnv,
-} from '../../../../lib/auth/auth-test-kit';
+} from '../../../lib/auth/auth-test-kit';
 
 let restore: () => void;
 
@@ -32,9 +32,9 @@ const locationOf = (res: Response): URL | undefined => {
   return location ? new URL(location) : undefined;
 };
 
-describe('GET /api/auth/login', () => {
+describe('GET /auth/login', () => {
   it('sends the browser to Google asking only who the person is', () => {
-    const res = GET(appRequest('GET', '/api/auth/login'));
+    const res = GET(appRequest('GET', '/auth/login'));
     const target = locationOf(res);
     expect(res.status).toBe(307);
     expect(`${target?.origin}${target?.pathname}`).toBe(
@@ -42,13 +42,13 @@ describe('GET /api/auth/login', () => {
     );
     expect(target?.searchParams.get('client_id')).toBe('client-id');
     expect(target?.searchParams.get('redirect_uri')).toBe(
-      'https://app.test/api/auth/callback',
+      'https://app.test/auth/callback',
     );
     expect(target?.searchParams.get('scope')).toBe('openid email profile');
   });
 
   it('keeps the same one-time state in the address and in an httpOnly cookie', () => {
-    const res = GET(appRequest('GET', '/api/auth/login'));
+    const res = GET(appRequest('GET', '/auth/login'));
     const state = locationOf(res)?.searchParams.get('state');
     expect(state).toMatch(/^signin\./);
     expect(res.cookies.get(STATE_COOKIE)).toMatchObject({
@@ -62,14 +62,14 @@ describe('GET /api/auth/login', () => {
 
   it('gives each visit a different state', () => {
     const state = () =>
-      locationOf(GET(appRequest('GET', '/api/auth/login')))?.searchParams.get(
+      locationOf(GET(appRequest('GET', '/auth/login')))?.searchParams.get(
         'state',
       );
     expect(state()).not.toBe(state());
   });
 
   it('remembers a safe returnTo in a cookie', () => {
-    const res = GET(appRequest('GET', '/api/auth/login?returnTo=%2Fa%2Fb'));
+    const res = GET(appRequest('GET', '/auth/login?returnTo=%2Fa%2Fb'));
     expect(res.cookies.get(RETURN_COOKIE)?.value).toBe('/a/b');
   });
 
@@ -81,10 +81,7 @@ describe('GET /api/auth/login', () => {
     '/a\r\nb',
   ])('refuses to remember the returnTo %s', (target) => {
     const res = GET(
-      appRequest(
-        'GET',
-        `/api/auth/login?returnTo=${encodeURIComponent(target)}`,
-      ),
+      appRequest('GET', `/auth/login?returnTo=${encodeURIComponent(target)}`),
     );
     expect(res.cookies.get(RETURN_COOKIE)?.value ?? '').toBe('');
   });
@@ -97,14 +94,14 @@ describe('GET /api/auth/login', () => {
       GOOGLE_OAUTH_CLIENT_SECRET: 'client-secret',
       APP_URL: 'https://the.site',
     });
-    const target = locationOf(GET(appRequest('GET', '/api/auth/login')));
+    const target = locationOf(GET(appRequest('GET', '/auth/login')));
     expect(target?.searchParams.get('redirect_uri')).toBe(
-      'https://the.site/api/auth/callback',
+      'https://the.site/auth/callback',
     );
   });
 });
 
-describe('GET /api/auth/login on a server that is not set up', () => {
+describe('GET /auth/login on a server that is not set up', () => {
   it.each([
     [
       'SESSION_SECRET',
@@ -121,7 +118,7 @@ describe('GET /api/auth/login on a server that is not set up', () => {
   ])('refuses and names %s when it is missing', async (name, env) => {
     restore();
     restore = installEnv(env);
-    const res = GET(appRequest('GET', '/api/auth/login'));
+    const res = GET(appRequest('GET', '/auth/login'));
     expect(res.status).toBe(503);
     expect(res.headers.get('location')).toBeNull();
     expect(await res.text()).toContain(name);
@@ -135,7 +132,7 @@ describe('GET /api/auth/login on a server that is not set up', () => {
       GOOGLE_OAUTH_CLIENT_ID: 'a',
       GOOGLE_OAUTH_CLIENT_SECRET: 'b',
     });
-    const res = GET(appRequest('GET', '/api/auth/login'));
+    const res = GET(appRequest('GET', '/auth/login'));
     expect(res.status).toBe(503);
     expect(res.headers.get('cache-control')).toBe('no-store');
     expect(res.headers.get('content-type')).toBe('application/problem+json');
@@ -144,7 +141,7 @@ describe('GET /api/auth/login on a server that is not set up', () => {
   it('names every missing setting, and never a value', async () => {
     restore();
     restore = installEnv({ GOOGLE_OAUTH_CLIENT_ID: 'visible-id-value' });
-    const text = await GET(appRequest('GET', '/api/auth/login')).text();
+    const text = await GET(appRequest('GET', '/auth/login')).text();
     expect(text).toContain('GOOGLE_OAUTH_CLIENT_SECRET, SESSION_SECRET');
     expect(text).not.toContain('visible-id-value');
   });

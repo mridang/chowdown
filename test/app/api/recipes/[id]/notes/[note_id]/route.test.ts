@@ -20,7 +20,7 @@ import {
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const { DELETE, GET, PUT } =
-  await import('../../../../../../../src/app/api/recipes/[id]/notes/[note-id]/route');
+  await import('../../../../../../../src/app/api/recipes/[id]/notes/[note_id]/route');
 
 let world: World;
 
@@ -33,9 +33,9 @@ afterEach(() => world.close());
 const SOURCE =
   '>> title: Curry\n\nCook @onion{1}.\n\n-- [note] First\n-- [note] Second\n';
 
-/** The context Next hands a handler for `/api/recipes/:id/notes/:note-id`. */
+/** The context Next hands a handler for `/api/recipes/:id/notes/:note_id`. */
 const ctx = (noteId: string, id = 'f1') => ({
-  params: Promise.resolve({ id, 'note-id': noteId }),
+  params: Promise.resolve({ id, note_id: noteId }),
 });
 
 /** Sign in with Drive and cache `f1` with two notes, in the cache and in the fake Drive. */
@@ -45,7 +45,7 @@ async function withNotes() {
   return fakeGoogle({ f1: { name: 'Curry.cook', content: SOURCE } });
 }
 
-describe('GET /api/recipes/:id/notes/:note-id', () => {
+describe('GET /api/recipes/:id/notes/:note_id', () => {
   it('answers 401 when nobody is signed in', async () => {
     expect((await GET(fromApp('GET', '/x'), ctx('1'))).status).toBe(401);
   });
@@ -77,7 +77,7 @@ describe('GET /api/recipes/:id/notes/:note-id', () => {
   });
 });
 
-describe('PUT /api/recipes/:id/notes/:note-id', () => {
+describe('PUT /api/recipes/:id/notes/:note_id', () => {
   const replace = (
     noteId: string,
     json: unknown,
@@ -116,7 +116,7 @@ describe('PUT /api/recipes/:id/notes/:note-id', () => {
   });
 });
 
-describe('DELETE /api/recipes/:id/notes/:note-id', () => {
+describe('DELETE /api/recipes/:id/notes/:note_id', () => {
   const remove = (noteId: string, headers: Record<string, string> = {}) =>
     DELETE(fromApp('DELETE', '/x', { headers }), ctx(noteId));
 

@@ -13,9 +13,9 @@ describe('MenuLink', () => {
 
   it('is a plain link to an API route', () => {
     const out = htmlAt(
-      <MenuLink label="Connect Google Drive" href="/api/auth/drive" />,
+      <MenuLink label="Connect Google Drive" href="/auth/drive" />,
     );
-    expect(out).toContain('href="/api/auth/drive"');
+    expect(out).toContain('href="/auth/drive"');
   });
 
   it('shows the picture it is asked for, hidden from assistive technology', () => {

@@ -22,7 +22,7 @@ function isConnectedApp(value: unknown): value is ConnectedApp {
   );
 }
 
-/** The apps in the answer of `GET /api/users/self/connected-apps`; anything unreadable is left out. */
+/** The apps in the answer of `GET /api/users/self/connections`; anything unreadable is left out. */
 function appsOf(body: unknown): readonly ConnectedApp[] {
   return typeof body === 'object' &&
     body !== null &&
@@ -99,7 +99,7 @@ export function ConnectedApps(): ReactElement {
     // Leaving the page cancels the request, and a cancelled request must not
     // set state on a component that has gone.
     const controller = new AbortController();
-    fetch('/api/users/self/connected-apps', { signal: controller.signal })
+    fetch('/api/users/self/connections', { signal: controller.signal })
       .then(async (res) => {
         if (!res.ok) {
           throw new Error(String(res.status));
@@ -123,7 +123,7 @@ export function ConnectedApps(): ReactElement {
     setBusyId(grantId);
     setProblem(null);
     try {
-      const res = await fetch(`/api/users/self/connected-apps/${grantId}`, {
+      const res = await fetch(`/api/users/self/connections/${grantId}`, {
         method: 'DELETE',
       });
       if (!res.ok) {

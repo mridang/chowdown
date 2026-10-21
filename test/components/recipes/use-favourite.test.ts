@@ -17,7 +17,7 @@ beforeEach(() => {
 
 describe('favouriteUrl', () => {
   it('addresses the recipe under the signed-in user', () => {
-    expect(favouriteUrl('abc')).toBe('/api/users/self/favourite-recipes/abc');
+    expect(favouriteUrl('abc')).toBe('/api/users/self/favourites/abc');
   });
 });
 
@@ -25,7 +25,7 @@ describe('saveFavourite', () => {
   it('favouriting creates the resource and keeps the heart on', async () => {
     const send = jest.fn<Send>(async () => ({ ok: true, status: 204 }));
     expect(await saveFavourite('abc', true, send)).toBe(true);
-    expect(send).toHaveBeenCalledWith('/api/users/self/favourite-recipes/abc', {
+    expect(send).toHaveBeenCalledWith('/api/users/self/favourites/abc', {
       method: 'PUT',
     });
     expect(getFavouriteOverride('abc')).toBe(true);
@@ -34,7 +34,7 @@ describe('saveFavourite', () => {
   it('un-favouriting deletes the resource and keeps the heart off', async () => {
     const send = jest.fn<Send>(async () => ({ ok: true, status: 204 }));
     expect(await saveFavourite('abc', false, send)).toBe(true);
-    expect(send).toHaveBeenCalledWith('/api/users/self/favourite-recipes/abc', {
+    expect(send).toHaveBeenCalledWith('/api/users/self/favourites/abc', {
       method: 'DELETE',
     });
     expect(getFavouriteOverride('abc')).toBe(false);

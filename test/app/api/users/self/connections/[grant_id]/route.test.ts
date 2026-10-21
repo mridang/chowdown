@@ -31,7 +31,7 @@ jest.unstable_mockModule(
 );
 
 const { DELETE } =
-  await import('../../../../../../../src/app/api/users/self/connected-apps/[grant-id]/route');
+  await import('../../../../../../../src/app/api/users/self/connections/[grant_id]/route');
 
 quietSecurityLogs();
 
@@ -70,16 +70,16 @@ beforeEach(() => {
 
 afterEach(() => restore());
 
-const URL = 'https://chowdown.test/api/users/self/connected-apps';
+const URL = 'https://chowdown.test/api/users/self/connections';
 
-describe('DELETE /api/users/self/connected-apps/:grant-id', () => {
+describe('DELETE /api/users/self/connections/:grant_id', () => {
   const del = (id: string, headers: Record<string, string> = {}) =>
     DELETE(
       new Request(`${URL}/${id}`, {
         method: 'DELETE',
         headers: { 'sec-fetch-site': 'same-origin', ...headers },
       }),
-      { params: Promise.resolve({ 'grant-id': id }) },
+      { params: Promise.resolve({ grant_id: id }) },
     );
 
   it('disconnects the app, including any older grant for it, with 204', async () => {
