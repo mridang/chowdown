@@ -76,5 +76,5 @@ export const DISCOVERY_PATHS: ReadonlySet<string> = new Set([
   '/robots.txt',
   '/sitemap.xml',
   '/manifest.webmanifest',
-  '/api/health',
+  '/health',
 ]);

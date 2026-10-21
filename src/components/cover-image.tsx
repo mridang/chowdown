@@ -29,7 +29,7 @@ export function sizesFor(
 
 /**
  * A recipe cover image that degrades gracefully. Covers belong to the recipe's
- * source site, so they are loaded through our own `/api/img` (scaled,
+ * source site, so they are loaded through our own `/img` (scaled,
  * cached, and without handing the site your cookies or referrer), at the widths
  * in `widths` so a phone doesn't download a desktop-sized photo. Any of them can
  * still break (the site goes down, the file moves); when the image fails to
