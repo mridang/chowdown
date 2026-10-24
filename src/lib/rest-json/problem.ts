@@ -48,6 +48,21 @@ export function problem(
   });
 }
 
+/**
+ * A problem raised as an exception, carrying the response to send. A controller
+ * (or any caller) catches it and returns {@link ProblemError.response}, so a
+ * decode/handle step can refuse by throwing instead of threading a result.
+ */
+export class ProblemError extends Error {
+  readonly response: Response;
+
+  constructor(response: Response) {
+    super('problem');
+    this.name = 'ProblemError';
+    this.response = response;
+  }
+}
+
 /** The standard problems, so every route words them the same way. */
 export const problems = {
   unauthorized: () =>

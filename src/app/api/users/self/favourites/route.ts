@@ -6,7 +6,8 @@
  *   GET /api/users/self/favourites
  */
 
-import { requireLiveUid } from '@/domain/api/auth';
+import { ApiController } from '@/core/api/controller';
+import { liveUid } from '@/domain/api/auth';
 import { listRecipes } from '@/domain/api/recipe-list';
 
 /**
@@ -14,10 +15,15 @@ import { listRecipes } from '@/domain/api/recipe-list';
  * hearted, filtered and sorted by the query string. Answers 200 with the page,
  * or 401 when nobody is signed in.
  */
-export async function GET(request: Request): Promise<Response> {
-  const auth = await requireLiveUid(request);
-  if (!auth.ok) {
-    return auth.response;
-  }
-  return listRecipes(request, auth.value, { favourite: 'true' });
-}
+export const GET = new ApiController<{
+  readonly request: Request;
+  readonly uid: number;
+}>({
+  context: async (request) => ({ request, uid: await liveUid(request) }),
+})
+  .on({
+    method: 'GET',
+    handle: (_input, { request, uid }) =>
+      listRecipes(request, uid, { favourite: 'true' }),
+  })
+  .handler('GET');

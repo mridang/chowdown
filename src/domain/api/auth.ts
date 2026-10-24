@@ -15,7 +15,7 @@ import {
 import type { User } from '@/domain/db/users';
 import { isSameOriginPost } from '@/lib/web-security/csrf';
 import { appOrigin } from '@/core/origin';
-import { problems } from '@/lib/rest-json/problem';
+import { ProblemError, problems } from '@/lib/rest-json/problem';
 
 /** Methods that never change data and so need no origin check. */
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -76,4 +76,22 @@ export async function requireLiveUid(request: Request): Promise<Auth<number>> {
 /** The caller's full user record, for routes that need Drive access. */
 export async function requireUser(request: Request): Promise<Auth<User>> {
   return authenticate(request, getCurrentUser);
+}
+
+/** The value of an {@link Auth}, or the refusal thrown as a {@link ProblemError} (for controllers). */
+function orThrow<T>(auth: Auth<T>): T {
+  if (!auth.ok) {
+    throw new ProblemError(auth.response);
+  }
+  return auth.value;
+}
+
+/** Like {@link requireLiveUid}, but throws the refusal — for an {@link ApiController} context. */
+export async function liveUid(request: Request): Promise<number> {
+  return orThrow(await requireLiveUid(request));
+}
+
+/** Like {@link requireUser}, but throws the refusal — for an {@link ApiController} context. */
+export async function sessionUser(request: Request): Promise<User> {
+  return orThrow(await requireUser(request));
 }

@@ -4,10 +4,9 @@
  *   DELETE /api/users/self/connections/:grant_id → 204
  */
 
-import { NextResponse } from 'next/server';
-
-import { requireLiveUid } from '@/domain/api/auth';
-import { problems } from '@/lib/rest-json/problem';
+import { ApiController } from '@/core/api/controller';
+import { liveUid } from '@/domain/api/auth';
+import { ProblemError, problems } from '@/lib/rest-json/problem';
 import { revokeConnectedApp } from '@/domain/db/oauth';
 import { getDatabase } from '@/core/runtime';
 
@@ -16,20 +15,22 @@ import { getDatabase } from '@/core/runtime';
  * right away. Answers 204, 404 when the grant is not the user's (or is already
  * revoked), 401 when nobody is signed in.
  */
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ grant_id: string }> },
-): Promise<Response> {
-  const auth = await requireLiveUid(request);
-  if (!auth.ok) {
-    return auth.response;
-  }
-  const revoked = await revokeConnectedApp(
-    getDatabase(),
-    auth.value,
-    (await params).grant_id,
-  );
-  return revoked
-    ? new NextResponse(null, { status: 204 })
-    : problems.notFound('connected app');
-}
+export const DELETE = new ApiController<
+  { readonly uid: number; readonly grantId: string },
+  { readonly params: Promise<{ readonly grant_id: string }> }
+>({
+  context: async (request, route) => ({
+    uid: await liveUid(request),
+    grantId: (await route.params).grant_id,
+  }),
+})
+  .on({
+    method: 'DELETE',
+    handle: async (_input, { uid, grantId }) => {
+      const revoked = await revokeConnectedApp(getDatabase(), uid, grantId);
+      if (!revoked) {
+        throw new ProblemError(problems.notFound('connected app'));
+      }
+    },
+  })
+  .handler('DELETE');

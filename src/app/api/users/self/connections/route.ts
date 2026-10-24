@@ -4,9 +4,8 @@
  *   GET /api/users/self/connections
  */
 
-import { NextResponse } from 'next/server';
-
-import { requireLiveUid } from '@/domain/api/auth';
+import { ApiController } from '@/core/api/controller';
+import { liveUid } from '@/domain/api/auth';
 import { pageBody } from '@/core/api/pagination';
 import { connectedAppResource } from '@/domain/connected-apps';
 import { listConnectedApps } from '@/domain/db/oauth';
@@ -17,13 +16,19 @@ import { getDatabase } from '@/core/runtime';
  * disconnected, newest first. Answers 200 with a page of apps, or 401 when
  * nobody is signed in.
  */
-export async function GET(request: Request): Promise<Response> {
-  const auth = await requireLiveUid(request);
-  if (!auth.ok) {
-    return auth.response;
-  }
-  const apps = await listConnectedApps(getDatabase(), auth.value);
-  return NextResponse.json(pageBody(request, apps.map(connectedAppResource)), {
-    headers: { 'Cache-Control': 'private, no-cache' },
-  });
-}
+export const GET = new ApiController<{
+  readonly request: Request;
+  readonly uid: number;
+}>({
+  context: async (request) => ({ request, uid: await liveUid(request) }),
+})
+  .on({
+    method: 'GET',
+    handle: async (_input, { uid }) =>
+      (await listConnectedApps(getDatabase(), uid)).map(connectedAppResource),
+    encode: (apps, { request }) => ({
+      body: pageBody(request, apps),
+      headers: { 'Cache-Control': 'private, no-cache' },
+    }),
+  })
+  .handler('GET');
