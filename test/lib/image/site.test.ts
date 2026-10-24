@@ -1,6 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { ALLOWED_HOSTS, ALLOWED_WIDTHS, DEFAULT_WIDTH } from '@/lib/image/site';
+import {
+  ALLOWED_HOSTS,
+  ALLOWED_WIDTHS,
+  DEFAULT_WIDTH,
+} from '@/lib/images/site';
 
 describe('image settings', () => {
   it('takes photos from the recipes’ own sites, so from any public host', () => {

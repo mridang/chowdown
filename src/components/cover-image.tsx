@@ -3,7 +3,7 @@
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { preload } from 'react-dom';
 
-import { imageSrc, imageSrcSet, isProxyableUrl } from '@/lib/image/address';
+import { imageSrc, imageSrcSet, isProxyableUrl } from '@/lib/images/address';
 
 /**
  * The `sizes` attribute for an image: for one that loads lazily, `auto` first,

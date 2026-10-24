@@ -9,7 +9,7 @@
 
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-import { isImagesBinding, type ImagesLike } from '@/lib/image/proxy';
+import { isImagesBinding, type ImagesLike } from '@/lib/images/proxy';
 import type { ImageCache } from '@/domain/image/service';
 
 /** The Images binding, where the deployment has one. */

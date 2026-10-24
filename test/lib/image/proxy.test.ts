@@ -1,11 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { snapWidth } from '@/lib/image/address';
+import { snapWidth } from '@/lib/images/address';
 import {
   fetchImage,
   isImagesBinding,
   type ImageFetch,
-} from '@/lib/image/proxy';
+} from '@/lib/images/proxy';
 import { SITE_NAME } from '@/utils/site';
 
 const image = (type = 'image/jpeg', headers: Record<string, string> = {}) =>

@@ -15,7 +15,7 @@
 
 import { isPublicWebUrl } from '@/lib/safe-fetch';
 import { parseUrl } from '@/utils/url';
-import { ALLOWED_HOSTS, ALLOWED_WIDTHS } from '@/lib/image/site';
+import { ALLOWED_HOSTS, ALLOWED_WIDTHS } from '@/lib/images/site';
 
 /** The path every app serves its pictures from. */
 export const IMAGE_PATH = '/img';
