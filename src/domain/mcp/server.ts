@@ -1,41 +1,35 @@
 /**
  * @packageDocumentation
  *
- * A minimal Model Context Protocol server over JSON-RPC 2.0, served at
- * `/mcp` (OAuth 2.1 bearer tokens). It lets an assistant (Claude, ChatGPT, …)
- * work with the user's recipes headlessly: browse and search them, read one,
- * add, edit, tag, favourite and annotate recipes, and set the measurement system.
+ * chowdown's MCP server: the recipe methods registered on the generic
+ * {@link McpServer} engine (see `@/lib/mcp/server`). It lets an assistant
+ * (Claude, ChatGPT, …) work with the user's recipes headlessly: browse and
+ * search them, read one, add, edit, tag, favourite and annotate recipes, and
+ * set the measurement system.
  *
  * Drive access is via the user's stored refresh token, so the tools work with
  * no browser open; a person who hasn't connected Google Drive gets an error
- * result that says how to (see `callToolOrExplain`). The server is
- * deliberately hand-rolled (no SDK) to keep the Worker bundle small and the
- * transport simple: each POST carries one JSON-RPC message (or a batch) and gets
- * one JSON response. Both the legacy handshake revisions and the stateless
- * 2026-07-28 one are spoken (see `protocol.ts`).
- *
- * This file routes messages (handshake, discovery, listing, calling, reading
- * resources) through a table of {@link Route}s, so a new method is one entry
- * (plus a capability); the tool catalogue is in `tool-definitions.ts`, what the
- * tools do is in `tool-calls.ts`, and what the server says about itself is in
- * `server-info.ts`.
+ * result that says how to (see `callToolOrExplain`). The engine owns the
+ * JSON-RPC envelope (handshake vs modern era, notifications, result dressing,
+ * faults); this file is the method table — the tool catalogue is in
+ * `tool-definitions.ts`, what the tools do is in `tool-calls.ts`, and what the
+ * server says about itself is in `server-info.ts`.
  */
 
 import { errorMessage, logError } from '@/utils/logging';
 import type { User } from '@/domain/db/users';
 import {
-  ERROR_INTERNAL,
   ERROR_INVALID_PARAMS,
-  ERROR_METHOD_NOT_FOUND,
   RpcError,
   SUPPORTED_VERSIONS,
-  isModernRequest,
-  isNotification,
   isPlainObject,
   negotiateLegacyVersion,
-  replyIdOf,
-  type ReplyId,
 } from '@/lib/mcp/protocol';
+import {
+  McpServer,
+  type CacheHint,
+  type JsonRpcResponse,
+} from '@/lib/mcp/server';
 import {
   CAPABILITIES,
   INSTRUCTIONS,
@@ -60,51 +54,19 @@ import {
   findAppResource,
 } from '@/domain/mcp/ui-resources';
 
-/** A JSON-RPC 2.0 request/notification, as received (clients may leave any member out). */
-export interface JsonRpcMessage {
-  readonly jsonrpc?: string;
-  readonly id?: number | string | null;
-  readonly method?: string;
-  readonly params?: Readonly<Record<string, unknown>>;
-}
+export type { JsonRpcMessage, JsonRpcResponse } from '@/lib/mcp/server';
 
-/** A JSON-RPC error: what went wrong, and detail for the caller when there is any. */
-export interface JsonRpcErrorBody {
-  readonly code: number;
-  readonly message: string;
-  readonly data?: unknown;
-}
+/** Runs a tool by name; the real one opens Drive and the database, so tests pass their own. */
+export type ToolRunner = typeof callToolOrExplain;
 
-/** A JSON-RPC reply: a result, or an error. */
-export type JsonRpcResponse =
-  | {
-      readonly jsonrpc: '2.0';
-      readonly id: ReplyId;
-      readonly result: object;
-    }
-  | {
-      readonly jsonrpc: '2.0';
-      readonly id: ReplyId;
-      readonly error: JsonRpcErrorBody;
-    };
+/** The parameters a JSON-RPC message carries. */
+type Params = Readonly<Record<string, unknown>> | undefined;
 
-/** A successful reply. */
-function succeeded(id: ReplyId, result: object): JsonRpcResponse {
-  return { jsonrpc: '2.0', id, result };
-}
-
-/** An error reply. */
-function failed(
-  id: ReplyId,
-  code: number,
-  message: string,
-  data?: unknown,
-): JsonRpcResponse {
-  return {
-    jsonrpc: '2.0',
-    id,
-    error: { code, message, ...(data === undefined ? {} : { data }) },
-  };
+/** The per-request context the recipe methods run against. */
+interface McpContext {
+  readonly user: Readonly<User>;
+  readonly runTool: ToolRunner;
+  readonly listRecipes: RecipeLister;
 }
 
 /**
@@ -127,21 +89,7 @@ export const CACHE_HINTS = {
   read: { ttlMs: 900_000, cacheScope: 'public' },
   immutable: { ttlMs: 86_400_000, cacheScope: 'public' },
   recipe: { ttlMs: 60_000, cacheScope: 'private' },
-} as const;
-
-/** The hints a cacheable result carries. */
-export type CacheHint = (typeof CACHE_HINTS)[keyof typeof CACHE_HINTS];
-
-/** Runs a tool by name; the real one opens Drive and the database, so tests pass their own. */
-export type ToolRunner = typeof callToolOrExplain;
-
-/** What a route's handler is given. */
-interface Call {
-  readonly user: Readonly<User>;
-  readonly params: Readonly<Record<string, unknown>> | undefined;
-  readonly runTool: ToolRunner;
-  readonly listRecipes: RecipeLister;
-}
+} as const satisfies Record<string, CacheHint>;
 
 /**
  * Refuse a pagination cursor on a list that has only one page. Cursors are
@@ -151,33 +99,15 @@ interface Call {
  * mean "from the start": some clients send one of them with a first request,
  * and refusing it would help nobody.
  */
-function refuseCursor(params: Call['params']): void {
+function refuseCursor(params: Params): void {
   const cursor = params?.['cursor'];
   if (cursor !== undefined && cursor !== null && cursor !== '') {
     throw new RpcError(ERROR_INVALID_PARAMS, 'Invalid cursor');
   }
 }
 
-/** One method the server answers. */
-interface Route {
-  /** Produce the result, or throw an {@link RpcError} to refuse the request. */
-  readonly handle: (call: Call) => object | Promise<object>;
-  /**
-   * Caching hints for the result, for the methods the newest revision makes
-   * cacheable: fixed, or chosen from the result when they depend on it.
-   */
-  readonly cache?: CacheHint | ((result: object) => CacheHint);
-  /** Whether the method belongs to the newest revision only (and so always gets its result fields). */
-  readonly modernOnly?: true;
-  /**
-   * Whether the newest revision removed the method: a request of that era gets
-   * "method not found", while the older revisions still use it.
-   */
-  readonly legacyOnly?: true;
-}
-
 /** The answer to the older revisions' `initialize` handshake. */
-function initializeResult({ params }: Call): object {
+function initializeResult(params: Params): object {
   return {
     protocolVersion: negotiateLegacyVersion(params?.['protocolVersion']),
     capabilities: CAPABILITIES,
@@ -240,11 +170,10 @@ function decodedCursor(cursor: string): string | undefined {
  * `resources/read`), then the user's recipes, a page at a time, from the cache.
  * If the cache cannot be read the views are still listed.
  */
-async function resourceListResult({
-  user,
-  params,
-  listRecipes,
-}: Call): Promise<object> {
+async function resourceListResult(
+  params: Params,
+  { user, listRecipes }: McpContext,
+): Promise<object> {
   const offset = offsetOfCursor(params?.['cursor']);
   const views =
     offset === 0
@@ -276,7 +205,7 @@ async function resourceListResult({
 }
 
 /** The answer to `resources/templates/list`: where a single recipe can be read. */
-function resourceTemplateListResult({ params }: Call): object {
+function resourceTemplateListResult(params: Params): object {
   refuseCursor(params);
   return { resourceTemplates: [RECIPE_TEMPLATE] };
 }
@@ -307,7 +236,10 @@ export function readCache(result: object): CacheHint {
  * The reply to `resources/read`: a view's HTML, or one of the user's recipes
  * from their Drive, or an error for an address the server does not have.
  */
-async function readResource({ user, params }: Call): Promise<object> {
+async function readResource(
+  params: Params,
+  { user }: McpContext,
+): Promise<object> {
   const uri = params?.['uri'];
   if (typeof uri !== 'string') {
     throw new RpcError(
@@ -337,7 +269,7 @@ async function readResource({ user, params }: Call): Promise<object> {
 }
 
 /** The answer to `prompts/get`. */
-function promptResult({ params }: Call): object {
+function promptResult(params: Params): object {
   return getPrompt(params?.['name'], params?.['arguments']);
 }
 
@@ -371,12 +303,12 @@ function unknownToolError(name: unknown): RpcError {
  * spec counts input validation among tool execution errors). A tool that still
  * reports its arguments as invalid by throwing is a malformed request too.
  */
-async function callTool(call: Call): Promise<object> {
-  const name = call.params?.['name'];
+async function callTool(params: Params, ctx: McpContext): Promise<object> {
+  const name = params?.['name'];
   if (!isAdvertisedTool(name)) {
     throw unknownToolError(name);
   }
-  const args = call.params?.['arguments'];
+  const args = params?.['arguments'];
   if (args !== undefined && !isPlainObject(args)) {
     throw new RpcError(
       ERROR_INVALID_PARAMS,
@@ -384,7 +316,7 @@ async function callTool(call: Call): Promise<object> {
     );
   }
   try {
-    return await call.runTool(call.user, call.params);
+    return await ctx.runTool(ctx.user, params);
   } catch (error) {
     if (error instanceof UnknownTool) {
       throw unknownToolError(error.tool);
@@ -400,114 +332,55 @@ async function callTool(call: Call): Promise<object> {
   }
 }
 
-/** Every method the server answers, by name (a `Map`, so `constructor` and friends are not methods). */
-const ROUTES: ReadonlyMap<string, Route> = new Map<string, Route>([
-  ['initialize', { handle: initializeResult, legacyOnly: true }],
-  [
-    'server/discover',
-    { handle: discoverResult, cache: CACHE_HINTS.discover, modernOnly: true },
-  ],
-  ['ping', { handle: () => ({}), legacyOnly: true }],
-  [
-    'tools/list',
-    {
-      handle: ({ params }) => {
-        refuseCursor(params);
-        return { tools: TOOLS };
-      },
-      cache: CACHE_HINTS.list,
+/** chowdown's MCP server: the engine with the recipe methods registered. */
+const server = new McpServer<McpContext>({
+  serverInfo: SERVER_INFO,
+  serverInfoMetaKey: SERVER_INFO_META_KEY,
+})
+  .register('initialize', { handle: initializeResult, legacyOnly: true })
+  .register('server/discover', {
+    handle: discoverResult,
+    cache: CACHE_HINTS.discover,
+    modernOnly: true,
+  })
+  .register('ping', { handle: () => ({}), legacyOnly: true })
+  .register('tools/list', {
+    handle: (params) => {
+      refuseCursor(params);
+      return { tools: TOOLS };
     },
-  ],
-  ['tools/call', { handle: callTool }],
-  ['resources/list', { handle: resourceListResult, cache: CACHE_HINTS.recipe }],
-  [
-    'resources/templates/list',
-    { handle: resourceTemplateListResult, cache: CACHE_HINTS.list },
-  ],
-  ['resources/read', { handle: readResource, cache: readCache }],
-  [
-    'prompts/list',
-    {
-      handle: ({ params }) => {
-        refuseCursor(params);
-        return { prompts: PROMPT_DEFINITIONS };
-      },
-      cache: CACHE_HINTS.list,
+    cache: CACHE_HINTS.list,
+  })
+  .register('tools/call', { handle: callTool })
+  .register('resources/list', {
+    handle: resourceListResult,
+    cache: CACHE_HINTS.recipe,
+  })
+  .register('resources/templates/list', {
+    handle: resourceTemplateListResult,
+    cache: CACHE_HINTS.list,
+  })
+  .register('resources/read', { handle: readResource, cache: readCache })
+  .register('prompts/list', {
+    handle: (params) => {
+      refuseCursor(params);
+      return { prompts: PROMPT_DEFINITIONS };
     },
-  ],
-  ['prompts/get', { handle: promptResult }],
-]);
-
-/** The `_meta` of a result, when it has one. */
-function metaOf(result: object): Readonly<Record<string, unknown>> {
-  return '_meta' in result && isPlainObject(result._meta) ? result._meta : {};
-}
-
-/**
- * Dress a successful result for the newest revision: it says it is complete,
- * carries the caching hints of its method, and names the server in `_meta`
- * (merged into any `_meta` the result already has, such as a tool's).
- * Older revisions get the result as it is.
- */
-function forModernClient(result: object, route: Route): object {
-  return {
-    ...result,
-    ...(typeof route.cache === 'function'
-      ? route.cache(result)
-      : (route.cache ?? {})),
-    ...('resultType' in result ? {} : { resultType: 'complete' }),
-    _meta: { ...metaOf(result), [SERVER_INFO_META_KEY]: SERVER_INFO },
-  };
-}
-
-/** The error reply for something that went wrong while handling a request. */
-function faultReply(id: ReplyId, error: unknown): JsonRpcResponse {
-  if (error instanceof RpcError) {
-    return failed(id, error.code, error.message, error.data);
-  }
-  // What went wrong stays in our logs: the text can carry Google's replies or
-  // database details, which should not travel on to an assistant and the
-  // service behind it.
-  logError({ event: 'mcp.request_failed', error: errorMessage(error) });
-  return failed(id, ERROR_INTERNAL, 'Something went wrong on the server.');
-}
+    cache: CACHE_HINTS.list,
+  })
+  .register('prompts/get', { handle: promptResult });
 
 /**
  * Handle one JSON-RPC message. Returns the response object, or null for
- * notifications (which get an empty 202 from the route). A refusal is returned
- * as a JSON-RPC error carrying the request's id, so the client surfaces it
- * cleanly. `runTool` is what runs a tool call and `listRecipes` what finds the
- * recipes for `resources/list` (the real ones unless a test supplies its own).
+ * notifications (which get an empty 202 from the route). `runTool` is what runs
+ * a tool call and `listRecipes` what finds the recipes for `resources/list`
+ * (the real ones unless a test supplies its own).
  */
 export async function handleMcpMessage(
   user: Readonly<User>,
-  message: JsonRpcMessage,
+  message: Parameters<typeof server.handleMessage>[0],
   runTool: ToolRunner = callToolOrExplain,
   listRecipes: RecipeLister = listCachedRecipes,
 ): Promise<JsonRpcResponse | null> {
-  // A notification expects no reply, whatever it announces.
-  if (isNotification(message)) {
-    return null;
-  }
-  const id = replyIdOf(message.id);
-  const route = ROUTES.get(message.method ?? '');
-  if (!route || (route.legacyOnly && isModernRequest(message))) {
-    return failed(id, ERROR_METHOD_NOT_FOUND, 'Method not found');
-  }
-  try {
-    const result = await route.handle({
-      user,
-      params: message.params,
-      runTool,
-      listRecipes,
-    });
-    return succeeded(
-      id,
-      route.modernOnly || isModernRequest(message)
-        ? forModernClient(result, route)
-        : result,
-    );
-  } catch (error) {
-    return faultReply(id, error);
-  }
+  return server.handleMessage(message, { user, runTool, listRecipes });
 }
