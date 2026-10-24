@@ -6,6 +6,7 @@ import { PlugIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { accessLabel, type ConnectedApp } from '@/lib/connected-apps';
+import { imageSrc } from '@/lib/images/address';
 import { relativeTime } from '@/lib/intl';
 
 /** Whether a value has the members of a {@link ConnectedApp} that this list shows. */
@@ -32,6 +33,27 @@ function appsOf(body: unknown): readonly ConnectedApp[] {
     : [];
 }
 
+/** The app's own picture, or a plug when it has none or the picture cannot be shown. */
+function AppLogo({ app }: Readonly<{ app: ConnectedApp }>): ReactElement {
+  const [broken, setBroken] = useState(false);
+  return (
+    <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-control bg-ink/5">
+      {app.logo_uri && !broken ? (
+        <img
+          src={imageSrc(app.logo_uri, 80)}
+          alt=""
+          width={40}
+          height={40}
+          className="size-full object-contain"
+          onError={() => setBroken(true)}
+        />
+      ) : (
+        <PlugIcon size="md" />
+      )}
+    </span>
+  );
+}
+
 /**
  * One connected app: its name, how much it may do (the widest of its installs,
  * with the number of installs when there is more than one), who published it
@@ -55,9 +77,7 @@ export function ConnectedAppItem({
       className="flex items-center justify-between gap-4"
     >
       <div className="flex min-w-0 items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-control bg-ink/5">
-          <PlugIcon size="md" />
-        </span>
+        <AppLogo app={app} />
         <p className="min-w-0 leading-tight">
           <span className="block truncate font-semibold">{app.name}</span>
           <span className="block text-sm text-muted">

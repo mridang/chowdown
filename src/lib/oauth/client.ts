@@ -15,6 +15,7 @@
 
 import { sanitiseDisplayName } from './display';
 import { isAcceptableRedirectUri } from './redirect-uri';
+import { isPublicWebUrl } from '../http/safe-fetch';
 import { bytesToBase64Url } from '../util/base64';
 import { SITE_URL } from '../site';
 import { parseUrl } from '../util/url';
@@ -28,6 +29,8 @@ export interface OAuthClient {
   readonly kind: 'dcr' | 'cimd';
   /** How the client proves itself at the token endpoint; absent means a public client (PKCE only). */
   readonly auth?: ClientAuth;
+  /** The https address of the picture the client's metadata document names, if it names a usable one. */
+  readonly logoUri?: string;
 }
 
 /** The signature algorithms accepted on a client assertion. `none` and the HMAC family are never among them. */
@@ -116,6 +119,26 @@ export function isMetadataDocumentUrl(
  */
 function cleanName(name: unknown, fallback: string): string {
   return sanitiseDisplayName(name, fallback);
+}
+
+/**
+ * The picture a metadata document names for its client: its `logo_uri` when that
+ * is a plain https address of a public site, and nothing otherwise. It is only
+ * ever fetched through the image proxy, which checks it again.
+ */
+function logoOf(value: unknown): string | undefined {
+  const url =
+    typeof value === 'string' && value.length <= MAX_CLIENT_ID_LENGTH
+      ? parseUrl(value)
+      : undefined;
+  return url?.protocol === 'https:' &&
+    !url.hash &&
+    !url.username &&
+    !url.password &&
+    isPublicWebUrl(url.href) &&
+    url.href === value
+    ? url.href
+    : undefined;
 }
 
 /** Whether a value is a JSON object (or array) whose members can be looked up by name. */
@@ -294,6 +317,7 @@ export function parseClientMetadataDocument(
   if (!auth.ok) {
     return bad(auth.description);
   }
+  const logoUri = logoOf(doc['logo_uri']);
   // `client_name` is among the properties the CIMD draft lists, but a document
   // without one is still unambiguous (the approval screen leads with the domain
   // that published it), so the host stands in for it rather than turning the
@@ -306,6 +330,7 @@ export function parseClientMetadataDocument(
       redirectUris,
       kind: 'cimd',
       ...(auth.auth && { auth: auth.auth }),
+      ...(logoUri && { logoUri }),
     },
   };
 }

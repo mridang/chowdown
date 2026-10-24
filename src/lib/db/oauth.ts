@@ -83,6 +83,7 @@ function toClient(row: Readonly<ClientRow>): OAuthClient {
       row.jwks_uri !== null && {
         auth: { method: 'private_key_jwt', jwksUri: row.jwks_uri },
       }),
+    ...(row.logo_uri !== null && { logoUri: row.logo_uri }),
   };
 }
 
@@ -108,6 +109,7 @@ export async function saveClient(
     fetched_at: fetched ? now : null,
     auth_method: client.auth?.method ?? 'none',
     jwks_uri: client.auth?.jwksUri ?? null,
+    logo_uri: client.logoUri ?? null,
     expires_at:
       fetched && ttlSeconds !== undefined
         ? new Date(nowMs + ttlSeconds * 1000).toISOString()
@@ -125,6 +127,7 @@ export async function saveClient(
         expires_at: values.expires_at,
         auth_method: values.auth_method,
         jwks_uri: values.jwks_uri,
+        logo_uri: values.logo_uri,
       },
     });
 }
@@ -418,6 +421,8 @@ export interface ConnectedApp {
   readonly installs: number;
   /** The domain that published the app, or null for an app that registered itself unverified. */
   readonly domain: string | null;
+  /** The picture the app publishes for itself, or null when it has none. */
+  readonly logoUri: string | null;
   readonly connectedAt: string;
   readonly lastUsedAt: string | null;
 }
@@ -448,6 +453,7 @@ export async function listConnectedApps(
       grant: oauthGrants,
       name: oauthClients.client_name,
       kind: oauthClients.kind,
+      logo: oauthClients.logo_uri,
     })
     .from(oauthGrants)
     .leftJoin(oauthClients, eq(oauthClients.client_id, oauthGrants.client_id))
@@ -477,12 +483,38 @@ export async function listConnectedApps(
           scope: unionOfScopes(all.map((r) => r.grant.scope)),
           installs: all.length,
           domain: identity.kind === 'domain' ? identity.domain : null,
+          logoUri: identity.kind === 'domain' ? (newest.logo ?? null) : null,
           connectedAt: newest.grant.created_at,
           lastUsedAt: lastUsed ?? null,
         },
       ];
     },
   );
+}
+
+/**
+ * Whether `url` is the picture of an app the user has connected, which is what
+ * entitles them to have the image proxy fetch it (see `images/access.ts`).
+ */
+export async function userHasConnectedLogo(
+  db: Database,
+  userId: number,
+  url: string,
+): Promise<boolean> {
+  const row = await db
+    .select({ id: oauthGrants.id })
+    .from(oauthGrants)
+    .innerJoin(oauthClients, eq(oauthClients.client_id, oauthGrants.client_id))
+    .where(
+      and(
+        eq(oauthGrants.user_id, userId),
+        isNull(oauthGrants.revoked_at),
+        eq(oauthClients.kind, 'cimd'),
+        eq(oauthClients.logo_uri, url),
+      ),
+    )
+    .limit(1);
+  return row.length > 0;
 }
 
 /**

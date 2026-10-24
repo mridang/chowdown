@@ -116,8 +116,25 @@ describe('parseClientMetadataDocument', () => {
           method: 'private_key_jwt',
           jwksUri: 'https://chatgpt.com/oauth/jwks.json',
         },
+        logoUri: 'https://persistent.oaistatic.com/sonic/misc/openai-logo.png',
       },
     });
+  });
+
+  it.each([
+    ['an http address', 'http://example.com/logo.png'],
+    ['an address with a login', 'https://user:pw@example.com/logo.png'],
+    ['an address on a private network', 'https://192.168.0.1/logo.png'],
+    ['an address that is not normalised', 'https://EXAMPLE.com/a/../logo.png'],
+    ['text that is not an address', 'not a url'],
+    ['something that is not text', 42],
+  ])('leaves the logo out for %s', (_label, logo_uri) => {
+    const result = parseClientMetadataDocument(
+      { ...goodDoc, logo_uri },
+      URL_ID,
+    );
+    expect(result.ok && result.client).not.toHaveProperty('logoUri');
+    expect(result.ok).toBe(true);
   });
 
   it('holds a client to private_key_jwt even when it also lists none', () => {

@@ -392,6 +392,7 @@ describe('listConnectedApps', () => {
         scope: ['recipes:read', 'recipes:write'],
         installs: 1,
         domain: null,
+        logoUri: null,
         connectedAt: '2026-01-01T00:00:00.000Z',
         lastUsedAt: null,
       },
@@ -478,6 +479,7 @@ const MIGRATIONS = [
   '0012_oauth_housekeeping.sql',
   '0016_oauth_redirect_uri_sent.sql',
   '0017_oauth_client_assertions.sql',
+  '0018_oauth_client_logo.sql',
 ] as const;
 
 describe('against a real SQLite database', () => {
@@ -740,6 +742,33 @@ describe('against a real SQLite database', () => {
       return made;
     };
 
+    it('gives a verified app its logo and an unverified app none', async () => {
+      const { db, raw } = sqliteDatabase(...MIGRATIONS);
+      seedClient(
+        raw,
+        'https://a.example/c.json',
+        'cimd',
+        '2026-01-01T00:00:00.000Z',
+      );
+      seedClient(raw, 'dcr_b', 'dcr', '2026-01-01T00:00:00.000Z');
+      raw.exec(
+        "UPDATE oauth_clients SET logo_uri = 'https://a.example/logo.png'",
+      );
+      seedGrant(
+        raw,
+        'g-a',
+        7,
+        'https://a.example/c.json',
+        '2026-02-01T00:00:00.000Z',
+      );
+      seedGrant(raw, 'g-b', 7, 'dcr_b', '2026-01-01T00:00:00.000Z');
+      const apps = await listConnectedApps(db, 7);
+      expect(apps.map((a) => a.logoUri)).toEqual([
+        'https://a.example/logo.png',
+        null,
+      ]);
+    });
+
     it('lists an app once, newest first, with the latest use of any of its grants', async () => {
       const { db } = seed();
       expect(await listConnectedApps(db, 7)).toEqual([
@@ -749,6 +778,7 @@ describe('against a real SQLite database', () => {
           scope: ['recipes:read', 'recipes:write'],
           installs: 2,
           domain: null,
+          logoUri: null,
           connectedAt: '2026-03-01T00:00:00.000Z',
           lastUsedAt: '2026-03-05T00:00:00.000Z',
         },
@@ -1174,6 +1204,26 @@ describe('against a real SQLite database', () => {
         )
         .all();
       expect(rows.map((r) => r['expires_at'] === null)).toEqual([true, false]);
+    });
+
+    it('keeps the logo a fetched document names, and drops it when the document stops naming one', async () => {
+      const { db, raw } = sqliteDatabase(...MIGRATIONS);
+      const client = {
+        clientId: CIMD,
+        name: 'A',
+        redirectUris: ['https://app.example/cb'],
+        kind: 'cimd' as const,
+      };
+      const logo = () =>
+        raw.prepare('SELECT logo_uri FROM oauth_clients').get()?.['logo_uri'];
+      await saveClient(
+        db,
+        { ...client, logoUri: 'https://app.example/l.png' },
+        600,
+      );
+      expect(logo()).toBe('https://app.example/l.png');
+      await saveClient(db, client, 600);
+      expect(logo()).toBeNull();
     });
 
     it('updates the name and expiry of a client it already knows, keeping when it was first seen', async () => {

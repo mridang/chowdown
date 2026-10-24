@@ -158,6 +158,8 @@ export const oauthClients = sqliteTable('oauth_clients', {
   auth_method: text('auth_method').notNull().default('none'),
   /** Where the client publishes the keys it signs assertions with; set only for `private_key_jwt`. */
   jwks_uri: text('jwks_uri'),
+  /** The picture the client publishes for itself; set only for a client fetched from its metadata document. */
+  logo_uri: text('logo_uri'),
 });
 
 /** Client assertions already accepted (by `jti`), kept until they expire so none is used twice. */
