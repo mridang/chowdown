@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { Database } from '@/core/db/client';
-import { getRecipePageRows } from '@/lib/db/recipe-page';
+import { getRecipePageRows } from '@/domain/db/recipe-page';
 
 /** A query builder stub: every method chains, and the batch returns canned rows. */
 function dbReturning(results: unknown[]): { db: Database; queries: number } {

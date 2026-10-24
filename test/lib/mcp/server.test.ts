@@ -9,9 +9,9 @@ import {
 } from '@modelcontextprotocol/core';
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { User } from '@/lib/db/users';
-import type { RecipeLister } from '@/lib/mcp/recipe-resources';
-import { SCENARIO_TOOLS } from '@/lib/mcp/scenarios';
+import type { User } from '@/domain/db/users';
+import type { RecipeLister } from '@/domain/mcp/recipe-resources';
+import { SCENARIO_TOOLS } from '@/domain/mcp/scenarios';
 import {
   CACHE_HINTS,
   RESOURCE_PAGE_SIZE,
@@ -20,13 +20,17 @@ import {
   isAdvertisedTool,
   type JsonRpcResponse,
   type ToolRunner,
-} from '@/lib/mcp/server';
-import { callTool } from '@/lib/mcp/tool-calls';
+} from '@/domain/mcp/server';
+import { callTool } from '@/domain/mcp/tool-calls';
 import { InvalidToolArguments, UnknownTool } from '@/lib/mcp/tool-errors';
-import { CAPABILITIES, INSTRUCTIONS, SERVER_INFO } from '@/lib/mcp/server-info';
-import { textResult } from '@/lib/mcp/tool-results';
-import { APP_RESOURCES } from '@/lib/mcp/ui-resources';
-import { TOOLS } from '@/lib/mcp/tool-definitions';
+import {
+  CAPABILITIES,
+  INSTRUCTIONS,
+  SERVER_INFO,
+} from '@/domain/mcp/server-info';
+import { textResult } from '@/domain/mcp/tool-results';
+import { APP_RESOURCES } from '@/domain/mcp/ui-resources';
+import { TOOLS } from '@/domain/mcp/tool-definitions';
 import { PANCAKES, call, fakeServices, folder } from './tool-fakes';
 import { SCOPE_READ, SCOPE_WRITE, scopeForTool } from '@/lib/oauth/scopes';
 

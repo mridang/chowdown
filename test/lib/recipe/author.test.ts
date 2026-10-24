@@ -9,7 +9,7 @@ import {
   hasAuthor,
   looksLikeAPerson,
   withAuthor,
-} from '@/lib/recipe/author';
+} from '@/domain/recipe/author';
 
 /** A page with the given head markup and body text. */
 const page = (head: string, body = '') =>

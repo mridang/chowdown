@@ -10,7 +10,7 @@ import {
   imageUrls,
   resolveImageRefs,
   schemaOrgToCook,
-} from '@/lib/recipe/import-schema-org';
+} from '@/domain/recipe/import-schema-org';
 
 describe('humaniseDuration', () => {
   it('formats hours and minutes', () => {

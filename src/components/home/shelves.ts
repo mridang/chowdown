@@ -7,7 +7,7 @@
  * from day to day without ever being random on each load.
  */
 
-import type { CardRecipe } from '@/lib/recipe/card-data';
+import type { CardRecipe } from '@/domain/recipe/card-data';
 
 /** How many recipes a row shows. */
 export const ROW_SIZE = 4;

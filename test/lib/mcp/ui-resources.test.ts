@@ -25,7 +25,7 @@ import {
   findAppResource,
   hashedResourceUri,
   viewToolMeta,
-} from '@/lib/mcp/ui-resources';
+} from '@/domain/mcp/ui-resources';
 import { SITE_URL } from '@/utils/site';
 
 /** The document with its inline script removed: what the host's CSP actually has to police. */

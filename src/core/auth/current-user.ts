@@ -9,13 +9,13 @@
 
 import { cookies } from 'next/headers';
 
-import { SESSION_COOKIE } from '@/lib/auth/app';
+import { SESSION_COOKIE } from '@/domain/auth/app';
 import {
   sessionIsCurrent,
   verifySessionToken,
   type SessionPayload,
 } from '@/lib/session';
-import { getSessionEpoch, getUserById, type User } from '@/lib/auth/store';
+import { getSessionEpoch, getUserById, type User } from '@/domain/auth/store';
 import { getEnv } from '@/core/runtime';
 
 /**

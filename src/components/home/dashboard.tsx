@@ -30,8 +30,8 @@ import {
 } from '@/components/home/shelves';
 import type { ShellUser } from '@/core/auth/shell-user';
 import { countOf } from '@/lib/intl';
-import { toCardRecipe, type CardRecipe } from '@/lib/recipe/card-data';
-import { loadCollection } from '@/lib/recipe/load-collection';
+import { toCardRecipe, type CardRecipe } from '@/domain/recipe/card-data';
+import { loadCollection } from '@/domain/recipe/load-collection';
 
 /** The recipe list at the filters given, as a link. */
 function listHref(params: RawParams): string {

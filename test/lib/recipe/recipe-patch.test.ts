@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { applyRecipePatch } from '@/lib/recipe/recipe-patch';
+import { applyRecipePatch } from '@/domain/recipe/recipe-patch';
 
 const SOURCE =
   '>> title: Pasta\n>> source: https://a.com/p\n>> protein: beef\n\nBoil @pasta{200%g}.\n-- [note] keep\n';

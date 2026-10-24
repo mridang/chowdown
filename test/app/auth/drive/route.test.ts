@@ -9,7 +9,7 @@ import {
 import type { NextResponse } from 'next/server';
 
 import { verifySessionToken } from '@/lib/session';
-import { SESSION_COOKIE } from '@/lib/auth/app';
+import { SESSION_COOKIE } from '@/domain/auth/app';
 import {
   SESSION_SECRET,
   fakeCookies,

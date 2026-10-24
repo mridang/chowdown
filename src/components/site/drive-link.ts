@@ -7,7 +7,7 @@
  * where "Open Drive" leads.
  */
 
-import { driveConnectHref } from '@/lib/auth/drive-access';
+import { driveConnectHref } from '@/domain/auth/drive-access';
 import { isDriveFileId } from '@/lib/google/drive';
 
 /** Where "Open Drive" goes when the Recipes folder is not known: Drive's home page. */

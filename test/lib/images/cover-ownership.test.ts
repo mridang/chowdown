@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
-import { userHasCover } from '@/lib/images/cover-ownership';
+import { userHasCover } from '@/domain/image/cover-ownership';
 import { APP_MIGRATIONS } from '../db/migrations';
 import { sqliteDatabase, type SqliteDatabase } from '../db/sqlite-db';
 

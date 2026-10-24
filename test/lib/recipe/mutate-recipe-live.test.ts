@@ -2,11 +2,11 @@ import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import type { Database } from '@/core/db/client';
-import type { User } from '@/lib/db/users';
+import type { User } from '@/domain/db/users';
 import {
   mutateRecipeForUser,
   type MutateLiveDeps,
-} from '@/lib/recipe/mutate-recipe-live';
+} from '@/domain/recipe/mutate-recipe-live';
 
 const db = {} as Database;
 const user = { id: 4 } as unknown as User;

@@ -2,14 +2,14 @@ import { describe, expect, it } from '@jest/globals';
 import Ajv2020 from 'ajv/dist/2020.js';
 
 import { validateJson, unsupportedKeywords } from '@/lib/mcp/json-schema';
-import { MAX_BODY_BYTES } from '@/lib/mcp/request-limits';
+import { MAX_BODY_BYTES } from '@/domain/mcp/request-limits';
 import {
   CONTENT_MAX,
   PAGE_DEFAULT,
   TOOLS,
   toolNamed,
-} from '@/lib/mcp/tool-definitions';
-import { APP_RESOURCES } from '@/lib/mcp/ui-resources';
+} from '@/domain/mcp/tool-definitions';
+import { APP_RESOURCES } from '@/domain/mcp/ui-resources';
 import { SCOPE_READ, scopeForTool } from '@/lib/oauth/scopes';
 import { PANCAKES, call, fakeServices, folder } from './tool-fakes';
 

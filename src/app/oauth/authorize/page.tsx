@@ -7,8 +7,11 @@ import { CenteredCard } from '@/components/site/centered-card';
 import { Eyebrow, Heading } from '@/components/ui/layout';
 import { DriveConnectPanel } from '@/components/site/drive-connect';
 import { getCurrentUser } from '@/core/auth/current-user';
-import { isDriveConnected, wasDriveConnected } from '@/lib/auth/drive-access';
-import { resolveClient } from '@/lib/db/oauth';
+import {
+  isDriveConnected,
+  wasDriveConnected,
+} from '@/domain/auth/drive-access';
+import { resolveClient } from '@/domain/db/oauth';
 import {
   AUTHORIZE_FIELDS,
   redirectWith,

@@ -11,7 +11,7 @@ import {
   setRefreshToken,
   setUserUnits,
   upsertUser,
-} from '@/lib/db/users';
+} from '@/domain/db/users';
 import { fakeDb } from './fake-db';
 import { APP_MIGRATIONS } from './migrations';
 import { sqliteDatabase } from './sqlite-db';

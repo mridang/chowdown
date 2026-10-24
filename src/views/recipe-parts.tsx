@@ -12,7 +12,7 @@
 import type { ReactElement } from 'react';
 
 import type { StepToken } from '@/lib/cooklang/cooklang';
-import type { RecipeCardData } from '@/lib/mcp/ui-types';
+import type { RecipeCardData } from '@/domain/mcp/ui-types';
 import { safeHttpUrl, sourceHost } from '@/views/follow-up';
 
 /** The small label above a title: "Recipe" or "Recipe idea". */

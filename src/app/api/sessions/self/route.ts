@@ -7,7 +7,7 @@
 
 import { NextResponse } from 'next/server';
 
-import { SESSION_COOKIE } from '@/lib/auth/app';
+import { SESSION_COOKIE } from '@/domain/auth/app';
 import { crossSiteRefusal } from '@/core/auth/guard';
 
 /**

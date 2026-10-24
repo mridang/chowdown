@@ -4,7 +4,7 @@ import {
   noteIndex,
   noteResource,
   parseNoteInput,
-} from '@/lib/api/note-resource';
+} from '@/domain/api/note-resource';
 
 describe('noteResource', () => {
   it('numbers notes from 1 and uses upper-case scopes', () => {

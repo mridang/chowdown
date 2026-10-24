@@ -8,7 +8,7 @@
 
 import { NextResponse } from 'next/server';
 
-import { RETURN_COOKIE, STATE_COOKIE } from '@/lib/auth/app';
+import { RETURN_COOKIE, STATE_COOKIE } from '@/domain/auth/app';
 import { STATE_TTL_SECONDS } from '@/lib/web-security/oauth-state';
 
 /** What the round trip needs remembered. */

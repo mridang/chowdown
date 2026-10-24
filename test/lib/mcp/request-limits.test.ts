@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { User } from '@/lib/db/users';
+import type { User } from '@/domain/db/users';
 import {
   MAX_BODY_BYTES,
   MCP_RATE_LIMITS,
@@ -10,7 +10,7 @@ import {
   checkRateLimits,
   readJsonBody,
   type RateLimitDeps,
-} from '@/lib/mcp/request-limits';
+} from '@/domain/mcp/request-limits';
 import type { RateLimitStore } from '@/lib/rate-limit';
 
 const URL = 'https://chowdown.test/mcp';

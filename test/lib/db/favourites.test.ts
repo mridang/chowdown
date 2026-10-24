@@ -4,7 +4,7 @@ import {
   isFavourite,
   listFavouriteIds,
   setFavourite,
-} from '@/lib/db/favourites';
+} from '@/domain/db/favourites';
 import { fakeDb } from './fake-db';
 
 describe('isFavourite', () => {

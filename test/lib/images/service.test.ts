@@ -11,7 +11,7 @@ import {
   serveImage,
   type ImageAccess,
   type ImageCache,
-} from '@/lib/images/service';
+} from '@/domain/image/service';
 import { ALLOWED_HOSTS, ALLOWED_WIDTHS, DEFAULT_WIDTH } from '@/lib/image/site';
 
 const HOST = ALLOWED_HOSTS?.[0] ?? 'photos.example.org';

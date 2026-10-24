@@ -11,8 +11,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getCurrentUser, getSession } from '@/core/auth/current-user';
-import { isDriveConnected } from '@/lib/auth/drive-access';
-import { buildDriveAuthUrl } from '@/lib/auth/drive-oauth';
+import { isDriveConnected } from '@/domain/auth/drive-access';
+import { buildDriveAuthUrl } from '@/domain/auth/drive-oauth';
 import { startFlowCookies } from '@/core/auth/flow-cookies';
 import { newState } from '@/lib/web-security/oauth-state';
 import { safeReturnPath } from '@/lib/web-security/return-to';

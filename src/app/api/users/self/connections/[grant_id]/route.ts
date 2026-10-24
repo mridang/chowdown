@@ -6,9 +6,9 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireLiveUid } from '@/lib/api/auth';
+import { requireLiveUid } from '@/domain/api/auth';
 import { problems } from '@/lib/rest-json/problem';
-import { revokeConnectedApp } from '@/lib/db/oauth';
+import { revokeConnectedApp } from '@/domain/db/oauth';
 import { getDatabase } from '@/core/runtime';
 
 /**

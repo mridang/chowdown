@@ -7,8 +7,8 @@ import {
   importPosition,
   importSummary,
   parseImportInput,
-} from '@/lib/api/recipe-import-resource';
-import type { RecipeImport } from '@/lib/db/recipe-imports';
+} from '@/domain/api/recipe-import-resource';
+import type { RecipeImport } from '@/domain/db/recipe-imports';
 
 const imported: RecipeImport = {
   id: 'abc',

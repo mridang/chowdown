@@ -6,7 +6,7 @@ import {
   photosFirst,
   todaySeed,
 } from '@/components/home/shelves';
-import type { CardRecipe } from '@/lib/recipe/card-data';
+import type { CardRecipe } from '@/domain/recipe/card-data';
 
 function recipe(id: string, over: Partial<CardRecipe> = {}): CardRecipe {
   return {

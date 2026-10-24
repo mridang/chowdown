@@ -5,7 +5,7 @@
  *   POST /oauth/token  (application/x-www-form-urlencoded)
  */
 
-import { createOAuthStore, oauthSweeps } from '@/lib/db/oauth';
+import { createOAuthStore, oauthSweeps } from '@/domain/db/oauth';
 import {
   formFailure,
   noStoreJson,

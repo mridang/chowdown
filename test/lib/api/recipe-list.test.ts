@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { listRecipes } from '@/lib/api/recipe-list';
+import { listRecipes } from '@/domain/api/recipe-list';
 import { APP_MIGRATIONS } from '../db/migrations';
 import { installCloudflareContext, sqliteD1 } from '../db/sqlite-d1';
 import { insertUser } from '../auth/session-fixture';

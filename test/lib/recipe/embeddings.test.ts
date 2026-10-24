@@ -7,7 +7,7 @@ import {
   cosineSimilarity,
   embedText,
   measure,
-} from '@/lib/recipe/embeddings';
+} from '@/domain/recipe/embeddings';
 
 describe('cosineSimilarity', () => {
   it('is 1 for identical vectors', () => {

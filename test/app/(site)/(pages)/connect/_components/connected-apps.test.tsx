@@ -4,7 +4,7 @@ import {
   ConnectedAppItem,
   ConnectedApps,
 } from '@/app/(site)/(pages)/connect/_components/connected-apps';
-import type { ConnectedApp } from '@/lib/connected-apps';
+import type { ConnectedApp } from '@/domain/connected-apps';
 import { html } from '../../../../../components/render';
 
 const APP: ConnectedApp = {

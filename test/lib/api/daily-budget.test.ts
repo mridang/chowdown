@@ -7,7 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 
-import { budgetRefusal } from '@/lib/api/daily-budget';
+import { budgetRefusal } from '@/domain/api/daily-budget';
 import {
   d1RateLimitStore,
   type RateLimit,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { NextResponse } from 'next/server';
 
-import { RETURN_COOKIE, STATE_COOKIE } from '@/lib/auth/app';
+import { RETURN_COOKIE, STATE_COOKIE } from '@/domain/auth/app';
 import { finishFlow, startFlowCookies } from '@/core/auth/flow-cookies';
 
 const start = (returnTo: string | undefined, secure = true) => {

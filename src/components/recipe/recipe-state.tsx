@@ -11,7 +11,7 @@ import {
   type SetStateAction,
 } from 'react';
 
-import { displayQuantity, type UnitChoice } from '@/lib/recipe/page-view';
+import { displayQuantity, type UnitChoice } from '@/domain/recipe/page-view';
 
 /** What the controls on a recipe page share. */
 interface RecipeState {

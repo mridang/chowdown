@@ -10,7 +10,7 @@ import {
 import type { NextResponse } from 'next/server';
 
 import { GET } from '@/app/auth/login/route';
-import { RETURN_COOKIE, STATE_COOKIE } from '@/lib/auth/app';
+import { RETURN_COOKIE, STATE_COOKIE } from '@/domain/auth/app';
 import {
   SESSION_SECRET,
   appRequest,

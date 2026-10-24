@@ -10,8 +10,8 @@
  * simply has no value for that filter, and sorts after the ones that do.
  */
 
-import type { CardRecipe } from '@/lib/recipe/card-data';
-import { DIET_TYPES } from '@/lib/recipe/diet-type';
+import type { CardRecipe } from '@/domain/recipe/card-data';
+import { DIET_TYPES } from '@/domain/recipe/diet-type';
 import { sentenceCase } from '@/utils/text';
 import { compareText, foldText } from '@/lib/intl';
 

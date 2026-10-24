@@ -18,7 +18,7 @@
 
 import { useCallback, useReducer, type ReactElement } from 'react';
 
-import type { RecipeListData, RecipeListItem } from '@/lib/mcp/ui-types';
+import type { RecipeListData, RecipeListItem } from '@/domain/mcp/ui-types';
 import {
   INITIAL_LIST_STATE,
   reduceListState,

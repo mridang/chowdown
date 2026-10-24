@@ -13,19 +13,19 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireUser } from '@/lib/api/auth';
-import { driveFailure } from '@/lib/api/drive-failure';
+import { requireUser } from '@/domain/api/auth';
+import { driveFailure } from '@/domain/api/drive-failure';
 import { pageBody, parseLimit } from '@/core/api/pagination';
-import { budgetRefusal } from '@/lib/api/daily-budget';
+import { budgetRefusal } from '@/domain/api/daily-budget';
 import { problems } from '@/lib/rest-json/problem';
-import { getUserAccessToken } from '@/lib/auth/user-access-token';
+import { getUserAccessToken } from '@/domain/auth/user-access-token';
 import { listRecipeFiles } from '@/lib/google/drive';
-import { recipesFolderFor } from '@/lib/drive/recipes-folder';
+import { recipesFolderFor } from '@/domain/drive/recipes-folder';
 import { recipeDisplayName } from '@/lib/cooklang/cook-text';
-import { embedText } from '@/lib/recipe/embeddings';
-import { ensureEmbeddings, topSimilar } from '@/lib/recipe/similar';
+import { embedText } from '@/domain/recipe/embeddings';
+import { ensureEmbeddings, topSimilar } from '@/domain/recipe/similar';
 import { getEnv } from '@/core/runtime';
-import { DAILY_BUDGETS } from '@/lib/util/daily-budget';
+import { DAILY_BUDGETS } from '@/domain/daily-budget';
 
 /** How many suggestions to give when the client does not say. */
 const DEFAULT_SUGGESTIONS = 8;

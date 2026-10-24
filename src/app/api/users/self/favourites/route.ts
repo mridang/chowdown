@@ -6,8 +6,8 @@
  *   GET /api/users/self/favourites
  */
 
-import { requireLiveUid } from '@/lib/api/auth';
-import { listRecipes } from '@/lib/api/recipe-list';
+import { requireLiveUid } from '@/domain/api/auth';
+import { listRecipes } from '@/domain/api/recipe-list';
 
 /**
  * `GET /api/users/self/favourites`: one page of the recipes the user has

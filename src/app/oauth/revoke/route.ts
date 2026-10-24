@@ -4,7 +4,7 @@
  * the token was known, so it can't be used to probe for valid tokens.
  */
 
-import { createOAuthStore } from '@/lib/db/oauth';
+import { createOAuthStore } from '@/domain/db/oauth';
 import {
   formFailure,
   noStoreJson,

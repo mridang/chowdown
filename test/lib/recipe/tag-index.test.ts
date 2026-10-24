@@ -1,14 +1,14 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import type { Database } from '@/core/db/client';
-import type { User } from '@/lib/db/users';
+import type { User } from '@/domain/db/users';
 import { parseRecipe } from '@/lib/cooklang/cooklang';
 import {
   extractFacetTags,
   rowTags,
   syncRecipeTags,
   type TagSyncDeps,
-} from '@/lib/recipe/tag-index';
+} from '@/domain/recipe/tag-index';
 
 const SOURCE =
   '>> cuisine: Indian\n>> protein: Chicken\n\nCook @chicken thigh{500%g} with @onion{1}.\n';

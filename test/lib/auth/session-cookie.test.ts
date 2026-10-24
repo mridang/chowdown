@@ -1,10 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 import { NextResponse } from 'next/server';
 
-import { SESSION_COOKIE, sessionClaims } from '@/lib/auth/app';
+import { SESSION_COOKIE, sessionClaims } from '@/domain/auth/app';
 import { verifySessionToken } from '@/lib/session';
 import { setSessionCookie } from '@/core/auth/session-cookie';
-import type { User } from '@/lib/auth/store';
+import type { User } from '@/domain/auth/store';
 
 const SECRET = 'test-session-secret-value';
 const user = (overrides: Record<string, unknown> = {}) =>

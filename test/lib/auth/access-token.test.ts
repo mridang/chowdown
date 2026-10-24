@@ -1,7 +1,10 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { accessTokenFor, type AccessTokenDeps } from '@/lib/auth/access-token';
-import { DriveNotConnectedError } from '@/lib/auth/drive-access';
+import {
+  accessTokenFor,
+  type AccessTokenDeps,
+} from '@/domain/auth/access-token';
+import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 
 function deps(overrides: Partial<AccessTokenDeps> = {}) {
   const forget = jest.fn<AccessTokenDeps['forget']>().mockResolvedValue();

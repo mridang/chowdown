@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { RecipeCardData } from '@/lib/mcp/ui-types';
+import type { RecipeCardData } from '@/domain/mcp/ui-types';
 import { RecipeCardApp, RecipeCardScreen } from '@/views/recipe-card-view';
 import type { ViewState } from '@/views/view-state';
 import { html } from '../components/render';

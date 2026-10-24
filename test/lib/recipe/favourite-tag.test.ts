@@ -1,6 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { hasFavouriteTag, withFavouriteTag } from '@/lib/recipe/favourite-tag';
+import {
+  hasFavouriteTag,
+  withFavouriteTag,
+} from '@/domain/recipe/favourite-tag';
 
 const SRC =
   '>> title: Pasta\n>> servings: 2\n\nBoil @pasta{200%g}.\n-- [cook 2026-01-01] great\n';

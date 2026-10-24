@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { entityTag } from '@/lib/rest-json/etag';
-import { mutateRecipe, type MutateDeps } from '@/lib/recipe/mutate-recipe';
+import { mutateRecipe, type MutateDeps } from '@/domain/recipe/mutate-recipe';
 
 const CURRENT = '>> title: A\n\nCook.\n';
 

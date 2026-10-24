@@ -11,7 +11,7 @@ import { cn } from '@/components/ui/cn';
 import { Heading } from '@/components/ui/layout';
 import { TintTile } from '@/components/ui/tint-tile';
 import { duration, sentenceCase } from '@/utils/text';
-import type { CardRecipe, Tone } from '@/lib/recipe/card-data';
+import type { CardRecipe, Tone } from '@/domain/recipe/card-data';
 
 /**
  * A recipe photo. With a cover it shows the photo (falling back to the tint if

@@ -11,8 +11,8 @@ import {
   SERVER_INFO_META_KEY,
   SERVER_VERSION,
   UI_EXTENSION_ID,
-} from '@/lib/mcp/server-info';
-import { TOOLS } from '@/lib/mcp/tool-definitions';
+} from '@/domain/mcp/server-info';
+import { TOOLS } from '@/domain/mcp/tool-definitions';
 
 const root = process.cwd();
 

@@ -1,13 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import type { Database } from '@/core/db/client';
-import type { User } from '@/lib/db/users';
+import type { User } from '@/domain/db/users';
 import {
   deleteRecipe,
   deleteRecipeForUser,
   type DeleteDeps,
   type DeleteLiveDeps,
-} from '@/lib/recipe/delete-recipe';
+} from '@/domain/recipe/delete-recipe';
 
 /** Fake dependencies; `overrides` swap individual behaviours. */
 function deps(overrides: Partial<DeleteDeps> = {}) {

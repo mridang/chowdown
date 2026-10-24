@@ -16,8 +16,8 @@ import {
   SIGN_IN_FAILED_PATH,
   STATE_COOKIE,
   sessionClaims,
-} from '@/lib/auth/app';
-import type { User } from '@/lib/auth/store';
+} from '@/domain/auth/app';
+import type { User } from '@/domain/auth/store';
 import { verifySessionToken } from '@/lib/session';
 import {
   SESSION_SECRET,
@@ -59,7 +59,7 @@ const OTHER_FLOWS = Object.fromEntries(
   ]),
 );
 
-jest.unstable_mockModule('@/lib/auth/store', () => ({
+jest.unstable_mockModule('@/domain/auth/store', () => ({
   upsertGoogleUser,
 }));
 jest.unstable_mockModule('@/core/auth/hooks', () => ({

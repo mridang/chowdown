@@ -8,7 +8,7 @@
  * reducer holds that outcome so the rules are testable without a browser.
  */
 
-import type { RecipeCardData, RecipeListItem } from '@/lib/mcp/ui-types';
+import type { RecipeCardData, RecipeListItem } from '@/domain/mcp/ui-types';
 import type { ToolOutcome } from '@/views/payload';
 
 /**

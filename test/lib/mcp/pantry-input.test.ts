@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { pantryOf } from '@/lib/mcp/pantry-input';
+import { pantryOf } from '@/domain/mcp/pantry-input';
 
 describe('pantryOf', () => {
   it('reads strings, lists in one string, and objects', () => {

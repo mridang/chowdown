@@ -6,7 +6,7 @@ import {
   convertImport,
   convertToCooklang,
   hasRecipeBody,
-} from '@/lib/recipe/to-cooklang';
+} from '@/domain/recipe/to-cooklang';
 
 const realFetch = global.fetch;
 

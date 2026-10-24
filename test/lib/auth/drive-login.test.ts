@@ -7,9 +7,9 @@ import {
   jest,
 } from '@jest/globals';
 
-import { revokeDriveLogin } from '@/lib/auth/drive-login';
+import { revokeDriveLogin } from '@/domain/auth/drive-login';
 import { encryptSecret } from '@/lib/crypto';
-import type { User } from '@/lib/db/users';
+import type { User } from '@/domain/db/users';
 import { installCloudflareContext, sqliteD1 } from '../db/sqlite-d1';
 import { testEnv } from './session-fixture';
 

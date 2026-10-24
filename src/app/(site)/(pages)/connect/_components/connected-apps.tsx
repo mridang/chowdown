@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { PlugIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { accessLabel, type ConnectedApp } from '@/lib/connected-apps';
+import { accessLabel, type ConnectedApp } from '@/domain/connected-apps';
 import { relativeTime } from '@/lib/intl';
 
 /** Whether a value has the members of a {@link ConnectedApp} that this list shows. */

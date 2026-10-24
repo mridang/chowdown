@@ -10,10 +10,10 @@
 import { cookies } from 'next/headers';
 import { cache } from 'react';
 
-import { getUserById } from '@/lib/db/users';
+import { getUserById } from '@/domain/db/users';
 import { getDatabase, getEnv } from '@/core/runtime';
-import { SESSION_COOKIE, driveHint, folderHint } from '@/lib/auth/app';
-import { isDriveConnected } from '@/lib/auth/drive-access';
+import { SESSION_COOKIE, driveHint, folderHint } from '@/domain/auth/app';
+import { isDriveConnected } from '@/domain/auth/drive-access';
 import { verifySessionToken } from '@/lib/session';
 
 /** What the header shows about the signed-in person. */

@@ -8,15 +8,15 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireUser } from '@/lib/api/auth';
+import { requireUser } from '@/domain/api/auth';
 import { readJsonObject } from '@/lib/rest-json/json';
 import { problems } from '@/lib/rest-json/problem';
-import { parseUserPatch, userResource } from '@/lib/api/user-resource';
-import { SESSION_COOKIE } from '@/lib/auth/app';
-import { revokeDriveLogin } from '@/lib/auth/drive-login';
-import { forgetAccessTokens } from '@/lib/auth/user-access-token';
-import { deleteAccountData } from '@/lib/db/account';
-import { getUserById, setUserUnits } from '@/lib/db/users';
+import { parseUserPatch, userResource } from '@/domain/api/user-resource';
+import { SESSION_COOKIE } from '@/domain/auth/app';
+import { revokeDriveLogin } from '@/domain/auth/drive-login';
+import { forgetAccessTokens } from '@/domain/auth/user-access-token';
+import { deleteAccountData } from '@/domain/db/account';
+import { getUserById, setUserUnits } from '@/domain/db/users';
 import { getDatabase, runInBackground } from '@/core/runtime';
 
 /**

@@ -6,7 +6,7 @@ import {
   grantedDrive,
   refreshAccessToken,
   revokeToken,
-} from '@/lib/auth/drive-oauth';
+} from '@/domain/auth/drive-oauth';
 
 const base = {
   clientId: 'client-id',

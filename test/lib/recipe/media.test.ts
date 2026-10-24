@@ -6,7 +6,7 @@ import {
   normalizeImageUrl,
   validImageUrls,
   withImages,
-} from '@/lib/recipe/media';
+} from '@/domain/recipe/media';
 
 function recipe(metadata: [string, string][]): ParsedRecipe {
   return { title: 'X', metadata, ingredients: [], cookware: [], steps: [] };

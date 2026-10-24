@@ -8,7 +8,7 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import type { Auth } from '@/lib/api/auth';
+import type { Auth } from '@/domain/api/auth';
 import { APP_MIGRATIONS } from '../db/migrations';
 import { installCloudflareContext, sqliteD1 } from '../db/sqlite-d1';
 import {
@@ -22,7 +22,7 @@ import {
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const { requireLiveUid, requireUid, requireUser } =
-  await import('@/lib/api/auth');
+  await import('@/domain/api/auth');
 
 const ORIGIN = 'https://chowdown.test';
 

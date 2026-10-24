@@ -3,8 +3,8 @@ import path from 'node:path';
 
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { DriveNotConnectedError } from '@/lib/auth/drive-access';
-import type { User } from '@/lib/db/users';
+import { DriveNotConnectedError } from '@/domain/auth/drive-access';
+import type { User } from '@/domain/db/users';
 import { RpcError } from '@/lib/mcp/protocol';
 import { BackendFailure } from '@/lib/mcp/tool-errors';
 import {
@@ -14,8 +14,8 @@ import {
   readRecipeResource,
   recipeResource,
   recipeUri,
-} from '@/lib/mcp/recipe-resources';
-import type { ToolContext } from '@/lib/mcp/tool-calls';
+} from '@/domain/mcp/recipe-resources';
+import type { ToolContext } from '@/domain/mcp/tool-calls';
 import { sqliteDatabase } from '../db/sqlite-db';
 
 const someone = { id: 1 } as User;

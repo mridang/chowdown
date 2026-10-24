@@ -3,7 +3,7 @@ import { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { describe, expect, it } from '@jest/globals';
 
 import { createDatabase } from '@/core/db/client';
-import * as schema from '@/lib/db/schema';
+import * as schema from '@/domain/db/schema';
 import { APP_MIGRATIONS } from './migrations';
 import { sqliteD1 } from './sqlite-d1';
 

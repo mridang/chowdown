@@ -12,7 +12,7 @@ import {
   MAX_SERVINGS,
   servingsOf,
   stepText,
-} from '@/lib/recipe/page-view';
+} from '@/domain/recipe/page-view';
 
 describe('servingsOf', () => {
   it('reads the servings metadata', () => {

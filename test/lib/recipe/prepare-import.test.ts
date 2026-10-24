@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-import { planImport } from '@/lib/recipe/import-blob';
-import { prepareImport } from '@/lib/recipe/prepare-import';
+import { planImport } from '@/domain/recipe/import-blob';
+import { prepareImport } from '@/domain/recipe/prepare-import';
 
 /** A page carrying a schema.org Recipe, so no model call is needed. */
 const PAGE = `<html><script type="application/ld+json">${JSON.stringify({

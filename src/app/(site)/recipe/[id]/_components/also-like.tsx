@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 
 import { RecipeCard, RecipeGrid } from '@/components/recipes/recipe-card';
 import { Container, Heading } from '@/components/ui/layout';
-import type { CardRecipe } from '@/lib/recipe/card-data';
+import type { CardRecipe } from '@/domain/recipe/card-data';
 
 /**
  * The "You might also like" row at the foot of the recipe page: similar recipes

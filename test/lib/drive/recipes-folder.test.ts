@@ -8,8 +8,8 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { recipesFolderFor } from '@/lib/drive/recipes-folder';
-import { getUserById } from '@/lib/db/users';
+import { recipesFolderFor } from '@/domain/drive/recipes-folder';
+import { getUserById } from '@/domain/db/users';
 import { getDatabase } from '@/core/runtime';
 import { insertUser } from '../auth/session-fixture';
 import { APP_MIGRATIONS } from '../db/migrations';

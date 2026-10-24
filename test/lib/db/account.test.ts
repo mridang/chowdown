@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { deleteAccountData } from '@/lib/db/account';
+import { deleteAccountData } from '@/domain/db/account';
 import { APP_MIGRATIONS } from './migrations';
 import { sqliteDatabase } from './sqlite-db';
 

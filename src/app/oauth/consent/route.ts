@@ -8,7 +8,7 @@
 import { NextResponse } from 'next/server';
 
 import { getLiveSessionUid } from '@/core/auth/current-user';
-import { createOAuthStore, resolveClient } from '@/lib/db/oauth';
+import { createOAuthStore, resolveClient } from '@/domain/db/oauth';
 import { readFormBody } from '@/utils/http/body';
 import {
   authorizeParamsFrom,

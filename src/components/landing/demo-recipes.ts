@@ -8,7 +8,11 @@
  * shows beside the finished recipe it produces.
  */
 
-import type { CardRecipe, DifficultyLevel, Tone } from '@/lib/recipe/card-data';
+import type {
+  CardRecipe,
+  DifficultyLevel,
+  Tone,
+} from '@/domain/recipe/card-data';
 
 /** The soft colours a recipe tile can wear, re-exported for the landing page's mock-ups. */
 export type { Tone };

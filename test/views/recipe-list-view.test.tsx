@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { RecipeCardData, RecipeListData } from '@/lib/mcp/ui-types';
+import type { RecipeCardData, RecipeListData } from '@/domain/mcp/ui-types';
 import { INITIAL_LIST_STATE, type ListState } from '@/views/list-state';
 import { RecipeListApp, RecipeListScreen } from '@/views/recipe-list-view';
 import type { ViewState } from '@/views/view-state';

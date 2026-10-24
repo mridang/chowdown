@@ -10,23 +10,23 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireLiveUid, requireUser } from '@/lib/api/auth';
-import { driveFailure } from '@/lib/api/drive-failure';
+import { requireLiveUid, requireUser } from '@/domain/api/auth';
+import { driveFailure } from '@/domain/api/drive-failure';
 import { readJsonObject } from '@/lib/rest-json/json';
-import { settleMutation } from '@/lib/api/mutation-response';
+import { settleMutation } from '@/domain/api/mutation-response';
 import {
   noteIndex,
   noteResource,
   parseNoteInput,
-} from '@/lib/api/note-resource';
+} from '@/domain/api/note-resource';
 import { problems } from '@/lib/rest-json/problem';
-import { getRecipeByFileId } from '@/lib/db/recipes';
+import { getRecipeByFileId } from '@/domain/db/recipes';
 import {
   extractNotes,
   removeNote,
   replaceNote,
 } from '@/lib/cooklang/cook-text';
-import { mutateRecipeForUser } from '@/lib/recipe/mutate-recipe-live';
+import { mutateRecipeForUser } from '@/domain/recipe/mutate-recipe-live';
 import { getDatabase } from '@/core/runtime';
 
 /** The context Next.js hands these handlers: the recipe id and the note's position. */

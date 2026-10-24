@@ -5,7 +5,7 @@ import {
   RecipeCard,
   RecipeGrid,
 } from '@/components/recipes/recipe-card';
-import { toCardRecipe } from '@/lib/recipe/card-data';
+import { toCardRecipe } from '@/domain/recipe/card-data';
 import { html } from '../render';
 
 const SOURCE = [

@@ -19,7 +19,7 @@ import {
   RETURN_COOKIE,
   SIGN_IN_FAILED_PATH,
   STATE_COOKIE,
-} from '@/lib/auth/app';
+} from '@/domain/auth/app';
 import { finishFlow } from '@/core/auth/flow-cookies';
 import { exchangeCode, getUserInfo } from '@/lib/google/auth';
 import { OTHER_FLOWS } from '@/core/auth/hooks';
@@ -29,7 +29,7 @@ import {
   completeSignIn,
   missingSignInSettings,
   type FlowContext,
-} from '@/lib/auth/sign-in';
+} from '@/domain/auth/sign-in';
 import { getEnv } from '@/core/runtime';
 import { logError, logWarn } from '@/utils/logging';
 import { appOrigin } from '@/core/origin';

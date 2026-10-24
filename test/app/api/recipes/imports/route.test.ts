@@ -8,9 +8,9 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { DAILY_BUDGETS } from '@/lib/util/daily-budget';
-import type { ImportUnit } from '@/lib/recipe/import-blob';
-import type { ImportItem } from '@/lib/recipe/prepare-import';
+import { DAILY_BUDGETS } from '@/domain/daily-budget';
+import type { ImportUnit } from '@/domain/recipe/import-blob';
+import type { ImportItem } from '@/domain/recipe/prepare-import';
 import { APP_MIGRATIONS } from '../../../../lib/db/migrations';
 import {
   installCloudflareContext,
@@ -23,7 +23,7 @@ const session: { uid: number | null } = { uid: 7 };
 // The sign-in gate has its own tests (test/lib/api/auth.test.ts); here it just
 // says who is calling, in the shape the routes read.
 const { problems } = await import('@/lib/rest-json/problem');
-jest.unstable_mockModule('@/lib/api/auth', () => ({
+jest.unstable_mockModule('@/domain/api/auth', () => ({
   requireLiveUid: async () =>
     session.uid === null
       ? { ok: false, response: problems.unauthorized() }
@@ -43,7 +43,7 @@ const prepareImport = jest.fn<
   ),
 );
 
-jest.unstable_mockModule('@/lib/recipe/prepare-import', () => ({
+jest.unstable_mockModule('@/domain/recipe/prepare-import', () => ({
   prepareImport,
 }));
 

@@ -8,7 +8,7 @@ import {
   resolveClient,
   revokeConnectedApp,
   saveClient,
-} from '@/lib/db/oauth';
+} from '@/domain/db/oauth';
 import { OAUTH_LIMITS } from '@/lib/oauth/limits';
 import { MAX_LIVE_GRANTS_PER_APP } from '@/lib/oauth/retention';
 import type { RateLimitStore } from '@/lib/rate-limit';

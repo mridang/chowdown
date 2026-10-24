@@ -8,14 +8,14 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { DriveNotConnectedError } from '@/lib/auth/drive-access';
+import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import { encryptSecret } from '@/lib/crypto';
 import { APP_MIGRATIONS } from '../db/migrations';
 import { installCloudflareContext, sqliteD1 } from '../db/sqlite-d1';
 import { insertUser, testEnv } from './session-fixture';
 
 const { forgetAccessTokens, getUserAccessToken } =
-  await import('@/lib/auth/user-access-token');
+  await import('@/domain/auth/user-access-token');
 
 let raw: DatabaseSync;
 let restore: () => void;
@@ -62,7 +62,7 @@ describe('getUserAccessToken', () => {
       String(env['TOKEN_ENCRYPTION_KEY']),
     );
     insertUser(raw, { id, refresh_token_enc: sealed });
-    const { getUserById } = await import('@/lib/db/users');
+    const { getUserById } = await import('@/domain/db/users');
     const { getDatabase } = await import('@/core/runtime');
     const user = await getUserById(getDatabase(), id);
     if (!user) {
@@ -73,7 +73,7 @@ describe('getUserAccessToken', () => {
 
   it('says Drive is not connected when there is no stored login', async () => {
     insertUser(raw, { id: 20 });
-    const { getUserById } = await import('@/lib/db/users');
+    const { getUserById } = await import('@/domain/db/users');
     const { getDatabase } = await import('@/core/runtime');
     const user = await getUserById(getDatabase(), 20);
     await expect(getUserAccessToken(user!)).rejects.toThrow(

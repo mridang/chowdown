@@ -13,8 +13,8 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireLiveUid } from '@/lib/api/auth';
-import { budgetRefusal } from '@/lib/api/daily-budget';
+import { requireLiveUid } from '@/domain/api/auth';
+import { budgetRefusal } from '@/domain/api/daily-budget';
 import { readJson } from '@/lib/rest-json/json';
 import {
   absoluteUrl,
@@ -30,12 +30,15 @@ import {
   importSummary,
   MAX_IMPORT_BODY_BYTES,
   parseImportInput,
-} from '@/lib/api/recipe-import-resource';
-import { createRecipeImport, listRecipeImports } from '@/lib/db/recipe-imports';
-import { MAX_IMPORT_UNITS, planImport } from '@/lib/recipe/import-blob';
-import { prepareImport } from '@/lib/recipe/prepare-import';
+} from '@/domain/api/recipe-import-resource';
+import {
+  createRecipeImport,
+  listRecipeImports,
+} from '@/domain/db/recipe-imports';
+import { MAX_IMPORT_UNITS, planImport } from '@/domain/recipe/import-blob';
+import { prepareImport } from '@/domain/recipe/prepare-import';
 import { getDatabase, getEnv } from '@/core/runtime';
-import { DAILY_BUDGETS } from '@/lib/util/daily-budget';
+import { DAILY_BUDGETS } from '@/domain/daily-budget';
 
 /**
  * `POST /api/recipes/imports`: read the links and recipe text in `{ input }`

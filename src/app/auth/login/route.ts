@@ -13,7 +13,7 @@ import { startFlowCookies } from '@/core/auth/flow-cookies';
 import { SIGN_IN_SCOPES, buildAuthUrl } from '@/lib/google/auth';
 import { SIGN_IN_PURPOSE, newState } from '@/lib/web-security/oauth-state';
 import { safeReturnPath } from '@/lib/web-security/return-to';
-import { missingSignInSettings } from '@/lib/auth/sign-in';
+import { missingSignInSettings } from '@/domain/auth/sign-in';
 import { getEnv } from '@/core/runtime';
 import { logError } from '@/utils/logging';
 import { appOrigin } from '@/core/origin';

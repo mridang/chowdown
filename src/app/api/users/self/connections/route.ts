@@ -6,10 +6,10 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireLiveUid } from '@/lib/api/auth';
+import { requireLiveUid } from '@/domain/api/auth';
 import { pageBody } from '@/core/api/pagination';
-import { connectedAppResource } from '@/lib/connected-apps';
-import { listConnectedApps } from '@/lib/db/oauth';
+import { connectedAppResource } from '@/domain/connected-apps';
+import { listConnectedApps } from '@/domain/db/oauth';
 import { getDatabase } from '@/core/runtime';
 
 /**

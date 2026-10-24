@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { RecipeCardData } from '@/lib/mcp/ui-types';
+import type { RecipeCardData } from '@/domain/mcp/ui-types';
 import {
   INITIAL_LIST_STATE,
   INLINE_TILE_LIMIT,

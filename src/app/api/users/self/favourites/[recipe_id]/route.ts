@@ -9,13 +9,13 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireLiveUid } from '@/lib/api/auth';
+import { requireLiveUid } from '@/domain/api/auth';
 import { problems } from '@/lib/rest-json/problem';
-import { recipeSummary } from '@/lib/api/recipe-resource';
-import { setFavourite } from '@/lib/db/favourites';
-import { getRecipePageRows } from '@/lib/db/recipe-page';
+import { recipeSummary } from '@/domain/api/recipe-resource';
+import { setFavourite } from '@/domain/db/favourites';
+import { getRecipePageRows } from '@/domain/db/recipe-page';
 import { isDriveFileId } from '@/lib/google/drive';
-import { setFavouriteAndTag } from '@/lib/recipe/favourite';
+import { setFavouriteAndTag } from '@/domain/recipe/favourite';
 import { getDatabase } from '@/core/runtime';
 
 /** The context Next.js hands these handlers: the recipe's id. */

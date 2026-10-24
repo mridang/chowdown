@@ -6,7 +6,7 @@
  *   POST /oauth/register { client_name, redirect_uris, … } → 201 { client_id, … }
  */
 
-import { oauthSweeps, saveClient } from '@/lib/db/oauth';
+import { oauthSweeps, saveClient } from '@/domain/db/oauth';
 import { readBodyText } from '@/utils/http/body';
 import { MAX_REGISTRATION_BYTES } from '@/lib/oauth/client';
 import { noStoreJson, oauthError, preflight } from '@/lib/oauth/http';

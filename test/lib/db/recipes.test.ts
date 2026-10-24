@@ -7,7 +7,7 @@ import {
   getRecipeByFileId,
   staleRecipeIds,
   upsertRecipe,
-} from '@/lib/db/recipes';
+} from '@/domain/db/recipes';
 import { APP_MIGRATIONS } from './migrations';
 import { sqliteDatabase } from './sqlite-db';
 

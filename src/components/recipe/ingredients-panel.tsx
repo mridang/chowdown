@@ -6,7 +6,7 @@ import { CheckIcon, MinusIcon, PanIcon, PlusIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
 import { Eyebrow, Heading } from '@/components/ui/layout';
 import { Segmented } from '@/components/ui/segmented';
-import type { UnitChoice } from '@/lib/recipe/page-view';
+import type { UnitChoice } from '@/domain/recipe/page-view';
 
 import { NoteChip } from '@/components/recipe/note-chip';
 import { useRecipeState } from '@/components/recipe/recipe-state';

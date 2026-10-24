@@ -7,8 +7,8 @@ import {
   jest,
 } from '@jest/globals';
 
-import { SESSION_COOKIE } from '@/lib/auth/app';
-import type { User } from '@/lib/auth/store';
+import { SESSION_COOKIE } from '@/domain/auth/app';
+import type { User } from '@/domain/auth/store';
 import { fakeCookies, installEnv, jar, tokenFor } from './auth-test-kit';
 
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
@@ -23,7 +23,7 @@ const getUserById = jest.fn(async (id: number) => {
 });
 const getSessionEpoch = jest.fn(async (id: number) => accounts.get(id)?.epoch);
 
-jest.unstable_mockModule('@/lib/auth/store', () => ({
+jest.unstable_mockModule('@/domain/auth/store', () => ({
   getUserById,
   getSessionEpoch,
 }));

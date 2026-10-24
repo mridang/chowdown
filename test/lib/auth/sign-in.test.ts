@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import { LANDING_PATH, SESSION_COOKIE, sessionClaims } from '@/lib/auth/app';
-import type { User } from '@/lib/auth/store';
+import { LANDING_PATH, SESSION_COOKIE, sessionClaims } from '@/domain/auth/app';
+import type { User } from '@/domain/auth/store';
 import { SESSION_SECRET, appRequest } from './auth-test-kit';
 
 const person = {
@@ -21,7 +21,7 @@ const afterSignIn = jest
   .fn<(user: unknown) => Promise<void>>()
   .mockResolvedValue(undefined);
 
-jest.unstable_mockModule('@/lib/auth/store', () => ({
+jest.unstable_mockModule('@/domain/auth/store', () => ({
   upsertGoogleUser,
 }));
 jest.unstable_mockModule('@/core/auth/hooks', () => ({
@@ -30,7 +30,7 @@ jest.unstable_mockModule('@/core/auth/hooks', () => ({
 }));
 
 const { completeSignIn, missingSignInSettings } =
-  await import('@/lib/auth/sign-in');
+  await import('@/domain/auth/sign-in');
 const { verifySessionToken } = await import('@/lib/session');
 
 const env = (overrides: Record<string, string | undefined> = {}) =>

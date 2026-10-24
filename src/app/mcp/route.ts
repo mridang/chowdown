@@ -11,8 +11,8 @@
  * and this site's origin.
  */
 
-import { authenticateMcpRequest } from '@/lib/mcp/auth';
-import { respondToMcp } from '@/lib/mcp/http';
+import { authenticateMcpRequest } from '@/domain/mcp/auth';
+import { respondToMcp } from '@/domain/mcp/http';
 import { appOrigin } from '@/core/origin';
 
 /** Answer any request to the endpoint with the real token check. */

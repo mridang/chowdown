@@ -9,8 +9,8 @@ import { promisify } from 'node:util';
 
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 
-import type { User } from '@/lib/db/users';
-import { respondToMcp } from '@/lib/mcp/http';
+import type { User } from '@/domain/db/users';
+import { respondToMcp } from '@/domain/mcp/http';
 import { SCOPE_READ, SCOPE_WRITE } from '@/lib/oauth/scopes';
 
 const run = promisify(execFile);

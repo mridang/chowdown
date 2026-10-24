@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { firstTag } from '@/lib/recipe/first-tag';
+import { firstTag } from '@/domain/recipe/first-tag';
 
 describe('firstTag', () => {
   it('is the first value of the key', () => {

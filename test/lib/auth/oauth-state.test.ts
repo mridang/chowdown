@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { EXTRA_PURPOSES } from '@/lib/auth/app';
+import { EXTRA_PURPOSES } from '@/domain/auth/app';
 import {
   SIGN_IN_PURPOSE,
   checkState,

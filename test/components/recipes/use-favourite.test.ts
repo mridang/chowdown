@@ -7,7 +7,7 @@ import {
 import {
   getFavouriteOverride,
   resetFavouriteOverrides,
-} from '@/lib/favourites-store';
+} from '@/domain/favourites-store';
 
 type Send = NonNullable<Parameters<typeof saveFavourite>[2]>;
 

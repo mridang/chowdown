@@ -6,7 +6,7 @@ import {
   backfillEmbeddings,
   embedRecipe,
   type EmbedWriteDeps,
-} from '@/lib/recipe/embed-write';
+} from '@/domain/recipe/embed-write';
 
 const db = {} as Database;
 

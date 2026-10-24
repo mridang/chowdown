@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { User } from '@/lib/db/users';
-import type { McpAuth } from '@/lib/mcp/auth';
+import type { User } from '@/domain/db/users';
+import type { McpAuth } from '@/domain/mcp/auth';
 import {
   corsFor,
   handleMcpPost,
@@ -9,9 +9,12 @@ import {
   respondToMcp,
   unauthorizedResponse,
   type Authenticate,
-} from '@/lib/mcp/http';
-import { MAX_BODY_BYTES, type RateLimitDeps } from '@/lib/mcp/request-limits';
-import { SERVER_INFO } from '@/lib/mcp/server-info';
+} from '@/domain/mcp/http';
+import {
+  MAX_BODY_BYTES,
+  type RateLimitDeps,
+} from '@/domain/mcp/request-limits';
+import { SERVER_INFO } from '@/domain/mcp/server-info';
 import type { RateLimitStore } from '@/lib/rate-limit';
 
 const ALL_SCOPES = ['recipes:read', 'recipes:write'];

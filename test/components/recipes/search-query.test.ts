@@ -13,7 +13,7 @@ import {
   toggled,
   valuesOf,
 } from '@/components/recipes/search-query';
-import type { CardRecipe } from '@/lib/recipe/card-data';
+import type { CardRecipe } from '@/domain/recipe/card-data';
 
 /** A recipe with every fact; tests override what they care about. */
 function recipe(over: Partial<CardRecipe> & { id: string }): CardRecipe {

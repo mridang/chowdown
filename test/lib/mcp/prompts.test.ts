@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { PROMPT_DEFINITIONS, getPrompt } from '@/lib/mcp/prompts';
+import { PROMPT_DEFINITIONS, getPrompt } from '@/domain/mcp/prompts';
 import { RpcError } from '@/lib/mcp/protocol';
-import { TOOLS } from '@/lib/mcp/tool-definitions';
+import { TOOLS } from '@/domain/mcp/tool-definitions';
 
 /** The opening message's text. */
 function textOf(name: string, args?: unknown): string {

@@ -6,7 +6,7 @@
  * classes every app has. It is the one place an app says what it is protecting.
  */
 
-import { SESSION_COOKIE } from '@/lib/auth/app';
+import { SESSION_COOKIE } from '@/domain/auth/app';
 import {
   GENERIC_CLASSES,
   genericClass,

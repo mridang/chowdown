@@ -8,9 +8,9 @@ import {
 } from '@jest/globals';
 import type { NextResponse } from 'next/server';
 
-import { SESSION_COOKIE, SIGN_IN_FAILED_PATH } from '@/lib/auth/app';
-import { completeDriveConnect } from '@/lib/auth/drive-callback';
-import { DRIVE_SCOPE } from '@/lib/auth/drive-oauth';
+import { SESSION_COOKIE, SIGN_IN_FAILED_PATH } from '@/domain/auth/app';
+import { completeDriveConnect } from '@/domain/auth/drive-callback';
+import { DRIVE_SCOPE } from '@/domain/auth/drive-oauth';
 import { verifySessionToken } from '@/lib/session';
 import { decryptSecret } from '@/lib/crypto';
 import {

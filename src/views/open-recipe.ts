@@ -9,7 +9,7 @@
  * a display name.
  */
 
-import type { RecipeCardData, RecipeListItem } from '@/lib/mcp/ui-types';
+import type { RecipeCardData, RecipeListItem } from '@/domain/mcp/ui-types';
 import { openRecipePrompt } from '@/views/follow-up';
 import type { ListAction } from '@/views/list-state';
 import { isRecipeCardData, type ToolOutcome } from '@/views/payload';

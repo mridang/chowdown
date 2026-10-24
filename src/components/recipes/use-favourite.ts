@@ -4,7 +4,7 @@ import {
   getFavouriteOverride,
   setFavouriteOverride,
   subscribeFavourites,
-} from '@/lib/favourites-store';
+} from '@/domain/favourites-store';
 
 /** The part of `fetch` this file uses, so a test can stand in for the network. */
 type Send = (

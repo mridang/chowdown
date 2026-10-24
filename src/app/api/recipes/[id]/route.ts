@@ -13,21 +13,21 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireLiveUid, requireUser } from '@/lib/api/auth';
-import { driveFailure } from '@/lib/api/drive-failure';
+import { requireLiveUid, requireUser } from '@/domain/api/auth';
+import { driveFailure } from '@/domain/api/drive-failure';
 import { readJson, readJsonObject } from '@/lib/rest-json/json';
-import { settleMutation } from '@/lib/api/mutation-response';
+import { settleMutation } from '@/domain/api/mutation-response';
 import { problems } from '@/lib/rest-json/problem';
 import {
   MAX_RECIPE_BODY_BYTES,
   parseReplacementCooklang,
-} from '@/lib/api/recipe-input';
-import { sendRecipe } from '@/lib/api/recipe-response';
+} from '@/domain/api/recipe-input';
+import { sendRecipe } from '@/domain/api/recipe-response';
 import type { IdContext } from '@/core/api/route-context';
-import { deleteRecipeForUser } from '@/lib/recipe/delete-recipe';
-import type { MutateOutcome } from '@/lib/recipe/mutate-recipe';
-import { mutateRecipeForUser } from '@/lib/recipe/mutate-recipe-live';
-import { applyRecipePatch } from '@/lib/recipe/recipe-patch';
+import { deleteRecipeForUser } from '@/domain/recipe/delete-recipe';
+import type { MutateOutcome } from '@/domain/recipe/mutate-recipe';
+import { mutateRecipeForUser } from '@/domain/recipe/mutate-recipe-live';
+import { applyRecipePatch } from '@/domain/recipe/recipe-patch';
 
 /** Turn a mutation outcome into the response to send: a refusal, or the recipe as it now stands. */
 async function respond(

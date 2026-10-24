@@ -10,7 +10,7 @@
  * it is used.
  */
 
-import type { RecipeCardData, RecipeListData } from '@/lib/mcp/ui-types';
+import type { RecipeCardData, RecipeListData } from '@/domain/mcp/ui-types';
 
 /** The parts of a `CallToolResult` a View reads. */
 export interface ToolResultLike {

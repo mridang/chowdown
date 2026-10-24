@@ -7,8 +7,8 @@ import {
   jest,
 } from '@jest/globals';
 
-import { SESSION_COOKIE } from '@/lib/auth/app';
-import type { User } from '@/lib/auth/store';
+import { SESSION_COOKIE } from '@/domain/auth/app';
+import type { User } from '@/domain/auth/store';
 import {
   appRequest,
   fakeCookies,
@@ -34,7 +34,7 @@ const bumpSessionEpoch = jest.fn(async (id: number) => {
   epochs.set(id, (epochs.get(id) ?? 0) + 1);
 });
 
-jest.unstable_mockModule('@/lib/auth/store', () => ({
+jest.unstable_mockModule('@/domain/auth/store', () => ({
   getUserById,
   getSessionEpoch: async (id: number) => epochs.get(id),
   bumpSessionEpoch,
