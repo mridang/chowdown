@@ -4,7 +4,7 @@
  * the token was known, so it can't be used to probe for valid tokens.
  */
 
-import { createOAuthStore } from '@/domain/db/oauth';
+import { D1OAuthStore } from '@/domain/db/oauth';
 import {
   formFailure,
   noStoreJson,
@@ -20,7 +20,7 @@ import {
 } from '@/lib/oauth/limits';
 import { formField } from '@/lib/oauth/token-request';
 import { revokeToken } from '@/lib/oauth/token-endpoint';
-import { d1RateLimitStore } from '@/lib/rate-limit';
+import { D1RateLimitStore } from '@/lib/rate-limit';
 import { getDatabase } from '@/core/runtime';
 
 /**
@@ -34,7 +34,7 @@ import { getDatabase } from '@/core/runtime';
 export async function POST(request: Request) {
   const db = getDatabase();
   const wait = await retryAfterIfLimited(
-    d1RateLimitStore(db.$client),
+    new D1RateLimitStore(db.$client),
     OAUTH_LIMITS.revoke,
     clientAddress(request.headers),
   );
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   if (!token) {
     return oauthError('invalid_request', 'The request has no token.');
   }
-  await revokeToken(createOAuthStore(db), token);
+  await revokeToken(new D1OAuthStore(db), token);
   return noStoreJson({});
 }
 

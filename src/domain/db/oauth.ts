@@ -2,7 +2,7 @@
  * @packageDocumentation
  *
  * D1 persistence for the OAuth server: the client registry, grants, codes and
- * tokens. {@link createOAuthStore} adapts it to the {@link OAuthStore}
+ * tokens. {@link D1OAuthStore} adapts it to the {@link OAuthStore}
  * interface the token logic is written against.
  */
 
@@ -36,12 +36,14 @@ import { SUPPORTED_SCOPES } from '@/lib/oauth/scopes';
 import { logSecurityEvent } from '@/lib/oauth/security-log';
 import type { Sweeps } from '@/lib/oauth/sweep';
 import type {
+  CodeRecord,
+  GrantRecord,
   OAuthStore,
   TokenRecord,
   TokenRow,
 } from '@/lib/oauth/token-endpoint';
 import {
-  d1RateLimitStore,
+  D1RateLimitStore,
   purgeRateLimits,
   type RateLimitStore,
 } from '@/lib/rate-limit';
@@ -174,7 +176,7 @@ export async function resolveClient(
   const fallback =
     row && isDocumentUsable(cachedOf(row), nowMs) ? toClient(row) : undefined;
   const wait = await firstRetryAfter(
-    deps.rateLimits ?? d1RateLimitStore(db.$client),
+    deps.rateLimits ?? new D1RateLimitStore(db.$client),
     [
       { limit: OAUTH_LIMITS.cimdHost, subject: new URL(clientId).host },
       ...(deps.address === undefined
@@ -220,161 +222,170 @@ function changesOf(result: unknown): number {
   return 0;
 }
 
-/** Adapt D1 to the store the token logic uses. */
-export function createOAuthStore(db: Database): OAuthStore {
-  return {
-    async saveCode(hash, code) {
-      await db.insert(oauthCodes).values({
-        code_hash: hash,
-        client_id: code.clientId,
-        user_id: code.userId,
-        redirect_uri: code.redirectUri,
-        redirect_uri_sent: code.redirectUriSent,
-        code_challenge: code.codeChallenge,
-        scope: code.scope.join(' '),
-        resource: code.resource,
-        expires_at: code.expiresAt,
-        grant_id: null,
-      });
-    },
+/** The {@link OAuthStore} backed by a D1-bound Drizzle client. */
+export class D1OAuthStore implements OAuthStore {
+  readonly #db: Database;
 
-    async findCode(hash) {
-      const row = await db.query.oauthCodes.findFirst({
-        where: eq(oauthCodes.code_hash, hash),
-      });
-      return row
-        ? {
-            clientId: row.client_id,
-            userId: row.user_id,
-            redirectUri: row.redirect_uri,
-            redirectUriSent: row.redirect_uri_sent,
-            codeChallenge: row.code_challenge,
-            scope: row.scope.split(' '),
-            resource: row.resource,
-            expiresAt: row.expires_at,
-            grantId: row.grant_id,
-          }
-        : undefined;
-    },
+  constructor(db: Database) {
+    this.#db = db;
+  }
 
-    async claimCode(hash, grantId) {
-      const result = await db
-        .update(oauthCodes)
-        .set({ grant_id: grantId })
-        .where(and(eq(oauthCodes.code_hash, hash), isNull(oauthCodes.grant_id)))
-        .run();
-      return (result.meta.changes ?? 0) > 0;
-    },
+  async saveCode(hash: string, code: CodeRecord): Promise<void> {
+    await this.#db.insert(oauthCodes).values({
+      code_hash: hash,
+      client_id: code.clientId,
+      user_id: code.userId,
+      redirect_uri: code.redirectUri,
+      redirect_uri_sent: code.redirectUriSent,
+      code_challenge: code.codeChallenge,
+      scope: code.scope.join(' '),
+      resource: code.resource,
+      expires_at: code.expiresAt,
+      grant_id: null,
+    });
+  }
 
-    async createGrant(grant, tokens) {
-      const now = new Date().toISOString();
-      const sameApp = and(
-        eq(oauthGrants.user_id, grant.userId),
-        eq(oauthGrants.client_id, grant.clientId),
-        isNull(oauthGrants.revoked_at),
-      );
-      // The newest connections that stay: one fewer than the cap, to leave
-      // room for the one being made.
-      const kept = db
-        .select({ id: oauthGrants.id })
-        .from(oauthGrants)
-        .where(sameApp)
-        .orderBy(desc(oauthGrants.created_at), desc(oauthGrants.id))
-        .limit(MAX_LIVE_GRANTS_PER_APP - 1);
-      // One batch is one transaction: the oldest connections beyond the cap are
-      // retired, the new one and its first tokens appear, or none of it happens.
-      // Other installs of the same app keep working.
-      await db.batch([
-        db
-          .update(oauthGrants)
-          .set({ revoked_at: now })
-          .where(and(sameApp, notInArray(oauthGrants.id, kept))),
-        db.insert(oauthGrants).values({
-          id: grant.id,
-          user_id: grant.userId,
-          client_id: grant.clientId,
-          scope: grant.scope.join(' '),
-          resource: grant.resource,
-          created_at: now,
-        }),
-        db.insert(oauthTokens).values(tokenValues(tokens)),
-      ]);
-    },
+  async findCode(hash: string): Promise<CodeRecord | undefined> {
+    const row = await this.#db.query.oauthCodes.findFirst({
+      where: eq(oauthCodes.code_hash, hash),
+    });
+    return row
+      ? {
+          clientId: row.client_id,
+          userId: row.user_id,
+          redirectUri: row.redirect_uri,
+          redirectUriSent: row.redirect_uri_sent,
+          codeChallenge: row.code_challenge,
+          scope: row.scope.split(' '),
+          resource: row.resource,
+          expiresAt: row.expires_at,
+          grantId: row.grant_id,
+        }
+      : undefined;
+  }
 
-    async revokeGrant(grantId) {
-      await db
+  async claimCode(hash: string, grantId: string): Promise<boolean> {
+    const result = await this.#db
+      .update(oauthCodes)
+      .set({ grant_id: grantId })
+      .where(and(eq(oauthCodes.code_hash, hash), isNull(oauthCodes.grant_id)))
+      .run();
+    return (result.meta.changes ?? 0) > 0;
+  }
+
+  async createGrant(
+    grant: Omit<GrantRecord, 'revoked' | 'lastUsedAt'>,
+    tokens: readonly TokenRow[],
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    const sameApp = and(
+      eq(oauthGrants.user_id, grant.userId),
+      eq(oauthGrants.client_id, grant.clientId),
+      isNull(oauthGrants.revoked_at),
+    );
+    // The newest connections that stay: one fewer than the cap, to leave
+    // room for the one being made.
+    const kept = this.#db
+      .select({ id: oauthGrants.id })
+      .from(oauthGrants)
+      .where(sameApp)
+      .orderBy(desc(oauthGrants.created_at), desc(oauthGrants.id))
+      .limit(MAX_LIVE_GRANTS_PER_APP - 1);
+    // One batch is one transaction: the oldest connections beyond the cap are
+    // retired, the new one and its first tokens appear, or none of it happens.
+    // Other installs of the same app keep working.
+    await this.#db.batch([
+      this.#db
         .update(oauthGrants)
-        .set({ revoked_at: new Date().toISOString() })
+        .set({ revoked_at: now })
+        .where(and(sameApp, notInArray(oauthGrants.id, kept))),
+      this.#db.insert(oauthGrants).values({
+        id: grant.id,
+        user_id: grant.userId,
+        client_id: grant.clientId,
+        scope: grant.scope.join(' '),
+        resource: grant.resource,
+        created_at: now,
+      }),
+      this.#db.insert(oauthTokens).values(tokenValues(tokens)),
+    ]);
+  }
+
+  async revokeGrant(grantId: string): Promise<void> {
+    await this.#db
+      .update(oauthGrants)
+      .set({ revoked_at: new Date().toISOString() })
+      .where(and(eq(oauthGrants.id, grantId), isNull(oauthGrants.revoked_at)));
+  }
+
+  async saveTokens(tokens: readonly TokenRow[]): Promise<void> {
+    if (tokens.length > 0) {
+      await this.#db.insert(oauthTokens).values(tokenValues(tokens));
+    }
+  }
+
+  async findToken(hash: string): Promise<TokenRecord | undefined> {
+    const [row] = await this.#db
+      .select({ token: oauthTokens, grant: oauthGrants })
+      .from(oauthTokens)
+      .innerJoin(oauthGrants, eq(oauthGrants.id, oauthTokens.grant_id))
+      .where(eq(oauthTokens.token_hash, hash))
+      .limit(1);
+    if (!row) {
+      return undefined;
+    }
+    return {
+      kind: row.token.kind === 'access' ? 'access' : 'refresh',
+      expiresAt: row.token.expires_at,
+      usedAt: row.token.used_at,
+      grant: {
+        id: row.grant.id,
+        userId: row.grant.user_id,
+        clientId: row.grant.client_id,
+        scope: row.grant.scope.split(' '),
+        resource: row.grant.resource,
+        revoked: row.grant.revoked_at !== null,
+        lastUsedAt: seconds(row.grant.last_used_at),
+      },
+    };
+  }
+
+  async rotateRefreshToken(
+    hash: string,
+    now: number,
+    tokens: readonly TokenRow[],
+  ): Promise<boolean> {
+    // The replacement tokens and the "spent" mark go in one transaction, so a
+    // failure can never leave the old token spent with nothing to replace it.
+    const [, claim] = await this.#db.batch([
+      this.#db.insert(oauthTokens).values(tokenValues(tokens)),
+      this.#db
+        .update(oauthTokens)
+        .set({ used_at: now })
         .where(
-          and(eq(oauthGrants.id, grantId), isNull(oauthGrants.revoked_at)),
-        );
-    },
-
-    async saveTokens(tokens) {
-      if (tokens.length > 0) {
-        await db.insert(oauthTokens).values(tokenValues(tokens));
-      }
-    },
-
-    async findToken(hash): Promise<TokenRecord | undefined> {
-      const [row] = await db
-        .select({ token: oauthTokens, grant: oauthGrants })
-        .from(oauthTokens)
-        .innerJoin(oauthGrants, eq(oauthGrants.id, oauthTokens.grant_id))
-        .where(eq(oauthTokens.token_hash, hash))
-        .limit(1);
-      if (!row) {
-        return undefined;
-      }
-      return {
-        kind: row.token.kind === 'access' ? 'access' : 'refresh',
-        expiresAt: row.token.expires_at,
-        usedAt: row.token.used_at,
-        grant: {
-          id: row.grant.id,
-          userId: row.grant.user_id,
-          clientId: row.grant.client_id,
-          scope: row.grant.scope.split(' '),
-          resource: row.grant.resource,
-          revoked: row.grant.revoked_at !== null,
-          lastUsedAt: seconds(row.grant.last_used_at),
-        },
-      };
-    },
-
-    async rotateRefreshToken(hash, now, tokens) {
-      // The replacement tokens and the "spent" mark go in one transaction, so a
-      // failure can never leave the old token spent with nothing to replace it.
-      const [, claim] = await db.batch([
-        db.insert(oauthTokens).values(tokenValues(tokens)),
-        db
-          .update(oauthTokens)
-          .set({ used_at: now })
-          .where(
-            and(eq(oauthTokens.token_hash, hash), isNull(oauthTokens.used_at)),
-          ),
-      ]);
-      if (changesOf(claim) > 0) {
-        return true;
-      }
-      // A parallel request spent the token first. Its replacement tokens were
-      // never handed to anyone; take them back so only the winner's pair lives.
-      await db.delete(oauthTokens).where(
-        inArray(
-          oauthTokens.token_hash,
-          tokens.map((t) => t.hash),
+          and(eq(oauthTokens.token_hash, hash), isNull(oauthTokens.used_at)),
         ),
-      );
-      return false;
-    },
+    ]);
+    if (changesOf(claim) > 0) {
+      return true;
+    }
+    // A parallel request spent the token first. Its replacement tokens were
+    // never handed to anyone; take them back so only the winner's pair lives.
+    await this.#db.delete(oauthTokens).where(
+      inArray(
+        oauthTokens.token_hash,
+        tokens.map((t) => t.hash),
+      ),
+    );
+    return false;
+  }
 
-    async touchGrant(grantId, now) {
-      await db
-        .update(oauthGrants)
-        .set({ last_used_at: iso(now) })
-        .where(eq(oauthGrants.id, grantId));
-    },
-  };
+  async touchGrant(grantId: string, now: number): Promise<void> {
+    await this.#db
+      .update(oauthGrants)
+      .set({ last_used_at: iso(now) })
+      .where(eq(oauthGrants.id, grantId));
+  }
 }
 
 /** An approved application as the user sees it in the app. */
@@ -580,6 +591,6 @@ export function oauthSweeps(db: Database): Sweeps {
   return {
     purgeOAuth: () => purgeOAuthData(db),
     purgeRateLimits: () =>
-      purgeRateLimits(d1RateLimitStore(db.$client), IDLE_COUNTER_SECONDS),
+      purgeRateLimits(new D1RateLimitStore(db.$client), IDLE_COUNTER_SECONDS),
   };
 }

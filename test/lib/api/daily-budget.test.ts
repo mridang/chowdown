@@ -9,7 +9,7 @@ import {
 
 import { budgetRefusal } from '@/domain/api/daily-budget';
 import {
-  d1RateLimitStore,
+  D1RateLimitStore,
   type RateLimit,
   type RateLimitStore,
 } from '@/lib/rate-limit';
@@ -26,7 +26,7 @@ const SMALL: RateLimit = {
 let store: RateLimitStore;
 
 beforeEach(() => {
-  store = d1RateLimitStore(sqliteD1(...APP_MIGRATIONS).d1);
+  store = new D1RateLimitStore(sqliteD1(...APP_MIGRATIONS).d1);
 });
 
 afterEach(() => {

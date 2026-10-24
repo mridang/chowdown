@@ -11,7 +11,7 @@ import type { DatabaseSync } from 'node:sqlite';
 
 import { DELETE, GET, OPTIONS, POST } from '@/app/mcp/route';
 import { createDatabase } from '@/core/db/client';
-import { createOAuthStore } from '@/domain/db/oauth';
+import { D1OAuthStore } from '@/domain/db/oauth';
 import { s256 } from '@/lib/oauth/pkce';
 import {
   exchangeAuthorizationCode,
@@ -68,7 +68,7 @@ const rpc = (method: string, params?: Record<string, unknown>) =>
 async function accessToken(
   scope: readonly string[] = ['recipes:read', 'recipes:write'],
 ): Promise<string> {
-  const store = createOAuthStore(database);
+  const store = new D1OAuthStore(database);
   const now = Math.floor(Date.now() / 1000);
   const code = await issueAuthorizationCode(
     store,

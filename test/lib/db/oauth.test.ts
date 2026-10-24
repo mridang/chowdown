@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import {
-  createOAuthStore,
+  D1OAuthStore,
   listConnectedApps,
   oauthSweeps,
   purgeOAuthData,
@@ -180,7 +180,7 @@ describe('saveClient', () => {
   });
 });
 
-describe('createOAuthStore', () => {
+describe('D1OAuthStore', () => {
   it('finds a code and splits its scope', async () => {
     const { db } = fakeDb({
       findFirst: {
@@ -197,7 +197,7 @@ describe('createOAuthStore', () => {
         },
       },
     });
-    expect(await createOAuthStore(db).findCode('h')).toEqual({
+    expect(await new D1OAuthStore(db).findCode('h')).toEqual({
       clientId: 'c',
       userId: 7,
       redirectUri: 'https://app.example/cb',
@@ -212,17 +212,17 @@ describe('createOAuthStore', () => {
 
   it('knows no code that is not stored', async () => {
     const { db } = fakeDb({ findFirst: { oauthCodes: undefined } });
-    expect(await createOAuthStore(db).findCode('h')).toBeUndefined();
+    expect(await new D1OAuthStore(db).findCode('h')).toBeUndefined();
   });
 
   it('claims a code only when a row actually changed', async () => {
     expect(
-      await createOAuthStore(
+      await new D1OAuthStore(
         fakeDb({ update: [{ meta: { changes: 1 } }] }).db,
       ).claimCode('h', 'g'),
     ).toBe(true);
     expect(
-      await createOAuthStore(
+      await new D1OAuthStore(
         fakeDb({ update: [{ meta: { changes: 0 } }] }).db,
       ).claimCode('h', 'g'),
     ).toBe(false);
@@ -230,7 +230,7 @@ describe('createOAuthStore', () => {
 
   it('saves a pair of tokens in one insert', async () => {
     const { db, calls } = fakeDb();
-    await createOAuthStore(db).saveTokens([
+    await new D1OAuthStore(db).saveTokens([
       { hash: 'a', kind: 'access', grantId: 'g', expiresAt: 1 },
       { hash: 'b', kind: 'refresh', grantId: 'g', expiresAt: 2 },
     ]);
@@ -246,7 +246,7 @@ describe('createOAuthStore', () => {
 
   it('saves nothing for an empty list', async () => {
     const { db, calls } = fakeDb();
-    await createOAuthStore(db).saveTokens([]);
+    await new D1OAuthStore(db).saveTokens([]);
     expect(calls).toHaveLength(0);
   });
 
@@ -269,7 +269,7 @@ describe('createOAuthStore', () => {
         ],
       ],
     });
-    expect(await createOAuthStore(db).findToken('h')).toEqual({
+    expect(await new D1OAuthStore(db).findToken('h')).toEqual({
       kind: 'refresh',
       expiresAt: 5,
       usedAt: null,
@@ -304,7 +304,7 @@ describe('createOAuthStore', () => {
         ],
       ],
     });
-    expect(await createOAuthStore(db).findToken('h')).toMatchObject({
+    expect(await new D1OAuthStore(db).findToken('h')).toMatchObject({
       kind: 'access',
       usedAt: 3,
       grant: { revoked: true, lastUsedAt: null },
@@ -313,7 +313,7 @@ describe('createOAuthStore', () => {
 
   it('knows no token that is not stored', async () => {
     const { db } = fakeDb({ select: [[]] });
-    expect(await createOAuthStore(db).findToken('h')).toBeUndefined();
+    expect(await new D1OAuthStore(db).findToken('h')).toBeUndefined();
   });
 
   const pair = [
@@ -325,7 +325,7 @@ describe('createOAuthStore', () => {
     const { db, calls, batches } = fakeDb({
       batch: [[[], { meta: { changes: 1 } }]],
     });
-    expect(await createOAuthStore(db).rotateRefreshToken('h', 5, pair)).toBe(
+    expect(await new D1OAuthStore(db).rotateRefreshToken('h', 5, pair)).toBe(
       true,
     );
     expect(batches).toHaveLength(1);
@@ -337,7 +337,7 @@ describe('createOAuthStore', () => {
     const { db, calls } = fakeDb({
       batch: [[[], { meta: { changes: 0 } }]],
     });
-    expect(await createOAuthStore(db).rotateRefreshToken('h', 5, pair)).toBe(
+    expect(await new D1OAuthStore(db).rotateRefreshToken('h', 5, pair)).toBe(
       false,
     );
     expect(calls.some((c) => c.statement === 'delete')).toBe(true);
@@ -345,7 +345,7 @@ describe('createOAuthStore', () => {
 
   it('creates a grant, retires the old one and stores the tokens in one batch', async () => {
     const { db, batches } = fakeDb();
-    await createOAuthStore(db).createGrant(
+    await new D1OAuthStore(db).createGrant(
       {
         id: 'g',
         userId: 7,
@@ -361,7 +361,7 @@ describe('createOAuthStore', () => {
 
   it('records when a grant was last used, as a timestamp', async () => {
     const { db, calls } = fakeDb();
-    await createOAuthStore(db).touchGrant('g', 1000);
+    await new D1OAuthStore(db).touchGrant('g', 1000);
     expect(calls.find((c) => c.method === 'set')?.args[0]).toEqual({
       last_used_at: '1970-01-01T00:16:40.000Z',
     });
@@ -497,7 +497,7 @@ describe('against a real SQLite database', () => {
       'remembers whether the request sent the redirect address (%s)',
       async (sent) => {
         const { db } = sqliteDatabase(...MIGRATIONS);
-        const store = createOAuthStore(db);
+        const store = new D1OAuthStore(db);
         await store.saveCode('h', code(sent));
         expect(await store.findCode('h')).toMatchObject({
           redirectUriSent: sent,
@@ -512,7 +512,7 @@ describe('against a real SQLite database', () => {
           'INSERT INTO oauth_codes (code_hash, client_id, user_id, redirect_uri, code_challenge, scope, resource, expires_at) VALUES (?, ?, 1, ?, ?, ?, ?, 99)',
         )
         .run('old', 'c1', 'u', 'ch', 'recipes:read', 'r');
-      expect(await createOAuthStore(db).findCode('old')).toMatchObject({
+      expect(await new D1OAuthStore(db).findCode('old')).toMatchObject({
         redirectUriSent: true,
       });
     });
@@ -536,7 +536,7 @@ describe('against a real SQLite database', () => {
   describe('createGrant', () => {
     it("keeps the user's other grants for the same client working, and other users' and clients' too", async () => {
       const { db, raw } = sqliteDatabase(...MIGRATIONS);
-      const store = createOAuthStore(db);
+      const store = new D1OAuthStore(db);
       await store.createGrant(grantRecord('laptop'), [
         ...tokenRows('o1', 'o2').map((t) => ({ ...t, grantId: 'laptop' })),
       ]);
@@ -565,7 +565,7 @@ describe('against a real SQLite database', () => {
 
     it('retires only the oldest connections beyond the cap', async () => {
       const { db, raw } = sqliteDatabase(...MIGRATIONS);
-      const store = createOAuthStore(db);
+      const store = new D1OAuthStore(db);
       const made = Array.from(
         { length: MAX_LIVE_GRANTS_PER_APP + 2 },
         (_, i) => `g${String(i).padStart(2, '0')}`,
@@ -594,7 +594,7 @@ describe('against a real SQLite database', () => {
 
     it('does nothing at all if storing the tokens fails', async () => {
       const { db, raw } = sqliteDatabase(...MIGRATIONS);
-      const store = createOAuthStore(db);
+      const store = new D1OAuthStore(db);
       await store.createGrant(grantRecord('old'), tokenRows('t1', 't2'));
       // A token hash that is already taken makes the last statement fail.
       await expect(
@@ -612,7 +612,7 @@ describe('against a real SQLite database', () => {
   describe('rotateRefreshToken', () => {
     const setup = async () => {
       const made = sqliteDatabase(...MIGRATIONS);
-      const store = createOAuthStore(made.db);
+      const store = new D1OAuthStore(made.db);
       await store.createGrant(grantRecord('g'), [
         { hash: 'at', kind: 'access', grantId: 'g', expiresAt: 9_999_999_999 },
         { hash: 'rt', kind: 'refresh', grantId: 'g', expiresAt: 9_999_999_999 },

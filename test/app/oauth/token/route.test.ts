@@ -3,7 +3,7 @@ import type { DatabaseSync } from 'node:sqlite';
 
 import { OPTIONS, POST } from '@/app/oauth/token/route';
 import { createDatabase } from '@/core/db/client';
-import { createOAuthStore } from '@/domain/db/oauth';
+import { D1OAuthStore } from '@/domain/db/oauth';
 import { s256 } from '@/lib/oauth/pkce';
 import { issueAuthorizationCode } from '@/lib/oauth/token-endpoint';
 import { installCloudflareContext, sqliteD1 } from '../../../lib/db/sqlite-d1';
@@ -35,7 +35,7 @@ afterEach(() => restore());
 /** A fresh authorization code for user 7 and client `client-1`. */
 async function newCode(): Promise<string> {
   return issueAuthorizationCode(
-    createOAuthStore(database),
+    new D1OAuthStore(database),
     {
       clientId: 'client-1',
       userId: 7,
@@ -145,7 +145,7 @@ describe('POST /oauth/token', () => {
 
   it('redeems a code when neither request named the redirect address and the client has one', async () => {
     const code = await issueAuthorizationCode(
-      createOAuthStore(database),
+      new D1OAuthStore(database),
       {
         clientId: 'client-1',
         userId: 7,

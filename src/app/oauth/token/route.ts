@@ -5,7 +5,7 @@
  *   POST /oauth/token  (application/x-www-form-urlencoded)
  */
 
-import { createOAuthStore, oauthSweeps } from '@/domain/db/oauth';
+import { D1OAuthStore, oauthSweeps } from '@/domain/db/oauth';
 import {
   formFailure,
   noStoreJson,
@@ -21,7 +21,7 @@ import {
 } from '@/lib/oauth/limits';
 import { sweepSometimes } from '@/lib/oauth/sweep';
 import { handleTokenRequest } from '@/lib/oauth/token-request';
-import { d1RateLimitStore } from '@/lib/rate-limit';
+import { D1RateLimitStore } from '@/lib/rate-limit';
 import { getDatabase, runInBackground } from '@/core/runtime';
 import { appOrigin } from '@/core/origin';
 
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   const db = getDatabase();
   const now = Math.floor(Date.now() / 1000);
   const wait = await retryAfterIfLimited(
-    d1RateLimitStore(db.$client),
+    new D1RateLimitStore(db.$client),
     OAUTH_LIMITS.token,
     clientAddress(request.headers),
     now,
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
   }
   const result = await handleTokenRequest(
     body.form,
-    createOAuthStore(db),
+    new D1OAuthStore(db),
     appOrigin(request),
     now,
     {

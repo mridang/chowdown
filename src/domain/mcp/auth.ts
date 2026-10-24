@@ -6,7 +6,7 @@
  * passed in, so the decision can be tested without a database.
  */
 
-import { createOAuthStore } from '@/domain/db/oauth';
+import { D1OAuthStore } from '@/domain/db/oauth';
 import { getUserById, type User } from '@/domain/db/users';
 import { bearerToken } from '@/lib/oauth/http';
 import { resourceUri } from '@/lib/oauth/metadata';
@@ -58,7 +58,7 @@ const ACCESS_TOKEN_SHAPE = new RegExp(
 /** The real database, opened only once a token has actually been sent. */
 function liveDeps(): McpAuthDeps {
   const db = getDatabase();
-  const store = createOAuthStore(db);
+  const store = new D1OAuthStore(db);
   return {
     identify: (token, resource, now) =>
       authenticateAccessToken(store, token, resource, now),

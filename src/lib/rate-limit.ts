@@ -22,7 +22,7 @@ export interface RateLimit {
   readonly windowSeconds: number;
 }
 
-/** Where the counters live. Real use is {@link d1RateLimitStore}; tests supply their own. */
+/** Where the counters live. Real use is {@link D1RateLimitStore}; tests supply their own. */
 export interface RateLimitStore {
   /**
    * Record a hit on `key` at `now` (seconds). A window that opened at or before
@@ -64,25 +64,35 @@ function isHitRow(
 }
 
 /** A store backed by a D1 database's `rate_limits` table. */
-export function d1RateLimitStore(d1: D1Database): RateLimitStore {
-  return {
-    async hit(key, now, windowSeconds) {
-      const row = await d1
-        .prepare(HIT_SQL)
-        .bind(key, now, now - windowSeconds)
-        .first();
-      if (!isHitRow(row)) {
-        throw new Error('rate limit counter did not answer');
-      }
-      return { count: row.count, windowStart: row.window_start };
-    },
-    async purge(before) {
-      await d1
-        .prepare('DELETE FROM rate_limits WHERE window_start < ?1')
-        .bind(before)
-        .run();
-    },
-  };
+/** The {@link RateLimitStore} backed by a D1 binding. */
+export class D1RateLimitStore implements RateLimitStore {
+  readonly #d1: D1Database;
+
+  constructor(d1: D1Database) {
+    this.#d1 = d1;
+  }
+
+  async hit(
+    key: string,
+    now: number,
+    windowSeconds: number,
+  ): Promise<{ readonly count: number; readonly windowStart: number }> {
+    const row = await this.#d1
+      .prepare(HIT_SQL)
+      .bind(key, now, now - windowSeconds)
+      .first();
+    if (!isHitRow(row)) {
+      throw new Error('rate limit counter did not answer');
+    }
+    return { count: row.count, windowStart: row.window_start };
+  }
+
+  async purge(before: number): Promise<void> {
+    await this.#d1
+      .prepare('DELETE FROM rate_limits WHERE window_start < ?1')
+      .bind(before)
+      .run();
+  }
 }
 
 /**

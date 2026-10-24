@@ -8,7 +8,7 @@
 import { NextResponse } from 'next/server';
 
 import { getLiveSessionUid } from '@/core/auth/current-user';
-import { createOAuthStore, resolveClient } from '@/domain/db/oauth';
+import { D1OAuthStore, resolveClient } from '@/domain/db/oauth';
 import { readFormBody } from '@/utils/http/body';
 import {
   authorizeParamsFrom,
@@ -125,7 +125,7 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
   const code = await issueAuthorizationCode(
-    createOAuthStore(db),
+    new D1OAuthStore(db),
     {
       clientId: client.clientId,
       userId: uid,

@@ -16,7 +16,7 @@ import {
 import { getDatabase, runInBackground } from '@/core/runtime';
 import { errorMessage, logError } from '@/utils/logging';
 import {
-  d1RateLimitStore,
+  D1RateLimitStore,
   purgeRateLimits,
   rateLimit,
   type RateLimit,
@@ -83,7 +83,7 @@ export interface RateLimitDeps {
 /** The real thing: counters in D1, the clock and `Math.random`. */
 export function liveRateLimitDeps(): RateLimitDeps {
   return {
-    store: () => d1RateLimitStore(getDatabase().$client),
+    store: () => new D1RateLimitStore(getDatabase().$client),
     now: () => Math.floor(Date.now() / 1000),
     random: Math.random,
   };

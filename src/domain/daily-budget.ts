@@ -13,7 +13,7 @@
  */
 
 import {
-  d1RateLimitStore,
+  D1RateLimitStore,
   rateLimit,
   type RateLimit,
   type RateLimitStore,
@@ -56,7 +56,7 @@ export async function spendBudget(
   deps: BudgetDeps = {},
 ): Promise<number | undefined> {
   try {
-    const store = deps.store ?? d1RateLimitStore(getDatabase().$client);
+    const store = deps.store ?? new D1RateLimitStore(getDatabase().$client);
     const decision = await rateLimit(store, budget, `u:${userId}`, deps.now);
     return decision.allowed ? undefined : decision.retryAfterSeconds;
   } catch (error) {
