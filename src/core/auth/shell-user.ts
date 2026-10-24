@@ -14,7 +14,7 @@ import { getUserById } from '@/domain/db/users';
 import { getDatabase, getEnv } from '@/core/runtime';
 import { SESSION_COOKIE, driveHint, folderHint } from '@/domain/auth/app';
 import { isDriveConnected } from '@/domain/auth/drive-access';
-import { verifySessionToken } from '@/lib/session';
+import { SessionTokens } from '@/lib/session';
 
 /** What the header shows about the signed-in person. */
 export interface ShellUser {
@@ -85,7 +85,9 @@ export const getShellUser = cache(async (): Promise<ShellUser | null> => {
   if (!token) {
     return null;
   }
-  const payload = await verifySessionToken(token, getEnv().SESSION_SECRET);
+  const payload = await new SessionTokens(getEnv().SESSION_SECRET).verify(
+    token,
+  );
   if (!payload) {
     return null;
   }

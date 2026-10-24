@@ -7,7 +7,7 @@ import {
   folderHint,
   sessionClaims,
 } from '@/domain/auth/app';
-import { createSessionToken, verifySessionToken } from '@/lib/session';
+import { SessionTokens } from '@/lib/session';
 
 const SECRET = 'test-session-secret-value';
 
@@ -40,9 +40,12 @@ describe('sessionClaims', () => {
       refresh_token_enc: 'x',
       recipes_folder_id: '1AbC-dEf_9',
     });
-    const payload = await verifySessionToken(
-      await createSessionToken({ uid: 1, email: 'a@b.com', ...claims }, SECRET),
-      SECRET,
+    const payload = await new SessionTokens(SECRET).verify(
+      await new SessionTokens(SECRET).create({
+        uid: 1,
+        email: 'a@b.com',
+        ...claims,
+      }),
     );
     expect(payload && driveHint(payload)).toBe(true);
     expect(payload && folderHint(payload)).toBe('1AbC-dEf_9');

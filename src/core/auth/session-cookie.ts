@@ -9,7 +9,7 @@
 import type { NextResponse } from 'next/server';
 
 import { SESSION_COOKIE, sessionClaims } from '@/domain/auth/app';
-import { SESSION_TTL_SECONDS, createSessionToken } from '@/lib/session';
+import { SESSION_TTL_SECONDS, SessionTokens } from '@/lib/session';
 import type { User } from '@/domain/auth/store';
 
 /**
@@ -28,18 +28,15 @@ export async function setSessionCookie(
     exp?: number;
   }>,
 ): Promise<void> {
-  const token = await createSessionToken(
-    {
-      ...(options.claims ?? sessionClaims(user)),
-      uid: user.id,
-      email: user.email,
-      name: user.name ?? undefined,
-      picture: user.picture ?? undefined,
-      ep: user.session_epoch,
-      exp: options.exp,
-    },
-    options.secret,
-  );
+  const token = await new SessionTokens(options.secret).create({
+    ...(options.claims ?? sessionClaims(user)),
+    uid: user.id,
+    email: user.email,
+    name: user.name ?? undefined,
+    picture: user.picture ?? undefined,
+    ep: user.session_epoch,
+    exp: options.exp,
+  });
   response.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: options.secure,

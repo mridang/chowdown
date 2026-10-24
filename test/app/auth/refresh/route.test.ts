@@ -8,7 +8,7 @@ import {
 } from '@jest/globals';
 import type { NextResponse } from 'next/server';
 
-import { verifySessionToken } from '@/lib/session';
+import { SessionTokens } from '@/lib/session';
 import { SESSION_COOKIE } from '@/domain/auth/app';
 import {
   SESSION_SECRET,
@@ -39,7 +39,7 @@ afterEach(() => world.close());
 /** The session the route put in its response cookie. */
 async function reissued(res: Awaited<ReturnType<typeof GET>>) {
   const value = (res as NextResponse).cookies.get(SESSION_COOKIE)?.value;
-  return value ? verifySessionToken(value, SESSION_SECRET) : null;
+  return value ? new SessionTokens(SESSION_SECRET).verify(value) : null;
 }
 
 describe('GET /auth/refresh', () => {

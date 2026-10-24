@@ -8,7 +8,7 @@ import {
 } from '@jest/globals';
 import type { NextResponse } from 'next/server';
 
-import { verifySessionToken } from '@/lib/session';
+import { SessionTokens } from '@/lib/session';
 import { SESSION_COOKIE } from '@/domain/auth/app';
 import {
   SESSION_SECRET,
@@ -72,7 +72,7 @@ describe('GET /auth/drive', () => {
     expect(locationOf(res)?.href).toBe('https://chowdown.test/connect');
     const cookie =
       (res as NextResponse).cookies.get(SESSION_COOKIE)?.value ?? '';
-    const session = await verifySessionToken(cookie, SESSION_SECRET);
+    const session = await new SessionTokens(SESSION_SECRET).verify(cookie);
     expect(session).toMatchObject({ drive: true, exp: soon });
   });
 

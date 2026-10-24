@@ -1,7 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite';
 
 import { generateKeyBase64 } from '@/lib/crypto';
-import { createSessionToken } from '@/lib/session';
+import { SessionTokens } from '@/lib/session';
 import { SESSION_SECRET, fakeCookies, jar } from './auth-test-kit';
 
 export { SESSION_SECRET, fakeCookies, jar };
@@ -23,10 +23,11 @@ export function sessionTokenFor(
   user: Readonly<{ id: number; email?: string }>,
   options: Readonly<{ ep?: number; exp?: number }> = {},
 ): Promise<string> {
-  return createSessionToken(
-    { uid: user.id, email: user.email ?? 'a@b.com', ...options },
-    SESSION_SECRET,
-  );
+  return new SessionTokens(SESSION_SECRET).create({
+    uid: user.id,
+    email: user.email ?? 'a@b.com',
+    ...options,
+  });
 }
 
 /** Insert a user row and return its id. */

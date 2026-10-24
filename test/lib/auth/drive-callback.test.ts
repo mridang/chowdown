@@ -11,7 +11,7 @@ import type { NextResponse } from 'next/server';
 import { SESSION_COOKIE, SIGN_IN_FAILED_PATH } from '@/domain/auth/app';
 import { completeDriveConnect } from '@/domain/auth/drive-callback';
 import { DRIVE_SCOPE } from '@/domain/auth/drive-oauth';
-import { verifySessionToken } from '@/lib/session';
+import { SessionTokens } from '@/lib/session';
 import { decryptSecret } from '@/lib/crypto';
 import {
   ORIGIN,
@@ -106,9 +106,8 @@ describe('completeDriveConnect', () => {
         String(world.env['TOKEN_ENCRYPTION_KEY']),
       ),
     ).toBe('the-refresh-token');
-    const session = await verifySessionToken(
+    const session = await new SessionTokens(SESSION_SECRET).verify(
       cookiesOf(res)[SESSION_COOKIE] ?? '',
-      SESSION_SECRET,
     );
     expect(session).toMatchObject({ drive: true, exp: soon });
   });
@@ -129,9 +128,8 @@ describe('completeDriveConnect', () => {
     const res = await connect({
       [SESSION_COOKIE]: await sessionTokenFor({ id: 1 }),
     });
-    const session = await verifySessionToken(
+    const session = await new SessionTokens(SESSION_SECRET).verify(
       cookiesOf(res)[SESSION_COOKIE] ?? '',
-      SESSION_SECRET,
     );
     expect(session?.['folder']).toBe('new-folder');
   });

@@ -11,8 +11,8 @@ import { cookies } from 'next/headers';
 
 import { SESSION_COOKIE } from '@/domain/auth/app';
 import {
+  SessionTokens,
   sessionIsCurrent,
-  verifySessionToken,
   type SessionPayload,
 } from '@/lib/session';
 import { getSessionEpoch, getUserById, type User } from '@/domain/auth/store';
@@ -47,7 +47,7 @@ export async function getSession(): Promise<SessionPayload | null> {
   if (!token || !secret) {
     return null;
   }
-  return verifySessionToken(token, secret);
+  return new SessionTokens(secret).verify(token);
 }
 
 /**

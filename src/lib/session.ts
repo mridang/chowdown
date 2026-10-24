@@ -83,62 +83,76 @@ async function hmacKey(secret: string): Promise<CryptoKey> {
 }
 
 /**
- * Create a signed session token for a user. `exp` defaults to now +
- * {@link SESSION_TTL_SECONDS} but can be supplied (e.g. in tests).
+ * Signed session tokens for one signing secret. Construct it once with the
+ * `SESSION_SECRET` (it refuses an empty one, so no session is ever signed with
+ * a guessable value) and use it to create and verify tokens.
  */
-export async function createSessionToken(
-  payload: NewSession,
-  secret: string,
-): Promise<string> {
-  const { uid, email, name, picture, ep, exp, ...extra } = payload;
-  const full: SessionPayload = {
-    // The app's own claims go first so they can never replace the ones below.
-    ...Object.fromEntries(
-      Object.entries(extra).filter(([, value]) => value !== undefined),
-    ),
-    uid,
-    email,
-    // Kept short: the whole token travels in a cookie on every request.
-    ...(name ? { name: name.slice(0, 80) } : {}),
-    ...(picture && picture.length <= 400 ? { picture } : {}),
-    ...(ep !== undefined ? { ep } : {}),
-    exp: exp ?? Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
-  };
-  const body = bytesToBase64Url(new TextEncoder().encode(JSON.stringify(full)));
-  const key = await hmacKey(secret);
-  const sig = new Uint8Array(
-    await crypto.subtle.sign(
-      'HMAC',
-      key,
-      bufferSource(new TextEncoder().encode(body)),
-    ),
-  );
-  return `${body}.${bytesToBase64Url(sig)}`;
-}
+export class SessionTokens {
+  readonly #secret: string;
 
-/**
- * Verify a session token: checks the signature (constant-time via
- * `crypto.subtle.verify`) and the expiry. Returns the payload or null.
- */
-export async function verifySessionToken(
-  token: string,
-  secret: string,
-): Promise<SessionPayload | null> {
-  const dot = token.indexOf('.');
-  if (dot <= 0) {
-    return null;
+  /**
+   * Build a token signer/verifier for one signing secret. An empty secret is
+   * accepted but can sign nothing worth trusting, so every token it verifies
+   * fails: callers that must refuse outright guard with {@link requireSessionSecret}.
+   */
+  constructor(secret: string) {
+    this.#secret = secret;
   }
-  const body = token.slice(0, dot);
-  const sig = token.slice(dot + 1);
-  const key = await hmacKey(secret);
-  if (!(await signatureValid(key, body, sig))) {
-    return null;
+
+  /**
+   * Create a signed session token for a user. `exp` defaults to now +
+   * {@link SESSION_TTL_SECONDS} but can be supplied (e.g. in tests).
+   */
+  async create(payload: NewSession): Promise<string> {
+    const { uid, email, name, picture, ep, exp, ...extra } = payload;
+    const full: SessionPayload = {
+      // The app's own claims go first so they can never replace the ones below.
+      ...Object.fromEntries(
+        Object.entries(extra).filter(([, value]) => value !== undefined),
+      ),
+      uid,
+      email,
+      // Kept short: the whole token travels in a cookie on every request.
+      ...(name ? { name: name.slice(0, 80) } : {}),
+      ...(picture && picture.length <= 400 ? { picture } : {}),
+      ...(ep !== undefined ? { ep } : {}),
+      exp: exp ?? Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
+    };
+    const body = bytesToBase64Url(
+      new TextEncoder().encode(JSON.stringify(full)),
+    );
+    const key = await hmacKey(this.#secret);
+    const sig = new Uint8Array(
+      await crypto.subtle.sign(
+        'HMAC',
+        key,
+        bufferSource(new TextEncoder().encode(body)),
+      ),
+    );
+    return `${body}.${bytesToBase64Url(sig)}`;
   }
-  const payload = parsePayload(body);
-  if (!payload || payload.exp < Math.floor(Date.now() / 1000)) {
-    return null;
+
+  /**
+   * Verify a session token: checks the signature (constant-time via
+   * `crypto.subtle.verify`) and the expiry. Returns the payload or null.
+   */
+  async verify(token: string): Promise<SessionPayload | null> {
+    const dot = token.indexOf('.');
+    if (dot <= 0) {
+      return null;
+    }
+    const body = token.slice(0, dot);
+    const sig = token.slice(dot + 1);
+    const key = await hmacKey(this.#secret);
+    if (!(await signatureValid(key, body, sig))) {
+      return null;
+    }
+    const payload = parsePayload(body);
+    if (!payload || payload.exp < Math.floor(Date.now() / 1000)) {
+      return null;
+    }
+    return payload;
   }
-  return payload;
 }
 
 /** Whether `sig` (URL-safe base64) is the HMAC of `body` under `key`; malformed signatures are simply invalid. */

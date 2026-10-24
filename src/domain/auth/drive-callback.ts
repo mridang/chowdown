@@ -29,7 +29,7 @@ import { driveResultPath } from '@/domain/auth/drive-access';
 import { checkDriveGrant } from '@/domain/auth/drive-grant';
 import { finishFlow } from '@/core/auth/flow-cookies';
 import type { GoogleUser, TokenResponse } from '@/lib/google/auth';
-import { sessionIsCurrent, verifySessionToken } from '@/lib/session';
+import { SessionTokens, sessionIsCurrent } from '@/lib/session';
 import { setSessionCookie } from '@/core/auth/session-cookie';
 import type { FlowContext } from '@/domain/auth/sign-in';
 
@@ -43,9 +43,8 @@ export async function completeDriveConnect(
   tokens: TokenResponse,
 ): Promise<NextResponse> {
   const db = getDatabase();
-  const session = await verifySessionToken(
+  const session = await new SessionTokens(env.SESSION_SECRET).verify(
     request.cookies.get(SESSION_COOKIE)?.value ?? '',
-    env.SESSION_SECRET,
   );
   const found = session ? await getUserById(db, session.uid) : undefined;
   // A session the person has since ended (signed out everywhere) cannot be
