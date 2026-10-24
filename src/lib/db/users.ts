@@ -8,7 +8,7 @@
 
 import { and, eq, isNull, lte, or, sql } from 'drizzle-orm';
 
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/core/db/client';
 import { users } from '@/lib/db/schema';
 
 /** A full user row. */

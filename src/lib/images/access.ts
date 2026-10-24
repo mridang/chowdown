@@ -10,8 +10,8 @@
  */
 
 import { problems } from '@/lib/rest-json/problem';
-import { getSessionUid } from '@/lib/auth/current-user';
-import { getDatabase } from '@/lib/util/runtime';
+import { getSessionUid } from '@/core/auth/current-user';
+import { getDatabase } from '@/core/runtime';
 import { userHasCover } from '@/lib/images/cover-ownership';
 
 /** Refuses a caller who is not signed in. */

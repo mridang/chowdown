@@ -10,7 +10,7 @@
 
 import { and, eq, sql } from 'drizzle-orm';
 
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/core/db/client';
 import { recipes } from '@/lib/db/schema';
 import { parseRecipe } from '@/lib/cooklang/cooklang';
 import { extractMedia } from '@/lib/recipe/media';

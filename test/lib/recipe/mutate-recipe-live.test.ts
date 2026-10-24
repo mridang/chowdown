@@ -1,7 +1,7 @@
 import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/core/db/client';
 import type { User } from '@/lib/db/users';
 import {
   mutateRecipeForUser,

@@ -6,7 +6,7 @@ import type { ReactElement } from 'react';
 import { CenteredCard } from '@/components/site/centered-card';
 import { Eyebrow, Heading } from '@/components/ui/layout';
 import { DriveConnectPanel } from '@/components/site/drive-connect';
-import { getCurrentUser } from '@/lib/auth/current-user';
+import { getCurrentUser } from '@/core/auth/current-user';
 import { isDriveConnected, wasDriveConnected } from '@/lib/auth/drive-access';
 import { resolveClient } from '@/lib/db/oauth';
 import {
@@ -17,8 +17,8 @@ import {
 } from '@/lib/oauth/authorize-request';
 import { clientIdentity, describeRedirect } from '@/lib/oauth/display';
 import { clientAddress } from '@/lib/oauth/limits';
-import { getDatabase } from '@/lib/util/runtime';
-import { appOriginFromHeaders } from '@/utils/origin';
+import { getDatabase } from '@/core/runtime';
+import { appOriginFromHeaders } from '@/core/origin';
 
 import { ConsentCard } from '@/app/oauth/authorize/consent-card';
 

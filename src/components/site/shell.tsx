@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 
-import { getShellUser } from '@/lib/auth/shell-user';
+import { getShellUser } from '@/core/auth/shell-user';
 
 import { MAIN_MIN_HEIGHT_CLASS } from '@/components/site/header-height';
 import { SiteFooter } from '@/components/site/site-footer';

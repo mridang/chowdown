@@ -29,7 +29,7 @@ jest.unstable_mockModule('@/lib/auth/store', () => ({
 }));
 
 const { getCurrentUser, getLiveSessionUid, getSession, getSessionUid } =
-  await import('@/lib/auth/current-user');
+  await import('@/core/auth/current-user');
 
 let restore: () => void;
 

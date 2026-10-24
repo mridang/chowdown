@@ -11,11 +11,11 @@
  */
 
 import { getUserAccessToken } from '@/lib/auth/user-access-token';
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/core/db/client';
 import { deleteRecipeData, getRecipeByFileId } from '@/lib/db/recipes';
 import type { User } from '@/lib/db/users';
 import { trashRecipeFile } from '@/lib/google/drive';
-import { getDatabase } from '@/lib/util/runtime';
+import { getDatabase } from '@/core/runtime';
 import { refreshSimilarLists } from '@/lib/recipe/similar';
 
 /** The side effects a delete needs, injected so the logic is testable. */

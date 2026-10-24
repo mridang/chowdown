@@ -4,7 +4,7 @@ import { Suspense, type ReactElement } from 'react';
 import { GoogleIcon, PlusIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
 import { Container } from '@/components/ui/layout';
-import type { ShellUser } from '@/lib/auth/shell-user';
+import type { ShellUser } from '@/core/auth/shell-user';
 
 import { AccountMenu } from '@/components/site/account-menu';
 import { driveLink } from '@/components/site/drive-link';

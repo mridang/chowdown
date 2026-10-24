@@ -8,7 +8,7 @@
  */
 
 import { getUserAccessToken } from '@/lib/auth/user-access-token';
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/core/db/client';
 import { deleteOrphanEmbeddings } from '@/lib/db/embeddings';
 import { deleteRecipesNotIn } from '@/lib/db/recipes';
 import { setRecipesFolderId, type User } from '@/lib/db/users';
@@ -17,7 +17,7 @@ import {
   listRecipeFiles,
   type DriveFile,
 } from '@/lib/google/drive';
-import { getDatabase } from '@/lib/util/runtime';
+import { getDatabase } from '@/core/runtime';
 import { syncRecipeTags } from '@/lib/recipe/tag-index';
 
 /**

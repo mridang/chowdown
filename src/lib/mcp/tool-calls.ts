@@ -49,7 +49,7 @@ import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 import { parseVector, topSimilar } from '@/lib/recipe/similar';
 import { isUnitSystem, type UnitSystem } from '@/lib/cooklang/units';
 import { SITE_URL } from '@/utils/site';
-import { getDatabase } from '@/lib/util/runtime';
+import { getDatabase } from '@/core/runtime';
 import { errorMessage, logError } from '@/utils/logging';
 import {
   isJsonObject,

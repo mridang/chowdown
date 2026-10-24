@@ -8,7 +8,7 @@
 
 import { and, eq } from 'drizzle-orm';
 
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/core/db/client';
 import { favourites } from '@/lib/db/schema';
 
 /** Whether the user has hearted a given recipe. */

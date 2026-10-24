@@ -20,7 +20,7 @@ const session: { uid: number | null; ended: boolean } = {
   ended: false,
 };
 
-jest.unstable_mockModule('@/lib/auth/current-user', () => ({
+jest.unstable_mockModule('@/core/auth/current-user', () => ({
   getSessionUid: async () => session.uid,
   getLiveSessionUid: async () => (session.ended ? null : session.uid),
   getCurrentUser: async () => null,

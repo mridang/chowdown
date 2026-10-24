@@ -13,7 +13,7 @@
 
 import { authenticateMcpRequest } from '@/lib/mcp/auth';
 import { respondToMcp } from '@/lib/mcp/http';
-import { appOrigin } from '@/utils/origin';
+import { appOrigin } from '@/core/origin';
 
 /** Answer any request to the endpoint with the real token check. */
 function respond(request: Request): Promise<Response> {

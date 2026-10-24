@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { jsonLdText, landingJsonLd } from '@/lib/seo';
+import { jsonLdText, landingJsonLd } from '@/core/seo';
 
 describe('landingJsonLd', () => {
   const graph = landingJsonLd()['@graph'] as Record<string, unknown>[];

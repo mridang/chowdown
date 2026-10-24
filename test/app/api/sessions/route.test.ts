@@ -41,7 +41,7 @@ jest.unstable_mockModule('@/lib/auth/store', () => ({
 }));
 
 const { DELETE } = await import('@/app/api/sessions/route');
-const { getCurrentUser } = await import('@/lib/auth/current-user');
+const { getCurrentUser } = await import('@/core/auth/current-user');
 
 let restore: () => void;
 

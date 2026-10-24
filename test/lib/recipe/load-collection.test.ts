@@ -3,7 +3,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/lib/auth/drive-access';
 import type { SessionPayload } from '@/lib/session';
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/core/db/client';
 import type { AppPageRows } from '@/lib/db/recipe-page';
 import {
   loadCollection,

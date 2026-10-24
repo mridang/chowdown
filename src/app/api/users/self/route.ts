@@ -17,7 +17,7 @@ import { revokeDriveLogin } from '@/lib/auth/drive-login';
 import { forgetAccessTokens } from '@/lib/auth/user-access-token';
 import { deleteAccountData } from '@/lib/db/account';
 import { getUserById, setUserUnits } from '@/lib/db/users';
-import { getDatabase, runInBackground } from '@/lib/util/runtime';
+import { getDatabase, runInBackground } from '@/core/runtime';
 
 /**
  * `GET /api/users/self`: the signed-in user's profile (id, email, name,

@@ -10,18 +10,18 @@ import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
 import { ENDED_SESSION_PATH } from '@/lib/auth/app';
-import { getCurrentUser, getSession } from '@/lib/auth/current-user';
+import { getCurrentUser, getSession } from '@/core/auth/current-user';
 import {
   DriveNotConnectedError,
   isDriveConnected,
 } from '@/lib/auth/drive-access';
 import { sessionIsCurrent, type SessionPayload } from '@/lib/session';
 import { getUserAccessToken } from '@/lib/auth/user-access-token';
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/core/db/client';
 import { getRecipePageRows, type RecipePageRows } from '@/lib/db/recipe-page';
 import { claimDriveSync, type User } from '@/lib/db/users';
 import { getFileContent, listRecipeFiles } from '@/lib/google/drive';
-import { getDatabase } from '@/lib/util/runtime';
+import { getDatabase } from '@/core/runtime';
 import {
   toCardRecipe,
   toneFor,

@@ -1,4 +1,4 @@
-import { getEnv } from '@/lib/util/runtime';
+import { getEnv } from '@/core/runtime';
 
 /**
  * The app's public origin: the `APP_URL` secret when set, otherwise the origin

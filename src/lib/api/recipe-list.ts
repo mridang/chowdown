@@ -8,13 +8,13 @@
 
 import { getAppPageRows } from '@/lib/db/recipe-page';
 import { sourceDomainOf } from '@/lib/cooklang/cook-text';
-import { getDatabase } from '@/lib/util/runtime';
+import { getDatabase } from '@/core/runtime';
 import {
   decodeCursor,
   pageBody,
   parseLimit,
   sliceAfter,
-} from '@/lib/api/pagination';
+} from '@/core/api/pagination';
 import { problems } from '@/lib/rest-json/problem';
 import {
   comparePositions,

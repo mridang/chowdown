@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 
 import { DriveConnectPanel } from '@/components/site/drive-connect';
 import { Container } from '@/components/ui/layout';
-import { getCurrentUser } from '@/lib/auth/current-user';
+import { getCurrentUser } from '@/core/auth/current-user';
 import { isDriveConnected, wasDriveConnected } from '@/lib/auth/drive-access';
 
 import { AddRecipesPage } from '@/app/(site)/(pages)/recipes/add/_components/add-recipes-page';

@@ -12,7 +12,7 @@ import {
   genericClass,
   type ClassSpec,
   type EdgeLimits,
-} from '@/lib/http/edge-limits';
+} from '@/core/http/edge-limits';
 
 /** The kinds of request this app counts besides the classes every app has. */
 type OwnClass =

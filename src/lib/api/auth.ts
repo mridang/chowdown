@@ -11,10 +11,10 @@ import {
   getCurrentUser,
   getLiveSessionUid,
   getSessionUid,
-} from '@/lib/auth/current-user';
+} from '@/core/auth/current-user';
 import type { User } from '@/lib/db/users';
 import { isSameOriginPost } from '@/lib/web-security/csrf';
-import { appOrigin } from '@/utils/origin';
+import { appOrigin } from '@/core/origin';
 import { problems } from '@/lib/rest-json/problem';
 
 /** Methods that never change data and so need no origin check. */

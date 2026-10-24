@@ -14,7 +14,7 @@ import { installCloudflareContext, sqliteD1 } from '../db/sqlite-d1';
 /** Who is signed in; null means nobody. */
 const session: { uid: number | null } = { uid: 7 };
 
-jest.unstable_mockModule('@/lib/auth/current-user', () => ({
+jest.unstable_mockModule('@/core/auth/current-user', () => ({
   getSessionUid: async () => session.uid,
 }));
 

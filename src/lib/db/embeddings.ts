@@ -9,7 +9,7 @@
 import { and, count, eq, inArray, sql } from 'drizzle-orm';
 
 import { chunked } from '@/lib/db/chunk';
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/core/db/client';
 import { embeddings, recipes } from '@/lib/db/schema';
 
 /** A cached embedding row. */

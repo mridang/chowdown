@@ -16,7 +16,7 @@
  * `MCP_ALLOWED_ORIGINS="chrome-extension://abcdef,https://tool.example"`.
  */
 
-import { getEnv } from '@/lib/util/runtime';
+import { getEnv } from '@/core/runtime';
 
 /** The name of the setting that adds browser origins allowed to call the MCP endpoint. */
 export const ALLOWED_ORIGINS_SETTING = 'MCP_ALLOWED_ORIGINS';

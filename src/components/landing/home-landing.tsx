@@ -12,7 +12,7 @@ import { WorksWith } from '@/components/landing/works-with';
 import { ButtonLink } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
-import { jsonLdText, landingJsonLd } from '@/lib/seo';
+import { jsonLdText, landingJsonLd } from '@/core/seo';
 
 /**
  * The signed-out home: what chowdown is, why, and a way in. A static server

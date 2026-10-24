@@ -1,4 +1,4 @@
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/core/db/client';
 
 /** One call made on a fake query builder. */
 export interface Call {

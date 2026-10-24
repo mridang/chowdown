@@ -6,11 +6,11 @@ const app = {
   health: { ok: true, details: {} as Record<string, unknown> },
 };
 
-jest.unstable_mockModule('@/lib/util/runtime', () => ({
+jest.unstable_mockModule('@/core/runtime', () => ({
   isDatabaseBound: () => app.bound,
 }));
 
-jest.unstable_mockModule('@/lib/health', () => ({
+jest.unstable_mockModule('@/core/health', () => ({
   appHealth: async () => app.health,
 }));
 

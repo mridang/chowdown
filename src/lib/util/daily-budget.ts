@@ -19,7 +19,7 @@ import {
   type RateLimitStore,
 } from '@/lib/rate-limit';
 import { errorMessage, logError } from '@/utils/logging';
-import { getDatabase } from '@/lib/util/runtime';
+import { getDatabase } from '@/core/runtime';
 
 /** Seconds in a day. */
 const DAY_SECONDS = 86_400;

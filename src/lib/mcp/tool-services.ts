@@ -33,7 +33,7 @@ import {
 } from '@/lib/recipe/to-cooklang';
 import type { UnitSystem } from '@/lib/cooklang/units';
 import { DAILY_BUDGETS, spendBudget } from '@/lib/util/daily-budget';
-import { getDatabase, getEnv, runInBackground } from '@/lib/util/runtime';
+import { getDatabase, getEnv, runInBackground } from '@/core/runtime';
 import { errorMessage, logError } from '@/utils/logging';
 import type { ScenarioDeps } from '@/lib/mcp/scenarios';
 import type { FileOps } from '@/lib/mcp/tool-calls';

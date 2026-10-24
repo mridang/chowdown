@@ -11,7 +11,7 @@
 
 import { eq, inArray } from 'drizzle-orm';
 
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/core/db/client';
 import {
   embeddings,
   favourites,

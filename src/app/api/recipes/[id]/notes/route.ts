@@ -15,13 +15,13 @@ import { driveFailure } from '@/lib/api/drive-failure';
 import { readJsonObject } from '@/lib/rest-json/json';
 import { settleMutation } from '@/lib/api/mutation-response';
 import { noteResource, parseNoteInput } from '@/lib/api/note-resource';
-import { absoluteUrl, pageBody } from '@/lib/api/pagination';
+import { absoluteUrl, pageBody } from '@/core/api/pagination';
 import { problems } from '@/lib/rest-json/problem';
-import type { IdContext } from '@/lib/api/route-context';
+import type { IdContext } from '@/core/api/route-context';
 import { getRecipeByFileId } from '@/lib/db/recipes';
 import { appendNote, extractNotes } from '@/lib/cooklang/cook-text';
 import { mutateRecipeForUser } from '@/lib/recipe/mutate-recipe-live';
-import { getDatabase } from '@/lib/util/runtime';
+import { getDatabase } from '@/core/runtime';
 
 /**
  * `GET /api/recipes/:id/notes`: the recipe's notes, in order, numbered from 1.

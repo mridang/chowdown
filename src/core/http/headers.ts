@@ -8,8 +8,8 @@
  * test keeps the two in step).
  */
 
-import { REPORTING_ENDPOINTS } from '@/lib/http/reporting';
-import { OPEN_FILES, PUBLIC_PAGES, RARELY_CHANGING } from '@/lib/http/site';
+import { REPORTING_ENDPOINTS } from '@/core/http/reporting';
+import { OPEN_FILES, PUBLIC_PAGES, RARELY_CHANGING } from '@/core/http/site';
 
 /** Security headers for every response. */
 export const SECURITY_HEADERS: Readonly<Record<string, string>> = {

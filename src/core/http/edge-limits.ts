@@ -31,8 +31,8 @@
  */
 
 import { clientSubject } from '@/utils/http/client-address';
-import { CSP_REPORT_PATH } from '@/lib/http/reporting';
-import { DISCOVERY_PATHS, STATIC_PREFIXES } from '@/lib/http/site';
+import { CSP_REPORT_PATH } from '@/core/http/reporting';
+import { DISCOVERY_PATHS, STATIC_PREFIXES } from '@/core/http/site';
 import { errorMessage, logError } from '@/utils/logging';
 
 /** One Workers Rate Limiting binding: `limit` says whether `key` may go ahead. */

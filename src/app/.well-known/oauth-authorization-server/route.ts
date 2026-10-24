@@ -5,7 +5,7 @@
 
 import { noStoreJson, preflight } from '@/lib/oauth/http';
 import { authorizationServerMetadata } from '@/lib/oauth/metadata';
-import { appOrigin } from '@/utils/origin';
+import { appOrigin } from '@/core/origin';
 
 /**
  * `GET /.well-known/oauth-authorization-server`: the discovery document for

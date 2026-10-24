@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { SESSION_COOKIE, sessionClaims } from '@/lib/auth/app';
 import { verifySessionToken } from '@/lib/session';
-import { setSessionCookie } from '@/lib/auth/session-cookie';
+import { setSessionCookie } from '@/core/auth/session-cookie';
 import type { User } from '@/lib/auth/store';
 
 const SECRET = 'test-session-secret-value';

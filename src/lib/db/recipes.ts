@@ -12,7 +12,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import { normalizeSourceUrl, sourceUrlOf } from '@/lib/cooklang/cook-text';
 import { chunked } from '@/lib/db/chunk';
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/core/db/client';
 import { embeddings, favourites, recipes } from '@/lib/db/schema';
 
 /** A full recipe row. */

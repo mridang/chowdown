@@ -4,10 +4,10 @@ import { redirect } from 'next/navigation';
 import type { ReactElement } from 'react';
 
 import { DriveConnectNotice } from '@/components/site/drive-connect';
-import { getCurrentUser } from '@/lib/auth/current-user';
+import { getCurrentUser } from '@/core/auth/current-user';
 import { isDriveConnected, wasDriveConnected } from '@/lib/auth/drive-access';
 import { mcpUrl } from '@/lib/connected-apps';
-import { appOriginFromHeaders } from '@/utils/origin';
+import { appOriginFromHeaders } from '@/core/origin';
 import { Card } from '@/components/ui/card';
 import { CopyField } from '@/components/ui/copy-field';
 import { Container, Heading } from '@/components/ui/layout';

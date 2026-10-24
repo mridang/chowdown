@@ -15,7 +15,7 @@ import {
   authenticateAccessToken,
   type AccessIdentity,
 } from '@/lib/oauth/token-endpoint';
-import { getDatabase } from '@/lib/util/runtime';
+import { getDatabase } from '@/core/runtime';
 
 /** Who the request is from, or why it is not allowed in. */
 export type McpAuth =

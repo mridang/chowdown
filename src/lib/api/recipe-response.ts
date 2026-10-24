@@ -9,7 +9,7 @@
 import { getRecipePageRows } from '@/lib/db/recipe-page';
 import { recipeToJsonLd } from '@/lib/recipe/schema-org';
 import { parseRecipe } from '@/lib/cooklang/cooklang';
-import { getDatabase } from '@/lib/util/runtime';
+import { getDatabase } from '@/core/runtime';
 import {
   entityTag,
   ifNoneMatchHit,
@@ -17,7 +17,7 @@ import {
   type RecipeRepresentation,
 } from '@/lib/rest-json/etag';
 import { problems } from '@/lib/rest-json/problem';
-import { absoluteUrl } from '@/lib/api/pagination';
+import { absoluteUrl } from '@/core/api/pagination';
 import { recipeResource } from '@/lib/api/recipe-resource';
 
 /** The media type of a recipe's Cooklang source. */

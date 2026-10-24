@@ -17,7 +17,7 @@ import {
   setRefreshToken,
 } from '@/lib/db/users';
 import { ensureRecipesFolder } from '@/lib/google/drive';
-import { getDatabase } from '@/lib/util/runtime';
+import { getDatabase } from '@/core/runtime';
 import { logError } from '@/utils/logging';
 import {
   LANDING_PATH,
@@ -27,10 +27,10 @@ import {
 } from '@/lib/auth/app';
 import { driveResultPath } from '@/lib/auth/drive-access';
 import { checkDriveGrant } from '@/lib/auth/drive-grant';
-import { finishFlow } from '@/lib/auth/flow-cookies';
+import { finishFlow } from '@/core/auth/flow-cookies';
 import type { GoogleUser, TokenResponse } from '@/lib/google/auth';
 import { sessionIsCurrent, verifySessionToken } from '@/lib/session';
-import { setSessionCookie } from '@/lib/auth/session-cookie';
+import { setSessionCookie } from '@/core/auth/session-cookie';
 import type { FlowContext } from '@/lib/auth/sign-in';
 
 /**

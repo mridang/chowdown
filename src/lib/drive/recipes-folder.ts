@@ -7,7 +7,7 @@
 
 import { setRecipesFolderId } from '@/lib/db/users';
 import type { User } from '@/lib/db/users';
-import { getDatabase } from '@/lib/util/runtime';
+import { getDatabase } from '@/core/runtime';
 import { ensureRecipesFolder } from '@/lib/google/drive';
 
 /** The id of the user's Recipes folder, creating and recording it if needed. */

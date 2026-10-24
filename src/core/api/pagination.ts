@@ -8,7 +8,7 @@
  * absolute URLs, `items`, and no total count.
  */
 
-import { appOrigin } from '@/utils/origin';
+import { appOrigin } from '@/core/origin';
 import { base64UrlToBytes, bytesToBase64Url } from '@/utils/base64';
 import { setSearchParams } from '@/utils/query';
 import { problems } from '@/lib/rest-json/problem';

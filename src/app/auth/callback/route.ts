@@ -20,9 +20,9 @@ import {
   SIGN_IN_FAILED_PATH,
   STATE_COOKIE,
 } from '@/lib/auth/app';
-import { finishFlow } from '@/lib/auth/flow-cookies';
+import { finishFlow } from '@/core/auth/flow-cookies';
 import { exchangeCode, getUserInfo } from '@/lib/google/auth';
-import { OTHER_FLOWS } from '@/lib/auth/hooks';
+import { OTHER_FLOWS } from '@/core/auth/hooks';
 import { SIGN_IN_PURPOSE, checkState } from '@/lib/web-security/oauth-state';
 import { safeReturnPath } from '@/lib/web-security/return-to';
 import {
@@ -30,9 +30,9 @@ import {
   missingSignInSettings,
   type FlowContext,
 } from '@/lib/auth/sign-in';
-import { getEnv } from '@/lib/util/runtime';
+import { getEnv } from '@/core/runtime';
 import { logError, logWarn } from '@/utils/logging';
-import { appOrigin } from '@/utils/origin';
+import { appOrigin } from '@/core/origin';
 
 /** Where to send someone whose round trip failed, by what it was for. */
 function failurePath(purpose: string, kind: 'error' | 'denied'): string {

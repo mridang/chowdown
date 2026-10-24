@@ -12,7 +12,7 @@
 
 import { and, count, eq, sql } from 'drizzle-orm';
 
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/core/db/client';
 import { embeddings, favourites, recipes, users } from '@/lib/db/schema';
 
 /** What the recipe page reads for one recipe. */

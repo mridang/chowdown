@@ -10,12 +10,12 @@
 
 import { getUserAccessToken } from '@/lib/auth/user-access-token';
 import { isDriveConnected } from '@/lib/auth/drive-access';
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/core/db/client';
 import { isFavourite, setFavourite } from '@/lib/db/favourites';
 import { getRecipeByFileId } from '@/lib/db/recipes';
 import { getUserById, type User } from '@/lib/db/users';
 import { getFileContent, updateRecipeFile } from '@/lib/google/drive';
-import { getDatabase, runInBackground } from '@/lib/util/runtime';
+import { getDatabase, runInBackground } from '@/core/runtime';
 import { withFavouriteTag } from '@/lib/recipe/favourite-tag';
 import { createKeyedQueue } from '@/lib/async/keyed-queue';
 import { indexRecipeWrite } from '@/lib/recipe/tag-index';

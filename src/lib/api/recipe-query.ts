@@ -14,7 +14,7 @@ import {
   type SearchParams,
 } from '@/lib/recipe/facet-filter';
 import { compareText } from '@/lib/intl';
-import type { CursorPosition } from '@/lib/api/pagination';
+import type { CursorPosition } from '@/core/api/pagination';
 
 /** A recipe as the query needs it. */
 export interface QueryableRecipe extends FilterableRecipe {

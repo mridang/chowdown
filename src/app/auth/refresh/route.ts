@@ -10,12 +10,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCurrentUser, getSession } from '@/lib/auth/current-user';
+import { getCurrentUser, getSession } from '@/core/auth/current-user';
 import { safeReturnPath } from '@/lib/web-security/return-to';
 import { SESSION_COOKIE } from '@/lib/auth/app';
-import { setSessionCookie } from '@/lib/auth/session-cookie';
-import { getEnv } from '@/lib/util/runtime';
-import { appOrigin } from '@/utils/origin';
+import { setSessionCookie } from '@/core/auth/session-cookie';
+import { getEnv } from '@/core/runtime';
+import { appOrigin } from '@/core/origin';
 
 /**
  * `GET /auth/refresh`: reissue the session cookie from the database and

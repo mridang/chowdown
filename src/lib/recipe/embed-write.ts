@@ -8,7 +8,7 @@
  * "Find similar" row a single cheap read.
  */
 
-import type { Database } from '@/lib/db/client';
+import type { Database } from '@/core/db/client';
 import { listEmbeddings, upsertEmbedding } from '@/lib/db/embeddings';
 import { listRecipesByUser } from '@/lib/db/recipes';
 import { recipeDisplayName } from '@/lib/cooklang/cook-text';

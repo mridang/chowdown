@@ -6,7 +6,7 @@ import {
   getEnv,
   isDatabaseBound,
   runInBackground,
-} from '@/lib/util/runtime';
+} from '@/core/runtime';
 import { installCloudflareContext, sqliteD1 } from '../db/sqlite-d1';
 
 describe('without a Cloudflare context (tests, scripts)', () => {

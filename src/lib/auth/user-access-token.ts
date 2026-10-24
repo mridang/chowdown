@@ -15,7 +15,7 @@ import { DriveNotConnectedError } from '@/lib/auth/drive-access';
 import { refreshAccessToken } from '@/lib/auth/drive-oauth';
 import { decryptSecret } from '@/lib/crypto';
 import { clearRefreshToken, type User } from '@/lib/db/users';
-import { getDatabase, getEnv } from '@/lib/util/runtime';
+import { getDatabase, getEnv } from '@/core/runtime';
 
 /** Access tokens already minted by this instance (see the cache module). */
 const accessTokens = createAccessTokenCache();

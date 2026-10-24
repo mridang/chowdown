@@ -8,9 +8,9 @@
  * refused. Refusals are RFC 9457 problem documents.
  */
 
-import { appOrigin } from '@/utils/origin';
+import { appOrigin } from '@/core/origin';
 import { isSameOriginPost } from '@/lib/web-security/csrf';
-import { getCurrentUser } from '@/lib/auth/current-user';
+import { getCurrentUser } from '@/core/auth/current-user';
 import type { User } from '@/lib/auth/store';
 
 /** A problem response with the fixed shape every refusal here has. */

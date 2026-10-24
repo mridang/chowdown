@@ -14,7 +14,7 @@ import { clientAddress, tooManyRequests } from '@/lib/oauth/limits';
 import { handleRegistration } from '@/lib/oauth/register-request';
 import { sweepSometimes } from '@/lib/oauth/sweep';
 import { d1RateLimitStore } from '@/lib/rate-limit';
-import { getDatabase, runInBackground } from '@/lib/util/runtime';
+import { getDatabase, runInBackground } from '@/core/runtime';
 
 /**
  * `POST /oauth/register`: register a public client from a JSON body. Anyone

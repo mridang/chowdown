@@ -6,7 +6,7 @@ import {
   pageBody,
   parseLimit,
   sliceAfter,
-} from '@/lib/api/pagination';
+} from '@/core/api/pagination';
 
 describe('cursor', () => {
   it('round-trips a position, including non-ASCII keys', () => {

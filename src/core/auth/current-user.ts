@@ -16,7 +16,7 @@ import {
   type SessionPayload,
 } from '@/lib/session';
 import { getSessionEpoch, getUserById, type User } from '@/lib/auth/store';
-import { getEnv } from '@/lib/util/runtime';
+import { getEnv } from '@/core/runtime';
 
 /**
  * The user for the current request, or null when not signed in, the session is
