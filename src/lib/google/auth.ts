@@ -88,90 +88,136 @@ function isGoogleUser(value: unknown): value is GoogleUser {
   );
 }
 
-/**
- * Build the Google consent URL to redirect the user to. `state` is the
- * CSRF/one-time value the callback validates. `extra` adds query parameters
- * for an ask that needs them (for example `access_type=offline`); signing in
- * needs none.
- */
-export function buildAuthUrl(
-  params: Readonly<{
-    clientId: string;
-    redirectUri: string;
-    state: string;
-    scopes: readonly string[];
-    extra?: Readonly<Record<string, string>>;
-  }>,
-): string {
-  const query = new URLSearchParams({
-    client_id: params.clientId,
-    redirect_uri: params.redirectUri,
-    response_type: 'code',
-    scope: params.scopes.join(' '),
-    ...params.extra,
-    state: params.state,
-  });
-  return `${AUTH_ENDPOINT}?${query}`;
+/** The client credentials a Google OAuth app is registered with. */
+export interface GoogleOAuthCredentials {
+  readonly clientId: string;
+  /** Needed only for the token-endpoint exchanges, not for building a consent URL. */
+  readonly clientSecret?: string;
 }
 
 /**
- * POST a form to Google's token endpoint and return the parsed answer; `what`
- * names the step in the error.
- * @public
+ * Server-side Google OAuth 2.0 client for one registered app. Build it with the
+ * app's credentials (and, in tests, an injected `fetcher`) and use it to build
+ * consent URLs, trade codes and refresh tokens for access tokens, and read who
+ * the person is. The client secret stays on the server.
  */
-export async function postToken(
-  form: Readonly<Record<string, string>>,
-  what: string,
-): Promise<unknown> {
-  const response = await fetch(TOKEN_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams(form),
-  });
-  if (!response.ok) {
-    throw new Error(
-      `${what} failed: ${response.status} ${await response.text()}`,
-    );
+export class GoogleOAuthClient {
+  readonly #credentials: GoogleOAuthCredentials;
+  readonly #fetch: typeof fetch;
+
+  constructor(credentials: GoogleOAuthCredentials, fetcher?: typeof fetch) {
+    this.#credentials = credentials;
+    // Resolve the global fetch lazily so a test that swaps it still takes effect.
+    this.#fetch = fetcher ?? ((input, init) => fetch(input, init));
   }
-  return response.json();
-}
 
-/** Exchange an authorization code for access (and, if asked for, refresh) tokens. */
-export async function exchangeCode(
-  params: Readonly<{
-    code: string;
-    clientId: string;
-    clientSecret: string;
-    redirectUri: string;
-  }>,
-): Promise<TokenResponse> {
-  const tokens = await postToken(
-    {
-      code: params.code,
-      client_id: params.clientId,
-      client_secret: params.clientSecret,
+  /**
+   * Build the Google consent URL to redirect the user to. `state` is the
+   * CSRF/one-time value the callback validates. `extra` adds query parameters
+   * for an ask that needs them (for example `access_type=offline`); signing in
+   * needs none.
+   */
+  authUrl(
+    params: Readonly<{
+      redirectUri: string;
+      state: string;
+      scopes: readonly string[];
+      extra?: Readonly<Record<string, string>>;
+    }>,
+  ): string {
+    const query = new URLSearchParams({
+      client_id: this.#credentials.clientId,
       redirect_uri: params.redirectUri,
-      grant_type: 'authorization_code',
-    },
-    'Token exchange',
-  );
-  if (!isAccessTokenResponse(tokens)) {
-    throw new Error('Token exchange failed: unexpected response');
+      response_type: 'code',
+      scope: params.scopes.join(' '),
+      ...params.extra,
+      state: params.state,
+    });
+    return `${AUTH_ENDPOINT}?${query}`;
   }
-  return tokens;
-}
 
-/** Fetch the signed-in user's identity from the OpenID userinfo endpoint. */
-export async function getUserInfo(accessToken: string): Promise<GoogleUser> {
-  const response = await fetch(USERINFO_ENDPOINT, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  if (!response.ok) {
-    throw new Error(`userinfo failed: ${response.status}`);
+  /** The configured client secret, or a clear error when one is needed but unset. */
+  #secret(): string {
+    const secret = this.#credentials.clientSecret;
+    if (!secret) {
+      throw new Error('clientSecret is required for a token exchange');
+    }
+    return secret;
   }
-  const user: unknown = await response.json();
-  if (!isGoogleUser(user)) {
-    throw new Error('userinfo failed: unexpected response');
+
+  /**
+   * POST a form to Google's token endpoint and return the parsed answer; `what`
+   * names the step in the error.
+   */
+  async #postToken(
+    form: Readonly<Record<string, string>>,
+    what: string,
+  ): Promise<unknown> {
+    const response = await this.#fetch(TOKEN_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(form),
+    });
+    if (!response.ok) {
+      throw new Error(
+        `${what} failed: ${response.status} ${await response.text()}`,
+      );
+    }
+    return response.json();
   }
-  return user;
+
+  /** Exchange an authorization code for access (and, if asked for, refresh) tokens. */
+  async exchangeCode(
+    params: Readonly<{ code: string; redirectUri: string }>,
+  ): Promise<TokenResponse> {
+    const tokens = await this.#postToken(
+      {
+        code: params.code,
+        client_id: this.#credentials.clientId,
+        client_secret: this.#secret(),
+        redirect_uri: params.redirectUri,
+        grant_type: 'authorization_code',
+      },
+      'Token exchange',
+    );
+    if (!isAccessTokenResponse(tokens)) {
+      throw new Error('Token exchange failed: unexpected response');
+    }
+    return tokens;
+  }
+
+  /**
+   * Mint a fresh access token from a stored refresh token. Used per request
+   * (access tokens are short-lived) and by the headless MCP/sync paths.
+   */
+  async refreshAccessToken(refreshToken: string): Promise<AccessTokenResponse> {
+    const tokens = await this.#postToken(
+      {
+        refresh_token: refreshToken,
+        client_id: this.#credentials.clientId,
+        client_secret: this.#secret(),
+        grant_type: 'refresh_token',
+      },
+      'Token refresh',
+    );
+    if (!isAccessTokenResponse(tokens)) {
+      throw new Error('Token refresh failed: unexpected response');
+    }
+    return tokens;
+  }
+
+  /** Fetch the signed-in user's identity from the OpenID userinfo endpoint. */
+  async getUserInfo(accessToken: string): Promise<GoogleUser> {
+    const response = await this.#fetch(USERINFO_ENDPOINT, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!response.ok) {
+      throw new Error(`userinfo failed: ${response.status}`);
+    }
+    const user: unknown = await response.json();
+    if (!isGoogleUser(user)) {
+      throw new Error('userinfo failed: unexpected response');
+    }
+    return user;
+  }
 }

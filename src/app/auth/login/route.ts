@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { problem } from '@/lib/rest-json/problem';
 import { startFlowCookies } from '@/core/auth/flow-cookies';
-import { SIGN_IN_SCOPES, buildAuthUrl } from '@/lib/google/auth';
+import { GoogleOAuthClient, SIGN_IN_SCOPES } from '@/lib/google/auth';
 import { SIGN_IN_PURPOSE, newState } from '@/lib/web-security/oauth-state';
 import { safeReturnPath } from '@/lib/web-security/return-to';
 import { missingSignInSettings } from '@/domain/auth/sign-in';
@@ -39,8 +39,9 @@ export function GET(request: NextRequest): Response {
   const origin = appOrigin(request);
   const state = newState(SIGN_IN_PURPOSE);
   const response = NextResponse.redirect(
-    buildAuthUrl({
+    new GoogleOAuthClient({
       clientId: env.GOOGLE_OAUTH_CLIENT_ID,
+    }).authUrl({
       redirectUri: `${origin}/auth/callback`,
       state,
       scopes: SIGN_IN_SCOPES,

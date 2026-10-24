@@ -12,12 +12,7 @@
  * app needs no Google security assessment.
  */
 
-import {
-  buildAuthUrl,
-  isAccessTokenResponse,
-  postToken,
-  type AccessTokenResponse,
-} from '@/lib/google/auth';
+import { GoogleOAuthClient, type AccessTokenResponse } from '@/lib/google/auth';
 
 /** The one Drive permission chowdown uses: files the app itself created. */
 export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
@@ -52,8 +47,7 @@ export function buildDriveAuthUrl(
     loginHint?: string;
   }>,
 ): string {
-  return buildAuthUrl({
-    clientId: params.clientId,
+  return new GoogleOAuthClient({ clientId: params.clientId }).authUrl({
     redirectUri: params.redirectUri,
     state: params.state,
     scopes: DRIVE_SCOPES,
@@ -77,19 +71,10 @@ export async function refreshAccessToken(
     clientSecret: string;
   }>,
 ): Promise<AccessTokenResponse> {
-  const tokens = await postToken(
-    {
-      refresh_token: params.refreshToken,
-      client_id: params.clientId,
-      client_secret: params.clientSecret,
-      grant_type: 'refresh_token',
-    },
-    'Token refresh',
-  );
-  if (!isAccessTokenResponse(tokens)) {
-    throw new Error('Token refresh failed: unexpected response');
-  }
-  return tokens;
+  return new GoogleOAuthClient({
+    clientId: params.clientId,
+    clientSecret: params.clientSecret,
+  }).refreshAccessToken(params.refreshToken);
 }
 
 /**

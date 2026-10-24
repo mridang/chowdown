@@ -21,7 +21,7 @@ import {
   STATE_COOKIE,
 } from '@/domain/auth/app';
 import { finishFlow } from '@/core/auth/flow-cookies';
-import { exchangeCode, getUserInfo } from '@/lib/google/auth';
+import { GoogleOAuthClient } from '@/lib/google/auth';
 import { OTHER_FLOWS } from '@/core/auth/hooks';
 import { SIGN_IN_PURPOSE, checkState } from '@/lib/web-security/oauth-state';
 import { safeReturnPath } from '@/lib/web-security/return-to';
@@ -93,13 +93,15 @@ export async function GET(request: NextRequest): Promise<Response> {
     returnTo: safeReturnPath(request.cookies.get(RETURN_COOKIE)?.value),
   };
   try {
-    const tokens = await exchangeCode({
-      code,
+    const google = new GoogleOAuthClient({
       clientId: env.GOOGLE_OAUTH_CLIENT_ID,
       clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+    });
+    const tokens = await google.exchangeCode({
+      code,
       redirectUri: `${origin}/auth/callback`,
     });
-    const info = await getUserInfo(tokens.access_token);
+    const info = await google.getUserInfo(tokens.access_token);
     if (purpose === SIGN_IN_PURPOSE) {
       return await completeSignIn(context, info);
     }
