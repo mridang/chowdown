@@ -11,8 +11,8 @@ import {
   sourceUrlOf,
   isUncurated,
   recipeDisplayName,
-} from '@/lib/recipe/cook-text';
-import { parseRecipe, type StepToken } from '@/lib/recipe/cooklang';
+} from '@/lib/cooklang/cook-text';
+import { parseRecipe, type StepToken } from '@/lib/cooklang/cooklang';
 import { extractMedia } from '@/lib/recipe/media';
 import { rowTags, type RecipeTags } from '@/lib/recipe/tag-index';
 

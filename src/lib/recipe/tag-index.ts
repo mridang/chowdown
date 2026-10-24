@@ -14,11 +14,11 @@
 import type { Database } from '@/lib/db/client';
 import type { User } from '@/lib/db/users';
 import { listRecipesByUser, upsertRecipe, type Recipe } from '@/lib/db/recipes';
-import { getFileContent, type DriveFile } from '@/lib/drive/drive-client';
+import { getFileContent, type DriveFile } from '@/lib/google/drive';
 import { getDatabase, getEnv, runInBackground } from '@/lib/util/runtime';
-import { parseRecipe, type ParsedRecipe } from '@/lib/recipe/cooklang';
+import { parseRecipe, type ParsedRecipe } from '@/lib/cooklang/cooklang';
 import { embedRecipe } from '@/lib/recipe/embed-write';
-import { mapSequentially } from '@/lib/recipe/map-sequentially';
+import { mapSequentially } from '@/lib/async/map-sequentially';
 import { classifyDietType } from '@/lib/recipe/diet-type';
 import { canonicalValue, facet } from '@/lib/recipe/taxonomy';
 

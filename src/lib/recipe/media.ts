@@ -10,8 +10,8 @@
  * malformed metadata value can never inject a bad `src`.
  */
 
-import { upsertMetadata } from '@/lib/recipe/cook-text';
-import type { ParsedRecipe } from '@/lib/recipe/cooklang';
+import { upsertMetadata } from '@/lib/cooklang/cook-text';
+import type { ParsedRecipe } from '@/lib/cooklang/cooklang';
 
 /** A recipe's media for display. */
 export interface RecipeMedia {

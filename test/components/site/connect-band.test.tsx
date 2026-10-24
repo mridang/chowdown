@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { ConnectBand } from '@/components/site/connect-band';
-import { MCP_URL } from '@/lib/site';
+import { MCP_URL } from '@/utils/site';
 import { html } from '../render';
 
 describe('ConnectBand', () => {

@@ -7,7 +7,7 @@ import {
   folderHint,
   sessionClaims,
 } from '@/lib/auth/app';
-import { createSessionToken, verifySessionToken } from '@/lib/auth/session';
+import { createSessionToken, verifySessionToken } from '@/lib/session';
 
 const SECRET = 'test-session-secret-value';
 

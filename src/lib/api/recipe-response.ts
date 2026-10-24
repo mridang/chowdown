@@ -8,15 +8,15 @@
 
 import { getRecipePageRows } from '@/lib/db/recipe-page';
 import { recipeToJsonLd } from '@/lib/recipe/schema-org';
-import { parseRecipe } from '@/lib/recipe/cooklang';
+import { parseRecipe } from '@/lib/cooklang/cooklang';
 import { getDatabase } from '@/lib/util/runtime';
 import {
   entityTag,
   ifNoneMatchHit,
   representationTag,
   type RecipeRepresentation,
-} from '@/lib/api/etag';
-import { problems } from '@/lib/api/problem';
+} from '@/lib/rest-json/etag';
+import { problems } from '@/lib/rest-json/problem';
 import { absoluteUrl } from '@/lib/api/pagination';
 import { recipeResource } from '@/lib/api/recipe-resource';
 

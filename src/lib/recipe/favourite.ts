@@ -14,10 +14,10 @@ import type { Database } from '@/lib/db/client';
 import { isFavourite, setFavourite } from '@/lib/db/favourites';
 import { getRecipeByFileId } from '@/lib/db/recipes';
 import { getUserById, type User } from '@/lib/db/users';
-import { getFileContent, updateRecipeFile } from '@/lib/drive/drive-client';
+import { getFileContent, updateRecipeFile } from '@/lib/google/drive';
 import { getDatabase, runInBackground } from '@/lib/util/runtime';
 import { withFavouriteTag } from '@/lib/recipe/favourite-tag';
-import { createKeyedQueue } from '@/lib/recipe/keyed-queue';
+import { createKeyedQueue } from '@/lib/async/keyed-queue';
 import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 
 /**

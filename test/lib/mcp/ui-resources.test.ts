@@ -26,7 +26,7 @@ import {
   hashedResourceUri,
   viewToolMeta,
 } from '@/lib/mcp/ui-resources';
-import { SITE_URL } from '@/lib/site';
+import { SITE_URL } from '@/utils/site';
 
 /** The document with its inline script removed: what the host's CSP actually has to police. */
 function shellOf(html: string): string {

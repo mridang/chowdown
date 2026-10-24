@@ -15,9 +15,9 @@ import { NextResponse } from 'next/server';
 
 import { requireLiveUid, requireUser } from '@/lib/api/auth';
 import { driveFailure } from '@/lib/api/drive-failure';
-import { readJson, readJsonObject } from '@/lib/api/json';
+import { readJson, readJsonObject } from '@/lib/rest-json/json';
 import { settleMutation } from '@/lib/api/mutation-response';
-import { problems } from '@/lib/api/problem';
+import { problems } from '@/lib/rest-json/problem';
 import {
   MAX_RECIPE_BODY_BYTES,
   parseReplacementCooklang,

@@ -21,7 +21,7 @@ import {
 } from '@/lib/oauth/limits';
 import { sweepSometimes } from '@/lib/oauth/sweep';
 import { handleTokenRequest } from '@/lib/oauth/token-request';
-import { d1RateLimitStore } from '@/lib/util/rate-limit';
+import { d1RateLimitStore } from '@/lib/rate-limit';
 import { getDatabase, runInBackground } from '@/lib/util/runtime';
 import { appOrigin } from '@/utils/origin';
 

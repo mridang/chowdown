@@ -4,7 +4,7 @@ import { PlugIcon } from '@/components/icons';
 import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import { MiniCard } from '@/components/landing/features/mini-card';
 import { WindowFrame } from '@/components/landing/window-frame';
-import { MCP_URL } from '@/lib/site';
+import { MCP_URL } from '@/utils/site';
 
 /** The assistant: a chat that answers from your own recipes. */
 export function AiVisual({

@@ -11,7 +11,7 @@ import {
   readJsonBody,
   type RateLimitDeps,
 } from '@/lib/mcp/request-limits';
-import type { RateLimitStore } from '@/lib/util/rate-limit';
+import type { RateLimitStore } from '@/lib/rate-limit';
 
 const URL = 'https://chowdown.test/mcp';
 

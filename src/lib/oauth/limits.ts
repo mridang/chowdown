@@ -20,7 +20,7 @@ import {
   rateLimit,
   type RateLimit,
   type RateLimitStore,
-} from '@/lib/util/rate-limit';
+} from '@/lib/rate-limit';
 
 /**
  * The limits. Registration is generous per hour (a legitimate assistant

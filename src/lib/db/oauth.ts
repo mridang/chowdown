@@ -44,7 +44,7 @@ import {
   d1RateLimitStore,
   purgeRateLimits,
   type RateLimitStore,
-} from '@/lib/util/rate-limit';
+} from '@/lib/rate-limit';
 import type { Database } from '@/lib/db/client';
 import {
   oauthClients,

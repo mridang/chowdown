@@ -16,9 +16,9 @@ import {
   isUnitSystem,
   scaleQuantity,
   type UnitSystem,
-} from '@/lib/recipe/units';
-import type { Note } from '@/lib/recipe/cook-text';
-import type { StepToken } from '@/lib/recipe/cooklang';
+} from '@/lib/cooklang/units';
+import type { Note } from '@/lib/cooklang/cook-text';
+import type { StepToken } from '@/lib/cooklang/cooklang';
 
 /** What the servings stepper starts on when a recipe doesn't say. */
 export const DEFAULT_SERVINGS = 4;

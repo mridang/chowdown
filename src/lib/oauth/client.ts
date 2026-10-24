@@ -16,7 +16,7 @@
 import { sanitiseDisplayName } from '@/lib/oauth/display';
 import { isAcceptableRedirectUri } from '@/lib/oauth/redirect-uri';
 import { bytesToBase64Url } from '@/utils/base64';
-import { SITE_URL } from '@/lib/site';
+import { SITE_URL } from '@/utils/site';
 import { parseUrl } from '@/utils/url';
 
 /** A client as the authorization server uses it. */

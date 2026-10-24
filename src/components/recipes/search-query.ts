@@ -12,7 +12,7 @@
 
 import type { CardRecipe } from '@/lib/recipe/card-data';
 import { DIET_TYPES } from '@/lib/recipe/diet-type';
-import { sentenceCase } from '@/lib/format';
+import { sentenceCase } from '@/utils/text';
 import { compareText, foldText } from '@/lib/intl';
 
 /** The query-string bag Next gives a page. */

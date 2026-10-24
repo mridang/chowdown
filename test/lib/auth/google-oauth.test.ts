@@ -7,7 +7,7 @@ import {
   getUserInfo,
   isAccessTokenResponse,
   postToken,
-} from '@/lib/auth/google-oauth';
+} from '@/lib/google/auth';
 
 const base = {
   clientId: 'client-id',

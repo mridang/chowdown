@@ -5,7 +5,7 @@ import {
   isUnitSystem,
   scaleQuantity,
   toBaseAmount,
-} from '@/lib/recipe/units';
+} from '@/lib/cooklang/units';
 
 describe('isUnitSystem', () => {
   it('accepts the three systems and rejects others', () => {

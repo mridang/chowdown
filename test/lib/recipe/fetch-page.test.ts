@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-import { USER_AGENT } from '@/lib/http/safe-fetch';
+import { USER_AGENT } from '@/lib/safe-fetch';
 import { fetchPage, PageFetchError } from '@/lib/recipe/fetch-page';
 
 const realFetch = global.fetch;

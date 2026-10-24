@@ -2,7 +2,7 @@ import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/lib/auth/drive-access';
-import type { SessionPayload } from '@/lib/auth/session';
+import type { SessionPayload } from '@/lib/session';
 import type { Database } from '@/lib/db/client';
 import type { AppPageRows } from '@/lib/db/recipe-page';
 import {

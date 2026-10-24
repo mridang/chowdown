@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { isSameOriginPost } from '@/lib/auth/csrf';
+import { isSameOriginPost } from '@/lib/web-security/csrf';
 
 const ORIGIN = 'https://chowdown.example';
 const headers = (h: Record<string, string>) => new Headers(h);

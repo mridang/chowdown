@@ -19,7 +19,7 @@ import { listEmbeddings, type EmbeddingRow } from '@/lib/db/embeddings';
 import { listFavouriteIds } from '@/lib/db/favourites';
 import { findRecipeBySourceUrl, listRecipesByUser } from '@/lib/db/recipes';
 import { setUserUnits, type User } from '@/lib/db/users';
-import type { DriveFile } from '@/lib/drive/drive-client';
+import type { DriveFile } from '@/lib/google/drive';
 import { embedText } from '@/lib/recipe/embeddings';
 import { setFavouriteAndTag } from '@/lib/recipe/favourite';
 import type { ExistingRecipe } from '@/lib/recipe/import-recipe';
@@ -31,7 +31,7 @@ import {
   convertImport,
   type ConversionOptions,
 } from '@/lib/recipe/to-cooklang';
-import type { UnitSystem } from '@/lib/recipe/units';
+import type { UnitSystem } from '@/lib/cooklang/units';
 import { DAILY_BUDGETS, spendBudget } from '@/lib/util/daily-budget';
 import { getDatabase, getEnv, runInBackground } from '@/lib/util/runtime';
 import { errorMessage, logError } from '@/utils/logging';

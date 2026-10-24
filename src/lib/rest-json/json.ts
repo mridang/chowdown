@@ -9,7 +9,7 @@
  */
 
 import { readJsonBody } from '@/utils/http/body';
-import { problem, problems } from '@/lib/api/problem';
+import { problem, problems } from '@/lib/rest-json/problem';
 
 /**
  * The largest JSON body a route accepts unless it asks for more. Generous for

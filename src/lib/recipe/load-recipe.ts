@@ -15,12 +15,12 @@ import {
   DriveNotConnectedError,
   isDriveConnected,
 } from '@/lib/auth/drive-access';
-import { sessionIsCurrent, type SessionPayload } from '@/lib/auth/session';
+import { sessionIsCurrent, type SessionPayload } from '@/lib/session';
 import { getUserAccessToken } from '@/lib/auth/user-access-token';
 import type { Database } from '@/lib/db/client';
 import { getRecipePageRows, type RecipePageRows } from '@/lib/db/recipe-page';
 import { claimDriveSync, type User } from '@/lib/db/users';
-import { getFileContent, listRecipeFiles } from '@/lib/drive/drive-client';
+import { getFileContent, listRecipeFiles } from '@/lib/google/drive';
 import { getDatabase } from '@/lib/util/runtime';
 import {
   toCardRecipe,
@@ -28,8 +28,8 @@ import {
   type CardRecipe,
   type Tone,
 } from '@/lib/recipe/card-data';
-import { extractNotes, sourceUrlOf, type Note } from '@/lib/recipe/cook-text';
-import { parseRecipe, type ParsedRecipe } from '@/lib/recipe/cooklang';
+import { extractNotes, sourceUrlOf, type Note } from '@/lib/cooklang/cook-text';
+import { parseRecipe, type ParsedRecipe } from '@/lib/cooklang/cooklang';
 import { recipesFolderOf } from '@/lib/recipe/drive-sync';
 import { minutesOf } from '@/lib/recipe/minutes';
 import { initialUnits, type UnitChoice } from '@/lib/recipe/page-view';

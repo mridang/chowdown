@@ -7,14 +7,14 @@ import {
   rateLimit,
   type RateLimit,
   type RateLimitStore,
-} from '@/lib/util/rate-limit';
+} from '@/lib/rate-limit';
 
 /** The statement the real store runs, read from the source so the test cannot drift from it. */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const SOURCE = readFileSync(
-  path.join(process.cwd(), 'src/lib/util/rate-limit.ts'),
+  path.join(process.cwd(), 'src/lib/rate-limit.ts'),
   'utf8',
 );
 const HIT_SQL = /const HIT_SQL = `([^`]*)`/.exec(SOURCE)?.[1] ?? '';

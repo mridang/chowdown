@@ -1,7 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite';
 
 import { generateKeyBase64 } from '@/lib/crypto';
-import { createSessionToken } from '@/lib/auth/session';
+import { createSessionToken } from '@/lib/session';
 import { SESSION_SECRET, fakeCookies, jar } from './auth-test-kit';
 
 export { SESSION_SECRET, fakeCookies, jar };

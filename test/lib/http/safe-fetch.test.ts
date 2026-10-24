@@ -7,8 +7,8 @@ import {
   type CappedFetchOptions,
   type SafeFetcher,
   type SafeRequestInit,
-} from '@/lib/http/safe-fetch';
-import { SITE_URL } from '@/lib/site';
+} from '@/lib/safe-fetch';
+import { SITE_URL } from '@/utils/site';
 
 describe('isPublicWebUrl', () => {
   it.each([

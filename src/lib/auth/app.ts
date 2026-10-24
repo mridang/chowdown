@@ -12,7 +12,7 @@
 
 import type { User } from '@/lib/db/users';
 import { isDriveConnected } from '@/lib/auth/drive-access';
-import type { SessionPayload } from '@/lib/auth/session';
+import type { SessionPayload } from '@/lib/session';
 
 /** Name of the session cookie. */
 export const SESSION_COOKIE = 'chowdown_session';

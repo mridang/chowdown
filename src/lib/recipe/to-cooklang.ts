@@ -18,8 +18,8 @@ import {
   removeEmptyMetadata,
   sourceUrlOf,
   upsertMetadata,
-} from '@/lib/recipe/cook-text';
-import { parseRecipe } from '@/lib/recipe/cooklang';
+} from '@/lib/cooklang/cook-text';
+import { parseRecipe } from '@/lib/cooklang/cooklang';
 import { withAuthor } from '@/lib/recipe/author';
 import { withoutScriptsAndStyles } from '@/lib/recipe/html-text';
 import { fetchPage } from '@/lib/recipe/fetch-page';

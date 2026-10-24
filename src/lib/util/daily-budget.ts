@@ -17,7 +17,7 @@ import {
   rateLimit,
   type RateLimit,
   type RateLimitStore,
-} from '@/lib/util/rate-limit';
+} from '@/lib/rate-limit';
 import { errorMessage, logError } from '@/utils/logging';
 import { getDatabase } from '@/lib/util/runtime';
 

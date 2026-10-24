@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { NextResponse } from 'next/server';
 
 import { SESSION_COOKIE, sessionClaims } from '@/lib/auth/app';
-import { verifySessionToken } from '@/lib/auth/session';
+import { verifySessionToken } from '@/lib/session';
 import { setSessionCookie } from '@/lib/auth/session-cookie';
 import type { User } from '@/lib/auth/store';
 

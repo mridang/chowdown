@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { CARD_RESOURCE_URI, LIST_RESOURCE_URI } from '@/lib/mcp/ui-resources';
-import { uncuratedFilename } from '@/lib/recipe/cook-text';
+import { uncuratedFilename } from '@/lib/cooklang/cook-text';
 import {
   buildRecipeCardData,
   buildRecipeListData,

@@ -18,7 +18,7 @@ import type {
   ParsedIngredient,
   ParsedRecipe,
   StepToken,
-} from '@/lib/recipe/cooklang';
+} from '@/lib/cooklang/cooklang';
 import { own } from '@/utils/own';
 
 /** Supported measurement systems. */

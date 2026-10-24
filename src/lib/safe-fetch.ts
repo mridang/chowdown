@@ -18,7 +18,7 @@
  * It introduces itself with one honest `User-Agent` that says who to contact.
  */
 
-import { SITE_NAME, SITE_URL } from '@/lib/site';
+import { SITE_NAME, SITE_URL } from '@/utils/site';
 import { parseUrl } from '@/utils/url';
 
 /**

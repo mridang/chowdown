@@ -11,7 +11,7 @@
  * carry on with whatever content they already have.
  */
 
-import { fetchCapped, type FetchFailure } from '@/lib/http/safe-fetch';
+import { fetchCapped, type FetchFailure } from '@/lib/safe-fetch';
 
 /** Max characters of HTML kept, so a huge page can't blow a request up. */
 const MAX_HTML = 200_000;

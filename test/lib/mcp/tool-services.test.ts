@@ -2,7 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/lib/auth/drive-access';
 import type { EmbeddingRow } from '@/lib/db/embeddings';
-import type { DriveFile } from '@/lib/drive/drive-client';
+import type { DriveFile } from '@/lib/google/drive';
 import type { FileOps } from '@/lib/mcp/tool-calls';
 import { BackendFailure } from '@/lib/mcp/tool-errors';
 import {

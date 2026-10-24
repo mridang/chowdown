@@ -12,7 +12,7 @@ import {
 } from '@/lib/mcp/http';
 import { MAX_BODY_BYTES, type RateLimitDeps } from '@/lib/mcp/request-limits';
 import { SERVER_INFO } from '@/lib/mcp/server-info';
-import type { RateLimitStore } from '@/lib/util/rate-limit';
+import type { RateLimitStore } from '@/lib/rate-limit';
 
 const ALL_SCOPES = ['recipes:read', 'recipes:write'];
 const SELF = 'https://chowdown.test';

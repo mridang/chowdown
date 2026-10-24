@@ -12,7 +12,7 @@ import {
 } from '@/components/icons';
 import { Fact } from '@/components/recipe/fact';
 import { Difficulty } from '@/components/ui/difficulty';
-import { duration, sentenceCase } from '@/lib/format';
+import { duration, sentenceCase } from '@/utils/text';
 import { firstTag } from '@/lib/recipe/first-tag';
 import type { RecipeTags } from '@/lib/recipe/tag-index';
 

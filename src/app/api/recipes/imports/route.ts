@@ -15,7 +15,7 @@ import { NextResponse } from 'next/server';
 
 import { requireLiveUid } from '@/lib/api/auth';
 import { budgetRefusal } from '@/lib/api/daily-budget';
-import { readJson } from '@/lib/api/json';
+import { readJson } from '@/lib/rest-json/json';
 import {
   absoluteUrl,
   decodeCursor,
@@ -23,7 +23,7 @@ import {
   parseLimit,
   sliceAfter,
 } from '@/lib/api/pagination';
-import { problems } from '@/lib/api/problem';
+import { problems } from '@/lib/rest-json/problem';
 import {
   compareImportPositions,
   importPosition,

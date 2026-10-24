@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { createKeyedQueue } from '@/lib/recipe/keyed-queue';
+import { createKeyedQueue } from '@/lib/async/keyed-queue';
 
 /** Let queued microtasks run, so a job that is ready to start has started. */
 const tick = () => new Promise<void>((resolve) => setTimeout(resolve, 0));

@@ -13,8 +13,8 @@ import {
   isUncurated,
   recipeDisplayName,
   sourceUrlOf,
-} from '@/lib/recipe/cook-text';
-import { parseRecipe } from '@/lib/recipe/cooklang';
+} from '@/lib/cooklang/cook-text';
+import { parseRecipe } from '@/lib/cooklang/cooklang';
 import { extractMedia } from '@/lib/recipe/media';
 import { minutesOf } from '@/lib/recipe/minutes';
 import { rowTags } from '@/lib/recipe/tag-index';

@@ -10,7 +10,7 @@ import {
   PRIVATE_PATHS,
   SITEMAP_PAGES,
 } from '@/app/_brand';
-import { PRIVACY_LAST_UPDATED } from '@/lib/site';
+import { PRIVACY_LAST_UPDATED } from '@/utils/site';
 import { pngSize } from '../png';
 
 describe('the brand', () => {

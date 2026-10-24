@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 
 import { requireLiveUid } from '@/lib/api/auth';
 import { pageBody } from '@/lib/api/pagination';
-import { problems } from '@/lib/api/problem';
+import { problems } from '@/lib/rest-json/problem';
 import type { IdContext } from '@/lib/api/route-context';
 import { getRecipePageRows } from '@/lib/db/recipe-page';
 import { parseSimilar } from '@/lib/recipe/similar';

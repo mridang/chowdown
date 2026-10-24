@@ -14,7 +14,7 @@ import {
 } from '@/lib/oauth/client';
 import { OAUTH_LIMITS, retryAfterIfLimited } from '@/lib/oauth/limits';
 import type { TextBody } from '@/utils/http/body';
-import type { RateLimitStore } from '@/lib/util/rate-limit';
+import type { RateLimitStore } from '@/lib/rate-limit';
 
 /** What a registration request came to. */
 export type RegistrationResult =

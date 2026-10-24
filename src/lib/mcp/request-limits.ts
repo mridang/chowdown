@@ -21,7 +21,7 @@ import {
   rateLimit,
   type RateLimit,
   type RateLimitStore,
-} from '@/lib/util/rate-limit';
+} from '@/lib/rate-limit';
 import {
   ERROR_INTERNAL,
   isNotification,

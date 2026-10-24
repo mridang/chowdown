@@ -12,7 +12,7 @@ import {
   d1RateLimitStore,
   type RateLimit,
   type RateLimitStore,
-} from '@/lib/util/rate-limit';
+} from '@/lib/rate-limit';
 import { APP_MIGRATIONS } from '../db/migrations';
 import { sqliteD1 } from '../db/sqlite-d1';
 

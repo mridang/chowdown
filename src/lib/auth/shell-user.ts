@@ -14,7 +14,7 @@ import { getUserById } from '@/lib/db/users';
 import { getDatabase, getEnv } from '@/lib/util/runtime';
 import { SESSION_COOKIE, driveHint, folderHint } from '@/lib/auth/app';
 import { isDriveConnected } from '@/lib/auth/drive-access';
-import { verifySessionToken } from '@/lib/auth/session';
+import { verifySessionToken } from '@/lib/session';
 
 /** What the header shows about the signed-in person. */
 export interface ShellUser {

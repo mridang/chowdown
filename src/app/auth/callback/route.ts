@@ -21,10 +21,10 @@ import {
   STATE_COOKIE,
 } from '@/lib/auth/app';
 import { finishFlow } from '@/lib/auth/flow-cookies';
-import { exchangeCode, getUserInfo } from '@/lib/auth/google-oauth';
+import { exchangeCode, getUserInfo } from '@/lib/google/auth';
 import { OTHER_FLOWS } from '@/lib/auth/hooks';
-import { SIGN_IN_PURPOSE, checkState } from '@/lib/auth/oauth-state';
-import { safeReturnPath } from '@/lib/auth/return-to';
+import { SIGN_IN_PURPOSE, checkState } from '@/lib/web-security/oauth-state';
+import { safeReturnPath } from '@/lib/web-security/return-to';
 import {
   completeSignIn,
   missingSignInSettings,

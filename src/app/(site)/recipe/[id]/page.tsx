@@ -22,7 +22,7 @@ import {
 } from '@/lib/recipe/page-view';
 import { recipeToJsonLd } from '@/lib/recipe/schema-org';
 import { jsonLdText } from '@/lib/seo';
-import { SITE_URL } from '@/lib/site';
+import { SITE_URL } from '@/utils/site';
 
 import { AlsoLike } from '@/app/(site)/recipe/[id]/_components/also-like';
 import {

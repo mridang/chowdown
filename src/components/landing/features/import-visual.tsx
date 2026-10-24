@@ -6,7 +6,7 @@ import { WindowFrame } from '@/components/landing/window-frame';
 import { Card } from '@/components/ui/card';
 import { Eyebrow } from '@/components/ui/layout';
 import { TintTile } from '@/components/ui/tint-tile';
-import { sentenceCase } from '@/lib/format';
+import { sentenceCase } from '@/utils/text';
 
 /** Importing: a pasted link becomes a draft with tags. */
 export function ImportVisual({

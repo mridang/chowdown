@@ -7,11 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 
-import {
-  ALLOWED_HOSTS,
-  ALLOWED_WIDTHS,
-  DEFAULT_WIDTH,
-} from '@/lib/images/site';
+import { ALLOWED_HOSTS, ALLOWED_WIDTHS, DEFAULT_WIDTH } from '@/lib/image/site';
 
 /** What the mocked access rules answer. */
 const rules = {

@@ -9,7 +9,7 @@
 import { NextResponse } from 'next/server';
 
 import { RETURN_COOKIE, STATE_COOKIE } from '@/lib/auth/app';
-import { STATE_TTL_SECONDS } from '@/lib/auth/oauth-state';
+import { STATE_TTL_SECONDS } from '@/lib/web-security/oauth-state';
 
 /** What the round trip needs remembered. */
 export interface FlowStart {

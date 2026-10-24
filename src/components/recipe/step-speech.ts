@@ -1,4 +1,4 @@
-import type { StepToken } from '@/lib/recipe/cooklang';
+import type { StepToken } from '@/lib/cooklang/cooklang';
 
 import { AMOUNT_PATTERN, parseAmount } from '@/components/recipe/amount';
 

@@ -31,7 +31,7 @@ jest.unstable_mockModule('@/lib/auth/hooks', () => ({
 
 const { completeSignIn, missingSignInSettings } =
   await import('@/lib/auth/sign-in');
-const { verifySessionToken } = await import('@/lib/auth/session');
+const { verifySessionToken } = await import('@/lib/session');
 
 const env = (overrides: Record<string, string | undefined> = {}) =>
   ({

@@ -16,7 +16,7 @@ import {
   ensureRecipesFolder,
   listRecipeFiles,
   type DriveFile,
-} from '@/lib/drive/drive-client';
+} from '@/lib/google/drive';
 import { getDatabase } from '@/lib/util/runtime';
 import { syncRecipeTags } from '@/lib/recipe/tag-index';
 

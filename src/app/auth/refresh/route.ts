@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getCurrentUser, getSession } from '@/lib/auth/current-user';
-import { safeReturnPath } from '@/lib/auth/return-to';
+import { safeReturnPath } from '@/lib/web-security/return-to';
 import { SESSION_COOKIE } from '@/lib/auth/app';
 import { setSessionCookie } from '@/lib/auth/session-cookie';
 import { getEnv } from '@/lib/util/runtime';

@@ -5,7 +5,7 @@
  *   GET /.well-known/gpc.json
  */
 
-import { GPC_LAST_UPDATE } from '@/lib/site';
+import { GPC_LAST_UPDATE } from '@/utils/site';
 
 /**
  * `GET /.well-known/gpc.json`: says this site honours Global Privacy Control,

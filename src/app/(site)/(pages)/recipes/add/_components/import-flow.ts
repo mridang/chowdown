@@ -7,7 +7,7 @@
  * checked without a browser.
  */
 
-import { problemMessage } from '@/lib/problem-message';
+import { problemMessage } from '@/lib/rest-json/problem-message';
 
 import {
   postImport,

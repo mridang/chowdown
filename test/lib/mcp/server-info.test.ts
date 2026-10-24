@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
 
-import { SITE_URL } from '@/lib/site';
+import { SITE_URL } from '@/utils/site';
 import {
   CAPABILITIES,
   INSTRUCTIONS,

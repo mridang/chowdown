@@ -18,7 +18,7 @@ import {
   sessionHintStale,
   wasDriveConnected,
 } from '@/lib/auth/drive-access';
-import { sessionIsCurrent, type SessionPayload } from '@/lib/auth/session';
+import { sessionIsCurrent, type SessionPayload } from '@/lib/session';
 import type { Database } from '@/lib/db/client';
 import { getAppPageRows, type AppPageRows } from '@/lib/db/recipe-page';
 import { claimBackfillLease, claimDriveSync, type User } from '@/lib/db/users';

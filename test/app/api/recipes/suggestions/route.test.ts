@@ -8,7 +8,7 @@ import {
 } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/lib/auth/drive-access';
-import type { DriveFile } from '@/lib/drive/drive-client';
+import type { DriveFile } from '@/lib/google/drive';
 import { installCloudflareContext } from '../../../../lib/db/sqlite-d1';
 
 /** Who is signed in; null means nobody. */
@@ -16,7 +16,7 @@ const session: { user: { id: number } | null } = { user: { id: 7 } };
 
 // The sign-in gate has its own tests (test/lib/api/auth.test.ts); here it just
 // says who is calling, in the shape the routes read.
-const { problems } = await import('@/lib/api/problem');
+const { problems } = await import('@/lib/rest-json/problem');
 jest.unstable_mockModule('@/lib/api/auth', () => ({
   requireUser: async () =>
     session.user
@@ -52,7 +52,7 @@ const topSimilar = jest.fn<
 jest.unstable_mockModule('@/lib/auth/user-access-token', () => ({
   getUserAccessToken,
 }));
-jest.unstable_mockModule('@/lib/drive/drive-client', () => ({
+jest.unstable_mockModule('@/lib/google/drive', () => ({
   listRecipeFiles,
 }));
 jest.unstable_mockModule('@/lib/drive/recipes-folder', () => ({

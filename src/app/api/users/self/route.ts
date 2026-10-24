@@ -9,8 +9,8 @@
 import { NextResponse } from 'next/server';
 
 import { requireUser } from '@/lib/api/auth';
-import { readJsonObject } from '@/lib/api/json';
-import { problems } from '@/lib/api/problem';
+import { readJsonObject } from '@/lib/rest-json/json';
+import { problems } from '@/lib/rest-json/problem';
 import { parseUserPatch, userResource } from '@/lib/api/user-resource';
 import { SESSION_COOKIE } from '@/lib/auth/app';
 import { revokeDriveLogin } from '@/lib/auth/drive-login';

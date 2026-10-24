@@ -17,7 +17,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { NumberBadge } from '@/components/ui/number-badge';
-import type { StepToken } from '@/lib/recipe/cooklang';
+import type { StepToken } from '@/lib/cooklang/cooklang';
 import { stepText } from '@/lib/recipe/page-view';
 
 import { ReadAloudButton } from '@/components/recipe/read-aloud';

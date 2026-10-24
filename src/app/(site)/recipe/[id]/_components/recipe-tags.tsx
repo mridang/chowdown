@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 
 import { Tag } from '@/components/ui/chip';
 import { Eyebrow } from '@/components/ui/layout';
-import { sentenceCase } from '@/lib/format';
+import { sentenceCase } from '@/utils/text';
 
 /** The most keywords shown; a recipe can carry dozens, and a long row is noise. */
 export const MAX_TAGS = 10;

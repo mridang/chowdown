@@ -14,7 +14,7 @@
  */
 
 import { foldText } from '@/lib/intl';
-import { toBaseAmount, type BaseAmount } from '@/lib/recipe/units';
+import { toBaseAmount, type BaseAmount } from '@/lib/cooklang/units';
 import { own } from '@/utils/own';
 
 /** Something the person has, with an amount when they gave one. */

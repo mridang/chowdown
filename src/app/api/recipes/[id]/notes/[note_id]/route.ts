@@ -12,16 +12,20 @@ import { NextResponse } from 'next/server';
 
 import { requireLiveUid, requireUser } from '@/lib/api/auth';
 import { driveFailure } from '@/lib/api/drive-failure';
-import { readJsonObject } from '@/lib/api/json';
+import { readJsonObject } from '@/lib/rest-json/json';
 import { settleMutation } from '@/lib/api/mutation-response';
 import {
   noteIndex,
   noteResource,
   parseNoteInput,
 } from '@/lib/api/note-resource';
-import { problems } from '@/lib/api/problem';
+import { problems } from '@/lib/rest-json/problem';
 import { getRecipeByFileId } from '@/lib/db/recipes';
-import { extractNotes, removeNote, replaceNote } from '@/lib/recipe/cook-text';
+import {
+  extractNotes,
+  removeNote,
+  replaceNote,
+} from '@/lib/cooklang/cook-text';
 import { mutateRecipeForUser } from '@/lib/recipe/mutate-recipe-live';
 import { getDatabase } from '@/lib/util/runtime';
 

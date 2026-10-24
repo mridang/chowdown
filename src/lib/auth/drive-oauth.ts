@@ -17,7 +17,7 @@ import {
   isAccessTokenResponse,
   postToken,
   type AccessTokenResponse,
-} from '@/lib/auth/google-oauth';
+} from '@/lib/google/auth';
 
 /** The one Drive permission chowdown uses: files the app itself created. */
 export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';

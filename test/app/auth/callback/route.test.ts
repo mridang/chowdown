@@ -18,7 +18,7 @@ import {
   sessionClaims,
 } from '@/lib/auth/app';
 import type { User } from '@/lib/auth/store';
-import { verifySessionToken } from '@/lib/auth/session';
+import { verifySessionToken } from '@/lib/session';
 import {
   SESSION_SECRET,
   answerFetch,

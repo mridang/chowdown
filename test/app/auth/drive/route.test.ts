@@ -8,7 +8,7 @@ import {
 } from '@jest/globals';
 import type { NextResponse } from 'next/server';
 
-import { verifySessionToken } from '@/lib/auth/session';
+import { verifySessionToken } from '@/lib/session';
 import { SESSION_COOKIE } from '@/lib/auth/app';
 import {
   SESSION_SECRET,

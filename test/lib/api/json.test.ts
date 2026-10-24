@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { isObject, readJson, readJsonObject } from '@/lib/api/json';
+import { isObject, readJson, readJsonObject } from '@/lib/rest-json/json';
 
 const post = (body: string, type = 'application/json') =>
   new Request('http://localhost/x', {

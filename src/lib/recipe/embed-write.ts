@@ -11,10 +11,10 @@
 import type { Database } from '@/lib/db/client';
 import { listEmbeddings, upsertEmbedding } from '@/lib/db/embeddings';
 import { listRecipesByUser } from '@/lib/db/recipes';
-import { recipeDisplayName } from '@/lib/recipe/cook-text';
-import { parseRecipe } from '@/lib/recipe/cooklang';
+import { recipeDisplayName } from '@/lib/cooklang/cook-text';
+import { parseRecipe } from '@/lib/cooklang/cooklang';
 import { buildEmbeddingText, embedText } from '@/lib/recipe/embeddings';
-import { mapSequentially } from '@/lib/recipe/map-sequentially';
+import { mapSequentially } from '@/lib/async/map-sequentially';
 import { refreshSimilarLists } from '@/lib/recipe/similar';
 
 /**

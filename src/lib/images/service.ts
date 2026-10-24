@@ -14,15 +14,15 @@
  * rest of the API, that nobody caches.
  */
 
-import { problems } from '@/lib/api/problem';
-import { isPublicWebUrl } from '@/lib/http/safe-fetch';
-import { isAllowedHost, snapWidth } from '@/lib/images/address';
+import { problems } from '@/lib/rest-json/problem';
+import { isPublicWebUrl } from '@/lib/safe-fetch';
+import { isAllowedHost, snapWidth } from '@/lib/image/address';
 import {
   fetchImage,
   type ImageFetch,
   type ImagesLike,
-} from '@/lib/images/proxy';
-import { DEFAULT_WIDTH } from '@/lib/images/site';
+} from '@/lib/image/proxy';
+import { DEFAULT_WIDTH } from '@/lib/image/site';
 
 /** The two cache operations the service uses. */
 export type ImageCache = Pick<Cache, 'match' | 'put'>;

@@ -29,7 +29,7 @@ import {
   contentHash as recipeListHash,
   html as recipeListHtml,
 } from '../../../dist/views/recipe-list';
-import { SITE_URL } from '@/lib/site';
+import { SITE_URL } from '@/utils/site';
 
 /**
  * MIME type the MCP Apps spec requires for UI resources. Defined locally so the

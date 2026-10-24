@@ -20,10 +20,10 @@ import {
   type EmbeddingRow,
 } from '@/lib/db/embeddings';
 import type { User } from '@/lib/db/users';
-import { getFileContent, type DriveFile } from '@/lib/drive/drive-client';
+import { getFileContent, type DriveFile } from '@/lib/google/drive';
 import { getDatabase, getEnv } from '@/lib/util/runtime';
-import { recipeDisplayName } from '@/lib/recipe/cook-text';
-import { parseRecipe } from '@/lib/recipe/cooklang';
+import { recipeDisplayName } from '@/lib/cooklang/cook-text';
+import { parseRecipe } from '@/lib/cooklang/cooklang';
 import {
   buildEmbeddingText,
   cosineBetween,
@@ -31,7 +31,7 @@ import {
   embedText,
   measure,
 } from '@/lib/recipe/embeddings';
-import { mapSequentially } from '@/lib/recipe/map-sequentially';
+import { mapSequentially } from '@/lib/async/map-sequentially';
 
 /** How many "find similar" recipes are stored and shown per recipe. */
 export const SIMILAR_COUNT = 6;

@@ -14,7 +14,7 @@ import {
   sessionIsCurrent,
   verifySessionToken,
   type SessionPayload,
-} from '@/lib/auth/session';
+} from '@/lib/session';
 import { getSessionEpoch, getUserById, type User } from '@/lib/auth/store';
 import { getEnv } from '@/lib/util/runtime';
 

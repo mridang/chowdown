@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import { NoteIcon } from '@/components/icons';
 import { Card } from '@/components/ui/card';
 import { Eyebrow, Heading } from '@/components/ui/layout';
-import { sentenceCase } from '@/lib/format';
+import { sentenceCase } from '@/utils/text';
 import type { GeneralNote } from '@/lib/recipe/page-view';
 
 import { AddNote } from '@/app/(site)/recipe/[id]/_components/add-note';

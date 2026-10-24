@@ -11,7 +11,7 @@ import type { NextResponse } from 'next/server';
 import { SESSION_COOKIE, SIGN_IN_FAILED_PATH } from '@/lib/auth/app';
 import { completeDriveConnect } from '@/lib/auth/drive-callback';
 import { DRIVE_SCOPE } from '@/lib/auth/drive-oauth';
-import { verifySessionToken } from '@/lib/auth/session';
+import { verifySessionToken } from '@/lib/session';
 import { decryptSecret } from '@/lib/crypto';
 import {
   ORIGIN,

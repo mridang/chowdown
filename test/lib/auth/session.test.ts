@@ -7,7 +7,7 @@ import {
   requireSessionSecret,
   sessionIsCurrent,
   verifySessionToken,
-} from '@/lib/auth/session';
+} from '@/lib/session';
 
 const SECRET = 'test-session-secret-value';
 

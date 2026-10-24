@@ -9,7 +9,7 @@
  * runs only when it has none.)
  */
 
-import { problems } from '@/lib/api/problem';
+import { problems } from '@/lib/rest-json/problem';
 import { getSessionUid } from '@/lib/auth/current-user';
 import { getDatabase } from '@/lib/util/runtime';
 import { userHasCover } from '@/lib/images/cover-ownership';

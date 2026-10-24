@@ -8,7 +8,7 @@
  * and no extra vector-DB infrastructure.
  */
 
-import type { ParsedRecipe } from '@/lib/recipe/cooklang';
+import type { ParsedRecipe } from '@/lib/cooklang/cooklang';
 
 /** Workers AI embedding model (768-dimensional). */
 const EMBED_MODEL = '@cf/baai/bge-base-en-v1.5';

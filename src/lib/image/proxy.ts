@@ -11,8 +11,8 @@ import {
   fetchCapped,
   type FetchFailure,
   type SafeFetcher,
-} from '@/lib/http/safe-fetch';
-import { snapWidth } from '@/lib/images/address';
+} from '@/lib/safe-fetch';
+import { snapWidth } from '@/lib/image/address';
 
 /** The most a picture may weigh before we refuse it. */
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;

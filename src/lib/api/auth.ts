@@ -13,9 +13,9 @@ import {
   getSessionUid,
 } from '@/lib/auth/current-user';
 import type { User } from '@/lib/db/users';
-import { isSameOriginPost } from '@/lib/auth/csrf';
+import { isSameOriginPost } from '@/lib/web-security/csrf';
 import { appOrigin } from '@/utils/origin';
-import { problems } from '@/lib/api/problem';
+import { problems } from '@/lib/rest-json/problem';
 
 /** Methods that never change data and so need no origin check. */
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);

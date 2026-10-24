@@ -9,9 +9,9 @@
  * finds "Crème brûlée".
  */
 
-import type { DriveFile } from '@/lib/drive/drive-client';
+import type { DriveFile } from '@/lib/google/drive';
 import { foldText } from '@/lib/intl';
-import { recipeDisplayName } from '@/lib/recipe/cook-text';
+import { recipeDisplayName } from '@/lib/cooklang/cook-text';
 
 /** What a reference to a recipe turned out to mean. */
 export type FileMatch =

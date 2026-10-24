@@ -9,7 +9,7 @@
  */
 
 import { appOrigin } from '@/utils/origin';
-import { isSameOriginPost } from '@/lib/auth/csrf';
+import { isSameOriginPost } from '@/lib/web-security/csrf';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import type { User } from '@/lib/auth/store';
 

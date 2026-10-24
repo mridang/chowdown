@@ -12,18 +12,18 @@
 
 import { requireLiveUid, requireUser } from '@/lib/api/auth';
 import { driveFailure } from '@/lib/api/drive-failure';
-import { readJsonObject } from '@/lib/api/json';
+import { readJsonObject } from '@/lib/rest-json/json';
 import { absoluteUrl } from '@/lib/api/pagination';
-import { problems } from '@/lib/api/problem';
+import { problems } from '@/lib/rest-json/problem';
 import { MAX_RECIPE_BODY_BYTES, parseNewRecipe } from '@/lib/api/recipe-input';
 import { listRecipes } from '@/lib/api/recipe-list';
 import { sendRecipe } from '@/lib/api/recipe-response';
 import { getUserAccessToken } from '@/lib/auth/user-access-token';
 import type { User } from '@/lib/db/users';
 import { findRecipeBySourceUrl } from '@/lib/db/recipes';
-import { createRecipeFile, type DriveFile } from '@/lib/drive/drive-client';
+import { createRecipeFile, type DriveFile } from '@/lib/google/drive';
 import { recipesFolderFor } from '@/lib/drive/recipes-folder';
-import { sourceUrlOf } from '@/lib/recipe/cook-text';
+import { sourceUrlOf } from '@/lib/cooklang/cook-text';
 import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 import { getDatabase } from '@/lib/util/runtime';
 

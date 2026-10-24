@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { mapSequentially } from '@/lib/recipe/map-sequentially';
+import { mapSequentially } from '@/lib/async/map-sequentially';
 
 describe('mapSequentially', () => {
   it('returns the results in the order of the items', async () => {

@@ -15,7 +15,7 @@
  */
 
 import { countOf } from '@/lib/intl';
-import type { StepToken } from '@/lib/recipe/cooklang';
+import type { StepToken } from '@/lib/cooklang/cooklang';
 import type { RecipeCardData, RecipeListItem } from '@/lib/mcp/ui-types';
 
 /** The most recipes a list prints before saying how many more there are. */

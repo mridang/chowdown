@@ -6,7 +6,7 @@ import {
   checkState,
   newState,
   purposeOf,
-} from '@/lib/auth/oauth-state';
+} from '@/lib/web-security/oauth-state';
 
 /** Every ask a round trip can be for in this app. */
 const PURPOSES = [SIGN_IN_PURPOSE, ...EXTRA_PURPOSES];
