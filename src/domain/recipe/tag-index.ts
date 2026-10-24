@@ -18,7 +18,8 @@ import {
   upsertRecipe,
   type Recipe,
 } from '@/domain/db/recipes';
-import { getFileContent, type DriveFile } from '@/lib/google/drive';
+import { getFileContent } from '@/domain/drive/recipe-files';
+import { type DriveFile } from '@/lib/google/drive';
 import { getDatabase, getEnv, runInBackground } from '@/core/runtime';
 import { parseRecipe, type ParsedRecipe } from '@/lib/cooklang/cooklang';
 import { embedRecipe } from '@/domain/recipe/embed-write';

@@ -12,11 +12,9 @@ import type { Database } from '@/core/db/client';
 import { deleteOrphanEmbeddings } from '@/domain/db/embeddings';
 import { deleteRecipesNotIn } from '@/domain/db/recipes';
 import { setRecipesFolderId, type User } from '@/domain/db/users';
-import {
-  ensureRecipesFolder,
-  listRecipeFiles,
-  type DriveFile,
-} from '@/lib/google/drive';
+import { listRecipeFiles } from '@/domain/drive/recipe-files';
+import { ensureRecipesFolder } from '@/domain/drive/recipes-folder';
+import { type DriveFile } from '@/lib/google/drive';
 import { getDatabase } from '@/core/runtime';
 import { syncRecipeTags } from '@/domain/recipe/tag-index';
 

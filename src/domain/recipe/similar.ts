@@ -20,7 +20,8 @@ import {
   type EmbeddingRow,
 } from '@/domain/db/embeddings';
 import type { User } from '@/domain/db/users';
-import { getFileContent, type DriveFile } from '@/lib/google/drive';
+import { getFileContent } from '@/domain/drive/recipe-files';
+import { type DriveFile } from '@/lib/google/drive';
 import { getDatabase, getEnv } from '@/core/runtime';
 import { recipeDisplayName } from '@/lib/cooklang/cook-text';
 import { parseRecipe } from '@/lib/cooklang/cooklang';

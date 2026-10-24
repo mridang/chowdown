@@ -8,7 +8,7 @@ import { getUserAccessToken } from '@/domain/auth/user-access-token';
 import type { Database } from '@/core/db/client';
 import { getRecipeByFileId } from '@/domain/db/recipes';
 import type { User } from '@/domain/db/users';
-import { getFileContent, updateRecipeFile } from '@/lib/google/drive';
+import { getFileContent, updateRecipeFile } from '@/domain/drive/recipe-files';
 import { getDatabase } from '@/core/runtime';
 import {
   mutateRecipe,

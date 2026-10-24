@@ -14,7 +14,7 @@ import { getUserAccessToken } from '@/domain/auth/user-access-token';
 import type { Database } from '@/core/db/client';
 import { deleteRecipeData, getRecipeByFileId } from '@/domain/db/recipes';
 import type { User } from '@/domain/db/users';
-import { trashRecipeFile } from '@/lib/google/drive';
+import { trashRecipeFile } from '@/domain/drive/recipe-files';
 import { getDatabase } from '@/core/runtime';
 import { refreshSimilarLists } from '@/domain/recipe/similar';
 

@@ -52,7 +52,7 @@ const topSimilar = jest.fn<
 jest.unstable_mockModule('@/domain/auth/user-access-token', () => ({
   getUserAccessToken,
 }));
-jest.unstable_mockModule('@/lib/google/drive', () => ({
+jest.unstable_mockModule('@/domain/drive/recipe-files', () => ({
   listRecipeFiles,
 }));
 jest.unstable_mockModule('@/domain/drive/recipes-folder', () => ({

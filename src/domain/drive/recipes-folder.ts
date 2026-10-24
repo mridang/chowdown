@@ -8,7 +8,20 @@
 import { setRecipesFolderId } from '@/domain/db/users';
 import type { User } from '@/domain/db/users';
 import { getDatabase } from '@/core/runtime';
-import { ensureRecipesFolder } from '@/lib/google/drive';
+import { DriveClient } from '@/lib/google/drive';
+
+/** Name of the app-managed folder created in each user's Drive. */
+export const RECIPES_FOLDER_NAME = 'Recipes';
+
+/**
+ * Find the app-managed "Recipes" folder, creating it if absent. Returns the
+ * folder id.
+ */
+export async function ensureRecipesFolder(
+  accessToken: string,
+): Promise<string> {
+  return new DriveClient(accessToken).ensureFolder(RECIPES_FOLDER_NAME);
+}
 
 /** The id of the user's Recipes folder, creating and recording it if needed. */
 export async function recipesFolderFor(

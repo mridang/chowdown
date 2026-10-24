@@ -19,7 +19,7 @@ import { pageBody, parseLimit } from '@/core/api/pagination';
 import { budgetRefusal } from '@/domain/api/daily-budget';
 import { problems } from '@/lib/rest-json/problem';
 import { getUserAccessToken } from '@/domain/auth/user-access-token';
-import { listRecipeFiles } from '@/lib/google/drive';
+import { listRecipeFiles } from '@/domain/drive/recipe-files';
 import { recipesFolderFor } from '@/domain/drive/recipes-folder';
 import { recipeDisplayName } from '@/lib/cooklang/cook-text';
 import { embedText } from '@/domain/recipe/embeddings';

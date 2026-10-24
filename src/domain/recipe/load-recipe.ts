@@ -23,7 +23,7 @@ import {
   type RecipePageRows,
 } from '@/domain/db/recipe-page';
 import { claimDriveSync, type User } from '@/domain/db/users';
-import { getFileContent, listRecipeFiles } from '@/lib/google/drive';
+import { getFileContent, listRecipeFiles } from '@/domain/drive/recipe-files';
 import { getDatabase } from '@/core/runtime';
 import {
   toCardRecipe,

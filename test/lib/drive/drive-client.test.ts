@@ -2,10 +2,10 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import {
   createRecipeFile,
-  isDriveFileId,
   listRecipeFiles,
   trashRecipeFile,
-} from '@/lib/google/drive';
+} from '@/domain/drive/recipe-files';
+import { isDriveFileId } from '@/lib/google/drive';
 
 const realFetch = globalThis.fetch;
 

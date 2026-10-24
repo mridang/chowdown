@@ -16,7 +16,7 @@ import {
   setRecipesFolderId,
   setRefreshToken,
 } from '@/domain/db/users';
-import { ensureRecipesFolder } from '@/lib/google/drive';
+import { ensureRecipesFolder } from '@/domain/drive/recipes-folder';
 import { getDatabase } from '@/core/runtime';
 import { logError } from '@/utils/logging';
 import {

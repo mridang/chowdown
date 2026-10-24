@@ -14,7 +14,7 @@ import type { Database } from '@/core/db/client';
 import { isFavourite, setFavourite } from '@/domain/db/favourites';
 import { getRecipeByFileId } from '@/domain/db/recipes';
 import { getUserById, type User } from '@/domain/db/users';
-import { getFileContent, updateRecipeFile } from '@/lib/google/drive';
+import { getFileContent, updateRecipeFile } from '@/domain/drive/recipe-files';
 import { getDatabase, runInBackground } from '@/core/runtime';
 import { withFavouriteTag } from '@/domain/recipe/favourite-tag';
 import { createKeyedQueue } from '@/lib/async/keyed-queue';

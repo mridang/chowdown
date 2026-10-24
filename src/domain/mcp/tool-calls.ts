@@ -26,12 +26,12 @@ import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import type { User } from '@/domain/db/users';
 import {
   createRecipeFile,
-  ensureRecipesFolder,
   getFileContent,
   listRecipeFiles,
   updateRecipeFile,
-  type DriveFile,
-} from '@/lib/google/drive';
+} from '@/domain/drive/recipe-files';
+import { ensureRecipesFolder } from '@/domain/drive/recipes-folder';
+import { type DriveFile } from '@/lib/google/drive';
 import { countOf, foldText } from '@/lib/intl';
 import {
   appendCookingLog,
