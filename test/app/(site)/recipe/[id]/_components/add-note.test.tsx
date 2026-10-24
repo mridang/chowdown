@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { AddNote } from '../../../../../../src/app/(site)/recipe/[id]/_components/add-note';
+import { AddNote } from '@/app/(site)/recipe/[id]/_components/add-note';
 import { htmlAt } from '../../../../../components/render';
 
 describe('AddNote', () => {

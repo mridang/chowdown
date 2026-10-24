@@ -8,9 +8,9 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { recipesFolderFor } from '../../../src/lib/drive/recipes-folder';
-import { getUserById } from '../../../src/lib/db/users';
-import { getDatabase } from '../../../src/lib/util';
+import { recipesFolderFor } from '@/lib/drive/recipes-folder';
+import { getUserById } from '@/lib/db/users';
+import { getDatabase } from '@/lib/util';
 import { insertUser } from '../auth/session-fixture';
 import { APP_MIGRATIONS } from '../db/migrations';
 import { installCloudflareContext, sqliteD1 } from '../db/sqlite-d1';

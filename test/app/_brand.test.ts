@@ -9,8 +9,8 @@ import {
   MANIFEST_EXTRAS,
   PRIVATE_PATHS,
   SITEMAP_PAGES,
-} from '../../src/app/_brand';
-import { PRIVACY_LAST_UPDATED } from '../../src/lib/site';
+} from '@/app/_brand';
+import { PRIVACY_LAST_UPDATED } from '@/lib/site';
 import { pngSize } from '../png';
 
 describe('the brand', () => {

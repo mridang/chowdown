@@ -6,7 +6,7 @@ import type { ReactElement } from 'react';
 import { cn } from '@/components/ui/cn';
 import { IntentLink } from '@/components/ui/intent-link';
 
-import { activeSection, APP_NAV } from './nav-links';
+import { activeSection, APP_NAV } from '@/components/site/nav-links';
 
 /**
  * The main navigation on wide screens, marking the current section. It reads

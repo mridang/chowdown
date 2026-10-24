@@ -5,10 +5,10 @@
  * first use) and remember its id so later calls skip the lookup.
  */
 
-import { setRecipesFolderId } from '../db/users';
-import type { User } from '../db/users';
-import { getDatabase } from '../util';
-import { ensureRecipesFolder } from './drive-client';
+import { setRecipesFolderId } from '@/lib/db/users';
+import type { User } from '@/lib/db/users';
+import { getDatabase } from '@/lib/util';
+import { ensureRecipesFolder } from '@/lib/drive/drive-client';
 
 /** The id of the user's Recipes folder, creating and recording it if needed. */
 export async function recipesFolderFor(

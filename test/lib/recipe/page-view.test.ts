@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { Note } from '../../../src/lib/recipe/cook-text';
-import type { StepToken } from '../../../src/lib/recipe/cooklang';
+import type { Note } from '@/lib/recipe/cook-text';
+import type { StepToken } from '@/lib/recipe/cooklang';
 import {
   declaredServings,
   DEFAULT_SERVINGS,
@@ -12,7 +12,7 @@ import {
   MAX_SERVINGS,
   servingsOf,
   stepText,
-} from '../../../src/lib/recipe/page-view';
+} from '@/lib/recipe/page-view';
 
 describe('servingsOf', () => {
   it('reads the servings metadata', () => {

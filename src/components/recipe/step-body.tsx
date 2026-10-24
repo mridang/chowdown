@@ -6,10 +6,10 @@ import { ClockIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
 import type { StepToken } from '@/lib/recipe/cooklang';
 
-import { useRecipeState } from './recipe-state';
-import { parseDurationMs } from './timer-duration';
-import { describeTimer, type TimerView } from './timer-state';
-import { useOptionalStepTimers } from './use-step-timers';
+import { useRecipeState } from '@/components/recipe/recipe-state';
+import { parseDurationMs } from '@/components/recipe/timer-duration';
+import { describeTimer, type TimerView } from '@/components/recipe/timer-state';
+import { useOptionalStepTimers } from '@/components/recipe/use-step-timers';
 
 /** The look of a timer button in each state: quiet until started, strongest when it has rung. */
 const CHIP_STATES: Readonly<Record<TimerView['state'], string>> = {

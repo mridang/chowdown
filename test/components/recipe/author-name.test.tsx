@@ -1,9 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  AuthorName,
-  handwritingFor,
-} from '../../../src/components/recipe/author-name';
+import { AuthorName, handwritingFor } from '@/components/recipe/author-name';
 import { html } from '../render';
 
 /** Real-looking names: every first name with every surname (400 people). */

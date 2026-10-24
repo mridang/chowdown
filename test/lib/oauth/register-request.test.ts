@@ -1,9 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { OAuthClient } from '../../../src/lib/oauth/client';
-import { OAUTH_LIMITS } from '../../../src/lib/oauth/limits';
-import { handleRegistration } from '../../../src/lib/oauth/register-request';
-import type { RateLimitStore } from '../../../src/lib/util/rate-limit';
+import type { OAuthClient } from '@/lib/oauth/client';
+import { OAUTH_LIMITS } from '@/lib/oauth/limits';
+import { handleRegistration } from '@/lib/oauth/register-request';
+import type { RateLimitStore } from '@/lib/util/rate-limit';
 
 const body = JSON.stringify({
   client_name: 'Assistant',

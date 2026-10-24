@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   buildFacts,
   RecipeFacts,
-} from '../../../../../../src/app/(site)/recipe/[id]/_components/recipe-facts';
+} from '@/app/(site)/recipe/[id]/_components/recipe-facts';
 import { html } from '../../../../../components/render';
 
 const labels = (facts: ReturnType<typeof buildFacts>) =>

@@ -6,7 +6,7 @@
  * authorization code is useless on its own.
  */
 
-import { bytesToBase64Url } from '../util/base64';
+import { bytesToBase64Url } from '@/lib/util/base64';
 
 /** The `S256` code challenge for a verifier. */
 export async function s256(verifier: string): Promise<string> {

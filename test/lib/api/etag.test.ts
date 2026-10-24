@@ -5,7 +5,7 @@ import {
   ifMatchSatisfied,
   ifNoneMatchHit,
   representationTag,
-} from '../../../src/lib/api/etag';
+} from '@/lib/api/etag';
 
 describe('entityTag', () => {
   it('is a quoted, stable hash that changes with the content', async () => {

@@ -7,7 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 
-import { entityTag } from '../../../../../../src/lib/api/etag';
+import { entityTag } from '@/lib/api/etag';
 import { fakeCookies } from '../../../../../lib/auth/session-fixture';
 import {
   addRecipe,
@@ -20,8 +20,7 @@ import {
 
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
-const { GET, POST } =
-  await import('../../../../../../src/app/api/recipes/[id]/notes/route');
+const { GET, POST } = await import('@/app/api/recipes/[id]/notes/route');
 
 let world: World;
 

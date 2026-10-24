@@ -1,4 +1,4 @@
-import { AMOUNT_PATTERN, parseAmount } from './amount';
+import { AMOUNT_PATTERN, parseAmount } from '@/components/recipe/amount';
 
 /** How many milliseconds each unit of time a recipe may name is worth. */
 const SECOND = 1000;

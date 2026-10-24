@@ -1,11 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { RecipeCardData } from '../../src/lib/mcp/ui-types';
-import {
-  RecipeCardApp,
-  RecipeCardScreen,
-} from '../../src/views/recipe-card-view';
-import type { ViewState } from '../../src/views/view-state';
+import type { RecipeCardData } from '@/lib/mcp/ui-types';
+import { RecipeCardApp, RecipeCardScreen } from '@/views/recipe-card-view';
+import type { ViewState } from '@/views/view-state';
 import { html } from '../components/render';
 
 const RECIPE: RecipeCardData = {

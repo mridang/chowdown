@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { RECIPES } from '../../../../src/components/landing/demo-recipes';
-import { FilesVisual } from '../../../../src/components/landing/features/files-visual';
+import { RECIPES } from '@/components/landing/demo-recipes';
+import { FilesVisual } from '@/components/landing/features/files-visual';
 import { html } from '../../render';
 
 describe('FilesVisual', () => {

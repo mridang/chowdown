@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { RecipeNotes } from '../../../../../../src/app/(site)/recipe/[id]/_components/recipe-notes';
+import { RecipeNotes } from '@/app/(site)/recipe/[id]/_components/recipe-notes';
 import { htmlAt } from '../../../../../components/render';
 
 const markup = (general: readonly { label?: string; text: string }[]) =>

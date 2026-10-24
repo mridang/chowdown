@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
 
-import { ALLOWED_ORIGINS_SETTING, getEnvSafe } from '../../../src/lib/mcp/env';
+import { ALLOWED_ORIGINS_SETTING, getEnvSafe } from '@/lib/mcp/env';
 
 const key = Symbol.for('__cloudflare-context__');
 const holder = globalThis as unknown as Record<symbol, unknown>;

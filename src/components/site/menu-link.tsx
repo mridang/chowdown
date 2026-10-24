@@ -5,8 +5,8 @@ import { DriveIcon, HeartIcon, PlusIcon, SearchIcon } from '@/components/icons';
 import { isServerHref } from '@/components/ui/button';
 import { POPOVER_ITEM } from '@/components/ui/popover';
 
-import { NEW_TAB } from './drive-link';
-import type { NavIcon, NavLink } from './nav-links';
+import { NEW_TAB } from '@/components/site/drive-link';
+import type { NavIcon, NavLink } from '@/components/site/nav-links';
 
 /** The picture for each kind of menu link; the Drive one is the colour logo. */
 const ICONS: Readonly<Record<NavIcon, ReactElement>> = {

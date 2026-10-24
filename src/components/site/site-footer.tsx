@@ -5,7 +5,7 @@ import { PanIcon, SparkIcon } from '@/components/icons';
 import { Logo } from '@/components/site/logo';
 import { Container } from '@/components/ui/layout';
 
-import type { NavLink } from './nav-links';
+import type { NavLink } from '@/components/site/nav-links';
 
 /**
  * The jagged edge above the footer: one flame-orange polygon whose top edge

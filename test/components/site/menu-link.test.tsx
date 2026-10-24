@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { MenuLink } from '../../../src/components/site/menu-link';
-import { driveLink } from '../../../src/components/site/drive-link';
+import { MenuLink } from '@/components/site/menu-link';
+import { driveLink } from '@/components/site/drive-link';
 import { htmlAt } from '../render';
 
 describe('MenuLink', () => {

@@ -7,7 +7,7 @@ import {
   matchesFilters,
   parseFilters,
   type FilterableRecipe,
-} from '../../../src/lib/recipe/facet-filter';
+} from '@/lib/recipe/facet-filter';
 
 const recipes: FilterableRecipe[] = [
   {

@@ -10,7 +10,7 @@ import {
   PlayIcon,
   ProteinIcon,
   SparklesIcon,
-} from '../../src/components/icons';
+} from '@/components/icons';
 import { classOf, html } from './render';
 
 describe('icons', () => {

@@ -8,16 +8,24 @@
  * on tool invocations).
  */
 
-import type { User } from '../db/users';
-import { readJsonBody as readJsonBodyUpTo, type JsonBody } from '../http/body';
-import { errorMessage, getDatabase, logError, runInBackground } from '../util';
+import type { User } from '@/lib/db/users';
+import {
+  readJsonBody as readJsonBodyUpTo,
+  type JsonBody,
+} from '@/lib/http/body';
+import {
+  errorMessage,
+  getDatabase,
+  logError,
+  runInBackground,
+} from '@/lib/util';
 import {
   d1RateLimitStore,
   purgeRateLimits,
   rateLimit,
   type RateLimit,
   type RateLimitStore,
-} from '../util/rate-limit';
+} from '@/lib/util/rate-limit';
 import {
   ERROR_INTERNAL,
   isNotification,
@@ -26,7 +34,7 @@ import {
   type ProtocolMessage,
   type ReplyId,
   type ProtocolRefusal,
-} from './protocol';
+} from '@/lib/mcp/protocol';
 
 /** The largest request body, in bytes. An import page is the biggest legitimate message and fits easily. */
 export const MAX_BODY_BYTES = 1_048_576;

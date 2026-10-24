@@ -7,8 +7,8 @@ import {
   jest,
 } from '@jest/globals';
 
-import { SESSION_COOKIE } from '../../../../src/lib/auth/app';
-import type { User } from '../../../../src/lib/auth/store';
+import { SESSION_COOKIE } from '@/lib/auth/app';
+import type { User } from '@/lib/auth/store';
 import {
   appRequest,
   fakeCookies,
@@ -40,9 +40,8 @@ jest.unstable_mockModule('../../../../src/lib/auth/store', () => ({
   bumpSessionEpoch,
 }));
 
-const { DELETE } = await import('../../../../src/app/api/sessions/route');
-const { getCurrentUser } =
-  await import('../../../../src/lib/auth/current-user');
+const { DELETE } = await import('@/app/api/sessions/route');
+const { getCurrentUser } = await import('@/lib/auth/current-user');
 
 let restore: () => void;
 

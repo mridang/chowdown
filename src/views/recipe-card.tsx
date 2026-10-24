@@ -9,7 +9,7 @@
 
 import { createRoot } from 'react-dom/client';
 
-import { RecipeCardApp } from './recipe-card-view';
+import { RecipeCardApp } from '@/views/recipe-card-view';
 
 const root = document.getElementById('root');
 if (root) {

@@ -7,9 +7,9 @@
 
 import { NextResponse } from 'next/server';
 
-import { spendBudget, type BudgetDeps } from '../util/daily-budget';
-import type { RateLimit } from '../util/rate-limit';
-import { problems } from './problem';
+import { spendBudget, type BudgetDeps } from '@/lib/util/daily-budget';
+import type { RateLimit } from '@/lib/util/rate-limit';
+import { problems } from '@/lib/api/problem';
 
 /**
  * The 429 problem for a person who has used up `budget`, or null if the call may

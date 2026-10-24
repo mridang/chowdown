@@ -8,7 +8,7 @@ import {
   sortRecipes,
   toFilterParams,
   type QueryableRecipe,
-} from '../../../src/lib/api/recipe-query';
+} from '@/lib/api/recipe-query';
 
 const recipe = (
   id: string,

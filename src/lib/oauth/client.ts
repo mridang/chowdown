@@ -13,11 +13,11 @@
  * Only public clients (no client secret, PKCE required) are supported.
  */
 
-import { sanitiseDisplayName } from './display';
-import { isAcceptableRedirectUri } from './redirect-uri';
-import { bytesToBase64Url } from '../util/base64';
-import { SITE_URL } from '../site';
-import { parseUrl } from '../util/url';
+import { sanitiseDisplayName } from '@/lib/oauth/display';
+import { isAcceptableRedirectUri } from '@/lib/oauth/redirect-uri';
+import { bytesToBase64Url } from '@/lib/util/base64';
+import { SITE_URL } from '@/lib/site';
+import { parseUrl } from '@/lib/util/url';
 
 /** A client as the authorization server uses it. */
 export interface OAuthClient {

@@ -1,10 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  canonicalValue,
-  facet,
-  validateTags,
-} from '../../../src/lib/recipe/taxonomy';
+import { canonicalValue, facet, validateTags } from '@/lib/recipe/taxonomy';
 
 describe('canonicalValue', () => {
   it('canonicalises case for a closed facet', () => {

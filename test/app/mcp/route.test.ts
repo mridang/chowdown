@@ -9,15 +9,15 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { DELETE, GET, OPTIONS, POST } from '../../../src/app/mcp/route';
-import { createDatabase } from '../../../src/lib/db/client';
-import { createOAuthStore } from '../../../src/lib/db/oauth';
-import { s256 } from '../../../src/lib/oauth/pkce';
+import { DELETE, GET, OPTIONS, POST } from '@/app/mcp/route';
+import { createDatabase } from '@/lib/db/client';
+import { createOAuthStore } from '@/lib/db/oauth';
+import { s256 } from '@/lib/oauth/pkce';
 import {
   exchangeAuthorizationCode,
   issueAuthorizationCode,
   type TokenResponse,
-} from '../../../src/lib/oauth/token-endpoint';
+} from '@/lib/oauth/token-endpoint';
 import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
 
 const ORIGIN = 'https://chowdown.test';

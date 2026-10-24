@@ -11,9 +11,13 @@ import { PlayIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import type { StepToken } from '@/lib/recipe/cooklang';
 
-import { useRecipeState } from './recipe-state';
-import { browserSpeech, speak, stopSpeaking } from './speaker';
-import { spokenStep } from './step-speech';
+import { useRecipeState } from '@/components/recipe/recipe-state';
+import {
+  browserSpeech,
+  speak,
+  stopSpeaking,
+} from '@/components/recipe/speaker';
+import { spokenStep } from '@/components/recipe/step-speech';
 
 /** A subscription that never fires: whether the browser can speak does not change. */
 function subscribeToNothing(): () => void {

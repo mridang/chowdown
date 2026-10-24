@@ -1,12 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { ParsedRecipe } from '../../../src/lib/recipe/cooklang';
+import type { ParsedRecipe } from '@/lib/recipe/cooklang';
 import {
   extractMedia,
   normalizeImageUrl,
   validImageUrls,
   withImages,
-} from '../../../src/lib/recipe/media';
+} from '@/lib/recipe/media';
 
 function recipe(metadata: [string, string][]): ParsedRecipe {
   return { title: 'X', metadata, ingredients: [], cookware: [], steps: [] };

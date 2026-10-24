@@ -13,13 +13,13 @@ import {
   isUncurated,
   recipeDisplayName,
   extractCookingLogs,
-} from '../recipe/cook-text';
-import { parseRecipe } from '../recipe/cooklang';
-import { convertRecipe, type UnitSystem } from '../recipe/units';
-import type { DriveFile } from '../drive/drive-client';
-import { cardText, listText } from './tool-text';
-import { CARD_RESOURCE_URI, LIST_RESOURCE_URI } from './ui-resources';
-import type { RecipeCardData, RecipeListData } from './ui-types';
+} from '@/lib/recipe/cook-text';
+import { parseRecipe } from '@/lib/recipe/cooklang';
+import { convertRecipe, type UnitSystem } from '@/lib/recipe/units';
+import type { DriveFile } from '@/lib/drive/drive-client';
+import { cardText, listText } from '@/lib/mcp/tool-text';
+import { CARD_RESOURCE_URI, LIST_RESOURCE_URI } from '@/lib/mcp/ui-resources';
+import type { RecipeCardData, RecipeListData } from '@/lib/mcp/ui-types';
 
 /** One piece of text in a tool result. */
 export interface TextContent {

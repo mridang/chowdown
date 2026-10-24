@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { TimerTray } from '../../../src/components/recipe/timer-tray';
-import type { StepTimer } from '../../../src/components/recipe/timer-state';
-import type { StepTimers } from '../../../src/components/recipe/use-step-timers';
+import { TimerTray } from '@/components/recipe/timer-tray';
+import type { StepTimer } from '@/components/recipe/timer-state';
+import type { StepTimers } from '@/components/recipe/use-step-timers';
 import { html } from '../render';
 
 const MIN = 60_000;

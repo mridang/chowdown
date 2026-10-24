@@ -8,9 +8,9 @@
 
 import { and, count, eq, inArray, sql } from 'drizzle-orm';
 
-import { chunked } from './chunk';
-import type { Database } from './client';
-import { embeddings, recipes } from './schema';
+import { chunked } from '@/lib/db/chunk';
+import type { Database } from '@/lib/db/client';
+import { embeddings, recipes } from '@/lib/db/schema';
 
 /** A cached embedding row. */
 export type EmbeddingRow = typeof embeddings.$inferSelect;

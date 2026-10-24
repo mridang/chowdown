@@ -5,7 +5,7 @@ import {
   MoreMenu,
   ShareButton,
   shareLink,
-} from '../../../src/components/recipe/actions';
+} from '@/components/recipe/actions';
 import { htmlAt } from '../render';
 
 describe('focusMoreActionsButton', () => {

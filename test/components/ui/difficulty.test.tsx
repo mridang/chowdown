@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { Difficulty } from '../../../src/components/ui/difficulty';
+import { Difficulty } from '@/components/ui/difficulty';
 import { html } from '../render';
 
 /** How many of the bars are drawn in the lit colour. */

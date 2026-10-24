@@ -6,8 +6,8 @@
  * (with the cursor positions that go with it).
  */
 
-import type { RecipeImport } from '../db/recipe-imports';
-import type { CursorPosition } from './pagination';
+import type { RecipeImport } from '@/lib/db/recipe-imports';
+import type { CursorPosition } from '@/lib/api/pagination';
 
 /** Largest pasted blob accepted, in characters. */
 export const MAX_INPUT = 100_000;

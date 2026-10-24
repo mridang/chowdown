@@ -9,7 +9,7 @@ import {
   isDriveConnected,
   sessionHintStale,
   wasDriveConnected,
-} from '../../../src/lib/auth/drive-access';
+} from '@/lib/auth/drive-access';
 
 describe('isDriveConnected', () => {
   it('is true only once a refresh token is stored', () => {

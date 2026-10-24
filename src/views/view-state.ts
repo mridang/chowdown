@@ -9,7 +9,7 @@
  * "Loading…" forever: every way out has a state with a message.
  */
 
-import type { ToolOutcome } from './payload';
+import type { ToolOutcome } from '@/views/payload';
 
 /** How long a View waits for data before it says so (milliseconds). */
 export const LOADING_TIMEOUT_MS = 20_000;

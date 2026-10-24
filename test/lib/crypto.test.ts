@@ -1,10 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  decryptSecret,
-  encryptSecret,
-  generateKeyBase64,
-} from '../../src/lib/crypto';
+import { decryptSecret, encryptSecret, generateKeyBase64 } from '@/lib/crypto';
 
 describe('crypto', () => {
   it('round-trips a secret through encrypt/decrypt', async () => {

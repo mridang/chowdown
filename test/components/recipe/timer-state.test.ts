@@ -12,7 +12,7 @@ import {
   type StepTimer,
   type TimerAction,
   type TimerSpec,
-} from '../../../src/components/recipe/timer-state';
+} from '@/components/recipe/timer-state';
 
 const MIN = 60_000;
 const T0 = 1_000_000;

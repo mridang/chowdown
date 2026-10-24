@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { ID_CHUNK, chunked } from '../../../src/lib/db/chunk';
+import { ID_CHUNK, chunked } from '@/lib/db/chunk';
 
 describe('chunked', () => {
   it('splits into consecutive pieces of at most the size', () => {

@@ -5,7 +5,7 @@ import {
   readClock,
   subscribeToClock,
   type ClockEnvironment,
-} from '../../../src/components/recipe/use-clock';
+} from '@/components/recipe/use-clock';
 
 /** A stand-in environment that records scheduling and lets the test fire events. */
 function fakeEnvironment() {

@@ -12,10 +12,10 @@
  * it. They are pure so the rules can be tested without a page.
  */
 
-import { redirectKind, type RedirectKind } from './redirect-uri';
-import type { OAuthClient } from './client';
-import { SCOPE_READ, SCOPE_WRITE } from './scopes';
-import { parseUrl } from '../util/url';
+import { redirectKind, type RedirectKind } from '@/lib/oauth/redirect-uri';
+import type { OAuthClient } from '@/lib/oauth/client';
+import { SCOPE_READ, SCOPE_WRITE } from '@/lib/oauth/scopes';
+import { parseUrl } from '@/lib/util/url';
 
 /** The longest client name we show. */
 export const MAX_DISPLAY_NAME_LENGTH = 100;

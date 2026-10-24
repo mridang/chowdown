@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { EmptyState } from '../../../src/components/ui/empty-state';
+import { EmptyState } from '@/components/ui/empty-state';
 import { classOf, html } from '../render';
 
 describe('EmptyState', () => {

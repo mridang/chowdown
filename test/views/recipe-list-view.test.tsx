@@ -1,15 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type {
-  RecipeCardData,
-  RecipeListData,
-} from '../../src/lib/mcp/ui-types';
-import { INITIAL_LIST_STATE, type ListState } from '../../src/views/list-state';
-import {
-  RecipeListApp,
-  RecipeListScreen,
-} from '../../src/views/recipe-list-view';
-import type { ViewState } from '../../src/views/view-state';
+import type { RecipeCardData, RecipeListData } from '@/lib/mcp/ui-types';
+import { INITIAL_LIST_STATE, type ListState } from '@/views/list-state';
+import { RecipeListApp, RecipeListScreen } from '@/views/recipe-list-view';
+import type { ViewState } from '@/views/view-state';
 import { html } from '../components/render';
 
 const LIST: RecipeListData = {

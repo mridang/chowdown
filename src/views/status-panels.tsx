@@ -10,7 +10,7 @@
 
 import type { ReactElement } from 'react';
 
-import type { FailureReason } from './view-state';
+import type { FailureReason } from '@/views/view-state';
 
 /** The heading for each way a View can come up empty. */
 const HEADINGS: Readonly<Record<FailureReason, string>> = {

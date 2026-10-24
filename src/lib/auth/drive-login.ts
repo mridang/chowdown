@@ -7,10 +7,10 @@
  * our database.
  */
 
-import { decryptSecret } from '../crypto';
-import type { User } from '../db/users';
-import { errorMessage, getEnv, logError } from '../util';
-import { revokeToken } from './drive-oauth';
+import { decryptSecret } from '@/lib/crypto';
+import type { User } from '@/lib/db/users';
+import { errorMessage, getEnv, logError } from '@/lib/util';
+import { revokeToken } from '@/lib/auth/drive-oauth';
 
 /**
  * Revoke the person's stored Drive refresh token at Google, if they have one.

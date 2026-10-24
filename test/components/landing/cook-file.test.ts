@@ -4,7 +4,7 @@ import {
   fileSlug,
   previewLines,
   tidyLine,
-} from '../../../src/components/landing/cook-file';
+} from '@/components/landing/cook-file';
 
 describe('fileSlug', () => {
   it('joins the words of a title with hyphens', () => {

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { OPTIONS, POST } from '../../../../src/app/oauth/register/route';
+import { OPTIONS, POST } from '@/app/oauth/register/route';
 import { installCloudflareContext, sqliteD1 } from '../../../lib/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 

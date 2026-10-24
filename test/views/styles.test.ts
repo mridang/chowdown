@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { STYLES } from '../../src/views/styles';
+import { STYLES } from '@/views/styles';
 
 describe('STYLES', () => {
   it('follows the host’s theme, with the operating system only as a fallback', () => {

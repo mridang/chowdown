@@ -18,7 +18,7 @@ import {
   TextArea,
 } from '@/components/ui/field';
 
-import { postNote } from './note-request';
+import { postNote } from '@/app/(site)/recipe/[id]/_components/note-request';
 
 /**
  * "Add a note" control on a recipe page. Lets the user attach a personal note

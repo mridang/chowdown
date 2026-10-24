@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { DELETE } from '../../../../../src/app/api/sessions/self/route';
-import { SESSION_COOKIE } from '../../../../../src/lib/auth/app';
+import { DELETE } from '@/app/api/sessions/self/route';
+import { SESSION_COOKIE } from '@/lib/auth/app';
 import { appRequest } from '../../../../lib/auth/auth-test-kit';
 
 describe('DELETE /api/sessions/self', () => {

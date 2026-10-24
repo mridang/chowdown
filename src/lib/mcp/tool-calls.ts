@@ -21,9 +21,9 @@
  * can relay. Only a mistake in this code escapes as an exception.
  */
 
-import { getUserAccessToken } from '../auth/user-access-token';
-import { DriveNotConnectedError } from '../auth/drive-access';
-import type { User } from '../db/users';
+import { getUserAccessToken } from '@/lib/auth/user-access-token';
+import { DriveNotConnectedError } from '@/lib/auth/drive-access';
+import type { User } from '@/lib/db/users';
 import {
   createRecipeFile,
   ensureRecipesFolder,
@@ -31,8 +31,8 @@ import {
   listRecipeFiles,
   updateRecipeFile,
   type DriveFile,
-} from '../drive/drive-client';
-import { countOf, foldText } from '../intl';
+} from '@/lib/drive/drive-client';
+import { countOf, foldText } from '@/lib/intl';
 import {
   appendCookingLog,
   appendNote,
@@ -40,29 +40,38 @@ import {
   recipeDisplayName,
   removeMetadata,
   uncuratedFilename,
-} from '../recipe/cook-text';
-import { parseRecipe } from '../recipe/cooklang';
-import { importRecipe } from '../recipe/import-recipe';
-import { resolveFile } from '../recipe/match';
-import { validImageUrls, withImages } from '../recipe/media';
-import { indexRecipeWrite } from '../recipe/tag-index';
-import { parseVector, topSimilar } from '../recipe/similar';
-import { isUnitSystem, type UnitSystem } from '../recipe/units';
-import { SITE_URL } from '../site';
-import { errorMessage, getDatabase, logError } from '../util';
-import { isJsonObject, validateJson, type JsonSchema } from './json-schema';
+} from '@/lib/recipe/cook-text';
+import { parseRecipe } from '@/lib/recipe/cooklang';
+import { importRecipe } from '@/lib/recipe/import-recipe';
+import { resolveFile } from '@/lib/recipe/match';
+import { validImageUrls, withImages } from '@/lib/recipe/media';
+import { indexRecipeWrite } from '@/lib/recipe/tag-index';
+import { parseVector, topSimilar } from '@/lib/recipe/similar';
+import { isUnitSystem, type UnitSystem } from '@/lib/recipe/units';
+import { SITE_URL } from '@/lib/site';
+import { errorMessage, getDatabase, logError } from '@/lib/util';
+import {
+  isJsonObject,
+  validateJson,
+  type JsonSchema,
+} from '@/lib/mcp/json-schema';
 import {
   SCENARIO_TOOLS,
   runScenarioTool,
   type ScenarioToolName,
-} from './scenarios';
-import { canonicalArguments, numberArg, offsetArg, textArg } from './tool-args';
-import { PAGE_DEFAULT, PAGE_MAX, toolNamed } from './tool-definitions';
+} from '@/lib/mcp/scenarios';
+import {
+  canonicalArguments,
+  numberArg,
+  offsetArg,
+  textArg,
+} from '@/lib/mcp/tool-args';
+import { PAGE_DEFAULT, PAGE_MAX, toolNamed } from '@/lib/mcp/tool-definitions';
 import {
   BackendFailure,
   InvalidToolArguments,
   UnknownTool,
-} from './tool-errors';
+} from '@/lib/mcp/tool-errors';
 import {
   errorResult,
   recipeCardResult,
@@ -70,15 +79,20 @@ import {
   recipeListSummaryResult,
   textResult,
   type ToolResult,
-} from './tool-results';
-import { nextPageHint, pastTheEnd, plainTitle, rangeText } from './tool-text';
+} from '@/lib/mcp/tool-results';
+import {
+  nextPageHint,
+  pastTheEnd,
+  plainTitle,
+  rangeText,
+} from '@/lib/mcp/tool-text';
 import {
   EMBEDDINGS_PER_CALL,
   guardFileOps,
   guarded,
   liveToolServices,
   type ToolServices,
-} from './tool-services';
+} from '@/lib/mcp/tool-services';
 
 /** The four things the tools do with recipe files, plus the cache refresh that follows a write. */
 export interface FileOps {

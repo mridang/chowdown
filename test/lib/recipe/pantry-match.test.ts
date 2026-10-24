@@ -7,7 +7,7 @@ import {
   parsePantryItem,
   rankMatches,
   sameIngredient,
-} from '../../../src/lib/recipe/pantry-match';
+} from '@/lib/recipe/pantry-match';
 
 const needs = (...pairs: [string, string][]) =>
   pairs.map(([quantity, name]) => ({ quantity, name }));

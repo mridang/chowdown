@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-import { deleteAccount } from '../../../src/components/site/delete-account';
+import { deleteAccount } from '@/components/site/delete-account';
 
 afterEach(() => {
   jest.restoreAllMocks();

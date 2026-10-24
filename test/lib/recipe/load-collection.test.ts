@@ -1,14 +1,14 @@
 import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { DriveNotConnectedError } from '../../../src/lib/auth/drive-access';
-import type { SessionPayload } from '../../../src/lib/auth/session';
-import type { Database } from '../../../src/lib/db/client';
-import type { AppPageRows } from '../../../src/lib/db/recipe-page';
+import { DriveNotConnectedError } from '@/lib/auth/drive-access';
+import type { SessionPayload } from '@/lib/auth/session';
+import type { Database } from '@/lib/db/client';
+import type { AppPageRows } from '@/lib/db/recipe-page';
 import {
   loadCollection,
   type CollectionDeps,
-} from '../../../src/lib/recipe/load-collection';
+} from '@/lib/recipe/load-collection';
 
 const db = {} as Database;
 

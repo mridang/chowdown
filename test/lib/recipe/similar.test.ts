@@ -1,9 +1,9 @@
 import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { EmbeddingRow } from '../../../src/lib/db/embeddings';
-import type { Database } from '../../../src/lib/db/client';
-import type { User } from '../../../src/lib/db/users';
+import type { EmbeddingRow } from '@/lib/db/embeddings';
+import type { Database } from '@/lib/db/client';
+import type { User } from '@/lib/db/users';
 import {
   ensureEmbeddings,
   parseSimilar,
@@ -14,7 +14,7 @@ import {
   updateSimilarLists,
   type EmbeddingDeps,
   type SimilarRecipe,
-} from '../../../src/lib/recipe/similar';
+} from '@/lib/recipe/similar';
 import { APP_MIGRATIONS } from '../db/migrations';
 import { sqliteDatabase } from '../db/sqlite-db';
 

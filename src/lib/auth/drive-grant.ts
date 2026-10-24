@@ -8,9 +8,9 @@
  * back is ever shown.
  */
 
-import type { DriveAttempt } from './drive-access';
-import { grantedDrive } from './drive-oauth';
-import type { TokenResponse } from './google-oauth';
+import type { DriveAttempt } from '@/lib/auth/drive-access';
+import { grantedDrive } from '@/lib/auth/drive-oauth';
+import type { TokenResponse } from '@/lib/auth/google-oauth';
 
 /** What the check needs to know. */
 export interface DriveGrant {

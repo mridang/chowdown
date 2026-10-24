@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { driveFailure } from '../../../src/lib/api/drive-failure';
-import { DriveNotConnectedError } from '../../../src/lib/auth/drive-access';
+import { driveFailure } from '@/lib/api/drive-failure';
+import { DriveNotConnectedError } from '@/lib/auth/drive-access';
 
 describe('driveFailure', () => {
   it('says to connect Drive when that is what is missing', async () => {

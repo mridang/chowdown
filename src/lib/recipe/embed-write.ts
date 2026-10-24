@@ -8,14 +8,14 @@
  * "Find similar" row a single cheap read.
  */
 
-import type { Database } from '../db/client';
-import { listEmbeddings, upsertEmbedding } from '../db/embeddings';
-import { listRecipesByUser } from '../db/recipes';
-import { recipeDisplayName } from './cook-text';
-import { parseRecipe } from './cooklang';
-import { buildEmbeddingText, embedText } from './embeddings';
-import { mapSequentially } from './map-sequentially';
-import { refreshSimilarLists } from './similar';
+import type { Database } from '@/lib/db/client';
+import { listEmbeddings, upsertEmbedding } from '@/lib/db/embeddings';
+import { listRecipesByUser } from '@/lib/db/recipes';
+import { recipeDisplayName } from '@/lib/recipe/cook-text';
+import { parseRecipe } from '@/lib/recipe/cooklang';
+import { buildEmbeddingText, embedText } from '@/lib/recipe/embeddings';
+import { mapSequentially } from '@/lib/recipe/map-sequentially';
+import { refreshSimilarLists } from '@/lib/recipe/similar';
 
 /**
  * What embedding reaches out to, gathered in one place so a test can hand in

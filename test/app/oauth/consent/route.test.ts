@@ -8,7 +8,7 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { s256 } from '../../../../src/lib/oauth/pkce';
+import { s256 } from '@/lib/oauth/pkce';
 import { installCloudflareContext, sqliteD1 } from '../../../lib/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 
@@ -24,7 +24,7 @@ jest.unstable_mockModule('../../../../src/lib/auth/current-user', () => ({
   getLiveSessionUid: async () => (session.ended ? null : session.uid),
 }));
 
-const { POST } = await import('../../../../src/app/oauth/consent/route');
+const { POST } = await import('@/app/oauth/consent/route');
 
 const ORIGIN = 'https://chowdown.test';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';

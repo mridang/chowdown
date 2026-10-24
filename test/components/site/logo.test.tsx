@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { Logo } from '../../../src/components/site/logo';
+import { Logo } from '@/components/site/logo';
 import { classOf, html } from '../render';
 
 describe('Logo', () => {

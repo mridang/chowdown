@@ -7,10 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 
-import {
-  SESSION_COOKIE,
-  verifySessionToken,
-} from '../../../../src/lib/auth/session';
+import { SESSION_COOKIE, verifySessionToken } from '@/lib/auth/session';
 import {
   SESSION_SECRET,
   fakeCookies,
@@ -27,7 +24,7 @@ import {
 
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
-const { GET } = await import('../../../../src/app/auth/drive/route');
+const { GET } = await import('@/app/auth/drive/route');
 
 let world: World;
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import PagesLoading from '../../../../src/app/(site)/(pages)/loading';
+import PagesLoading from '@/app/(site)/(pages)/loading';
 import { html } from '../../../components/render';
 
 describe('the loading shell for the account pages', () => {

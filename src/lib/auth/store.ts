@@ -13,8 +13,8 @@ import {
   getUserById as findUser,
   upsertUser,
   type User,
-} from '../db/users';
-import { getDatabase } from '../util';
+} from '@/lib/db/users';
+import { getDatabase } from '@/lib/util';
 
 export type { User };
 

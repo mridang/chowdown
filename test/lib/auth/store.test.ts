@@ -5,7 +5,7 @@ import {
   getSessionEpoch,
   getUserById,
   upsertGoogleUser,
-} from '../../../src/lib/auth/store';
+} from '@/lib/auth/store';
 import { openWorld, type World } from '../../app/api/world';
 
 let world: World;

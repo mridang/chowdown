@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import PrivacyPage, { metadata } from '../../../../src/app/(site)/privacy/page';
+import PrivacyPage, { metadata } from '@/app/(site)/privacy/page';
 import { html } from '../../../components/render';
 
 describe('PrivacyPage', () => {

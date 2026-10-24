@@ -14,10 +14,10 @@
  * cooking log are never touched.
  */
 
-import { listAnd } from '../intl';
-import { removeMetadata, upsertMetadata } from './cook-text';
-import { validImageUrls, withImages } from './media';
-import { FACETS, canonicalValue, facet } from './taxonomy';
+import { listAnd } from '@/lib/intl';
+import { removeMetadata, upsertMetadata } from '@/lib/recipe/cook-text';
+import { validImageUrls, withImages } from '@/lib/recipe/media';
+import { FACETS, canonicalValue, facet } from '@/lib/recipe/taxonomy';
 
 /** The outcome of a patch: new source, or what was wrong with it. */
 export type PatchResult =

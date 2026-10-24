@@ -8,29 +8,29 @@
  * wording and ranking can be tested without a server.
  */
 
-import { DriveNotConnectedError } from '../auth/drive-access';
-import type { Recipe } from '../db/recipes';
-import { countOf, foldText, listAnd } from '../intl';
-import { recipeDisplayName } from '../recipe/cook-text';
-import { parseRecipe, type ParsedRecipe } from '../recipe/cooklang';
-import { DIET_TYPES, suitableFor, type DietType } from '../recipe/diet-type';
-import { minutesOf } from '../recipe/minutes';
+import { DriveNotConnectedError } from '@/lib/auth/drive-access';
+import type { Recipe } from '@/lib/db/recipes';
+import { countOf, foldText, listAnd } from '@/lib/intl';
+import { recipeDisplayName } from '@/lib/recipe/cook-text';
+import { parseRecipe, type ParsedRecipe } from '@/lib/recipe/cooklang';
+import { DIET_TYPES, suitableFor, type DietType } from '@/lib/recipe/diet-type';
+import { minutesOf } from '@/lib/recipe/minutes';
 import {
   matchRecipe,
   rankMatches,
   type PantryMatch,
-} from '../recipe/pantry-match';
-import { FACETS, facet } from '../recipe/taxonomy';
-import { rowTags, type RecipeTags } from '../recipe/tag-index';
-import { pantryOf } from './pantry-input';
+} from '@/lib/recipe/pantry-match';
+import { FACETS, facet } from '@/lib/recipe/taxonomy';
+import { rowTags, type RecipeTags } from '@/lib/recipe/tag-index';
+import { pantryOf } from '@/lib/mcp/pantry-input';
 import {
   limitArg,
   numberArg,
   offsetArg,
   stringArg,
   stringListArg,
-} from './tool-args';
-import { pastTheEnd, plainTitle, rangeText } from './tool-text';
+} from '@/lib/mcp/tool-args';
+import { pastTheEnd, plainTitle, rangeText } from '@/lib/mcp/tool-text';
 
 /** A cached recipe, parsed once, with what the scenario tools look at. */
 export interface ScenarioRecipe {

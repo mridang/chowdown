@@ -5,7 +5,7 @@ import {
   MAX_IMPORT_UNITS,
   planImport,
   splitTextBlocks,
-} from '../../../src/lib/recipe/import-blob';
+} from '@/lib/recipe/import-blob';
 
 describe('extractUrls', () => {
   it('pulls out http(s) URLs in order', () => {

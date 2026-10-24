@@ -6,7 +6,7 @@ import {
   postImport,
   postRecipe,
   readImport,
-} from '../../../../../../../src/app/(site)/(pages)/recipes/add/_components/recipe-requests';
+} from '@/app/(site)/(pages)/recipes/add/_components/recipe-requests';
 
 afterEach(() => {
   jest.restoreAllMocks();

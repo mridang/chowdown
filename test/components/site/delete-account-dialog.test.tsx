@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { DeleteAccountDialog } from '../../../src/components/site/delete-account-dialog';
+import { DeleteAccountDialog } from '@/components/site/delete-account-dialog';
 import { html } from '../render';
 
 const markup = (open: boolean) =>

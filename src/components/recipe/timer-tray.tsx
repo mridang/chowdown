@@ -6,8 +6,8 @@ import { CheckIcon, ClockIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/components/ui/cn';
 
-import { describeTimer, type StepTimer } from './timer-state';
-import type { StepTimers } from './use-step-timers';
+import { describeTimer, type StepTimer } from '@/components/recipe/timer-state';
+import type { StepTimers } from '@/components/recipe/use-step-timers';
 
 /** The look of a tray entry by state: a ring of colour for one that has rung, with no motion. */
 const ENTRY_STATES = {

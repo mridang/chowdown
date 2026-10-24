@@ -1,12 +1,12 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { Database } from '../../../src/lib/db/client';
-import type { User } from '../../../src/lib/db/users';
+import type { Database } from '@/lib/db/client';
+import type { User } from '@/lib/db/users';
 import {
   recipesFolderOf,
   syncFromDrive,
   type DriveSyncDeps,
-} from '../../../src/lib/recipe/drive-sync';
+} from '@/lib/recipe/drive-sync';
 
 const db = { fake: 'db' } as unknown as Database;
 

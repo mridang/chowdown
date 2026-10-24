@@ -2,8 +2,8 @@ import { jest } from '@jest/globals';
 import { NextRequest } from 'next/server';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { encryptSecret } from '../../../src/lib/crypto';
-import { SESSION_COOKIE } from '../../../src/lib/auth/session';
+import { encryptSecret } from '@/lib/crypto';
+import { SESSION_COOKIE } from '@/lib/auth/session';
 import {
   insertUser,
   jar,

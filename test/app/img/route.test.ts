@@ -11,7 +11,7 @@ import {
   ALLOWED_HOSTS,
   ALLOWED_WIDTHS,
   DEFAULT_WIDTH,
-} from '../../../src/lib/images/site';
+} from '@/lib/images/site';
 
 /** What the mocked access rules answer. */
 const rules = {
@@ -40,7 +40,7 @@ jest.unstable_mockModule('@opennextjs/cloudflare', () => ({
   }),
 }));
 
-const { GET } = await import('../../../src/app/img/route');
+const { GET } = await import('@/app/img/route');
 
 const PHOTO = `https://${ALLOWED_HOSTS?.[0] ?? 'photos.example.org'}/soup.jpg`;
 const WIDTH = ALLOWED_WIDTHS[0] ?? DEFAULT_WIDTH;

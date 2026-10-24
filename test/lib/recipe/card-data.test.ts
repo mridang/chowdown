@@ -1,10 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  cleanTitle,
-  toCardRecipe,
-  toneFor,
-} from '../../../src/lib/recipe/card-data';
+import { cleanTitle, toCardRecipe, toneFor } from '@/lib/recipe/card-data';
 
 const FULL = [
   '>> title: Chicken Chettinad | Chettinad Chicken Recipe',

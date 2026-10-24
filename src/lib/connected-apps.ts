@@ -6,7 +6,7 @@
  * apps that have been given access.
  */
 
-import type { ConnectedApp as StoredConnectedApp } from './db/oauth';
+import type { ConnectedApp as StoredConnectedApp } from '@/lib/db/oauth';
 
 /** An app the user has connected, as `GET /api/users/self/connections` returns it. */
 export interface ConnectedApp {

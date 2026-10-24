@@ -9,10 +9,10 @@
  * a display name.
  */
 
-import type { RecipeCardData, RecipeListItem } from '../lib/mcp/ui-types';
-import { openRecipePrompt } from './follow-up';
-import type { ListAction } from './list-state';
-import { isRecipeCardData, type ToolOutcome } from './payload';
+import type { RecipeCardData, RecipeListItem } from '@/lib/mcp/ui-types';
+import { openRecipePrompt } from '@/views/follow-up';
+import type { ListAction } from '@/views/list-state';
+import { isRecipeCardData, type ToolOutcome } from '@/views/payload';
 
 /** The tool a tap falls back to when the host cannot carry a message. */
 export const OPEN_RECIPE_TOOL = 'get_recipe';

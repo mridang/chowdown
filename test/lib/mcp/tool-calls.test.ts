@@ -1,22 +1,15 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { DriveNotConnectedError } from '../../../src/lib/auth/drive-access';
-import type { User } from '../../../src/lib/db/users';
-import {
-  callTool,
-  callToolOrExplain,
-  noteTarget,
-} from '../../../src/lib/mcp/tool-calls';
+import { DriveNotConnectedError } from '@/lib/auth/drive-access';
+import type { User } from '@/lib/db/users';
+import { callTool, callToolOrExplain, noteTarget } from '@/lib/mcp/tool-calls';
 import {
   BackendFailure,
   InvalidToolArguments,
   UnknownTool,
-} from '../../../src/lib/mcp/tool-errors';
-import { guardFileOps } from '../../../src/lib/mcp/tool-services';
-import {
-  RECIPE_TEXT_CLOSE,
-  RECIPE_TEXT_OPEN,
-} from '../../../src/lib/mcp/tool-text';
+} from '@/lib/mcp/tool-errors';
+import { guardFileOps } from '@/lib/mcp/tool-services';
+import { RECIPE_TEXT_CLOSE, RECIPE_TEXT_OPEN } from '@/lib/mcp/tool-text';
 import { PANCAKES, USER, call, fakeServices, folder, said } from './tool-fakes';
 
 describe('list_recipes', () => {

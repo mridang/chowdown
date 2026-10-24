@@ -12,9 +12,9 @@ import {
   parseFilters,
   type FilterableRecipe,
   type SearchParams,
-} from '../recipe/facet-filter';
-import { compareText } from '../intl';
-import type { CursorPosition } from './pagination';
+} from '@/lib/recipe/facet-filter';
+import { compareText } from '@/lib/intl';
+import type { CursorPosition } from '@/lib/api/pagination';
 
 /** A recipe as the query needs it. */
 export interface QueryableRecipe extends FilterableRecipe {

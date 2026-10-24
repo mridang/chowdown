@@ -1,9 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { EXTRA_PURPOSES } from '../../../src/lib/auth/app';
-import { completeDriveConnect } from '../../../src/lib/auth/drive-callback';
-import { OTHER_FLOWS, afterSignIn } from '../../../src/lib/auth/hooks';
-import type { User } from '../../../src/lib/auth/store';
+import { EXTRA_PURPOSES } from '@/lib/auth/app';
+import { completeDriveConnect } from '@/lib/auth/drive-callback';
+import { OTHER_FLOWS, afterSignIn } from '@/lib/auth/hooks';
+import type { User } from '@/lib/auth/store';
 
 describe('afterSignIn', () => {
   it('has nothing more to do once the person is recorded', async () => {

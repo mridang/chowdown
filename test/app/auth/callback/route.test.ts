@@ -16,9 +16,9 @@ import {
   SIGN_IN_FAILED_PATH,
   STATE_COOKIE,
   sessionClaims,
-} from '../../../../src/lib/auth/app';
-import type { User } from '../../../../src/lib/auth/store';
-import { verifySessionToken } from '../../../../src/lib/auth/session';
+} from '@/lib/auth/app';
+import type { User } from '@/lib/auth/store';
+import { verifySessionToken } from '@/lib/auth/session';
 import {
   SESSION_SECRET,
   answerFetch,
@@ -67,7 +67,7 @@ jest.unstable_mockModule('../../../../src/lib/auth/hooks', () => ({
   OTHER_FLOWS,
 }));
 
-const { GET } = await import('../../../../src/app/auth/callback/route');
+const { GET } = await import('@/app/auth/callback/route');
 
 let restore: () => void;
 

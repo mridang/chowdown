@@ -5,7 +5,7 @@ import {
   LIGHT_PALETTE,
   ON_ACCENT,
   type ThemePalette,
-} from '../../src/views/palette';
+} from '@/views/palette';
 
 /** Relative luminance of a `#rrggbb` colour, as WCAG defines it. */
 function luminance(hex: string): number {

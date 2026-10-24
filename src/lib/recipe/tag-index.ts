@@ -11,16 +11,16 @@
  * this is purely a tags-by-id lookup.
  */
 
-import type { Database } from '../db/client';
-import type { User } from '../db/users';
-import { listRecipesByUser, upsertRecipe, type Recipe } from '../db/recipes';
-import { getFileContent, type DriveFile } from '../drive/drive-client';
-import { getDatabase, getEnv, runInBackground } from '../util';
-import { parseRecipe, type ParsedRecipe } from './cooklang';
-import { embedRecipe } from './embed-write';
-import { mapSequentially } from './map-sequentially';
-import { classifyDietType } from './diet-type';
-import { canonicalValue, facet } from './taxonomy';
+import type { Database } from '@/lib/db/client';
+import type { User } from '@/lib/db/users';
+import { listRecipesByUser, upsertRecipe, type Recipe } from '@/lib/db/recipes';
+import { getFileContent, type DriveFile } from '@/lib/drive/drive-client';
+import { getDatabase, getEnv, runInBackground } from '@/lib/util';
+import { parseRecipe, type ParsedRecipe } from '@/lib/recipe/cooklang';
+import { embedRecipe } from '@/lib/recipe/embed-write';
+import { mapSequentially } from '@/lib/recipe/map-sequentially';
+import { classifyDietType } from '@/lib/recipe/diet-type';
+import { canonicalValue, facet } from '@/lib/recipe/taxonomy';
 
 /** A recipe's tags as `{ facetKey: canonicalValue[] }`. */
 export type RecipeTags = Readonly<Record<string, readonly string[]>>;

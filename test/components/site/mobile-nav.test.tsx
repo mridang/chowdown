@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { MobileNav } from '../../../src/components/site/mobile-nav';
+import { MobileNav } from '@/components/site/mobile-nav';
 import { htmlAt } from '../render';
 
 describe('MobileNav', () => {

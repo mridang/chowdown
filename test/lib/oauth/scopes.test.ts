@@ -7,7 +7,7 @@ import {
   normaliseScope,
   scopeForMessage,
   scopeForTool,
-} from '../../../src/lib/oauth/scopes';
+} from '@/lib/oauth/scopes';
 
 describe('normaliseScope', () => {
   it('grants everything supported when nothing is asked for', () => {

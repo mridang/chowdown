@@ -7,8 +7,8 @@ import {
   jest,
 } from '@jest/globals';
 
-import { DriveNotConnectedError } from '../../../../../src/lib/auth/drive-access';
-import type { DriveFile } from '../../../../../src/lib/drive/drive-client';
+import { DriveNotConnectedError } from '@/lib/auth/drive-access';
+import type { DriveFile } from '@/lib/drive/drive-client';
 import { installCloudflareContext } from '../../../../lib/db/sqlite-d1';
 
 /** Who is signed in; null means nobody. */
@@ -16,7 +16,7 @@ const session: { user: { id: number } | null } = { user: { id: 7 } };
 
 // The sign-in gate has its own tests (test/lib/api/auth.test.ts); here it just
 // says who is calling, in the shape the routes read.
-const { problems } = await import('../../../../../src/lib/api/problem');
+const { problems } = await import('@/lib/api/problem');
 jest.unstable_mockModule('../../../../../src/lib/api/auth', () => ({
   requireUser: async () =>
     session.user
@@ -69,8 +69,7 @@ jest.unstable_mockModule('../../../../../src/lib/recipe/similar', () => ({
   topSimilar,
 }));
 
-const { GET } =
-  await import('../../../../../src/app/api/recipes/suggestions/route');
+const { GET } = await import('@/app/api/recipes/suggestions/route');
 
 let restore: () => void;
 

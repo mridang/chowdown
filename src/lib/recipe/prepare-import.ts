@@ -9,17 +9,17 @@
  * whole import.
  */
 
-import { withAuthor } from './author';
-import { parseRecipe } from './cooklang';
-import { fetchPage, PageFetchError } from './fetch-page';
-import { MAX_IMPORT_UNITS, type ImportUnit } from './import-blob';
-import { mapSequentially } from './map-sequentially';
-import { tagCookSourceBestEffort } from './tagging';
+import { withAuthor } from '@/lib/recipe/author';
+import { parseRecipe } from '@/lib/recipe/cooklang';
+import { fetchPage, PageFetchError } from '@/lib/recipe/fetch-page';
+import { MAX_IMPORT_UNITS, type ImportUnit } from '@/lib/recipe/import-blob';
+import { mapSequentially } from '@/lib/recipe/map-sequentially';
+import { tagCookSourceBestEffort } from '@/lib/recipe/tagging';
 import {
   ConversionError,
   convertToCooklang,
   hasRecipeBody,
-} from './to-cooklang';
+} from '@/lib/recipe/to-cooklang';
 
 /** One prepared unit of an import. */
 export interface ImportItem {

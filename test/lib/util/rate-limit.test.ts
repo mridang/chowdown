@@ -7,7 +7,7 @@ import {
   rateLimit,
   type RateLimit,
   type RateLimitStore,
-} from '../../../src/lib/util/rate-limit';
+} from '@/lib/util/rate-limit';
 
 /** The statement the real store runs, read from the source so the test cannot drift from it. */
 import { readFileSync } from 'node:fs';

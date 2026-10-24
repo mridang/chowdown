@@ -7,7 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 
-import type { LayoutAction } from '../../src/views/display-mode';
+import type { LayoutAction } from '@/views/display-mode';
 import {
   applyDocumentContext,
   applyHostContext,
@@ -15,9 +15,9 @@ import {
   requestMode,
   runServerTool,
   sendFollowUpMessage,
-} from '../../src/views/host-wiring';
-import type { OpenAiApi } from '../../src/views/openai-bridge';
-import type { ViewAction } from '../../src/views/view-state';
+} from '@/views/host-wiring';
+import type { OpenAiApi } from '@/views/openai-bridge';
+import type { ViewAction } from '@/views/view-state';
 import {
   joinedHost,
   recordingRoot,

@@ -6,7 +6,7 @@
  * answered; this keeps the tables from growing without a cron trigger.
  */
 
-import { shouldPurge } from './retention';
+import { shouldPurge } from '@/lib/oauth/retention';
 
 /** The two sweeps a clean-up runs: stale OAuth rows, and idle rate-limit counters. */
 export interface Sweeps {

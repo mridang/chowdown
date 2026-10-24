@@ -5,7 +5,7 @@ import {
   isDriveFileId,
   listRecipeFiles,
   trashRecipeFile,
-} from '../../../src/lib/drive/drive-client';
+} from '@/lib/drive/drive-client';
 
 const realFetch = globalThis.fetch;
 

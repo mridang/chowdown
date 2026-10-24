@@ -9,14 +9,14 @@
 
 import { cookies } from 'next/headers';
 
-import { SESSION_COOKIE } from './app';
+import { SESSION_COOKIE } from '@/lib/auth/app';
 import {
   sessionIsCurrent,
   verifySessionToken,
   type SessionPayload,
-} from './session';
-import { getSessionEpoch, getUserById, type User } from './store';
-import { getEnv } from '../util';
+} from '@/lib/auth/session';
+import { getSessionEpoch, getUserById, type User } from '@/lib/auth/store';
+import { getEnv } from '@/lib/util';
 
 /**
  * The user for the current request, or null when not signed in, the session is

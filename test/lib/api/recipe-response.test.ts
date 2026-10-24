@@ -4,7 +4,7 @@ import {
   COOKLANG_TYPE,
   JSON_LD_TYPE,
   wantedType,
-} from '../../../src/lib/api/recipe-response';
+} from '@/lib/api/recipe-response';
 
 describe('wantedType', () => {
   it('gives JSON unless another representation is asked for', () => {

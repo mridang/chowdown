@@ -10,7 +10,7 @@ import {
   describeRedirect,
   describeScopes,
   sanitiseDisplayName,
-} from '../../../src/lib/oauth/display';
+} from '@/lib/oauth/display';
 
 describe('sanitiseDisplayName', () => {
   it('keeps an ordinary name', () => {

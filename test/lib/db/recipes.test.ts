@@ -1,13 +1,13 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { Database } from '../../../src/lib/db/client';
+import type { Database } from '@/lib/db/client';
 import {
   deleteRecipeData,
   findRecipeBySourceUrl,
   getRecipeByFileId,
   staleRecipeIds,
   upsertRecipe,
-} from '../../../src/lib/db/recipes';
+} from '@/lib/db/recipes';
 import { APP_MIGRATIONS } from './migrations';
 import { sqliteDatabase } from './sqlite-db';
 

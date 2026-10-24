@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { OPTIONS, POST } from '../../../../src/app/oauth/token/route';
-import { createDatabase } from '../../../../src/lib/db/client';
-import { createOAuthStore } from '../../../../src/lib/db/oauth';
-import { s256 } from '../../../../src/lib/oauth/pkce';
-import { issueAuthorizationCode } from '../../../../src/lib/oauth/token-endpoint';
+import { OPTIONS, POST } from '@/app/oauth/token/route';
+import { createDatabase } from '@/lib/db/client';
+import { createOAuthStore } from '@/lib/db/oauth';
+import { s256 } from '@/lib/oauth/pkce';
+import { issueAuthorizationCode } from '@/lib/oauth/token-endpoint';
 import { installCloudflareContext, sqliteD1 } from '../../../lib/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 

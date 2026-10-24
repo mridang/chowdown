@@ -9,13 +9,13 @@
 
 import type { NextRequest, NextResponse } from 'next/server';
 
-import { LANDING_PATH } from './app';
-import { finishFlow } from './flow-cookies';
-import type { GoogleUser, TokenResponse } from './google-oauth';
-import { afterSignIn } from './hooks';
-import { requireSessionSecret } from './session';
-import { setSessionCookie } from './session-cookie';
-import { upsertGoogleUser } from './store';
+import { LANDING_PATH } from '@/lib/auth/app';
+import { finishFlow } from '@/lib/auth/flow-cookies';
+import type { GoogleUser, TokenResponse } from '@/lib/auth/google-oauth';
+import { afterSignIn } from '@/lib/auth/hooks';
+import { requireSessionSecret } from '@/lib/auth/session';
+import { setSessionCookie } from '@/lib/auth/session-cookie';
+import { upsertGoogleUser } from '@/lib/auth/store';
 
 /** Where a round trip stands: who is asking, and where it came from. */
 export interface FlowContext {

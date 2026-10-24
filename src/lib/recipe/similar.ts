@@ -11,27 +11,27 @@
  * the Drive ↔ cache ↔ ranking flow so neither caller has to duplicate it.
  */
 
-import type { Database } from '../db/client';
+import type { Database } from '@/lib/db/client';
 import {
   deleteEmbeddingsNotIn,
   listEmbeddings,
   saveSimilarLists,
   upsertEmbedding,
   type EmbeddingRow,
-} from '../db/embeddings';
-import type { User } from '../db/users';
-import { getFileContent, type DriveFile } from '../drive/drive-client';
-import { getDatabase, getEnv } from '../util';
-import { recipeDisplayName } from './cook-text';
-import { parseRecipe } from './cooklang';
+} from '@/lib/db/embeddings';
+import type { User } from '@/lib/db/users';
+import { getFileContent, type DriveFile } from '@/lib/drive/drive-client';
+import { getDatabase, getEnv } from '@/lib/util';
+import { recipeDisplayName } from '@/lib/recipe/cook-text';
+import { parseRecipe } from '@/lib/recipe/cooklang';
 import {
   buildEmbeddingText,
   cosineBetween,
   cosineSimilarity,
   embedText,
   measure,
-} from './embeddings';
-import { mapSequentially } from './map-sequentially';
+} from '@/lib/recipe/embeddings';
+import { mapSequentially } from '@/lib/recipe/map-sequentially';
 
 /** How many "find similar" recipes are stored and shown per recipe. */
 export const SIMILAR_COUNT = 6;

@@ -8,7 +8,7 @@
  * `_meta` of every result of the newest revision.
  */
 
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '../site';
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/lib/site';
 
 /**
  * The version of this server. It follows `package.json`, and a test fails if the

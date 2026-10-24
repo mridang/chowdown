@@ -1,11 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import {
-  LANDING_PATH,
-  SESSION_COOKIE,
-  sessionClaims,
-} from '../../../src/lib/auth/app';
-import type { User } from '../../../src/lib/auth/store';
+import { LANDING_PATH, SESSION_COOKIE, sessionClaims } from '@/lib/auth/app';
+import type { User } from '@/lib/auth/store';
 import { SESSION_SECRET, appRequest } from './auth-test-kit';
 
 const person = {
@@ -34,8 +30,8 @@ jest.unstable_mockModule('../../../src/lib/auth/hooks', () => ({
 }));
 
 const { completeSignIn, missingSignInSettings } =
-  await import('../../../src/lib/auth/sign-in');
-const { verifySessionToken } = await import('../../../src/lib/auth/session');
+  await import('@/lib/auth/sign-in');
+const { verifySessionToken } = await import('@/lib/auth/session');
 
 const env = (overrides: Record<string, string | undefined> = {}) =>
   ({

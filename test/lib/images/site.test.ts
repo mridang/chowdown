@@ -4,7 +4,7 @@ import {
   ALLOWED_HOSTS,
   ALLOWED_WIDTHS,
   DEFAULT_WIDTH,
-} from '../../../src/lib/images/site';
+} from '@/lib/images/site';
 
 describe('image settings', () => {
   it('takes photos from the recipes’ own sites, so from any public host', () => {

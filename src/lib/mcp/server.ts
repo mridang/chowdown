@@ -21,8 +21,8 @@
  * `server-info.ts`.
  */
 
-import { errorMessage, logError } from '../util';
-import type { User } from '../db/users';
+import { errorMessage, logError } from '@/lib/util';
+import type { User } from '@/lib/db/users';
 import {
   ERROR_INTERNAL,
   ERROR_INVALID_PARAMS,
@@ -35,14 +35,14 @@ import {
   negotiateLegacyVersion,
   replyIdOf,
   type ReplyId,
-} from './protocol';
+} from '@/lib/mcp/protocol';
 import {
   CAPABILITIES,
   INSTRUCTIONS,
   SERVER_INFO,
   SERVER_INFO_META_KEY,
-} from './server-info';
-import { PROMPT_DEFINITIONS, getPrompt } from './prompts';
+} from '@/lib/mcp/server-info';
+import { PROMPT_DEFINITIONS, getPrompt } from '@/lib/mcp/prompts';
 import {
   RECIPE_TEMPLATE,
   isRecipeUri,
@@ -50,15 +50,15 @@ import {
   readRecipeResource,
   recipeResource,
   type RecipeLister,
-} from './recipe-resources';
-import { callToolOrExplain } from './tool-calls';
-import { TOOLS } from './tool-definitions';
-import { InvalidToolArguments, UnknownTool } from './tool-errors';
+} from '@/lib/mcp/recipe-resources';
+import { callToolOrExplain } from '@/lib/mcp/tool-calls';
+import { TOOLS } from '@/lib/mcp/tool-definitions';
+import { InvalidToolArguments, UnknownTool } from '@/lib/mcp/tool-errors';
 import {
   APP_RESOURCES,
   RESOURCE_MIME_TYPE,
   findAppResource,
-} from './ui-resources';
+} from '@/lib/mcp/ui-resources';
 
 /** A JSON-RPC 2.0 request/notification, as received (clients may leave any member out). */
 export interface JsonRpcMessage {

@@ -26,9 +26,13 @@ import {
   missingFieldErrors,
   prepareImport,
   type Phase,
-} from './import-flow';
-import { discardImport, postRecipe, type ImportDraft } from './recipe-requests';
-import { SHARED_HINT } from './shared-input';
+} from '@/app/(site)/(pages)/recipes/add/_components/import-flow';
+import {
+  discardImport,
+  postRecipe,
+  type ImportDraft,
+} from '@/app/(site)/(pages)/recipes/add/_components/recipe-requests';
+import { SHARED_HINT } from '@/app/(site)/(pages)/recipes/add/_components/shared-input';
 
 /** The wizard's heading for each phase. */
 const HEADINGS: Readonly<Record<Phase, string>> = {

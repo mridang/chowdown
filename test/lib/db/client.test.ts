@@ -2,8 +2,8 @@ import { is } from 'drizzle-orm';
 import { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { describe, expect, it } from '@jest/globals';
 
-import { createDatabase } from '../../../src/lib/db/client';
-import * as schema from '../../../src/lib/db/schema';
+import { createDatabase } from '@/lib/db/client';
+import * as schema from '@/lib/db/schema';
 import { APP_MIGRATIONS } from './migrations';
 import { sqliteD1 } from './sqlite-d1';
 

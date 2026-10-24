@@ -10,9 +10,9 @@
  * happens after sign-in). Every app has these three, with the same exports.
  */
 
-import type { User } from '../db/users';
-import { isDriveConnected } from './drive-access';
-import type { SessionPayload } from './session';
+import type { User } from '@/lib/db/users';
+import { isDriveConnected } from '@/lib/auth/drive-access';
+import type { SessionPayload } from '@/lib/auth/session';
 
 /** Name of the session cookie. */
 export const SESSION_COOKIE = 'chowdown_session';

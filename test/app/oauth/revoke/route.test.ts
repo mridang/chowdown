@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { OPTIONS, POST } from '../../../../src/app/oauth/revoke/route';
+import { OPTIONS, POST } from '@/app/oauth/revoke/route';
 import { installCloudflareContext, sqliteD1 } from '../../../lib/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 
@@ -43,7 +43,7 @@ describe('POST /oauth/revoke', () => {
   });
 
   it('ends the grant a known token belongs to', async () => {
-    const { hashSecret } = await import('../../../../src/lib/oauth/secrets');
+    const { hashSecret } = await import('@/lib/oauth/secrets');
     raw
       .prepare(
         "INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g', 7, 'c', 'recipes:read', 'r', 'now')",

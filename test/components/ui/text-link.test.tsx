@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { TextLink } from '../../../src/components/ui/text-link';
+import { TextLink } from '@/components/ui/text-link';
 import { classOf, html } from '../render';
 
 describe('TextLink', () => {

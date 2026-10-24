@@ -26,8 +26,7 @@ jest.unstable_mockModule('../../../../../../src/lib/auth/current-user', () => ({
   getCurrentUser: async () => null,
 }));
 
-const { GET } =
-  await import('../../../../../../src/app/api/users/self/connections/route');
+const { GET } = await import('@/app/api/users/self/connections/route');
 
 let raw: DatabaseSync;
 let restore: () => void;

@@ -12,15 +12,15 @@
  * assistant out of the app.
  */
 
-import { errorMessage, logError } from '../util';
-import { oauthError } from './http';
-import { logSecurityEvent } from './security-log';
-import { clientSubject } from '../http/client-address';
+import { errorMessage, logError } from '@/lib/util';
+import { oauthError } from '@/lib/oauth/http';
+import { logSecurityEvent } from '@/lib/oauth/security-log';
+import { clientSubject } from '@/lib/http/client-address';
 import {
   rateLimit,
   type RateLimit,
   type RateLimitStore,
-} from '../util/rate-limit';
+} from '@/lib/util/rate-limit';
 
 /**
  * The limits. Registration is generous per hour (a legitimate assistant

@@ -1,9 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  AMOUNT_PATTERN,
-  parseAmount,
-} from '../../../src/components/recipe/amount';
+import { AMOUNT_PATTERN, parseAmount } from '@/components/recipe/amount';
 
 describe('parseAmount', () => {
   it.each([

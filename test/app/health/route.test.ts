@@ -14,7 +14,7 @@ jest.unstable_mockModule('../../../src/lib/health', () => ({
   appHealth: async () => app.health,
 }));
 
-const { GET } = await import('../../../src/app/health/route');
+const { GET } = await import('@/app/health/route');
 
 beforeEach(() => {
   app.bound = true;

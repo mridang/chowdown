@@ -7,11 +7,8 @@ import {
   redirectWith,
   validateAuthorizeRequest,
   type AuthorizeParams,
-} from '../../../src/lib/oauth/authorize-request';
-import {
-  MAX_CLIENT_ID_LENGTH,
-  type OAuthClient,
-} from '../../../src/lib/oauth/client';
+} from '@/lib/oauth/authorize-request';
+import { MAX_CLIENT_ID_LENGTH, type OAuthClient } from '@/lib/oauth/client';
 
 import { quietSecurityLogs } from './quiet-logs';
 

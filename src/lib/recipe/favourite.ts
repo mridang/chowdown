@@ -8,17 +8,17 @@
  * make a heart wait), which keeps the favourite attached to the recipe in Drive.
  */
 
-import { getUserAccessToken } from '../auth/user-access-token';
-import { isDriveConnected } from '../auth/drive-access';
-import type { Database } from '../db/client';
-import { isFavourite, setFavourite } from '../db/favourites';
-import { getRecipeByFileId } from '../db/recipes';
-import { getUserById, type User } from '../db/users';
-import { getFileContent, updateRecipeFile } from '../drive/drive-client';
-import { getDatabase, runInBackground } from '../util';
-import { withFavouriteTag } from './favourite-tag';
-import { createKeyedQueue } from './keyed-queue';
-import { indexRecipeWrite } from './tag-index';
+import { getUserAccessToken } from '@/lib/auth/user-access-token';
+import { isDriveConnected } from '@/lib/auth/drive-access';
+import type { Database } from '@/lib/db/client';
+import { isFavourite, setFavourite } from '@/lib/db/favourites';
+import { getRecipeByFileId } from '@/lib/db/recipes';
+import { getUserById, type User } from '@/lib/db/users';
+import { getFileContent, updateRecipeFile } from '@/lib/drive/drive-client';
+import { getDatabase, runInBackground } from '@/lib/util';
+import { withFavouriteTag } from '@/lib/recipe/favourite-tag';
+import { createKeyedQueue } from '@/lib/recipe/keyed-queue';
+import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 
 /**
  * What hearting a recipe reaches out to, gathered in one place so a test can

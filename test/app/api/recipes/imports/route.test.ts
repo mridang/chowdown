@@ -8,9 +8,9 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { DAILY_BUDGETS } from '../../../../../src/lib/util/daily-budget';
-import type { ImportUnit } from '../../../../../src/lib/recipe/import-blob';
-import type { ImportItem } from '../../../../../src/lib/recipe/prepare-import';
+import { DAILY_BUDGETS } from '@/lib/util/daily-budget';
+import type { ImportUnit } from '@/lib/recipe/import-blob';
+import type { ImportItem } from '@/lib/recipe/prepare-import';
 import { APP_MIGRATIONS } from '../../../../lib/db/migrations';
 import {
   installCloudflareContext,
@@ -22,7 +22,7 @@ const session: { uid: number | null } = { uid: 7 };
 
 // The sign-in gate has its own tests (test/lib/api/auth.test.ts); here it just
 // says who is calling, in the shape the routes read.
-const { problems } = await import('../../../../../src/lib/api/problem');
+const { problems } = await import('@/lib/api/problem');
 jest.unstable_mockModule('../../../../../src/lib/api/auth', () => ({
   requireLiveUid: async () =>
     session.uid === null
@@ -50,8 +50,7 @@ jest.unstable_mockModule(
   }),
 );
 
-const { GET, POST } =
-  await import('../../../../../src/app/api/recipes/imports/route');
+const { GET, POST } = await import('@/app/api/recipes/imports/route');
 
 let raw: DatabaseSync;
 let restore: () => void;

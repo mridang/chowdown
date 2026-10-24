@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { FilterPanel } from '../../../src/components/recipes/filter-panel';
-import type { FacetData } from '../../../src/components/recipes/search-query';
+import { FilterPanel } from '@/components/recipes/filter-panel';
+import type { FacetData } from '@/components/recipes/search-query';
 import { html } from '../render';
 
 /** A filter with one option, switched on or off. */

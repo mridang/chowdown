@@ -7,17 +7,17 @@
  * like" row and the landing page all read recipes the same way.
  */
 
-import type { Recipe } from '../db/recipes';
+import type { Recipe } from '@/lib/db/recipes';
 import {
   domainOf,
   isUncurated,
   recipeDisplayName,
   sourceUrlOf,
-} from './cook-text';
-import { parseRecipe } from './cooklang';
-import { extractMedia } from './media';
-import { minutesOf } from './minutes';
-import { rowTags } from './tag-index';
+} from '@/lib/recipe/cook-text';
+import { parseRecipe } from '@/lib/recipe/cooklang';
+import { extractMedia } from '@/lib/recipe/media';
+import { minutesOf } from '@/lib/recipe/minutes';
+import { rowTags } from '@/lib/recipe/tag-index';
 
 /** A soft colour a recipe without a photo wears instead. */
 export type Tone = 'flame' | 'marigold' | 'forest' | 'sand' | 'ink';

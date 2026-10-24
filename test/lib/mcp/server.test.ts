@@ -9,9 +9,9 @@ import {
 } from '@modelcontextprotocol/core';
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { User } from '../../../src/lib/db/users';
-import type { RecipeLister } from '../../../src/lib/mcp/recipe-resources';
-import { SCENARIO_TOOLS } from '../../../src/lib/mcp/scenarios';
+import type { User } from '@/lib/db/users';
+import type { RecipeLister } from '@/lib/mcp/recipe-resources';
+import { SCENARIO_TOOLS } from '@/lib/mcp/scenarios';
 import {
   CACHE_HINTS,
   RESOURCE_PAGE_SIZE,
@@ -20,26 +20,15 @@ import {
   isAdvertisedTool,
   type JsonRpcResponse,
   type ToolRunner,
-} from '../../../src/lib/mcp/server';
-import { callTool } from '../../../src/lib/mcp/tool-calls';
-import {
-  InvalidToolArguments,
-  UnknownTool,
-} from '../../../src/lib/mcp/tool-errors';
-import {
-  CAPABILITIES,
-  INSTRUCTIONS,
-  SERVER_INFO,
-} from '../../../src/lib/mcp/server-info';
-import { textResult } from '../../../src/lib/mcp/tool-results';
-import { APP_RESOURCES } from '../../../src/lib/mcp/ui-resources';
-import { TOOLS } from '../../../src/lib/mcp/tool-definitions';
+} from '@/lib/mcp/server';
+import { callTool } from '@/lib/mcp/tool-calls';
+import { InvalidToolArguments, UnknownTool } from '@/lib/mcp/tool-errors';
+import { CAPABILITIES, INSTRUCTIONS, SERVER_INFO } from '@/lib/mcp/server-info';
+import { textResult } from '@/lib/mcp/tool-results';
+import { APP_RESOURCES } from '@/lib/mcp/ui-resources';
+import { TOOLS } from '@/lib/mcp/tool-definitions';
 import { PANCAKES, call, fakeServices, folder } from './tool-fakes';
-import {
-  SCOPE_READ,
-  SCOPE_WRITE,
-  scopeForTool,
-} from '../../../src/lib/oauth/scopes';
+import { SCOPE_READ, SCOPE_WRITE, scopeForTool } from '@/lib/oauth/scopes';
 
 /** The address of a view the server serves. */
 const FIRST_VIEW = APP_RESOURCES.at(0)?.uri ?? '';

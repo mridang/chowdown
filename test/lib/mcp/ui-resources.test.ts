@@ -25,8 +25,8 @@ import {
   findAppResource,
   hashedResourceUri,
   viewToolMeta,
-} from '../../../src/lib/mcp/ui-resources';
-import { SITE_URL } from '../../../src/lib/site';
+} from '@/lib/mcp/ui-resources';
+import { SITE_URL } from '@/lib/site';
 
 /** The document with its inline script removed: what the host's CSP actually has to police. */
 function shellOf(html: string): string {

@@ -4,14 +4,18 @@
  * Wires {@link mutateRecipe} to the real Drive and D1 for a signed-in user.
  */
 
-import { getUserAccessToken } from '../auth/user-access-token';
-import type { Database } from '../db/client';
-import { getRecipeByFileId } from '../db/recipes';
-import type { User } from '../db/users';
-import { getFileContent, updateRecipeFile } from '../drive/drive-client';
-import { getDatabase } from '../util';
-import { mutateRecipe, type Edit, type MutateOutcome } from './mutate-recipe';
-import { indexRecipeWrite } from './tag-index';
+import { getUserAccessToken } from '@/lib/auth/user-access-token';
+import type { Database } from '@/lib/db/client';
+import { getRecipeByFileId } from '@/lib/db/recipes';
+import type { User } from '@/lib/db/users';
+import { getFileContent, updateRecipeFile } from '@/lib/drive/drive-client';
+import { getDatabase } from '@/lib/util';
+import {
+  mutateRecipe,
+  type Edit,
+  type MutateOutcome,
+} from '@/lib/recipe/mutate-recipe';
+import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 
 /**
  * What {@link mutateRecipeForUser} reaches out to, gathered in one place so a

@@ -7,7 +7,7 @@
  * clients that edit or delete should send the recipe's `ETag` as `If-Match`.
  */
 
-import { flatNoteKey, type Note } from '../recipe/cook-text';
+import { flatNoteKey, type Note } from '@/lib/recipe/cook-text';
 
 /** A note as the API shows it. */
 export interface NoteResource {

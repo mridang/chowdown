@@ -9,7 +9,7 @@ import {
 import type { DatabaseSync } from 'node:sqlite';
 import type { ReactElement } from 'react';
 
-import { s256 } from '../../../../src/lib/oauth/pkce';
+import { s256 } from '@/lib/oauth/pkce';
 import { installCloudflareContext, sqliteD1 } from '../../../lib/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 import { htmlAt } from '../../../components/render';
@@ -40,8 +40,7 @@ jest.unstable_mockModule('../../../../src/lib/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
 }));
 
-const { default: AuthorizePage } =
-  await import('../../../../src/app/oauth/authorize/page');
+const { default: AuthorizePage } = await import('@/app/oauth/authorize/page');
 
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 const CIMD = 'https://claude.ai/oauth/meta.json';

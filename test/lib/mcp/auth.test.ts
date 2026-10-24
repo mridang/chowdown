@@ -1,15 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { User } from '../../../src/lib/db/users';
-import {
-  ACCESS_PREFIX,
-  REFRESH_PREFIX,
-  newSecret,
-} from '../../../src/lib/oauth/secrets';
-import {
-  authenticateMcpRequest,
-  type McpAuthDeps,
-} from '../../../src/lib/mcp/auth';
+import type { User } from '@/lib/db/users';
+import { ACCESS_PREFIX, REFRESH_PREFIX, newSecret } from '@/lib/oauth/secrets';
+import { authenticateMcpRequest, type McpAuthDeps } from '@/lib/mcp/auth';
 
 const ORIGIN = 'https://chowdown.test';
 const user = { id: 7 } as User;

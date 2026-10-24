@@ -13,9 +13,13 @@
  * untouched.
  */
 
-import { formatQuantityNumber } from '../intl';
-import type { ParsedIngredient, ParsedRecipe, StepToken } from './cooklang';
-import { own } from '../util/own';
+import { formatQuantityNumber } from '@/lib/intl';
+import type {
+  ParsedIngredient,
+  ParsedRecipe,
+  StepToken,
+} from '@/lib/recipe/cooklang';
+import { own } from '@/lib/util/own';
 
 /** Supported measurement systems. */
 export type UnitSystem = 'metric' | 'us' | 'imperial';

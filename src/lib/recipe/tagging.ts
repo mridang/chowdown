@@ -11,11 +11,11 @@
  * shape the recipe page and facet filter read back.
  */
 
-import { isObject } from '../api/json';
-import { upsertMetadata } from './cook-text';
-import { parseRecipe, type ParsedRecipe } from './cooklang';
-import { buildEmbeddingText } from './embeddings';
-import { FACETS, validateTags } from './taxonomy';
+import { isObject } from '@/lib/api/json';
+import { upsertMetadata } from '@/lib/recipe/cook-text';
+import { parseRecipe, type ParsedRecipe } from '@/lib/recipe/cooklang';
+import { buildEmbeddingText } from '@/lib/recipe/embeddings';
+import { FACETS, validateTags } from '@/lib/recipe/taxonomy';
 
 /** The model used for tagging — same fast instruct model as conversion. */
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';

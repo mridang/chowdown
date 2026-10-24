@@ -6,7 +6,7 @@ import {
   isRecipeListData,
   readOutcome,
   textOf,
-} from '../../src/views/payload';
+} from '@/views/payload';
 
 /** A card payload the server would send. */
 const CARD = {

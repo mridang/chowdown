@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { FacetData } from '../../../src/components/recipes/search-query';
-import { FacetSection } from '../../../src/components/ui/facet';
+import type { FacetData } from '@/components/recipes/search-query';
+import { FacetSection } from '@/components/ui/facet';
 import { html } from '../render';
 
 const FACET: FacetData = {

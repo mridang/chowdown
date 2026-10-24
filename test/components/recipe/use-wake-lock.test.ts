@@ -4,7 +4,7 @@ import {
   keepScreenAwake,
   shouldRequestLock,
   type WakeLockEnvironment,
-} from '../../../src/components/recipe/use-wake-lock';
+} from '@/components/recipe/use-wake-lock';
 
 /** A wake lock sentinel that can be released by the "browser" as well as by the page. */
 function fakeSentinel() {

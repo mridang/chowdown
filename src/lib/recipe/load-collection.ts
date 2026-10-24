@@ -10,21 +10,21 @@
 
 import { redirect } from 'next/navigation';
 
-import { ENDED_SESSION_PATH, driveHint } from '../auth/app';
-import { getSession } from '../auth/current-user';
+import { ENDED_SESSION_PATH, driveHint } from '@/lib/auth/app';
+import { getSession } from '@/lib/auth/current-user';
 import {
   DriveNotConnectedError,
   isDriveConnected,
   sessionHintStale,
   wasDriveConnected,
-} from '../auth/drive-access';
-import { sessionIsCurrent, type SessionPayload } from '../auth/session';
-import type { Database } from '../db/client';
-import { getAppPageRows, type AppPageRows } from '../db/recipe-page';
-import { claimBackfillLease, claimDriveSync, type User } from '../db/users';
-import { getDatabase, getEnv, runInBackground } from '../util';
-import { syncFromDrive } from './drive-sync';
-import { backfillEmbeddings } from './embed-write';
+} from '@/lib/auth/drive-access';
+import { sessionIsCurrent, type SessionPayload } from '@/lib/auth/session';
+import type { Database } from '@/lib/db/client';
+import { getAppPageRows, type AppPageRows } from '@/lib/db/recipe-page';
+import { claimBackfillLease, claimDriveSync, type User } from '@/lib/db/users';
+import { getDatabase, getEnv, runInBackground } from '@/lib/util';
+import { syncFromDrive } from '@/lib/recipe/drive-sync';
+import { backfillEmbeddings } from '@/lib/recipe/embed-write';
 
 /** Whether the person's Google Drive is connected, and how to word asking again. */
 export interface DriveStatus {

@@ -18,8 +18,8 @@
  * It introduces itself with one honest `User-Agent` that says who to contact.
  */
 
-import { SITE_NAME, SITE_URL } from '../site';
-import { parseUrl } from '../util/url';
+import { SITE_NAME, SITE_URL } from '@/lib/site';
+import { parseUrl } from '@/lib/util/url';
 
 /**
  * Who we say we are to the sites we fetch from. A site operator who sees us in

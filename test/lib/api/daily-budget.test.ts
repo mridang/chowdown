@@ -7,12 +7,12 @@ import {
   jest,
 } from '@jest/globals';
 
-import { budgetRefusal } from '../../../src/lib/api/daily-budget';
+import { budgetRefusal } from '@/lib/api/daily-budget';
 import {
   d1RateLimitStore,
   type RateLimit,
   type RateLimitStore,
-} from '../../../src/lib/util/rate-limit';
+} from '@/lib/util/rate-limit';
 import { APP_MIGRATIONS } from '../db/migrations';
 import { sqliteD1 } from '../db/sqlite-d1';
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { SignInButton } from '../../../src/components/landing/sign-in-button';
+import { SignInButton } from '@/components/landing/sign-in-button';
 import { classOf, html } from '../render';
 
 describe('SignInButton', () => {

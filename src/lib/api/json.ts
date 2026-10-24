@@ -10,8 +10,8 @@
 
 import type { NextResponse } from 'next/server';
 
-import { readJsonBody } from '../http/body';
-import { problem, problems } from './problem';
+import { readJsonBody } from '@/lib/http/body';
+import { problem, problems } from '@/lib/api/problem';
 
 /**
  * The largest JSON body a route accepts unless it asks for more. Generous for

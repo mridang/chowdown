@@ -8,7 +8,7 @@
  * of them can share a single registered callback address.
  */
 
-import { EXTRA_PURPOSES } from './app';
+import { EXTRA_PURPOSES } from '@/lib/auth/app';
 
 /** How long a round trip to Google may take before it is abandoned, in seconds. */
 export const STATE_TTL_SECONDS = 600;

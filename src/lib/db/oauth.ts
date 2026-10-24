@@ -24,29 +24,34 @@ import {
   isMetadataDocumentUrl,
   type ClientBusy,
   type OAuthClient,
-} from '../oauth/client';
-import { OAUTH_LIMITS, firstRetryAfter } from '../oauth/limits';
+} from '@/lib/oauth/client';
+import { OAUTH_LIMITS, firstRetryAfter } from '@/lib/oauth/limits';
 import {
   clientIdentity,
   NEUTRAL_CLIENT_NAME,
   sanitiseDisplayName,
-} from '../oauth/display';
-import { MAX_LIVE_GRANTS_PER_APP, purgeCutoffs } from '../oauth/retention';
-import { SUPPORTED_SCOPES } from '../oauth/scopes';
-import { logSecurityEvent } from '../oauth/security-log';
-import type { Sweeps } from '../oauth/sweep';
+} from '@/lib/oauth/display';
+import { MAX_LIVE_GRANTS_PER_APP, purgeCutoffs } from '@/lib/oauth/retention';
+import { SUPPORTED_SCOPES } from '@/lib/oauth/scopes';
+import { logSecurityEvent } from '@/lib/oauth/security-log';
+import type { Sweeps } from '@/lib/oauth/sweep';
 import type {
   OAuthStore,
   TokenRecord,
   TokenRow,
-} from '../oauth/token-endpoint';
+} from '@/lib/oauth/token-endpoint';
 import {
   d1RateLimitStore,
   purgeRateLimits,
   type RateLimitStore,
-} from '../util/rate-limit';
-import type { Database } from './client';
-import { oauthClients, oauthCodes, oauthGrants, oauthTokens } from './schema';
+} from '@/lib/util/rate-limit';
+import type { Database } from '@/lib/db/client';
+import {
+  oauthClients,
+  oauthCodes,
+  oauthGrants,
+  oauthTokens,
+} from '@/lib/db/schema';
 
 /** Unix seconds as the ISO-8601 text the timestamp columns hold. */
 const iso = (seconds: number): string => new Date(seconds * 1000).toISOString();

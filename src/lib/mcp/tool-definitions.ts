@@ -15,9 +15,9 @@
  * tool belongs in the server's instructions, not here.
  */
 
-import { scopeForTool } from '../oauth/scopes';
-import { NOT_BLANK } from './json-schema';
-import { CARD_RESOURCE_URI, LIST_RESOURCE_URI } from './ui-resources';
+import { scopeForTool } from '@/lib/oauth/scopes';
+import { NOT_BLANK } from '@/lib/mcp/json-schema';
+import { CARD_RESOURCE_URI, LIST_RESOURCE_URI } from '@/lib/mcp/ui-resources';
 
 /** JSON Schema for the recipe-card `structuredContent` (a parsed recipe + extras). */
 const RECIPE_CARD_OUTPUT_SCHEMA = {

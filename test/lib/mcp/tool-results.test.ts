@@ -1,10 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  CARD_RESOURCE_URI,
-  LIST_RESOURCE_URI,
-} from '../../../src/lib/mcp/ui-resources';
-import { uncuratedFilename } from '../../../src/lib/recipe/cook-text';
+import { CARD_RESOURCE_URI, LIST_RESOURCE_URI } from '@/lib/mcp/ui-resources';
+import { uncuratedFilename } from '@/lib/recipe/cook-text';
 import {
   buildRecipeCardData,
   buildRecipeListData,
@@ -13,7 +10,7 @@ import {
   recipeListResult,
   recipeListSummaryResult,
   textResult,
-} from '../../../src/lib/mcp/tool-results';
+} from '@/lib/mcp/tool-results';
 
 const SOURCE = [
   '>> servings: 4',

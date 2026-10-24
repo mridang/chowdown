@@ -4,7 +4,7 @@ import {
   heroCrumbs,
   heroEyebrow,
   RecipeHero,
-} from '../../../../../../src/app/(site)/recipe/[id]/_components/recipe-hero';
+} from '@/app/(site)/recipe/[id]/_components/recipe-hero';
 import { htmlAt } from '../../../../../components/render';
 
 describe('heroCrumbs', () => {

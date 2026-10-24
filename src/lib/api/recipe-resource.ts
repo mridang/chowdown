@@ -6,15 +6,15 @@
  * lists carry; the full *recipe* adds the Cooklang source and its parsed parts.
  */
 
-import type { Recipe } from '../db/recipes';
+import type { Recipe } from '@/lib/db/recipes';
 import {
   sourceUrlOf,
   isUncurated,
   recipeDisplayName,
-} from '../recipe/cook-text';
-import { parseRecipe, type StepToken } from '../recipe/cooklang';
-import { extractMedia } from '../recipe/media';
-import { rowTags, type RecipeTags } from '../recipe/tag-index';
+} from '@/lib/recipe/cook-text';
+import { parseRecipe, type StepToken } from '@/lib/recipe/cooklang';
+import { extractMedia } from '@/lib/recipe/media';
+import { rowTags, type RecipeTags } from '@/lib/recipe/tag-index';
 
 /** What list endpoints return for each recipe. */
 export interface RecipeSummary {

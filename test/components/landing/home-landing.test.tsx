@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { HomeLanding } from '../../../src/components/landing/home-landing';
+import { HomeLanding } from '@/components/landing/home-landing';
 import { classOf, html } from '../render';
 
 describe('HomeLanding', () => {

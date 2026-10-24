@@ -10,15 +10,15 @@
  * a way round the rate limits: `serve.ts` counts the request first.
  */
 
-import { SITE_NAME } from '../site';
-import { nonceOf } from './csp';
-import { EDGE_LIMITS } from './extras';
-import { replacingHeaders } from './headers';
+import { SITE_NAME } from '@/lib/site';
+import { nonceOf } from '@/lib/http/csp';
+import { EDGE_LIMITS } from '@/lib/http/extras';
+import { replacingHeaders } from '@/lib/http/headers';
 import {
   CACHED_QUERY_PARAMS,
   EDGE_CACHED_PAGES,
   EDGE_TTL_SECONDS,
-} from './site';
+} from '@/lib/http/site';
 
 /** The most query parameters a kept page may carry. */
 const MAX_PARAMS = 8;

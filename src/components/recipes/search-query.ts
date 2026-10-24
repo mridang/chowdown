@@ -10,10 +10,10 @@
  * simply has no value for that filter, and sorts after the ones that do.
  */
 
-import type { CardRecipe } from '../../lib/recipe/card-data';
-import { DIET_TYPES } from '../../lib/recipe/diet-type';
-import { sentenceCase } from '../../lib/format';
-import { compareText, foldText } from '../../lib/intl';
+import type { CardRecipe } from '@/lib/recipe/card-data';
+import { DIET_TYPES } from '@/lib/recipe/diet-type';
+import { sentenceCase } from '@/lib/format';
+import { compareText, foldText } from '@/lib/intl';
 
 /** The query-string bag Next gives a page. */
 export type RawParams = Readonly<

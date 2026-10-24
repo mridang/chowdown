@@ -14,8 +14,8 @@ import {
   tooManyRequests,
   type GenericClass,
   type RateLimitBinding,
-} from '../../../src/lib/http/edge-limits';
-import { EDGE_LIMITS } from '../../../src/lib/http/extras';
+} from '@/lib/http/edge-limits';
+import { EDGE_LIMITS } from '@/lib/http/extras';
 
 /** A binding that allows the first `allowance` calls per key and refuses the rest. */
 function binding(allowance: number): RateLimitBinding & {

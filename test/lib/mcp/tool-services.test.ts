@@ -1,16 +1,16 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { DriveNotConnectedError } from '../../../src/lib/auth/drive-access';
-import type { EmbeddingRow } from '../../../src/lib/db/embeddings';
-import type { DriveFile } from '../../../src/lib/drive/drive-client';
-import type { FileOps } from '../../../src/lib/mcp/tool-calls';
-import { BackendFailure } from '../../../src/lib/mcp/tool-errors';
+import { DriveNotConnectedError } from '@/lib/auth/drive-access';
+import type { EmbeddingRow } from '@/lib/db/embeddings';
+import type { DriveFile } from '@/lib/drive/drive-client';
+import type { FileOps } from '@/lib/mcp/tool-calls';
+import { BackendFailure } from '@/lib/mcp/tool-errors';
 import {
   EMBEDDINGS_PER_CALL,
   guardFileOps,
   guarded,
   planBackfill,
-} from '../../../src/lib/mcp/tool-services';
+} from '@/lib/mcp/tool-services';
 
 describe('guarded', () => {
   it('returns what the call returns', async () => {

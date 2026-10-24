@@ -1,12 +1,12 @@
 import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { Database } from '../../../src/lib/db/client';
+import type { Database } from '@/lib/db/client';
 import {
   backfillEmbeddings,
   embedRecipe,
   type EmbedWriteDeps,
-} from '../../../src/lib/recipe/embed-write';
+} from '@/lib/recipe/embed-write';
 
 const db = {} as Database;
 

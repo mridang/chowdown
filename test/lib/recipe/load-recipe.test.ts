@@ -1,16 +1,16 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { SessionPayload } from '../../../src/lib/auth/session';
-import type { Database } from '../../../src/lib/db/client';
-import type { RecipePageRows } from '../../../src/lib/db/recipe-page';
-import type { User } from '../../../src/lib/db/users';
+import type { SessionPayload } from '@/lib/auth/session';
+import type { Database } from '@/lib/db/client';
+import type { RecipePageRows } from '@/lib/db/recipe-page';
+import type { User } from '@/lib/db/users';
 import {
   ALSO_LIKE_COUNT,
   loadRecipePageRows,
   similarCards,
   type RecipeLoadDeps,
-} from '../../../src/lib/recipe/load-recipe';
-import { serializeSimilar } from '../../../src/lib/recipe/similar';
+} from '@/lib/recipe/load-recipe';
+import { serializeSimilar } from '@/lib/recipe/similar';
 
 /** A cached recipe row, as far as the cards need it. */
 const row = (id: string) =>

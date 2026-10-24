@@ -12,7 +12,7 @@ import {
   isUnitWord,
   parsePantryItem,
   type PantryItem,
-} from '../recipe/pantry-match';
+} from '@/lib/recipe/pantry-match';
 
 /** The most pantry items a request may carry. */
 const MAX_PANTRY_ITEMS = 60;

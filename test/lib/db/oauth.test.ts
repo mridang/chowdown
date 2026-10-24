@@ -8,10 +8,10 @@ import {
   resolveClient,
   revokeConnectedApp,
   saveClient,
-} from '../../../src/lib/db/oauth';
-import { OAUTH_LIMITS } from '../../../src/lib/oauth/limits';
-import { MAX_LIVE_GRANTS_PER_APP } from '../../../src/lib/oauth/retention';
-import type { RateLimitStore } from '../../../src/lib/util/rate-limit';
+} from '@/lib/db/oauth';
+import { OAUTH_LIMITS } from '@/lib/oauth/limits';
+import { MAX_LIVE_GRANTS_PER_APP } from '@/lib/oauth/retention';
+import type { RateLimitStore } from '@/lib/util/rate-limit';
 import { fakeDb } from './fake-db';
 import { sqliteDatabase } from './sqlite-db';
 import { quietSecurityLogs } from '../oauth/quiet-logs';

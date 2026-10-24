@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   GET,
   OPTIONS,
-} from '../../../../src/app/.well-known/oauth-protected-resource/[[...path]]/route';
+} from '@/app/.well-known/oauth-protected-resource/[[...path]]/route';
 
 const get = (path?: readonly string[]) =>
   GET(

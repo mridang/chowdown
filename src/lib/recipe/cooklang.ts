@@ -9,7 +9,7 @@
 
 import { Recipe } from '@cooklang/cooklang-ts';
 
-import { leadingUnit, parseIngredientLine } from './ingredient-line';
+import { leadingUnit, parseIngredientLine } from '@/lib/recipe/ingredient-line';
 
 /** A measured thing: an ingredient, a piece of cookware, or a timer. */
 interface RawQuantity {

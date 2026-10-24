@@ -1,13 +1,10 @@
 import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { Database } from '../../../src/lib/db/client';
-import type { User } from '../../../src/lib/db/users';
-import {
-  setFavouriteAndTag,
-  type FavouriteDeps,
-} from '../../../src/lib/recipe/favourite';
-import { createKeyedQueue } from '../../../src/lib/recipe/keyed-queue';
+import type { Database } from '@/lib/db/client';
+import type { User } from '@/lib/db/users';
+import { setFavouriteAndTag, type FavouriteDeps } from '@/lib/recipe/favourite';
+import { createKeyedQueue } from '@/lib/recipe/keyed-queue';
 
 const db = {} as Database;
 

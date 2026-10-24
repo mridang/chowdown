@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { setSearchParams, withQueryParams } from '../../../src/lib/util/query';
+import { setSearchParams, withQueryParams } from '@/lib/util/query';
 
 describe('setSearchParams', () => {
   it('appends a parameter that is not there yet', () => {

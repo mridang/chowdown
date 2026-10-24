@@ -1,10 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { ParsedRecipe } from '../../../src/lib/recipe/cooklang';
-import {
-  recipeToJsonLd,
-  toIsoDuration,
-} from '../../../src/lib/recipe/schema-org';
+import type { ParsedRecipe } from '@/lib/recipe/cooklang';
+import { recipeToJsonLd, toIsoDuration } from '@/lib/recipe/schema-org';
 
 describe('toIsoDuration', () => {
   it('parses minutes', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { appHealth } from '../../src/lib/health';
+import { appHealth } from '@/lib/health';
 
 describe('appHealth', () => {
   it('has nothing to check beyond the Worker answering', async () => {

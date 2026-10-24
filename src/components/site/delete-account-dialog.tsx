@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-import { deleteAccount } from './delete-account';
+import { deleteAccount } from '@/components/site/delete-account';
 
 /**
  * The confirmation in front of "Delete account". It says plainly what goes

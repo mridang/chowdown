@@ -13,9 +13,9 @@
  * cooking oil are assumed to be in the kitchen.
  */
 
-import { foldText } from '../intl';
-import { toBaseAmount, type BaseAmount } from './units';
-import { own } from '../util/own';
+import { foldText } from '@/lib/intl';
+import { toBaseAmount, type BaseAmount } from '@/lib/recipe/units';
+import { own } from '@/lib/util/own';
 
 /** Something the person has, with an amount when they gave one. */
 export interface PantryItem {

@@ -10,8 +10,8 @@ import {
   pastTheEnd,
   plainTitle,
   rangeText,
-} from '../../../src/lib/mcp/tool-text';
-import { buildRecipeCardData } from '../../../src/lib/mcp/tool-results';
+} from '@/lib/mcp/tool-text';
+import { buildRecipeCardData } from '@/lib/mcp/tool-results';
 
 const SOURCE = [
   '>> servings: 4',

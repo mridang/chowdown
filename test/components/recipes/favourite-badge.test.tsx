@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { FavouriteBadge } from '../../../src/components/recipes/favourite-badge';
+import { FavouriteBadge } from '@/components/recipes/favourite-badge';
 import { html } from '../render';
 
 describe('FavouriteBadge', () => {

@@ -20,7 +20,7 @@ import { clientAddress } from '@/lib/oauth/limits';
 import { getDatabase } from '@/lib/util';
 import { appOriginFromHeaders } from '@/lib/util/origin';
 
-import { ConsentCard } from './consent-card';
+import { ConsentCard } from '@/app/oauth/authorize/consent-card';
 
 /** The tab title of the approval screen. */
 export const metadata: Metadata = { title: 'Connect an app' };

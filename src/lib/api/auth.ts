@@ -13,11 +13,11 @@ import {
   getCurrentUser,
   getLiveSessionUid,
   getSessionUid,
-} from '../auth/current-user';
-import type { User } from '../db/users';
-import { isSameOriginPost } from '../auth/csrf';
-import { appOrigin } from '../util/origin';
-import { problems } from './problem';
+} from '@/lib/auth/current-user';
+import type { User } from '@/lib/db/users';
+import { isSameOriginPost } from '@/lib/auth/csrf';
+import { appOrigin } from '@/lib/util/origin';
+import { problems } from '@/lib/api/problem';
 
 /** Methods that never change data and so need no origin check. */
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);

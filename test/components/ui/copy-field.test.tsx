@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { CopyField } from '../../../src/components/ui/copy-field';
+import { CopyField } from '@/components/ui/copy-field';
 import { html } from '../render';
 
 describe('CopyField', () => {

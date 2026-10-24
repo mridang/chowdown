@@ -12,7 +12,7 @@
  * ext-apps `App.ontoolresult` handler (`params.structuredContent`).
  */
 
-import type { ParsedRecipe } from '../recipe/cooklang';
+import type { ParsedRecipe } from '@/lib/recipe/cooklang';
 
 /** One dated cooking-log entry surfaced in the card/fullscreen view. */
 export interface RecipeLogEntry {

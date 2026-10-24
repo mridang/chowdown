@@ -7,12 +7,12 @@ import { Container } from '@/components/ui/layout';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import { isDriveConnected, wasDriveConnected } from '@/lib/auth/drive-access';
 
-import { AddRecipesPage } from './_components/add-recipes-page';
+import { AddRecipesPage } from '@/app/(site)/(pages)/recipes/add/_components/add-recipes-page';
 import {
   addRecipesPath,
   sharedImportInput,
   type ShareParams,
-} from './_components/shared-input';
+} from '@/app/(site)/(pages)/recipes/add/_components/shared-input';
 
 /** The tab title of the Add recipes page. */
 export const metadata: Metadata = { title: 'Add recipes' };

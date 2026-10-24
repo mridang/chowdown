@@ -1,4 +1,4 @@
-import type { RecipeTags } from './tag-index';
+import type { RecipeTags } from '@/lib/recipe/tag-index';
 
 /**
  * The first value of a tag (the recipe's main cuisine, say), or `undefined`

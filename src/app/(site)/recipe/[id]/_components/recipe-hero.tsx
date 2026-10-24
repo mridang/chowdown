@@ -12,7 +12,10 @@ import { sentenceCase } from '@/lib/format';
 import type { Tone } from '@/lib/recipe/card-data';
 import type { StepToken } from '@/lib/recipe/cooklang';
 
-import { AuthorLine, SourceLine } from './byline';
+import {
+  AuthorLine,
+  SourceLine,
+} from '@/app/(site)/recipe/[id]/_components/byline';
 
 /**
  * The trail above the title: always "Recipes", plus the recipe's cuisine (a

@@ -20,10 +20,10 @@
  * readers are linear, and the model is shown data, never instructions.
  */
 
-import { errorMessage, logError, safeJsonParse } from '../util';
-import { upsertMetadata } from './cook-text';
-import { decodeEntities, visibleText } from './html-text';
-import { scanHtml } from './import-html-scan';
+import { errorMessage, logError, safeJsonParse } from '@/lib/util';
+import { upsertMetadata } from '@/lib/recipe/cook-text';
+import { decodeEntities, visibleText } from '@/lib/recipe/html-text';
+import { scanHtml } from '@/lib/recipe/import-html-scan';
 
 /** A loose JSON value: structured data arrives without a fixed shape. */
 type Json = unknown;

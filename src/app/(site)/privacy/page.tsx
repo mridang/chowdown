@@ -7,7 +7,10 @@ import { ChevronLeftIcon } from '@/components/icons';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 import { TextLink } from '@/components/ui/text-link';
 
-import { LegalItem, LegalSection } from './_components/legal-section';
+import {
+  LegalItem,
+  LegalSection,
+} from '@/app/(site)/privacy/_components/legal-section';
 
 /**
  * A public page: it may be indexed, and it carries its own social card (the

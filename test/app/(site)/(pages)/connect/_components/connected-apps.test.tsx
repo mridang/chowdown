@@ -3,8 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import {
   ConnectedAppItem,
   ConnectedApps,
-} from '../../../../../../src/app/(site)/(pages)/connect/_components/connected-apps';
-import type { ConnectedApp } from '../../../../../../src/lib/connected-apps';
+} from '@/app/(site)/(pages)/connect/_components/connected-apps';
+import type { ConnectedApp } from '@/lib/connected-apps';
 import { html } from '../../../../../components/render';
 
 const APP: ConnectedApp = {

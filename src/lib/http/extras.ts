@@ -6,13 +6,13 @@
  * classes every app has. It is the one place an app says what it is protecting.
  */
 
-import { SESSION_COOKIE } from '../auth/session';
+import { SESSION_COOKIE } from '@/lib/auth/session';
 import {
   GENERIC_CLASSES,
   genericClass,
   type ClassSpec,
   type EdgeLimits,
-} from './edge-limits';
+} from '@/lib/http/edge-limits';
 
 /** The kinds of request this app counts besides the classes every app has. */
 type OwnClass =

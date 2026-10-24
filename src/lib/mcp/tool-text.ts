@@ -14,9 +14,9 @@
  * model's context.
  */
 
-import { countOf } from '../intl';
-import type { StepToken } from '../recipe/cooklang';
-import type { RecipeCardData, RecipeListItem } from './ui-types';
+import { countOf } from '@/lib/intl';
+import type { StepToken } from '@/lib/recipe/cooklang';
+import type { RecipeCardData, RecipeListItem } from '@/lib/mcp/ui-types';
 
 /** The most recipes a list prints before saying how many more there are. */
 export const LIST_TEXT_LIMIT = 200;

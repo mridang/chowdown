@@ -31,7 +31,7 @@ jest.unstable_mockModule(
 );
 
 const { DELETE } =
-  await import('../../../../../../../src/app/api/users/self/connections/[grant_id]/route');
+  await import('@/app/api/users/self/connections/[grant_id]/route');
 
 quietSecurityLogs();
 

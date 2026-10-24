@@ -13,9 +13,9 @@
  * and widths an app uses is in `site.ts`.
  */
 
-import { isPublicWebUrl } from '../http/safe-fetch';
-import { parseUrl } from '../util/url';
-import { ALLOWED_HOSTS, ALLOWED_WIDTHS } from './site';
+import { isPublicWebUrl } from '@/lib/http/safe-fetch';
+import { parseUrl } from '@/lib/util/url';
+import { ALLOWED_HOSTS, ALLOWED_WIDTHS } from '@/lib/images/site';
 
 /** The path every app serves its pictures from. */
 export const IMAGE_PATH = '/img';

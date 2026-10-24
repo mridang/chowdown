@@ -1,13 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { ParsedRecipe } from '../../../src/lib/recipe/cooklang';
+import type { ParsedRecipe } from '@/lib/recipe/cooklang';
 import {
   buildEmbeddingText,
   cosineBetween,
   cosineSimilarity,
   embedText,
   measure,
-} from '../../../src/lib/recipe/embeddings';
+} from '@/lib/recipe/embeddings';
 
 describe('cosineSimilarity', () => {
   it('is 1 for identical vectors', () => {

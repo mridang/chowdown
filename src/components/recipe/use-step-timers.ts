@@ -19,7 +19,7 @@ import {
   vibrateOnFinish,
   type Alarm,
   type AudioContextConstructor,
-} from './timer-alerts';
+} from '@/components/recipe/timer-alerts';
 import {
   ADD_TIME_MS,
   newlyFinished,
@@ -28,8 +28,8 @@ import {
   timerReducer,
   type StepTimer,
   type TimerSpec,
-} from './timer-state';
-import { useNow } from './use-clock';
+} from '@/components/recipe/timer-state';
+import { useNow } from '@/components/recipe/use-clock';
 
 /** What the timers offer to the rest of cook mode. */
 export interface StepTimers {

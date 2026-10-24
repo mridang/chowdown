@@ -19,7 +19,7 @@ jest.unstable_mockModule('../../../src/lib/auth/current-user', () => ({
 }));
 
 const { authenticate, mayFetch, signatureFor, signatureValid } =
-  await import('../../../src/lib/images/access');
+  await import('@/lib/images/access');
 
 const PHOTO = 'https://photos.example.org/soup.jpg';
 const UNLISTED = 'https://photos.example.org/unlisted.jpg';

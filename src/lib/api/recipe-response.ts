@@ -8,19 +8,19 @@
 
 import { NextResponse } from 'next/server';
 
-import { getRecipePageRows } from '../db/recipe-page';
-import { recipeToJsonLd } from '../recipe/schema-org';
-import { parseRecipe } from '../recipe/cooklang';
-import { getDatabase } from '../util';
+import { getRecipePageRows } from '@/lib/db/recipe-page';
+import { recipeToJsonLd } from '@/lib/recipe/schema-org';
+import { parseRecipe } from '@/lib/recipe/cooklang';
+import { getDatabase } from '@/lib/util';
 import {
   entityTag,
   ifNoneMatchHit,
   representationTag,
   type RecipeRepresentation,
-} from './etag';
-import { problems } from './problem';
-import { absoluteUrl } from './pagination';
-import { recipeResource } from './recipe-resource';
+} from '@/lib/api/etag';
+import { problems } from '@/lib/api/problem';
+import { absoluteUrl } from '@/lib/api/pagination';
+import { recipeResource } from '@/lib/api/recipe-resource';
 
 /** The media type of a recipe's Cooklang source. */
 export const COOKLANG_TYPE = 'text/x-cooklang';

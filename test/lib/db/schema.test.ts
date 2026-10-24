@@ -3,7 +3,7 @@ import { SQLiteTable, getTableConfig } from 'drizzle-orm/sqlite-core';
 import { describe, expect, it } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import * as schema from '../../../src/lib/db/schema';
+import * as schema from '@/lib/db/schema';
 import { APP_MIGRATIONS } from './migrations';
 import { sqliteD1 } from './sqlite-d1';
 

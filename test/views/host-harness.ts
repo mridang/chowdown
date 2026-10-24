@@ -7,7 +7,7 @@ import {
   PostMessageTransport as HostTransport,
 } from '@modelcontextprotocol/ext-apps/app-bridge';
 
-import type { DocumentRoot } from '../../src/views/host-wiring';
+import type { DocumentRoot } from '@/views/host-wiring';
 
 /** Wait for queued messages to be delivered, in both directions. */
 export function settle(): Promise<void> {

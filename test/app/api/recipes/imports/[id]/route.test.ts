@@ -19,7 +19,7 @@ const session: { uid: number | null } = { uid: 7 };
 
 // The sign-in gate has its own tests (test/lib/api/auth.test.ts); here it just
 // says who is calling, in the shape the routes read.
-const { problems } = await import('../../../../../../src/lib/api/problem');
+const { problems } = await import('@/lib/api/problem');
 jest.unstable_mockModule('../../../../../../src/lib/api/auth', () => ({
   requireLiveUid: async () =>
     session.uid === null
@@ -27,8 +27,7 @@ jest.unstable_mockModule('../../../../../../src/lib/api/auth', () => ({
       : { ok: true, value: session.uid },
 }));
 
-const { DELETE, GET } =
-  await import('../../../../../../src/app/api/recipes/imports/[id]/route');
+const { DELETE, GET } = await import('@/app/api/recipes/imports/[id]/route');
 
 let raw: DatabaseSync;
 let restore: () => void;

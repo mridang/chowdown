@@ -1,10 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  isWellFormedChallenge,
-  s256,
-  verifyPkce,
-} from '../../../src/lib/oauth/pkce';
+import { isWellFormedChallenge, s256, verifyPkce } from '@/lib/oauth/pkce';
 
 // The worked example from RFC 7636 appendix B.
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';

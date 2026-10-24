@@ -6,7 +6,7 @@ import {
   listEmbeddings,
   saveSimilarLists,
   upsertEmbedding,
-} from '../../../src/lib/db/embeddings';
+} from '@/lib/db/embeddings';
 import { fakeDb } from './fake-db';
 
 describe('listEmbeddings', () => {

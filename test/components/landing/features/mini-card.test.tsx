@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { RECIPES } from '../../../../src/components/landing/demo-recipes';
-import { MiniCard } from '../../../../src/components/landing/features/mini-card';
+import { RECIPES } from '@/components/landing/demo-recipes';
+import { MiniCard } from '@/components/landing/features/mini-card';
 import { html } from '../../render';
 
 describe('MiniCard', () => {

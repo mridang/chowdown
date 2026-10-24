@@ -1,6 +1,6 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-import { createDatabase, type Database } from '../db/client';
+import { createDatabase, type Database } from '@/lib/db/client';
 
 /** The D1 database binding from the current Cloudflare context. */
 export function getDB(): D1Database {

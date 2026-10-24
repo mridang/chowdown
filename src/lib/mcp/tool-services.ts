@@ -14,35 +14,35 @@
  * a loud failure rather than being reported as an outage.
  */
 
-import { DriveNotConnectedError } from '../auth/drive-access';
-import { listEmbeddings, type EmbeddingRow } from '../db/embeddings';
-import { listFavouriteIds } from '../db/favourites';
-import { findRecipeBySourceUrl, listRecipesByUser } from '../db/recipes';
-import { setUserUnits, type User } from '../db/users';
-import type { DriveFile } from '../drive/drive-client';
-import { embedText } from '../recipe/embeddings';
-import { setFavouriteAndTag } from '../recipe/favourite';
-import type { ExistingRecipe } from '../recipe/import-recipe';
-import { syncFromDrive } from '../recipe/drive-sync';
-import { ensureEmbeddings } from '../recipe/similar';
-import { tagCookSource, tagCookSourceBestEffort } from '../recipe/tagging';
+import { DriveNotConnectedError } from '@/lib/auth/drive-access';
+import { listEmbeddings, type EmbeddingRow } from '@/lib/db/embeddings';
+import { listFavouriteIds } from '@/lib/db/favourites';
+import { findRecipeBySourceUrl, listRecipesByUser } from '@/lib/db/recipes';
+import { setUserUnits, type User } from '@/lib/db/users';
+import type { DriveFile } from '@/lib/drive/drive-client';
+import { embedText } from '@/lib/recipe/embeddings';
+import { setFavouriteAndTag } from '@/lib/recipe/favourite';
+import type { ExistingRecipe } from '@/lib/recipe/import-recipe';
+import { syncFromDrive } from '@/lib/recipe/drive-sync';
+import { ensureEmbeddings } from '@/lib/recipe/similar';
+import { tagCookSource, tagCookSourceBestEffort } from '@/lib/recipe/tagging';
 import {
   addMissingCover,
   convertImport,
   type ConversionOptions,
-} from '../recipe/to-cooklang';
-import type { UnitSystem } from '../recipe/units';
-import { DAILY_BUDGETS, spendBudget } from '../util/daily-budget';
+} from '@/lib/recipe/to-cooklang';
+import type { UnitSystem } from '@/lib/recipe/units';
+import { DAILY_BUDGETS, spendBudget } from '@/lib/util/daily-budget';
 import {
   errorMessage,
   getDatabase,
   getEnv,
   logError,
   runInBackground,
-} from '../util';
-import type { ScenarioDeps } from './scenarios';
-import type { FileOps } from './tool-calls';
-import { BackendFailure } from './tool-errors';
+} from '@/lib/util';
+import type { ScenarioDeps } from '@/lib/mcp/scenarios';
+import type { FileOps } from '@/lib/mcp/tool-calls';
+import { BackendFailure } from '@/lib/mcp/tool-errors';
 
 /**
  * Run one outside call and turn any failure of it into a {@link BackendFailure}

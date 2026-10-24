@@ -9,10 +9,10 @@
  * runs only when it has none.)
  */
 
-import { problems } from '../api/problem';
-import { getSessionUid } from '../auth/current-user';
-import { getDatabase } from '../util';
-import { userHasCover } from './cover-ownership';
+import { problems } from '@/lib/api/problem';
+import { getSessionUid } from '@/lib/auth/current-user';
+import { getDatabase } from '@/lib/util';
+import { userHasCover } from '@/lib/images/cover-ownership';
 
 /** Refuses a caller who is not signed in. */
 export async function authenticate(): Promise<Response | undefined> {

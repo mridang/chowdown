@@ -10,10 +10,10 @@
 
 import { and, eq, sql } from 'drizzle-orm';
 
-import type { Database } from '../db/client';
-import { recipes } from '../db/schema';
-import { parseRecipe } from '../recipe/cooklang';
-import { extractMedia } from '../recipe/media';
+import type { Database } from '@/lib/db/client';
+import { recipes } from '@/lib/db/schema';
+import { parseRecipe } from '@/lib/recipe/cooklang';
+import { extractMedia } from '@/lib/recipe/media';
 
 /**
  * How many recipes that mention the address anywhere are looked at. The text

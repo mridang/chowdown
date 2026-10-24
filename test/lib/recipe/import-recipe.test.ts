@@ -4,7 +4,7 @@ import {
   importRecipe,
   type ExistingRecipe,
   type ImportDeps,
-} from '../../../src/lib/recipe/import-recipe';
+} from '@/lib/recipe/import-recipe';
 
 const GOOD =
   '>> title: Pasta\n>> source: https://a.com/pasta\n\nBoil @pasta{200%g}.\n';

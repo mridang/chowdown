@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { Method } from '../../../src/components/recipe/method';
-import { RecipeStateProvider } from '../../../src/components/recipe/recipe-state';
+import { Method } from '@/components/recipe/method';
+import { RecipeStateProvider } from '@/components/recipe/recipe-state';
 import { html } from '../render';
 
 const step = (text: string) => [{ kind: 'text' as const, text }];

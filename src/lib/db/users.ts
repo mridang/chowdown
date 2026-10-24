@@ -8,8 +8,8 @@
 
 import { and, eq, isNull, lte, or, sql } from 'drizzle-orm';
 
-import type { Database } from './client';
-import { users } from './schema';
+import type { Database } from '@/lib/db/client';
+import { users } from '@/lib/db/schema';
 
 /** A full user row. */
 export type User = typeof users.$inferSelect;

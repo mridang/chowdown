@@ -1,7 +1,7 @@
-import { DriveNotConnectedError } from '../../../src/lib/auth/drive-access';
+import { DriveNotConnectedError } from '@/lib/auth/drive-access';
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { Recipe } from '../../../src/lib/db/recipes';
+import type { Recipe } from '@/lib/db/recipes';
 
 import {
   browseRecipes,
@@ -10,7 +10,7 @@ import {
   runScenarioTool,
   type ScenarioDeps,
   type ScenarioRecipe,
-} from '../../../src/lib/mcp/scenarios';
+} from '@/lib/mcp/scenarios';
 
 const recipe = (
   name: string,

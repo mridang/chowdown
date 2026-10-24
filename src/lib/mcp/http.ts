@@ -12,15 +12,15 @@
  * request it answers carries that request's id.
  */
 
-import { errorMessage, logError } from '../util';
+import { errorMessage, logError } from '@/lib/util';
 import { NextResponse } from 'next/server';
 
-import type { User } from '../db/users';
-import { CORS_HEADERS } from '../oauth/http';
-import { wwwAuthenticate } from '../oauth/metadata';
-import { SCOPE_READ, hasScope, scopeForMessage } from '../oauth/scopes';
-import type { McpAuth } from './auth';
-import { ALLOWED_ORIGINS_SETTING, getEnvSafe } from './env';
+import type { User } from '@/lib/db/users';
+import { CORS_HEADERS } from '@/lib/oauth/http';
+import { wwwAuthenticate } from '@/lib/oauth/metadata';
+import { SCOPE_READ, hasScope, scopeForMessage } from '@/lib/oauth/scopes';
+import type { McpAuth } from '@/lib/mcp/auth';
+import { ALLOWED_ORIGINS_SETTING, getEnvSafe } from '@/lib/mcp/env';
 import {
   ERROR_INTERNAL,
   ERROR_INVALID_REQUEST,
@@ -39,7 +39,7 @@ import {
   replyIdOf,
   type ProtocolMessage,
   type ProtocolRefusal,
-} from './protocol';
+} from '@/lib/mcp/protocol';
 import {
   MAX_BATCH,
   checkRateLimits,
@@ -47,12 +47,12 @@ import {
   liveRateLimitDeps,
   readJsonBody,
   type RateLimitDeps,
-} from './request-limits';
+} from '@/lib/mcp/request-limits';
 import {
   handleMcpMessage,
   isAdvertisedTool,
   type JsonRpcResponse,
-} from './server';
+} from '@/lib/mcp/server';
 
 /**
  * Replies carry a person's recipes and are never meant to be stored by a shared

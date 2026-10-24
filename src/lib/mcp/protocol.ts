@@ -14,8 +14,8 @@
  * needs a session, because the server keeps no state between requests.
  */
 
-import { base64ToBytes } from '../util/base64';
-import { parseUrl } from '../util/url';
+import { base64ToBytes } from '@/lib/util/base64';
+import { parseUrl } from '@/lib/util/url';
 
 /** The newest revision, which has no handshake and no sessions. */
 export const MODERN_VERSION = '2026-07-28';

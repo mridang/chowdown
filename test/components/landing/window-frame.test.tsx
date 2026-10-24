@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { WindowFrame } from '../../../src/components/landing/window-frame';
+import { WindowFrame } from '@/components/landing/window-frame';
 import { html } from '../render';
 
 describe('WindowFrame', () => {

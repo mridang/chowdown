@@ -7,8 +7,8 @@ import {
   jest,
 } from '@jest/globals';
 
-import { SESSION_COOKIE } from '../../../src/lib/auth/app';
-import type { User } from '../../../src/lib/auth/store';
+import { SESSION_COOKIE } from '@/lib/auth/app';
+import type { User } from '@/lib/auth/store';
 import { fakeCookies, installEnv, jar, tokenFor } from './auth-test-kit';
 
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
@@ -29,7 +29,7 @@ jest.unstable_mockModule('../../../src/lib/auth/store', () => ({
 }));
 
 const { getCurrentUser, getLiveSessionUid, getSession, getSessionUid } =
-  await import('../../../src/lib/auth/current-user');
+  await import('@/lib/auth/current-user');
 
 let restore: () => void;
 

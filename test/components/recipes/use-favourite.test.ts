@@ -3,11 +3,11 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import {
   favouriteUrl,
   saveFavourite,
-} from '../../../src/components/recipes/use-favourite';
+} from '@/components/recipes/use-favourite';
 import {
   getFavouriteOverride,
   resetFavouriteOverrides,
-} from '../../../src/lib/favourites-store';
+} from '@/lib/favourites-store';
 
 type Send = NonNullable<Parameters<typeof saveFavourite>[2]>;
 

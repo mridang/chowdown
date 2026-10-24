@@ -4,7 +4,7 @@ import {
   accessLabel,
   connectedAppResource,
   mcpUrl,
-} from '../../src/lib/connected-apps';
+} from '@/lib/connected-apps';
 
 describe('mcpUrl', () => {
   it('puts the MCP path on the origin it is served from', () => {

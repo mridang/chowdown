@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { User } from '../../../src/lib/db/users';
-import type { McpAuth } from '../../../src/lib/mcp/auth';
+import type { User } from '@/lib/db/users';
+import type { McpAuth } from '@/lib/mcp/auth';
 import {
   corsFor,
   handleMcpPost,
@@ -9,13 +9,10 @@ import {
   respondToMcp,
   unauthorizedResponse,
   type Authenticate,
-} from '../../../src/lib/mcp/http';
-import {
-  MAX_BODY_BYTES,
-  type RateLimitDeps,
-} from '../../../src/lib/mcp/request-limits';
-import { SERVER_INFO } from '../../../src/lib/mcp/server-info';
-import type { RateLimitStore } from '../../../src/lib/util/rate-limit';
+} from '@/lib/mcp/http';
+import { MAX_BODY_BYTES, type RateLimitDeps } from '@/lib/mcp/request-limits';
+import { SERVER_INFO } from '@/lib/mcp/server-info';
+import type { RateLimitStore } from '@/lib/util/rate-limit';
 
 const ALL_SCOPES = ['recipes:read', 'recipes:write'];
 const SELF = 'https://chowdown.test';

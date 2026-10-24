@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { Segmented } from '../../../src/components/ui/segmented';
+import { Segmented } from '@/components/ui/segmented';
 import { html } from '../render';
 
 const OPTIONS = [

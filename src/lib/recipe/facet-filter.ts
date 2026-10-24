@@ -11,9 +11,9 @@
  * and any tag value.
  */
 
-import { foldText } from '../intl';
-import { FACETS } from './taxonomy';
-import type { RecipeTags } from './tag-index';
+import { foldText } from '@/lib/intl';
+import { FACETS } from '@/lib/recipe/taxonomy';
+import type { RecipeTags } from '@/lib/recipe/tag-index';
 
 /** Parsed filter state from the query string. */
 export interface FilterState {

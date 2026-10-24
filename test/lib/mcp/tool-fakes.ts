@@ -6,11 +6,11 @@
 
 import { jest } from '@jest/globals';
 
-import type { Recipe } from '../../../src/lib/db/recipes';
-import type { User } from '../../../src/lib/db/users';
-import type { DriveFile } from '../../../src/lib/drive/drive-client';
-import { callTool, type ToolContext } from '../../../src/lib/mcp/tool-calls';
-import type { ToolServices } from '../../../src/lib/mcp/tool-services';
+import type { Recipe } from '@/lib/db/recipes';
+import type { User } from '@/lib/db/users';
+import type { DriveFile } from '@/lib/drive/drive-client';
+import { callTool, type ToolContext } from '@/lib/mcp/tool-calls';
+import type { ToolServices } from '@/lib/mcp/tool-services';
 
 /** The signed-in user the tests act as. */
 export const USER = { id: 7, units: null, recipes_folder_id: 'folder' } as User;

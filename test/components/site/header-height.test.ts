@@ -6,7 +6,7 @@ import {
   MAIN_MIN_HEIGHT_CLASS,
   STICKY_PANEL_CLASS,
   STICKY_SIDEBAR_CLASS,
-} from '../../../src/components/site/header-height';
+} from '@/components/site/header-height';
 
 /** The first number (in rem) found after `prefix` in a class string. */
 function remAfter(classes: string, prefix: RegExp): number {

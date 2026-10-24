@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { GET, OPTIONS } from '../../../src/app/.well-known/[...path]/route';
+import { GET, OPTIONS } from '@/app/.well-known/[...path]/route';
 
 describe('GET /.well-known/<anything else>', () => {
   const res = GET();

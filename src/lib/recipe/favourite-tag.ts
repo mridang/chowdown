@@ -8,7 +8,7 @@
  * file (other apps, a future import, an assistant).
  */
 
-import { removeMetadata, upsertMetadata } from './cook-text';
+import { removeMetadata, upsertMetadata } from '@/lib/recipe/cook-text';
 
 /** The metadata key carrying the favourite marker. */
 export const FAVOURITE_KEY = 'favourite';

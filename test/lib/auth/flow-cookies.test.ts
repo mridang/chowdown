@@ -1,11 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 import { NextResponse } from 'next/server';
 
-import { RETURN_COOKIE, STATE_COOKIE } from '../../../src/lib/auth/app';
-import {
-  finishFlow,
-  startFlowCookies,
-} from '../../../src/lib/auth/flow-cookies';
+import { RETURN_COOKIE, STATE_COOKIE } from '@/lib/auth/app';
+import { finishFlow, startFlowCookies } from '@/lib/auth/flow-cookies';
 
 const start = (returnTo: string | undefined, secure = true) => {
   const response = NextResponse.next();

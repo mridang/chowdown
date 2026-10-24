@@ -5,7 +5,7 @@
  * search engines and assistants can say what the site is without guessing.
  */
 
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from './site';
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/lib/site';
 
 /** The landing page's structured data: the organisation, the site and the app. */
 export function landingJsonLd(): Readonly<Record<string, unknown>> {

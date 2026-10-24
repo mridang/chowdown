@@ -8,10 +8,10 @@
  * is connecting Google Drive (see `drive-callback.ts`).
  */
 
-import { driveResultPath } from './drive-access';
-import { completeDriveConnect } from './drive-callback';
-import type { OtherFlow } from './sign-in';
-import type { User } from './store';
+import { driveResultPath } from '@/lib/auth/drive-access';
+import { completeDriveConnect } from '@/lib/auth/drive-callback';
+import type { OtherFlow } from '@/lib/auth/sign-in';
+import type { User } from '@/lib/auth/store';
 
 /** What runs once the person is recorded and before their session is issued. */
 export const afterSignIn: (user: Readonly<User>) => Promise<void> = async () =>

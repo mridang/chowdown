@@ -6,11 +6,8 @@ import {
   firstRetryAfter,
   retryAfterIfLimited,
   tooManyRequests,
-} from '../../../src/lib/oauth/limits';
-import type {
-  RateLimit,
-  RateLimitStore,
-} from '../../../src/lib/util/rate-limit';
+} from '@/lib/oauth/limits';
+import type { RateLimit, RateLimitStore } from '@/lib/util/rate-limit';
 
 /** A store that counts hits per key in memory, in one never-ending window that opens at the first hit. */
 function countingStore(): RateLimitStore & { readonly keys: string[] } {

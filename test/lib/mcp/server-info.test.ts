@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
 
-import { SITE_URL } from '../../../src/lib/site';
+import { SITE_URL } from '@/lib/site';
 import {
   CAPABILITIES,
   INSTRUCTIONS,
@@ -11,8 +11,8 @@ import {
   SERVER_INFO_META_KEY,
   SERVER_VERSION,
   UI_EXTENSION_ID,
-} from '../../../src/lib/mcp/server-info';
-import { TOOLS } from '../../../src/lib/mcp/tool-definitions';
+} from '@/lib/mcp/server-info';
+import { TOOLS } from '@/lib/mcp/tool-definitions';
 
 const root = process.cwd();
 

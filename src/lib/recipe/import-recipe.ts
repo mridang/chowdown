@@ -14,9 +14,12 @@
  *      import that saved metadata but no recipe) or create a new file.
  */
 
-import { parseRecipe } from './cooklang';
-import { withImages } from './media';
-import { hasRecipeBody, type ConversionOptions } from './to-cooklang';
+import { parseRecipe } from '@/lib/recipe/cooklang';
+import { withImages } from '@/lib/recipe/media';
+import {
+  hasRecipeBody,
+  type ConversionOptions,
+} from '@/lib/recipe/to-cooklang';
 
 /** What an import ended up doing. */
 export type ImportOutcome =

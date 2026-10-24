@@ -5,7 +5,7 @@ import {
   useOptionalStepTimers,
   useStepTimers,
   type StepTimers,
-} from '../../../src/components/recipe/use-step-timers';
+} from '@/components/recipe/use-step-timers';
 import { html } from '../render';
 
 /** Renders what the hook returns, as JSON. */

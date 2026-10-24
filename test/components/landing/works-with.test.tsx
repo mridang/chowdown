@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { WorksWith } from '../../../src/components/landing/works-with';
+import { WorksWith } from '@/components/landing/works-with';
 import { html } from '../render';
 
 describe('WorksWith', () => {

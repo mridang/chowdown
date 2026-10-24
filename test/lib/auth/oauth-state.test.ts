@@ -1,12 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { EXTRA_PURPOSES } from '../../../src/lib/auth/app';
+import { EXTRA_PURPOSES } from '@/lib/auth/app';
 import {
   SIGN_IN_PURPOSE,
   checkState,
   newState,
   purposeOf,
-} from '../../../src/lib/auth/oauth-state';
+} from '@/lib/auth/oauth-state';
 
 /** Every ask a round trip can be for in this app. */
 const PURPOSES = [SIGN_IN_PURPOSE, ...EXTRA_PURPOSES];

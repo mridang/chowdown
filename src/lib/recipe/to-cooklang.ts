@@ -14,12 +14,19 @@
  *      conventions are dictated here, not by the client.
  */
 
-import { removeEmptyMetadata, sourceUrlOf, upsertMetadata } from './cook-text';
-import { parseRecipe } from './cooklang';
-import { withAuthor } from './author';
-import { withoutScriptsAndStyles } from './html-text';
-import { fetchPage } from './fetch-page';
-import { extractOgImage, extractRecipeFromHtml } from './import-schema-org';
+import {
+  removeEmptyMetadata,
+  sourceUrlOf,
+  upsertMetadata,
+} from '@/lib/recipe/cook-text';
+import { parseRecipe } from '@/lib/recipe/cooklang';
+import { withAuthor } from '@/lib/recipe/author';
+import { withoutScriptsAndStyles } from '@/lib/recipe/html-text';
+import { fetchPage } from '@/lib/recipe/fetch-page';
+import {
+  extractOgImage,
+  extractRecipeFromHtml,
+} from '@/lib/recipe/import-schema-org';
 
 /** The model used for conversion. Swappable; fp8-fast balances quality/latency. */
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';

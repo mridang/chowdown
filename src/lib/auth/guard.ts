@@ -10,10 +10,10 @@
 
 import { NextResponse } from 'next/server';
 
-import { appOrigin } from '../util/origin';
-import { isSameOriginPost } from './csrf';
-import { getCurrentUser } from './current-user';
-import type { User } from './store';
+import { appOrigin } from '@/lib/util/origin';
+import { isSameOriginPost } from '@/lib/auth/csrf';
+import { getCurrentUser } from '@/lib/auth/current-user';
+import type { User } from '@/lib/auth/store';
 
 /** A problem response with the fixed shape every refusal here has. */
 function refusal(

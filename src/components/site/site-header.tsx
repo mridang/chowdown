@@ -6,13 +6,13 @@ import { ButtonLink } from '@/components/ui/button';
 import { Container } from '@/components/ui/layout';
 import type { ShellUser } from '@/lib/auth/shell-user';
 
-import { AccountMenu } from './account-menu';
-import { driveLink } from './drive-link';
-import { HEADER_ROW_CLASS } from './header-height';
-import { HeaderNav } from './header-nav';
-import { Logo } from './logo';
-import { MobileNav } from './mobile-nav';
-import { menuLinks, VISITOR_NAV } from './nav-links';
+import { AccountMenu } from '@/components/site/account-menu';
+import { driveLink } from '@/components/site/drive-link';
+import { HEADER_ROW_CLASS } from '@/components/site/header-height';
+import { HeaderNav } from '@/components/site/header-nav';
+import { Logo } from '@/components/site/logo';
+import { MobileNav } from '@/components/site/mobile-nav';
+import { menuLinks, VISITOR_NAV } from '@/components/site/nav-links';
 
 /**
  * What sits beside the account menu for someone signed in: the "Add recipe"

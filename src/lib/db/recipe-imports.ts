@@ -7,9 +7,9 @@
 
 import { and, desc, eq, lt, or, sql } from 'drizzle-orm';
 
-import type { ImportItem } from '../recipe/prepare-import';
-import type { Database } from './client';
-import { recipeImports } from './schema';
+import type { ImportItem } from '@/lib/recipe/prepare-import';
+import type { Database } from '@/lib/db/client';
+import { recipeImports } from '@/lib/db/schema';
 
 /** An import as stored. */
 export interface RecipeImport {

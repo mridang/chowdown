@@ -7,8 +7,8 @@
  * own; `getUserAccessToken` in `current-user.ts` supplies the real ones.
  */
 
-import type { MintedToken } from './access-token-cache';
-import { DriveNotConnectedError, isAuthFailure } from './drive-access';
+import type { MintedToken } from '@/lib/auth/access-token-cache';
+import { DriveNotConnectedError, isAuthFailure } from '@/lib/auth/drive-access';
 
 /** What the exchange needs from the outside world. */
 export interface AccessTokenDeps {

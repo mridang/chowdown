@@ -20,16 +20,20 @@
 
 import { asc, eq } from 'drizzle-orm';
 
-import { DriveNotConnectedError } from '../auth/drive-access';
-import type { Database } from '../db/client';
-import { recipes } from '../db/schema';
-import type { User } from '../db/users';
-import { recipeDisplayName } from '../recipe/cook-text';
-import { getDatabase } from '../util';
-import { ERROR_INTERNAL, ERROR_INVALID_PARAMS, RpcError } from './protocol';
-import { createToolContext, type ToolContext } from './tool-calls';
-import { guarded } from './tool-services';
-import { plainTitle } from './tool-text';
+import { DriveNotConnectedError } from '@/lib/auth/drive-access';
+import type { Database } from '@/lib/db/client';
+import { recipes } from '@/lib/db/schema';
+import type { User } from '@/lib/db/users';
+import { recipeDisplayName } from '@/lib/recipe/cook-text';
+import { getDatabase } from '@/lib/util';
+import {
+  ERROR_INTERNAL,
+  ERROR_INVALID_PARAMS,
+  RpcError,
+} from '@/lib/mcp/protocol';
+import { createToolContext, type ToolContext } from '@/lib/mcp/tool-calls';
+import { guarded } from '@/lib/mcp/tool-services';
+import { plainTitle } from '@/lib/mcp/tool-text';
 
 /** What every recipe address starts with: the scheme and the two slashes. */
 export const RECIPE_URI_PREFIX = 'recipe://';

@@ -1,7 +1,7 @@
 /* eslint-disable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */
 import { describe, expect, it } from '@jest/globals';
 
-import { CoverImage, sizesFor } from '../../src/components/cover-image';
+import { CoverImage, sizesFor } from '@/components/cover-image';
 import { html } from './render';
 
 const FALLBACK = <p>No photo</p>;

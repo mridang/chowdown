@@ -18,11 +18,14 @@
  * pure and unit-tested.
  */
 
-import { authorEvidence, declaredAuthor, hasAuthor } from './author';
-import { upsertMetadata } from './cook-text';
-import { scanHtml, type Attributes } from './import-html-scan';
-import { parseIngredientLine, toCookIngredient } from './ingredient-line';
-import { validImageUrls } from './media';
+import { authorEvidence, declaredAuthor, hasAuthor } from '@/lib/recipe/author';
+import { upsertMetadata } from '@/lib/recipe/cook-text';
+import { scanHtml, type Attributes } from '@/lib/recipe/import-html-scan';
+import {
+  parseIngredientLine,
+  toCookIngredient,
+} from '@/lib/recipe/ingredient-line';
+import { validImageUrls } from '@/lib/recipe/media';
 
 /** A loose JSON value — JSON-LD arrives without a fixed shape. */
 type Json = unknown;

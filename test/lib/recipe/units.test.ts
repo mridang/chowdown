@@ -5,7 +5,7 @@ import {
   isUnitSystem,
   scaleQuantity,
   toBaseAmount,
-} from '../../../src/lib/recipe/units';
+} from '@/lib/recipe/units';
 
 describe('isUnitSystem', () => {
   it('accepts the three systems and rejects others', () => {

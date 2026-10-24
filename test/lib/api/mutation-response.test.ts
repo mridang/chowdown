@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { settleMutation } from '../../../src/lib/api/mutation-response';
+import { settleMutation } from '@/lib/api/mutation-response';
 
 const wording = { missing: 'note', invalid: 'The note is not valid.' };
 

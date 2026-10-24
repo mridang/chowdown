@@ -4,7 +4,7 @@ import {
   BackendFailure,
   InvalidToolArguments,
   UnknownTool,
-} from '../../../src/lib/mcp/tool-errors';
+} from '@/lib/mcp/tool-errors';
 
 describe('UnknownTool', () => {
   it('names the tool the caller asked for', () => {

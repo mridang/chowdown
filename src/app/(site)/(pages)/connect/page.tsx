@@ -14,7 +14,7 @@ import { Container, Heading } from '@/components/ui/layout';
 import { NumberBadge } from '@/components/ui/number-badge';
 import { PageHeader } from '@/components/ui/page-header';
 
-import { ConnectedApps } from './_components/connected-apps';
+import { ConnectedApps } from '@/app/(site)/(pages)/connect/_components/connected-apps';
 
 /** The tab title and description of the Cook with AI page. */
 export const metadata: Metadata = {

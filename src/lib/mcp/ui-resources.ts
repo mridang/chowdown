@@ -20,7 +20,7 @@
 import {
   SUPPORTED_DISPLAY_MODES,
   type DisplayMode,
-} from '../../views/display-mode';
+} from '@/views/display-mode';
 import {
   contentHash as recipeCardHash,
   html as recipeCardHtml,
@@ -29,7 +29,7 @@ import {
   contentHash as recipeListHash,
   html as recipeListHtml,
 } from '../../../dist/views/recipe-list';
-import { SITE_URL } from '../site';
+import { SITE_URL } from '@/lib/site';
 
 /**
  * MIME type the MCP Apps spec requires for UI resources. Defined locally so the

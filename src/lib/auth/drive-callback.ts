@@ -10,23 +10,27 @@
 
 import type { NextResponse } from 'next/server';
 
-import { encryptSecret } from '../crypto';
-import { getUserById, setRecipesFolderId, setRefreshToken } from '../db/users';
-import { ensureRecipesFolder } from '../drive/drive-client';
-import { getDatabase, logError } from '../util';
+import { encryptSecret } from '@/lib/crypto';
+import {
+  getUserById,
+  setRecipesFolderId,
+  setRefreshToken,
+} from '@/lib/db/users';
+import { ensureRecipesFolder } from '@/lib/drive/drive-client';
+import { getDatabase, logError } from '@/lib/util';
 import {
   LANDING_PATH,
   SESSION_COOKIE,
   SIGN_IN_FAILED_PATH,
   sessionClaims,
-} from './app';
-import { driveResultPath } from './drive-access';
-import { checkDriveGrant } from './drive-grant';
-import { finishFlow } from './flow-cookies';
-import type { GoogleUser, TokenResponse } from './google-oauth';
-import { sessionIsCurrent, verifySessionToken } from './session';
-import { setSessionCookie } from './session-cookie';
-import type { FlowContext } from './sign-in';
+} from '@/lib/auth/app';
+import { driveResultPath } from '@/lib/auth/drive-access';
+import { checkDriveGrant } from '@/lib/auth/drive-grant';
+import { finishFlow } from '@/lib/auth/flow-cookies';
+import type { GoogleUser, TokenResponse } from '@/lib/auth/google-oauth';
+import { sessionIsCurrent, verifySessionToken } from '@/lib/auth/session';
+import { setSessionCookie } from '@/lib/auth/session-cookie';
+import type { FlowContext } from '@/lib/auth/sign-in';
 
 /**
  * Finish connecting Drive: only for the person who is signed in, and only if

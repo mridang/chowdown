@@ -5,7 +5,7 @@ import {
   accessTokenKey,
   createAccessTokenCache,
   type MintedToken,
-} from '../../../src/lib/auth/access-token-cache';
+} from '@/lib/auth/access-token-cache';
 
 /** A clock the test can move, in epoch milliseconds. */
 function clock(start = 1_000_000) {

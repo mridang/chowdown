@@ -5,7 +5,7 @@ import {
   AuthorLine,
   isAuthorKey,
   SourceLine,
-} from '../../../../../../src/app/(site)/recipe/[id]/_components/byline';
+} from '@/app/(site)/recipe/[id]/_components/byline';
 import { html } from '../../../../../components/render';
 
 const SITE = 'https://www.seriouseats.com/recipes/dal';

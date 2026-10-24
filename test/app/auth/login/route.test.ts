@@ -7,8 +7,8 @@ import {
   jest,
 } from '@jest/globals';
 
-import { GET } from '../../../../src/app/auth/login/route';
-import { RETURN_COOKIE, STATE_COOKIE } from '../../../../src/lib/auth/app';
+import { GET } from '@/app/auth/login/route';
+import { RETURN_COOKIE, STATE_COOKIE } from '@/lib/auth/app';
 import {
   SESSION_SECRET,
   appRequest,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { Section, SectionHeader } from '../../../src/components/ui/section';
+import { Section, SectionHeader } from '@/components/ui/section';
 import { classOf, html } from '../render';
 
 describe('SectionHeader', () => {

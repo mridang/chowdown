@@ -8,17 +8,17 @@
  * doesn't already show.
  */
 
-import { facet } from './taxonomy';
-import { FAVOURITE_KEY } from './favourite-tag';
-import { MEDIA_META_KEYS } from './media';
+import { facet } from '@/lib/recipe/taxonomy';
+import { FAVOURITE_KEY } from '@/lib/recipe/favourite-tag';
+import { MEDIA_META_KEYS } from '@/lib/recipe/media';
 import {
   convertQuantity,
   isUnitSystem,
   scaleQuantity,
   type UnitSystem,
-} from './units';
-import type { Note } from './cook-text';
-import type { StepToken } from './cooklang';
+} from '@/lib/recipe/units';
+import type { Note } from '@/lib/recipe/cook-text';
+import type { StepToken } from '@/lib/recipe/cooklang';
 
 /** What the servings stepper starts on when a recipe doesn't say. */
 export const DEFAULT_SERVINGS = 4;

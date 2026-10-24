@@ -6,8 +6,8 @@ import {
   stepOffsetForEvent,
   stepOffsetForKey,
   usesArrowKeys,
-} from '../../../src/components/recipe/cook-mode';
-import { RecipeStateProvider } from '../../../src/components/recipe/recipe-state';
+} from '@/components/recipe/cook-mode';
+import { RecipeStateProvider } from '@/components/recipe/recipe-state';
 import { htmlAt } from '../render';
 
 const STEPS = [

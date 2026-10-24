@@ -10,10 +10,10 @@
 
 import { NextResponse } from 'next/server';
 
-import { appOrigin } from '../util/origin';
-import { base64UrlToBytes, bytesToBase64Url } from '../util/base64';
-import { setSearchParams } from '../util/query';
-import { problems } from './problem';
+import { appOrigin } from '@/lib/util/origin';
+import { base64UrlToBytes, bytesToBase64Url } from '@/lib/util/base64';
+import { setSearchParams } from '@/lib/util/query';
+import { problems } from '@/lib/api/problem';
 
 /** Default and maximum page sizes. */
 export const DEFAULT_LIMIT = 20;

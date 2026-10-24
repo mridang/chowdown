@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { parseUrl } from '../../../src/lib/util/url';
+import { parseUrl } from '@/lib/util/url';
 
 describe('parseUrl', () => {
   it('parses an absolute URL', () => {

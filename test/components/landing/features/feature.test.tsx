@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { Feature } from '../../../../src/components/landing/features/feature';
+import { Feature } from '@/components/landing/features/feature';
 import { html } from '../../render';
 
 const feature = (flip?: boolean) =>

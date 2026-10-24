@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { PageSkeleton } from '../../../src/components/site/page-skeleton';
+import { PageSkeleton } from '@/components/site/page-skeleton';
 import { html } from '../render';
 
 describe('PageSkeleton', () => {

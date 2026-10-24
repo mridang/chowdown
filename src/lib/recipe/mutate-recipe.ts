@@ -9,7 +9,7 @@
  * rules can be tested.
  */
 
-import { entityTag, ifMatchSatisfied } from '../api/etag';
+import { entityTag, ifMatchSatisfied } from '@/lib/api/etag';
 
 /** The side effects a mutation needs. */
 export interface MutateDeps {

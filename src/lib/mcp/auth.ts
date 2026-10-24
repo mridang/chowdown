@@ -6,16 +6,16 @@
  * passed in, so the decision can be tested without a database.
  */
 
-import { createOAuthStore } from '../db/oauth';
-import { getUserById, type User } from '../db/users';
-import { bearerToken } from '../oauth/http';
-import { resourceUri } from '../oauth/metadata';
-import { ACCESS_PREFIX } from '../oauth/secrets';
+import { createOAuthStore } from '@/lib/db/oauth';
+import { getUserById, type User } from '@/lib/db/users';
+import { bearerToken } from '@/lib/oauth/http';
+import { resourceUri } from '@/lib/oauth/metadata';
+import { ACCESS_PREFIX } from '@/lib/oauth/secrets';
 import {
   authenticateAccessToken,
   type AccessIdentity,
-} from '../oauth/token-endpoint';
-import { getDatabase } from '../util';
+} from '@/lib/oauth/token-endpoint';
+import { getDatabase } from '@/lib/util';
 
 /** Who the request is from, or why it is not allowed in. */
 export type McpAuth =

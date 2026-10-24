@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { sweepSometimes } from '../../../src/lib/oauth/sweep';
+import { sweepSometimes } from '@/lib/oauth/sweep';
 
 const sweeps = () => ({
   purgeOAuth: jest.fn(async () => undefined),

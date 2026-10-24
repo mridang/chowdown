@@ -8,11 +8,11 @@ import {
 } from '@jest/globals';
 import type { NextResponse } from 'next/server';
 
-import { SESSION_COOKIE, SIGN_IN_FAILED_PATH } from '../../../src/lib/auth/app';
-import { completeDriveConnect } from '../../../src/lib/auth/drive-callback';
-import { DRIVE_SCOPE } from '../../../src/lib/auth/drive-oauth';
-import { verifySessionToken } from '../../../src/lib/auth/session';
-import { decryptSecret } from '../../../src/lib/crypto';
+import { SESSION_COOKIE, SIGN_IN_FAILED_PATH } from '@/lib/auth/app';
+import { completeDriveConnect } from '@/lib/auth/drive-callback';
+import { DRIVE_SCOPE } from '@/lib/auth/drive-oauth';
+import { verifySessionToken } from '@/lib/auth/session';
+import { decryptSecret } from '@/lib/crypto';
 import {
   ORIGIN,
   answerFetch,

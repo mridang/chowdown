@@ -5,7 +5,7 @@
  * metadata ("35 minutes", "1 hour 20 min", "15%minutes", "45").
  */
 
-import { toIsoDuration } from './schema-org';
+import { toIsoDuration } from '@/lib/recipe/schema-org';
 
 /** Minutes for a time string, or undefined if it holds no time. */
 export function minutesOf(value: string | undefined): number | undefined {

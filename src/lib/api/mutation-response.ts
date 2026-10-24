@@ -9,8 +9,8 @@
 
 import type { NextResponse } from 'next/server';
 
-import type { MutateOutcome } from '../recipe/mutate-recipe';
-import { problems } from './problem';
+import type { MutateOutcome } from '@/lib/recipe/mutate-recipe';
+import { problems } from '@/lib/api/problem';
 
 /** How a route words the failures that depend on what it was changing. */
 export interface MutationWording {

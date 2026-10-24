@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import { NextRequest } from 'next/server';
 
-import { createSessionToken } from '../../../src/lib/auth/session';
+import { createSessionToken } from '@/lib/auth/session';
 import { installCloudflareContext } from '../db/sqlite-d1';
 
 /** The session secret the sign-in tests use. */

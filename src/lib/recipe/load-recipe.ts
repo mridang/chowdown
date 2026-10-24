@@ -9,24 +9,36 @@
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
-import { ENDED_SESSION_PATH } from '../auth/app';
-import { getCurrentUser, getSession } from '../auth/current-user';
-import { DriveNotConnectedError, isDriveConnected } from '../auth/drive-access';
-import { sessionIsCurrent, type SessionPayload } from '../auth/session';
-import { getUserAccessToken } from '../auth/user-access-token';
-import type { Database } from '../db/client';
-import { getRecipePageRows, type RecipePageRows } from '../db/recipe-page';
-import { claimDriveSync, type User } from '../db/users';
-import { getFileContent, listRecipeFiles } from '../drive/drive-client';
-import { getDatabase } from '../util';
-import { toCardRecipe, toneFor, type CardRecipe, type Tone } from './card-data';
-import { extractNotes, sourceUrlOf, type Note } from './cook-text';
-import { parseRecipe, type ParsedRecipe } from './cooklang';
-import { recipesFolderOf } from './drive-sync';
-import { minutesOf } from './minutes';
-import { initialUnits, type UnitChoice } from './page-view';
-import { parseSimilar } from './similar';
-import { indexRecipeWrite, rowTags, type RecipeTags } from './tag-index';
+import { ENDED_SESSION_PATH } from '@/lib/auth/app';
+import { getCurrentUser, getSession } from '@/lib/auth/current-user';
+import {
+  DriveNotConnectedError,
+  isDriveConnected,
+} from '@/lib/auth/drive-access';
+import { sessionIsCurrent, type SessionPayload } from '@/lib/auth/session';
+import { getUserAccessToken } from '@/lib/auth/user-access-token';
+import type { Database } from '@/lib/db/client';
+import { getRecipePageRows, type RecipePageRows } from '@/lib/db/recipe-page';
+import { claimDriveSync, type User } from '@/lib/db/users';
+import { getFileContent, listRecipeFiles } from '@/lib/drive/drive-client';
+import { getDatabase } from '@/lib/util';
+import {
+  toCardRecipe,
+  toneFor,
+  type CardRecipe,
+  type Tone,
+} from '@/lib/recipe/card-data';
+import { extractNotes, sourceUrlOf, type Note } from '@/lib/recipe/cook-text';
+import { parseRecipe, type ParsedRecipe } from '@/lib/recipe/cooklang';
+import { recipesFolderOf } from '@/lib/recipe/drive-sync';
+import { minutesOf } from '@/lib/recipe/minutes';
+import { initialUnits, type UnitChoice } from '@/lib/recipe/page-view';
+import { parseSimilar } from '@/lib/recipe/similar';
+import {
+  indexRecipeWrite,
+  rowTags,
+  type RecipeTags,
+} from '@/lib/recipe/tag-index';
 
 /** How many "you might also like" recipes the page shows (one full row). */
 export const ALSO_LIKE_COUNT = 4;

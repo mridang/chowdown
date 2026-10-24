@@ -12,7 +12,7 @@ import {
   isOpenOn,
   supportsAnchorPositioning,
   supportsPopover,
-} from '../../../src/components/ui/popover';
+} from '@/components/ui/popover';
 import { html, htmlAt } from '../render';
 
 describe('PopoverSeparator', () => {

@@ -1,13 +1,13 @@
 import { describe, expect, it } from '@jest/globals';
 import type { ReactElement } from 'react';
 
-import { RecipeStateProvider } from '../../../src/components/recipe/recipe-state';
-import { StepBody } from '../../../src/components/recipe/step-body';
+import { RecipeStateProvider } from '@/components/recipe/recipe-state';
+import { StepBody } from '@/components/recipe/step-body';
 import {
   StepTimersContext,
   type StepTimers,
-} from '../../../src/components/recipe/use-step-timers';
-import type { StepTimer } from '../../../src/components/recipe/timer-state';
+} from '@/components/recipe/use-step-timers';
+import type { StepTimer } from '@/components/recipe/timer-state';
 import { htmlAt } from '../render';
 
 const MIN = 60_000;

@@ -9,8 +9,8 @@ import {
   listRecipeImportSummaries,
   MAX_IMPORTS_PER_USER,
   purgeExpiredRecipeImports,
-} from '../../../src/lib/db/recipe-imports';
-import type { ImportItem } from '../../../src/lib/recipe/prepare-import';
+} from '@/lib/db/recipe-imports';
+import type { ImportItem } from '@/lib/recipe/prepare-import';
 import { fakeDb } from './fake-db';
 import { APP_MIGRATIONS } from './migrations';
 import { sqliteDatabase } from './sqlite-db';

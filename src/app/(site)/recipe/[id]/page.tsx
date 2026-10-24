@@ -24,13 +24,16 @@ import { recipeToJsonLd } from '@/lib/recipe/schema-org';
 import { jsonLdText } from '@/lib/seo';
 import { SITE_URL } from '@/lib/site';
 
-import { AlsoLike } from './_components/also-like';
-import { buildFacts, RecipeFacts } from './_components/recipe-facts';
-import { authorOf } from './_components/byline';
-import { RecipeHero } from './_components/recipe-hero';
-import { RecipeExtras } from './_components/recipe-extras';
-import { RecipeNotes } from './_components/recipe-notes';
-import { RecipeTags } from './_components/recipe-tags';
+import { AlsoLike } from '@/app/(site)/recipe/[id]/_components/also-like';
+import {
+  buildFacts,
+  RecipeFacts,
+} from '@/app/(site)/recipe/[id]/_components/recipe-facts';
+import { authorOf } from '@/app/(site)/recipe/[id]/_components/byline';
+import { RecipeHero } from '@/app/(site)/recipe/[id]/_components/recipe-hero';
+import { RecipeExtras } from '@/app/(site)/recipe/[id]/_components/recipe-extras';
+import { RecipeNotes } from '@/app/(site)/recipe/[id]/_components/recipe-notes';
+import { RecipeTags } from '@/app/(site)/recipe/[id]/_components/recipe-tags';
 
 /**
  * The page's title: the recipe's own, or a plain "Recipe" when it cannot be

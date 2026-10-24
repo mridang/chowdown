@@ -17,11 +17,11 @@ import {
   PopoverSeparator,
 } from '@/components/ui/popover';
 
-import { MenuLink } from './menu-link';
-import { DeleteAccountDialog } from './delete-account-dialog';
-import type { DriveLink } from './drive-link';
-import { InstallIosHint } from './install-ios-hint';
-import { useInstallPrompt } from './use-install-prompt';
+import { MenuLink } from '@/components/site/menu-link';
+import { DeleteAccountDialog } from '@/components/site/delete-account-dialog';
+import type { DriveLink } from '@/components/site/drive-link';
+import { InstallIosHint } from '@/components/site/install-ios-hint';
+import { useInstallPrompt } from '@/components/site/use-install-prompt';
 
 /**
  * The person's Google photo, or their initial when there is none or it fails to

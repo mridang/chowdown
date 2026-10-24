@@ -8,13 +8,13 @@
 
 import type { NextResponse } from 'next/server';
 
-import { sessionClaims } from './app';
+import { sessionClaims } from '@/lib/auth/app';
 import {
   SESSION_COOKIE,
   SESSION_TTL_SECONDS,
   createSessionToken,
-} from './session';
-import type { User } from './store';
+} from '@/lib/auth/session';
+import type { User } from '@/lib/auth/store';
 
 /**
  * Set a fresh session cookie for `user` on `response`. `claims` replaces the

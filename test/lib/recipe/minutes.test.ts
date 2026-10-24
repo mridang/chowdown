@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { minutesOf } from '../../../src/lib/recipe/minutes';
+import { minutesOf } from '@/lib/recipe/minutes';
 
 describe('minutesOf', () => {
   it('reads minutes and hours', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { own } from '../../../src/lib/util/own';
+import { own } from '@/lib/util/own';
 
 describe('own', () => {
   const table = { cup: 240, tbsp: 15 } as const;

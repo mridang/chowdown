@@ -7,18 +7,18 @@
  * anyone waiting on Google or the Drive API.
  */
 
-import { getUserAccessToken } from '../auth/user-access-token';
-import type { Database } from '../db/client';
-import { deleteOrphanEmbeddings } from '../db/embeddings';
-import { deleteRecipesNotIn } from '../db/recipes';
-import { setRecipesFolderId, type User } from '../db/users';
+import { getUserAccessToken } from '@/lib/auth/user-access-token';
+import type { Database } from '@/lib/db/client';
+import { deleteOrphanEmbeddings } from '@/lib/db/embeddings';
+import { deleteRecipesNotIn } from '@/lib/db/recipes';
+import { setRecipesFolderId, type User } from '@/lib/db/users';
 import {
   ensureRecipesFolder,
   listRecipeFiles,
   type DriveFile,
-} from '../drive/drive-client';
-import { getDatabase } from '../util';
-import { syncRecipeTags } from './tag-index';
+} from '@/lib/drive/drive-client';
+import { getDatabase } from '@/lib/util';
+import { syncRecipeTags } from '@/lib/recipe/tag-index';
 
 /**
  * Everything {@link syncFromDrive} reaches out to, gathered in one place so a

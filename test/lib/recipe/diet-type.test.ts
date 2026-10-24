@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { classifyDietType } from '../../../src/lib/recipe/diet-type';
+import { classifyDietType } from '@/lib/recipe/diet-type';
 
 describe('classifyDietType', () => {
   it('calls anything with meat or poultry non-vegetarian', () => {

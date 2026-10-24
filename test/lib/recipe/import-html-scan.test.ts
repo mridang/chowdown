@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { scanHtml } from '../../../src/lib/recipe/import-html-scan';
+import { scanHtml } from '@/lib/recipe/import-html-scan';
 
 /** How long `work` takes, in milliseconds. */
 function milliseconds(work: () => unknown): number {

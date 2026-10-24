@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { parseRecipe } from '../../../src/lib/recipe/cooklang';
+import { parseRecipe } from '@/lib/recipe/cooklang';
 
 import {
   extractOgImage,
@@ -10,7 +10,7 @@ import {
   imageUrls,
   resolveImageRefs,
   schemaOrgToCook,
-} from '../../../src/lib/recipe/import-schema-org';
+} from '@/lib/recipe/import-schema-org';
 
 describe('humaniseDuration', () => {
   it('formats hours and minutes', () => {

@@ -10,13 +10,13 @@
  * forgotten: if Drive refuses, nothing local changes and the recipe stays put.
  */
 
-import { getUserAccessToken } from '../auth/user-access-token';
-import type { Database } from '../db/client';
-import { deleteRecipeData, getRecipeByFileId } from '../db/recipes';
-import type { User } from '../db/users';
-import { trashRecipeFile } from '../drive/drive-client';
-import { getDatabase } from '../util';
-import { refreshSimilarLists } from './similar';
+import { getUserAccessToken } from '@/lib/auth/user-access-token';
+import type { Database } from '@/lib/db/client';
+import { deleteRecipeData, getRecipeByFileId } from '@/lib/db/recipes';
+import type { User } from '@/lib/db/users';
+import { trashRecipeFile } from '@/lib/drive/drive-client';
+import { getDatabase } from '@/lib/util';
+import { refreshSimilarLists } from '@/lib/recipe/similar';
 
 /** The side effects a delete needs, injected so the logic is testable. */
 export interface DeleteDeps {

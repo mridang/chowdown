@@ -5,7 +5,7 @@ import {
   MAX_COOKLANG_LINES,
   parseNewRecipe,
   parseReplacementCooklang,
-} from '../../../src/lib/api/recipe-input';
+} from '@/lib/api/recipe-input';
 
 describe('parseNewRecipe', () => {
   it('accepts a name and Cooklang text', () => {

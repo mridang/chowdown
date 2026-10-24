@@ -17,16 +17,20 @@
  *  - an access token is only good for the MCP server it was issued for.
  */
 
-import { verifyPkce } from './pkce';
+import { verifyPkce } from '@/lib/oauth/pkce';
 import {
   ACCESS_PREFIX,
   CODE_PREFIX,
   REFRESH_PREFIX,
   hashSecret,
   newSecret,
-} from './secrets';
-import { SCOPE_OFFLINE_ACCESS, hasScope, isSupportedScope } from './scopes';
-import { logSecurityEvent } from './security-log';
+} from '@/lib/oauth/secrets';
+import {
+  SCOPE_OFFLINE_ACCESS,
+  hasScope,
+  isSupportedScope,
+} from '@/lib/oauth/scopes';
+import { logSecurityEvent } from '@/lib/oauth/security-log';
 
 /** Access tokens live an hour; refresh tokens thirty days, renewed on use. */
 export const ACCESS_TTL_SECONDS = 60 * 60;

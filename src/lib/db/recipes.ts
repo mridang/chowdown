@@ -10,10 +10,10 @@
 
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
-import { normalizeSourceUrl, sourceUrlOf } from '../recipe/cook-text';
-import { chunked } from './chunk';
-import type { Database } from './client';
-import { embeddings, favourites, recipes } from './schema';
+import { normalizeSourceUrl, sourceUrlOf } from '@/lib/recipe/cook-text';
+import { chunked } from '@/lib/db/chunk';
+import type { Database } from '@/lib/db/client';
+import { embeddings, favourites, recipes } from '@/lib/db/schema';
 
 /** A full recipe row. */
 export type Recipe = typeof recipes.$inferSelect;

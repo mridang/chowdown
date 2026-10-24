@@ -8,7 +8,7 @@
 
 import { Bricolage_Grotesque, Inter } from 'next/font/google';
 
-import { HANDWRITING_VARIABLES } from './handwriting-fonts';
+import { HANDWRITING_VARIABLES } from '@/app/handwriting-fonts';
 
 /**
  * Body face. `optional` means a slow first load shows the (metrics-matched)

@@ -12,8 +12,8 @@
 
 import { and, count, eq, sql } from 'drizzle-orm';
 
-import type { Database } from './client';
-import { embeddings, favourites, recipes, users } from './schema';
+import type { Database } from '@/lib/db/client';
+import { embeddings, favourites, recipes, users } from '@/lib/db/schema';
 
 /** What the recipe page reads for one recipe. */
 export interface RecipePageRows {

@@ -12,7 +12,7 @@ import {
   afterDelay,
   HOVER_INTENT_MS,
   IntentLink,
-} from '../../../src/components/ui/intent-link';
+} from '@/components/ui/intent-link';
 import { html } from '../render';
 
 describe('IntentLink', () => {

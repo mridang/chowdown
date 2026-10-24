@@ -12,10 +12,10 @@
  * may be framed, embedded or sent anywhere but this site.
  */
 
-import { bytesToBase64 } from '../util/base64';
-import { replacingHeaders } from './headers';
-import { CSP_REPORT_DIRECTIVES } from './reporting';
-import { EXTRA_DIRECTIVES, EXTRA_IMG_SOURCES } from './site';
+import { bytesToBase64 } from '@/lib/util/base64';
+import { replacingHeaders } from '@/lib/http/headers';
+import { CSP_REPORT_DIRECTIVES } from '@/lib/http/reporting';
+import { EXTRA_DIRECTIVES, EXTRA_IMG_SOURCES } from '@/lib/http/site';
 
 /** A fresh, unguessable nonce: 16 random bytes, base64. */
 export function newNonce(): string {

@@ -4,7 +4,7 @@ import {
   decodeEntities,
   visibleText,
   withoutScriptsAndStyles,
-} from '../../../src/lib/recipe/html-text';
+} from '@/lib/recipe/html-text';
 
 describe('decodeEntities', () => {
   it('reads the references that turn up in web text and leaves the rest', () => {

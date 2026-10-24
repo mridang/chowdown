@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { SiteHeader } from '../../../src/components/site/site-header';
-import type { ShellUser } from '../../../src/lib/auth/shell-user';
+import { SiteHeader } from '@/components/site/site-header';
+import type { ShellUser } from '@/lib/auth/shell-user';
 import { htmlAt } from '../render';
 
 const ADA: ShellUser = {

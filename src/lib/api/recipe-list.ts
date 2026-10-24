@@ -8,11 +8,16 @@
 
 import { NextResponse } from 'next/server';
 
-import { getAppPageRows } from '../db/recipe-page';
-import { sourceDomainOf } from '../recipe/cook-text';
-import { getDatabase } from '../util';
-import { decodeCursor, pageBody, parseLimit, sliceAfter } from './pagination';
-import { problems } from './problem';
+import { getAppPageRows } from '@/lib/db/recipe-page';
+import { sourceDomainOf } from '@/lib/recipe/cook-text';
+import { getDatabase } from '@/lib/util';
+import {
+  decodeCursor,
+  pageBody,
+  parseLimit,
+  sliceAfter,
+} from '@/lib/api/pagination';
+import { problems } from '@/lib/api/problem';
 import {
   comparePositions,
   filterRecipes,
@@ -20,8 +25,8 @@ import {
   positionOf,
   sortRecipes,
   type QueryableRecipe,
-} from './recipe-query';
-import { recipeSummary, type RecipeSummary } from './recipe-resource';
+} from '@/lib/api/recipe-query';
+import { recipeSummary, type RecipeSummary } from '@/lib/api/recipe-resource';
 
 /**
  * The query with each forced parameter set to its forced value, replacing

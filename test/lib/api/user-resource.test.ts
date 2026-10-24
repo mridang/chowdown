@@ -1,10 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { User } from '../../../src/lib/db/users';
-import {
-  parseUserPatch,
-  userResource,
-} from '../../../src/lib/api/user-resource';
+import type { User } from '@/lib/db/users';
+import { parseUserPatch, userResource } from '@/lib/api/user-resource';
 
 const user = (extra: Partial<User> = {}) =>
   ({

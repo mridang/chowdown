@@ -6,11 +6,8 @@ import {
   driveHint,
   folderHint,
   sessionClaims,
-} from '../../../src/lib/auth/app';
-import {
-  createSessionToken,
-  verifySessionToken,
-} from '../../../src/lib/auth/session';
+} from '@/lib/auth/app';
+import { createSessionToken, verifySessionToken } from '@/lib/auth/session';
 
 const SECRET = 'test-session-secret-value';
 

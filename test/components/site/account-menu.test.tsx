@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { AccountMenu, Avatar } from '../../../src/components/site/account-menu';
-import { driveLink } from '../../../src/components/site/drive-link';
+import { AccountMenu, Avatar } from '@/components/site/account-menu';
+import { driveLink } from '@/components/site/drive-link';
 import { htmlAt } from '../render';
 
 describe('Avatar', () => {

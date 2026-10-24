@@ -6,7 +6,7 @@ import {
   resetFavouriteOverrides,
   setFavouriteOverride,
   subscribeFavourites,
-} from '../../src/lib/favourites-store';
+} from '@/lib/favourites-store';
 
 afterEach(() => resetFavouriteOverrides());
 
