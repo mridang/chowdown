@@ -1,0 +1,31 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.mridang/chowdown",
+  "title": "chowdown",
+  "description": "Your recipes as plain files in your own Google Drive, searchable by your AI assistant.",
+  "version": "0.1.0",
+  "websiteUrl": "https://chowdown.apps.mrida.ng",
+  "repository": {
+    "url": "https://github.com/mridang/chowdown",
+    "source": "github",
+    "id": "1414249157"
+  },
+  "icons": [
+    {
+      "src": "https://chowdown.apps.mrida.ng/icons/icon-192.png",
+      "mimeType": "image/png",
+      "sizes": ["192x192"]
+    },
+    {
+      "src": "https://chowdown.apps.mrida.ng/icons/icon-512.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://chowdown.apps.mrida.ng/mcp"
+    }
+  ]
+}

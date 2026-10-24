@@ -66,6 +66,9 @@ in with Google when asked, and approve. There is no secret to copy. The person
 needs to have connected Google Drive (see above); until then the assistant is
 told so instead of being shown an empty collection.
 
+chowdown is listed in the [MCP Registry](https://registry.modelcontextprotocol.io)
+as `io.github.mridang/chowdown`; the listing is `server.json` in this repository.
+
 - **Scopes:** `recipes:read` (browse and search) and `recipes:write` (add, edit,
   tag, favourite, annotate). An assistant can be granted read only.
 - **Asking what to cook:** `browse_recipes` ("I feel like cooking Indian",
