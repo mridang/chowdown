@@ -1,4 +1,5 @@
 import { MAX_LIVE_GRANTS_PER_APP } from '../../../src/lib/oauth/retention';
+import type { OAuthClient } from '../../../src/lib/oauth/client';
 import type {
   CodeRecord,
   GrantRecord,
@@ -84,6 +85,20 @@ export class MemoryStore implements OAuthStore {
     }
     this.tokens.set(hash, { ...token, usedAt: now });
     await this.saveTokens(tokens);
+    return true;
+  }
+  clients = new Map<string, OAuthClient>();
+  assertions = new Set<string>();
+
+  async findClient(clientId: string) {
+    return this.clients.get(clientId);
+  }
+  async claimAssertion(clientId: string, jti: string) {
+    const key = `${clientId} ${jti}`;
+    if (this.assertions.has(key)) {
+      return false;
+    }
+    this.assertions.add(key);
     return true;
   }
   async touchGrant(grantId: string, now: number) {

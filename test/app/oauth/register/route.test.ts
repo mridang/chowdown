@@ -30,6 +30,7 @@ beforeEach(() => {
     '0011_rate_limits.sql',
     '0012_oauth_housekeeping.sql',
     '0016_oauth_redirect_uri_sent.sql',
+    '0017_oauth_client_assertions.sql',
   );
   raw = made.raw;
   restore = installCloudflareContext(made.d1);

@@ -46,7 +46,13 @@ import {
   type RateLimitStore,
 } from '../util/rate-limit';
 import type { Database } from './client';
-import { oauthClients, oauthCodes, oauthGrants, oauthTokens } from './schema';
+import {
+  oauthAssertions,
+  oauthClients,
+  oauthCodes,
+  oauthGrants,
+  oauthTokens,
+} from './schema';
 
 /** Unix seconds as the ISO-8601 text the timestamp columns hold. */
 const iso = (seconds: number): string => new Date(seconds * 1000).toISOString();
@@ -73,6 +79,10 @@ function toClient(row: Readonly<ClientRow>): OAuthClient {
     name: row.client_name,
     redirectUris: redirectUrisOf(row.redirect_uris),
     kind: row.kind === 'cimd' ? 'cimd' : 'dcr',
+    ...(row.auth_method === 'private_key_jwt' &&
+      row.jwks_uri !== null && {
+        auth: { method: 'private_key_jwt', jwksUri: row.jwks_uri },
+      }),
   };
 }
 
@@ -96,6 +106,8 @@ export async function saveClient(
     redirect_uris: JSON.stringify(client.redirectUris),
     created_at: now,
     fetched_at: fetched ? now : null,
+    auth_method: client.auth?.method ?? 'none',
+    jwks_uri: client.auth?.jwksUri ?? null,
     expires_at:
       fetched && ttlSeconds !== undefined
         ? new Date(nowMs + ttlSeconds * 1000).toISOString()
@@ -111,6 +123,8 @@ export async function saveClient(
         redirect_uris: values.redirect_uris,
         fetched_at: values.fetched_at,
         expires_at: values.expires_at,
+        auth_method: values.auth_method,
+        jwks_uri: values.jwks_uri,
       },
     });
 }
@@ -363,6 +377,22 @@ export function createOAuthStore(db: Database): OAuthStore {
       return false;
     },
 
+    async findClient(clientId) {
+      const row = await db.query.oauthClients.findFirst({
+        where: eq(oauthClients.client_id, clientId),
+      });
+      return row ? toClient(row) : undefined;
+    },
+
+    async claimAssertion(clientId, jti, expiresAt) {
+      const result = await db
+        .insert(oauthAssertions)
+        .values({ client_id: clientId, jti, expires_at: expiresAt })
+        .onConflictDoNothing()
+        .run();
+      return changesOf(result) === 1;
+    },
+
     async touchGrant(grantId, now) {
       await db
         .update(oauthGrants)
@@ -535,6 +565,9 @@ export async function purgeOAuthData(
     db
       .delete(oauthTokens)
       .where(lt(oauthTokens.expires_at, cutoffs.tokensExpiredBefore)),
+    db
+      .delete(oauthAssertions)
+      .where(lt(oauthAssertions.expires_at, cutoffs.tokensExpiredBefore)),
     db
       .delete(oauthTokens)
       .where(

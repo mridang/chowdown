@@ -477,9 +477,56 @@ const MIGRATIONS = [
   '0008_oauth.sql',
   '0012_oauth_housekeeping.sql',
   '0016_oauth_redirect_uri_sent.sql',
+  '0017_oauth_client_assertions.sql',
 ] as const;
 
 describe('against a real SQLite database', () => {
+  describe('client authentication', () => {
+    const signed = {
+      clientId: 'https://chatgpt.com/oauth/client.json',
+      name: 'ChatGPT',
+      redirectUris: ['https://chatgpt.com/connector_platform_oauth_redirect'],
+      kind: 'cimd' as const,
+      auth: {
+        method: 'private_key_jwt' as const,
+        jwksUri: 'https://chatgpt.com/oauth/jwks.json',
+      },
+    };
+
+    it('keeps how a client authenticates and where its keys are', async () => {
+      const { db } = sqliteDatabase(...MIGRATIONS);
+      await saveClient(db, signed, 300);
+      expect(await createOAuthStore(db).findClient(signed.clientId)).toEqual(
+        signed,
+      );
+    });
+
+    it('treats a client saved without a method as public, and updates it when the document changes', async () => {
+      const { db } = sqliteDatabase(...MIGRATIONS);
+      await saveClient(db, { ...signed, auth: undefined }, 300);
+      expect(
+        (await createOAuthStore(db).findClient(signed.clientId))?.auth,
+      ).toBeUndefined();
+      await saveClient(db, signed, 300);
+      expect(
+        (await createOAuthStore(db).findClient(signed.clientId))?.auth,
+      ).toEqual(signed.auth);
+    });
+
+    it('answers nothing for a client it does not know', async () => {
+      const { db } = sqliteDatabase(...MIGRATIONS);
+      expect(await createOAuthStore(db).findClient('nobody')).toBeUndefined();
+    });
+
+    it('accepts an assertion once and refuses it the second time, per client', async () => {
+      const { db } = sqliteDatabase(...MIGRATIONS);
+      const store = createOAuthStore(db);
+      expect(await store.claimAssertion('a', 'jti-1', 99)).toBe(true);
+      expect(await store.claimAssertion('a', 'jti-1', 99)).toBe(false);
+      expect(await store.claimAssertion('b', 'jti-1', 99)).toBe(true);
+    });
+  });
+
   describe('authorization codes', () => {
     const code = (redirectUriSent: boolean) => ({
       clientId: 'c1',
@@ -814,6 +861,11 @@ describe('against a real SQLite database', () => {
       code.run('code-old', 'c', 'u', 'ch', 's', 'r', NOW - 2 * 86_400);
       code.run('code-recent', 'c', 'u', 'ch', 's', 'r', NOW - 3600);
       code.run('code-live', 'c', 'u', 'ch', 's', 'r', NOW + 60);
+      const assertion = raw.prepare(
+        'INSERT INTO oauth_assertions (client_id, jti, expires_at) VALUES (?, ?, ?)',
+      );
+      assertion.run('c', 'jti-old', NOW - 2 * 86_400);
+      assertion.run('c', 'jti-live', NOW + 60);
       seedGrant(raw, 'live', 1, 'granted', day(10));
       seedGrant(raw, 'revoked-recent', 1, 'granted', day(10), day(2));
       seedGrant(raw, 'revoked-today', 1, 'granted', day(10), day(0.5));
@@ -856,6 +908,7 @@ describe('against a real SQLite database', () => {
         'tok-recent-expiry',
         'tok-revoked-today',
       ]);
+      expect(ids(raw, 'oauth_assertions', 'jti')).toEqual(['jti-live']);
       expect(ids(raw, 'oauth_grants', 'id')).toEqual([
         'idle',
         'live',

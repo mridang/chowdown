@@ -29,6 +29,21 @@ const goodDoc = {
   token_endpoint_auth_method: 'none',
 };
 
+/** What https://chatgpt.com/oauth/client.json served when ChatGPT was first refused. */
+const CHATGPT_DOCUMENT = {
+  client_id: 'https://chatgpt.com/oauth/client.json',
+  client_uri: 'https://chatgpt.com/',
+  redirect_uris: ['https://chatgpt.com/connector_platform_oauth_redirect'],
+  token_endpoint_auth_method: 'private_key_jwt',
+  token_endpoint_auth_methods_supported: ['none', 'private_key_jwt'],
+  grant_types: ['authorization_code', 'refresh_token'],
+  response_types: ['code'],
+  client_name: 'ChatGPT',
+  logo_uri: 'https://persistent.oaistatic.com/sonic/misc/openai-logo.png',
+  token_endpoint_auth_signing_alg: 'RS256',
+  jwks_uri: 'https://chatgpt.com/oauth/jwks.json',
+};
+
 describe('isMetadataDocumentUrl', () => {
   it('accepts an https URL with a path', () => {
     expect(isMetadataDocumentUrl(URL_ID)).toBe(true);
@@ -87,6 +102,60 @@ describe('parseClientMetadataDocument', () => {
         URL_ID,
       ).ok,
     ).toBe(false);
+  });
+
+  it('reads the published ChatGPT document as a client that signs its requests', () => {
+    expect(parseClientMetadataDocument(CHATGPT_DOCUMENT, URL_ID)).toEqual({
+      ok: true,
+      client: {
+        clientId: URL_ID,
+        name: 'ChatGPT',
+        redirectUris: ['https://chatgpt.com/connector_platform_oauth_redirect'],
+        kind: 'cimd',
+        auth: {
+          method: 'private_key_jwt',
+          jwksUri: 'https://chatgpt.com/oauth/jwks.json',
+        },
+      },
+    });
+  });
+
+  it('holds a client to private_key_jwt even when it also lists none', () => {
+    const result = parseClientMetadataDocument(CHATGPT_DOCUMENT, URL_ID);
+    expect(result.ok && result.client.auth?.method).toBe('private_key_jwt');
+  });
+
+  it.each([
+    ['no jwks_uri', { jwks_uri: undefined }],
+    ['an http jwks_uri', { jwks_uri: 'http://chatgpt.com/oauth/jwks.json' }],
+    ['a jwks_uri with credentials', { jwks_uri: 'https://u:p@chatgpt.com/k' }],
+    ['a jwks_uri that is not a URL', { jwks_uri: 'keys' }],
+    ['a jwks_uri that is not text', { jwks_uri: 7 }],
+    [
+      'a signing algorithm we do not accept',
+      { token_endpoint_auth_signing_alg: 'HS256' },
+    ],
+    ['the algorithm none', { token_endpoint_auth_signing_alg: 'none' }],
+  ])('rejects a private_key_jwt client with %s', (_name, change) => {
+    const result = parseClientMetadataDocument(
+      { ...CHATGPT_DOCUMENT, ...change },
+      URL_ID,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it('accepts a private_key_jwt client that names no algorithm', () => {
+    const document = {
+      ...CHATGPT_DOCUMENT,
+      token_endpoint_auth_signing_alg: undefined,
+    };
+    expect(parseClientMetadataDocument(document, URL_ID).ok).toBe(true);
+  });
+
+  it('treats a document that names no method as a public client', () => {
+    const document = { ...goodDoc, token_endpoint_auth_method: undefined };
+    const result = parseClientMetadataDocument(document, URL_ID);
+    expect(result.ok && result.client.auth).toBeUndefined();
   });
 
   it('falls back to the host as the name and caps its length', () => {
