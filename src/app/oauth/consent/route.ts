@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 
 import { getLiveSessionUid } from '@/core/auth/current-user';
 import { D1OAuthStore, resolveClient } from '@/domain/db/oauth';
-import { readFormBody } from '@/utils/http/body';
+import { readFormBody } from '@/lib/rest-json/body';
 import {
   authorizeParamsFrom,
   grantedScope,

@@ -9,7 +9,7 @@
 
 import { NextResponse } from 'next/server';
 
-import { readJsonBody } from '@/utils/http/body';
+import { readJsonBody } from '@/lib/rest-json/body';
 import { summariseReports } from '@/core/http/csp-reports';
 
 /** The largest report body read: a few reports are a few hundred bytes each. */

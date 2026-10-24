@@ -15,7 +15,7 @@ import {
 import type { User } from '@/domain/db/users';
 import { isSameOriginPost } from '@/lib/web-security/csrf';
 import { appOrigin } from '@/core/origin';
-import { ProblemError, problems } from '@/lib/rest-json/problem';
+import { problems } from '@/lib/rest-json/problem';
 
 /** Methods that never change data and so need no origin check. */
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -78,10 +78,10 @@ export async function requireUser(request: Request): Promise<Auth<User>> {
   return authenticate(request, getCurrentUser);
 }
 
-/** The value of an {@link Auth}, or the refusal thrown as a {@link ProblemError} (for controllers). */
+/** The value of an {@link Auth}, or the refusal thrown as a problem `Response` (for controllers). */
 function orThrow<T>(auth: Auth<T>): T {
   if (!auth.ok) {
-    throw new ProblemError(auth.response);
+    throw auth.response;
   }
   return auth.value;
 }

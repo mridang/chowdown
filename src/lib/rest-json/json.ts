@@ -8,7 +8,7 @@
  * validating its fields.
  */
 
-import { readJsonBody } from '@/utils/http/body';
+import { readJsonBody } from '@/lib/rest-json/body';
 import { problem, problems } from '@/lib/rest-json/problem';
 
 /**

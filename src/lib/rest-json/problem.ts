@@ -6,6 +6,10 @@
  * `type` is a relative URI naming the kind of problem; it identifies the problem
  * and need not be resolvable. Details are written for API clients and never
  * include stack traces or internals.
+ *
+ * These build plain `Response`s, so the module is a pure library with no
+ * framework dependency; the controller framework in `core/api` returns them
+ * unchanged.
  */
 
 /** The members of a problem document. */
@@ -46,21 +50,6 @@ export function problem(
       ...extra.headers,
     },
   });
-}
-
-/**
- * A problem raised as an exception, carrying the response to send. A controller
- * (or any caller) catches it and returns {@link ProblemError.response}, so a
- * decode/handle step can refuse by throwing instead of threading a result.
- */
-export class ProblemError extends Error {
-  readonly response: Response;
-
-  constructor(response: Response) {
-    super('problem');
-    this.name = 'ProblemError';
-    this.response = response;
-  }
 }
 
 /** The standard problems, so every route words them the same way. */

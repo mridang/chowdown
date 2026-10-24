@@ -6,7 +6,7 @@
  * OAuth shape, and reading the bearer token.
  */
 
-import { readFormBody, type FormBody } from '@/utils/http/body';
+import { readFormBody, type FormBody } from '@/lib/rest-json/body';
 
 /**
  * CORS for endpoints a browser-based client may call. The MCP headers are
