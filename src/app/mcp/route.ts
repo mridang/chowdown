@@ -11,14 +11,12 @@
  * and this site's origin.
  */
 
-import type { NextResponse } from 'next/server';
-
 import { authenticateMcpRequest } from '@/lib/mcp/auth';
 import { respondToMcp } from '@/lib/mcp/http';
 import { appOrigin } from '@/utils/origin';
 
 /** Answer any request to the endpoint with the real token check. */
-function respond(request: Request): Promise<NextResponse> {
+function respond(request: Request): Promise<Response> {
   return respondToMcp(request, appOrigin(request), authenticateMcpRequest);
 }
 

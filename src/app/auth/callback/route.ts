@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import {
+  EXTRA_PURPOSES,
   RETURN_COOKIE,
   SIGN_IN_FAILED_PATH,
   STATE_COOKIE,
@@ -46,7 +47,7 @@ function failurePath(purpose: string, kind: 'error' | 'denied'): string {
  * when the trip began is acted on. Always answers a redirect: on to the app on
  * success, or back with a fixed flag on any failure.
  */
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(request: NextRequest): Promise<Response> {
   const env = getEnv();
   const origin = appOrigin(request);
   const url = new URL(request.url);
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const oauthError = url.searchParams.get('error');
 
   // Validate the round-trip before trusting the code.
-  const checked = checkState(state, expectedState);
+  const checked = checkState(state, expectedState, EXTRA_PURPOSES);
   if (!checked.ok) {
     logError({
       event: 'auth.callback.state_check_failed',

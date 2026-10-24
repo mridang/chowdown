@@ -125,8 +125,10 @@ const where = (res: Response) => res.headers.get('location');
 const FAILED = `https://app.test${SIGN_IN_FAILED_PATH}`;
 
 /** Everything the callback set on the response, by cookie name. */
-const cookiesOf = (res: NextResponse) =>
-  Object.fromEntries(res.cookies.getAll().map((c) => [c.name, c.value]));
+const cookiesOf = (res: Response) =>
+  Object.fromEntries(
+    (res as NextResponse).cookies.getAll().map((c) => [c.name, c.value]),
+  );
 
 describe('GET /auth/callback with a state that does not check out', () => {
   it('sends a sign-in back with a fixed flag when there is no state cookie', async () => {
@@ -221,7 +223,7 @@ describe('GET /auth/callback signing in', () => {
   it('sets a cookie that is httpOnly, Lax and Secure on https', async () => {
     googleSignsIn();
     const res = await callback(`code=c&state=${STATE}`);
-    expect(res.cookies.get(SESSION_COOKIE)).toMatchObject({
+    expect((res as NextResponse).cookies.get(SESSION_COOKIE)).toMatchObject({
       httpOnly: true,
       sameSite: 'lax',
       secure: true,
@@ -265,7 +267,7 @@ describe('GET /auth/callback signing in', () => {
     googleSignsIn(null);
     const res = await callback(`code=c&state=${STATE}`);
     expect(where(res)).toBe(FAILED);
-    expect(res.cookies.get(SESSION_COOKIE)).toBeUndefined();
+    expect((res as NextResponse).cookies.get(SESSION_COOKIE)).toBeUndefined();
     expect(upsertGoogleUser).not.toHaveBeenCalled();
   });
 
@@ -273,7 +275,7 @@ describe('GET /auth/callback signing in', () => {
     answerFetch({ [TOKEN_URL]: () => json({ error: 'invalid_grant' }, 400) });
     const res = await callback(`code=bad&state=${STATE}`);
     expect(where(res)).toBe(FAILED);
-    expect(res.cookies.get(SESSION_COOKIE)).toBeUndefined();
+    expect((res as NextResponse).cookies.get(SESSION_COOKIE)).toBeUndefined();
     expect(upsertGoogleUser).not.toHaveBeenCalled();
   });
 
@@ -282,7 +284,7 @@ describe('GET /auth/callback signing in', () => {
     afterSignIn.mockRejectedValue(new Error('boom'));
     const res = await callback(`code=c&state=${STATE}`);
     expect(where(res)).toBe(FAILED);
-    expect(res.cookies.get(SESSION_COOKIE)).toBeUndefined();
+    expect((res as NextResponse).cookies.get(SESSION_COOKIE)).toBeUndefined();
   });
 });
 
@@ -298,7 +300,7 @@ describe('GET /auth/callback on a server that is not set up', () => {
     expect(where(res)).toBe(FAILED);
     expect(requested).toEqual([]);
     expect(upsertGoogleUser).not.toHaveBeenCalled();
-    expect(res.cookies.get(SESSION_COOKIE)).toBeUndefined();
+    expect((res as NextResponse).cookies.get(SESSION_COOKIE)).toBeUndefined();
   });
 
   it('fails closed without the Google client, too', async () => {

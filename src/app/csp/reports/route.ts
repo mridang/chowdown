@@ -22,7 +22,7 @@ const MAX_REPORT_BYTES = 16_384;
  * Needs no sign-in: browsers send these anonymously, and the edge limits how
  * many one address may send.
  */
-export async function POST(request: Request): Promise<NextResponse> {
+export async function POST(request: Request): Promise<Response> {
   const body = await readJsonBody(request, MAX_REPORT_BYTES);
   if (body.kind === 'too-large') {
     return new NextResponse(null, { status: 413 });

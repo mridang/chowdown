@@ -21,7 +21,7 @@ import { bumpSessionEpoch } from '@/lib/auth/store';
  * signed in (or the session had already been ended), or 403 for a request from
  * another site.
  */
-export async function DELETE(request: Request): Promise<NextResponse> {
+export async function DELETE(request: Request): Promise<Response> {
   const caller = await requireSignedIn(request);
   if (!caller.ok) {
     return caller.response;

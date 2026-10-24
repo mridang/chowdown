@@ -17,11 +17,6 @@ import {
   bufferSource,
   bytesToBase64Url,
 } from '@/utils/base64';
-import { SESSION_COOKIE } from '@/lib/auth/app';
-
-// Re-exported so the cookie's name is read from the same place as the token
-// functions that fill it.
-export { SESSION_COOKIE };
 
 /** How long a session stays valid, in seconds (30 days). */
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;

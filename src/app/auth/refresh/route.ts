@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getCurrentUser, getSession } from '@/lib/auth/current-user';
 import { safeReturnPath } from '@/lib/auth/return-to';
-import { SESSION_COOKIE } from '@/lib/auth/session';
+import { SESSION_COOKIE } from '@/lib/auth/app';
 import { setSessionCookie } from '@/lib/auth/session-cookie';
 import { getEnv } from '@/lib/util/runtime';
 import { appOrigin } from '@/utils/origin';
@@ -23,7 +23,7 @@ import { appOrigin } from '@/utils/origin';
  * redirect; someone who is not signed in goes to the home page with any dead
  * session cookie cleared.
  */
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(request: NextRequest): Promise<Response> {
   const origin = appOrigin(request);
   const user = await getCurrentUser();
   if (!user) {

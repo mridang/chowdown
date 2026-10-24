@@ -24,7 +24,7 @@ import { getDatabase } from '@/lib/util/runtime';
 export async function GET(
   request: Request,
   { params }: IdContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;

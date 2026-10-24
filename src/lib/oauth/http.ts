@@ -6,8 +6,6 @@
  * OAuth shape, and reading the bearer token.
  */
 
-import { NextResponse } from 'next/server';
-
 import { readFormBody, type FormBody } from '@/utils/http/body';
 
 /**
@@ -41,8 +39,8 @@ export const CORS_HEADERS: Readonly<Record<string, string>> = {
 };
 
 /** The reply to a CORS preflight. */
-export function preflight(): NextResponse {
-  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+export function preflight(): Response {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
 
 /**
@@ -54,8 +52,8 @@ export function noStoreJson(
   body: unknown,
   status = 200,
   extra: Readonly<Record<string, string>> = {},
-): NextResponse {
-  return NextResponse.json(body, {
+): Response {
+  return Response.json(body, {
     status,
     headers: {
       ...CORS_HEADERS,
@@ -72,7 +70,7 @@ export function oauthError(
   description: string,
   status = 400,
   extra: Readonly<Record<string, string>> = {},
-): NextResponse {
+): Response {
   return noStoreJson({ error, error_description: description }, status, extra);
 }
 
@@ -109,7 +107,7 @@ export async function readOAuthForm(request: Request): Promise<OAuthForm> {
 /** The OAuth error response for a form that could not be used (the `ok` case is not a failure). */
 export function formFailure(
   form: Exclude<OAuthForm, { readonly kind: 'ok' }>,
-): NextResponse {
+): Response {
   switch (form.kind) {
     case 'wrong-type':
       return oauthError(

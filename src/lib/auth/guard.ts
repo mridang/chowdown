@@ -8,8 +8,6 @@
  * refused. Refusals are RFC 9457 problem documents.
  */
 
-import { NextResponse } from 'next/server';
-
 import { appOrigin } from '@/utils/origin';
 import { isSameOriginPost } from '@/lib/auth/csrf';
 import { getCurrentUser } from '@/lib/auth/current-user';
@@ -21,8 +19,8 @@ function refusal(
   type: string,
   title: string,
   detail: string,
-): NextResponse {
-  return NextResponse.json(
+): Response {
+  return Response.json(
     { type, title, status, detail },
     {
       status,
@@ -39,7 +37,7 @@ function refusal(
  * from our own pages. Signing someone out from another site is a nuisance
  * attack, so it is checked before anything about who is signed in is revealed.
  */
-export function crossSiteRefusal(request: Request): NextResponse | undefined {
+export function crossSiteRefusal(request: Request): Response | undefined {
   return isSameOriginPost(request.headers, appOrigin(request))
     ? undefined
     : refusal(
@@ -53,7 +51,7 @@ export function crossSiteRefusal(request: Request): NextResponse | undefined {
 /** Success carries the caller; failure carries the response to send back. */
 export type Caller =
   | { readonly ok: true; readonly user: User }
-  | { readonly ok: false; readonly response: NextResponse };
+  | { readonly ok: false; readonly response: Response };
 
 /**
  * The signed-in person for a request that changes something: 403 for a request

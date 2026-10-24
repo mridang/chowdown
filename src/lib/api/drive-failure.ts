@@ -7,13 +7,11 @@
  * else is a Drive hiccup, and nothing was changed.
  */
 
-import type { NextResponse } from 'next/server';
-
 import { DriveNotConnectedError } from '@/lib/auth/drive-access';
 import { problems } from '@/lib/api/problem';
 
 /** The problem response for `error`, with `detail` for the Drive-hiccup case. */
-export function driveFailure(error: unknown, detail: string): NextResponse {
+export function driveFailure(error: unknown, detail: string): Response {
   return error instanceof DriveNotConnectedError
     ? problems.driveNotConnected()
     : problems.upstream(detail);

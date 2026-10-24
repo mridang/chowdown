@@ -6,8 +6,10 @@ import {
   it,
   jest,
 } from '@jest/globals';
+import type { NextResponse } from 'next/server';
 
-import { SESSION_COOKIE, verifySessionToken } from '@/lib/auth/session';
+import { verifySessionToken } from '@/lib/auth/session';
+import { SESSION_COOKIE } from '@/lib/auth/app';
 import {
   SESSION_SECRET,
   fakeCookies,
@@ -54,8 +56,12 @@ describe('GET /auth/drive', () => {
     expect(target?.searchParams.get('login_hint')).toBe('ada@example.com');
     const state = target?.searchParams.get('state');
     expect(state).toMatch(/^drive\./);
-    expect(res.cookies.get('chowdown_oauth_state')?.value).toBe(state);
-    expect(res.cookies.get('chowdown_return_to')?.value).toBe('/connect');
+    expect(
+      (res as NextResponse).cookies.get('chowdown_oauth_state')?.value,
+    ).toBe(state);
+    expect((res as NextResponse).cookies.get('chowdown_return_to')?.value).toBe(
+      '/connect',
+    );
   });
 
   it('does not go to Google again for someone already connected, and keeps their session length', async () => {
@@ -64,7 +70,8 @@ describe('GET /auth/drive', () => {
     jar.set(SESSION_COOKIE, await sessionTokenFor({ id: 1 }, { exp: soon }));
     const res = await GET(nextRequest('/auth/drive?returnTo=%2Fconnect'));
     expect(locationOf(res)?.href).toBe('https://chowdown.test/connect');
-    const cookie = res.cookies.get(SESSION_COOKIE)?.value ?? '';
+    const cookie =
+      (res as NextResponse).cookies.get(SESSION_COOKIE)?.value ?? '';
     const session = await verifySessionToken(cookie, SESSION_SECRET);
     expect(session).toMatchObject({ drive: true, exp: soon });
   });
@@ -89,6 +96,8 @@ describe('GET /auth/drive', () => {
         `/auth/drive?returnTo=${encodeURIComponent('https://evil.example')}`,
       ),
     );
-    expect(res.cookies.get('chowdown_return_to')?.value ?? '').toBe('');
+    expect(
+      (res as NextResponse).cookies.get('chowdown_return_to')?.value ?? '',
+    ).toBe('');
   });
 });

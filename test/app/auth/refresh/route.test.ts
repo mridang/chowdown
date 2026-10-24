@@ -6,8 +6,10 @@ import {
   it,
   jest,
 } from '@jest/globals';
+import type { NextResponse } from 'next/server';
 
-import { SESSION_COOKIE, verifySessionToken } from '@/lib/auth/session';
+import { verifySessionToken } from '@/lib/auth/session';
+import { SESSION_COOKIE } from '@/lib/auth/app';
 import {
   SESSION_SECRET,
   fakeCookies,
@@ -36,7 +38,7 @@ afterEach(() => world.close());
 
 /** The session the route put in its response cookie. */
 async function reissued(res: Awaited<ReturnType<typeof GET>>) {
-  const value = res.cookies.get(SESSION_COOKIE)?.value;
+  const value = (res as NextResponse).cookies.get(SESSION_COOKIE)?.value;
   return value ? verifySessionToken(value, SESSION_SECRET) : null;
 }
 

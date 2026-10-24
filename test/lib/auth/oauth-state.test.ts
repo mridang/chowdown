@@ -25,14 +25,14 @@ describe('newState', () => {
 
 describe('purposeOf', () => {
   it.each(PURPOSES)('reads the purpose (%s) back out', (purpose) => {
-    expect(purposeOf(newState(purpose))).toBe(purpose);
+    expect(purposeOf(newState(purpose), EXTRA_PURPOSES)).toBe(purpose);
   });
 
   it('refuses anything that is not one of ours', () => {
     expect(purposeOf('')).toBeUndefined();
     expect(purposeOf(SIGN_IN_PURPOSE)).toBeUndefined();
     expect(purposeOf(`${SIGN_IN_PURPOSE}.`)).toBeUndefined();
-    expect(purposeOf('admin.123')).toBeUndefined();
+    expect(purposeOf('admin.123', EXTRA_PURPOSES)).toBeUndefined();
     expect(purposeOf('123e4567-e89b-12d3-a456-426614174000')).toBeUndefined();
   });
 });
@@ -42,7 +42,10 @@ describe('checkState', () => {
     'trusts a state that matches the cookie and names its purpose (%s)',
     (purpose) => {
       const state = newState(purpose);
-      expect(checkState(state, state)).toEqual({ ok: true, purpose });
+      expect(checkState(state, state, EXTRA_PURPOSES)).toEqual({
+        ok: true,
+        purpose,
+      });
     },
   );
 
@@ -63,7 +66,7 @@ describe('checkState', () => {
   });
 
   it('stops for a matching state that is not one of ours', () => {
-    expect(checkState('admin.123', 'admin.123')).toEqual({
+    expect(checkState('admin.123', 'admin.123', EXTRA_PURPOSES)).toEqual({
       ok: false,
       claimed: undefined,
     });

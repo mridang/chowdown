@@ -23,7 +23,7 @@ import { getDatabase, runInBackground } from '@/lib/util/runtime';
  * `GET /api/users/self`: the signed-in user's profile (id, email, name,
  * picture, measurement system). Answers 200, or 401 when nobody is signed in.
  */
-export async function GET(request: Request): Promise<NextResponse> {
+export async function GET(request: Request): Promise<Response> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;
@@ -39,7 +39,7 @@ export async function GET(request: Request): Promise<NextResponse> {
  * with the updated profile, 400 for a patch that is not valid (identity fields
  * cannot be edited), 401 when nobody is signed in.
  */
-export async function PATCH(request: Request): Promise<NextResponse> {
+export async function PATCH(request: Request): Promise<Response> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;
@@ -72,7 +72,7 @@ export async function PATCH(request: Request): Promise<NextResponse> {
  * recipe files in their own Google Drive are left exactly as they are. Answers
  * 204, 401 when nobody is signed in, 403 for a request from another site.
  */
-export async function DELETE(request: Request): Promise<NextResponse> {
+export async function DELETE(request: Request): Promise<Response> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;

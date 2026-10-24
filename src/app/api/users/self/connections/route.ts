@@ -17,7 +17,7 @@ import { getDatabase } from '@/lib/util/runtime';
  * disconnected, newest first. Answers 200 with a page of apps, or 401 when
  * nobody is signed in.
  */
-export async function GET(request: Request): Promise<NextResponse> {
+export async function GET(request: Request): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;

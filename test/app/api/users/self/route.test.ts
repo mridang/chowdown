@@ -7,7 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 
-import { SESSION_COOKIE } from '@/lib/auth/session';
+import { SESSION_COOKIE } from '@/lib/auth/app';
 import { fakeCookies } from '../../../../lib/auth/session-fixture';
 import { settleBackground } from '../../../../lib/db/sqlite-d1';
 import {

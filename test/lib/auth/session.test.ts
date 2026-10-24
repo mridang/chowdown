@@ -2,14 +2,12 @@ import { describe, expect, it } from '@jest/globals';
 
 import { bytesToBase64Url } from '@/utils/base64';
 import {
-  SESSION_COOKIE,
   SESSION_TTL_SECONDS,
   createSessionToken,
   requireSessionSecret,
   sessionIsCurrent,
   verifySessionToken,
 } from '@/lib/auth/session';
-import { SESSION_COOKIE as APP_SESSION_COOKIE } from '@/lib/auth/app';
 
 const SECRET = 'test-session-secret-value';
 
@@ -219,12 +217,6 @@ describe('session epoch', () => {
   it('treats a session issued before epochs existed as epoch 0', () => {
     expect(sessionIsCurrent({}, 0)).toBe(true);
     expect(sessionIsCurrent({}, 1)).toBe(false);
-  });
-});
-
-describe('the session cookie', () => {
-  it('is named by the app and read from the same place as the tokens', () => {
-    expect(SESSION_COOKIE).toBe(APP_SESSION_COOKIE);
   });
 });
 

@@ -6,8 +6,6 @@
  * can make conditional requests.
  */
 
-import { NextResponse } from 'next/server';
-
 import { getRecipePageRows } from '@/lib/db/recipe-page';
 import { recipeToJsonLd } from '@/lib/recipe/schema-org';
 import { parseRecipe } from '@/lib/recipe/cooklang';
@@ -50,7 +48,7 @@ export async function sendRecipe(
   id: string,
   status = 200,
   extraHeaders: Readonly<Record<string, string>> = {},
-): Promise<NextResponse> {
+): Promise<Response> {
   const rows = await getRecipePageRows(getDatabase(), userId, id);
   if (!rows.recipe) {
     return problems.notFound('recipe');
@@ -67,10 +65,10 @@ export async function sendRecipe(
     request.method === 'GET' &&
     ifNoneMatchHit(request.headers.get('if-none-match'), etag)
   ) {
-    return new NextResponse(null, { status: 304, headers });
+    return new Response(null, { status: 304, headers });
   }
   if (kind === 'cooklang') {
-    return new NextResponse(rows.recipe.source, {
+    return new Response(rows.recipe.source, {
       status,
       headers: {
         ...headers,
@@ -80,12 +78,12 @@ export async function sendRecipe(
   }
   if (kind === 'ld') {
     const parsed = parseRecipe(rows.recipe.source, rows.recipe.name);
-    return NextResponse.json(
+    return Response.json(
       recipeToJsonLd(parsed, absoluteUrl(request, `/recipe/${id}`)),
       { status, headers: { ...headers, 'Content-Type': JSON_LD_TYPE } },
     );
   }
-  return NextResponse.json(recipeResource(rows.recipe, rows.favourite), {
+  return Response.json(recipeResource(rows.recipe, rows.favourite), {
     status,
     headers,
   });

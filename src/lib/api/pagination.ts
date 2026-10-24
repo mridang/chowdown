@@ -8,8 +8,6 @@
  * absolute URLs, `items`, and no total count.
  */
 
-import { NextResponse } from 'next/server';
-
 import { appOrigin } from '@/utils/origin';
 import { base64UrlToBytes, bytesToBase64Url } from '@/utils/base64';
 import { setSearchParams } from '@/utils/query';
@@ -56,7 +54,7 @@ export function decodeCursor(cursor: string): CursorPosition | undefined {
 export function parseLimit(
   raw: string | null,
   fallback = DEFAULT_LIMIT,
-): number | NextResponse {
+): number | Response {
   if (raw === null) {
     return fallback;
   }

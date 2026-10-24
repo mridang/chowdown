@@ -29,7 +29,7 @@ const refuse = (
   message: string,
   status: number,
   retryAfterSeconds?: number,
-): NextResponse =>
+): Response =>
   new NextResponse(message, {
     status,
     headers:
@@ -49,7 +49,7 @@ const refuse = (
  * metadata documents are being fetched at the moment. An `access` field of
  * `read` approves the app with read-only access even if it asked to edit.
  */
-export async function POST(request: Request): Promise<NextResponse> {
+export async function POST(request: Request): Promise<Response> {
   const origin = appOrigin(request);
   if (!isSameOriginPost(request.headers, origin)) {
     return refuse('Cross-site request refused.', 403);

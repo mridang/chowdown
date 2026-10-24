@@ -5,8 +5,6 @@
  * `util/daily-budget.ts` for what the budgets are and how they are counted).
  */
 
-import { NextResponse } from 'next/server';
-
 import { spendBudget, type BudgetDeps } from '@/lib/util/daily-budget';
 import type { RateLimit } from '@/lib/util/rate-limit';
 import { problems } from '@/lib/api/problem';
@@ -20,7 +18,7 @@ export async function budgetRefusal(
   userId: number,
   what: string,
   deps: BudgetDeps = {},
-): Promise<NextResponse | null> {
+): Promise<Response | null> {
   const retryAfter = await spendBudget(budget, userId, deps);
   return retryAfter === undefined
     ? null

@@ -8,8 +8,6 @@
  * of them can share a single registered callback address.
  */
 
-import { EXTRA_PURPOSES } from '@/lib/auth/app';
-
 /** How long a round trip to Google may take before it is abandoned, in seconds. */
 export const STATE_TTL_SECONDS = 600;
 
@@ -38,8 +36,9 @@ export type StateCheck =
 export function checkState(
   state: string | null,
   expected: string | undefined,
+  extraPurposes: readonly string[] = [],
 ): StateCheck {
-  const purpose = state ? purposeOf(state) : undefined;
+  const purpose = state ? purposeOf(state, extraPurposes) : undefined;
   return state && expected && state === expected && purpose
     ? { ok: true, purpose }
     : { ok: false, claimed: purpose };
@@ -48,13 +47,17 @@ export function checkState(
 /**
  * What a `state` value was made for, or undefined when it is not one of ours.
  * This only reads the label; trusting it still requires the value to match the
- * cookie.
+ * cookie. The asks beyond signing in are supplied by the caller (the app's
+ * extra purposes), so this helper stays free of any one app's configuration.
  */
-export function purposeOf(state: string): string | undefined {
+export function purposeOf(
+  state: string,
+  extraPurposes: readonly string[] = [],
+): string | undefined {
   const [purpose, nonce] = state.split('.');
   return purpose &&
     nonce &&
-    (purpose === SIGN_IN_PURPOSE || EXTRA_PURPOSES.includes(purpose))
+    (purpose === SIGN_IN_PURPOSE || extraPurposes.includes(purpose))
     ? purpose
     : undefined;
 }

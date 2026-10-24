@@ -43,7 +43,7 @@ const MAX_QUERY_LENGTH = 300;
  * `limit`. Needs a signed-in user: 401, and 502 or 409 when Drive or the model
  * is unavailable.
  */
-export async function GET(request: Request): Promise<NextResponse> {
+export async function GET(request: Request): Promise<Response> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;

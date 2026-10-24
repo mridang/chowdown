@@ -6,8 +6,6 @@
  * the cached recipes, and return one page.
  */
 
-import { NextResponse } from 'next/server';
-
 import { getAppPageRows } from '@/lib/db/recipe-page';
 import { sourceDomainOf } from '@/lib/recipe/cook-text';
 import { getDatabase } from '@/lib/util/runtime';
@@ -50,7 +48,7 @@ export async function listRecipes(
   request: Request,
   userId: number,
   forced: Readonly<Record<string, string>> = {},
-): Promise<NextResponse> {
+): Promise<Response> {
   const query = withForced(new URL(request.url).searchParams, forced);
   if (query.has('favourite') && !('favourite' in forced)) {
     return problems.badRequest(
@@ -99,7 +97,7 @@ export async function listRecipes(
     after,
     limit,
   );
-  return NextResponse.json(
+  return Response.json(
     pageBody(
       request,
       page.items.map((r) => r.summary),

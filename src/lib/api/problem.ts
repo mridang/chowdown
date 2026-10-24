@@ -8,8 +8,6 @@
  * include stack traces or internals.
  */
 
-import { NextResponse } from 'next/server';
-
 /** The members of a problem document. */
 export interface ProblemBody {
   readonly type: string;
@@ -30,7 +28,7 @@ export function problem(
     readonly errors?: readonly string[];
     readonly headers?: Readonly<Record<string, string>>;
   } = {},
-): NextResponse {
+): Response {
   const body: ProblemBody = {
     type,
     title,
@@ -40,7 +38,7 @@ export function problem(
       ? { errors: extra.errors }
       : {}),
   };
-  return NextResponse.json(body, {
+  return Response.json(body, {
     status,
     headers: {
       'Content-Type': 'application/problem+json',

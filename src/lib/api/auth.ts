@@ -7,8 +7,6 @@
  * came from in `Sec-Fetch-Site`, and anything not same-origin is refused.
  */
 
-import type { NextResponse } from 'next/server';
-
 import {
   getCurrentUser,
   getLiveSessionUid,
@@ -33,7 +31,7 @@ function crossSite(request: Request): boolean {
 /** Success carries the caller; failure carries the response to send back. */
 export type Auth<T> =
   | { readonly ok: true; readonly value: T }
-  | { readonly ok: false; readonly response: NextResponse };
+  | { readonly ok: false; readonly response: Response };
 
 /**
  * Run the cross-site check, then `identify`: 403 for a cross-site write, 401

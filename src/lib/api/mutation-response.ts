@@ -7,8 +7,6 @@
  * refuse in the same words.
  */
 
-import type { NextResponse } from 'next/server';
-
 import type { MutateOutcome } from '@/lib/recipe/mutate-recipe';
 import { problems } from '@/lib/api/problem';
 
@@ -26,7 +24,7 @@ export type DoneMutation<T> = Extract<MutateOutcome<T>, { kind: 'done' }>;
 /** The finished change, or the problem response to send instead. */
 export type SettledMutation<T> =
   | { readonly ok: true; readonly done: DoneMutation<T> }
-  | { readonly ok: false; readonly response: NextResponse };
+  | { readonly ok: false; readonly response: Response };
 
 /**
  * Sort a mutation outcome into the finished change or the response for why it

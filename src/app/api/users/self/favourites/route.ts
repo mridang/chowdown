@@ -6,8 +6,6 @@
  *   GET /api/users/self/favourites
  */
 
-import { NextResponse } from 'next/server';
-
 import { requireLiveUid } from '@/lib/api/auth';
 import { listRecipes } from '@/lib/api/recipe-list';
 
@@ -16,7 +14,7 @@ import { listRecipes } from '@/lib/api/recipe-list';
  * hearted, filtered and sorted by the query string. Answers 200 with the page,
  * or 401 when nobody is signed in.
  */
-export async function GET(request: Request): Promise<NextResponse> {
+export async function GET(request: Request): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;

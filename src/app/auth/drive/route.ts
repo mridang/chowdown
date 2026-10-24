@@ -26,7 +26,7 @@ import { appOrigin } from '@/utils/origin';
  * (with a corrected session cookie) when Drive is already connected, or to
  * Google's consent screen otherwise.
  */
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(request: NextRequest): Promise<Response> {
   const env = getEnv();
   const origin = appOrigin(request);
   const secure = origin.startsWith('https');

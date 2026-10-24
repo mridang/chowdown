@@ -35,7 +35,7 @@ async function respond(
   userId: number,
   id: string,
   outcome: MutateOutcome<null>,
-): Promise<NextResponse> {
+): Promise<Response> {
   const settled = settleMutation(outcome, {
     missing: 'recipe',
     invalid: 'The change is not valid.',
@@ -52,7 +52,7 @@ async function respond(
 export async function GET(
   request: Request,
   { params }: IdContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
@@ -69,7 +69,7 @@ export async function GET(
 export async function PUT(
   request: Request,
   { params }: IdContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;
@@ -109,7 +109,7 @@ export async function PUT(
 export async function PATCH(
   request: Request,
   { params }: IdContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;
@@ -153,7 +153,7 @@ export async function PATCH(
 export async function DELETE(
   request: Request,
   { params }: IdContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;

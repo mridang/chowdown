@@ -45,7 +45,7 @@ import { DAILY_BUDGETS } from '@/lib/util/daily-budget';
  * over 1 MiB; 429 once the person has used the day's import allowance; 415 for a body that is not JSON. Needs a signed-in user: 401
  * without a session.
  */
-export async function POST(request: Request): Promise<NextResponse> {
+export async function POST(request: Request): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
@@ -98,7 +98,7 @@ export async function POST(request: Request): Promise<NextResponse> {
  * (no drafts). Answers 200 with a page, 400 for a bad `limit` or `cursor`, 401
  * when nobody is signed in.
  */
-export async function GET(request: Request): Promise<NextResponse> {
+export async function GET(request: Request): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;

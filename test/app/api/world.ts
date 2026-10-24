@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import type { DatabaseSync } from 'node:sqlite';
 
 import { encryptSecret } from '@/lib/crypto';
-import { SESSION_COOKIE } from '@/lib/auth/session';
+import { SESSION_COOKIE } from '@/lib/auth/app';
 import {
   insertUser,
   jar,

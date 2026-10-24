@@ -13,8 +13,6 @@
  */
 
 import { errorMessage, logError } from '@/utils/logging';
-import { NextResponse } from 'next/server';
-
 import type { User } from '@/lib/db/users';
 import { CORS_HEADERS } from '@/lib/oauth/http';
 import { wwwAuthenticate } from '@/lib/oauth/metadata';
@@ -80,15 +78,15 @@ export function originRefusal(
   request: Request,
   selfOrigin: string,
   extraOrigins: string | undefined = configuredOrigins(),
-): NextResponse | null {
+): Response | null {
   const origin = request.headers.get('origin');
   if (isAllowedOrigin(origin, selfOrigin, extraOrigins)) {
     return null;
   }
-  return NextResponse.json(
-    errorBody(ERROR_INVALID_REQUEST, 'Origin not allowed'),
-    { status: 403, headers: NO_STORE },
-  );
+  return Response.json(errorBody(ERROR_INVALID_REQUEST, 'Origin not allowed'), {
+    status: 403,
+    headers: NO_STORE,
+  });
 }
 
 /**
@@ -102,8 +100,8 @@ export function unauthorizedResponse(
   origin: string,
   invalidToken: boolean,
   cors: Readonly<Record<string, string>>,
-): NextResponse {
-  return NextResponse.json(
+): Response {
+  return Response.json(
     errorBody(ERROR_INVALID_REQUEST, 'Authorization required'),
     {
       status: 401,
@@ -171,16 +169,16 @@ export function corsFor(
 function refuse(
   refusal: ProtocolRefusal,
   cors: Readonly<Record<string, string>>,
-): NextResponse {
-  return NextResponse.json(refusal.body, {
+): Response {
+  return Response.json(refusal.body, {
     status: refusal.status,
     headers: { ...cors, ...NO_STORE, ...refusal.headers },
   });
 }
 
 /** An empty 202: the answer to notifications, and to replies we have nothing to say to. */
-function accepted(cors: Readonly<Record<string, string>>): NextResponse {
-  return new NextResponse(null, {
+function accepted(cors: Readonly<Record<string, string>>): Response {
+  return new Response(null, {
     status: 202,
     headers: { ...cors, ...NO_STORE },
   });
@@ -261,7 +259,7 @@ export async function handleMcpPost(
   scopes: readonly string[],
   origin: string,
   rate: RateLimitDeps = liveRateLimitDeps(),
-): Promise<NextResponse> {
+): Promise<Response> {
   const cors = corsFor(request, origin);
   // Refuse a body we could not read as messages, unless the junk has already
   // used up the caller's allowance, in which case say so instead.
@@ -331,7 +329,7 @@ export async function handleMcpPost(
   if (isBatch) {
     const answered = replies.filter((r) => r !== null);
     return answered.length > 0
-      ? NextResponse.json(answered, { headers })
+      ? Response.json(answered, { headers })
       : accepted(cors);
   }
   const [reply] = replies;
@@ -344,7 +342,7 @@ export async function handleMcpPost(
     message !== undefined && isModernRequest(message) && isUnknownMethod(reply)
       ? 404
       : 200;
-  return NextResponse.json(reply, { status, headers });
+  return Response.json(reply, { status, headers });
 }
 
 /**
@@ -369,8 +367,8 @@ interface Admitted {
  * and tries again instead of treating a bare 500 page as the final word. Nothing
  * of the fault itself is sent.
  */
-function authFault(cors: Readonly<Record<string, string>>): NextResponse {
-  return NextResponse.json(
+function authFault(cors: Readonly<Record<string, string>>): Response {
+  return Response.json(
     errorBody(ERROR_INTERNAL, 'Something went wrong on the server.'),
     {
       status: 503,
@@ -387,7 +385,7 @@ async function admit(
   request: Request,
   origin: string,
   authenticate: Authenticate,
-): Promise<Admitted | NextResponse> {
+): Promise<Admitted | Response> {
   const refused = originRefusal(request, origin);
   if (refused) {
     return refused;
@@ -419,23 +417,23 @@ export async function respondToMcp(
   origin: string,
   authenticate: Authenticate,
   rate: RateLimitDeps = liveRateLimitDeps(),
-): Promise<NextResponse> {
+): Promise<Response> {
   if (request.method === 'OPTIONS') {
     return (
       originRefusal(request, origin) ??
-      new NextResponse(null, {
+      new Response(null, {
         status: 204,
         headers: { ...corsFor(request, origin), Allow: 'POST, OPTIONS' },
       })
     );
   }
   const admitted = await admit(request, origin, authenticate);
-  if (admitted instanceof NextResponse) {
+  if (admitted instanceof Response) {
     return admitted;
   }
   return request.method === 'POST'
     ? handleMcpPost(request, admitted.user, admitted.scope, origin, rate)
-    : new NextResponse(null, {
+    : new Response(null, {
         status: 405,
         headers: {
           ...corsFor(request, origin),
