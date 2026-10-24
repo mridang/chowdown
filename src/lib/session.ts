@@ -10,6 +10,12 @@
  * This is deliberately small: it carries identity only, plus whatever hints an
  * app adds (see `sessionClaims` in `app.ts`). Anything sensitive stays in the
  * database, never in the cookie.
+ *
+ * The token is a hand-rolled Web Crypto HMAC rather than a `jose` JWT on
+ * purpose: this exact wire format is already in every signed-in user's cookie,
+ * and a JWT would be a different format that invalidates all of them on deploy.
+ * So the library's own "hand-roll when the dependency does not fit" rule
+ * applies — the format is fixed by what is already deployed.
  */
 
 import {
