@@ -31,6 +31,48 @@ describe('SERVER_VERSION', () => {
   });
 });
 
+describe('server.json', () => {
+  const listing = JSON.parse(
+    readFileSync(path.join(root, 'server.json'), 'utf8'),
+  ) as {
+    version: string;
+    title: string;
+    description: string;
+    websiteUrl: string;
+    icons: { src: string; mimeType: string; sizes: string[] }[];
+    remotes: { type: string; url: string }[];
+  };
+
+  it('has the version of the server', () => {
+    expect(listing.version).toBe(SERVER_VERSION);
+  });
+
+  it('names the server and its website as the server reports them', () => {
+    expect(listing.title).toBe(SERVER_INFO.title);
+    expect(listing.websiteUrl).toBe(SERVER_INFO.websiteUrl);
+  });
+
+  it('fits the 100 characters the registry allows for a description', () => {
+    expect(listing.description.length).toBeLessThanOrEqual(100);
+  });
+
+  it('lists the same icons as the server', () => {
+    expect(listing.icons).toEqual(
+      SERVER_INFO.icons.map((icon) => ({
+        src: icon.src,
+        mimeType: icon.mimeType,
+        sizes: [...icon.sizes],
+      })),
+    );
+  });
+
+  it('points to the MCP endpoint', () => {
+    expect(listing.remotes).toEqual([
+      { type: 'streamable-http', url: `${SITE_URL}/mcp` },
+    ]);
+  });
+});
+
 describe('SERVER_INFO', () => {
   it('names the server, describes it and points to its website', () => {
     expect(SERVER_INFO).toMatchObject({

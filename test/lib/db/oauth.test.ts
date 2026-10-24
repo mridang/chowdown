@@ -392,6 +392,7 @@ describe('listConnectedApps', () => {
         scope: ['recipes:read', 'recipes:write'],
         installs: 1,
         domain: null,
+        logoUri: null,
         connectedAt: '2026-01-01T00:00:00.000Z',
         lastUsedAt: null,
       },
@@ -477,9 +478,57 @@ const MIGRATIONS = [
   '0008_oauth.sql',
   '0012_oauth_housekeeping.sql',
   '0016_oauth_redirect_uri_sent.sql',
+  '0017_oauth_client_assertions.sql',
+  '0018_oauth_client_logo.sql',
 ] as const;
 
 describe('against a real SQLite database', () => {
+  describe('client authentication', () => {
+    const signed = {
+      clientId: 'https://chatgpt.com/oauth/client.json',
+      name: 'ChatGPT',
+      redirectUris: ['https://chatgpt.com/connector_platform_oauth_redirect'],
+      kind: 'cimd' as const,
+      auth: {
+        method: 'private_key_jwt' as const,
+        jwksUri: 'https://chatgpt.com/oauth/jwks.json',
+      },
+    };
+
+    it('keeps how a client authenticates and where its keys are', async () => {
+      const { db } = sqliteDatabase(...MIGRATIONS);
+      await saveClient(db, signed, 300);
+      expect(await createOAuthStore(db).findClient(signed.clientId)).toEqual(
+        signed,
+      );
+    });
+
+    it('treats a client saved without a method as public, and updates it when the document changes', async () => {
+      const { db } = sqliteDatabase(...MIGRATIONS);
+      await saveClient(db, { ...signed, auth: undefined }, 300);
+      expect(
+        (await createOAuthStore(db).findClient(signed.clientId))?.auth,
+      ).toBeUndefined();
+      await saveClient(db, signed, 300);
+      expect(
+        (await createOAuthStore(db).findClient(signed.clientId))?.auth,
+      ).toEqual(signed.auth);
+    });
+
+    it('answers nothing for a client it does not know', async () => {
+      const { db } = sqliteDatabase(...MIGRATIONS);
+      expect(await createOAuthStore(db).findClient('nobody')).toBeUndefined();
+    });
+
+    it('accepts an assertion once and refuses it the second time, per client', async () => {
+      const { db } = sqliteDatabase(...MIGRATIONS);
+      const store = createOAuthStore(db);
+      expect(await store.claimAssertion('a', 'jti-1', 99)).toBe(true);
+      expect(await store.claimAssertion('a', 'jti-1', 99)).toBe(false);
+      expect(await store.claimAssertion('b', 'jti-1', 99)).toBe(true);
+    });
+  });
+
   describe('authorization codes', () => {
     const code = (redirectUriSent: boolean) => ({
       clientId: 'c1',
@@ -693,6 +742,33 @@ describe('against a real SQLite database', () => {
       return made;
     };
 
+    it('gives a verified app its logo and an unverified app none', async () => {
+      const { db, raw } = sqliteDatabase(...MIGRATIONS);
+      seedClient(
+        raw,
+        'https://a.example/c.json',
+        'cimd',
+        '2026-01-01T00:00:00.000Z',
+      );
+      seedClient(raw, 'dcr_b', 'dcr', '2026-01-01T00:00:00.000Z');
+      raw.exec(
+        "UPDATE oauth_clients SET logo_uri = 'https://a.example/logo.png'",
+      );
+      seedGrant(
+        raw,
+        'g-a',
+        7,
+        'https://a.example/c.json',
+        '2026-02-01T00:00:00.000Z',
+      );
+      seedGrant(raw, 'g-b', 7, 'dcr_b', '2026-01-01T00:00:00.000Z');
+      const apps = await listConnectedApps(db, 7);
+      expect(apps.map((a) => a.logoUri)).toEqual([
+        'https://a.example/logo.png',
+        null,
+      ]);
+    });
+
     it('lists an app once, newest first, with the latest use of any of its grants', async () => {
       const { db } = seed();
       expect(await listConnectedApps(db, 7)).toEqual([
@@ -702,6 +778,7 @@ describe('against a real SQLite database', () => {
           scope: ['recipes:read', 'recipes:write'],
           installs: 2,
           domain: null,
+          logoUri: null,
           connectedAt: '2026-03-01T00:00:00.000Z',
           lastUsedAt: '2026-03-05T00:00:00.000Z',
         },
@@ -814,6 +891,11 @@ describe('against a real SQLite database', () => {
       code.run('code-old', 'c', 'u', 'ch', 's', 'r', NOW - 2 * 86_400);
       code.run('code-recent', 'c', 'u', 'ch', 's', 'r', NOW - 3600);
       code.run('code-live', 'c', 'u', 'ch', 's', 'r', NOW + 60);
+      const assertion = raw.prepare(
+        'INSERT INTO oauth_assertions (client_id, jti, expires_at) VALUES (?, ?, ?)',
+      );
+      assertion.run('c', 'jti-old', NOW - 2 * 86_400);
+      assertion.run('c', 'jti-live', NOW + 60);
       seedGrant(raw, 'live', 1, 'granted', day(10));
       seedGrant(raw, 'revoked-recent', 1, 'granted', day(10), day(2));
       seedGrant(raw, 'revoked-today', 1, 'granted', day(10), day(0.5));
@@ -856,6 +938,7 @@ describe('against a real SQLite database', () => {
         'tok-recent-expiry',
         'tok-revoked-today',
       ]);
+      expect(ids(raw, 'oauth_assertions', 'jti')).toEqual(['jti-live']);
       expect(ids(raw, 'oauth_grants', 'id')).toEqual([
         'idle',
         'live',
@@ -1121,6 +1204,26 @@ describe('against a real SQLite database', () => {
         )
         .all();
       expect(rows.map((r) => r['expires_at'] === null)).toEqual([true, false]);
+    });
+
+    it('keeps the logo a fetched document names, and drops it when the document stops naming one', async () => {
+      const { db, raw } = sqliteDatabase(...MIGRATIONS);
+      const client = {
+        clientId: CIMD,
+        name: 'A',
+        redirectUris: ['https://app.example/cb'],
+        kind: 'cimd' as const,
+      };
+      const logo = () =>
+        raw.prepare('SELECT logo_uri FROM oauth_clients').get()?.['logo_uri'];
+      await saveClient(
+        db,
+        { ...client, logoUri: 'https://app.example/l.png' },
+        600,
+      );
+      expect(logo()).toBe('https://app.example/l.png');
+      await saveClient(db, client, 600);
+      expect(logo()).toBeNull();
     });
 
     it('updates the name and expiry of a client it already knows, keeping when it was first seen', async () => {

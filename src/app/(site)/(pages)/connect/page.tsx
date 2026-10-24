@@ -94,7 +94,7 @@ export default async function ConnectPage(): Promise<ReactElement> {
       )}
       <PageHeader
         roomy
-        eyebrow="Connect an assistant"
+        eyebrow="Assistants"
         title="Cook with AI"
         intro="chowdown speaks MCP, the open standard assistants use to reach your tools. Add this address once and ask for ideas, searches and new recipes in plain words."
       >

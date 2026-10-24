@@ -4,13 +4,14 @@
  * Which pictures a person may ask the proxy for. The proxy fetches pictures
  * from other websites, so left open to any address it would be a free image
  * relay for the whole web. Here only signed-in people may use it, and only for
- * the photos their own recipes list in `>> images:`, which is exactly the set
- * the pages ever ask for. (The edge keeps a copy of each photo, so the check
+ * the photos their own recipes list in `>> images:` and the logos of the apps
+ * they have connected, which is exactly the set the pages ever ask for. (The edge keeps a copy of each photo, so the check
  * runs only when it has none.)
  */
 
 import { problems } from '../api/problem';
 import { getSessionUid } from '../auth/current-user';
+import { userHasConnectedLogo } from '../db/oauth';
 import { getDatabase } from '../util';
 import { userHasCover } from './cover-ownership';
 
@@ -29,8 +30,18 @@ export function signatureValid(): boolean {
   return true;
 }
 
-/** Whether one of the signed-in person's recipes lists the photo at `url`. */
+/**
+ * Whether `url` is a photo one of the signed-in person's recipes lists, or the
+ * logo of an app they have connected.
+ */
 export async function mayFetch(url: string): Promise<boolean> {
   const uid = await getSessionUid();
-  return uid !== null && userHasCover(getDatabase(), uid, url);
+  if (uid === null) {
+    return false;
+  }
+  const db = getDatabase();
+  return (
+    (await userHasCover(db, uid, url)) ||
+    (await userHasConnectedLogo(db, uid, url))
+  );
 }

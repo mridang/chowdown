@@ -46,7 +46,13 @@ import {
   type RateLimitStore,
 } from '../util/rate-limit';
 import type { Database } from './client';
-import { oauthClients, oauthCodes, oauthGrants, oauthTokens } from './schema';
+import {
+  oauthAssertions,
+  oauthClients,
+  oauthCodes,
+  oauthGrants,
+  oauthTokens,
+} from './schema';
 
 /** Unix seconds as the ISO-8601 text the timestamp columns hold. */
 const iso = (seconds: number): string => new Date(seconds * 1000).toISOString();
@@ -73,6 +79,11 @@ function toClient(row: Readonly<ClientRow>): OAuthClient {
     name: row.client_name,
     redirectUris: redirectUrisOf(row.redirect_uris),
     kind: row.kind === 'cimd' ? 'cimd' : 'dcr',
+    ...(row.auth_method === 'private_key_jwt' &&
+      row.jwks_uri !== null && {
+        auth: { method: 'private_key_jwt', jwksUri: row.jwks_uri },
+      }),
+    ...(row.logo_uri !== null && { logoUri: row.logo_uri }),
   };
 }
 
@@ -96,6 +107,9 @@ export async function saveClient(
     redirect_uris: JSON.stringify(client.redirectUris),
     created_at: now,
     fetched_at: fetched ? now : null,
+    auth_method: client.auth?.method ?? 'none',
+    jwks_uri: client.auth?.jwksUri ?? null,
+    logo_uri: client.logoUri ?? null,
     expires_at:
       fetched && ttlSeconds !== undefined
         ? new Date(nowMs + ttlSeconds * 1000).toISOString()
@@ -111,6 +125,9 @@ export async function saveClient(
         redirect_uris: values.redirect_uris,
         fetched_at: values.fetched_at,
         expires_at: values.expires_at,
+        auth_method: values.auth_method,
+        jwks_uri: values.jwks_uri,
+        logo_uri: values.logo_uri,
       },
     });
 }
@@ -363,6 +380,22 @@ export function createOAuthStore(db: Database): OAuthStore {
       return false;
     },
 
+    async findClient(clientId) {
+      const row = await db.query.oauthClients.findFirst({
+        where: eq(oauthClients.client_id, clientId),
+      });
+      return row ? toClient(row) : undefined;
+    },
+
+    async claimAssertion(clientId, jti, expiresAt) {
+      const result = await db
+        .insert(oauthAssertions)
+        .values({ client_id: clientId, jti, expires_at: expiresAt })
+        .onConflictDoNothing()
+        .run();
+      return changesOf(result) === 1;
+    },
+
     async touchGrant(grantId, now) {
       await db
         .update(oauthGrants)
@@ -388,6 +421,8 @@ export interface ConnectedApp {
   readonly installs: number;
   /** The domain that published the app, or null for an app that registered itself unverified. */
   readonly domain: string | null;
+  /** The picture the app publishes for itself, or null when it has none. */
+  readonly logoUri: string | null;
   readonly connectedAt: string;
   readonly lastUsedAt: string | null;
 }
@@ -418,6 +453,7 @@ export async function listConnectedApps(
       grant: oauthGrants,
       name: oauthClients.client_name,
       kind: oauthClients.kind,
+      logo: oauthClients.logo_uri,
     })
     .from(oauthGrants)
     .leftJoin(oauthClients, eq(oauthClients.client_id, oauthGrants.client_id))
@@ -447,12 +483,38 @@ export async function listConnectedApps(
           scope: unionOfScopes(all.map((r) => r.grant.scope)),
           installs: all.length,
           domain: identity.kind === 'domain' ? identity.domain : null,
+          logoUri: identity.kind === 'domain' ? (newest.logo ?? null) : null,
           connectedAt: newest.grant.created_at,
           lastUsedAt: lastUsed ?? null,
         },
       ];
     },
   );
+}
+
+/**
+ * Whether `url` is the picture of an app the user has connected, which is what
+ * entitles them to have the image proxy fetch it (see `images/access.ts`).
+ */
+export async function userHasConnectedLogo(
+  db: Database,
+  userId: number,
+  url: string,
+): Promise<boolean> {
+  const row = await db
+    .select({ id: oauthGrants.id })
+    .from(oauthGrants)
+    .innerJoin(oauthClients, eq(oauthClients.client_id, oauthGrants.client_id))
+    .where(
+      and(
+        eq(oauthGrants.user_id, userId),
+        isNull(oauthGrants.revoked_at),
+        eq(oauthClients.kind, 'cimd'),
+        eq(oauthClients.logo_uri, url),
+      ),
+    )
+    .limit(1);
+  return row.length > 0;
 }
 
 /**
@@ -535,6 +597,9 @@ export async function purgeOAuthData(
     db
       .delete(oauthTokens)
       .where(lt(oauthTokens.expires_at, cutoffs.tokensExpiredBefore)),
+    db
+      .delete(oauthAssertions)
+      .where(lt(oauthAssertions.expires_at, cutoffs.tokensExpiredBefore)),
     db
       .delete(oauthTokens)
       .where(

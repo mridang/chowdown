@@ -154,7 +154,27 @@ export const oauthClients = sqliteTable('oauth_clients', {
   fetched_at: text('fetched_at'),
   /** Until when a fetched document may be reused (from its cache headers); null for older rows and registered clients. */
   expires_at: text('expires_at'),
+  /** How the client proves itself at the token endpoint: `none` (PKCE only) or `private_key_jwt`. */
+  auth_method: text('auth_method').notNull().default('none'),
+  /** Where the client publishes the keys it signs assertions with; set only for `private_key_jwt`. */
+  jwks_uri: text('jwks_uri'),
+  /** The picture the client publishes for itself; set only for a client fetched from its metadata document. */
+  logo_uri: text('logo_uri'),
 });
+
+/** Client assertions already accepted (by `jti`), kept until they expire so none is used twice. */
+export const oauthAssertions = sqliteTable(
+  'oauth_assertions',
+  {
+    client_id: text('client_id').notNull(),
+    jti: text('jti').notNull(),
+    expires_at: integer('expires_at').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.client_id, table.jti] }),
+    index('idx_oauth_assertions_expires').on(table.expires_at),
+  ],
+);
 
 /** One user's approval of one client; revoking it revokes all its tokens. */
 export const oauthGrants = sqliteTable(

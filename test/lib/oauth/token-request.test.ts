@@ -1,4 +1,13 @@
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import { beforeAll, beforeEach, describe, expect, it } from '@jest/globals';
+import {
+  SignJWT,
+  exportJWK,
+  generateKeyPair,
+  type CryptoKey,
+  type JWK,
+} from 'jose';
+
+import { CLIENT_ASSERTION_TYPE } from '../../../src/lib/oauth/client-auth';
 
 import { s256 } from '../../../src/lib/oauth/pkce';
 import {
@@ -293,5 +302,166 @@ describe('error_description is printable ASCII without quotes or backslashes (RF
       await handleTokenRequest(form(fields), store, ORIGIN, NOW),
     );
     expect(result.description).toMatch(/^[\x20\x21\x23-\x5b\x5d-\x7e]+$/);
+  });
+});
+
+describe('handleTokenRequest for a client that signs its requests', () => {
+  const CLIENT = 'https://chatgpt.com/oauth/client.json';
+  const REDIRECT = 'https://chatgpt.com/connector_platform_oauth_redirect';
+  const KEYS = 'https://chatgpt.com/oauth/jwks.json';
+  let key: CryptoKey;
+  let jwks: { keys: JWK[] };
+
+  beforeAll(async () => {
+    const pair = await generateKeyPair('RS256', { extractable: true });
+    key = pair.privateKey;
+    jwks = { keys: [{ ...(await exportJWK(pair.publicKey)), kid: 'k' }] };
+  });
+
+  beforeEach(() => {
+    store.clients.set(CLIENT, {
+      clientId: CLIENT,
+      name: 'ChatGPT',
+      redirectUris: [REDIRECT],
+      kind: 'cimd',
+      auth: { method: 'private_key_jwt', jwksUri: KEYS },
+    });
+  });
+
+  const assertion = (claims: Record<string, unknown> = {}) =>
+    new SignJWT({
+      iss: CLIENT,
+      sub: CLIENT,
+      aud: `${ORIGIN}/oauth/token`,
+      exp: NOW + 60,
+      jti: crypto.randomUUID(),
+      ...claims,
+    })
+      .setProtectedHeader({ alg: 'RS256', kid: 'k' })
+      .sign(key);
+
+  const signedFields = async (claims?: Record<string, unknown>) => ({
+    client_assertion_type: CLIENT_ASSERTION_TYPE,
+    client_assertion: await assertion(claims),
+  });
+
+  const context = { fetchJwks: async () => jwks as unknown };
+
+  /** A code issued to the signing client. */
+  async function codeFor() {
+    return issueAuthorizationCode(
+      store,
+      {
+        clientId: CLIENT,
+        userId: 7,
+        redirectUri: REDIRECT,
+        redirectUriSent: true,
+        codeChallenge: await s256(VERIFIER),
+        scope: ['recipes:read'],
+        resource: RESOURCE,
+      },
+      NOW,
+    );
+  }
+
+  const exchange = async (extra: Record<string, string>) =>
+    handleTokenRequest(
+      form({
+        client_id: CLIENT,
+        grant_type: 'authorization_code',
+        code: await codeFor(),
+        redirect_uri: REDIRECT,
+        code_verifier: VERIFIER,
+        ...extra,
+      }),
+      store,
+      ORIGIN,
+      NOW,
+      context,
+    );
+
+  it('trades a code for tokens when the request is signed', async () => {
+    expect(await exchange(await signedFields())).toMatchObject({ ok: true });
+  });
+
+  it('works when the request leaves client_id to the assertion', async () => {
+    const result = await handleTokenRequest(
+      form({
+        grant_type: 'authorization_code',
+        code: await codeFor(),
+        redirect_uri: REDIRECT,
+        code_verifier: VERIFIER,
+        ...(await signedFields()),
+      }),
+      store,
+      ORIGIN,
+      NOW,
+      context,
+    );
+    expect(result).toMatchObject({ ok: true });
+  });
+
+  it('refuses a code with the right verifier but no signature', async () => {
+    expect(refusal(await exchange({}))).toMatchObject({
+      error: 'invalid_client',
+      status: 400,
+    });
+  });
+
+  it('refuses a request signed by someone else', async () => {
+    const other = await generateKeyPair('RS256');
+    const forged = await new SignJWT({
+      iss: CLIENT,
+      sub: CLIENT,
+      aud: `${ORIGIN}/oauth/token`,
+      exp: NOW + 60,
+      jti: 'forged',
+    })
+      .setProtectedHeader({ alg: 'RS256', kid: 'k' })
+      .sign(other.privateKey);
+    expect(
+      refusal(
+        await exchange({
+          client_assertion_type: CLIENT_ASSERTION_TYPE,
+          client_assertion: forged,
+        }),
+      ).error,
+    ).toBe('invalid_client');
+  });
+
+  it('refuses a replayed assertion', async () => {
+    const fields = await signedFields();
+    expect(await exchange(fields)).toMatchObject({ ok: true });
+    expect(refusal(await exchange(fields)).description).toMatch(/already used/);
+  });
+
+  it('asks a refresh to be signed too', async () => {
+    const issued = await exchange(await signedFields());
+    const refreshToken = issued.ok ? issued.tokens.refresh_token : '';
+    const refresh = (extra: Record<string, string>) =>
+      handleTokenRequest(
+        form({
+          client_id: CLIENT,
+          grant_type: 'refresh_token',
+          refresh_token: refreshToken,
+          ...extra,
+        }),
+        store,
+        ORIGIN,
+        NOW,
+        context,
+      );
+    expect(refusal(await refresh({})).error).toBe('invalid_client');
+    expect(await refresh(await signedFields())).toMatchObject({ ok: true });
+  });
+
+  it('does not ask a public client for a signature', async () => {
+    store.clients.set(CLIENT, {
+      clientId: CLIENT,
+      name: 'ChatGPT',
+      redirectUris: [REDIRECT],
+      kind: 'cimd',
+    });
+    expect(await exchange({})).toMatchObject({ ok: true });
   });
 });

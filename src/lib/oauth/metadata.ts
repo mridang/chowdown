@@ -13,6 +13,7 @@
  * both documents describe the same origin.
  */
 
+import { ASSERTION_ALGORITHMS } from './client';
 import { SCOPE_OFFLINE_ACCESS, SUPPORTED_SCOPES } from './scopes';
 import { parseUrl } from '../util/url';
 
@@ -106,6 +107,7 @@ export interface AuthorizationServerMetadata {
   readonly grant_types_supported: readonly string[];
   readonly code_challenge_methods_supported: readonly string[];
   readonly token_endpoint_auth_methods_supported: readonly string[];
+  readonly token_endpoint_auth_signing_alg_values_supported: readonly string[];
   readonly client_id_metadata_document_supported: boolean;
   readonly authorization_response_iss_parameter_supported: boolean;
 }
@@ -131,7 +133,10 @@ export function authorizationServerMetadata(
     response_types_supported: ['code'],
     grant_types_supported: ['authorization_code', 'refresh_token'],
     code_challenge_methods_supported: ['S256'],
-    token_endpoint_auth_methods_supported: ['none'],
+    // `none` for public clients; `private_key_jwt` for those that sign an
+    // assertion (a client's metadata document says which it uses).
+    token_endpoint_auth_methods_supported: ['none', 'private_key_jwt'],
+    token_endpoint_auth_signing_alg_values_supported: [...ASSERTION_ALGORITHMS],
     client_id_metadata_document_supported: true,
     authorization_response_iss_parameter_supported: true,
   };

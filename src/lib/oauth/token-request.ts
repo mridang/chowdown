@@ -7,6 +7,12 @@
  * answer; the rules live here, where a fake store can test them.
  */
 
+import {
+  assertionSubject,
+  fetchJwks,
+  verifyClientAssertion,
+  type AssertionDeps,
+} from './client-auth';
 import type { FormFields } from './http';
 import { isOurResource } from './metadata';
 import {
@@ -40,6 +46,8 @@ export type TokenRequestResult =
 export interface TokenRequestContext {
   /** Whether the request had an `Authorization: Basic …` header. */
   readonly basicAuthAttempted?: boolean;
+  /** Fetch a client's key set; the real fetch unless a test supplies one. */
+  readonly fetchJwks?: AssertionDeps['fetchJwks'];
 }
 
 /** The challenge sent with a 401 from the token endpoint. This server only has public clients, so Basic is offered only to say it is not accepted as the way to identify. */
@@ -63,7 +71,10 @@ export async function handleTokenRequest(
   now: number,
   context: Readonly<TokenRequestContext> = {},
 ): Promise<TokenRequestResult> {
-  const clientId = formField(form, 'client_id');
+  const assertion = formField(form, 'client_assertion');
+  const clientId =
+    formField(form, 'client_id') ??
+    (assertion ? assertionSubject(assertion) : undefined);
   if (!clientId) {
     // Every client here is public and names itself with `client_id`. A request
     // that tried to authenticate some other way gets the 401 and challenge the
@@ -82,6 +93,34 @@ export async function handleTokenRequest(
           description: 'The request has no client_id.',
           status: 400,
         };
+  }
+  // A client that declared `private_key_jwt` must sign every request, whatever
+  // else it supports: the declared method is never downgraded.
+  const auth = (await store.findClient(clientId))?.auth;
+  const unauthenticated = auth
+    ? await verifyClientAssertion(
+        auth,
+        clientId,
+        {
+          assertion,
+          assertionType: formField(form, 'client_assertion_type'),
+        },
+        [`${origin}/oauth/token`, origin],
+        {
+          fetchJwks: context.fetchJwks ?? fetchJwks,
+          claimAssertion: (id, jti, expiresAt) =>
+            store.claimAssertion(id, jti, expiresAt),
+        },
+        now,
+      )
+    : undefined;
+  if (unauthenticated) {
+    return {
+      ok: false,
+      error: unauthenticated.error,
+      description: unauthenticated.description,
+      status: 400,
+    };
   }
   const result = await exchange(
     formField(form, 'grant_type'),

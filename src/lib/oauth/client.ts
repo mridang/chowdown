@@ -15,6 +15,7 @@
 
 import { sanitiseDisplayName } from './display';
 import { isAcceptableRedirectUri } from './redirect-uri';
+import { isPublicWebUrl } from '../http/safe-fetch';
 import { bytesToBase64Url } from '../util/base64';
 import { SITE_URL } from '../site';
 import { parseUrl } from '../util/url';
@@ -26,6 +27,19 @@ export interface OAuthClient {
   readonly redirectUris: readonly string[];
   /** How the client became known: `dcr` registered itself, `cimd` published a metadata document. */
   readonly kind: 'dcr' | 'cimd';
+  /** How the client proves itself at the token endpoint; absent means a public client (PKCE only). */
+  readonly auth?: ClientAuth;
+  /** The https address of the picture the client's metadata document names, if it names a usable one. */
+  readonly logoUri?: string;
+}
+
+/** The signature algorithms accepted on a client assertion. `none` and the HMAC family are never among them. */
+export const ASSERTION_ALGORITHMS = ['RS256', 'PS256', 'ES256'] as const;
+
+/** A client that signs an assertion (RFC 7523) with a key it publishes at `jwksUri`. */
+export interface ClientAuth {
+  readonly method: 'private_key_jwt';
+  readonly jwksUri: string;
 }
 
 /**
@@ -107,6 +121,26 @@ function cleanName(name: unknown, fallback: string): string {
   return sanitiseDisplayName(name, fallback);
 }
 
+/**
+ * The picture a metadata document names for its client: its `logo_uri` when that
+ * is a plain https address of a public site, and nothing otherwise. It is only
+ * ever fetched through the image proxy, which checks it again.
+ */
+function logoOf(value: unknown): string | undefined {
+  const url =
+    typeof value === 'string' && value.length <= MAX_CLIENT_ID_LENGTH
+      ? parseUrl(value)
+      : undefined;
+  return url?.protocol === 'https:' &&
+    !url.hash &&
+    !url.username &&
+    !url.password &&
+    isPublicWebUrl(url.href) &&
+    url.href === value
+    ? url.href
+    : undefined;
+}
+
 /** Whether a value is a JSON object (or array) whose members can be looked up by name. */
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null;
@@ -186,6 +220,66 @@ export function isDocumentUsable(
   );
 }
 
+/**
+ * How a metadata document says its client authenticates: not at all (a public
+ * client, the default), or by `private_key_jwt` with a `jwks_uri` over https
+ * and a signing algorithm we accept. A preference is honoured as declared and
+ * never downgraded, so a client that names `private_key_jwt` always has to sign;
+ * any other method (a shared secret) is not supported.
+ */
+function documentAuth(
+  doc: Readonly<Record<string, unknown>>,
+):
+  | { readonly ok: true; readonly auth?: ClientAuth }
+  | { readonly ok: false; readonly description: string } {
+  const method = doc['token_endpoint_auth_method'];
+  if (method === undefined || method === 'none') {
+    return { ok: true };
+  }
+  if (method !== 'private_key_jwt') {
+    return {
+      ok: false,
+      description:
+        'Only token_endpoint_auth_method none and private_key_jwt are supported.',
+    };
+  }
+  const jwksUri = doc['jwks_uri'];
+  const jwks = typeof jwksUri === 'string' ? parseUrl(jwksUri) : undefined;
+  if (
+    typeof jwksUri !== 'string' ||
+    jwksUri.length > MAX_CLIENT_ID_LENGTH ||
+    !jwks ||
+    jwks.protocol !== 'https:' ||
+    jwks.hash ||
+    jwks.username ||
+    jwks.password ||
+    !jwks.hostname.includes('.') ||
+    jwks.href !== jwksUri
+  ) {
+    return {
+      ok: false,
+      description: 'A private_key_jwt client needs an https jwks_uri.',
+    };
+  }
+  const alg = doc['token_endpoint_auth_signing_alg'];
+  if (
+    alg !== undefined &&
+    !(
+      typeof alg === 'string' &&
+      (ASSERTION_ALGORITHMS as readonly string[]).includes(alg)
+    )
+  ) {
+    return {
+      ok: false,
+      description: `token_endpoint_auth_signing_alg must be one of ${ASSERTION_ALGORITHMS.join(', ')}.`,
+    };
+  }
+  return {
+    ok: true,
+    auth: { method: 'private_key_jwt', jwksUri },
+  };
+}
+
 /** The result of validating client metadata. */
 export type ClientParse =
   | { readonly ok: true; readonly client: OAuthClient }
@@ -219,12 +313,11 @@ export function parseClientMetadataDocument(
   if (!redirectUris) {
     return bad('The document has no valid redirect_uris.');
   }
-  const method = doc['token_endpoint_auth_method'];
-  if (method !== undefined && method !== 'none') {
-    return bad(
-      'Only public clients (token_endpoint_auth_method none) are supported.',
-    );
+  const auth = documentAuth(doc);
+  if (!auth.ok) {
+    return bad(auth.description);
   }
+  const logoUri = logoOf(doc['logo_uri']);
   // `client_name` is among the properties the CIMD draft lists, but a document
   // without one is still unambiguous (the approval screen leads with the domain
   // that published it), so the host stands in for it rather than turning the
@@ -236,6 +329,8 @@ export function parseClientMetadataDocument(
       name: cleanName(doc['client_name'], new URL(url).hostname),
       redirectUris,
       kind: 'cimd',
+      ...(auth.auth && { auth: auth.auth }),
+      ...(logoUri && { logoUri }),
     },
   };
 }
