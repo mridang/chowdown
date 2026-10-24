@@ -92,8 +92,7 @@ as `io.github.mridang/chowdown`; the listing is `server.json` in this repository
 The app's data is available as a REST API under `/api`, designed to the
 [Zalando RESTful API guidelines](https://opensource.zalando.com/restful-api-guidelines/)
 (plural nouns, `snake_case` JSON, RFC 9457 problem details, cursor pagination,
-JSON Merge Patch, `ETag` / `If-Match`, `X-Flow-ID`), described in
-[`openapi/openapi.json`](openapi/openapi.json). The deliberate departures are
+JSON Merge Patch, `ETag` / `If-Match`, `X-Flow-ID`). The deliberate departures are
 the `/api` prefix and path segments without hyphens (`recipes/imports`, not
 `recipe-imports`).
 
