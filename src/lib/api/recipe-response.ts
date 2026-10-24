@@ -11,7 +11,7 @@ import { NextResponse } from 'next/server';
 import { getRecipePageRows } from '@/lib/db/recipe-page';
 import { recipeToJsonLd } from '@/lib/recipe/schema-org';
 import { parseRecipe } from '@/lib/recipe/cooklang';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 import {
   entityTag,
   ifNoneMatchHit,

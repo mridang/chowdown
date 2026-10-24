@@ -30,10 +30,10 @@
  * request through.
  */
 
-import { clientSubject } from '@/lib/http/client-address';
+import { clientSubject } from '@/utils/http/client-address';
 import { CSP_REPORT_PATH } from '@/lib/http/reporting';
 import { DISCOVERY_PATHS, STATIC_PREFIXES } from '@/lib/http/site';
-import { errorMessage, logError } from '@/lib/util/logging';
+import { errorMessage, logError } from '@/utils/logging';
 
 /** One Workers Rate Limiting binding: `limit` says whether `key` may go ahead. */
 export interface RateLimitBinding {

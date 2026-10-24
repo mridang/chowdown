@@ -23,7 +23,7 @@ import {
 } from '@/lib/oauth/redirect-uri';
 import { SCOPE_READ, normaliseScope, type Scope } from '@/lib/oauth/scopes';
 import { logSecurityEvent } from '@/lib/oauth/security-log';
-import { withQueryParams } from '@/lib/util/query';
+import { withQueryParams } from '@/utils/query';
 
 /** A validated authorization request. */
 export interface AuthorizeRequest {

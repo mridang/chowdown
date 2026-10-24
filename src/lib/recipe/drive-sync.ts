@@ -17,7 +17,7 @@ import {
   listRecipeFiles,
   type DriveFile,
 } from '@/lib/drive/drive-client';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 import { syncRecipeTags } from '@/lib/recipe/tag-index';
 
 /**

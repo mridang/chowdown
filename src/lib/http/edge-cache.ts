@@ -13,7 +13,7 @@
 import { SITE_NAME } from '@/lib/site';
 import { nonceOf } from '@/lib/http/csp';
 import { EDGE_LIMITS } from '@/lib/http/extras';
-import { replacingHeaders } from '@/lib/http/headers';
+import { replacingHeaders } from '@/utils/http/headers';
 import {
   CACHED_QUERY_PARAMS,
   EDGE_CACHED_PAGES,

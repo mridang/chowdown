@@ -25,7 +25,7 @@ const getUserById = jest.fn(async (id: number) =>
     : undefined,
 );
 
-jest.unstable_mockModule('../../../src/lib/auth/store', () => ({
+jest.unstable_mockModule('@/lib/auth/store', () => ({
   getUserById,
   getSessionEpoch: async () => 0,
 }));

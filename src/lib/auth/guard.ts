@@ -10,7 +10,7 @@
 
 import { NextResponse } from 'next/server';
 
-import { appOrigin } from '@/lib/util/origin';
+import { appOrigin } from '@/utils/origin';
 import { isSameOriginPost } from '@/lib/auth/csrf';
 import { getCurrentUser } from '@/lib/auth/current-user';
 import type { User } from '@/lib/auth/store';

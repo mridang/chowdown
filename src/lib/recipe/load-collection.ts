@@ -22,7 +22,7 @@ import { sessionIsCurrent, type SessionPayload } from '@/lib/auth/session';
 import type { Database } from '@/lib/db/client';
 import { getAppPageRows, type AppPageRows } from '@/lib/db/recipe-page';
 import { claimBackfillLease, claimDriveSync, type User } from '@/lib/db/users';
-import { getDatabase, getEnv, runInBackground } from '@/lib/util';
+import { getDatabase, getEnv, runInBackground } from '@/lib/util/runtime';
 import { syncFromDrive } from '@/lib/recipe/drive-sync';
 import { backfillEmbeddings } from '@/lib/recipe/embed-write';
 

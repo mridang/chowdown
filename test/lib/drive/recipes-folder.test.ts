@@ -10,7 +10,7 @@ import type { DatabaseSync } from 'node:sqlite';
 
 import { recipesFolderFor } from '@/lib/drive/recipes-folder';
 import { getUserById } from '@/lib/db/users';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 import { insertUser } from '../auth/session-fixture';
 import { APP_MIGRATIONS } from '../db/migrations';
 import { installCloudflareContext, sqliteD1 } from '../db/sqlite-d1';

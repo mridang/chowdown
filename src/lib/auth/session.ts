@@ -16,7 +16,7 @@ import {
   base64UrlToBytes,
   bufferSource,
   bytesToBase64Url,
-} from '@/lib/util/base64';
+} from '@/utils/base64';
 import { SESSION_COOKIE } from '@/lib/auth/app';
 
 // Re-exported so the cookie's name is read from the same place as the token

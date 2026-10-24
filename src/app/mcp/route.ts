@@ -15,7 +15,7 @@ import type { NextResponse } from 'next/server';
 
 import { authenticateMcpRequest } from '@/lib/mcp/auth';
 import { respondToMcp } from '@/lib/mcp/http';
-import { appOrigin } from '@/lib/util/origin';
+import { appOrigin } from '@/utils/origin';
 
 /** Answer any request to the endpoint with the real token check. */
 function respond(request: Request): Promise<NextResponse> {

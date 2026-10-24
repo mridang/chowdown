@@ -13,7 +13,7 @@ import { problems } from '@/lib/api/problem';
 import type { IdContext } from '@/lib/api/route-context';
 import { getRecipePageRows } from '@/lib/db/recipe-page';
 import { parseSimilar } from '@/lib/recipe/similar';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 
 /**
  * `GET /api/recipes/:id/similar`: the recipes closest in meaning to

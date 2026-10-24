@@ -8,7 +8,7 @@
 
 import { NextResponse } from 'next/server';
 
-import { readFormBody, type FormBody } from '@/lib/http/body';
+import { readFormBody, type FormBody } from '@/utils/http/body';
 
 /**
  * CORS for endpoints a browser-based client may call. The MCP headers are

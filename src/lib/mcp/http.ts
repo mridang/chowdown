@@ -12,7 +12,7 @@
  * request it answers carries that request's id.
  */
 
-import { errorMessage, logError } from '@/lib/util';
+import { errorMessage, logError } from '@/utils/logging';
 import { NextResponse } from 'next/server';
 
 import type { User } from '@/lib/db/users';

@@ -29,8 +29,9 @@ import {
   missingSignInSettings,
   type FlowContext,
 } from '@/lib/auth/sign-in';
-import { getEnv, logError, logWarn } from '@/lib/util';
-import { appOrigin } from '@/lib/util/origin';
+import { getEnv } from '@/lib/util/runtime';
+import { logError, logWarn } from '@/utils/logging';
+import { appOrigin } from '@/utils/origin';
 
 /** Where to send someone whose round trip failed, by what it was for. */
 function failurePath(purpose: string, kind: 'error' | 'denied'): string {

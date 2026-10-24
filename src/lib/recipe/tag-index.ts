@@ -15,7 +15,7 @@ import type { Database } from '@/lib/db/client';
 import type { User } from '@/lib/db/users';
 import { listRecipesByUser, upsertRecipe, type Recipe } from '@/lib/db/recipes';
 import { getFileContent, type DriveFile } from '@/lib/drive/drive-client';
-import { getDatabase, getEnv, runInBackground } from '@/lib/util';
+import { getDatabase, getEnv, runInBackground } from '@/lib/util/runtime';
 import { parseRecipe, type ParsedRecipe } from '@/lib/recipe/cooklang';
 import { embedRecipe } from '@/lib/recipe/embed-write';
 import { mapSequentially } from '@/lib/recipe/map-sequentially';

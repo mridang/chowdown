@@ -14,8 +14,9 @@ import { SIGN_IN_SCOPES, buildAuthUrl } from '@/lib/auth/google-oauth';
 import { SIGN_IN_PURPOSE, newState } from '@/lib/auth/oauth-state';
 import { safeReturnPath } from '@/lib/auth/return-to';
 import { missingSignInSettings } from '@/lib/auth/sign-in';
-import { getEnv, logError } from '@/lib/util';
-import { appOrigin } from '@/lib/util/origin';
+import { getEnv } from '@/lib/util/runtime';
+import { logError } from '@/utils/logging';
+import { appOrigin } from '@/utils/origin';
 
 /**
  * `GET /auth/login`: send the browser to Google to sign in. Open to

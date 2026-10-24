@@ -15,7 +15,7 @@
 
 import { foldText } from '@/lib/intl';
 import { toBaseAmount, type BaseAmount } from '@/lib/recipe/units';
-import { own } from '@/lib/util/own';
+import { own } from '@/utils/own';
 
 /** Something the person has, with an amount when they gave one. */
 export interface PantryItem {

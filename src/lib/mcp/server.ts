@@ -21,7 +21,7 @@
  * `server-info.ts`.
  */
 
-import { errorMessage, logError } from '@/lib/util';
+import { errorMessage, logError } from '@/utils/logging';
 import type { User } from '@/lib/db/users';
 import {
   ERROR_INTERNAL,

@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 
 import { getLiveSessionUid } from '@/lib/auth/current-user';
 import { createOAuthStore, resolveClient } from '@/lib/db/oauth';
-import { readFormBody } from '@/lib/http/body';
+import { readFormBody } from '@/utils/http/body';
 import {
   authorizeParamsFrom,
   grantedScope,
@@ -21,8 +21,8 @@ import { MAX_OAUTH_FORM_BYTES } from '@/lib/oauth/http';
 import { clientAddress } from '@/lib/oauth/limits';
 import { logSecurityEvent } from '@/lib/oauth/security-log';
 import { issueAuthorizationCode } from '@/lib/oauth/token-endpoint';
-import { getDatabase } from '@/lib/util';
-import { appOrigin } from '@/lib/util/origin';
+import { getDatabase } from '@/lib/util/runtime';
+import { appOrigin } from '@/utils/origin';
 
 /** A plain-text error page response, with a `Retry-After` when the caller should wait. */
 const refuse = (

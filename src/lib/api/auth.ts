@@ -16,7 +16,7 @@ import {
 } from '@/lib/auth/current-user';
 import type { User } from '@/lib/db/users';
 import { isSameOriginPost } from '@/lib/auth/csrf';
-import { appOrigin } from '@/lib/util/origin';
+import { appOrigin } from '@/utils/origin';
 import { problems } from '@/lib/api/problem';
 
 /** Methods that never change data and so need no origin check. */

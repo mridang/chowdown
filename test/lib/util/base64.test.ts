@@ -6,7 +6,7 @@ import {
   bufferSource,
   bytesToBase64,
   bytesToBase64Url,
-} from '@/lib/util/base64';
+} from '@/utils/base64';
 
 describe('base64', () => {
   it('encodes and decodes every byte value', () => {

@@ -18,7 +18,7 @@ import {
   type RateLimit,
   type RateLimitStore,
 } from '@/lib/util/rate-limit';
-import { errorMessage, logError } from '@/lib/util/logging';
+import { errorMessage, logError } from '@/utils/logging';
 import { getDatabase } from '@/lib/util/runtime';
 
 /** Seconds in a day. */

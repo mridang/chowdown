@@ -49,7 +49,8 @@ import { indexRecipeWrite } from '@/lib/recipe/tag-index';
 import { parseVector, topSimilar } from '@/lib/recipe/similar';
 import { isUnitSystem, type UnitSystem } from '@/lib/recipe/units';
 import { SITE_URL } from '@/lib/site';
-import { errorMessage, getDatabase, logError } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
+import { errorMessage, logError } from '@/utils/logging';
 import {
   isJsonObject,
   validateJson,

@@ -4,7 +4,7 @@ import {
   appOrigin,
   appOriginFromHeaders,
   originOfSetting,
-} from '@/lib/util/origin';
+} from '@/utils/origin';
 
 describe('without a Cloudflare context (tests, scripts)', () => {
   it("uses the request's own origin as the app origin", () => {

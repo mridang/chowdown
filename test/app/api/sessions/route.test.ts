@@ -34,7 +34,7 @@ const bumpSessionEpoch = jest.fn(async (id: number) => {
   epochs.set(id, (epochs.get(id) ?? 0) + 1);
 });
 
-jest.unstable_mockModule('../../../../src/lib/auth/store', () => ({
+jest.unstable_mockModule('@/lib/auth/store', () => ({
   getUserById,
   getSessionEpoch: async (id: number) => epochs.get(id),
   bumpSessionEpoch,

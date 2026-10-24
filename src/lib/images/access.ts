@@ -11,7 +11,7 @@
 
 import { problems } from '@/lib/api/problem';
 import { getSessionUid } from '@/lib/auth/current-user';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 import { userHasCover } from '@/lib/images/cover-ownership';
 
 /** Refuses a caller who is not signed in. */

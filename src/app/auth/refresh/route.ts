@@ -14,8 +14,8 @@ import { getCurrentUser, getSession } from '@/lib/auth/current-user';
 import { safeReturnPath } from '@/lib/auth/return-to';
 import { SESSION_COOKIE } from '@/lib/auth/session';
 import { setSessionCookie } from '@/lib/auth/session-cookie';
-import { getEnv } from '@/lib/util';
-import { appOrigin } from '@/lib/util/origin';
+import { getEnv } from '@/lib/util/runtime';
+import { appOrigin } from '@/utils/origin';
 
 /**
  * `GET /auth/refresh`: reissue the session cookie from the database and

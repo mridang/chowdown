@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { bytesToBase64Url } from '@/lib/util/base64';
+import { bytesToBase64Url } from '@/utils/base64';
 import {
   SESSION_COOKIE,
   SESSION_TTL_SECONDS,

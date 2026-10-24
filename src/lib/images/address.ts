@@ -14,7 +14,7 @@
  */
 
 import { isPublicWebUrl } from '@/lib/http/safe-fetch';
-import { parseUrl } from '@/lib/util/url';
+import { parseUrl } from '@/utils/url';
 import { ALLOWED_HOSTS, ALLOWED_WIDTHS } from '@/lib/images/site';
 
 /** The path every app serves its pictures from. */

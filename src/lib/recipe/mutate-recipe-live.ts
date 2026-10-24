@@ -9,7 +9,7 @@ import type { Database } from '@/lib/db/client';
 import { getRecipeByFileId } from '@/lib/db/recipes';
 import type { User } from '@/lib/db/users';
 import { getFileContent, updateRecipeFile } from '@/lib/drive/drive-client';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 import {
   mutateRecipe,
   type Edit,

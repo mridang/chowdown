@@ -19,7 +19,7 @@
  */
 
 import { SITE_NAME, SITE_URL } from '@/lib/site';
-import { parseUrl } from '@/lib/util/url';
+import { parseUrl } from '@/utils/url';
 
 /**
  * Who we say we are to the sites we fetch from. A site operator who sees us in

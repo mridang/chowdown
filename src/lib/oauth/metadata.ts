@@ -14,7 +14,7 @@
  */
 
 import { SCOPE_OFFLINE_ACCESS, SUPPORTED_SCOPES } from '@/lib/oauth/scopes';
-import { parseUrl } from '@/lib/util/url';
+import { parseUrl } from '@/utils/url';
 
 /** Path of the OAuth-protected MCP endpoint. */
 export const MCP_PATH = '/mcp';

@@ -13,7 +13,7 @@ import {
   type OAuthClient,
 } from '@/lib/oauth/client';
 import { OAUTH_LIMITS, retryAfterIfLimited } from '@/lib/oauth/limits';
-import type { TextBody } from '@/lib/http/body';
+import type { TextBody } from '@/utils/http/body';
 import type { RateLimitStore } from '@/lib/util/rate-limit';
 
 /** What a registration request came to. */

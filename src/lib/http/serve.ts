@@ -36,7 +36,7 @@ import {
   type EdgeLimits,
 } from '@/lib/http/edge-limits';
 import { EDGE_LIMITS } from '@/lib/http/extras';
-import { applyResponseHeaders, replacingHeaders } from '@/lib/http/headers';
+import { applyResponseHeaders, replacingHeaders } from '@/utils/http/headers';
 import { CACHED_QUERY_PARAMS, EDGE_CACHED_PAGES } from '@/lib/http/site';
 
 /** What the Worker is given besides the request. */

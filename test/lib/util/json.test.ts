@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { safeJsonParse } from '@/lib/util/json';
+import { safeJsonParse } from '@/utils/json';
 
 describe('safeJsonParse', () => {
   it('parses valid JSON into an ok result', () => {

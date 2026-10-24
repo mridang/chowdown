@@ -20,7 +20,8 @@
  * readers are linear, and the model is shown data, never instructions.
  */
 
-import { errorMessage, logError, safeJsonParse } from '@/lib/util';
+import { safeJsonParse } from '@/utils/json';
+import { errorMessage, logError } from '@/utils/logging';
 import { upsertMetadata } from '@/lib/recipe/cook-text';
 import { decodeEntities, visibleText } from '@/lib/recipe/html-text';
 import { scanHtml } from '@/lib/recipe/import-html-scan';

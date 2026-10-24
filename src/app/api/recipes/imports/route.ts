@@ -34,7 +34,7 @@ import {
 import { createRecipeImport, listRecipeImports } from '@/lib/db/recipe-imports';
 import { MAX_IMPORT_UNITS, planImport } from '@/lib/recipe/import-blob';
 import { prepareImport } from '@/lib/recipe/prepare-import';
-import { getDatabase, getEnv } from '@/lib/util';
+import { getDatabase, getEnv } from '@/lib/util/runtime';
 import { DAILY_BUDGETS } from '@/lib/util/daily-budget';
 
 /**

@@ -5,7 +5,7 @@
  */
 
 import { appHealth } from '@/lib/health';
-import { isDatabaseBound } from '@/lib/util';
+import { isDatabaseBound } from '@/lib/util/runtime';
 
 /** Never prerender or cache this route: the answer must reflect right now. */
 export const dynamic = 'force-dynamic';

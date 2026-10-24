@@ -21,10 +21,10 @@ const afterSignIn = jest
   .fn<(user: unknown) => Promise<void>>()
   .mockResolvedValue(undefined);
 
-jest.unstable_mockModule('../../../src/lib/auth/store', () => ({
+jest.unstable_mockModule('@/lib/auth/store', () => ({
   upsertGoogleUser,
 }));
-jest.unstable_mockModule('../../../src/lib/auth/hooks', () => ({
+jest.unstable_mockModule('@/lib/auth/hooks', () => ({
   afterSignIn,
   OTHER_FLOWS: {},
 }));

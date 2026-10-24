@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
 
 import { getAppPageRows } from '@/lib/db/recipe-page';
 import { sourceDomainOf } from '@/lib/recipe/cook-text';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 import {
   decodeCursor,
   pageBody,

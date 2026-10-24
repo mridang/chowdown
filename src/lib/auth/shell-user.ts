@@ -11,7 +11,7 @@ import { cookies } from 'next/headers';
 import { cache } from 'react';
 
 import { getUserById } from '@/lib/db/users';
-import { getDatabase, getEnv } from '@/lib/util';
+import { getDatabase, getEnv } from '@/lib/util/runtime';
 import { SESSION_COOKIE, driveHint, folderHint } from '@/lib/auth/app';
 import { isDriveConnected } from '@/lib/auth/drive-access';
 import { verifySessionToken } from '@/lib/auth/session';

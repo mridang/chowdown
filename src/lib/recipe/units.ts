@@ -19,7 +19,7 @@ import type {
   ParsedRecipe,
   StepToken,
 } from '@/lib/recipe/cooklang';
-import { own } from '@/lib/util/own';
+import { own } from '@/utils/own';
 
 /** Supported measurement systems. */
 export type UnitSystem = 'metric' | 'us' | 'imperial';

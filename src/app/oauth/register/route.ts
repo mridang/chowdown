@@ -7,14 +7,14 @@
  */
 
 import { oauthSweeps, saveClient } from '@/lib/db/oauth';
-import { readBodyText } from '@/lib/http/body';
+import { readBodyText } from '@/utils/http/body';
 import { MAX_REGISTRATION_BYTES } from '@/lib/oauth/client';
 import { noStoreJson, oauthError, preflight } from '@/lib/oauth/http';
 import { clientAddress, tooManyRequests } from '@/lib/oauth/limits';
 import { handleRegistration } from '@/lib/oauth/register-request';
 import { sweepSometimes } from '@/lib/oauth/sweep';
 import { d1RateLimitStore } from '@/lib/util/rate-limit';
-import { getDatabase, runInBackground } from '@/lib/util';
+import { getDatabase, runInBackground } from '@/lib/util/runtime';
 
 /**
  * `POST /oauth/register`: register a public client from a JSON body. Anyone

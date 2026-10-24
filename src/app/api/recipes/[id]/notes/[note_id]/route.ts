@@ -23,7 +23,7 @@ import { problems } from '@/lib/api/problem';
 import { getRecipeByFileId } from '@/lib/db/recipes';
 import { extractNotes, removeNote, replaceNote } from '@/lib/recipe/cook-text';
 import { mutateRecipeForUser } from '@/lib/recipe/mutate-recipe-live';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 
 /** The context Next.js hands these handlers: the recipe id and the note's position. */
 interface NoteContext {

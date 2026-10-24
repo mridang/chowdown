@@ -20,7 +20,7 @@ const rules = {
   refusal: undefined as Response | undefined,
 };
 
-jest.unstable_mockModule('../../../src/lib/images/access', () => ({
+jest.unstable_mockModule('@/lib/images/access', () => ({
   authenticate: async () => rules.refusal,
   signatureFor: () => undefined,
   signatureValid: () => rules.signed,

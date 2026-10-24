@@ -14,7 +14,7 @@ import {
   upsertUser,
   type User,
 } from '@/lib/db/users';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 
 export type { User };
 

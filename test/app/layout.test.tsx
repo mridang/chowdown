@@ -6,16 +6,16 @@ import { html } from '../components/render';
 
 // The stylesheet, the fonts (which only work inside the Next compiler) and the
 // two scripts are not what is under test: the frame around the page is.
-jest.unstable_mockModule('../../src/app/globals.css', () => ({}));
-jest.unstable_mockModule('../../src/app/_fonts', () => ({
+jest.unstable_mockModule('@/app/globals.css', () => ({}));
+jest.unstable_mockModule('@/app/_fonts', () => ({
   HTML_CLASS: 'fonts-on-html',
   BODY_CLASS: 'classes-on-body',
   HTML_ATTRIBUTES: { 'data-test': 'yes' },
 }));
-jest.unstable_mockModule('../../src/components/site/service-worker', () => ({
+jest.unstable_mockModule('@/components/site/service-worker', () => ({
   ServiceWorker: () => <i id="service-worker" />,
 }));
-jest.unstable_mockModule('../../src/components/site/theme-script', () => ({
+jest.unstable_mockModule('@/components/site/theme-script', () => ({
   ThemeScript: () => <i id="theme-script" />,
 }));
 

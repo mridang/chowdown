@@ -17,7 +17,7 @@ const session: { user: { id: number } | null } = { user: { id: 7 } };
 // The sign-in gate has its own tests (test/lib/api/auth.test.ts); here it just
 // says who is calling, in the shape the routes read.
 const { problems } = await import('@/lib/api/problem');
-jest.unstable_mockModule('../../../../../src/lib/api/auth', () => ({
+jest.unstable_mockModule('@/lib/api/auth', () => ({
   requireUser: async () =>
     session.user
       ? { ok: true, value: session.user }
@@ -49,22 +49,19 @@ const topSimilar = jest.fn<
   ) => readonly DriveFile[]
 >((_rows, _vector, files) => files.slice(0, 1));
 
-jest.unstable_mockModule(
-  '../../../../../src/lib/auth/user-access-token',
-  () => ({
-    getUserAccessToken,
-  }),
-);
-jest.unstable_mockModule('../../../../../src/lib/drive/drive-client', () => ({
+jest.unstable_mockModule('@/lib/auth/user-access-token', () => ({
+  getUserAccessToken,
+}));
+jest.unstable_mockModule('@/lib/drive/drive-client', () => ({
   listRecipeFiles,
 }));
-jest.unstable_mockModule('../../../../../src/lib/drive/recipes-folder', () => ({
+jest.unstable_mockModule('@/lib/drive/recipes-folder', () => ({
   recipesFolderFor,
 }));
-jest.unstable_mockModule('../../../../../src/lib/recipe/embeddings', () => ({
+jest.unstable_mockModule('@/lib/recipe/embeddings', () => ({
   embedText,
 }));
-jest.unstable_mockModule('../../../../../src/lib/recipe/similar', () => ({
+jest.unstable_mockModule('@/lib/recipe/similar', () => ({
   ensureEmbeddings,
   topSimilar,
 }));

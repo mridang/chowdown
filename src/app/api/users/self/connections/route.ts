@@ -10,7 +10,7 @@ import { requireLiveUid } from '@/lib/api/auth';
 import { pageBody } from '@/lib/api/pagination';
 import { connectedAppResource } from '@/lib/connected-apps';
 import { listConnectedApps } from '@/lib/db/oauth';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 
 /**
  * `GET /api/users/self/connections`: the apps the user has approved and not

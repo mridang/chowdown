@@ -21,7 +21,7 @@ import {
 } from '@/lib/db/embeddings';
 import type { User } from '@/lib/db/users';
 import { getFileContent, type DriveFile } from '@/lib/drive/drive-client';
-import { getDatabase, getEnv } from '@/lib/util';
+import { getDatabase, getEnv } from '@/lib/util/runtime';
 import { recipeDisplayName } from '@/lib/recipe/cook-text';
 import { parseRecipe } from '@/lib/recipe/cooklang';
 import {

@@ -17,8 +17,8 @@ import { startFlowCookies } from '@/lib/auth/flow-cookies';
 import { newState } from '@/lib/auth/oauth-state';
 import { safeReturnPath } from '@/lib/auth/return-to';
 import { setSessionCookie } from '@/lib/auth/session-cookie';
-import { getEnv } from '@/lib/util';
-import { appOrigin } from '@/lib/util/origin';
+import { getEnv } from '@/lib/util/runtime';
+import { appOrigin } from '@/utils/origin';
 
 /**
  * `GET /auth/drive`: connect Google Drive for the signed-in person.

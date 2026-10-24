@@ -12,10 +12,10 @@
  * assistant out of the app.
  */
 
-import { errorMessage, logError } from '@/lib/util';
+import { errorMessage, logError } from '@/utils/logging';
 import { oauthError } from '@/lib/oauth/http';
 import { logSecurityEvent } from '@/lib/oauth/security-log';
-import { clientSubject } from '@/lib/http/client-address';
+import { clientSubject } from '@/utils/http/client-address';
 import {
   rateLimit,
   type RateLimit,

@@ -9,7 +9,8 @@
 
 import { decryptSecret } from '@/lib/crypto';
 import type { User } from '@/lib/db/users';
-import { errorMessage, getEnv, logError } from '@/lib/util';
+import { getEnv } from '@/lib/util/runtime';
+import { errorMessage, logError } from '@/utils/logging';
 import { revokeToken } from '@/lib/auth/drive-oauth';
 
 /**

@@ -10,7 +10,7 @@
 
 import type { NextResponse } from 'next/server';
 
-import { readJsonBody } from '@/lib/http/body';
+import { readJsonBody } from '@/utils/http/body';
 import { problem, problems } from '@/lib/api/problem';
 
 /**

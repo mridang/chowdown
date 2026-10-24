@@ -16,7 +16,7 @@ import { setFavourite } from '@/lib/db/favourites';
 import { getRecipePageRows } from '@/lib/db/recipe-page';
 import { isDriveFileId } from '@/lib/drive/drive-client';
 import { setFavouriteAndTag } from '@/lib/recipe/favourite';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 
 /** The context Next.js hands these handlers: the recipe's id. */
 interface RecipeContext {

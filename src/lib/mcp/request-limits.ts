@@ -12,13 +12,9 @@ import type { User } from '@/lib/db/users';
 import {
   readJsonBody as readJsonBodyUpTo,
   type JsonBody,
-} from '@/lib/http/body';
-import {
-  errorMessage,
-  getDatabase,
-  logError,
-  runInBackground,
-} from '@/lib/util';
+} from '@/utils/http/body';
+import { getDatabase, runInBackground } from '@/lib/util/runtime';
+import { errorMessage, logError } from '@/utils/logging';
 import {
   d1RateLimitStore,
   purgeRateLimits,

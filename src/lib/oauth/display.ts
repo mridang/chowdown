@@ -15,7 +15,7 @@
 import { redirectKind, type RedirectKind } from '@/lib/oauth/redirect-uri';
 import type { OAuthClient } from '@/lib/oauth/client';
 import { SCOPE_READ, SCOPE_WRITE } from '@/lib/oauth/scopes';
-import { parseUrl } from '@/lib/util/url';
+import { parseUrl } from '@/utils/url';
 
 /** The longest client name we show. */
 export const MAX_DISPLAY_NAME_LENGTH = 100;

@@ -17,7 +17,8 @@ import {
   setRefreshToken,
 } from '@/lib/db/users';
 import { ensureRecipesFolder } from '@/lib/drive/drive-client';
-import { getDatabase, logError } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
+import { logError } from '@/utils/logging';
 import {
   LANDING_PATH,
   SESSION_COOKIE,

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-import { errorMessage, logError, logInfo, logWarn } from '@/lib/util/logging';
+import { errorMessage, logError, logInfo, logWarn } from '@/utils/logging';
 
 type ConsoleSpy = jest.SpiedFunction<typeof console.log>;
 

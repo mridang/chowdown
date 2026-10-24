@@ -24,7 +24,7 @@ import { recipesFolderFor } from '@/lib/drive/recipes-folder';
 import { recipeDisplayName } from '@/lib/recipe/cook-text';
 import { embedText } from '@/lib/recipe/embeddings';
 import { ensureEmbeddings, topSimilar } from '@/lib/recipe/similar';
-import { getEnv } from '@/lib/util';
+import { getEnv } from '@/lib/util/runtime';
 import { DAILY_BUDGETS } from '@/lib/util/daily-budget';
 
 /** How many suggestions to give when the client does not say. */

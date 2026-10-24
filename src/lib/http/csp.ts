@@ -12,8 +12,8 @@
  * may be framed, embedded or sent anywhere but this site.
  */
 
-import { bytesToBase64 } from '@/lib/util/base64';
-import { replacingHeaders } from '@/lib/http/headers';
+import { bytesToBase64 } from '@/utils/base64';
+import { replacingHeaders } from '@/utils/http/headers';
 import { CSP_REPORT_DIRECTIVES } from '@/lib/http/reporting';
 import { EXTRA_DIRECTIVES, EXTRA_IMG_SOURCES } from '@/lib/http/site';
 

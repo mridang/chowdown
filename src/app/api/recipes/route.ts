@@ -27,7 +27,7 @@ import { createRecipeFile, type DriveFile } from '@/lib/drive/drive-client';
 import { recipesFolderFor } from '@/lib/drive/recipes-folder';
 import { sourceUrlOf } from '@/lib/recipe/cook-text';
 import { indexRecipeWrite } from '@/lib/recipe/tag-index';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 
 /** Save a new recipe file in the user's Recipes folder in Drive. */
 async function createInDrive(

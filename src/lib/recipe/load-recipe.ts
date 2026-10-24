@@ -21,7 +21,7 @@ import type { Database } from '@/lib/db/client';
 import { getRecipePageRows, type RecipePageRows } from '@/lib/db/recipe-page';
 import { claimDriveSync, type User } from '@/lib/db/users';
 import { getFileContent, listRecipeFiles } from '@/lib/drive/drive-client';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 import {
   toCardRecipe,
   toneFor,

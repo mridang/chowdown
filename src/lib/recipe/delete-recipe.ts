@@ -15,7 +15,7 @@ import type { Database } from '@/lib/db/client';
 import { deleteRecipeData, getRecipeByFileId } from '@/lib/db/recipes';
 import type { User } from '@/lib/db/users';
 import { trashRecipeFile } from '@/lib/drive/drive-client';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 import { refreshSimilarLists } from '@/lib/recipe/similar';
 
 /** The side effects a delete needs, injected so the logic is testable. */

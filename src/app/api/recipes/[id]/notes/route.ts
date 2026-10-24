@@ -21,7 +21,7 @@ import type { IdContext } from '@/lib/api/route-context';
 import { getRecipeByFileId } from '@/lib/db/recipes';
 import { appendNote, extractNotes } from '@/lib/recipe/cook-text';
 import { mutateRecipeForUser } from '@/lib/recipe/mutate-recipe-live';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 
 /**
  * `GET /api/recipes/:id/notes`: the recipe's notes, in order, numbered from 1.

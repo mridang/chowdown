@@ -11,7 +11,7 @@ import { requireLiveUid } from '@/lib/api/auth';
 import { problems } from '@/lib/api/problem';
 import type { IdContext } from '@/lib/api/route-context';
 import { deleteRecipeImport, getRecipeImport } from '@/lib/db/recipe-imports';
-import { getDatabase } from '@/lib/util';
+import { getDatabase } from '@/lib/util/runtime';
 
 /**
  * `GET /api/recipes/imports/:id`: the import with all its drafts. Answers 200,
