@@ -9,8 +9,11 @@
 
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-import { isImagesBinding, type ImagesLike } from '@/lib/images/proxy';
-import type { ImageCache } from '@/domain/image/service';
+import {
+  isImagesBinding,
+  type ImagesLike,
+} from '@/lib/cloudflare/images/proxy';
+import type { ImageCache } from '@/lib/cloudflare/images/service';
 
 /** The Images binding, where the deployment has one. */
 export function imagesBinding(): ImagesLike | undefined {

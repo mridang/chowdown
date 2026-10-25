@@ -11,7 +11,7 @@ import {
   ALLOWED_HOSTS,
   ALLOWED_WIDTHS,
   DEFAULT_WIDTH,
-} from '@/lib/images/site';
+} from '@/lib/cloudflare/images/site';
 
 /** What the mocked access rules answer. */
 const rules = {
@@ -20,7 +20,7 @@ const rules = {
   refusal: undefined as Response | undefined,
 };
 
-jest.unstable_mockModule('@/domain/image/access', () => ({
+jest.unstable_mockModule('@/domain/images/access', () => ({
   authenticate: async () => rules.refusal,
   signatureFor: () => undefined,
   signatureValid: () => rules.signed,

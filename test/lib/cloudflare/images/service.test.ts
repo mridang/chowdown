@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { snapWidth } from '@/lib/images/address';
-import type { ImageFetch } from '@/lib/images/proxy';
+import { snapWidth } from '@/lib/cloudflare/images/address';
+import type { ImageFetch } from '@/lib/cloudflare/images/proxy';
 import {
   BROWSER_SECONDS,
   EDGE_SECONDS,
@@ -11,12 +11,12 @@ import {
   serveImage,
   type ImageAccess,
   type ImageCache,
-} from '@/domain/image/service';
+} from '@/lib/cloudflare/images/service';
 import {
   ALLOWED_HOSTS,
   ALLOWED_WIDTHS,
   DEFAULT_WIDTH,
-} from '@/lib/images/site';
+} from '@/lib/cloudflare/images/site';
 
 const HOST = ALLOWED_HOSTS?.[0] ?? 'photos.example.org';
 const PHOTO = `https://${HOST}/soup.jpg`;

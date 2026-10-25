@@ -12,7 +12,7 @@
 import { problems } from '@/lib/rest-json/problem';
 import { getSessionUid } from '@/core/auth/current-user';
 import { getDatabase } from '@/core/runtime';
-import { userHasCover } from '@/domain/image/cover-ownership';
+import { userHasCover } from '@/domain/images/cover-ownership';
 
 /** Refuses a caller who is not signed in. */
 export async function authenticate(): Promise<Response | undefined> {

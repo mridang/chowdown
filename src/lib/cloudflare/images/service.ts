@@ -16,13 +16,13 @@
 
 import { problems } from '@/lib/rest-json/problem';
 import { isPublicWebUrl } from '@/lib/safe-fetch';
-import { isAllowedHost, snapWidth } from '@/lib/images/address';
+import { isAllowedHost, snapWidth } from '@/lib/cloudflare/images/address';
 import {
   fetchImage,
   type ImageFetch,
   type ImagesLike,
-} from '@/lib/images/proxy';
-import { DEFAULT_WIDTH } from '@/lib/images/site';
+} from '@/lib/cloudflare/images/proxy';
+import { DEFAULT_WIDTH } from '@/lib/cloudflare/images/site';
 
 /** The two cache operations the service uses. */
 export type ImageCache = Pick<Cache, 'match' | 'put'>;

@@ -9,13 +9,13 @@
  * edge cache when they can, and a browser keeps them for a month.
  */
 
-import * as access from '@/domain/image/access';
+import * as access from '@/domain/images/access';
 import {
   imageCache,
   imagesBinding,
   runInBackground,
-} from '@/core/image/runtime';
-import { serveImage } from '@/domain/image/service';
+} from '@/lib/cloudflare/images/runtime';
+import { serveImage } from '@/lib/cloudflare/images/service';
 
 /**
  * `GET /img?url=…&w=…`: the picture at `url`, scaled to the nearest
