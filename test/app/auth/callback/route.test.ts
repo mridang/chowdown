@@ -62,12 +62,33 @@ const OTHER_FLOWS = Object.fromEntries(
 jest.unstable_mockModule('@/domain/auth/store', () => ({
   upsertGoogleUser,
 }));
-jest.unstable_mockModule('@/lib/core/auth/hooks', () => ({
-  afterSignIn,
-  OTHER_FLOWS,
-}));
 
-const { GET } = await import('@/app/auth/callback/route');
+const { GoogleAuthKit } = await import('@/lib/core/auth/google-auth-kit');
+const { GoogleOAuthClient, SIGN_IN_SCOPES } = await import('@/lib/google');
+const { completeSignIn, missingSignInSettings } =
+  await import('@/domain/auth/sign-in');
+const { getEnv } = await import('@/lib/core/runtime');
+
+/**
+ * The real sign-in kit, but with the extra-ask flows and the post-sign-in hook
+ * injected as test doubles, so observing where the callback routes needs no
+ * module mocking of the auth package.
+ */
+const kit = new GoogleAuthKit({
+  oauthClient: () =>
+    new GoogleOAuthClient({
+      clientId: getEnv().GOOGLE_OAUTH_CLIENT_ID,
+      clientSecret: getEnv().GOOGLE_OAUTH_CLIENT_SECRET,
+    }),
+  signInScopes: SIGN_IN_SCOPES,
+  callbackPath: '/auth/callback',
+  missingSettings: () => missingSignInSettings(getEnv()),
+  extraPurposes: EXTRA_PURPOSES,
+  otherFlows: OTHER_FLOWS,
+  signInFailedPath: SIGN_IN_FAILED_PATH,
+  completeSignIn: (context, info) => completeSignIn(context, info, afterSignIn),
+});
+const GET = kit.callbackHandler();
 
 let restore: () => void;
 
