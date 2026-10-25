@@ -120,7 +120,7 @@ export function AccountMenu({
         <PopoverSeparator />
         <Link href="/connect" className={POPOVER_ITEM}>
           <McpIcon size="menu" />
-          Connect an assistant
+          Manage assistants
         </Link>
         <MenuLink {...drive} icon="drive" />
         {install ? (

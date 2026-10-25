@@ -45,6 +45,7 @@ describe('connectedAppResource', () => {
     scope: ['recipes:read'],
     installs: 1,
     domain: 'claude.ai',
+    logoUri: 'https://claude.ai/logo.png',
     connectedAt: '2026-01-01T00:00:00.000Z',
     lastUsedAt: '2026-02-01T00:00:00.000Z',
   };
@@ -56,6 +57,7 @@ describe('connectedAppResource', () => {
       scopes: ['recipes:read'],
       installs: 1,
       domain: 'claude.ai',
+      logo_uri: 'https://claude.ai/logo.png',
       connected_at: '2026-01-01T00:00:00.000Z',
       last_used_at: '2026-02-01T00:00:00.000Z',
     });
@@ -65,6 +67,12 @@ describe('connectedAppResource', () => {
     expect(
       connectedAppResource({ ...stored, domain: null }),
     ).not.toHaveProperty('domain');
+  });
+
+  it('leaves logo_uri out for an app with no picture', () => {
+    expect(
+      connectedAppResource({ ...stored, logoUri: null }),
+    ).not.toHaveProperty('logo_uri');
   });
 
   it('leaves last_used_at out for an app that was never used', () => {

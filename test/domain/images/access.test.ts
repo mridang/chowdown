@@ -16,6 +16,7 @@ const sessionUid = async (): Promise<number | null> => session.uid;
 
 const PHOTO = 'https://photos.example.org/soup.jpg';
 const UNLISTED = 'https://photos.example.org/unlisted.jpg';
+const LOGO = 'https://apps.example.org/logo.png';
 
 let raw: DatabaseSync;
 let restore: () => void;
@@ -25,6 +26,9 @@ beforeEach(() => {
   const made = sqliteD1(...APP_MIGRATIONS);
   raw = made.raw;
   restore = installCloudflareContext(made.d1);
+  raw.exec(
+    `INSERT INTO oauth_clients (client_id, kind, client_name, redirect_uris, created_at, logo_uri) VALUES ('https://apps.example.org/c.json', 'cimd', 'App', '[]', 't', '${LOGO}')`,
+  );
   raw.exec(
     "INSERT INTO users (id, google_sub, email, created_at, updated_at) VALUES (7, 's7', 'a@b.c', 't', 't'), (8, 's8', 'd@e.f', 't', 't')",
   );
@@ -72,6 +76,23 @@ describe('mayFetch', () => {
   it("refuses a photo only someone else's recipe lists", async () => {
     session.uid = 8;
     expect(await mayFetch(PHOTO, sessionUid)).toBe(false);
+  });
+
+  it('lets a person have the logo of an app they have connected', async () => {
+    raw.exec(
+      "INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g1', 7, 'https://apps.example.org/c.json', 'recipes:read', 'r', 't')",
+    );
+    expect(await mayFetch(LOGO, sessionUid)).toBe(true);
+    session.uid = 8;
+    expect(await mayFetch(LOGO, sessionUid)).toBe(false);
+  });
+
+  it('refuses the logo of an app they have not connected, or have disconnected', async () => {
+    expect(await mayFetch(LOGO, sessionUid)).toBe(false);
+    raw.exec(
+      "INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at, revoked_at) VALUES ('g1', 7, 'https://apps.example.org/c.json', 'recipes:read', 'r', 't', 't')",
+    );
+    expect(await mayFetch(LOGO, sessionUid)).toBe(false);
   });
 
   it('refuses everything when nobody is signed in', async () => {

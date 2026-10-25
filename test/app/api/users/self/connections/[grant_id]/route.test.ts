@@ -44,6 +44,8 @@ beforeEach(() => {
     '0008_oauth.sql',
     '0012_oauth_housekeeping.sql',
     '0016_oauth_redirect_uri_sent.sql',
+    '0017_oauth_client_assertions.sql',
+    '0018_oauth_client_logo.sql',
   );
   raw = made.raw;
   restore = installCloudflareContext(made.d1);

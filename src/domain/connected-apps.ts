@@ -17,6 +17,8 @@ export interface ConnectedApp {
   readonly installs: number;
   /** The domain that published the app; absent for an app that registered itself without any check. */
   readonly domain?: string;
+  /** The picture the app publishes for itself; absent for an app that has none or is unverified. */
+  readonly logo_uri?: string;
   readonly connected_at: string;
   readonly last_used_at?: string;
 }
@@ -31,6 +33,7 @@ export function connectedAppResource(
     scopes: app.scope,
     installs: app.installs,
     ...(app.domain ? { domain: app.domain } : {}),
+    ...(app.logoUri ? { logo_uri: app.logoUri } : {}),
     connected_at: app.connectedAt,
     ...(app.lastUsedAt ? { last_used_at: app.lastUsedAt } : {}),
   };

@@ -23,6 +23,8 @@ beforeEach(() => {
     '0011_rate_limits.sql',
     '0012_oauth_housekeeping.sql',
     '0016_oauth_redirect_uri_sent.sql',
+    '0017_oauth_client_assertions.sql',
+    '0018_oauth_client_logo.sql',
   );
   raw = made.raw;
   restore = installCloudflareContext(made.d1);
@@ -75,6 +77,23 @@ async function redeem(): Promise<Record<string, string>> {
 }
 
 describe('POST /oauth/token', () => {
+  it('refuses a code for a client that signs its requests when the request is not signed', async () => {
+    raw
+      .prepare(
+        "INSERT INTO oauth_clients (client_id, kind, client_name, redirect_uris, created_at, auth_method, jwks_uri) VALUES ('client-1', 'cimd', 'Signer', '[\"https://app.example/cb\"]', '2026-01-01T00:00:00.000Z', 'private_key_jwt', 'https://app.example/jwks.json')",
+      )
+      .run();
+    const res = await token({
+      grant_type: 'authorization_code',
+      client_id: 'client-1',
+      code: await newCode(),
+      redirect_uri: 'https://app.example/cb',
+      code_verifier: VERIFIER,
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ error: 'invalid_client' });
+  });
+
   it('redeems a code for a token pair, never cached', async () => {
     const res = await token({
       grant_type: 'authorization_code',

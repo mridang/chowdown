@@ -17,6 +17,7 @@
  *  - an access token is only good for the MCP server it was issued for.
  */
 
+import type { OAuthClient } from '@/lib/oauth/client';
 import { verifyPkce } from '@/lib/oauth/pkce';
 import {
   ACCESS_PREFIX,
@@ -143,6 +144,18 @@ export interface OAuthStore {
     tokens: readonly TokenRow[],
   ): Promise<boolean>;
   touchGrant(grantId: string, now: number): Promise<void>;
+  /**
+   * Remember that a client assertion (by its `jti`) has been used, until
+   * `expiresAt`. False if that client already used that `jti`, which is how a
+   * replayed assertion is told from a fresh one.
+   */
+  claimAssertion(
+    clientId: string,
+    jti: string,
+    expiresAt: number,
+  ): Promise<boolean>;
+  /** The client as last registered or fetched, if it is known; never fetches. */
+  findClient(clientId: string): Promise<OAuthClient | undefined>;
 }
 
 /** An OAuth error response. */

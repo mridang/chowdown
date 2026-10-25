@@ -58,6 +58,17 @@ describe('ConnectedAppItem', () => {
     expect(out).not.toContain('unverified');
   });
 
+  it('shows the picture the app publishes, through our own image address', () => {
+    const out = item({ ...APP, logo_uri: 'https://claude.ai/logo.png' });
+    expect(out).toContain(
+      `src="/img?url=${encodeURIComponent('https://claude.ai/logo.png')}&amp;w=320"`,
+    );
+  });
+
+  it('shows a plug for an app with no picture', () => {
+    expect(item(APP)).not.toContain('<img');
+  });
+
   it('says when the app was last used, if it was', () => {
     expect(item(APP)).not.toContain('last used');
     expect(

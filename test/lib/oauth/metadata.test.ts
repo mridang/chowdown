@@ -75,9 +75,17 @@ describe('authorizationServerMetadata', () => {
     expect(doc.revocation_endpoint).toBe(`${ORIGIN}/oauth/revoke`);
   });
 
-  it('requires PKCE S256 and supports public clients only', () => {
+  it('requires PKCE S256 and offers public clients and signed assertions', () => {
     expect(doc.code_challenge_methods_supported).toEqual(['S256']);
-    expect(doc.token_endpoint_auth_methods_supported).toEqual(['none']);
+    expect(doc.token_endpoint_auth_methods_supported).toEqual([
+      'none',
+      'private_key_jwt',
+    ]);
+    expect(doc.token_endpoint_auth_signing_alg_values_supported).toEqual([
+      'RS256',
+      'PS256',
+      'ES256',
+    ]);
   });
 
   it('says revocation takes public clients only', () => {
