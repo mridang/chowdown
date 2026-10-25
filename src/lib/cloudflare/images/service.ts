@@ -16,18 +16,14 @@
 
 import { problems } from '@/lib/core/api';
 import { isPublicWebUrl } from '@/lib/safe-fetch';
-import { isAllowedHost, snapWidth } from '@/lib/cloudflare/images/address';
-import {
-  fetchImage,
-  type ImageFetch,
-  type ImagesLike,
-} from '@/lib/cloudflare/images/proxy';
-import { DEFAULT_WIDTH } from '@/lib/cloudflare/images/site';
+import { SITE_NAME, SITE_URL } from '@/utils/site';
+import { DEFAULT_WIDTH, isAllowedHost, snapWidth } from './address';
+import { fetchImage, type ImageFetch, type ImagesLike } from './proxy';
 
 /** The two cache operations the service uses. */
 export type ImageCache = Pick<Cache, 'match' | 'put'>;
 
-/** Who may have which picture; the rules differ from app to app (see `access.ts`). */
+/** Who may have which picture; the rules differ from app to app. */
 export interface ImageAccess {
   /**
    * Asked first, of every request. A refusal is sent as it is; undefined lets
@@ -35,7 +31,7 @@ export interface ImageAccess {
    */
   authenticate(request: Request): Promise<Response | undefined>;
   /** Whether `signature` proves this server chose to show the picture at `url`. */
-  signatureValid(url: string, signature: string | null): boolean;
+  signatureValid(url: string, signature: string | null): Promise<boolean>;
   /**
    * Whether the caller may have the proxy fetch `url`. Asked only when the
    * edge has no copy, since a copy costs nothing and is a public picture anyway.
@@ -192,7 +188,10 @@ export async function serveImage(
   if (url.length === 0 || url.length > MAX_URL_LENGTH || !isPublicWebUrl(url)) {
     return refuse(400, 'url: must be a public http(s) image address.');
   }
-  if (!isAllowedHost(url) || !access.signatureValid(url, params.get('sig'))) {
+  if (
+    !isAllowedHost(url) ||
+    !(await access.signatureValid(url, params.get('sig')))
+  ) {
     return refuse(403, 'That image is not available through this site.');
   }
   const width = snapWidth(Number(params.get('w')) || DEFAULT_WIDTH);
@@ -209,6 +208,7 @@ export async function serveImage(
   const result = await fetchImage(url, width, {
     images: deps.images,
     fetcher: deps.fetcher,
+    userAgent: `${SITE_NAME}/1.0 (+${SITE_URL})`,
   });
   if (!result.ok) {
     // An address that leads somewhere it should not is refused outright; any

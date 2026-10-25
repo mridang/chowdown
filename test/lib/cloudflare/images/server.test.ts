@@ -101,7 +101,7 @@ describe('ImageService', () => {
     const service = new ImageService({
       access: {
         authenticate: async () => refusal,
-        signatureValid: () => true,
+        signatureValid: async () => true,
         mayFetch: async () => true,
       },
       background: () => undefined,

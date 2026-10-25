@@ -12,15 +12,6 @@ import {
   type FetchFailure,
   type SafeFetcher,
 } from '@/lib/safe-fetch';
-import { snapWidth } from '@/lib/cloudflare/images/address';
-import { SITE_NAME, SITE_URL } from '@/utils/site';
-
-/**
- * How the image proxy introduces itself to the sites it fetches pictures from.
- * The shared fetcher no longer carries an identity of its own, so the caller
- * states one; this is the same string the proxy has always sent.
- */
-const USER_AGENT = `${SITE_NAME}/1.0 (+${SITE_URL})`;
 
 /** The most a picture may weigh before we refuse it. */
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -101,7 +92,8 @@ function refusal(
 /**
  * The picture scaled down to `width` and encoded as WebP, or undefined when
  * scaling fails or would not make it any smaller. The original is then sent
- * as it is, so a picture is never lost to an optimisation.
+ * as it is, so a picture is never lost to an optimisation. `width` is already
+ * one of the app's allowed widths (the caller snaps it).
  */
 async function scaledCopy(
   images: ImagesLike,
@@ -111,7 +103,7 @@ async function scaledCopy(
   const scaled = await attempt(async () => {
     const output = await images
       .input(new Blob([bytes]).stream())
-      .transform({ width: snapWidth(width), fit: 'scale-down' })
+      .transform({ width, fit: 'scale-down' })
       .output({ format: SCALED_TYPE, quality: SCALED_QUALITY });
     return output.response().arrayBuffer();
   });
@@ -165,7 +157,11 @@ function refusalFor(failure: FetchFailure): ImageResult {
 export async function fetchImage(
   url: string,
   width: number,
-  deps: Readonly<{ fetcher?: ImageFetch; images?: ImagesLike }> = {},
+  deps: Readonly<{
+    fetcher?: ImageFetch;
+    images?: ImagesLike;
+    userAgent?: string;
+  }> = {},
 ): Promise<ImageResult> {
   const fetched = await fetchCapped(url, {
     maxBytes: MAX_IMAGE_BYTES,
@@ -174,7 +170,7 @@ export async function fetchImage(
     acceptsType: isRasterImage,
     // Cloudflare-only: keep the original at the edge, ignored elsewhere.
     edgeCache: { cacheEverything: true, cacheTtl: ORIGINAL_KEEP_SECONDS },
-    userAgent: USER_AGENT,
+    userAgent: deps.userAgent,
     fetcher: deps.fetcher,
   });
   if (!fetched.ok) {

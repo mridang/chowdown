@@ -1,12 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { snapWidth } from '@/lib/cloudflare/images/address';
 import {
   fetchImage,
   isImagesBinding,
   type ImageFetch,
 } from '@/lib/cloudflare/images/proxy';
-import { SITE_NAME } from '@/utils/site';
 
 const image = (type = 'image/jpeg', headers: Record<string, string> = {}) =>
   new Response('bytes', { headers: { 'content-type': type, ...headers } });
@@ -61,13 +59,14 @@ describe('fetchImage', () => {
       }),
     });
 
-    it('scales a large photo to the width we asked for and sends WebP', async () => {
+    it('scales a large photo to the width it is given and sends WebP', async () => {
       const seen: { width?: number } = {};
+      // The caller (the image service) snaps the width; the proxy uses it as given.
       const result = await fetchImage('https://a.com/x.jpg', 700, {
         fetcher: returning(big()),
         images: images(new Uint8Array(9_000).buffer, seen),
       });
-      expect(seen.width).toBe(snapWidth(700));
+      expect(seen.width).toBe(700);
       expect(result).toMatchObject({ ok: true, type: 'image/webp' });
       expect(result.ok && result.bytes.byteLength).toBe(9_000);
     });
@@ -166,13 +165,16 @@ describe('fetchImage', () => {
       return { fetcher, calls };
     }
 
-    it('introduces itself honestly and keeps the original at the edge', async () => {
+    it('introduces itself with the user-agent it is given and keeps the original at the edge', async () => {
       const { fetcher, calls } = serving(image());
-      await fetchImage('https://a.com/x.jpg', 640, { fetcher });
+      await fetchImage('https://a.com/x.jpg', 640, {
+        fetcher,
+        userAgent: 'chowdown/1.0 (+https://chowdown.test)',
+      });
       const init = calls[0]?.init;
       expect(init?.headers).toEqual(
         expect.objectContaining({
-          'User-Agent': expect.stringContaining(SITE_NAME),
+          'User-Agent': 'chowdown/1.0 (+https://chowdown.test)',
         }),
       );
       expect(init?.redirect).toBe('manual');

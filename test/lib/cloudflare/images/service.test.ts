@@ -43,7 +43,7 @@ const serving: ImageFetch = async () =>
 /** Access rules that let everyone have everything. */
 const open: ImageAccess = {
   authenticate: async () => undefined,
-  signatureValid: () => true,
+  signatureValid: async () => true,
   mayFetch: async () => true,
 };
 
@@ -312,7 +312,7 @@ describe('serveImage', () => {
         ...open,
         signatureValid: (_url, signature) => {
           checked.push(signature);
-          return signature === 'good';
+          return Promise.resolve(signature === 'good');
         },
       };
       const deps = { access, fetcher, background: () => undefined };
@@ -327,7 +327,7 @@ describe('serveImage', () => {
 
     it('refuses an address that is not a public image with 400, before any other question', async () => {
       const mayFetch = jest.fn(async () => true);
-      const signatureValid = jest.fn(() => true);
+      const signatureValid = jest.fn(async () => true);
       const deps = {
         access: { ...open, mayFetch, signatureValid },
         background: () => undefined,

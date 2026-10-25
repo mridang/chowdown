@@ -102,8 +102,8 @@ describe('mayFetch', () => {
 });
 
 describe('signatures', () => {
-  it('are not used: who may ask is decided by the recipes', () => {
+  it('are not used: who may ask is decided by the recipes', async () => {
     expect(signatureFor()).toBeUndefined();
-    expect(signatureValid()).toBe(true);
+    await expect(signatureValid()).resolves.toBe(true);
   });
 });

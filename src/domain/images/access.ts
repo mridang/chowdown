@@ -34,9 +34,13 @@ export function signatureFor(): string | undefined {
   return undefined;
 }
 
-/** This app does not sign its picture addresses, so there is nothing to check. */
-export function signatureValid(): boolean {
-  return true;
+/**
+ * This app does not sign its picture addresses, so there is nothing to check.
+ * Async to match the shared `ImageAccess` interface the service awaits; who may
+ * ask is decided by {@link authenticate} and {@link mayFetch}, not a signature.
+ */
+export function signatureValid(): Promise<boolean> {
+  return Promise.resolve(true);
 }
 
 /**
