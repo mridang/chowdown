@@ -2,8 +2,8 @@
  * @packageDocumentation
  *
  * A small controller framework for the REST API, built on the pure
- * JSON/problem primitives in this package. A route registers typed endpoints — each with an
- * optional `decode` (request → input), a `handle` (input → output) and an
+ * JSON/problem primitives in this package. A route registers typed endpoints —
+ * each with an optional `decode` (request → input), a `handle` (input → output) and an
  * optional `encode` (output → response) — and the controller wires the
  * pipeline: build the per-request context, decode (a thrown problem becomes the
  * 4xx), handle, then encode to a `Response` (JSON 200 by default). A thrown
@@ -12,9 +12,8 @@
  * mounted, so Next answers it 405.
  *
  * This is the one Next-aware seam over the pure JSON/problem primitives in
- * this package: endpoints and their
- * controllers hold no framework code, so they grow without touching the route
- * file, which only mounts `handlers()`.
+ * this package: endpoints and their controllers hold no framework code, so
+ * they grow without touching the route file, which only mounts `handlers()`.
  */
 
 import { problem } from './problem';
