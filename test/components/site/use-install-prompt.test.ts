@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { createElement, type ReactElement } from 'react';
 
 import {
   isInstallPromptEvent,
@@ -8,14 +9,14 @@ import {
 import { html } from '../render';
 
 /** Says whether the hook offers an install action. */
-function Probe() {
+function Probe(): ReactElement {
   const { install } = useInstallPrompt();
-  return <p>{install ? 'can install' : 'cannot install'}</p>;
+  return createElement('p', null, install ? 'can install' : 'cannot install');
 }
 
 describe('useInstallPrompt', () => {
   it('offers nothing until the browser says the site can be installed', () => {
-    expect(html(<Probe />)).toBe('<p>cannot install</p>');
+    expect(html(createElement(Probe))).toBe('<p>cannot install</p>');
   });
 });
 

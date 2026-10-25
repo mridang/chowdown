@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
+import { createElement, type ReactElement } from 'react';
 
 import {
   StepTimersContext,
@@ -9,24 +10,32 @@ import {
 import { html } from '../render';
 
 /** Renders what the hook returns, as JSON. */
-function Probe(): React.ReactElement {
+function Probe(): ReactElement {
   const timers = useOptionalStepTimers();
-  return <p>{timers === null ? 'none' : `timers:${timers.timers.length}`}</p>;
+  return createElement(
+    'p',
+    null,
+    timers === null ? 'none' : `timers:${timers.timers.length}`,
+  );
 }
 
 /** Renders the state a fresh set of timers starts in. */
-function Fresh(): React.ReactElement {
+function Fresh(): ReactElement {
   const timers = useStepTimers('Dal');
-  return (
-    <p>
-      {timers.timers.length}|{timers.announcement}|{typeof timers.toggle}
-    </p>
+  return createElement(
+    'p',
+    null,
+    timers.timers.length,
+    '|',
+    timers.announcement,
+    '|',
+    typeof timers.toggle,
   );
 }
 
 describe('useOptionalStepTimers', () => {
   it('is null outside cook mode, where steps have no working timers', () => {
-    expect(html(<Probe />)).toBe('<p>none</p>');
+    expect(html(createElement(Probe))).toBe('<p>none</p>');
   });
 
   it('is what cook mode supplies inside it', () => {
@@ -45,9 +54,11 @@ describe('useOptionalStepTimers', () => {
     };
     expect(
       html(
-        <StepTimersContext.Provider value={value}>
-          <Probe />
-        </StepTimersContext.Provider>,
+        createElement(
+          StepTimersContext.Provider,
+          { value },
+          createElement(Probe),
+        ),
       ),
     ).toBe('<p>timers:0</p>');
   });
@@ -55,6 +66,6 @@ describe('useOptionalStepTimers', () => {
 
 describe('useStepTimers', () => {
   it('starts with no timers and nothing announced', () => {
-    expect(html(<Fresh />)).toBe('<p>0||function</p>');
+    expect(html(createElement(Fresh))).toBe('<p>0||function</p>');
   });
 });
