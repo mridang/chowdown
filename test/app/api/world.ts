@@ -92,10 +92,14 @@ export function fromApp(
 ): Request {
   const body =
     options.json !== undefined ? JSON.stringify(options.json) : options.body;
+  // The browser sends its cookies with every request; the API resolves identity
+  // from them, so carry whatever signIn put in the jar.
+  const cookie = [...jar].map(([name, value]) => `${name}=${value}`).join('; ');
   return new Request(`${ORIGIN}${path}`, {
     method,
     headers: {
       'sec-fetch-site': 'same-origin',
+      ...(cookie ? { cookie } : {}),
       ...(body !== undefined
         ? { 'content-type': options.type ?? 'application/json' }
         : {}),

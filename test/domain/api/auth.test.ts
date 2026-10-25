@@ -1,28 +1,16 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
+import { requireLiveUid, requireUid, requireUser } from '@/domain/api/auth';
 import type { Auth } from '@/domain/api/auth';
 import { APP_MIGRATIONS } from '../../lib/db/migrations';
 import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
 import {
-  fakeCookies,
   insertUser,
   jar,
   sessionTokenFor,
   testEnv,
 } from '../../lib/auth/session-fixture';
-
-jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
-
-const { requireLiveUid, requireUid, requireUser } =
-  await import('@/domain/api/auth');
 
 const ORIGIN = 'https://chowdown.test';
 
@@ -40,9 +28,14 @@ beforeEach(async () => {
 
 afterEach(() => restore());
 
-/** A request with the given method and headers. */
-const request = (method: string, headers: Record<string, string> = {}) =>
-  new Request(`${ORIGIN}/api/thing`, { method, headers });
+/** A request with the given method and headers, carrying whatever is in the jar. */
+const request = (method: string, headers: Record<string, string> = {}) => {
+  const cookie = [...jar].map(([name, value]) => `${name}=${value}`).join('; ');
+  return new Request(`${ORIGIN}/api/thing`, {
+    method,
+    headers: { ...(cookie ? { cookie } : {}), ...headers },
+  });
+};
 
 /** The status of a failed outcome, or 'ok'. */
 async function statusOf(outcome: Auth<unknown>) {

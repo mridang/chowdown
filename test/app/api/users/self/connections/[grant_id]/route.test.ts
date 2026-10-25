@@ -8,6 +8,8 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
+import { makeConnectionItem } from '@/domain/api/connections';
+import type { CurrentUserResolver } from '@/domain/api/auth';
 import { quietSecurityLogs } from '../../../../../../lib/oauth/quiet-logs';
 import {
   installCloudflareContext,
@@ -21,14 +23,14 @@ const session: { uid: number | null; ended: boolean } = {
   ended: false,
 };
 
-jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
-  getSessionUid: async () => session.uid,
-  getLiveSessionUid: async () => (session.ended ? null : session.uid),
-  getCurrentUser: async () => null,
-}));
+/** Identity injected in place of the session cookie. */
+const resolver: CurrentUserResolver = {
+  currentUid: async () => session.uid,
+  currentLiveUid: async () => (session.ended ? null : session.uid),
+  currentUser: async () => null,
+};
 
-const { DELETE } =
-  await import('@/app/api/users/self/connections/[grant_id]/route');
+const { DELETE } = makeConnectionItem(resolver).handlers();
 
 quietSecurityLogs();
 
