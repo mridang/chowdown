@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 
 import { DriveConnectPanel } from '@/components/site/drive-connect';
 import { Container } from '@/components/ui/layout';
-import { getCurrentUser } from '@/core/auth/current-user';
+import { getCurrentUser } from '@/lib/core/auth/current-user';
 import {
   isDriveConnected,
   wasDriveConnected,

@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import type { User } from '@/domain/db/users';
 import { parseRecipe } from '@/lib/cooklang';
 import {

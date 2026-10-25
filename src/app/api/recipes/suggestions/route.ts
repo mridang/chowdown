@@ -15,7 +15,7 @@ import { NextResponse } from 'next/server';
 
 import { requireUser } from '@/domain/api/auth';
 import { driveFailure } from '@/domain/api/drive-failure';
-import { pageBody, parseLimit } from '@/core/api';
+import { pageBody, parseLimit } from '@/lib/core/api';
 import { budgetRefusal } from '@/domain/api/daily-budget';
 import { problems } from '@/lib/rest-json';
 import { getUserAccessToken } from '@/domain/auth/user-access-token';
@@ -24,7 +24,7 @@ import { recipesFolderFor } from '@/domain/drive/recipes-folder';
 import { recipeDisplayName } from '@/lib/cooklang';
 import { embedText } from '@/domain/recipe/embeddings';
 import { ensureEmbeddings, topSimilar } from '@/domain/recipe/similar';
-import { getEnv } from '@/core/runtime';
+import { getEnv } from '@/lib/core/runtime';
 import { DAILY_BUDGETS } from '@/domain/daily-budget';
 
 /** How many suggestions to give when the client does not say. */

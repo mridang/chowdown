@@ -11,11 +11,11 @@
  */
 
 import { getUserAccessToken } from '@/domain/auth/user-access-token';
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import { deleteRecipeData, getRecipeByFileId } from '@/domain/db/recipes';
 import type { User } from '@/domain/db/users';
 import { trashRecipeFile } from '@/domain/drive/recipe-files';
-import { getDatabase } from '@/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 import { refreshSimilarLists } from '@/domain/recipe/similar';
 
 /** The side effects a delete needs, injected so the logic is testable. */

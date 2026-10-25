@@ -4,7 +4,7 @@ import { Suspense, type ReactElement } from 'react';
 import { Dashboard } from '@/components/home/dashboard';
 import { HomeLanding } from '@/components/landing/home-landing';
 import { PageSkeleton } from '@/components/site/page-skeleton';
-import { getShellUser } from '@/core/auth/shell-user';
+import { getShellUser } from '@/lib/core/auth/shell-user';
 
 /**
  * The same address serves two pages: the landing page for visitors, which

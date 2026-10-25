@@ -5,7 +5,7 @@
  * the recipes the signed-in person has hearted. The route file only mounts it.
  */
 
-import { ApiController } from '@/core/api';
+import { ApiController } from '@/lib/core/api';
 import { liveUid } from '@/domain/api/auth';
 import { listRecipes } from '@/domain/api/recipe-list';
 

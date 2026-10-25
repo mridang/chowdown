@@ -10,14 +10,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCurrentUser, getSession } from '@/core/auth/current-user';
+import { getCurrentUser, getSession } from '@/lib/core/auth/current-user';
 import { isDriveConnected } from '@/domain/auth/drive-access';
 import { buildDriveAuthUrl } from '@/domain/auth/drive-oauth';
-import { startFlowCookies } from '@/core/auth/flow-cookies';
+import { startFlowCookies } from '@/lib/core/auth/flow-cookies';
 import { newState, safeReturnPath } from '@/lib/web-security';
-import { setSessionCookie } from '@/core/auth/session-cookie';
-import { getEnv } from '@/core/runtime';
-import { appOrigin } from '@/core/origin';
+import { setSessionCookie } from '@/lib/core/auth/session-cookie';
+import { getEnv } from '@/lib/core/runtime';
+import { appOrigin } from '@/lib/core/origin';
 
 /**
  * `GET /auth/drive`: connect Google Drive for the signed-in person.

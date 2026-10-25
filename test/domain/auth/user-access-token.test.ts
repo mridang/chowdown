@@ -63,7 +63,7 @@ describe('getUserAccessToken', () => {
     );
     insertUser(raw, { id, refresh_token_enc: sealed });
     const { getUserById } = await import('@/domain/db/users');
-    const { getDatabase } = await import('@/core/runtime');
+    const { getDatabase } = await import('@/domain/db/client');
     const user = await getUserById(getDatabase(), id);
     if (!user) {
       throw new Error('user not inserted');
@@ -74,7 +74,7 @@ describe('getUserAccessToken', () => {
   it('says Drive is not connected when there is no stored login', async () => {
     insertUser(raw, { id: 20 });
     const { getUserById } = await import('@/domain/db/users');
-    const { getDatabase } = await import('@/core/runtime');
+    const { getDatabase } = await import('@/domain/db/client');
     const user = await getUserById(getDatabase(), 20);
     await expect(getUserAccessToken(user!)).rejects.toThrow(
       DriveNotConnectedError,

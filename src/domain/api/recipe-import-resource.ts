@@ -7,7 +7,7 @@
  */
 
 import type { RecipeImport } from '@/domain/db/recipe-imports';
-import type { CursorPosition } from '@/core/api';
+import type { CursorPosition } from '@/lib/core/api';
 
 /** Largest pasted blob accepted, in characters. */
 export const MAX_INPUT = 100_000;

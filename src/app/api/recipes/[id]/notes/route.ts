@@ -15,11 +15,11 @@ import { driveFailure } from '@/domain/api/drive-failure';
 import { problems, readJsonObject } from '@/lib/rest-json';
 import { settleMutation } from '@/domain/api/mutation-response';
 import { noteResource, parseNoteInput } from '@/domain/api/note-resource';
-import { absoluteUrl, pageBody, type IdContext } from '@/core/api';
+import { absoluteUrl, pageBody, type IdContext } from '@/lib/core/api';
 import { getRecipeByFileId } from '@/domain/db/recipes';
 import { appendNote, extractNotes } from '@/lib/cooklang';
 import { mutateRecipeForUser } from '@/domain/recipe/mutate-recipe-live';
-import { getDatabase } from '@/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 
 /**
  * `GET /api/recipes/:id/notes`: the recipe's notes, in order, numbered from 1.

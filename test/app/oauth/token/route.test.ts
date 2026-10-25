@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
 import { OPTIONS, POST } from '@/app/oauth/token/route';
-import { createDatabase } from '@/core/db/client';
+import { createDatabase } from '@/domain/db/client';
 import { D1OAuthStore } from '@/domain/db/oauth';
 import { s256 } from '@/lib/oauth/pkce';
 import { issueAuthorizationCode } from '@/lib/oauth/token-endpoint';

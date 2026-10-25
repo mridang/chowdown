@@ -22,7 +22,7 @@ import {
   parseReplacementCooklang,
 } from '@/domain/api/recipe-input';
 import { sendRecipe } from '@/domain/api/recipe-response';
-import type { IdContext } from '@/core/api';
+import type { IdContext } from '@/lib/core/api';
 import { deleteRecipeForUser } from '@/domain/recipe/delete-recipe';
 import type { MutateOutcome } from '@/domain/recipe/mutate-recipe';
 import { mutateRecipeForUser } from '@/domain/recipe/mutate-recipe-live';

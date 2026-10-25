@@ -21,11 +21,11 @@
 import { asc, eq } from 'drizzle-orm';
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import { recipes } from '@/domain/db/schema';
 import type { User } from '@/domain/db/users';
 import { recipeDisplayName } from '@/lib/cooklang';
-import { getDatabase } from '@/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 import {
   ERROR_INTERNAL,
   ERROR_INVALID_PARAMS,

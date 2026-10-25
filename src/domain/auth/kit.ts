@@ -6,11 +6,11 @@
  * sign-in does. The login and callback routes register its handlers.
  */
 
-import { GoogleAuthKit } from '@/core/auth/google-auth-kit';
+import { GoogleAuthKit } from '@/lib/core/auth/google-auth-kit';
 import { GoogleOAuthClient, SIGN_IN_SCOPES } from '@/lib/google';
-import { getEnv } from '@/core/runtime';
+import { getEnv } from '@/lib/core/runtime';
 import { EXTRA_PURPOSES, SIGN_IN_FAILED_PATH } from '@/domain/auth/app';
-import { OTHER_FLOWS } from '@/core/auth/hooks';
+import { OTHER_FLOWS } from '@/lib/core/auth/hooks';
 import { completeSignIn, missingSignInSettings } from '@/domain/auth/sign-in';
 
 /** The sign-in kit for this app, registered by the login and callback routes. */

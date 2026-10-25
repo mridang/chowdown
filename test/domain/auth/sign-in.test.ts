@@ -24,7 +24,7 @@ const afterSignIn = jest
 jest.unstable_mockModule('@/domain/auth/store', () => ({
   upsertGoogleUser,
 }));
-jest.unstable_mockModule('@/core/auth/hooks', () => ({
+jest.unstable_mockModule('@/lib/core/auth/hooks', () => ({
   afterSignIn,
   OTHER_FLOWS: {},
 }));

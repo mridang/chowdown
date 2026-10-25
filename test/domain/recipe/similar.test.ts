@@ -2,7 +2,7 @@ import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import type { EmbeddingRow } from '@/domain/db/embeddings';
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import type { User } from '@/domain/db/users';
 import {
   ensureEmbeddings,

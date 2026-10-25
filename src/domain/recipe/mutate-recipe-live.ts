@@ -5,11 +5,11 @@
  */
 
 import { getUserAccessToken } from '@/domain/auth/user-access-token';
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import { getRecipeByFileId } from '@/domain/db/recipes';
 import type { User } from '@/domain/db/users';
 import { getFileContent, updateRecipeFile } from '@/domain/drive/recipe-files';
-import { getDatabase } from '@/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 import {
   mutateRecipe,
   type Edit,

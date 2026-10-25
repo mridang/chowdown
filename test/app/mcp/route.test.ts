@@ -10,7 +10,7 @@ import {
 import type { DatabaseSync } from 'node:sqlite';
 
 import { DELETE, GET, OPTIONS, POST } from '@/app/mcp/route';
-import { createDatabase } from '@/core/db/client';
+import { createDatabase } from '@/domain/db/client';
 import { D1OAuthStore } from '@/domain/db/oauth';
 import { s256 } from '@/lib/oauth/pkce';
 import {

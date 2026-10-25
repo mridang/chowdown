@@ -21,7 +21,7 @@ import {
   servingsOf,
 } from '@/domain/recipe/page-view';
 import { recipeToJsonLd } from '@/domain/recipe/schema-org';
-import { jsonLdText } from '@/core/seo';
+import { jsonLdText } from '@/lib/core/seo';
 import { SITE_URL } from '@/utils/site';
 
 import { AlsoLike } from '@/app/(site)/recipe/[id]/_components/also-like';

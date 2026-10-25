@@ -10,21 +10,21 @@ import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
 import { ENDED_SESSION_PATH } from '@/domain/auth/app';
-import { getCurrentUser, getSession } from '@/core/auth/current-user';
+import { getCurrentUser, getSession } from '@/lib/core/auth/current-user';
 import {
   DriveNotConnectedError,
   isDriveConnected,
 } from '@/domain/auth/drive-access';
 import { sessionIsCurrent, type SessionPayload } from '@/lib/session';
 import { getUserAccessToken } from '@/domain/auth/user-access-token';
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import {
   getRecipePageRows,
   type RecipePageRows,
 } from '@/domain/db/recipe-page';
 import { claimDriveSync, type User } from '@/domain/db/users';
 import { getFileContent, listRecipeFiles } from '@/domain/drive/recipe-files';
-import { getDatabase } from '@/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 import {
   toCardRecipe,
   toneFor,

@@ -7,7 +7,7 @@
 
 import { NextResponse } from 'next/server';
 
-import { getLiveSessionUid } from '@/core/auth/current-user';
+import { getLiveSessionUid } from '@/lib/core/auth/current-user';
 import { D1OAuthStore, resolveClient } from '@/domain/db/oauth';
 import { readFormBody } from '@/lib/rest-json';
 import {
@@ -21,8 +21,8 @@ import { MAX_OAUTH_FORM_BYTES } from '@/lib/oauth/http';
 import { clientAddress } from '@/lib/oauth/limits';
 import { logSecurityEvent } from '@/lib/oauth/security-log';
 import { issueAuthorizationCode } from '@/lib/oauth/token-endpoint';
-import { getDatabase } from '@/core/runtime';
-import { appOrigin } from '@/core/origin';
+import { getDatabase } from '@/domain/db/client';
+import { appOrigin } from '@/lib/core/origin';
 
 /** A plain-text error page response, with a `Retry-After` when the caller should wait. */
 const refuse = (

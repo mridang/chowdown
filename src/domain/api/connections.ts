@@ -6,12 +6,12 @@
  * files only mount these.
  */
 
-import { ApiController, pageBody } from '@/core/api';
+import { ApiController, pageBody } from '@/lib/core/api';
 import { liveUid } from '@/domain/api/auth';
 import { problems } from '@/lib/rest-json';
 import { connectedAppResource } from '@/domain/connected-apps';
 import { listConnectedApps, revokeConnectedApp } from '@/domain/db/oauth';
-import { getDatabase } from '@/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 
 /** The signed-in person's id, plus the request (for building page URLs). */
 interface UidContext {

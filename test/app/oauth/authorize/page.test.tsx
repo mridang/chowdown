@@ -36,7 +36,7 @@ jest.unstable_mockModule('next/headers', () => ({
   headers: async () =>
     new Headers({ host: 'chowdown.test', ...state.requestHeaders }),
 }));
-jest.unstable_mockModule('@/core/auth/current-user', () => ({
+jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
 }));
 

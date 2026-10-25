@@ -13,7 +13,8 @@ import {
   readJsonBody as readJsonBodyUpTo,
   type JsonBody,
 } from '@/lib/rest-json';
-import { getDatabase, runInBackground } from '@/core/runtime';
+import { runInBackground } from '@/lib/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 import { errorMessage, logError } from '@/utils/logging';
 import {
   D1RateLimitStore,

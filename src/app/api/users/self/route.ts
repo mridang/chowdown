@@ -18,7 +18,8 @@ import { SESSION_COOKIE } from '@/domain/auth/app';
 import { revokeDriveLogin } from '@/domain/auth/drive-login';
 import { forgetAccessTokens } from '@/domain/auth/user-access-token';
 import { deleteAccountData } from '@/domain/db/account';
-import { getDatabase, runInBackground } from '@/core/runtime';
+import { runInBackground } from '@/lib/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 
 export const dynamic = 'force-dynamic';
 

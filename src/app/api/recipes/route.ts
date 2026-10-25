@@ -13,7 +13,7 @@
 import { requireLiveUid, requireUser } from '@/domain/api/auth';
 import { driveFailure } from '@/domain/api/drive-failure';
 import { problems, readJsonObject } from '@/lib/rest-json';
-import { absoluteUrl } from '@/core/api';
+import { absoluteUrl } from '@/lib/core/api';
 import {
   MAX_RECIPE_BODY_BYTES,
   parseNewRecipe,
@@ -28,7 +28,7 @@ import { type DriveFile } from '@/lib/google';
 import { recipesFolderFor } from '@/domain/drive/recipes-folder';
 import { sourceUrlOf } from '@/lib/cooklang';
 import { indexRecipeWrite } from '@/domain/recipe/tag-index';
-import { getDatabase } from '@/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 
 /** Save a new recipe file in the user's Recipes folder in Drive. */
 async function createInDrive(

@@ -7,12 +7,12 @@
  * so that stays a thin handler in the route file.
  */
 
-import { ApiController } from '@/core/api';
+import { ApiController } from '@/lib/core/api';
 import { sessionUser } from '@/domain/api/auth';
 import { problems, readJsonObject } from '@/lib/rest-json';
 import { parseUserPatch, userResource } from '@/domain/api/user-resource';
 import { getUserById, setUserUnits, type User } from '@/domain/db/users';
-import { getDatabase } from '@/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 
 /** A validated preference patch: the raw body (to see which keys were sent) and the parsed units. */
 interface ParsedUserPatch {

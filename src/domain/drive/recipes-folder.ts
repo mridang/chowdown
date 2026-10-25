@@ -7,7 +7,7 @@
 
 import { setRecipesFolderId } from '@/domain/db/users';
 import type { User } from '@/domain/db/users';
-import { getDatabase } from '@/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 import { DriveClient } from '@/lib/google';
 
 /** Name of the app-managed folder created in each user's Drive. */

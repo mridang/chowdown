@@ -11,7 +11,7 @@
  * this is purely a tags-by-id lookup.
  */
 
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import type { User } from '@/domain/db/users';
 import {
   listRecipesByUser,
@@ -20,7 +20,8 @@ import {
 } from '@/domain/db/recipes';
 import { getFileContent } from '@/domain/drive/recipe-files';
 import { type DriveFile } from '@/lib/google';
-import { getDatabase, getEnv, runInBackground } from '@/core/runtime';
+import { getEnv, runInBackground } from '@/lib/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 import { parseRecipe, type ParsedRecipe } from '@/lib/cooklang';
 import { embedRecipe } from '@/domain/recipe/embed-write';
 import { mapSequentially } from '@/lib/async';

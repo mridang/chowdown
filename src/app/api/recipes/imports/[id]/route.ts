@@ -9,12 +9,12 @@ import { NextResponse } from 'next/server';
 
 import { requireLiveUid } from '@/domain/api/auth';
 import { problems } from '@/lib/rest-json';
-import type { IdContext } from '@/core/api';
+import type { IdContext } from '@/lib/core/api';
 import {
   deleteRecipeImport,
   getRecipeImport,
 } from '@/domain/db/recipe-imports';
-import { getDatabase } from '@/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 
 /**
  * `GET /api/recipes/imports/:id`: the import with all its drafts. Answers 200,

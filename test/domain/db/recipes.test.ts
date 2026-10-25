@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import {
   deleteRecipeData,
   findRecipeBySourceUrl,

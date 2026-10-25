@@ -11,7 +11,7 @@
  * the Drive ↔ cache ↔ ranking flow so neither caller has to duplicate it.
  */
 
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import {
   deleteEmbeddingsNotIn,
   listEmbeddings,
@@ -22,7 +22,8 @@ import {
 import type { User } from '@/domain/db/users';
 import { getFileContent } from '@/domain/drive/recipe-files';
 import { type DriveFile } from '@/lib/google';
-import { getDatabase, getEnv } from '@/core/runtime';
+import { getEnv } from '@/lib/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 import { parseRecipe, recipeDisplayName } from '@/lib/cooklang';
 import {
   buildEmbeddingText,

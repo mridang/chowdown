@@ -22,7 +22,7 @@ import {
   pageBody,
   parseLimit,
   sliceAfter,
-} from '@/core/api';
+} from '@/lib/core/api';
 import {
   compareImportPositions,
   importPosition,
@@ -36,7 +36,8 @@ import {
 } from '@/domain/db/recipe-imports';
 import { MAX_IMPORT_UNITS, planImport } from '@/domain/recipe/import-blob';
 import { prepareImport } from '@/domain/recipe/prepare-import';
-import { getDatabase, getEnv } from '@/core/runtime';
+import { getEnv } from '@/lib/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 import { DAILY_BUDGETS } from '@/domain/daily-budget';
 
 /**

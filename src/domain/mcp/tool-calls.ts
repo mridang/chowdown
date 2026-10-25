@@ -50,7 +50,7 @@ import { validImageUrls, withImages } from '@/domain/recipe/media';
 import { indexRecipeWrite } from '@/domain/recipe/tag-index';
 import { parseVector, topSimilar } from '@/domain/recipe/similar';
 import { SITE_URL } from '@/utils/site';
-import { getDatabase } from '@/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 import { errorMessage, logError } from '@/utils/logging';
 import {
   isJsonObject,

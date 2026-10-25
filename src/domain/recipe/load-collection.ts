@@ -11,7 +11,7 @@
 import { redirect } from 'next/navigation';
 
 import { ENDED_SESSION_PATH, driveHint } from '@/domain/auth/app';
-import { getSession } from '@/core/auth/current-user';
+import { getSession } from '@/lib/core/auth/current-user';
 import {
   DriveNotConnectedError,
   isDriveConnected,
@@ -19,14 +19,15 @@ import {
   wasDriveConnected,
 } from '@/domain/auth/drive-access';
 import { sessionIsCurrent, type SessionPayload } from '@/lib/session';
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import { getAppPageRows, type AppPageRows } from '@/domain/db/recipe-page';
 import {
   claimBackfillLease,
   claimDriveSync,
   type User,
 } from '@/domain/db/users';
-import { getDatabase, getEnv, runInBackground } from '@/core/runtime';
+import { getEnv, runInBackground } from '@/lib/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 import { syncFromDrive } from '@/domain/recipe/drive-sync';
 import { backfillEmbeddings } from '@/domain/recipe/embed-write';
 

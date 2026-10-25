@@ -12,7 +12,7 @@ import {
   isProtectedResourcePath,
   protectedResourceMetadata,
 } from '@/lib/oauth/metadata';
-import { appOrigin } from '@/core/origin';
+import { appOrigin } from '@/lib/core/origin';
 
 /** The route's dynamic segments: the optional rest of the path after the well-known prefix. */
 interface Context {

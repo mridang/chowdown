@@ -14,7 +14,7 @@ import {
   upsertUser,
   type User,
 } from '@/domain/db/users';
-import { getDatabase } from '@/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 
 export type { User };
 

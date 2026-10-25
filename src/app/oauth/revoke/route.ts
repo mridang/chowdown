@@ -21,7 +21,7 @@ import {
 import { formField } from '@/lib/oauth/token-request';
 import { revokeToken } from '@/lib/oauth/token-endpoint';
 import { D1RateLimitStore } from '@/lib/rate-limit';
-import { getDatabase } from '@/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 
 /**
  * `POST /oauth/revoke`: revoke the grant behind `token` (a URL-encoded form

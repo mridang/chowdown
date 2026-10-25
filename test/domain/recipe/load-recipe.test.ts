@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import type { SessionPayload } from '@/lib/session';
-import type { Database } from '@/core/db/client';
+import type { Database } from '@/domain/db/client';
 import type { RecipePageRows } from '@/domain/db/recipe-page';
 import type { User } from '@/domain/db/users';
 import {
