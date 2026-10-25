@@ -7,7 +7,7 @@ import {
   setFavouriteAndTag,
   type FavouriteDeps,
 } from '@/domain/recipe/favourite';
-import { createKeyedQueue } from '@/lib/async/keyed-queue';
+import { createKeyedQueue } from '@/lib/async';
 
 const db = {} as Database;
 

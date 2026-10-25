@@ -12,14 +12,12 @@ import { NextResponse } from 'next/server';
 
 import { requireLiveUid, requireUser } from '@/domain/api/auth';
 import { driveFailure } from '@/domain/api/drive-failure';
-import { readJsonObject } from '@/lib/rest-json/json';
+import { problems, readJsonObject } from '@/lib/rest-json';
 import { settleMutation } from '@/domain/api/mutation-response';
 import { noteResource, parseNoteInput } from '@/domain/api/note-resource';
-import { absoluteUrl, pageBody } from '@/core/api/pagination';
-import { problems } from '@/lib/rest-json/problem';
-import type { IdContext } from '@/core/api/route-context';
+import { absoluteUrl, pageBody, type IdContext } from '@/core/api';
 import { getRecipeByFileId } from '@/domain/db/recipes';
-import { appendNote, extractNotes } from '@/lib/cooklang/cook-text';
+import { appendNote, extractNotes } from '@/lib/cooklang';
 import { mutateRecipeForUser } from '@/domain/recipe/mutate-recipe-live';
 import { getDatabase } from '@/core/runtime';
 

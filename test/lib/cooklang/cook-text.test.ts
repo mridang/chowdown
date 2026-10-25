@@ -19,7 +19,7 @@ import {
   sourceUrlOf,
   uncuratedFilename,
   upsertMetadata,
-} from '@/lib/cooklang/cook-text';
+} from '@/lib/cooklang';
 
 describe('uncurated filenames', () => {
   it('builds a marked filename', () => {

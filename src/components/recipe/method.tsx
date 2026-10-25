@@ -5,7 +5,7 @@ import type { ReactElement } from 'react';
 import { ClockIcon } from '@/components/icons';
 import { Heading } from '@/components/ui/layout';
 import { NumberBadge } from '@/components/ui/number-badge';
-import type { StepToken } from '@/lib/cooklang/cooklang';
+import type { StepToken } from '@/lib/cooklang';
 
 import { NoteChip } from '@/components/recipe/note-chip';
 import { useRecipeState } from '@/components/recipe/recipe-state';

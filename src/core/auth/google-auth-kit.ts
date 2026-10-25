@@ -11,20 +11,19 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { GoogleOAuthClient } from '@/lib/google/auth';
-import { problem } from '@/lib/rest-json/problem';
+import { GoogleOAuthClient, type GoogleUser } from '@/lib/google';
+import { problem } from '@/lib/rest-json';
 import {
   SIGN_IN_PURPOSE,
   checkState,
   newState,
-} from '@/lib/web-security/oauth-state';
-import { safeReturnPath } from '@/lib/web-security/return-to';
+  safeReturnPath,
+} from '@/lib/web-security';
 import { finishFlow, startFlowCookies } from '@/core/auth/flow-cookies';
 import { appOrigin } from '@/core/origin';
 import { RETURN_COOKIE, STATE_COOKIE } from '@/domain/auth/app';
 import { getEnv } from '@/core/runtime';
 import type { FlowContext, OtherFlow } from '@/domain/auth/sign-in';
-import type { GoogleUser } from '@/lib/google/auth';
 import { logError, logWarn } from '@/utils/logging';
 
 /** How a Google sign-in kit is wired for one app. */

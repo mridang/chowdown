@@ -12,7 +12,7 @@
  * app needs no Google security assessment.
  */
 
-import { GoogleOAuthClient, type AccessTokenResponse } from '@/lib/google/auth';
+import { GoogleOAuthClient, type AccessTokenResponse } from '@/lib/google';
 
 /** The one Drive permission chowdown uses: files the app itself created. */
 export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';

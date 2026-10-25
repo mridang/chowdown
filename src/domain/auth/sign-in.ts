@@ -11,7 +11,7 @@ import type { NextRequest, NextResponse } from 'next/server';
 
 import { LANDING_PATH } from '@/domain/auth/app';
 import { finishFlow } from '@/core/auth/flow-cookies';
-import type { GoogleUser, TokenResponse } from '@/lib/google/auth';
+import type { GoogleUser, TokenResponse } from '@/lib/google';
 import { afterSignIn } from '@/core/auth/hooks';
 import { requireSessionSecret } from '@/lib/session';
 import { setSessionCookie } from '@/core/auth/session-cookie';

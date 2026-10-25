@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { parseRecipe } from '@/lib/cooklang/cooklang';
+import { parseRecipe } from '@/lib/cooklang';
 
 import {
   extractOgImage,

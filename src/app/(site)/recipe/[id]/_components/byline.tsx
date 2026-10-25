@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 import { LinkIcon } from '@/components/icons';
 import { AuthorName } from '@/components/recipe/author-name';
 import { TextLink } from '@/components/ui/text-link';
-import { domainOf } from '@/lib/cooklang/cook-text';
+import { domainOf } from '@/lib/cooklang';
 
 /**
  * The metadata keys that name a recipe's author, most specific first. They are

@@ -7,10 +7,9 @@
  * so that stays a thin handler in the route file.
  */
 
-import { ApiController } from '@/core/api/controller';
+import { ApiController } from '@/core/api';
 import { sessionUser } from '@/domain/api/auth';
-import { readJsonObject } from '@/lib/rest-json/json';
-import { problems } from '@/lib/rest-json/problem';
+import { problems, readJsonObject } from '@/lib/rest-json';
 import { parseUserPatch, userResource } from '@/domain/api/user-resource';
 import { getUserById, setUserUnits, type User } from '@/domain/db/users';
 import { getDatabase } from '@/core/runtime';

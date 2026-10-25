@@ -10,11 +10,11 @@
 import { NextResponse } from 'next/server';
 
 import { requireLiveUid } from '@/domain/api/auth';
-import { problems } from '@/lib/rest-json/problem';
+import { problems } from '@/lib/rest-json';
 import { recipeSummary } from '@/domain/api/recipe-resource';
 import { setFavourite } from '@/domain/db/favourites';
 import { getRecipePageRows } from '@/domain/db/recipe-page';
-import { isDriveFileId } from '@/lib/google/drive';
+import { isDriveFileId } from '@/lib/google';
 import { setFavouriteAndTag } from '@/domain/recipe/favourite';
 import { getDatabase } from '@/core/runtime';
 

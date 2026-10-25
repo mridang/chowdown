@@ -14,8 +14,8 @@ import {
   imageCache,
   imagesBinding,
   runInBackground,
-} from '@/lib/cloudflare/images/runtime';
-import { serveImage } from '@/lib/cloudflare/images/service';
+  serveImage,
+} from '@/lib/cloudflare/images';
 
 /**
  * `GET /img?url=…&w=…`: the picture at `url`, scaled to the nearest

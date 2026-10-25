@@ -11,7 +11,7 @@
 
 import type { ReactElement } from 'react';
 
-import type { StepToken } from '@/lib/cooklang/cooklang';
+import type { StepToken } from '@/lib/cooklang';
 import type { RecipeCardData } from '@/domain/mcp/ui-types';
 import { safeHttpUrl, sourceHost } from '@/views/follow-up';
 

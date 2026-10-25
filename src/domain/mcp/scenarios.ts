@@ -11,8 +11,11 @@
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import type { Recipe } from '@/domain/db/recipes';
 import { countOf, foldText, listAnd } from '@/lib/intl';
-import { recipeDisplayName } from '@/lib/cooklang/cook-text';
-import { parseRecipe, type ParsedRecipe } from '@/lib/cooklang/cooklang';
+import {
+  parseRecipe,
+  recipeDisplayName,
+  type ParsedRecipe,
+} from '@/lib/cooklang';
 import {
   DIET_TYPES,
   suitableFor,

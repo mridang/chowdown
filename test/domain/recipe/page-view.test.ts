@@ -1,7 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { Note } from '@/lib/cooklang/cook-text';
-import type { StepToken } from '@/lib/cooklang/cooklang';
+import type { Note, StepToken } from '@/lib/cooklang';
 import {
   declaredServings,
   DEFAULT_SERVINGS,

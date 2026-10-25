@@ -10,10 +10,10 @@
  */
 
 import { withAuthor } from '@/domain/recipe/author';
-import { parseRecipe } from '@/lib/cooklang/cooklang';
+import { parseRecipe } from '@/lib/cooklang';
 import { fetchPage, PageFetchError } from '@/domain/recipe/fetch-page';
 import { MAX_IMPORT_UNITS, type ImportUnit } from '@/domain/recipe/import-blob';
-import { mapSequentially } from '@/lib/async/map-sequentially';
+import { mapSequentially } from '@/lib/async';
 import { tagCookSourceBestEffort } from '@/domain/recipe/tagging';
 import {
   ConversionError,

@@ -31,8 +31,13 @@ import {
   type CardRecipe,
   type Tone,
 } from '@/domain/recipe/card-data';
-import { extractNotes, sourceUrlOf, type Note } from '@/lib/cooklang/cook-text';
-import { parseRecipe, type ParsedRecipe } from '@/lib/cooklang/cooklang';
+import {
+  extractNotes,
+  parseRecipe,
+  sourceUrlOf,
+  type Note,
+  type ParsedRecipe,
+} from '@/lib/cooklang';
 import { recipesFolderOf } from '@/domain/recipe/drive-sync';
 import { minutesOf } from '@/domain/recipe/minutes';
 import { initialUnits, type UnitChoice } from '@/domain/recipe/page-view';

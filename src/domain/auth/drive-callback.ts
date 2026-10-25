@@ -28,7 +28,7 @@ import {
 import { driveResultPath } from '@/domain/auth/drive-access';
 import { checkDriveGrant } from '@/domain/auth/drive-grant';
 import { finishFlow } from '@/core/auth/flow-cookies';
-import type { GoogleUser, TokenResponse } from '@/lib/google/auth';
+import type { GoogleUser, TokenResponse } from '@/lib/google';
 import { SessionTokens, sessionIsCurrent } from '@/lib/session';
 import { setSessionCookie } from '@/core/auth/session-cookie';
 import type { FlowContext } from '@/domain/auth/sign-in';

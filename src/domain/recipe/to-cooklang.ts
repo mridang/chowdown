@@ -15,11 +15,11 @@
  */
 
 import {
+  parseRecipe,
   removeEmptyMetadata,
   sourceUrlOf,
   upsertMetadata,
-} from '@/lib/cooklang/cook-text';
-import { parseRecipe } from '@/lib/cooklang/cooklang';
+} from '@/lib/cooklang';
 import { withAuthor } from '@/domain/recipe/author';
 import { withoutScriptsAndStyles } from '@/domain/recipe/html-text';
 import { fetchPage } from '@/domain/recipe/fetch-page';

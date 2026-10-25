@@ -7,6 +7,9 @@ import {
   jest,
 } from '@jest/globals';
 
+// Import the pure constants from the leaf, not the package barrel: the barrel
+// eagerly loads the Cloudflare runtime bindings, which would pull in
+// `@opennextjs/cloudflare` before this file's mock of it is installed.
 import {
   ALLOWED_HOSTS,
   ALLOWED_WIDTHS,

@@ -10,7 +10,7 @@
 
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 
-import { normalizeSourceUrl, sourceUrlOf } from '@/lib/cooklang/cook-text';
+import { normalizeSourceUrl, sourceUrlOf } from '@/lib/cooklang';
 import { chunked } from '@/domain/db/chunk';
 import type { Database } from '@/core/db/client';
 import { embeddings, favourites, recipes } from '@/domain/db/schema';

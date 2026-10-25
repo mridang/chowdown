@@ -6,10 +6,9 @@
  * files only mount these.
  */
 
-import { ApiController } from '@/core/api/controller';
+import { ApiController, pageBody } from '@/core/api';
 import { liveUid } from '@/domain/api/auth';
-import { pageBody } from '@/core/api/pagination';
-import { problems } from '@/lib/rest-json/problem';
+import { problems } from '@/lib/rest-json';
 import { connectedAppResource } from '@/domain/connected-apps';
 import { listConnectedApps, revokeConnectedApp } from '@/domain/db/oauth';
 import { getDatabase } from '@/core/runtime';

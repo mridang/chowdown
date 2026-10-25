@@ -2,7 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import type { Database } from '@/core/db/client';
 import type { User } from '@/domain/db/users';
-import { parseRecipe } from '@/lib/cooklang/cooklang';
+import { parseRecipe } from '@/lib/cooklang';
 import {
   extractFacetTags,
   rowTags,

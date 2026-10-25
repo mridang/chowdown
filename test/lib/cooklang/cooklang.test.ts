@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { formatQuantity, parseRecipe } from '@/lib/cooklang/cooklang';
+import { formatQuantity, parseRecipe } from '@/lib/cooklang';
 
 describe('formatQuantity', () => {
   it('combines quantity and units', () => {

@@ -8,11 +8,12 @@
 
 import type { Recipe } from '@/domain/db/recipes';
 import {
-  sourceUrlOf,
   isUncurated,
+  parseRecipe,
   recipeDisplayName,
-} from '@/lib/cooklang/cook-text';
-import { parseRecipe, type StepToken } from '@/lib/cooklang/cooklang';
+  sourceUrlOf,
+  type StepToken,
+} from '@/lib/cooklang';
 import { extractMedia } from '@/domain/recipe/media';
 import { rowTags, type RecipeTags } from '@/domain/recipe/tag-index';
 

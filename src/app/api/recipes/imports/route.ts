@@ -15,15 +15,14 @@ import { NextResponse } from 'next/server';
 
 import { requireLiveUid } from '@/domain/api/auth';
 import { budgetRefusal } from '@/domain/api/daily-budget';
-import { readJson } from '@/lib/rest-json/json';
+import { problems, readJson } from '@/lib/rest-json';
 import {
   absoluteUrl,
   decodeCursor,
   pageBody,
   parseLimit,
   sliceAfter,
-} from '@/core/api/pagination';
-import { problems } from '@/lib/rest-json/problem';
+} from '@/core/api';
 import {
   compareImportPositions,
   importPosition,

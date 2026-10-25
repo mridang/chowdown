@@ -22,7 +22,7 @@
 
 import { safeJsonParse } from '@/utils/json';
 import { errorMessage, logError } from '@/utils/logging';
-import { upsertMetadata } from '@/lib/cooklang/cook-text';
+import { upsertMetadata } from '@/lib/cooklang';
 import { decodeEntities, visibleText } from '@/domain/recipe/html-text';
 import { scanHtml } from '@/domain/recipe/import-html-scan';
 

@@ -8,7 +8,7 @@ import { jest } from '@jest/globals';
 
 import type { Recipe } from '@/domain/db/recipes';
 import type { User } from '@/domain/db/users';
-import type { DriveFile } from '@/lib/google/drive';
+import type { DriveFile } from '@/lib/google';
 import { callTool, type ToolContext } from '@/domain/mcp/tool-calls';
 import type { ToolServices } from '@/domain/mcp/tool-services';
 

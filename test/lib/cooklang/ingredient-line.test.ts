@@ -1,9 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  parseIngredientLine,
-  toCookIngredient,
-} from '@/lib/cooklang/ingredient-line';
+import { parseIngredientLine, toCookIngredient } from '@/lib/cooklang';
 
 /** The Cooklang token a line becomes: what ends up in the file and so what the page shows. */
 const token = (line: string) => toCookIngredient(parseIngredientLine(line));

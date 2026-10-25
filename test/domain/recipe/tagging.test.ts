@@ -5,7 +5,7 @@ import {
   tagCookSource,
   tagCookSourceBestEffort,
 } from '@/domain/recipe/tagging';
-import { parseRecipe } from '@/lib/cooklang/cooklang';
+import { parseRecipe } from '@/lib/cooklang';
 
 const SOURCE = '>> title: Curry\n\nCook @chicken{500%g} in a #pan{}.\n';
 

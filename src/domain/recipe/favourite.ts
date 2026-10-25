@@ -17,7 +17,7 @@ import { getUserById, type User } from '@/domain/db/users';
 import { getFileContent, updateRecipeFile } from '@/domain/drive/recipe-files';
 import { getDatabase, runInBackground } from '@/core/runtime';
 import { withFavouriteTag } from '@/domain/recipe/favourite-tag';
-import { createKeyedQueue } from '@/lib/async/keyed-queue';
+import { createKeyedQueue } from '@/lib/async';
 import { indexRecipeWrite } from '@/domain/recipe/tag-index';
 
 /**

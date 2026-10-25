@@ -12,7 +12,7 @@
  * durations (`PT30M`), which is what schema.org expects for `cookTime` &co.
  */
 
-import type { ParsedRecipe } from '@/lib/cooklang/cooklang';
+import type { ParsedRecipe } from '@/lib/cooklang';
 
 /** The subset of schema.org/Recipe we emit. All fields optional but `name`. */
 export interface RecipeJsonLd {

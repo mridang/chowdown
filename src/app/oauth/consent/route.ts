@@ -9,14 +9,14 @@ import { NextResponse } from 'next/server';
 
 import { getLiveSessionUid } from '@/core/auth/current-user';
 import { D1OAuthStore, resolveClient } from '@/domain/db/oauth';
-import { readFormBody } from '@/lib/rest-json/body';
+import { readFormBody } from '@/lib/rest-json';
 import {
   authorizeParamsFrom,
   grantedScope,
   redirectWith,
   validateAuthorizeRequest,
 } from '@/lib/oauth/authorize-request';
-import { isSameOriginPost } from '@/lib/web-security/csrf';
+import { isSameOriginPost } from '@/lib/web-security';
 import { MAX_OAUTH_FORM_BYTES } from '@/lib/oauth/http';
 import { clientAddress } from '@/lib/oauth/limits';
 import { logSecurityEvent } from '@/lib/oauth/security-log';

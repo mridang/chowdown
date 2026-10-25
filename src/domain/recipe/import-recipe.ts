@@ -14,7 +14,7 @@
  *      import that saved metadata but no recipe) or create a new file.
  */
 
-import { parseRecipe } from '@/lib/cooklang/cooklang';
+import { parseRecipe } from '@/lib/cooklang';
 import { withImages } from '@/domain/recipe/media';
 import {
   hasRecipeBody,

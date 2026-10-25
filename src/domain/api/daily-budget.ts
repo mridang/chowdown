@@ -7,7 +7,7 @@
 
 import { spendBudget, type BudgetDeps } from '@/domain/daily-budget';
 import type { RateLimit } from '@/lib/rate-limit';
-import { problems } from '@/lib/rest-json/problem';
+import { problems } from '@/lib/rest-json';
 
 /**
  * The 429 problem for a person who has used up `budget`, or null if the call may

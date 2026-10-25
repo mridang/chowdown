@@ -19,11 +19,11 @@ import {
   type Recipe,
 } from '@/domain/db/recipes';
 import { getFileContent } from '@/domain/drive/recipe-files';
-import { type DriveFile } from '@/lib/google/drive';
+import { type DriveFile } from '@/lib/google';
 import { getDatabase, getEnv, runInBackground } from '@/core/runtime';
-import { parseRecipe, type ParsedRecipe } from '@/lib/cooklang/cooklang';
+import { parseRecipe, type ParsedRecipe } from '@/lib/cooklang';
 import { embedRecipe } from '@/domain/recipe/embed-write';
-import { mapSequentially } from '@/lib/async/map-sequentially';
+import { mapSequentially } from '@/lib/async';
 import { classifyDietType } from '@/domain/recipe/diet-type';
 import { canonicalValue, facet } from '@/domain/recipe/taxonomy';
 

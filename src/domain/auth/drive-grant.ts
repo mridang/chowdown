@@ -10,7 +10,7 @@
 
 import type { DriveAttempt } from '@/domain/auth/drive-access';
 import { grantedDrive } from '@/domain/auth/drive-oauth';
-import type { TokenResponse } from '@/lib/google/auth';
+import type { TokenResponse } from '@/lib/google';
 
 /** What the check needs to know. */
 export interface DriveGrant {

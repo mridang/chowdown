@@ -9,7 +9,7 @@ import {
 
 import { PlayIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import type { StepToken } from '@/lib/cooklang/cooklang';
+import type { StepToken } from '@/lib/cooklang';
 
 import { useRecipeState } from '@/components/recipe/recipe-state';
 import {

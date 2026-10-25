@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/field';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 import { useFocusOnChange } from '@/components/ui/use-focus-on-change';
-import { problemError, problemText } from '@/lib/rest-json/problem-message';
+import { problemError, problemText } from '@/lib/rest-json';
 
 import { AddRecipes } from '@/app/(site)/(pages)/recipes/add/_components/add-recipes';
 import {

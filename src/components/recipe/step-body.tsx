@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 
 import { ClockIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
-import type { StepToken } from '@/lib/cooklang/cooklang';
+import type { StepToken } from '@/lib/cooklang';
 
 import { useRecipeState } from '@/components/recipe/recipe-state';
 import { parseDurationMs } from '@/components/recipe/timer-duration';

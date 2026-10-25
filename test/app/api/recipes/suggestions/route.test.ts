@@ -8,7 +8,7 @@ import {
 } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
-import type { DriveFile } from '@/lib/google/drive';
+import type { DriveFile } from '@/lib/google';
 import { installCloudflareContext } from '../../../../lib/db/sqlite-d1';
 
 /** Who is signed in; null means nobody. */
@@ -16,7 +16,7 @@ const session: { user: { id: number } | null } = { user: { id: 7 } };
 
 // The sign-in gate has its own tests (test/lib/api/auth.test.ts); here it just
 // says who is calling, in the shape the routes read.
-const { problems } = await import('@/lib/rest-json/problem');
+const { problems } = await import('@/lib/rest-json');
 jest.unstable_mockModule('@/domain/api/auth', () => ({
   requireUser: async () =>
     session.user

@@ -10,7 +10,7 @@ import { Eyebrow, Heading } from '@/components/ui/layout';
 import { TextLink } from '@/components/ui/text-link';
 import { sentenceCase } from '@/utils/text';
 import type { Tone } from '@/domain/recipe/card-data';
-import type { StepToken } from '@/lib/cooklang/cooklang';
+import type { StepToken } from '@/lib/cooklang';
 
 import {
   AuthorLine,

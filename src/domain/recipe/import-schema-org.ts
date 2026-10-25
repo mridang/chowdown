@@ -23,12 +23,12 @@ import {
   declaredAuthor,
   hasAuthor,
 } from '@/domain/recipe/author';
-import { upsertMetadata } from '@/lib/cooklang/cook-text';
-import { scanHtml, type Attributes } from '@/domain/recipe/import-html-scan';
 import {
   parseIngredientLine,
   toCookIngredient,
-} from '@/lib/cooklang/ingredient-line';
+  upsertMetadata,
+} from '@/lib/cooklang';
+import { scanHtml, type Attributes } from '@/domain/recipe/import-html-scan';
 import { validImageUrls } from '@/domain/recipe/media';
 
 /** A loose JSON value — JSON-LD arrives without a fixed shape. */

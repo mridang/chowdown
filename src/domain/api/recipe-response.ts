@@ -8,16 +8,16 @@
 
 import { getRecipePageRows } from '@/domain/db/recipe-page';
 import { recipeToJsonLd } from '@/domain/recipe/schema-org';
-import { parseRecipe } from '@/lib/cooklang/cooklang';
+import { parseRecipe } from '@/lib/cooklang';
 import { getDatabase } from '@/core/runtime';
 import {
   entityTag,
   ifNoneMatchHit,
+  problems,
   representationTag,
   type RecipeRepresentation,
-} from '@/lib/rest-json/etag';
-import { problems } from '@/lib/rest-json/problem';
-import { absoluteUrl } from '@/core/api/pagination';
+} from '@/lib/rest-json';
+import { absoluteUrl } from '@/core/api';
 import { recipeResource } from '@/domain/api/recipe-resource';
 
 /** The media type of a recipe's Cooklang source. */

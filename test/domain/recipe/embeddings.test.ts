@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { ParsedRecipe } from '@/lib/cooklang/cooklang';
+import type { ParsedRecipe } from '@/lib/cooklang';
 import {
   buildEmbeddingText,
   cosineBetween,

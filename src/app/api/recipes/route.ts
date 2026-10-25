@@ -12,9 +12,8 @@
 
 import { requireLiveUid, requireUser } from '@/domain/api/auth';
 import { driveFailure } from '@/domain/api/drive-failure';
-import { readJsonObject } from '@/lib/rest-json/json';
-import { absoluteUrl } from '@/core/api/pagination';
-import { problems } from '@/lib/rest-json/problem';
+import { problems, readJsonObject } from '@/lib/rest-json';
+import { absoluteUrl } from '@/core/api';
 import {
   MAX_RECIPE_BODY_BYTES,
   parseNewRecipe,
@@ -25,9 +24,9 @@ import { getUserAccessToken } from '@/domain/auth/user-access-token';
 import type { User } from '@/domain/db/users';
 import { findRecipeBySourceUrl } from '@/domain/db/recipes';
 import { createRecipeFile } from '@/domain/drive/recipe-files';
-import { type DriveFile } from '@/lib/google/drive';
+import { type DriveFile } from '@/lib/google';
 import { recipesFolderFor } from '@/domain/drive/recipes-folder';
-import { sourceUrlOf } from '@/lib/cooklang/cook-text';
+import { sourceUrlOf } from '@/lib/cooklang';
 import { indexRecipeWrite } from '@/domain/recipe/tag-index';
 import { getDatabase } from '@/core/runtime';
 

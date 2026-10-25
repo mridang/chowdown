@@ -4,7 +4,7 @@ import {
   CARD_RESOURCE_URI,
   LIST_RESOURCE_URI,
 } from '@/domain/mcp/ui-resources';
-import { uncuratedFilename } from '@/lib/cooklang/cook-text';
+import { uncuratedFilename } from '@/lib/cooklang';
 import {
   buildRecipeCardData,
   buildRecipeListData,

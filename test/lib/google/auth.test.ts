@@ -4,7 +4,7 @@ import {
   GoogleOAuthClient,
   SIGN_IN_SCOPES,
   isAccessTokenResponse,
-} from '@/lib/google/auth';
+} from '@/lib/google';
 
 const client = new GoogleOAuthClient({
   clientId: 'client-id',

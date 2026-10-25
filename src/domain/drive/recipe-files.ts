@@ -7,7 +7,7 @@
  * app's `.cook` convention lives, so the Drive client itself stays generic.
  */
 
-import { DriveClient, type DriveFile } from '@/lib/google/drive';
+import { DriveClient, type DriveFile } from '@/lib/google';
 
 /** The media type recipe files are stored under (Drive has no Cooklang type). */
 const COOK_MIME = 'text/plain';

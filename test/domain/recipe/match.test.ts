@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { DriveFile } from '@/lib/google/drive';
+import type { DriveFile } from '@/lib/google';
 import { matchFile, resolveFile } from '@/domain/recipe/match';
 
 const files = [

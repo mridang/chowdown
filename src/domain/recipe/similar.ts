@@ -21,10 +21,9 @@ import {
 } from '@/domain/db/embeddings';
 import type { User } from '@/domain/db/users';
 import { getFileContent } from '@/domain/drive/recipe-files';
-import { type DriveFile } from '@/lib/google/drive';
+import { type DriveFile } from '@/lib/google';
 import { getDatabase, getEnv } from '@/core/runtime';
-import { recipeDisplayName } from '@/lib/cooklang/cook-text';
-import { parseRecipe } from '@/lib/cooklang/cooklang';
+import { parseRecipe, recipeDisplayName } from '@/lib/cooklang';
 import {
   buildEmbeddingText,
   cosineBetween,
@@ -32,7 +31,7 @@ import {
   embedText,
   measure,
 } from '@/domain/recipe/embeddings';
-import { mapSequentially } from '@/lib/async/map-sequentially';
+import { mapSequentially } from '@/lib/async';
 
 /** How many "find similar" recipes are stored and shown per recipe. */
 export const SIMILAR_COUNT = 6;

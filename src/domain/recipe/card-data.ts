@@ -11,10 +11,10 @@ import type { Recipe } from '@/domain/db/recipes';
 import {
   domainOf,
   isUncurated,
+  parseRecipe,
   recipeDisplayName,
   sourceUrlOf,
-} from '@/lib/cooklang/cook-text';
-import { parseRecipe } from '@/lib/cooklang/cooklang';
+} from '@/lib/cooklang';
 import { extractMedia } from '@/domain/recipe/media';
 import { minutesOf } from '@/domain/recipe/minutes';
 import { rowTags } from '@/domain/recipe/tag-index';

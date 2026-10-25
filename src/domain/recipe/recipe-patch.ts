@@ -15,7 +15,7 @@
  */
 
 import { listAnd } from '@/lib/intl';
-import { removeMetadata, upsertMetadata } from '@/lib/cooklang/cook-text';
+import { removeMetadata, upsertMetadata } from '@/lib/cooklang';
 import { validImageUrls, withImages } from '@/domain/recipe/media';
 import { FACETS, canonicalValue, facet } from '@/domain/recipe/taxonomy';
 

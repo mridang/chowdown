@@ -8,7 +8,7 @@
  */
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
-import { problems } from '@/lib/rest-json/problem';
+import { problems } from '@/lib/rest-json';
 
 /** The problem response for `error`, with `detail` for the Drive-hiccup case. */
 export function driveFailure(error: unknown, detail: string): Response {

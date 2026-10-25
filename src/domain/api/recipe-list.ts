@@ -7,15 +7,10 @@
  */
 
 import { getAppPageRows } from '@/domain/db/recipe-page';
-import { sourceDomainOf } from '@/lib/cooklang/cook-text';
+import { sourceDomainOf } from '@/lib/cooklang';
 import { getDatabase } from '@/core/runtime';
-import {
-  decodeCursor,
-  pageBody,
-  parseLimit,
-  sliceAfter,
-} from '@/core/api/pagination';
-import { problems } from '@/lib/rest-json/problem';
+import { decodeCursor, pageBody, parseLimit, sliceAfter } from '@/core/api';
+import { problems } from '@/lib/rest-json';
 import {
   comparePositions,
   filterRecipes,

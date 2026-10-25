@@ -11,10 +11,9 @@
 import type { Database } from '@/core/db/client';
 import { listEmbeddings, upsertEmbedding } from '@/domain/db/embeddings';
 import { listRecipesByUser } from '@/domain/db/recipes';
-import { recipeDisplayName } from '@/lib/cooklang/cook-text';
-import { parseRecipe } from '@/lib/cooklang/cooklang';
+import { parseRecipe, recipeDisplayName } from '@/lib/cooklang';
 import { buildEmbeddingText, embedText } from '@/domain/recipe/embeddings';
-import { mapSequentially } from '@/lib/async/map-sequentially';
+import { mapSequentially } from '@/lib/async';
 import { refreshSimilarLists } from '@/domain/recipe/similar';
 
 /**
