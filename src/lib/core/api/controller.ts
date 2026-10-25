@@ -16,7 +16,7 @@
  * file, which only mounts `handlers()`.
  */
 
-import { problem } from '@/lib/rest-json';
+import { problem } from '@/lib/core/api/problem';
 import type { RouteContext } from '@/lib/core/api/route-context';
 
 /** The HTTP methods an endpoint may answer. */

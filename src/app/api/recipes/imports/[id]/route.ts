@@ -8,8 +8,7 @@
 import { NextResponse } from 'next/server';
 
 import { requireLiveUid } from '@/domain/api/auth';
-import { problems } from '@/lib/rest-json';
-import type { IdContext } from '@/lib/core/api';
+import { problems, type IdContext } from '@/lib/core/api';
 import {
   deleteRecipeImport,
   getRecipeImport,

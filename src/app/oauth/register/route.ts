@@ -7,7 +7,7 @@
  */
 
 import { oauthSweeps, saveClient } from '@/domain/db/oauth';
-import { readBodyText } from '@/lib/rest-json';
+import { readBodyText } from '@/lib/core/api';
 import { MAX_REGISTRATION_BYTES } from '@/lib/oauth/client';
 import { noStoreJson, oauthError, preflight } from '@/lib/oauth/http';
 import { clientAddress, tooManyRequests } from '@/lib/oauth/limits';

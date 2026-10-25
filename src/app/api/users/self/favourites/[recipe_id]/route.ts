@@ -10,7 +10,7 @@
 import { NextResponse } from 'next/server';
 
 import { requireLiveUid } from '@/domain/api/auth';
-import { problems } from '@/lib/rest-json';
+import { problems } from '@/lib/core/api';
 import { recipeSummary } from '@/domain/api/recipe-resource';
 import { setFavourite } from '@/domain/db/favourites';
 import { getRecipePageRows } from '@/domain/db/recipe-page';

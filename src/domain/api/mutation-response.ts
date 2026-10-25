@@ -8,7 +8,7 @@
  */
 
 import type { MutateOutcome } from '@/domain/recipe/mutate-recipe';
-import { problems } from '@/lib/rest-json';
+import { problems } from '@/lib/core/api';
 
 /** How a route words the failures that depend on what it was changing. */
 export interface MutationWording {

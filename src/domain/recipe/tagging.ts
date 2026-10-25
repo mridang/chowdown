@@ -11,7 +11,7 @@
  * shape the recipe page and facet filter read back.
  */
 
-import { isObject } from '@/lib/rest-json';
+import { isObject } from '@/lib/core/api';
 import { parseRecipe, type ParsedRecipe, upsertMetadata } from '@/lib/cooklang';
 import { buildEmbeddingText } from '@/domain/recipe/embeddings';
 import { FACETS, validateTags } from '@/domain/recipe/taxonomy';

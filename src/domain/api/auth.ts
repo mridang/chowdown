@@ -15,7 +15,7 @@ import {
 import type { User } from '@/domain/db/users';
 import { isSameOriginPost } from '@/lib/web-security';
 import { appOrigin } from '@/lib/core/origin';
-import { problems } from '@/lib/rest-json';
+import { problems } from '@/lib/core/api';
 
 /** Methods that never change data and so need no origin check. */
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);

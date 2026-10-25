@@ -15,9 +15,8 @@ import { NextResponse } from 'next/server';
 
 import { requireUser } from '@/domain/api/auth';
 import { driveFailure } from '@/domain/api/drive-failure';
-import { pageBody, parseLimit } from '@/lib/core/api';
+import { pageBody, parseLimit, problems } from '@/lib/core/api';
 import { budgetRefusal } from '@/domain/api/daily-budget';
-import { problems } from '@/lib/rest-json';
 import { getUserAccessToken } from '@/domain/auth/user-access-token';
 import { listRecipeFiles } from '@/domain/drive/recipe-files';
 import { recipesFolderFor } from '@/domain/drive/recipes-folder';

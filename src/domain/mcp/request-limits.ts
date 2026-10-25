@@ -12,7 +12,7 @@ import type { User } from '@/domain/db/users';
 import {
   readJsonBody as readJsonBodyUpTo,
   type JsonBody,
-} from '@/lib/rest-json';
+} from '@/lib/core/api';
 import { runInBackground } from '@/lib/core/runtime';
 import { getDatabase } from '@/domain/db/client';
 import { errorMessage, logError } from '@/utils/logging';

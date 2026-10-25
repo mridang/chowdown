@@ -11,13 +11,13 @@ import { recipeToJsonLd } from '@/domain/recipe/schema-org';
 import { parseRecipe } from '@/lib/cooklang';
 import { getDatabase } from '@/domain/db/client';
 import {
+  absoluteUrl,
   entityTag,
   ifNoneMatchHit,
   problems,
   representationTag,
   type RecipeRepresentation,
-} from '@/lib/rest-json';
-import { absoluteUrl } from '@/lib/core/api';
+} from '@/lib/core/api';
 import { recipeResource } from '@/domain/api/recipe-resource';
 
 /** The media type of a recipe's Cooklang source. */

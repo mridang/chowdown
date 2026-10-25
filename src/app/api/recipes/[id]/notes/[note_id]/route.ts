@@ -12,7 +12,7 @@ import { NextResponse } from 'next/server';
 
 import { requireLiveUid, requireUser } from '@/domain/api/auth';
 import { driveFailure } from '@/domain/api/drive-failure';
-import { problems, readJsonObject } from '@/lib/rest-json';
+import { problems, readJsonObject } from '@/lib/core/api';
 import { settleMutation } from '@/domain/api/mutation-response';
 import {
   noteIndex,

@@ -14,7 +14,7 @@
  * rest of the API, that nobody caches.
  */
 
-import { problems } from '@/lib/rest-json';
+import { problems } from '@/lib/core/api';
 import { isPublicWebUrl } from '@/lib/safe-fetch';
 import { isAllowedHost, snapWidth } from '@/lib/cloudflare/images/address';
 import {

@@ -22,7 +22,7 @@ const session: { uid: number | null } = { uid: 7 };
 
 // The sign-in gate has its own tests (test/lib/api/auth.test.ts); here it just
 // says who is calling, in the shape the routes read.
-const { problems } = await import('@/lib/rest-json');
+const { problems } = await import('@/lib/core/api');
 jest.unstable_mockModule('@/domain/api/auth', () => ({
   requireLiveUid: async () =>
     session.uid === null

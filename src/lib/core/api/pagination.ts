@@ -11,7 +11,7 @@
 import { appOrigin } from '@/lib/core/origin';
 import { base64UrlToBytes, bytesToBase64Url } from '@/utils/base64';
 import { setSearchParams } from '@/utils/query';
-import { problems } from '@/lib/rest-json';
+import { problems } from '@/lib/core/api/problem';
 
 /** Default and maximum page sizes. */
 export const DEFAULT_LIMIT = 20;

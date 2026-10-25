@@ -15,14 +15,18 @@ import { NextResponse } from 'next/server';
 
 import { requireLiveUid, requireUser } from '@/domain/api/auth';
 import { driveFailure } from '@/domain/api/drive-failure';
-import { problems, readJson, readJsonObject } from '@/lib/rest-json';
+import {
+  problems,
+  readJson,
+  readJsonObject,
+  type IdContext,
+} from '@/lib/core/api';
 import { settleMutation } from '@/domain/api/mutation-response';
 import {
   MAX_RECIPE_BODY_BYTES,
   parseReplacementCooklang,
 } from '@/domain/api/recipe-input';
 import { sendRecipe } from '@/domain/api/recipe-response';
-import type { IdContext } from '@/lib/core/api';
 import { deleteRecipeForUser } from '@/domain/recipe/delete-recipe';
 import type { MutateOutcome } from '@/domain/recipe/mutate-recipe';
 import { mutateRecipeForUser } from '@/domain/recipe/mutate-recipe-live';

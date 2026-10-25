@@ -6,9 +6,8 @@
  * route file only mounts it.
  */
 
-import { ApiController, pageBody } from '@/lib/core/api';
+import { ApiController, pageBody, problems } from '@/lib/core/api';
 import { liveUid } from '@/domain/api/auth';
-import { problems } from '@/lib/rest-json';
 import { getRecipePageRows } from '@/domain/db/recipe-page';
 import { parseSimilar } from '@/domain/recipe/similar';
 import { getDatabase } from '@/domain/db/client';

@@ -7,7 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 
-import { entityTag } from '@/lib/rest-json';
+import { entityTag } from '@/lib/core/api';
 import { fakeCookies } from '../../../../../lib/auth/session-fixture';
 import {
   addRecipe,

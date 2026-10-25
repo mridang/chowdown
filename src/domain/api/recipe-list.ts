@@ -9,8 +9,13 @@
 import { getAppPageRows } from '@/domain/db/recipe-page';
 import { sourceDomainOf } from '@/lib/cooklang';
 import { getDatabase } from '@/domain/db/client';
-import { decodeCursor, pageBody, parseLimit, sliceAfter } from '@/lib/core/api';
-import { problems } from '@/lib/rest-json';
+import {
+  decodeCursor,
+  pageBody,
+  parseLimit,
+  problems,
+  sliceAfter,
+} from '@/lib/core/api';
 import {
   comparePositions,
   filterRecipes,

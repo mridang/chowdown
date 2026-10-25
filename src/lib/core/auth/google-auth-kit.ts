@@ -12,7 +12,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { GoogleOAuthClient, type GoogleUser } from '@/lib/google';
-import { problem } from '@/lib/rest-json';
+import { problem } from '@/lib/core/api';
 import {
   SIGN_IN_PURPOSE,
   checkState,
