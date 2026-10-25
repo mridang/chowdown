@@ -9,4 +9,4 @@
 export type { Result } from './result';
 export { JsonClient } from './json-client';
 export type { JsonRequest } from './json-client';
-export type { ApiModel } from './model';
+export type { ApiModel } from './api-model';
