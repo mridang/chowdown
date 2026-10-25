@@ -24,9 +24,6 @@ export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
  */
 export const DRIVE_SCOPES = ['openid', DRIVE_SCOPE] as const;
 
-/** Where a token (and the grant behind it) is given back to Google. */
-const REVOKE_ENDPOINT = 'https://oauth2.googleapis.com/revoke';
-
 /** Whether a token response's granted scopes include Drive access. */
 export function grantedDrive(scope: string | undefined): boolean {
   return (scope ?? '').split(/\s+/).includes(DRIVE_SCOPE);
@@ -71,10 +68,26 @@ export async function refreshAccessToken(
     clientSecret: string;
   }>,
 ): Promise<AccessTokenResponse> {
-  return new GoogleOAuthClient({
+  const result = await new GoogleOAuthClient({
     clientId: params.clientId,
     clientSecret: params.clientSecret,
-  }).refreshAccessToken(params.refreshToken);
+  }).refreshAccessToken({ refreshToken: params.refreshToken });
+  if (!result.ok) {
+    if (result.status === undefined) {
+      // A transport error (the fetch itself failed): propagate it unchanged so
+      // a transient failure is not mistaken for a revoked login.
+      throw new Error(result.error);
+    }
+    // A 2xx with the wrong shape is "unexpected"; a real HTTP failure keeps its
+    // status and body in the message so a revoked login can be recognised (see
+    // drive-access `isAuthFailure`).
+    throw new Error(
+      result.status < 400
+        ? 'Token refresh failed: unexpected response'
+        : `Token refresh failed: ${result.status} ${result.raw}`,
+    );
+  }
+  return result.value;
 }
 
 /**
@@ -85,12 +98,11 @@ export async function refreshAccessToken(
  * free to ignore.
  */
 export async function revokeToken(refreshToken: string): Promise<void> {
-  const response = await fetch(REVOKE_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ token: refreshToken }),
+  // Revoking needs no client credentials, only the token itself.
+  const result = await new GoogleOAuthClient({ clientId: '' }).revoke({
+    token: refreshToken,
   });
-  if (!response.ok) {
-    throw new Error(`Token revocation failed: ${response.status}`);
+  if (!result.ok) {
+    throw new Error(`Token revocation failed: ${result.status}`);
   }
 }

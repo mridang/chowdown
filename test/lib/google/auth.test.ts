@@ -1,10 +1,6 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-import {
-  GoogleOAuthClient,
-  SIGN_IN_SCOPES,
-  isAccessTokenResponse,
-} from '@/lib/google';
+import { GoogleOAuthClient, SIGN_IN_SCOPES } from '@/lib/google';
 
 const client = new GoogleOAuthClient({
   clientId: 'client-id',
@@ -81,9 +77,13 @@ describe('exchangeCode', () => {
       expires_in: 3600,
     };
     const fetchSpy = answerWith(tokens);
-    await expect(client.exchangeCode(params)).resolves.toEqual(tokens);
+    const result = await client.exchangeCode(params);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).toEqual(tokens);
+    }
     const [url, init] = fetchSpy.mock.calls[0] ?? [];
-    expect(url).toBe('https://oauth2.googleapis.com/token');
+    expect(String(url)).toBe('https://oauth2.googleapis.com/token');
     expect(init?.method).toBe('POST');
     const form = new URLSearchParams(String(init?.body));
     expect(Object.fromEntries(form)).toEqual({
@@ -95,28 +95,30 @@ describe('exchangeCode', () => {
     });
   });
 
-  it("throws with Google's answer when the exchange is refused", async () => {
+  it("reports Google's answer when the exchange is refused", async () => {
     answerWith({ error: 'invalid_grant' }, 400);
-    await expect(client.exchangeCode(params)).rejects.toThrow(
-      /Token exchange failed: 400 .*invalid_grant/,
-    );
+    const result = await client.exchangeCode(params);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(400);
+      expect(result.raw).toMatch(/invalid_grant/);
+    }
   });
 
-  it('throws when the answer has no access token', async () => {
+  it('fails when the answer has no access token', async () => {
     answerWith({ nothing: true });
-    await expect(client.exchangeCode(params)).rejects.toThrow(
-      /unexpected response/,
-    );
+    expect((await client.exchangeCode(params)).ok).toBe(false);
   });
 });
 
 describe('refreshAccessToken', () => {
   it('posts the refresh grant and returns the minted token', async () => {
     const fetchSpy = answerWith({ access_token: 'fresh', expires_in: 3600 });
-    await expect(client.refreshAccessToken('rt')).resolves.toEqual({
-      access_token: 'fresh',
-      expires_in: 3600,
-    });
+    const result = await client.refreshAccessToken({ refreshToken: 'rt' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).toEqual({ access_token: 'fresh', expires_in: 3600 });
+    }
     const form = new URLSearchParams(String(fetchSpy.mock.calls[0]?.[1]?.body));
     expect(Object.fromEntries(form)).toEqual({
       refresh_token: 'rt',
@@ -126,11 +128,13 @@ describe('refreshAccessToken', () => {
     });
   });
 
-  it('names the step when Google refuses', async () => {
+  it('reports the status when Google refuses', async () => {
     answerWith({ error: 'nope' }, 400);
-    await expect(client.refreshAccessToken('rt')).rejects.toThrow(
-      /Token refresh failed: 400/,
-    );
+    const result = await client.refreshAccessToken({ refreshToken: 'rt' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(400);
+    }
   });
 });
 
@@ -147,48 +151,65 @@ describe('getUserInfo', () => {
   it('sends the access token as a bearer and returns who the person is', async () => {
     const user = { sub: '1', email: 'a@b.com', name: 'Ann' };
     const fetchSpy = answerWith(user);
-    await expect(client.getUserInfo('at')).resolves.toEqual(user);
+    const result = await client.getUserInfo('at');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).toEqual(user);
+    }
     expect(fetchSpy.mock.calls[0]?.[1]?.headers).toEqual({
       Authorization: 'Bearer at',
     });
   });
 
-  it('throws when Google refuses', async () => {
+  it('fails when Google refuses', async () => {
     answerWith({}, 401);
-    await expect(client.getUserInfo('at')).rejects.toThrow(
-      'userinfo failed: 401',
-    );
+    const result = await client.getUserInfo('at');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(401);
+    }
   });
 
   it('accepts an answer with only `sub`, as a grant that carries just `openid` gives', async () => {
     // Google then names the account and nothing else.
     answerWith({ sub: '1' });
-    await expect(client.getUserInfo('at')).resolves.toEqual({ sub: '1' });
+    const result = await client.getUserInfo('at');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).toEqual({ sub: '1' });
+    }
   });
 
-  it('throws when the answer does not say which account it is', async () => {
+  it('fails when the answer does not say which account it is', async () => {
     answerWith({ email: 'a@b.com' });
-    await expect(client.getUserInfo('at')).rejects.toThrow(
-      /unexpected response/,
-    );
+    expect((await client.getUserInfo('at')).ok).toBe(false);
   });
 
-  it('throws when the email is not text', async () => {
+  it('fails when the email is not text', async () => {
     answerWith({ sub: '1', email: 7 });
-    await expect(client.getUserInfo('at')).rejects.toThrow(
-      /unexpected response/,
-    );
+    expect((await client.getUserInfo('at')).ok).toBe(false);
   });
 });
 
-describe('isAccessTokenResponse', () => {
-  it('wants an access token and its lifetime', () => {
-    expect(isAccessTokenResponse({ access_token: 'a', expires_in: 1 })).toBe(
-      true,
+describe('revoke', () => {
+  it('posts the token to the revocation endpoint', async () => {
+    const fetchSpy = answerWith({});
+    const result = await client.revoke({ token: 'the-token' });
+    expect(result.ok).toBe(true);
+    const [url, init] = fetchSpy.mock.calls[0] ?? [];
+    expect(String(url)).toBe('https://oauth2.googleapis.com/revoke');
+    expect(init?.method).toBe('POST');
+    expect(new URLSearchParams(String(init?.body)).get('token')).toBe(
+      'the-token',
     );
-    expect(isAccessTokenResponse({ access_token: 5, expires_in: 'soon' })).toBe(
-      false,
-    );
-    expect(isAccessTokenResponse(null)).toBe(false);
+  });
+
+  it('reports the status when Google refuses', async () => {
+    answerWith({}, 400);
+    const result = await client.revoke({ token: 't' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.status).toBe(400);
+    }
   });
 });

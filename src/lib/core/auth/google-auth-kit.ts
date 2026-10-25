@@ -11,7 +11,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { GoogleOAuthClient, type GoogleUser } from '@/lib/google';
+import { GoogleOAuthClient, type GoogleUserResponse } from '@/lib/google';
 import { problem } from '@/lib/core/api';
 import {
   SIGN_IN_PURPOSE,
@@ -45,7 +45,7 @@ export interface GoogleAuthKitOptions {
   /** Finish a sign-in once the code has been exchanged. */
   readonly completeSignIn: (
     context: FlowContext,
-    info: GoogleUser,
+    info: GoogleUserResponse,
   ) => Promise<NextResponse>;
 }
 
@@ -155,11 +155,21 @@ export class GoogleAuthKit {
       };
       try {
         const google = this.#options.oauthClient();
-        const tokens = await google.exchangeCode({
+        const exchanged = await google.exchangeCode({
           code,
           redirectUri: `${origin}${this.#options.callbackPath}`,
         });
-        const info = await google.getUserInfo(tokens.access_token);
+        if (!exchanged.ok) {
+          throw new Error(
+            `Token exchange failed: ${exchanged.status ?? '?'} ${exchanged.raw}`,
+          );
+        }
+        const tokens = exchanged.value;
+        const identity = await google.getUserInfo(tokens.access_token);
+        if (!identity.ok) {
+          throw new Error(`userinfo failed: ${identity.status ?? '?'}`);
+        }
+        const info = identity.value;
         if (purpose === SIGN_IN_PURPOSE) {
           return await this.#options.completeSignIn(context, info);
         }

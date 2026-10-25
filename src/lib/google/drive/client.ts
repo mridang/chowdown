@@ -1,8 +1,10 @@
 /**
  * @packageDocumentation
  *
- * A thin Google Drive v3 REST client: find or create a folder by name, list the
- * files in one, read and write file contents, and trash a file. It is built
+ * A thin Google Drive v3 client. The JSON listing reads go through
+ * {@link JsonClient} and decode into {@link DriveFileListResponse}; reading,
+ * creating and overwriting file content are raw or multipart uploads done as
+ * direct fetches, since they are not JSON request/response calls. It is built
  * with a bearer access token (the user's `drive.file` token, for the files the
  * app owns) and knows nothing about what the app stores — the "Recipes" folder
  * and `.cook` files are the domain's concern.
@@ -11,6 +13,15 @@
  * through it, so {@link DriveClient.ensureFolder} creating the folder is what
  * makes the whole folder listable with the user's own token.
  */
+
+import { JsonClient } from '@/lib/http';
+
+import {
+  DriveFileListResponseSchema,
+  DriveFileSchema,
+  type DriveFile,
+  type DriveFileListResponse,
+} from './models';
 
 /** Base address of the Drive metadata API. */
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
@@ -21,47 +32,12 @@ const FOLDER_MIME = 'application/vnd.google-apps.folder';
 /** The most listing pages read for one folder (1000 files each). */
 const MAX_LIST_PAGES = 20;
 
-/** A Drive file as callers care about it. */
-export interface DriveFile {
-  readonly id: string;
-  readonly name: string;
-  readonly modifiedTime?: string;
-}
-
 /**
  * Whether `id` looks like a Drive file id: letters, digits, `_` and `-` only.
  * Checked before an id from a URL is used in a query.
  */
 export function isDriveFileId(id: string): boolean {
   return /^[\w-]+$/.test(id);
-}
-
-/** Whether a value is a file entry Drive returned (it has an id and a name). */
-function isDriveFile(value: unknown): value is DriveFile {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof Reflect.get(value, 'id') === 'string' &&
-    typeof Reflect.get(value, 'name') === 'string'
-  );
-}
-
-/** The well-formed file entries of a Drive listing answer (anything else is skipped). */
-function filesOf(listing: unknown): readonly DriveFile[] {
-  const files: unknown =
-    typeof listing === 'object' && listing !== null
-      ? Reflect.get(listing, 'files')
-      : undefined;
-  return Array.isArray(files) ? files.filter(isDriveFile) : [];
-}
-
-/** The token for the next page of a Drive listing answer, if there is one. */
-function nextPageTokenOf(listing: unknown): string | undefined {
-  const token: unknown =
-    typeof listing === 'object' && listing !== null
-      ? Reflect.get(listing, 'nextPageToken')
-      : undefined;
-  return typeof token === 'string' && token ? token : undefined;
 }
 
 /**
@@ -72,28 +48,36 @@ function nextPageTokenOf(listing: unknown): string | undefined {
 export class DriveClient {
   readonly #accessToken: string;
   readonly #fetch: typeof fetch;
+  readonly #http: JsonClient;
 
   constructor(accessToken: string, fetcher?: typeof fetch) {
     this.#accessToken = accessToken;
     // Resolve the global fetch lazily so a test that swaps it still takes effect.
     this.#fetch = fetcher ?? ((input, init) => fetch(input, init));
+    // Each listing read passes an absolute endpoint as the path, so base is empty.
+    this.#http = new JsonClient('', this.#fetch);
   }
 
   get #auth(): string {
     return `Bearer ${this.#accessToken}`;
   }
 
-  /** GET against the Drive API with the bearer token; throws on a non-2xx. */
-  async #get(path: string): Promise<Response> {
-    const response = await this.#fetch(`${DRIVE_API}${path}`, {
-      headers: { Authorization: this.#auth },
-    });
-    if (!response.ok) {
-      throw new Error(
-        `Drive GET ${path} -> ${response.status} ${await response.text()}`,
-      );
+  /** GET a JSON file listing from the Drive API; throws on a non-2xx or undecodable body. */
+  async #list(
+    query: Readonly<Record<string, string>>,
+  ): Promise<DriveFileListResponse> {
+    const result = await this.#http.request(
+      {
+        path: `${DRIVE_API}/files`,
+        query,
+        init: { headers: { Authorization: this.#auth } },
+      },
+      DriveFileListResponseSchema,
+    );
+    if (!result.ok) {
+      throw new Error(`Drive list -> ${result.status ?? '?'} ${result.raw}`);
     }
-    return response;
+    return result.value;
   }
 
   /**
@@ -102,17 +86,16 @@ export class DriveClient {
    * one of ours, never an unrelated folder the user owns.
    */
   async ensureFolder(name: string): Promise<string> {
-    const q = `name='${name}' and mimeType='${FOLDER_MIME}' and trashed=false`;
-    const params = new URLSearchParams({
-      q,
+    const listing = await this.#list({
+      q: `name='${name}' and mimeType='${FOLDER_MIME}' and trashed=false`,
       fields: 'files(id,name)',
       spaces: 'drive',
     });
-    const found = filesOf(await (await this.#get(`/files?${params}`)).json());
-    const existing = found.at(0);
+    const existing = listing.files?.at(0);
     if (existing) {
       return existing.id;
     }
+    // Creating the folder is a direct JSON POST that answers with just its id.
     const response = await this.#fetch(`${DRIVE_API}/files?fields=id`, {
       method: 'POST',
       headers: {
@@ -155,26 +138,41 @@ export class DriveClient {
     pageToken?: string,
     page = 0,
   ): Promise<readonly DriveFile[]> {
-    const params = new URLSearchParams({
+    const listing = await this.#list({
       q,
       fields: 'nextPageToken,files(id,name,modifiedTime)',
       pageSize: '1000',
       orderBy: 'name',
       ...(pageToken ? { pageToken } : {}),
     });
-    const data: unknown = await (await this.#get(`/files?${params}`)).json();
-    const next = nextPageTokenOf(data);
+    const files = listing.files ?? [];
+    const next = listing.nextPageToken;
     return next && page + 1 < MAX_LIST_PAGES
-      ? [...filesOf(data), ...(await this.#listPages(q, next, page + 1))]
-      : filesOf(data);
+      ? [...files, ...(await this.#listPages(q, next, page + 1))]
+      : files;
   }
 
-  /** Read a file's raw text content by id. */
+  /** Read a file's raw text content by id. A media download, done as a direct fetch. */
   async getContent(fileId: string): Promise<string> {
-    return (await this.#get(`/files/${fileId}?alt=media`)).text();
+    const response = await this.#fetch(
+      `${DRIVE_API}/files/${fileId}?alt=media`,
+      {
+        headers: { Authorization: this.#auth },
+      },
+    );
+    if (!response.ok) {
+      throw new Error(
+        `Drive GET /files/${fileId} -> ${response.status} ${await response.text()}`,
+      );
+    }
+    return response.text();
   }
 
-  /** Create a file in a folder via multipart upload. Returns the new file. */
+  /**
+   * Create a file in a folder via multipart upload. A direct fetch (not a JSON
+   * request), whose JSON answer is decoded with {@link DriveFileSchema}.
+   * Returns the new file.
+   */
   async createFile(
     params: Readonly<{
       parentId: string;
@@ -214,14 +212,17 @@ export class DriveClient {
         `Create file failed: ${response.status} ${await response.text()}`,
       );
     }
-    const created: unknown = await response.json();
-    if (!isDriveFile(created)) {
+    const decoded = DriveFileSchema.safeParse(await response.json());
+    if (!decoded.success) {
       throw new Error('Create file failed: no file in the answer');
     }
-    return created;
+    return decoded.data;
   }
 
-  /** Overwrite a file's content via a media upload (PATCH). */
+  /**
+   * Overwrite a file's content via a media upload (PATCH). A direct fetch, not
+   * a JSON request.
+   */
   async updateContent(
     fileId: string,
     content: string,

@@ -28,7 +28,7 @@ import {
 import { driveResultPath } from '@/domain/auth/drive-access';
 import { checkDriveGrant } from '@/domain/auth/drive-grant';
 import { finishFlow } from '@/lib/core/auth/flow-cookies';
-import type { GoogleUser, TokenResponse } from '@/lib/google';
+import type { GoogleUserResponse, TokenResponse } from '@/lib/google';
 import { SessionTokens, sessionIsCurrent } from '@/lib/session';
 import { setSessionCookie } from '@/lib/core/auth/session-cookie';
 import type { FlowContext } from '@/domain/auth/sign-in';
@@ -39,7 +39,7 @@ import type { FlowContext } from '@/domain/auth/sign-in';
  */
 export async function completeDriveConnect(
   { request, env, origin, returnTo }: FlowContext,
-  info: GoogleUser,
+  info: GoogleUserResponse,
   tokens: TokenResponse,
 ): Promise<NextResponse> {
   const db = getDatabase();
