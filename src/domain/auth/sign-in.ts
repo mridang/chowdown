@@ -11,10 +11,10 @@ import type { NextRequest, NextResponse } from 'next/server';
 
 import { LANDING_PATH } from '@/domain/auth/app';
 import { finishFlow } from '@/lib/core/auth/flow-cookies';
-import type { GoogleUserResponse, TokenResponse } from '@/lib/google';
 import { afterSignIn as defaultAfterSignIn } from '@/lib/core/auth/hooks';
-import { requireSessionSecret } from '@/lib/session';
 import { setSessionCookie } from '@/lib/core/auth/session-cookie';
+import type { GoogleUserResponse, TokenResponse } from '@/lib/google';
+import { requireSessionSecret } from '@/lib/session';
 import { upsertGoogleUser, type User } from '@/domain/auth/store';
 
 /** Where a round trip stands: who is asking, and where it came from. */

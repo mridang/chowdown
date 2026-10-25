@@ -8,7 +8,7 @@
  * choices can be tested without rendering anything.
  */
 
-import type { ShellUser } from '@/lib/core/auth/shell-user';
+import type { ShellUser } from '@/lib/core/auth';
 
 /** The little pictures a menu link can carry (see the phone menu). */
 export type NavIcon = 'recipes' | 'favourites' | 'add' | 'drive';

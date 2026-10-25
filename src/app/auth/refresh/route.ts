@@ -10,10 +10,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCurrentUser, getSession } from '@/lib/core/auth/current-user';
+import { getCurrentUser, getSession, setSessionCookie } from '@/lib/core/auth';
 import { safeReturnPath } from '@/lib/web-security';
 import { SESSION_COOKIE } from '@/domain/auth/app';
-import { setSessionCookie } from '@/lib/core/auth/session-cookie';
 import { getEnv } from '@/lib/core/runtime';
 import { appOrigin } from '@/lib/core/origin';
 

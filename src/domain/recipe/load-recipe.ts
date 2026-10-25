@@ -10,7 +10,7 @@ import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
 import { ENDED_SESSION_PATH } from '@/domain/auth/app';
-import { getCurrentUser, getSession } from '@/lib/core/auth/current-user';
+import { getCurrentUser, getSession } from '@/lib/core/auth';
 import {
   DriveNotConnectedError,
   isDriveConnected,

@@ -11,7 +11,7 @@
 import { redirect } from 'next/navigation';
 
 import { ENDED_SESSION_PATH, driveHint } from '@/domain/auth/app';
-import { getSession } from '@/lib/core/auth/current-user';
+import { getSession } from '@/lib/core/auth';
 import {
   DriveNotConnectedError,
   isDriveConnected,

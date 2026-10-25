@@ -10,7 +10,7 @@
  */
 
 import { problems } from '@/lib/core/api';
-import { getSessionUid } from '@/lib/core/auth/current-user';
+import { getSessionUid } from '@/lib/core/auth';
 import { getDatabase } from '@/domain/db/client';
 import { userHasCover } from '@/domain/images/cover-ownership';
 

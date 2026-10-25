@@ -10,12 +10,15 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCurrentUser, getSession } from '@/lib/core/auth/current-user';
+import {
+  getCurrentUser,
+  getSession,
+  setSessionCookie,
+  startFlowCookies,
+} from '@/lib/core/auth';
 import { isDriveConnected } from '@/domain/auth/drive-access';
 import { buildDriveAuthUrl } from '@/domain/auth/drive-oauth';
-import { startFlowCookies } from '@/lib/core/auth/flow-cookies';
 import { newState, safeReturnPath } from '@/lib/web-security';
-import { setSessionCookie } from '@/lib/core/auth/session-cookie';
 import { getEnv } from '@/lib/core/runtime';
 import { appOrigin } from '@/lib/core/origin';
 
