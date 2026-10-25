@@ -2,13 +2,14 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import {
   AUTHORIZE_FIELDS,
+  MAX_CLIENT_ID_LENGTH,
   authorizeParamsFrom,
   grantedScope,
   redirectWith,
-  validateAuthorizeRequest,
   type AuthorizeParams,
-} from '@/lib/oauth/authorize-request';
-import { MAX_CLIENT_ID_LENGTH, type OAuthClient } from '@/lib/oauth/client';
+  type OAuthClient,
+  validateAuthorizeRequest,
+} from '@/lib/oauth';
 
 import { quietSecurityLogs } from './quiet-logs';
 

@@ -1,11 +1,11 @@
-import { MAX_LIVE_GRANTS_PER_APP } from '@/lib/oauth/retention';
-import type {
-  CodeRecord,
-  GrantRecord,
-  OAuthStore,
-  TokenRecord,
-  TokenRow,
-} from '@/lib/oauth/token-endpoint';
+import {
+  MAX_LIVE_GRANTS_PER_APP,
+  type CodeRecord,
+  type GrantRecord,
+  type OAuthStore,
+  type TokenRecord,
+  type TokenRow,
+} from '@/lib/oauth';
 
 /** A token as the memory store keeps it. */
 interface StoredToken {

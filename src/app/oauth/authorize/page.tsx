@@ -14,12 +14,13 @@ import {
 import { resolveClient } from '@/domain/db/oauth';
 import {
   AUTHORIZE_FIELDS,
+  clientAddress,
+  clientIdentity,
+  describeRedirect,
   redirectWith,
-  validateAuthorizeRequest,
   type AuthorizeParams,
-} from '@/lib/oauth/authorize-request';
-import { clientIdentity, describeRedirect } from '@/lib/oauth/display';
-import { clientAddress } from '@/lib/oauth/limits';
+  validateAuthorizeRequest,
+} from '@/lib/oauth';
 import { getDatabase } from '@/domain/db/client';
 import { appOriginFromHeaders } from '@/lib/core/origin';
 

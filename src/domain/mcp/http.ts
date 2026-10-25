@@ -14,9 +14,13 @@
 
 import { errorMessage, logError } from '@/utils/logging';
 import type { User } from '@/domain/db/users';
-import { CORS_HEADERS } from '@/lib/oauth/http';
-import { wwwAuthenticate } from '@/lib/oauth/metadata';
-import { SCOPE_READ, hasScope, scopeForMessage } from '@/lib/oauth/scopes';
+import {
+  CORS_HEADERS,
+  SCOPE_READ,
+  hasScope,
+  scopeForMessage,
+  wwwAuthenticate,
+} from '@/lib/oauth';
 import type { McpAuth } from '@/domain/mcp/auth';
 import { ALLOWED_ORIGINS_SETTING, getEnvSafe } from '@/domain/mcp/env';
 import {
@@ -37,7 +41,7 @@ import {
   replyIdOf,
   type ProtocolMessage,
   type ProtocolRefusal,
-} from '@/lib/mcp/protocol';
+} from '@/lib/mcp';
 import {
   MAX_BATCH,
   checkRateLimits,

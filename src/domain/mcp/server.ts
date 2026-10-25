@@ -20,16 +20,16 @@ import { errorMessage, logError } from '@/utils/logging';
 import type { User } from '@/domain/db/users';
 import {
   ERROR_INVALID_PARAMS,
+  InvalidToolArguments,
+  McpServer,
   RpcError,
   SUPPORTED_VERSIONS,
+  UnknownTool,
   isPlainObject,
   negotiateLegacyVersion,
-} from '@/lib/mcp/protocol';
-import {
-  McpServer,
   type CacheHint,
   type JsonRpcResponse,
-} from '@/lib/mcp/server';
+} from '@/lib/mcp';
 import {
   CAPABILITIES,
   INSTRUCTIONS,
@@ -47,14 +47,13 @@ import {
 } from '@/domain/mcp/recipe-resources';
 import { callToolOrExplain } from '@/domain/mcp/tool-calls';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
-import { InvalidToolArguments, UnknownTool } from '@/lib/mcp/tool-errors';
 import {
   APP_RESOURCES,
   RESOURCE_MIME_TYPE,
   findAppResource,
 } from '@/domain/mcp/ui-resources';
 
-export type { JsonRpcMessage, JsonRpcResponse } from '@/lib/mcp/server';
+export type { JsonRpcMessage, JsonRpcResponse } from '@/lib/mcp';
 
 /** Runs a tool by name; the real one opens Drive and the database, so tests pass their own. */
 export type ToolRunner = typeof callToolOrExplain;

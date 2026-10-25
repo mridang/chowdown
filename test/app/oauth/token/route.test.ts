@@ -4,8 +4,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { OPTIONS, POST } from '@/app/oauth/token/route';
 import { createDatabase } from '@/domain/db/client';
 import { D1OAuthStore } from '@/domain/db/oauth';
-import { s256 } from '@/lib/oauth/pkce';
-import { issueAuthorizationCode } from '@/lib/oauth/token-endpoint';
+import { issueAuthorizationCode, s256 } from '@/lib/oauth';
 import { installCloudflareContext, sqliteD1 } from '../../../lib/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 

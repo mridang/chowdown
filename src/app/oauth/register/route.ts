@@ -8,11 +8,16 @@
 
 import { oauthSweeps, saveClient } from '@/domain/db/oauth';
 import { readBodyText } from '@/lib/core/api';
-import { MAX_REGISTRATION_BYTES } from '@/lib/oauth/client';
-import { noStoreJson, oauthError, preflight } from '@/lib/oauth/http';
-import { clientAddress, tooManyRequests } from '@/lib/oauth/limits';
-import { handleRegistration } from '@/lib/oauth/register-request';
-import { sweepSometimes } from '@/lib/oauth/sweep';
+import {
+  MAX_REGISTRATION_BYTES,
+  clientAddress,
+  handleRegistration,
+  noStoreJson,
+  oauthError,
+  preflight,
+  sweepSometimes,
+  tooManyRequests,
+} from '@/lib/oauth';
 import { D1RateLimitStore } from '@/lib/rate-limit';
 import { runInBackground } from '@/lib/core/runtime';
 import { getDatabase } from '@/domain/db/client';

@@ -53,31 +53,27 @@ import { SITE_URL } from '@/utils/site';
 import { getDatabase } from '@/domain/db/client';
 import { errorMessage, logError } from '@/utils/logging';
 import {
+  BackendFailure,
+  InvalidToolArguments,
+  UnknownTool,
+  canonicalArguments,
   isJsonObject,
-  validateJson,
+  numberArg,
+  offsetArg,
+  textArg,
   type JsonSchema,
-} from '@/lib/mcp/json-schema';
+  validateJson,
+} from '@/lib/mcp';
 import {
   SCENARIO_TOOLS,
   runScenarioTool,
   type ScenarioToolName,
 } from '@/domain/mcp/scenarios';
 import {
-  canonicalArguments,
-  numberArg,
-  offsetArg,
-  textArg,
-} from '@/lib/mcp/tool-args';
-import {
   PAGE_DEFAULT,
   PAGE_MAX,
   toolNamed,
 } from '@/domain/mcp/tool-definitions';
-import {
-  BackendFailure,
-  InvalidToolArguments,
-  UnknownTool,
-} from '@/lib/mcp/tool-errors';
 import {
   errorResult,
   recipeCardResult,

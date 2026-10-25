@@ -7,7 +7,7 @@ import {
   protectedResourceMetadata,
   resourceUri,
   wwwAuthenticate,
-} from '@/lib/oauth/metadata';
+} from '@/lib/oauth';
 
 const ORIGIN = 'https://chowdown.example';
 

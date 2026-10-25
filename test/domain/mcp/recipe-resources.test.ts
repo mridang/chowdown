@@ -5,8 +5,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import type { User } from '@/domain/db/users';
-import { RpcError } from '@/lib/mcp/protocol';
-import { BackendFailure } from '@/lib/mcp/tool-errors';
+import { BackendFailure, RpcError } from '@/lib/mcp';
 import {
   RECIPE_TEMPLATE,
   cachedRecipeLister,

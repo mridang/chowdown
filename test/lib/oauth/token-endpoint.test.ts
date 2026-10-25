@@ -2,23 +2,23 @@ import { beforeEach, describe, expect, it } from '@jest/globals';
 
 import { MemoryStore } from './memory-store';
 import { quietSecurityLogs, type LogSpy } from './quiet-logs';
-import { s256 } from '@/lib/oauth/pkce';
-import { MAX_LIVE_GRANTS_PER_APP } from '@/lib/oauth/retention';
-import { hashSecret } from '@/lib/oauth/secrets';
 import {
   ACCESS_TTL_SECONDS,
   CODE_TTL_SECONDS,
+  MAX_LIVE_GRANTS_PER_APP,
   REFRESH_GRACE_SECONDS,
   authenticateAccessToken,
   exchangeAuthorizationCode,
   exchangeRefreshToken as exchangeRefresh,
+  hashSecret,
   issueAuthorizationCode,
   revokeToken,
-  withinRefreshGrace,
+  s256,
   type CodeRecord,
   type OAuthFailure,
   type TokenResponse,
-} from '@/lib/oauth/token-endpoint';
+  withinRefreshGrace,
+} from '@/lib/oauth';
 
 const RESOURCE = 'https://chowdown.example/mcp';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';

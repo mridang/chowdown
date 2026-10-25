@@ -7,7 +7,7 @@ import {
   unsupportedKeywords,
   validateJson,
   type JsonSchema,
-} from '@/lib/mcp/json-schema';
+} from '@/lib/mcp';
 
 /** The problems found, with the subject spelled out as "It". */
 const problems = (schema: JsonSchema, value: unknown) =>

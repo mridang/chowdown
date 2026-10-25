@@ -31,7 +31,7 @@ import {
   type ProtocolMessage,
   type ReplyId,
   type ProtocolRefusal,
-} from '@/lib/mcp/protocol';
+} from '@/lib/mcp';
 
 /** The largest request body, in bytes. An import page is the biggest legitimate message and fits easily. */
 export const MAX_BODY_BYTES = 1_048_576;

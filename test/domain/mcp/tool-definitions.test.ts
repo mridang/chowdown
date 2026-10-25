@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import Ajv2020 from 'ajv/dist/2020.js';
 
-import { validateJson, unsupportedKeywords } from '@/lib/mcp/json-schema';
+import { validateJson, unsupportedKeywords } from '@/lib/mcp';
 import { MAX_BODY_BYTES } from '@/domain/mcp/request-limits';
 import {
   CONTENT_MAX,
@@ -10,7 +10,7 @@ import {
   toolNamed,
 } from '@/domain/mcp/tool-definitions';
 import { APP_RESOURCES } from '@/domain/mcp/ui-resources';
-import { SCOPE_READ, scopeForTool } from '@/lib/oauth/scopes';
+import { SCOPE_READ, scopeForTool } from '@/lib/oauth';
 import { PANCAKES, call, fakeServices, folder } from '../../lib/mcp/tool-fakes';
 
 /** A JSON Schema 2020-12 validator that rejects schemas with unknown keywords. */

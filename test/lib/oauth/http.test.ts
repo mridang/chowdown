@@ -9,7 +9,7 @@ import {
   oauthError,
   preflight,
   readOAuthForm,
-} from '@/lib/oauth/http';
+} from '@/lib/oauth';
 
 const withAuth = (value?: string) =>
   new Request('https://chowdown.test/x', {

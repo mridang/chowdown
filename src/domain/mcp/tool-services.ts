@@ -41,7 +41,7 @@ import { getDatabase } from '@/domain/db/client';
 import { errorMessage, logError } from '@/utils/logging';
 import type { ScenarioDeps } from '@/domain/mcp/scenarios';
 import type { FileOps } from '@/domain/mcp/tool-calls';
-import { BackendFailure } from '@/lib/mcp/tool-errors';
+import { BackendFailure } from '@/lib/mcp';
 
 /**
  * Run one outside call and turn any failure of it into a {@link BackendFailure}

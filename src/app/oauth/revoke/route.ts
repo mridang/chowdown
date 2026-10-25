@@ -6,20 +6,18 @@
 
 import { D1OAuthStore } from '@/domain/db/oauth';
 import {
+  OAUTH_LIMITS,
+  clientAddress,
   formFailure,
+  formField,
   noStoreJson,
   oauthError,
   preflight,
   readOAuthForm,
-} from '@/lib/oauth/http';
-import {
-  OAUTH_LIMITS,
-  clientAddress,
   retryAfterIfLimited,
+  revokeToken,
   tooManyRequests,
-} from '@/lib/oauth/limits';
-import { formField } from '@/lib/oauth/token-request';
-import { revokeToken } from '@/lib/oauth/token-endpoint';
+} from '@/lib/oauth';
 import { D1RateLimitStore } from '@/lib/rate-limit';
 import { getDatabase } from '@/domain/db/client';
 

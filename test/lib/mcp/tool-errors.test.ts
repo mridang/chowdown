@@ -1,10 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  BackendFailure,
-  InvalidToolArguments,
-  UnknownTool,
-} from '@/lib/mcp/tool-errors';
+import { BackendFailure, InvalidToolArguments, UnknownTool } from '@/lib/mcp';
 
 describe('UnknownTool', () => {
   it('names the tool the caller asked for', () => {

@@ -1,9 +1,12 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { nonceOf } from '@/lib/core/http/csp';
-import { genericClass } from '@/lib/core/http/edge-limits';
-import { EDGE_LIMITS } from '@/lib/core/http/extras';
-import { serve, type ServeApp } from '@/lib/core/http/serve';
+import {
+  EDGE_LIMITS,
+  genericClass,
+  nonceOf,
+  serve,
+  type ServeApp,
+} from '@/lib/core/http';
 
 /** A cache that keeps responses in memory, keyed by URL. */
 function memoryCache(): Cache & { readonly stored: Map<string, Response> } {

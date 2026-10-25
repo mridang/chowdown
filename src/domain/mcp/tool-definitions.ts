@@ -15,8 +15,8 @@
  * tool belongs in the server's instructions, not here.
  */
 
-import { scopeForTool } from '@/lib/oauth/scopes';
-import { NOT_BLANK } from '@/lib/mcp/json-schema';
+import { scopeForTool } from '@/lib/oauth';
+import { NOT_BLANK } from '@/lib/mcp';
 import {
   CARD_RESOURCE_URI,
   LIST_RESOURCE_URI,

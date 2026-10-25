@@ -6,7 +6,7 @@ import {
   firstRetryAfter,
   retryAfterIfLimited,
   tooManyRequests,
-} from '@/lib/oauth/limits';
+} from '@/lib/oauth';
 import type { RateLimit, RateLimitStore } from '@/lib/rate-limit';
 
 /** A store that counts hits per key in memory, in one never-ending window that opens at the first hit. */

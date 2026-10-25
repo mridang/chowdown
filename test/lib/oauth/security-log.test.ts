@@ -7,7 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 
-import { logSecurityEvent, type SecurityEvent } from '@/lib/oauth/security-log';
+import { logSecurityEvent, type SecurityEvent } from '@/lib/oauth';
 
 describe('logSecurityEvent', () => {
   let info: ReturnType<typeof jest.spyOn>;

@@ -22,7 +22,7 @@ import {
   type ToolRunner,
 } from '@/domain/mcp/server';
 import { callTool } from '@/domain/mcp/tool-calls';
-import { InvalidToolArguments, UnknownTool } from '@/lib/mcp/tool-errors';
+import { InvalidToolArguments, UnknownTool } from '@/lib/mcp';
 import {
   CAPABILITIES,
   INSTRUCTIONS,
@@ -32,7 +32,7 @@ import { textResult } from '@/domain/mcp/tool-results';
 import { APP_RESOURCES } from '@/domain/mcp/ui-resources';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
 import { PANCAKES, call, fakeServices, folder } from '../../lib/mcp/tool-fakes';
-import { SCOPE_READ, SCOPE_WRITE, scopeForTool } from '@/lib/oauth/scopes';
+import { SCOPE_READ, SCOPE_WRITE, scopeForTool } from '@/lib/oauth';
 
 /** The address of a view the server serves. */
 const FIRST_VIEW = APP_RESOURCES.at(0)?.uri ?? '';

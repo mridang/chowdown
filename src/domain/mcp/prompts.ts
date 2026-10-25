@@ -12,7 +12,7 @@
  * for a field the person skipped) is simply not mentioned.
  */
 
-import { ERROR_INVALID_PARAMS, RpcError } from '@/lib/mcp/protocol';
+import { ERROR_INVALID_PARAMS, RpcError } from '@/lib/mcp';
 
 /** One argument a prompt accepts. */
 export interface PromptArgument {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { PROMPT_DEFINITIONS, getPrompt } from '@/domain/mcp/prompts';
-import { RpcError } from '@/lib/mcp/protocol';
+import { RpcError } from '@/lib/mcp';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
 
 /** The opening message's text. */

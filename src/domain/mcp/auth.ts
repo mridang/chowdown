@@ -8,13 +8,13 @@
 
 import { D1OAuthStore } from '@/domain/db/oauth';
 import { getUserById, type User } from '@/domain/db/users';
-import { bearerToken } from '@/lib/oauth/http';
-import { resourceUri } from '@/lib/oauth/metadata';
-import { ACCESS_PREFIX } from '@/lib/oauth/secrets';
 import {
+  ACCESS_PREFIX,
   authenticateAccessToken,
+  bearerToken,
+  resourceUri,
   type AccessIdentity,
-} from '@/lib/oauth/token-endpoint';
+} from '@/lib/oauth';
 import { getDatabase } from '@/domain/db/client';
 
 /** Who the request is from, or why it is not allowed in. */

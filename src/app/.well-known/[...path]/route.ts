@@ -9,7 +9,7 @@
  * `security.txt`, `gpc.json`) over this catch-all, so it only sees the rest.
  */
 
-import { CORS_HEADERS, preflight } from '@/lib/oauth/http';
+import { CORS_HEADERS, preflight } from '@/lib/oauth';
 
 /**
  * `GET /.well-known/<anything else>`: no such document. A small JSON 404 that a

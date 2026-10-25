@@ -3,8 +3,11 @@
  * assistant uses to register, ask for access and get tokens.
  */
 
-import { noStoreJson, preflight } from '@/lib/oauth/http';
-import { authorizationServerMetadata } from '@/lib/oauth/metadata';
+import {
+  authorizationServerMetadata,
+  noStoreJson,
+  preflight,
+} from '@/lib/oauth';
 import { appOrigin } from '@/lib/core/origin';
 
 /**

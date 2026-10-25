@@ -24,7 +24,7 @@ import {
   protocolRefusal,
   replyIdOf,
   withoutId,
-} from '@/lib/mcp/protocol';
+} from '@/lib/mcp';
 
 const META = 'io.modelcontextprotocol/protocolVersion';
 const CAPS = 'io.modelcontextprotocol/clientCapabilities';

@@ -7,11 +7,7 @@ import {
   callToolOrExplain,
   noteTarget,
 } from '@/domain/mcp/tool-calls';
-import {
-  BackendFailure,
-  InvalidToolArguments,
-  UnknownTool,
-} from '@/lib/mcp/tool-errors';
+import { BackendFailure, InvalidToolArguments, UnknownTool } from '@/lib/mcp';
 import { guardFileOps } from '@/domain/mcp/tool-services';
 import { RECIPE_TEXT_CLOSE, RECIPE_TEXT_OPEN } from '@/domain/mcp/tool-text';
 import {

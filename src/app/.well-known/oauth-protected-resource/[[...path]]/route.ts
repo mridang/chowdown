@@ -7,11 +7,12 @@
  * derived from).
  */
 
-import { noStoreJson, preflight } from '@/lib/oauth/http';
 import {
   isProtectedResourcePath,
+  noStoreJson,
+  preflight,
   protectedResourceMetadata,
-} from '@/lib/oauth/metadata';
+} from '@/lib/oauth';
 import { appOrigin } from '@/lib/core/origin';
 
 /** The route's dynamic segments: the optional rest of the path after the well-known prefix. */

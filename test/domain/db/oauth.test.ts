@@ -9,8 +9,7 @@ import {
   revokeConnectedApp,
   saveClient,
 } from '@/domain/db/oauth';
-import { OAUTH_LIMITS } from '@/lib/oauth/limits';
-import { MAX_LIVE_GRANTS_PER_APP } from '@/lib/oauth/retention';
+import { MAX_LIVE_GRANTS_PER_APP, OAUTH_LIMITS } from '@/lib/oauth';
 import type { RateLimitStore } from '@/lib/rate-limit';
 import { fakeDb } from '../../lib/db/fake-db';
 import { sqliteDatabase } from '../../lib/db/sqlite-db';

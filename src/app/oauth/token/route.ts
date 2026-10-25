@@ -7,20 +7,18 @@
 
 import { D1OAuthStore, oauthSweeps } from '@/domain/db/oauth';
 import {
+  OAUTH_LIMITS,
+  clientAddress,
   formFailure,
+  handleTokenRequest,
   noStoreJson,
   oauthError,
   preflight,
   readOAuthForm,
-} from '@/lib/oauth/http';
-import {
-  OAUTH_LIMITS,
-  clientAddress,
   retryAfterIfLimited,
+  sweepSometimes,
   tooManyRequests,
-} from '@/lib/oauth/limits';
-import { sweepSometimes } from '@/lib/oauth/sweep';
-import { handleTokenRequest } from '@/lib/oauth/token-request';
+} from '@/lib/oauth';
 import { D1RateLimitStore } from '@/lib/rate-limit';
 import { runInBackground } from '@/lib/core/runtime';
 import { getDatabase } from '@/domain/db/client';

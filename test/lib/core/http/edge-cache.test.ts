@@ -1,17 +1,15 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
 
 import {
+  CACHED_QUERY_PARAMS,
+  EDGE_CACHED_PAGES,
+  EDGE_TTL_SECONDS,
   edgeCache,
   edgeCacheKey,
   isEdgeCacheable,
   storableCopy,
   withFreshNonce,
-} from '@/lib/core/http/edge-cache';
-import {
-  CACHED_QUERY_PARAMS,
-  EDGE_CACHED_PAGES,
-  EDGE_TTL_SECONDS,
-} from '@/lib/core/http/site';
+} from '@/lib/core/http';
 
 /** The pages these tests let the edge keep a copy of. */
 const pages: ReadonlySet<string> = new Set(['/', '/privacy']);

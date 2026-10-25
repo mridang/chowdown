@@ -43,7 +43,7 @@ describe('POST /oauth/revoke', () => {
   });
 
   it('ends the grant a known token belongs to', async () => {
-    const { hashSecret } = await import('@/lib/oauth/secrets');
+    const { hashSecret } = await import('@/lib/oauth');
     raw
       .prepare(
         "INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g', 7, 'c', 'recipes:read', 'r', 'now')",

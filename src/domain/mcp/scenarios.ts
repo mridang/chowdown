@@ -36,7 +36,7 @@ import {
   offsetArg,
   stringArg,
   stringListArg,
-} from '@/lib/mcp/tool-args';
+} from '@/lib/mcp';
 import { pastTheEnd, plainTitle, rangeText } from '@/domain/mcp/tool-text';
 
 /** A cached recipe, parsed once, with what the scenario tools look at. */

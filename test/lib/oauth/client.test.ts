@@ -19,7 +19,7 @@ import {
   parseRegistration,
   parseRegistrationText,
   registrationResponse,
-} from '@/lib/oauth/client';
+} from '@/lib/oauth';
 
 const URL_ID = 'https://chatgpt.com/oauth/client.json';
 const goodDoc = {

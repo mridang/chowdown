@@ -1,8 +1,10 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { OAuthClient } from '@/lib/oauth/client';
-import { OAUTH_LIMITS } from '@/lib/oauth/limits';
-import { handleRegistration } from '@/lib/oauth/register-request';
+import {
+  OAUTH_LIMITS,
+  handleRegistration,
+  type OAuthClient,
+} from '@/lib/oauth';
 import type { RateLimitStore } from '@/lib/rate-limit';
 
 const body = JSON.stringify({

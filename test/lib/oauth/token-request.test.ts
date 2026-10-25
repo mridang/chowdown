@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
-import { s256 } from '@/lib/oauth/pkce';
 import {
   formField,
   handleTokenRequest,
+  issueAuthorizationCode,
+  s256,
   type TokenRequestResult,
-} from '@/lib/oauth/token-request';
-import { issueAuthorizationCode } from '@/lib/oauth/token-endpoint';
+} from '@/lib/oauth';
 import { MemoryStore } from './memory-store';
 import { quietSecurityLogs } from './quiet-logs';
 

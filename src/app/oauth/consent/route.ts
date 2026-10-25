@@ -11,16 +11,16 @@ import { getLiveSessionUid } from '@/lib/core/auth/current-user';
 import { D1OAuthStore, resolveClient } from '@/domain/db/oauth';
 import { readFormBody } from '@/lib/core/api';
 import {
+  MAX_OAUTH_FORM_BYTES,
   authorizeParamsFrom,
+  clientAddress,
   grantedScope,
+  issueAuthorizationCode,
+  logSecurityEvent,
   redirectWith,
   validateAuthorizeRequest,
-} from '@/lib/oauth/authorize-request';
+} from '@/lib/oauth';
 import { isSameOriginPost } from '@/lib/web-security';
-import { MAX_OAUTH_FORM_BYTES } from '@/lib/oauth/http';
-import { clientAddress } from '@/lib/oauth/limits';
-import { logSecurityEvent } from '@/lib/oauth/security-log';
-import { issueAuthorizationCode } from '@/lib/oauth/token-endpoint';
 import { getDatabase } from '@/domain/db/client';
 import { appOrigin } from '@/lib/core/origin';
 

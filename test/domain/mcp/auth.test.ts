@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import type { User } from '@/domain/db/users';
-import { ACCESS_PREFIX, REFRESH_PREFIX, newSecret } from '@/lib/oauth/secrets';
+import { ACCESS_PREFIX, REFRESH_PREFIX, newSecret } from '@/lib/oauth';
 import { authenticateMcpRequest, type McpAuthDeps } from '@/domain/mcp/auth';
 
 const ORIGIN = 'https://chowdown.test';

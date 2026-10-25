@@ -5,6 +5,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import ts from 'typescript';
 
 import {
+  EDGE_LIMITS,
   GENERIC_CLASSES,
   OVERALL_BINDING,
   counterKey,
@@ -14,8 +15,7 @@ import {
   tooManyRequests,
   type GenericClass,
   type RateLimitBinding,
-} from '@/lib/core/http/edge-limits';
-import { EDGE_LIMITS } from '@/lib/core/http/extras';
+} from '@/lib/core/http';
 
 /** A binding that allows the first `allowance` calls per key and refuses the rest. */
 function binding(allowance: number): RateLimitBinding & {

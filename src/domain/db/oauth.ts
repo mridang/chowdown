@@ -18,30 +18,28 @@ import {
 } from 'drizzle-orm';
 
 import {
+  MAX_LIVE_GRANTS_PER_APP,
+  NEUTRAL_CLIENT_NAME,
+  OAUTH_LIMITS,
+  SUPPORTED_SCOPES,
+  clientIdentity,
   fetchClientMetadata,
+  firstRetryAfter,
   isDocumentFresh,
   isDocumentUsable,
   isMetadataDocumentUrl,
-  type ClientBusy,
-  type OAuthClient,
-} from '@/lib/oauth/client';
-import { OAUTH_LIMITS, firstRetryAfter } from '@/lib/oauth/limits';
-import {
-  clientIdentity,
-  NEUTRAL_CLIENT_NAME,
+  logSecurityEvent,
+  purgeCutoffs,
   sanitiseDisplayName,
-} from '@/lib/oauth/display';
-import { MAX_LIVE_GRANTS_PER_APP, purgeCutoffs } from '@/lib/oauth/retention';
-import { SUPPORTED_SCOPES } from '@/lib/oauth/scopes';
-import { logSecurityEvent } from '@/lib/oauth/security-log';
-import type { Sweeps } from '@/lib/oauth/sweep';
-import type {
-  CodeRecord,
-  GrantRecord,
-  OAuthStore,
-  TokenRecord,
-  TokenRow,
-} from '@/lib/oauth/token-endpoint';
+  type ClientBusy,
+  type CodeRecord,
+  type GrantRecord,
+  type OAuthClient,
+  type OAuthStore,
+  type Sweeps,
+  type TokenRecord,
+  type TokenRow,
+} from '@/lib/oauth';
 import {
   D1RateLimitStore,
   purgeRateLimits,
