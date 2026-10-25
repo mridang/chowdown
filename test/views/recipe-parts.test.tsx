@@ -1,12 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { RecipeCardData } from '../../src/lib/mcp/ui-types';
-import {
-  Eyebrow,
-  FullRecipe,
-  MetaRow,
-  Step,
-} from '../../src/views/recipe-parts';
+import type { RecipeCardData } from '@/domain/mcp/ui-types';
+import { Eyebrow, FullRecipe, MetaRow, Step } from '@/views/recipe-parts';
 import { html } from '../components/render';
 
 const RECIPE: RecipeCardData = {

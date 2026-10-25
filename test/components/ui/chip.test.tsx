@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { CountBadge, FilterChip, Tag } from '../../../src/components/ui/chip';
+import { CountBadge, FilterChip, Tag } from '@/components/ui/chip';
 import { html } from '../render';
 
 describe('FilterChip', () => {

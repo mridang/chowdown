@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { HeroPhoto } from '../../../src/components/recipe/hero-photo';
+import { HeroPhoto } from '@/components/recipe/hero-photo';
 import { html } from '../render';
 
 describe('HeroPhoto', () => {

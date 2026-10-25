@@ -1,11 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { OPTIONS, POST } from '../../../../src/app/oauth/token/route';
-import { createDatabase } from '../../../../src/lib/db/client';
-import { createOAuthStore } from '../../../../src/lib/db/oauth';
-import { s256 } from '../../../../src/lib/oauth/pkce';
-import { issueAuthorizationCode } from '../../../../src/lib/oauth/token-endpoint';
+import { OPTIONS, POST } from '@/app/oauth/token/route';
+import { createDatabase } from '@/domain/db/client';
+import { D1OAuthStore } from '@/domain/db/oauth';
+import { issueAuthorizationCode, s256 } from '@/lib/oauth';
 import { installCloudflareContext, sqliteD1 } from '../../../lib/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 
@@ -37,7 +36,7 @@ afterEach(() => restore());
 /** A fresh authorization code for user 7 and client `client-1`. */
 async function newCode(): Promise<string> {
   return issueAuthorizationCode(
-    createOAuthStore(database),
+    new D1OAuthStore(database),
     {
       clientId: 'client-1',
       userId: 7,
@@ -164,7 +163,7 @@ describe('POST /oauth/token', () => {
 
   it('redeems a code when neither request named the redirect address and the client has one', async () => {
     const code = await issueAuthorizationCode(
-      createOAuthStore(database),
+      new D1OAuthStore(database),
       {
         clientId: 'client-1',
         userId: 7,

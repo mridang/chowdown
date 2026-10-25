@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { hashSecret, newSecret } from '../../../src/lib/oauth/secrets';
+import { hashSecret, newSecret } from '@/lib/oauth';
 
 describe('newSecret', () => {
   it('is prefixed, url-safe and different every time', () => {

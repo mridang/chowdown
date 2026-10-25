@@ -14,7 +14,7 @@
  * production and under Jest with no polyfill.
  */
 
-import { base64ToBytes, bufferSource, bytesToBase64 } from './util/base64';
+import { base64ToBytes, bufferSource, bytesToBase64 } from '@/utils/base64';
 
 /** Length of the AES-GCM initialisation vector, in bytes (96 bits — the standard). */
 const IV_BYTES = 12;

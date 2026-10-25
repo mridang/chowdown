@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   RecipeStateProvider,
   useRecipeState,
-} from '../../../src/components/recipe/recipe-state';
+} from '@/components/recipe/recipe-state';
 import { html } from '../render';
 
 /** Prints what the shared state says, so a test can read it. */

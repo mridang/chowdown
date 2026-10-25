@@ -1,8 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import RecipeNotFound, {
-  metadata,
-} from '../../../../../src/app/(site)/recipe/[id]/not-found';
+import RecipeNotFound, { metadata } from '@/app/(site)/recipe/[id]/not-found';
 import { html } from '../../../../components/render';
 
 describe('RecipeNotFound', () => {

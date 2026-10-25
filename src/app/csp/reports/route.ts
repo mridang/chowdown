@@ -9,8 +9,8 @@
 
 import { NextResponse } from 'next/server';
 
-import { readJsonBody } from '@/lib/http/body';
-import { summariseReports } from '@/lib/http/csp-reports';
+import { readJsonBody } from '@/lib/core/api';
+import { summariseReports } from '@/lib/core/http';
 
 /** The largest report body read: a few reports are a few hundred bytes each. */
 const MAX_REPORT_BYTES = 16_384;
@@ -22,7 +22,7 @@ const MAX_REPORT_BYTES = 16_384;
  * Needs no sign-in: browsers send these anonymously, and the edge limits how
  * many one address may send.
  */
-export async function POST(request: Request): Promise<NextResponse> {
+export async function POST(request: Request): Promise<Response> {
   const body = await readJsonBody(request, MAX_REPORT_BYTES);
   if (body.kind === 'too-large') {
     return new NextResponse(null, { status: 413 });

@@ -4,7 +4,7 @@ import {
   ANNOUNCEMENTS,
   missingFieldErrors,
   prepareImport,
-} from '../../../../../../../src/app/(site)/(pages)/recipes/add/_components/import-flow';
+} from '@/app/(site)/(pages)/recipes/add/_components/import-flow';
 
 afterEach(() => {
   jest.restoreAllMocks();

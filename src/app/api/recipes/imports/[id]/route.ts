@@ -7,11 +7,13 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireLiveUid } from '@/lib/api/auth';
-import { problems } from '@/lib/api/problem';
-import type { IdContext } from '@/lib/api/route-context';
-import { deleteRecipeImport, getRecipeImport } from '@/lib/db/recipe-imports';
-import { getDatabase } from '@/lib/util';
+import { requireLiveUid } from '@/domain/api/auth';
+import { problems, type IdContext } from '@/lib/core/api';
+import {
+  deleteRecipeImport,
+  getRecipeImport,
+} from '@/domain/db/recipe-imports';
+import { getDatabase } from '@/domain/db/client';
 
 /**
  * `GET /api/recipes/imports/:id`: the import with all its drafts. Answers 200,
@@ -20,7 +22,7 @@ import { getDatabase } from '@/lib/util';
 export async function GET(
   request: Request,
   { params }: IdContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
@@ -44,7 +46,7 @@ export async function GET(
 export async function DELETE(
   request: Request,
   { params }: IdContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;

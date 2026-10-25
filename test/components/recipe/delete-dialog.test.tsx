@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { DeleteDialog } from '../../../src/components/recipe/delete-dialog';
+import { DeleteDialog } from '@/components/recipe/delete-dialog';
 import { htmlAt } from '../render';
 
 const markup = (open: boolean) =>

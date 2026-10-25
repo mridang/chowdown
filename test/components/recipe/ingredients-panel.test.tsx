@@ -3,8 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import {
   IngredientsPanel,
   toggledIn,
-} from '../../../src/components/recipe/ingredients-panel';
-import { RecipeStateProvider } from '../../../src/components/recipe/recipe-state';
+} from '@/components/recipe/ingredients-panel';
+import { RecipeStateProvider } from '@/components/recipe/recipe-state';
 import { html } from '../render';
 
 const panel = (ingredients: { name: string; quantity: string }[]) =>

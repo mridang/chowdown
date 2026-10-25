@@ -5,7 +5,7 @@
  * outcome can be decided (and checked) without a browser.
  */
 
-import { problemError, problemText } from '@/lib/problem-message';
+import { problemError, problemText } from '@/lib/core/api';
 
 /** How saving a note ended: saved, or the sentence to show the person. */
 export type NoteResult =

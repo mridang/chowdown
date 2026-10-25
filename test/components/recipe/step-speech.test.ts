@@ -1,9 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  spokenQuantity,
-  spokenStep,
-} from '../../../src/components/recipe/step-speech';
+import { spokenQuantity, spokenStep } from '@/components/recipe/step-speech';
 
 describe('spokenQuantity', () => {
   it.each([

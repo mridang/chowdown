@@ -9,13 +9,13 @@ import {
 
 import { CLIENT_ASSERTION_TYPE } from '../../../src/lib/oauth/client-auth';
 
-import { s256 } from '../../../src/lib/oauth/pkce';
 import {
   formField,
   handleTokenRequest,
+  issueAuthorizationCode,
+  s256,
   type TokenRequestResult,
-} from '../../../src/lib/oauth/token-request';
-import { issueAuthorizationCode } from '../../../src/lib/oauth/token-endpoint';
+} from '@/lib/oauth';
 import { MemoryStore } from './memory-store';
 import { quietSecurityLogs } from './quiet-logs';
 

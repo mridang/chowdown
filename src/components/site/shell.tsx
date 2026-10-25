@@ -1,11 +1,11 @@
 import type { ReactElement, ReactNode } from 'react';
 
-import { getShellUser } from '@/lib/auth/shell-user';
+import { getShellUser } from '@/lib/core/auth/shell-user';
 
-import { MAIN_MIN_HEIGHT_CLASS } from './header-height';
-import { SiteFooter } from './site-footer';
-import { SiteHeader } from './site-header';
-import { SkipLink } from './skip-link';
+import { MAIN_MIN_HEIGHT_CLASS } from '@/components/site/header-height';
+import { SiteFooter } from '@/components/site/site-footer';
+import { SiteHeader } from '@/components/site/site-header';
+import { SkipLink } from '@/components/site/skip-link';
 
 /** The frame shared by every page: skip link, header, content and footer. */
 export async function SiteShell({

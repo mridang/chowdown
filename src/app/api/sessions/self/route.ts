@@ -7,15 +7,15 @@
 
 import { NextResponse } from 'next/server';
 
-import { SESSION_COOKIE } from '@/lib/auth/app';
-import { crossSiteRefusal } from '@/lib/auth/guard';
+import { SESSION_COOKIE } from '@/domain/auth/app';
+import { crossSiteRefusal } from '@/lib/core/auth';
 
 /**
  * `DELETE /api/sessions/self`: sign out by clearing the session cookie. Answers
  * 204, or 403 when the request came from another site (so a stranger's page
  * cannot sign people out).
  */
-export async function DELETE(request: Request): Promise<NextResponse> {
+export async function DELETE(request: Request): Promise<Response> {
   const refused = crossSiteRefusal(request);
   if (refused) {
     return refused;

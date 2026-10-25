@@ -6,11 +6,10 @@ import {
   it,
   jest,
 } from '@jest/globals';
+import type { NextResponse } from 'next/server';
 
-import {
-  SESSION_COOKIE,
-  verifySessionToken,
-} from '../../../../src/lib/auth/session';
+import { SessionTokens } from '@/lib/session';
+import { SESSION_COOKIE } from '@/domain/auth/app';
 import {
   SESSION_SECRET,
   fakeCookies,
@@ -27,7 +26,7 @@ import {
 
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
-const { GET } = await import('../../../../src/app/auth/refresh/route');
+const { GET } = await import('@/app/auth/refresh/route');
 
 let world: World;
 
@@ -39,8 +38,8 @@ afterEach(() => world.close());
 
 /** The session the route put in its response cookie. */
 async function reissued(res: Awaited<ReturnType<typeof GET>>) {
-  const value = res.cookies.get(SESSION_COOKIE)?.value;
-  return value ? verifySessionToken(value, SESSION_SECRET) : null;
+  const value = (res as NextResponse).cookies.get(SESSION_COOKIE)?.value;
+  return value ? new SessionTokens(SESSION_SECRET).verify(value) : null;
 }
 
 describe('GET /auth/refresh', () => {

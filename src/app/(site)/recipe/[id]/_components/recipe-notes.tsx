@@ -3,10 +3,10 @@ import type { ReactElement } from 'react';
 import { NoteIcon } from '@/components/icons';
 import { Card } from '@/components/ui/card';
 import { Eyebrow, Heading } from '@/components/ui/layout';
-import { sentenceCase } from '@/lib/format';
-import type { GeneralNote } from '@/lib/recipe/page-view';
+import { sentenceCase } from '@/utils/text';
+import type { GeneralNote } from '@/domain/recipe/page-view';
 
-import { AddNote } from './add-note';
+import { AddNote } from '@/app/(site)/recipe/[id]/_components/add-note';
 
 /**
  * The reader's own notes about the recipe. Notes tied to an ingredient or step

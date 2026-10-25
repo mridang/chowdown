@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { TintTile } from '../../../src/components/ui/tint-tile';
+import { TintTile } from '@/components/ui/tint-tile';
 import { classOf, html } from '../render';
 
 describe('TintTile', () => {

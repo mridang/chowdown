@@ -10,15 +10,17 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCurrentUser, getSession } from '@/lib/auth/current-user';
-import { isDriveConnected } from '@/lib/auth/drive-access';
-import { buildDriveAuthUrl } from '@/lib/auth/drive-oauth';
-import { startFlowCookies } from '@/lib/auth/flow-cookies';
-import { newState } from '@/lib/auth/oauth-state';
-import { safeReturnPath } from '@/lib/auth/return-to';
-import { setSessionCookie } from '@/lib/auth/session-cookie';
-import { getEnv } from '@/lib/util';
-import { appOrigin } from '@/lib/util/origin';
+import {
+  getCurrentUser,
+  getSession,
+  setSessionCookie,
+  startFlowCookies,
+} from '@/lib/core/auth';
+import { isDriveConnected } from '@/domain/auth/drive-access';
+import { buildDriveAuthUrl } from '@/domain/auth/drive-oauth';
+import { newState, safeReturnPath } from '@/lib/web-security';
+import { getEnv } from '@/lib/core/runtime';
+import { appOrigin } from '@/lib/core/origin';
 
 /**
  * `GET /auth/drive`: connect Google Drive for the signed-in person.
@@ -26,7 +28,7 @@ import { appOrigin } from '@/lib/util/origin';
  * (with a corrected session cookie) when Drive is already connected, or to
  * Google's consent screen otherwise.
  */
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(request: NextRequest): Promise<Response> {
   const env = getEnv();
   const origin = appOrigin(request);
   const secure = origin.startsWith('https');

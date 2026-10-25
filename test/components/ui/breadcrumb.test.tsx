@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { Breadcrumb } from '../../../src/components/ui/breadcrumb';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { html } from '../render';
 
 describe('Breadcrumb', () => {

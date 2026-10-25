@@ -4,7 +4,7 @@ import {
   MAX_TAGS,
   RecipeTags,
   tagHref,
-} from '../../../../../../src/app/(site)/recipe/[id]/_components/recipe-tags';
+} from '@/app/(site)/recipe/[id]/_components/recipe-tags';
 import { html } from '../../../../../components/render';
 
 describe('tagHref', () => {

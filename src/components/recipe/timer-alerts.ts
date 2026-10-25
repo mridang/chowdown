@@ -1,4 +1,4 @@
-import type { StepTimer } from './timer-state';
+import type { StepTimer } from '@/components/recipe/timer-state';
 
 /**
  * How a finished timer gets the cook's attention: a short beep, a buzz, words

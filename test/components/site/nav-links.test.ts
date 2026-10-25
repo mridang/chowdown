@@ -5,8 +5,8 @@ import {
   APP_NAV,
   menuLinks,
   VISITOR_NAV,
-} from '../../../src/components/site/nav-links';
-import type { ShellUser } from '../../../src/lib/auth/shell-user';
+} from '@/components/site/nav-links';
+import type { ShellUser } from '@/lib/core/auth/shell-user';
 
 const ADA: ShellUser = {
   firstName: 'Ada',

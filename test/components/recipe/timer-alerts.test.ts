@@ -9,7 +9,7 @@ import {
   titleForFinished,
   VIBRATION_PATTERN,
   vibrateOnFinish,
-} from '../../../src/components/recipe/timer-alerts';
+} from '@/components/recipe/timer-alerts';
 
 /** A stand-in audio context that records what the beep asks of it. */
 function fakeContext(options: { readonly refuse?: boolean } = {}) {

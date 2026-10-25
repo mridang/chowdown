@@ -5,7 +5,7 @@ import {
   NEW_TAB,
   driveLink,
   driveOpenHref,
-} from '../../../src/components/site/drive-link';
+} from '@/components/site/drive-link';
 
 describe('driveOpenHref', () => {
   it('opens the Recipes folder when its id is known', () => {

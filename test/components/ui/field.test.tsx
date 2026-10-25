@@ -8,7 +8,7 @@ import {
   SelectField,
   TextArea,
   TextInput,
-} from '../../../src/components/ui/field';
+} from '@/components/ui/field';
 import { classOf, html } from '../render';
 
 describe('FormField', () => {

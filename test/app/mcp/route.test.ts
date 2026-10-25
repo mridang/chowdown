@@ -9,15 +9,15 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { DELETE, GET, OPTIONS, POST } from '../../../src/app/mcp/route';
-import { createDatabase } from '../../../src/lib/db/client';
-import { createOAuthStore } from '../../../src/lib/db/oauth';
-import { s256 } from '../../../src/lib/oauth/pkce';
+import { DELETE, GET, OPTIONS, POST } from '@/app/mcp/route';
+import { createDatabase } from '@/domain/db/client';
+import { D1OAuthStore } from '@/domain/db/oauth';
 import {
   exchangeAuthorizationCode,
   issueAuthorizationCode,
+  s256,
   type TokenResponse,
-} from '../../../src/lib/oauth/token-endpoint';
+} from '@/lib/oauth';
 import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
 
 const ORIGIN = 'https://chowdown.test';
@@ -68,7 +68,7 @@ const rpc = (method: string, params?: Record<string, unknown>) =>
 async function accessToken(
   scope: readonly string[] = ['recipes:read', 'recipes:write'],
 ): Promise<string> {
-  const store = createOAuthStore(database);
+  const store = new D1OAuthStore(database);
   const now = Math.floor(Date.now() / 1000);
   const code = await issueAuthorizationCode(
     store,

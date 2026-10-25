@@ -23,16 +23,16 @@ import {
   modeFromResult,
   type DisplayMode,
   type LayoutAction,
-} from './display-mode';
-import { firstThatWorks, followUpChannels } from './follow-up';
+} from '@/views/display-mode';
+import { firstThatWorks, followUpChannels } from '@/views/follow-up';
 import {
   hasFixedHeight,
   localeToLang,
   safeAreaVariables,
-} from './host-context';
-import type { OpenAiApi } from './openai-bridge';
-import { readOutcome, type ToolOutcome } from './payload';
-import type { ViewAction } from './view-state';
+} from '@/views/host-context';
+import type { OpenAiApi } from '@/views/openai-bridge';
+import { readOutcome, type ToolOutcome } from '@/views/payload';
+import type { ViewAction } from '@/views/view-state';
 
 /**
  * The part of the page's root element the host context changes. `document

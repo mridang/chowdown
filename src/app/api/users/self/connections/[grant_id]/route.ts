@@ -2,34 +2,12 @@
  * Disconnect an app: its access and refresh tokens stop working immediately.
  *
  *   DELETE /api/users/self/connections/:grant_id → 204
+ *
+ * The behaviour lives in the `connectionItem` controller; this file only mounts it.
  */
 
-import { NextResponse } from 'next/server';
+import { connectionItem } from '@/domain/api/connections';
 
-import { requireLiveUid } from '@/lib/api/auth';
-import { problems } from '@/lib/api/problem';
-import { revokeConnectedApp } from '@/lib/db/oauth';
-import { getDatabase } from '@/lib/util';
+export const dynamic = 'force-dynamic';
 
-/**
- * `DELETE /api/users/self/connections/:grant_id`: revoke the app's access
- * right away. Answers 204, 404 when the grant is not the user's (or is already
- * revoked), 401 when nobody is signed in.
- */
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ grant_id: string }> },
-): Promise<NextResponse> {
-  const auth = await requireLiveUid(request);
-  if (!auth.ok) {
-    return auth.response;
-  }
-  const revoked = await revokeConnectedApp(
-    getDatabase(),
-    auth.value,
-    (await params).grant_id,
-  );
-  return revoked
-    ? new NextResponse(null, { status: 204 })
-    : problems.notFound('connected app');
-}
+export const { DELETE } = connectionItem.handlers();

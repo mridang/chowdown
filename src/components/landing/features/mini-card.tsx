@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 
 import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import { TintTile } from '@/components/ui/tint-tile';
-import { duration } from '@/lib/format';
+import { duration } from '@/utils/text';
 
 /**
  * A small recipe card for the mock-ups: the tile, the title and the time. It

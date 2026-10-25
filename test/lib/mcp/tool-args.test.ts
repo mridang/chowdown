@@ -7,7 +7,7 @@ import {
   offsetArg,
   stringArg,
   stringListArg,
-} from '../../../src/lib/mcp/tool-args';
+} from '@/lib/mcp';
 
 describe('stringArg', () => {
   it('trims a string and gives empty for anything else', () => {

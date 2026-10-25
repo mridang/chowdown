@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { RECIPES } from '../../../../src/components/landing/demo-recipes';
-import { AiVisual } from '../../../../src/components/landing/features/ai-visual';
-import { MCP_URL } from '../../../../src/lib/site';
+import { RECIPES } from '@/components/landing/demo-recipes';
+import { AiVisual } from '@/components/landing/features/ai-visual';
+import { MCP_URL } from '@/utils/site';
 import { html } from '../../render';
 
 describe('AiVisual', () => {

@@ -4,8 +4,8 @@ import {
   PhotoBlock,
   RecipeCard,
   RecipeGrid,
-} from '../../../src/components/recipes/recipe-card';
-import { toCardRecipe } from '../../../src/lib/recipe/card-data';
+} from '@/components/recipes/recipe-card';
+import { toCardRecipe } from '@/domain/recipe/card-data';
 import { html } from '../render';
 
 const SOURCE = [

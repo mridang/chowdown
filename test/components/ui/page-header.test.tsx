@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { PageHeader } from '../../../src/components/ui/page-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { html } from '../render';
 
 describe('PageHeader', () => {

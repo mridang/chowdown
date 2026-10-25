@@ -6,21 +6,25 @@ import type { ReactElement } from 'react';
 import { CenteredCard } from '@/components/site/centered-card';
 import { Eyebrow, Heading } from '@/components/ui/layout';
 import { DriveConnectPanel } from '@/components/site/drive-connect';
-import { getCurrentUser } from '@/lib/auth/current-user';
-import { isDriveConnected, wasDriveConnected } from '@/lib/auth/drive-access';
-import { resolveClient } from '@/lib/db/oauth';
+import { getCurrentUser } from '@/lib/core/auth/current-user';
+import {
+  isDriveConnected,
+  wasDriveConnected,
+} from '@/domain/auth/drive-access';
+import { resolveClient } from '@/domain/db/oauth';
 import {
   AUTHORIZE_FIELDS,
+  clientAddress,
+  clientIdentity,
+  describeRedirect,
   redirectWith,
-  validateAuthorizeRequest,
   type AuthorizeParams,
-} from '@/lib/oauth/authorize-request';
-import { clientIdentity, describeRedirect } from '@/lib/oauth/display';
-import { clientAddress } from '@/lib/oauth/limits';
-import { getDatabase } from '@/lib/util';
-import { appOriginFromHeaders } from '@/lib/util/origin';
+  validateAuthorizeRequest,
+} from '@/lib/oauth';
+import { getDatabase } from '@/domain/db/client';
+import { appOriginFromHeaders } from '@/lib/core/origin';
 
-import { ConsentCard } from './consent-card';
+import { ConsentCard } from '@/app/oauth/authorize/consent-card';
 
 /** The tab title of the approval screen. */
 export const metadata: Metadata = { title: 'Connect an app' };

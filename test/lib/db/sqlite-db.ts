@@ -4,8 +4,8 @@ import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 
-import type { Database } from '../../../src/lib/db/client';
-import * as schema from '../../../src/lib/db/schema';
+import type { Database } from '@/domain/db/client';
+import * as schema from '@/domain/db/schema';
 
 /** The method Drizzle asks the driver to run a statement with. */
 type Method = 'run' | 'all' | 'values' | 'get';

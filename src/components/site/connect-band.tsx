@@ -4,7 +4,7 @@ import { ArrowIcon, PlugIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
 import { CopyField } from '@/components/ui/copy-field';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
-import { MCP_URL } from '@/lib/site';
+import { MCP_URL } from '@/utils/site';
 
 /**
  * A call to action to connect an AI assistant: a short pitch, the server

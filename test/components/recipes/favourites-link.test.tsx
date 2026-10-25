@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { FavouritesLink } from '../../../src/components/recipes/favourites-link';
+import { FavouritesLink } from '@/components/recipes/favourites-link';
 import { html } from '../render';
 
 describe('FavouritesLink', () => {

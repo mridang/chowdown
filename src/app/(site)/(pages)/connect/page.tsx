@@ -4,17 +4,20 @@ import { redirect } from 'next/navigation';
 import type { ReactElement } from 'react';
 
 import { DriveConnectNotice } from '@/components/site/drive-connect';
-import { getCurrentUser } from '@/lib/auth/current-user';
-import { isDriveConnected, wasDriveConnected } from '@/lib/auth/drive-access';
-import { mcpUrl } from '@/lib/connected-apps';
-import { appOriginFromHeaders } from '@/lib/util/origin';
+import { getCurrentUser } from '@/lib/core/auth/current-user';
+import {
+  isDriveConnected,
+  wasDriveConnected,
+} from '@/domain/auth/drive-access';
+import { mcpUrl } from '@/domain/connected-apps';
+import { appOriginFromHeaders } from '@/lib/core/origin';
 import { Card } from '@/components/ui/card';
 import { CopyField } from '@/components/ui/copy-field';
 import { Container, Heading } from '@/components/ui/layout';
 import { NumberBadge } from '@/components/ui/number-badge';
 import { PageHeader } from '@/components/ui/page-header';
 
-import { ConnectedApps } from './_components/connected-apps';
+import { ConnectedApps } from '@/app/(site)/(pages)/connect/_components/connected-apps';
 
 /** The tab title and description of the Cook with AI page. */
 export const metadata: Metadata = {

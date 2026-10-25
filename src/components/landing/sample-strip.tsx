@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { cn } from '@/components/ui/cn';
 import { Container } from '@/components/ui/layout';
 import { TintTile } from '@/components/ui/tint-tile';
-import { duration } from '@/lib/format';
+import { duration } from '@/utils/text';
 
 /** A row of example recipes, drawn as tinted tiles with their facts. */
 export function SampleStrip({

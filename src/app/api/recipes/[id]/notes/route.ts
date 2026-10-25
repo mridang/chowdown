@@ -10,18 +10,21 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireLiveUid, requireUser } from '@/lib/api/auth';
-import { driveFailure } from '@/lib/api/drive-failure';
-import { readJsonObject } from '@/lib/api/json';
-import { settleMutation } from '@/lib/api/mutation-response';
-import { noteResource, parseNoteInput } from '@/lib/api/note-resource';
-import { absoluteUrl, pageBody } from '@/lib/api/pagination';
-import { problems } from '@/lib/api/problem';
-import type { IdContext } from '@/lib/api/route-context';
-import { getRecipeByFileId } from '@/lib/db/recipes';
-import { appendNote, extractNotes } from '@/lib/recipe/cook-text';
-import { mutateRecipeForUser } from '@/lib/recipe/mutate-recipe-live';
-import { getDatabase } from '@/lib/util';
+import { requireLiveUid, requireUser } from '@/domain/api/auth';
+import { driveFailure } from '@/domain/api/drive-failure';
+import {
+  absoluteUrl,
+  pageBody,
+  problems,
+  readJsonObject,
+  type IdContext,
+} from '@/lib/core/api';
+import { settleMutation } from '@/domain/api/mutation-response';
+import { noteResource, parseNoteInput } from '@/domain/api/note-resource';
+import { getRecipeByFileId } from '@/domain/db/recipes';
+import { appendNote, extractNotes } from '@/lib/cooklang';
+import { mutateRecipeForUser } from '@/domain/recipe/mutate-recipe-live';
+import { getDatabase } from '@/domain/db/client';
 
 /**
  * `GET /api/recipes/:id/notes`: the recipe's notes, in order, numbered from 1.
@@ -31,7 +34,7 @@ import { getDatabase } from '@/lib/util';
 export async function GET(
   request: Request,
   { params }: IdContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
@@ -60,7 +63,7 @@ export async function GET(
 export async function POST(
   request: Request,
   { params }: IdContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;

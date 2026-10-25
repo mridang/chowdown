@@ -7,7 +7,7 @@ import {
   openRecipePrompt,
   safeHttpUrl,
   sourceHost,
-} from '../../src/views/follow-up';
+} from '@/views/follow-up';
 
 describe('followUpChannels', () => {
   it('uses ChatGPT’s bridge first inside ChatGPT, then the standard message', () => {

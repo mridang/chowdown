@@ -17,14 +17,17 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { NumberBadge } from '@/components/ui/number-badge';
-import type { StepToken } from '@/lib/recipe/cooklang';
-import { stepText } from '@/lib/recipe/page-view';
+import type { StepToken } from '@/lib/cooklang';
+import { stepText } from '@/domain/recipe/page-view';
 
-import { ReadAloudButton } from './read-aloud';
-import { StepBody } from './step-body';
-import { TimerTray } from './timer-tray';
-import { useStepTimers, StepTimersContext } from './use-step-timers';
-import { useWakeLock } from './use-wake-lock';
+import { ReadAloudButton } from '@/components/recipe/read-aloud';
+import { StepBody } from '@/components/recipe/step-body';
+import { TimerTray } from '@/components/recipe/timer-tray';
+import {
+  useStepTimers,
+  StepTimersContext,
+} from '@/components/recipe/use-step-timers';
+import { useWakeLock } from '@/components/recipe/use-wake-lock';
 
 /**
  * The step to show after a move: `index` clamped to the steps there are, so

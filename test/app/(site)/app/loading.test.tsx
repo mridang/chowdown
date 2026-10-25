@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import AppLoading from '../../../../src/app/(site)/app/loading';
+import AppLoading from '@/app/(site)/app/loading';
 import { html } from '../../../components/render';
 
 describe('the recipe list’s loading shell', () => {

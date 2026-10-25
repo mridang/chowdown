@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { PillLink } from '../../../src/components/ui/pill';
+import { PillLink } from '@/components/ui/pill';
 import { classOf, html } from '../render';
 
 describe('PillLink', () => {

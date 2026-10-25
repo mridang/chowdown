@@ -12,8 +12,8 @@ import {
   timeBucket,
   toggled,
   valuesOf,
-} from '../../../src/components/recipes/search-query';
-import type { CardRecipe } from '../../../src/lib/recipe/card-data';
+} from '@/components/recipes/search-query';
+import type { CardRecipe } from '@/domain/recipe/card-data';
 
 /** A recipe with every fact; tests override what they care about. */
 function recipe(over: Partial<CardRecipe> & { id: string }): CardRecipe {

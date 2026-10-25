@@ -7,7 +7,7 @@
  * and long, a plain fast hash is enough (no salt or slow KDF needed).
  */
 
-import { bytesToBase64Url } from '../util/base64';
+import { bytesToBase64Url } from '@/utils/base64';
 
 /** The readable prefix on an authorization code. */
 export const CODE_PREFIX = 'cdn_code';

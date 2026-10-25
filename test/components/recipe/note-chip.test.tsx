@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { NoteChip } from '../../../src/components/recipe/note-chip';
+import { NoteChip } from '@/components/recipe/note-chip';
 import { html } from '../render';
 
 describe('NoteChip', () => {

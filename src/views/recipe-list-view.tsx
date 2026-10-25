@@ -18,20 +18,20 @@
 
 import { useCallback, useReducer, type ReactElement } from 'react';
 
-import type { RecipeListData, RecipeListItem } from '../lib/mcp/ui-types';
+import type { RecipeListData, RecipeListItem } from '@/domain/mcp/ui-types';
 import {
   INITIAL_LIST_STATE,
   reduceListState,
   visibleRecipes,
   type ListState,
-} from './list-state';
-import { openRecipe } from './open-recipe';
-import { isRecipeListData } from './payload';
-import { CloseHint, FullRecipe, focusWhenShown } from './recipe-parts';
-import { Announcer, LoadingCard, MessageCard } from './status-panels';
-import { STYLES } from './styles';
-import { useWidgetData } from './use-widget-data';
-import type { ViewState } from './view-state';
+} from '@/views/list-state';
+import { openRecipe } from '@/views/open-recipe';
+import { isRecipeListData } from '@/views/payload';
+import { CloseHint, FullRecipe, focusWhenShown } from '@/views/recipe-parts';
+import { Announcer, LoadingCard, MessageCard } from '@/views/status-panels';
+import { STYLES } from '@/views/styles';
+import { useWidgetData } from '@/views/use-widget-data';
+import type { ViewState } from '@/views/view-state';
 
 /** What {@link RecipeGrid} needs besides the recipes themselves. */
 interface RecipeGridProps {

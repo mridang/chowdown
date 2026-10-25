@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { parseDurationMs } from '../../../src/components/recipe/timer-duration';
+import { parseDurationMs } from '@/components/recipe/timer-duration';
 
 const SEC = 1000;
 const MIN = 60 * SEC;

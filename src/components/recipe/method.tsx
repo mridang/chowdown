@@ -5,10 +5,10 @@ import type { ReactElement } from 'react';
 import { ClockIcon } from '@/components/icons';
 import { Heading } from '@/components/ui/layout';
 import { NumberBadge } from '@/components/ui/number-badge';
-import type { StepToken } from '@/lib/recipe/cooklang';
+import type { StepToken } from '@/lib/cooklang';
 
-import { NoteChip } from './note-chip';
-import { useRecipeState } from './recipe-state';
+import { NoteChip } from '@/components/recipe/note-chip';
+import { useRecipeState } from '@/components/recipe/recipe-state';
 
 /**
  * The shared look of an inline highlight. Each kind has its own tint and weight,

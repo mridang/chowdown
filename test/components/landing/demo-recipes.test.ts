@@ -1,9 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  HERO_RECIPE,
-  RECIPES,
-} from '../../../src/components/landing/demo-recipes';
+import { HERO_RECIPE, RECIPES } from '@/components/landing/demo-recipes';
 
 describe('RECIPES', () => {
   it('lists the featured recipe first', () => {

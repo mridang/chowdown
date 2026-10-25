@@ -8,7 +8,9 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { s256 } from '../../../../src/lib/oauth/pkce';
+import { handleConsent } from '@/app/oauth/consent/handler';
+import type { CurrentUserResolver } from '@/domain/api/auth';
+import { s256 } from '@/lib/oauth';
 import { installCloudflareContext, sqliteD1 } from '../../../lib/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 
@@ -19,12 +21,12 @@ const session: { uid: number | null; ended: boolean } = {
   ended: false,
 };
 
-jest.unstable_mockModule('../../../../src/lib/auth/current-user', () => ({
-  getSessionUid: async () => session.uid,
-  getLiveSessionUid: async () => (session.ended ? null : session.uid),
-}));
-
-const { POST } = await import('../../../../src/app/oauth/consent/route');
+/** Identity injected in place of the session cookie. */
+const resolver: CurrentUserResolver = {
+  currentUid: async () => session.uid,
+  currentLiveUid: async () => (session.ended ? null : session.uid),
+  currentUser: async () => null,
+};
 
 const ORIGIN = 'https://chowdown.test';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
@@ -87,12 +89,13 @@ function consent(
       v === undefined ? [] : [[k, v]],
     ),
   );
-  return POST(
+  return handleConsent(
     new Request(`${ORIGIN}/oauth/consent`, {
       method: 'POST',
       body: form,
       headers,
     }),
+    resolver,
   );
 }
 
@@ -182,12 +185,13 @@ describe('POST /oauth/consent', () => {
   });
 
   it('answers 400 for a body that is not readable text', async () => {
-    const res = await POST(
+    const res = await handleConsent(
       new Request(`${ORIGIN}/oauth/consent`, {
         method: 'POST',
         body: new Uint8Array([0xff, 0xfe]),
         headers: { 'sec-fetch-site': 'same-origin' },
       }),
+      resolver,
     );
     expect(res.status).toBe(400);
   });

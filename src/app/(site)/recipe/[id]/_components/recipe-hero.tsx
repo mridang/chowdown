@@ -8,11 +8,14 @@ import { MoreMenu, ShareButton } from '@/components/recipe/actions';
 import { Breadcrumb, type Crumb } from '@/components/ui/breadcrumb';
 import { Eyebrow, Heading } from '@/components/ui/layout';
 import { TextLink } from '@/components/ui/text-link';
-import { sentenceCase } from '@/lib/format';
-import type { Tone } from '@/lib/recipe/card-data';
-import type { StepToken } from '@/lib/recipe/cooklang';
+import { sentenceCase } from '@/utils/text';
+import type { Tone } from '@/domain/recipe/card-data';
+import type { StepToken } from '@/lib/cooklang';
 
-import { AuthorLine, SourceLine } from './byline';
+import {
+  AuthorLine,
+  SourceLine,
+} from '@/app/(site)/recipe/[id]/_components/byline';
 
 /**
  * The trail above the title: always "Recipes", plus the recipe's cuisine (a

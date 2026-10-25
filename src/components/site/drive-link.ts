@@ -7,8 +7,8 @@
  * where "Open Drive" leads.
  */
 
-import { driveConnectHref } from '@/lib/auth/drive-access';
-import { isDriveFileId } from '@/lib/drive/drive-client';
+import { driveConnectHref } from '@/domain/auth/drive-access';
+import { isDriveFileId } from '@/lib/google';
 
 /** Where "Open Drive" goes when the Recipes folder is not known: Drive's home page. */
 export const DRIVE_HOME_HREF = 'https://drive.google.com/drive/my-drive';

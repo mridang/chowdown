@@ -10,27 +10,30 @@ import { Method } from '@/components/recipe/method';
 import { RecipeStateProvider } from '@/components/recipe/recipe-state';
 import { STICKY_PANEL_CLASS } from '@/components/site/header-height';
 import { Container } from '@/components/ui/layout';
-import { cleanTitle } from '@/lib/recipe/card-data';
-import { firstTag } from '@/lib/recipe/first-tag';
-import { loadRecipe } from '@/lib/recipe/load-recipe';
-import { extractMedia } from '@/lib/recipe/media';
+import { cleanTitle } from '@/domain/recipe/card-data';
+import { firstTag } from '@/domain/recipe/first-tag';
+import { loadRecipe } from '@/domain/recipe/load-recipe';
+import { extractMedia } from '@/domain/recipe/media';
 import {
   declaredServings,
   extraMetadata,
   groupNotes,
   servingsOf,
-} from '@/lib/recipe/page-view';
-import { recipeToJsonLd } from '@/lib/recipe/schema-org';
-import { jsonLdText } from '@/lib/seo';
-import { SITE_URL } from '@/lib/site';
+} from '@/domain/recipe/page-view';
+import { recipeToJsonLd } from '@/domain/recipe/schema-org';
+import { jsonLdText } from '@/lib/core/seo';
+import { SITE_URL } from '@/utils/site';
 
-import { AlsoLike } from './_components/also-like';
-import { buildFacts, RecipeFacts } from './_components/recipe-facts';
-import { authorOf } from './_components/byline';
-import { RecipeHero } from './_components/recipe-hero';
-import { RecipeExtras } from './_components/recipe-extras';
-import { RecipeNotes } from './_components/recipe-notes';
-import { RecipeTags } from './_components/recipe-tags';
+import { AlsoLike } from '@/app/(site)/recipe/[id]/_components/also-like';
+import {
+  buildFacts,
+  RecipeFacts,
+} from '@/app/(site)/recipe/[id]/_components/recipe-facts';
+import { authorOf } from '@/app/(site)/recipe/[id]/_components/byline';
+import { RecipeHero } from '@/app/(site)/recipe/[id]/_components/recipe-hero';
+import { RecipeExtras } from '@/app/(site)/recipe/[id]/_components/recipe-extras';
+import { RecipeNotes } from '@/app/(site)/recipe/[id]/_components/recipe-notes';
+import { RecipeTags } from '@/app/(site)/recipe/[id]/_components/recipe-tags';
 
 /**
  * The page's title: the recipe's own, or a plain "Recipe" when it cannot be

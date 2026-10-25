@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { Skeleton, SkeletonFrame } from '../../../src/components/ui/skeleton';
+import { Skeleton, SkeletonFrame } from '@/components/ui/skeleton';
 import { classOf, html } from '../render';
 
 describe('Skeleton', () => {

@@ -5,8 +5,8 @@ import {
   fromTheShelf,
   photosFirst,
   todaySeed,
-} from '../../../src/components/home/shelves';
-import type { CardRecipe } from '../../../src/lib/recipe/card-data';
+} from '@/components/home/shelves';
+import type { CardRecipe } from '@/domain/recipe/card-data';
 
 function recipe(id: string, over: Partial<CardRecipe> = {}): CardRecipe {
   return {

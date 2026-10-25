@@ -10,24 +10,24 @@
  * saved returns that recipe with 200 instead of making a duplicate.
  */
 
-import { NextResponse } from 'next/server';
-
-import { requireLiveUid, requireUser } from '@/lib/api/auth';
-import { driveFailure } from '@/lib/api/drive-failure';
-import { readJsonObject } from '@/lib/api/json';
-import { absoluteUrl } from '@/lib/api/pagination';
-import { problems } from '@/lib/api/problem';
-import { MAX_RECIPE_BODY_BYTES, parseNewRecipe } from '@/lib/api/recipe-input';
-import { listRecipes } from '@/lib/api/recipe-list';
-import { sendRecipe } from '@/lib/api/recipe-response';
-import { getUserAccessToken } from '@/lib/auth/user-access-token';
-import type { User } from '@/lib/db/users';
-import { findRecipeBySourceUrl } from '@/lib/db/recipes';
-import { createRecipeFile, type DriveFile } from '@/lib/drive/drive-client';
-import { recipesFolderFor } from '@/lib/drive/recipes-folder';
-import { sourceUrlOf } from '@/lib/recipe/cook-text';
-import { indexRecipeWrite } from '@/lib/recipe/tag-index';
-import { getDatabase } from '@/lib/util';
+import { requireLiveUid, requireUser } from '@/domain/api/auth';
+import { driveFailure } from '@/domain/api/drive-failure';
+import { absoluteUrl, problems, readJsonObject } from '@/lib/core/api';
+import {
+  MAX_RECIPE_BODY_BYTES,
+  parseNewRecipe,
+} from '@/domain/api/recipe-input';
+import { listRecipes } from '@/domain/api/recipe-list';
+import { sendRecipe } from '@/domain/api/recipe-response';
+import { getUserAccessToken } from '@/domain/auth/user-access-token';
+import type { User } from '@/domain/db/users';
+import { findRecipeBySourceUrl } from '@/domain/db/recipes';
+import { createRecipeFile } from '@/domain/drive/recipe-files';
+import { type DriveFile } from '@/lib/google';
+import { recipesFolderFor } from '@/domain/drive/recipes-folder';
+import { sourceUrlOf } from '@/lib/cooklang';
+import { indexRecipeWrite } from '@/domain/recipe/tag-index';
+import { getDatabase } from '@/domain/db/client';
 
 /** Save a new recipe file in the user's Recipes folder in Drive. */
 async function createInDrive(
@@ -45,7 +45,7 @@ async function createInDrive(
  * sorted by the query string. Answers 200 with the page, or 401 when nobody is
  * signed in.
  */
-export async function GET(request: Request): Promise<NextResponse> {
+export async function GET(request: Request): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
@@ -60,7 +60,7 @@ export async function GET(request: Request): Promise<NextResponse> {
  * user with Drive connected: 401 without a session, 400 for a bad body, 413
  * for a body over 1 MiB, 409 when Drive is not connected, 502 when Drive fails.
  */
-export async function POST(request: Request): Promise<NextResponse> {
+export async function POST(request: Request): Promise<Response> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;
@@ -101,7 +101,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       'Google Drive could not save the recipe. Nothing was changed.',
     ),
   );
-  if (created instanceof NextResponse) {
+  if (created instanceof Response) {
     return created;
   }
   await indexRecipeWrite(db, user.id, created.id, created.name, input.cooklang);

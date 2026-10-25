@@ -6,7 +6,7 @@ import {
   MAX_SHARED_CHARACTERS,
   addRecipesPath,
   sharedImportInput,
-} from '../../../../../../../src/app/(site)/(pages)/recipes/add/_components/shared-input';
+} from '@/app/(site)/(pages)/recipes/add/_components/shared-input';
 
 describe('sharedImportInput', () => {
   it('is empty when nothing was shared', () => {

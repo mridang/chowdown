@@ -15,7 +15,7 @@ import {
   PopoverSeparator,
 } from '@/components/ui/popover';
 
-import { DeleteDialog } from './delete-dialog';
+import { DeleteDialog } from '@/components/recipe/delete-dialog';
 
 /** What the parts of the browser used to share a link look like, so they can be stood in for. */
 type ShareEnvironment = Readonly<{

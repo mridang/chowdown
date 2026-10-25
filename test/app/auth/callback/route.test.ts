@@ -16,9 +16,9 @@ import {
   SIGN_IN_FAILED_PATH,
   STATE_COOKIE,
   sessionClaims,
-} from '../../../../src/lib/auth/app';
-import type { User } from '../../../../src/lib/auth/store';
-import { verifySessionToken } from '../../../../src/lib/auth/session';
+} from '@/domain/auth/app';
+import type { User } from '@/domain/auth/store';
+import { SessionTokens } from '@/lib/session';
 import {
   SESSION_SECRET,
   answerFetch,
@@ -59,15 +59,36 @@ const OTHER_FLOWS = Object.fromEntries(
   ]),
 );
 
-jest.unstable_mockModule('../../../../src/lib/auth/store', () => ({
+jest.unstable_mockModule('@/domain/auth/store', () => ({
   upsertGoogleUser,
 }));
-jest.unstable_mockModule('../../../../src/lib/auth/hooks', () => ({
-  afterSignIn,
-  OTHER_FLOWS,
-}));
 
-const { GET } = await import('../../../../src/app/auth/callback/route');
+const { GoogleAuthKit } = await import('@/lib/core/auth/google-auth-kit');
+const { GoogleOAuthClient, SIGN_IN_SCOPES } = await import('@/lib/google');
+const { completeSignIn, missingSignInSettings } =
+  await import('@/domain/auth/sign-in');
+const { getEnv } = await import('@/lib/core/runtime');
+
+/**
+ * The real sign-in kit, but with the extra-ask flows and the post-sign-in hook
+ * injected as test doubles, so observing where the callback routes needs no
+ * module mocking of the auth package.
+ */
+const kit = new GoogleAuthKit({
+  oauthClient: () =>
+    new GoogleOAuthClient({
+      clientId: getEnv().GOOGLE_OAUTH_CLIENT_ID,
+      clientSecret: getEnv().GOOGLE_OAUTH_CLIENT_SECRET,
+    }),
+  signInScopes: SIGN_IN_SCOPES,
+  callbackPath: '/auth/callback',
+  missingSettings: () => missingSignInSettings(getEnv()),
+  extraPurposes: EXTRA_PURPOSES,
+  otherFlows: OTHER_FLOWS,
+  signInFailedPath: SIGN_IN_FAILED_PATH,
+  completeSignIn: (context, info) => completeSignIn(context, info, afterSignIn),
+});
+const GET = kit.callbackHandler();
 
 let restore: () => void;
 
@@ -125,8 +146,10 @@ const where = (res: Response) => res.headers.get('location');
 const FAILED = `https://app.test${SIGN_IN_FAILED_PATH}`;
 
 /** Everything the callback set on the response, by cookie name. */
-const cookiesOf = (res: NextResponse) =>
-  Object.fromEntries(res.cookies.getAll().map((c) => [c.name, c.value]));
+const cookiesOf = (res: Response) =>
+  Object.fromEntries(
+    (res as NextResponse).cookies.getAll().map((c) => [c.name, c.value]),
+  );
 
 describe('GET /auth/callback with a state that does not check out', () => {
   it('sends a sign-in back with a fixed flag when there is no state cookie', async () => {
@@ -205,9 +228,8 @@ describe('GET /auth/callback signing in', () => {
   it('issues a signed session for the person, stamped with their epoch and the app’s claims', async () => {
     googleSignsIn();
     const res = await callback(`code=c&state=${STATE}`);
-    const session = await verifySessionToken(
+    const session = await new SessionTokens(SESSION_SECRET).verify(
       cookiesOf(res)[SESSION_COOKIE] ?? '',
-      SESSION_SECRET,
     );
     expect(session).toMatchObject({
       uid: 4,
@@ -221,7 +243,7 @@ describe('GET /auth/callback signing in', () => {
   it('sets a cookie that is httpOnly, Lax and Secure on https', async () => {
     googleSignsIn();
     const res = await callback(`code=c&state=${STATE}`);
-    expect(res.cookies.get(SESSION_COOKIE)).toMatchObject({
+    expect((res as NextResponse).cookies.get(SESSION_COOKIE)).toMatchObject({
       httpOnly: true,
       sameSite: 'lax',
       secure: true,
@@ -265,7 +287,7 @@ describe('GET /auth/callback signing in', () => {
     googleSignsIn(null);
     const res = await callback(`code=c&state=${STATE}`);
     expect(where(res)).toBe(FAILED);
-    expect(res.cookies.get(SESSION_COOKIE)).toBeUndefined();
+    expect((res as NextResponse).cookies.get(SESSION_COOKIE)).toBeUndefined();
     expect(upsertGoogleUser).not.toHaveBeenCalled();
   });
 
@@ -273,7 +295,7 @@ describe('GET /auth/callback signing in', () => {
     answerFetch({ [TOKEN_URL]: () => json({ error: 'invalid_grant' }, 400) });
     const res = await callback(`code=bad&state=${STATE}`);
     expect(where(res)).toBe(FAILED);
-    expect(res.cookies.get(SESSION_COOKIE)).toBeUndefined();
+    expect((res as NextResponse).cookies.get(SESSION_COOKIE)).toBeUndefined();
     expect(upsertGoogleUser).not.toHaveBeenCalled();
   });
 
@@ -282,7 +304,7 @@ describe('GET /auth/callback signing in', () => {
     afterSignIn.mockRejectedValue(new Error('boom'));
     const res = await callback(`code=c&state=${STATE}`);
     expect(where(res)).toBe(FAILED);
-    expect(res.cookies.get(SESSION_COOKIE)).toBeUndefined();
+    expect((res as NextResponse).cookies.get(SESSION_COOKIE)).toBeUndefined();
   });
 });
 
@@ -298,7 +320,7 @@ describe('GET /auth/callback on a server that is not set up', () => {
     expect(where(res)).toBe(FAILED);
     expect(requested).toEqual([]);
     expect(upsertGoogleUser).not.toHaveBeenCalled();
-    expect(res.cookies.get(SESSION_COOKIE)).toBeUndefined();
+    expect((res as NextResponse).cookies.get(SESSION_COOKIE)).toBeUndefined();
   });
 
   it('fails closed without the Google client, too', async () => {

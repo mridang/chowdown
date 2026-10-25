@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { FinalCta } from '../../../src/components/landing/final-cta';
+import { FinalCta } from '@/components/landing/final-cta';
 import { html } from '../render';
 
 describe('FinalCta', () => {

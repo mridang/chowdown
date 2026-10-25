@@ -4,7 +4,7 @@ import {
   HEART_BUTTON_BASE,
   heartLabelledClass,
   heartOverlayClass,
-} from '../../../src/components/recipes/heart-look';
+} from '@/components/recipes/heart-look';
 
 describe('heartOverlayClass', () => {
   it('is ember when the recipe is a favourite, and never hidden', () => {

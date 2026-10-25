@@ -1,7 +1,7 @@
 /* eslint-disable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */
 import { describe, expect, it } from '@jest/globals';
 
-import { Card } from '../../../src/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { classOf, html } from '../render';
 
 describe('Card', () => {

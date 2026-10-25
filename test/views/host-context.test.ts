@@ -4,7 +4,7 @@ import {
   hasFixedHeight,
   localeToLang,
   safeAreaVariables,
-} from '../../src/views/host-context';
+} from '@/views/host-context';
 
 describe('safeAreaVariables', () => {
   it('turns the insets into pixel custom properties', () => {

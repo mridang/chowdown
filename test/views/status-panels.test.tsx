@@ -5,7 +5,7 @@ import {
   LoadingCard,
   MessageCard,
   liveRole,
-} from '../../src/views/status-panels';
+} from '@/views/status-panels';
 import { html } from '../components/render';
 
 describe('LoadingCard', () => {

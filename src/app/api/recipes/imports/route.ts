@@ -13,29 +13,33 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireLiveUid } from '@/lib/api/auth';
-import { budgetRefusal } from '@/lib/api/daily-budget';
-import { readJson } from '@/lib/api/json';
+import { requireLiveUid } from '@/domain/api/auth';
+import { budgetRefusal } from '@/domain/api/daily-budget';
 import {
   absoluteUrl,
   decodeCursor,
   pageBody,
   parseLimit,
+  problems,
+  readJson,
   sliceAfter,
-} from '@/lib/api/pagination';
-import { problems } from '@/lib/api/problem';
+} from '@/lib/core/api';
 import {
   compareImportPositions,
   importPosition,
   importSummary,
   MAX_IMPORT_BODY_BYTES,
   parseImportInput,
-} from '@/lib/api/recipe-import-resource';
-import { createRecipeImport, listRecipeImports } from '@/lib/db/recipe-imports';
-import { MAX_IMPORT_UNITS, planImport } from '@/lib/recipe/import-blob';
-import { prepareImport } from '@/lib/recipe/prepare-import';
-import { getDatabase, getEnv } from '@/lib/util';
-import { DAILY_BUDGETS } from '@/lib/util/daily-budget';
+} from '@/domain/api/recipe-import-resource';
+import {
+  createRecipeImport,
+  listRecipeImports,
+} from '@/domain/db/recipe-imports';
+import { MAX_IMPORT_UNITS, planImport } from '@/domain/recipe/import-blob';
+import { prepareImport } from '@/domain/recipe/prepare-import';
+import { getEnv } from '@/lib/core/runtime';
+import { getDatabase } from '@/domain/db/client';
+import { DAILY_BUDGETS } from '@/domain/daily-budget';
 
 /**
  * `POST /api/recipes/imports`: read the links and recipe text in `{ input }`
@@ -45,7 +49,7 @@ import { DAILY_BUDGETS } from '@/lib/util/daily-budget';
  * over 1 MiB; 429 once the person has used the day's import allowance; 415 for a body that is not JSON. Needs a signed-in user: 401
  * without a session.
  */
-export async function POST(request: Request): Promise<NextResponse> {
+export async function POST(request: Request): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
@@ -98,7 +102,7 @@ export async function POST(request: Request): Promise<NextResponse> {
  * (no drafts). Answers 200 with a page, 400 for a bad `limit` or `cursor`, 401
  * when nobody is signed in.
  */
-export async function GET(request: Request): Promise<NextResponse> {
+export async function GET(request: Request): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;

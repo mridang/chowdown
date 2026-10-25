@@ -1,13 +1,13 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { RecipeCardData } from '../../src/lib/mcp/ui-types';
-import type { ListAction } from '../../src/views/list-state';
+import type { RecipeCardData } from '@/domain/mcp/ui-types';
+import type { ListAction } from '@/views/list-state';
 import {
   OPEN_RECIPE_TOOL,
   openRecipe,
   type OpenRecipeHost,
-} from '../../src/views/open-recipe';
-import type { ToolOutcome } from '../../src/views/payload';
+} from '@/views/open-recipe';
+import type { ToolOutcome } from '@/views/payload';
 
 const RECIPE: RecipeCardData = {
   id: 'abc_123',

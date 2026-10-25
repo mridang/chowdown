@@ -14,7 +14,7 @@ import {
   DialogDescription,
   DialogTitle,
   DialogTrigger,
-} from '../../../src/components/ui/dialog';
+} from '@/components/ui/dialog';
 import { html } from '../render';
 
 /** A dialog with a title and a description, open or closed as told. */

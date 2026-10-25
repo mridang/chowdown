@@ -19,16 +19,20 @@ import {
 } from '@/components/ui/field';
 import { useFocusOnChange } from '@/components/ui/use-focus-on-change';
 import { countOf } from '@/lib/intl';
-import { problemMessage } from '@/lib/problem-message';
+import { problemMessage } from '@/lib/core/api';
 
 import {
   ANNOUNCEMENTS,
   missingFieldErrors,
   prepareImport,
   type Phase,
-} from './import-flow';
-import { discardImport, postRecipe, type ImportDraft } from './recipe-requests';
-import { SHARED_HINT } from './shared-input';
+} from '@/app/(site)/(pages)/recipes/add/_components/import-flow';
+import {
+  discardImport,
+  postRecipe,
+  type ImportDraft,
+} from '@/app/(site)/(pages)/recipes/add/_components/recipe-requests';
+import { SHARED_HINT } from '@/app/(site)/(pages)/recipes/add/_components/shared-input';
 
 /** The wizard's heading for each phase. */
 const HEADINGS: Readonly<Record<Phase, string>> = {

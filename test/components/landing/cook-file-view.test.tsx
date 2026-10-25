@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { CookFile } from '../../../src/components/landing/cook-file-view';
-import { RECIPES } from '../../../src/components/landing/demo-recipes';
+import { CookFile } from '@/components/landing/cook-file-view';
+import { RECIPES } from '@/components/landing/demo-recipes';
 import { html } from '../render';
 
 const recipe = RECIPES.find((r) => r.cooklang)!;

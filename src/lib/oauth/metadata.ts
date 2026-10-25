@@ -13,9 +13,9 @@
  * both documents describe the same origin.
  */
 
-import { ASSERTION_ALGORITHMS } from './client';
-import { SCOPE_OFFLINE_ACCESS, SUPPORTED_SCOPES } from './scopes';
-import { parseUrl } from '../util/url';
+import { ASSERTION_ALGORITHMS } from '@/lib/oauth/client';
+import { SCOPE_OFFLINE_ACCESS, SUPPORTED_SCOPES } from '@/lib/oauth/scopes';
+import { parseUrl } from '@/utils/url';
 
 /** Path of the OAuth-protected MCP endpoint. */
 export const MCP_PATH = '/mcp';

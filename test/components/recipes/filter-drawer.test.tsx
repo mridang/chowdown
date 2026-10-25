@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { FilterDrawer } from '../../../src/components/recipes/filter-drawer';
+import { FilterDrawer } from '@/components/recipes/filter-drawer';
 import { htmlAt } from '../render';
 
 describe('FilterDrawer', () => {

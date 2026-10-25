@@ -7,11 +7,14 @@ import {
   jest,
 } from '@jest/globals';
 
+// Import the pure constants from the leaf, not the package barrel: the barrel
+// eagerly loads the Cloudflare runtime bindings, which would pull in
+// `@opennextjs/cloudflare` before this file's mock of it is installed.
 import {
   ALLOWED_HOSTS,
   ALLOWED_WIDTHS,
   DEFAULT_WIDTH,
-} from '../../../src/lib/images/site';
+} from '@/lib/cloudflare/images/site';
 
 /** What the mocked access rules answer. */
 const rules = {
@@ -20,7 +23,7 @@ const rules = {
   refusal: undefined as Response | undefined,
 };
 
-jest.unstable_mockModule('../../../src/lib/images/access', () => ({
+jest.unstable_mockModule('@/domain/images/access', () => ({
   authenticate: async () => rules.refusal,
   signatureFor: () => undefined,
   signatureValid: () => rules.signed,
@@ -40,7 +43,7 @@ jest.unstable_mockModule('@opennextjs/cloudflare', () => ({
   }),
 }));
 
-const { GET } = await import('../../../src/app/img/route');
+const { GET } = await import('@/app/img/route');
 
 const PHOTO = `https://${ALLOWED_HOSTS?.[0] ?? 'photos.example.org'}/soup.jpg`;
 const WIDTH = ALLOWED_WIDTHS[0] ?? DEFAULT_WIDTH;

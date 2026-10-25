@@ -1,13 +1,8 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
+import { makeConnectionsCollection } from '@/domain/api/connections';
+import type { CurrentUserResolver } from '@/domain/api/auth';
 import {
   installCloudflareContext,
   sqliteD1,
@@ -20,14 +15,14 @@ const session: { uid: number | null; ended: boolean } = {
   ended: false,
 };
 
-jest.unstable_mockModule('../../../../../../src/lib/auth/current-user', () => ({
-  getSessionUid: async () => session.uid,
-  getLiveSessionUid: async () => (session.ended ? null : session.uid),
-  getCurrentUser: async () => null,
-}));
+/** Identity injected in place of the session cookie. */
+const resolver: CurrentUserResolver = {
+  currentUid: async () => session.uid,
+  currentLiveUid: async () => (session.ended ? null : session.uid),
+  currentUser: async () => null,
+};
 
-const { GET } =
-  await import('../../../../../../src/app/api/users/self/connections/route');
+const { GET } = makeConnectionsCollection(resolver).handlers();
 
 let raw: DatabaseSync;
 let restore: () => void;

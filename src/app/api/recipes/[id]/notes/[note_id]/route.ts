@@ -10,20 +10,19 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireLiveUid, requireUser } from '@/lib/api/auth';
-import { driveFailure } from '@/lib/api/drive-failure';
-import { readJsonObject } from '@/lib/api/json';
-import { settleMutation } from '@/lib/api/mutation-response';
+import { requireLiveUid, requireUser } from '@/domain/api/auth';
+import { driveFailure } from '@/domain/api/drive-failure';
+import { problems, readJsonObject } from '@/lib/core/api';
+import { settleMutation } from '@/domain/api/mutation-response';
 import {
   noteIndex,
   noteResource,
   parseNoteInput,
-} from '@/lib/api/note-resource';
-import { problems } from '@/lib/api/problem';
-import { getRecipeByFileId } from '@/lib/db/recipes';
-import { extractNotes, removeNote, replaceNote } from '@/lib/recipe/cook-text';
-import { mutateRecipeForUser } from '@/lib/recipe/mutate-recipe-live';
-import { getDatabase } from '@/lib/util';
+} from '@/domain/api/note-resource';
+import { getRecipeByFileId } from '@/domain/db/recipes';
+import { extractNotes, removeNote, replaceNote } from '@/lib/cooklang';
+import { mutateRecipeForUser } from '@/domain/recipe/mutate-recipe-live';
+import { getDatabase } from '@/domain/db/client';
 
 /** The context Next.js hands these handlers: the recipe id and the note's position. */
 interface NoteContext {
@@ -37,7 +36,7 @@ interface NoteContext {
 export async function GET(
   request: Request,
   { params }: NoteContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
@@ -65,7 +64,7 @@ export async function GET(
 export async function PUT(
   request: Request,
   { params }: NoteContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;
@@ -124,7 +123,7 @@ export async function PUT(
 export async function DELETE(
   request: Request,
   { params }: NoteContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;

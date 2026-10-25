@@ -13,12 +13,12 @@
  * Only public clients (no client secret, PKCE required) are supported.
  */
 
-import { sanitiseDisplayName } from './display';
-import { isAcceptableRedirectUri } from './redirect-uri';
-import { isPublicWebUrl } from '../http/safe-fetch';
-import { bytesToBase64Url } from '../util/base64';
-import { SITE_URL } from '../site';
-import { parseUrl } from '../util/url';
+import { sanitiseDisplayName } from '@/lib/oauth/display';
+import { isAcceptableRedirectUri } from '@/lib/oauth/redirect-uri';
+import { isPublicWebUrl } from '@/lib/safe-fetch';
+import { bytesToBase64Url } from '@/utils/base64';
+import { SITE_URL } from '@/utils/site';
+import { parseUrl } from '@/utils/url';
 
 /** A client as the authorization server uses it. */
 export interface OAuthClient {

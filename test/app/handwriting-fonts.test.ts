@@ -19,8 +19,7 @@ jest.unstable_mockModule('next/font/google', () => ({
   La_Belle_Aurore: loader('La_Belle_Aurore'),
 }));
 
-const { HANDWRITING_VARIABLES } =
-  await import('../../src/app/handwriting-fonts');
+const { HANDWRITING_VARIABLES } = await import('@/app/handwriting-fonts');
 
 describe('the handwriting faces', () => {
   it('are seven', () => {

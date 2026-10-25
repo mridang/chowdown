@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { SortSelect } from '../../../src/components/recipes/sort-select';
+import { SortSelect } from '@/components/recipes/sort-select';
 import { htmlAt } from '../render';
 
 const OPTIONS = [

@@ -15,7 +15,7 @@
  * import: that costs AI budget, so it stays a deliberate press of a button.
  */
 
-import { extractUrls } from '@/lib/recipe/import-blob';
+import { extractUrls } from '@/domain/recipe/import-blob';
 
 /** The path of the page that adds recipes, which is also the share target. */
 export const ADD_RECIPES_PATH = '/recipes/add';

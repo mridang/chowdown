@@ -9,9 +9,9 @@ import { promisify } from 'node:util';
 
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 
-import type { User } from '../../src/lib/db/users';
-import { respondToMcp } from '../../src/lib/mcp/http';
-import { SCOPE_READ, SCOPE_WRITE } from '../../src/lib/oauth/scopes';
+import type { User } from '@/domain/db/users';
+import { respondToMcp } from '@/domain/mcp/http';
+import { SCOPE_READ, SCOPE_WRITE } from '@/lib/oauth';
 
 const run = promisify(execFile);
 const require = createRequire(join(process.cwd(), 'package.json'));

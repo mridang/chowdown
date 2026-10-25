@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { FavouriteButton } from '../../../src/components/recipes/favourite-button';
+import { FavouriteButton } from '@/components/recipes/favourite-button';
 import { html } from '../render';
 
 describe('FavouriteButton, overlay', () => {

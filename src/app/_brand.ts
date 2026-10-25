@@ -20,7 +20,7 @@ import {
   SITE_NAME,
   SITE_TITLE,
   SITE_URL,
-} from '@/lib/site';
+} from '@/utils/site';
 
 /** The name of the app, as the wordmark, the tab title suffix and the home-screen label. */
 export const BRAND_NAME = SITE_NAME;

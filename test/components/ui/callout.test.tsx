@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { Callout } from '../../../src/components/ui/callout';
+import { Callout } from '@/components/ui/callout';
 import { classOf, html } from '../render';
 
 describe('Callout', () => {

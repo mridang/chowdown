@@ -1,6 +1,6 @@
-import type { StepToken } from '@/lib/recipe/cooklang';
+import type { StepToken } from '@/lib/cooklang';
 
-import { AMOUNT_PATTERN, parseAmount } from './amount';
+import { AMOUNT_PATTERN, parseAmount } from '@/components/recipe/amount';
 
 /**
  * A step turned into the words someone would say, for a speech synthesiser.

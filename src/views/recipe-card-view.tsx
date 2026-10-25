@@ -13,13 +13,18 @@
 
 import { useState, type ReactElement } from 'react';
 
-import type { RecipeCardData } from '../lib/mcp/ui-types';
-import { isRecipeCardData } from './payload';
-import { Eyebrow, FullRecipe, MetaRow, focusWhenShown } from './recipe-parts';
-import { Announcer, LoadingCard, MessageCard } from './status-panels';
-import { STYLES } from './styles';
-import { useWidgetData } from './use-widget-data';
-import type { ViewState } from './view-state';
+import type { RecipeCardData } from '@/domain/mcp/ui-types';
+import { isRecipeCardData } from '@/views/payload';
+import {
+  Eyebrow,
+  FullRecipe,
+  MetaRow,
+  focusWhenShown,
+} from '@/views/recipe-parts';
+import { Announcer, LoadingCard, MessageCard } from '@/views/status-panels';
+import { STYLES } from '@/views/styles';
+import { useWidgetData } from '@/views/use-widget-data';
+import type { ViewState } from '@/views/view-state';
 
 /** How many ingredients the compact card names before saying "+N more". */
 const CHIPS_SHOWN = 7;

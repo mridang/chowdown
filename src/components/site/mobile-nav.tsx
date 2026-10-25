@@ -5,8 +5,8 @@ import type { ReactElement } from 'react';
 import { MenuIcon } from '@/components/icons';
 import { Popover } from '@/components/ui/popover';
 
-import { MenuLink } from './menu-link';
-import type { NavLink } from './nav-links';
+import { MenuLink } from '@/components/site/menu-link';
+import type { NavLink } from '@/components/site/nav-links';
 
 /**
  * The phone navigation: a menu button that opens the main links. Hidden from

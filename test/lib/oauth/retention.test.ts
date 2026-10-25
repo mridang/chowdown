@@ -4,13 +4,13 @@ import {
   EXPIRED_ROW_GRACE_SECONDS,
   IDLE_GRANT_SECONDS,
   PURGE_PROBABILITY,
+  REFRESH_TTL_SECONDS,
   REVOKED_GRANT_KEEP_SECONDS,
   UNUSED_CIMD_CLIENT_KEEP_SECONDS,
   UNUSED_DCR_CLIENT_KEEP_SECONDS,
   purgeCutoffs,
   shouldPurge,
-} from '../../../src/lib/oauth/retention';
-import { REFRESH_TTL_SECONDS } from '../../../src/lib/oauth/token-endpoint';
+} from '@/lib/oauth';
 
 const NOW = Date.parse('2026-06-01T00:00:00.000Z') / 1000;
 const DAY = 86_400;

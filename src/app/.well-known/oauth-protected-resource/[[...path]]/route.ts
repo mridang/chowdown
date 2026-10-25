@@ -7,14 +7,13 @@
  * derived from).
  */
 
-import { NextResponse } from 'next/server';
-
-import { noStoreJson, preflight } from '@/lib/oauth/http';
 import {
   isProtectedResourcePath,
+  noStoreJson,
+  preflight,
   protectedResourceMetadata,
-} from '@/lib/oauth/metadata';
-import { appOrigin } from '@/lib/util/origin';
+} from '@/lib/oauth';
+import { appOrigin } from '@/lib/core/origin';
 
 /** The route's dynamic segments: the optional rest of the path after the well-known prefix. */
 interface Context {
@@ -30,7 +29,7 @@ interface Context {
 export async function GET(
   request: Request,
   { params }: Context,
-): Promise<NextResponse> {
+): Promise<Response> {
   const { path } = await params;
   return isProtectedResourcePath(path)
     ? noStoreJson(protectedResourceMetadata(appOrigin(request)))

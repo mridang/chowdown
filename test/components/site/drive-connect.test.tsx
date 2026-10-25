@@ -4,7 +4,7 @@ import {
   DriveConnectNotice,
   DriveConnectPanel,
   DriveUnreachable,
-} from '../../../src/components/site/drive-connect';
+} from '@/components/site/drive-connect';
 import { html } from '../render';
 
 describe('DriveConnectPanel', () => {

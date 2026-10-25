@@ -1,10 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { ConsentCard } from '../../../../src/app/oauth/authorize/consent-card';
-import {
-  clientIdentity,
-  describeRedirect,
-} from '../../../../src/lib/oauth/display';
+import { ConsentCard } from '@/app/oauth/authorize/consent-card';
+import { clientIdentity, describeRedirect } from '@/lib/oauth';
 import { html } from '../../../components/render';
 
 const FIELDS = [

@@ -8,8 +8,8 @@
  * reducer holds that outcome so the rules are testable without a browser.
  */
 
-import type { RecipeCardData, RecipeListItem } from '../lib/mcp/ui-types';
-import type { ToolOutcome } from './payload';
+import type { RecipeCardData, RecipeListItem } from '@/domain/mcp/ui-types';
+import type { ToolOutcome } from '@/views/payload';
 
 /**
  * How many recipes the inline list draws before offering "Show all". Chat hosts

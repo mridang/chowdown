@@ -6,15 +6,21 @@
  *   POST /oauth/register { client_name, redirect_uris, … } → 201 { client_id, … }
  */
 
-import { oauthSweeps, saveClient } from '@/lib/db/oauth';
-import { readBodyText } from '@/lib/http/body';
-import { MAX_REGISTRATION_BYTES } from '@/lib/oauth/client';
-import { noStoreJson, oauthError, preflight } from '@/lib/oauth/http';
-import { clientAddress, tooManyRequests } from '@/lib/oauth/limits';
-import { handleRegistration } from '@/lib/oauth/register-request';
-import { sweepSometimes } from '@/lib/oauth/sweep';
-import { d1RateLimitStore } from '@/lib/util/rate-limit';
-import { getDatabase, runInBackground } from '@/lib/util';
+import { oauthSweeps, saveClient } from '@/domain/db/oauth';
+import { readBodyText } from '@/lib/core/api';
+import {
+  MAX_REGISTRATION_BYTES,
+  clientAddress,
+  handleRegistration,
+  noStoreJson,
+  oauthError,
+  preflight,
+  sweepSometimes,
+  tooManyRequests,
+} from '@/lib/oauth';
+import { D1RateLimitStore } from '@/lib/rate-limit';
+import { runInBackground } from '@/lib/core/runtime';
+import { getDatabase } from '@/domain/db/client';
 
 /**
  * `POST /oauth/register`: register a public client from a JSON body. Anyone
@@ -30,7 +36,7 @@ export async function POST(request: Request) {
     () => readBodyText(request, MAX_REGISTRATION_BYTES),
     clientAddress(request.headers),
     {
-      rateLimits: d1RateLimitStore(db.$client),
+      rateLimits: new D1RateLimitStore(db.$client),
       save: (client) => saveClient(db, client),
       now,
     },

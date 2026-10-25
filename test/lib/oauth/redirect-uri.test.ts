@@ -6,7 +6,7 @@ import {
   isPrivateHost,
   redirectKind,
   redirectUriMatches,
-} from '../../../src/lib/oauth/redirect-uri';
+} from '@/lib/oauth';
 
 describe('isAcceptableRedirectUri', () => {
   it('accepts https, loopback http and private-use schemes', () => {

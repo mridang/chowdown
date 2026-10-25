@@ -6,7 +6,7 @@ import {
   speak,
   stopSpeaking,
   type SpeechEnvironment,
-} from '../../../src/components/recipe/speaker';
+} from '@/components/recipe/speaker';
 
 /** An utterance that records its listeners so a test can fire them. */
 function fakeUtterance(text: string) {

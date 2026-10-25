@@ -8,7 +8,7 @@ import {
   listAnd,
   listOr,
   relativeTime,
-} from '../../src/lib/intl';
+} from '@/lib/intl';
 
 describe('compareText', () => {
   it('alphabetises accented letters with their base letter', () => {

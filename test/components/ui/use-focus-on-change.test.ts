@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { shouldMoveFocus } from '../../../src/components/ui/use-focus-on-change';
+import { shouldMoveFocus } from '@/components/ui/use-focus-on-change';
 
 describe('shouldMoveFocus', () => {
   it('moves focus when the step changes', () => {

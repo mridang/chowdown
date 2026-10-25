@@ -6,7 +6,7 @@ import { WindowFrame } from '@/components/landing/window-frame';
 import { Difficulty } from '@/components/ui/difficulty';
 import { Eyebrow } from '@/components/ui/layout';
 import { TintTile } from '@/components/ui/tint-tile';
-import { duration, sentenceCase } from '@/lib/format';
+import { duration, sentenceCase } from '@/utils/text';
 
 /** The same recipe as the Cooklang file beside it, rendered the way chowdown shows it. */
 export function RenderedRecipe({

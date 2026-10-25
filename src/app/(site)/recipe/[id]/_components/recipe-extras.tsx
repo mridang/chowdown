@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-import { isAuthorKey } from './byline';
+import { isAuthorKey } from '@/app/(site)/recipe/[id]/_components/byline';
 
 /**
  * Whatever else the recipe's file says that the page has no place for (a

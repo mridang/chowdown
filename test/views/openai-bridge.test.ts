@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
 
-import { getOpenAi, globalsFromEvent } from '../../src/views/openai-bridge';
+import { getOpenAi, globalsFromEvent } from '@/views/openai-bridge';
 
 afterEach(() => {
   Reflect.deleteProperty(globalThis, 'openai');

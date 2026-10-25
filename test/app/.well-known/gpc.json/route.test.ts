@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { GET } from '../../../../src/app/.well-known/gpc.json/route';
-import { GPC_LAST_UPDATE } from '../../../../src/lib/site';
+import { GET } from '@/app/.well-known/gpc.json/route';
+import { GPC_LAST_UPDATE } from '@/utils/site';
 
 describe('GET /.well-known/gpc.json', () => {
   const res = GET();

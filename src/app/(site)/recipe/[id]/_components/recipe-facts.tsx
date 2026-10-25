@@ -12,9 +12,9 @@ import {
 } from '@/components/icons';
 import { Fact } from '@/components/recipe/fact';
 import { Difficulty } from '@/components/ui/difficulty';
-import { duration, sentenceCase } from '@/lib/format';
-import { firstTag } from '@/lib/recipe/first-tag';
-import type { RecipeTags } from '@/lib/recipe/tag-index';
+import { duration, sentenceCase } from '@/utils/text';
+import { firstTag } from '@/domain/recipe/first-tag';
+import type { RecipeTags } from '@/domain/recipe/tag-index';
 
 /** One entry of the facts grid, ready to hand to `Fact`. */
 export interface FactItem {

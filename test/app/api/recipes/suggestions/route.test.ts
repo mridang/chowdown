@@ -7,8 +7,8 @@ import {
   jest,
 } from '@jest/globals';
 
-import { DriveNotConnectedError } from '../../../../../src/lib/auth/drive-access';
-import type { DriveFile } from '../../../../../src/lib/drive/drive-client';
+import { DriveNotConnectedError } from '@/domain/auth/drive-access';
+import type { DriveFile } from '@/lib/google';
 import { installCloudflareContext } from '../../../../lib/db/sqlite-d1';
 
 /** Who is signed in; null means nobody. */
@@ -16,8 +16,8 @@ const session: { user: { id: number } | null } = { user: { id: 7 } };
 
 // The sign-in gate has its own tests (test/lib/api/auth.test.ts); here it just
 // says who is calling, in the shape the routes read.
-const { problems } = await import('../../../../../src/lib/api/problem');
-jest.unstable_mockModule('../../../../../src/lib/api/auth', () => ({
+const { problems } = await import('@/lib/core/api');
+jest.unstable_mockModule('@/domain/api/auth', () => ({
   requireUser: async () =>
     session.user
       ? { ok: true, value: session.user }
@@ -49,28 +49,24 @@ const topSimilar = jest.fn<
   ) => readonly DriveFile[]
 >((_rows, _vector, files) => files.slice(0, 1));
 
-jest.unstable_mockModule(
-  '../../../../../src/lib/auth/user-access-token',
-  () => ({
-    getUserAccessToken,
-  }),
-);
-jest.unstable_mockModule('../../../../../src/lib/drive/drive-client', () => ({
+jest.unstable_mockModule('@/domain/auth/user-access-token', () => ({
+  getUserAccessToken,
+}));
+jest.unstable_mockModule('@/domain/drive/recipe-files', () => ({
   listRecipeFiles,
 }));
-jest.unstable_mockModule('../../../../../src/lib/drive/recipes-folder', () => ({
+jest.unstable_mockModule('@/domain/drive/recipes-folder', () => ({
   recipesFolderFor,
 }));
-jest.unstable_mockModule('../../../../../src/lib/recipe/embeddings', () => ({
+jest.unstable_mockModule('@/domain/recipe/embeddings', () => ({
   embedText,
 }));
-jest.unstable_mockModule('../../../../../src/lib/recipe/similar', () => ({
+jest.unstable_mockModule('@/domain/recipe/similar', () => ({
   ensureEmbeddings,
   topSimilar,
 }));
 
-const { GET } =
-  await import('../../../../../src/app/api/recipes/suggestions/route');
+const { GET } = await import('@/app/api/recipes/suggestions/route');
 
 let restore: () => void;
 

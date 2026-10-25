@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { EmptyCollection } from '../../../src/components/recipes/empty-collection';
+import { EmptyCollection } from '@/components/recipes/empty-collection';
 import { html } from '../render';
 
 describe('EmptyCollection', () => {

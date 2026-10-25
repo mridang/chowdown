@@ -18,8 +18,7 @@ import {
 
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
-const { GET } =
-  await import('../../../../../../src/app/api/recipes/[id]/similar/route');
+const { GET } = await import('@/app/api/recipes/[id]/similar/route');
 
 let world: World;
 

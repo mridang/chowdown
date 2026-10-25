@@ -8,7 +8,7 @@ import { ToggleLink } from '@/components/ui/toggle-link';
 import {
   liveFavouriteCount,
   subscribeFavourites,
-} from '@/lib/favourites-store';
+} from '@/domain/favourites-store';
 
 /**
  * The Favourites switch above the filters: a toggle that follows `href` and

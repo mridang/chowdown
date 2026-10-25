@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { NumberBadge } from '../../../src/components/ui/number-badge';
+import { NumberBadge } from '@/components/ui/number-badge';
 import { classOf, html } from '../render';
 
 describe('NumberBadge', () => {

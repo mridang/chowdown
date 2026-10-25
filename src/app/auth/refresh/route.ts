@@ -10,12 +10,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCurrentUser, getSession } from '@/lib/auth/current-user';
-import { safeReturnPath } from '@/lib/auth/return-to';
-import { SESSION_COOKIE } from '@/lib/auth/session';
-import { setSessionCookie } from '@/lib/auth/session-cookie';
-import { getEnv } from '@/lib/util';
-import { appOrigin } from '@/lib/util/origin';
+import { getCurrentUser, getSession, setSessionCookie } from '@/lib/core/auth';
+import { safeReturnPath } from '@/lib/web-security';
+import { SESSION_COOKIE } from '@/domain/auth/app';
+import { getEnv } from '@/lib/core/runtime';
+import { appOrigin } from '@/lib/core/origin';
 
 /**
  * `GET /auth/refresh`: reissue the session cookie from the database and
@@ -23,7 +22,7 @@ import { appOrigin } from '@/lib/util/origin';
  * redirect; someone who is not signed in goes to the home page with any dead
  * session cookie cleared.
  */
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(request: NextRequest): Promise<Response> {
   const origin = appOrigin(request);
   const user = await getCurrentUser();
   if (!user) {

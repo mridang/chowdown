@@ -8,7 +8,7 @@
  * (see {@link isAcceptableRedirectUri}).
  */
 
-import { parseUrl } from '../util/url';
+import { parseUrl } from '@/utils/url';
 
 /** Schemes that can run script or read files; never a valid redirect target, dotted or not. */
 const FORBIDDEN_SCHEMES: ReadonlySet<string> = new Set([

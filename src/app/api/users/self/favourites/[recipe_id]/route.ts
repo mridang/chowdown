@@ -9,14 +9,14 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireLiveUid } from '@/lib/api/auth';
-import { problems } from '@/lib/api/problem';
-import { recipeSummary } from '@/lib/api/recipe-resource';
-import { setFavourite } from '@/lib/db/favourites';
-import { getRecipePageRows } from '@/lib/db/recipe-page';
-import { isDriveFileId } from '@/lib/drive/drive-client';
-import { setFavouriteAndTag } from '@/lib/recipe/favourite';
-import { getDatabase } from '@/lib/util';
+import { requireLiveUid } from '@/domain/api/auth';
+import { problems } from '@/lib/core/api';
+import { recipeSummary } from '@/domain/api/recipe-resource';
+import { setFavourite } from '@/domain/db/favourites';
+import { getRecipePageRows } from '@/domain/db/recipe-page';
+import { isDriveFileId } from '@/lib/google';
+import { setFavouriteAndTag } from '@/domain/recipe/favourite';
+import { getDatabase } from '@/domain/db/client';
 
 /** The context Next.js hands these handlers: the recipe's id. */
 interface RecipeContext {
@@ -40,7 +40,7 @@ async function ownsRecipe(userId: number, id: string): Promise<boolean> {
 export async function GET(
   request: Request,
   { params }: RecipeContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
@@ -66,7 +66,7 @@ export async function GET(
 export async function PUT(
   request: Request,
   { params }: RecipeContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
@@ -88,7 +88,7 @@ export async function PUT(
 export async function DELETE(
   request: Request,
   { params }: RecipeContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;

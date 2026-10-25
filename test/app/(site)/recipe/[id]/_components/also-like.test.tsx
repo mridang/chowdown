@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { AlsoLike } from '../../../../../../src/app/(site)/recipe/[id]/_components/also-like';
-import { toCardRecipe } from '../../../../../../src/lib/recipe/card-data';
+import { AlsoLike } from '@/app/(site)/recipe/[id]/_components/also-like';
+import { toCardRecipe } from '@/domain/recipe/card-data';
 import { html } from '../../../../../components/render';
 
 const card = (id: string) =>

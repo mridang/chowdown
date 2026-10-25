@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { ToggleLink } from '../../../src/components/ui/toggle-link';
+import { ToggleLink } from '@/components/ui/toggle-link';
 import { html } from '../render';
 
 describe('ToggleLink', () => {

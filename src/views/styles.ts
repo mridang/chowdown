@@ -16,7 +16,7 @@ import {
   LIGHT_PALETTE,
   ON_ACCENT,
   type ThemePalette,
-} from './palette';
+} from '@/views/palette';
 
 /** The custom properties that differ between the light and dark themes. */
 function themeVariables(palette: ThemePalette): string {

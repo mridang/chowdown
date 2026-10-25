@@ -12,16 +12,16 @@ import {
   fetchJwks,
   verifyClientAssertion,
   type AssertionDeps,
-} from './client-auth';
-import type { FormFields } from './http';
-import { isOurResource } from './metadata';
+} from '@/lib/oauth/client-auth';
+import type { FormFields } from '@/lib/oauth/http';
+import { isOurResource } from '@/lib/oauth/metadata';
 import {
   exchangeAuthorizationCode,
   exchangeRefreshToken,
   type OAuthFailure,
   type OAuthStore,
   type TokenResponse,
-} from './token-endpoint';
+} from '@/lib/oauth/token-endpoint';
 
 /** What the endpoint answers with, ready to turn into a response. */
 export type TokenRequestResult =

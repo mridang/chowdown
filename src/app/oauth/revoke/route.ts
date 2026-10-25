@@ -4,24 +4,22 @@
  * the token was known, so it can't be used to probe for valid tokens.
  */
 
-import { createOAuthStore } from '@/lib/db/oauth';
+import { D1OAuthStore } from '@/domain/db/oauth';
 import {
+  OAUTH_LIMITS,
+  clientAddress,
   formFailure,
+  formField,
   noStoreJson,
   oauthError,
   preflight,
   readOAuthForm,
-} from '@/lib/oauth/http';
-import {
-  OAUTH_LIMITS,
-  clientAddress,
   retryAfterIfLimited,
+  revokeToken,
   tooManyRequests,
-} from '@/lib/oauth/limits';
-import { formField } from '@/lib/oauth/token-request';
-import { revokeToken } from '@/lib/oauth/token-endpoint';
-import { d1RateLimitStore } from '@/lib/util/rate-limit';
-import { getDatabase } from '@/lib/util';
+} from '@/lib/oauth';
+import { D1RateLimitStore } from '@/lib/rate-limit';
+import { getDatabase } from '@/domain/db/client';
 
 /**
  * `POST /oauth/revoke`: revoke the grant behind `token` (a URL-encoded form
@@ -34,7 +32,7 @@ import { getDatabase } from '@/lib/util';
 export async function POST(request: Request) {
   const db = getDatabase();
   const wait = await retryAfterIfLimited(
-    d1RateLimitStore(db.$client),
+    new D1RateLimitStore(db.$client),
     OAUTH_LIMITS.revoke,
     clientAddress(request.headers),
   );
@@ -49,7 +47,7 @@ export async function POST(request: Request) {
   if (!token) {
     return oauthError('invalid_request', 'The request has no token.');
   }
-  await revokeToken(createOAuthStore(db), token);
+  await revokeToken(new D1OAuthStore(db), token);
   return noStoreJson({});
 }
 

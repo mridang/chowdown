@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { HeaderNav } from '../../../src/components/site/header-nav';
+import { HeaderNav } from '@/components/site/header-nav';
 import { htmlAt } from '../render';
 
 describe('HeaderNav', () => {

@@ -13,21 +13,24 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireLiveUid, requireUser } from '@/lib/api/auth';
-import { driveFailure } from '@/lib/api/drive-failure';
-import { readJson, readJsonObject } from '@/lib/api/json';
-import { settleMutation } from '@/lib/api/mutation-response';
-import { problems } from '@/lib/api/problem';
+import { requireLiveUid, requireUser } from '@/domain/api/auth';
+import { driveFailure } from '@/domain/api/drive-failure';
+import {
+  problems,
+  readJson,
+  readJsonObject,
+  type IdContext,
+} from '@/lib/core/api';
+import { settleMutation } from '@/domain/api/mutation-response';
 import {
   MAX_RECIPE_BODY_BYTES,
   parseReplacementCooklang,
-} from '@/lib/api/recipe-input';
-import { sendRecipe } from '@/lib/api/recipe-response';
-import type { IdContext } from '@/lib/api/route-context';
-import { deleteRecipeForUser } from '@/lib/recipe/delete-recipe';
-import type { MutateOutcome } from '@/lib/recipe/mutate-recipe';
-import { mutateRecipeForUser } from '@/lib/recipe/mutate-recipe-live';
-import { applyRecipePatch } from '@/lib/recipe/recipe-patch';
+} from '@/domain/api/recipe-input';
+import { sendRecipe } from '@/domain/api/recipe-response';
+import { deleteRecipeForUser } from '@/domain/recipe/delete-recipe';
+import type { MutateOutcome } from '@/domain/recipe/mutate-recipe';
+import { mutateRecipeForUser } from '@/domain/recipe/mutate-recipe-live';
+import { applyRecipePatch } from '@/domain/recipe/recipe-patch';
 
 /** Turn a mutation outcome into the response to send: a refusal, or the recipe as it now stands. */
 async function respond(
@@ -35,7 +38,7 @@ async function respond(
   userId: number,
   id: string,
   outcome: MutateOutcome<null>,
-): Promise<NextResponse> {
+): Promise<Response> {
   const settled = settleMutation(outcome, {
     missing: 'recipe',
     invalid: 'The change is not valid.',
@@ -52,7 +55,7 @@ async function respond(
 export async function GET(
   request: Request,
   { params }: IdContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireLiveUid(request);
   if (!auth.ok) {
     return auth.response;
@@ -69,7 +72,7 @@ export async function GET(
 export async function PUT(
   request: Request,
   { params }: IdContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;
@@ -109,7 +112,7 @@ export async function PUT(
 export async function PATCH(
   request: Request,
   { params }: IdContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;
@@ -153,7 +156,7 @@ export async function PATCH(
 export async function DELETE(
   request: Request,
   { params }: IdContext,
-): Promise<NextResponse> {
+): Promise<Response> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;

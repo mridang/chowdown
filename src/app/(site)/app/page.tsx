@@ -32,10 +32,10 @@ import { SearchField } from '@/components/ui/field';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Container } from '@/components/ui/layout';
 import { PageHeader } from '@/components/ui/page-header';
-import { driveAttemptOf } from '@/lib/auth/drive-access';
+import { driveAttemptOf } from '@/domain/auth/drive-access';
 import { countOf } from '@/lib/intl';
-import { toCardRecipe } from '@/lib/recipe/card-data';
-import { loadCollection } from '@/lib/recipe/load-collection';
+import { toCardRecipe } from '@/domain/recipe/card-data';
+import { loadCollection } from '@/domain/recipe/load-collection';
 
 /** How many cards are likely on screen at first, and so load their photos eagerly. */
 const ABOVE_THE_FOLD = 3;

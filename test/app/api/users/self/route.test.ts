@@ -7,7 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 
-import { SESSION_COOKIE } from '../../../../../src/lib/auth/session';
+import { SESSION_COOKIE } from '@/domain/auth/app';
 import { fakeCookies } from '../../../../lib/auth/session-fixture';
 import { settleBackground } from '../../../../lib/db/sqlite-d1';
 import {
@@ -21,8 +21,7 @@ import {
 
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
-const { DELETE, GET, PATCH } =
-  await import('../../../../../src/app/api/users/self/route');
+const { DELETE, GET, PATCH } = await import('@/app/api/users/self/route');
 
 let world: World;
 

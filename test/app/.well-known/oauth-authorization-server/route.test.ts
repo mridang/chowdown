@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   GET,
   OPTIONS,
-} from '../../../../src/app/.well-known/oauth-authorization-server/route';
+} from '@/app/.well-known/oauth-authorization-server/route';
 
 describe('GET /.well-known/oauth-authorization-server', () => {
   it('describes the endpoints of this origin, publicly', async () => {

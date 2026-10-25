@@ -7,9 +7,13 @@
  * checked without a browser.
  */
 
-import { problemMessage } from '@/lib/problem-message';
+import { problemMessage } from '@/lib/core/api';
 
-import { postImport, readImport, type PreparedImport } from './recipe-requests';
+import {
+  postImport,
+  readImport,
+  type PreparedImport,
+} from '@/app/(site)/(pages)/recipes/add/_components/recipe-requests';
 
 /** Where the wizard is: pasting, stepping through the drafts, or finished. */
 export type Phase = 'input' | 'review' | 'done';

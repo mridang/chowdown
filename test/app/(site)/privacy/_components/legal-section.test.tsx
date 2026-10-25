@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   LegalItem,
   LegalSection,
-} from '../../../../../src/app/(site)/privacy/_components/legal-section';
+} from '@/app/(site)/privacy/_components/legal-section';
 import { classOf, html } from '../../../../components/render';
 
 describe('LegalSection', () => {

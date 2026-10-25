@@ -11,10 +11,10 @@ import {
   parseRegistrationText,
   registrationResponse,
   type OAuthClient,
-} from './client';
-import { OAUTH_LIMITS, retryAfterIfLimited } from './limits';
-import type { TextBody } from '../http/body';
-import type { RateLimitStore } from '../util/rate-limit';
+} from '@/lib/oauth/client';
+import { OAUTH_LIMITS, retryAfterIfLimited } from '@/lib/oauth/limits';
+import type { TextBody } from '@/lib/core/api';
+import type { RateLimitStore } from '@/lib/rate-limit';
 
 /** What a registration request came to. */
 export type RegistrationResult =

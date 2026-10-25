@@ -11,9 +11,9 @@
 
 import { NextResponse } from 'next/server';
 
-import { SESSION_COOKIE } from '@/lib/auth/app';
-import { requireSignedIn } from '@/lib/auth/guard';
-import { bumpSessionEpoch } from '@/lib/auth/store';
+import { SESSION_COOKIE } from '@/domain/auth/app';
+import { requireSignedIn } from '@/lib/core/auth';
+import { bumpSessionEpoch } from '@/domain/auth/store';
 
 /**
  * `DELETE /api/sessions`: end every session of the signed-in person, on every
@@ -21,7 +21,7 @@ import { bumpSessionEpoch } from '@/lib/auth/store';
  * signed in (or the session had already been ended), or 403 for a request from
  * another site.
  */
-export async function DELETE(request: Request): Promise<NextResponse> {
+export async function DELETE(request: Request): Promise<Response> {
   const caller = await requireSignedIn(request);
   if (!caller.ok) {
     return caller.response;

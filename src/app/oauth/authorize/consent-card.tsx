@@ -4,14 +4,14 @@ import { CheckIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { Eyebrow, Heading } from '@/components/ui/layout';
-import { SCOPE_WRITE } from '@/lib/oauth/scopes';
 import {
   NEUTRAL_CLIENT_NAME,
+  SCOPE_WRITE,
   describeScopes,
   sanitiseDisplayName,
   type ClientIdentity,
   type RedirectDescription,
-} from '@/lib/oauth/display';
+} from '@/lib/oauth';
 
 /** One hidden form field carrying part of the authorization request through to the decision. */
 export interface HiddenField {

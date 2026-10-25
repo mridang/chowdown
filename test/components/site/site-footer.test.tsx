@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { SiteFooter } from '../../../src/components/site/site-footer';
+import { SiteFooter } from '@/components/site/site-footer';
 import { html } from '../render';
 
 describe('SiteFooter', () => {

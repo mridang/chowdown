@@ -24,7 +24,7 @@ import {
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const { DELETE, GET, PUT } =
-  await import('../../../../../../../src/app/api/users/self/favourites/[recipe_id]/route');
+  await import('@/app/api/users/self/favourites/[recipe_id]/route');
 
 let world: World;
 

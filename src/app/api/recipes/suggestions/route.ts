@@ -13,19 +13,18 @@
 
 import { NextResponse } from 'next/server';
 
-import { requireUser } from '@/lib/api/auth';
-import { driveFailure } from '@/lib/api/drive-failure';
-import { pageBody, parseLimit } from '@/lib/api/pagination';
-import { budgetRefusal } from '@/lib/api/daily-budget';
-import { problems } from '@/lib/api/problem';
-import { getUserAccessToken } from '@/lib/auth/user-access-token';
-import { listRecipeFiles } from '@/lib/drive/drive-client';
-import { recipesFolderFor } from '@/lib/drive/recipes-folder';
-import { recipeDisplayName } from '@/lib/recipe/cook-text';
-import { embedText } from '@/lib/recipe/embeddings';
-import { ensureEmbeddings, topSimilar } from '@/lib/recipe/similar';
-import { getEnv } from '@/lib/util';
-import { DAILY_BUDGETS } from '@/lib/util/daily-budget';
+import { requireUser } from '@/domain/api/auth';
+import { driveFailure } from '@/domain/api/drive-failure';
+import { pageBody, parseLimit, problems } from '@/lib/core/api';
+import { budgetRefusal } from '@/domain/api/daily-budget';
+import { getUserAccessToken } from '@/domain/auth/user-access-token';
+import { listRecipeFiles } from '@/domain/drive/recipe-files';
+import { recipesFolderFor } from '@/domain/drive/recipes-folder';
+import { recipeDisplayName } from '@/lib/cooklang';
+import { embedText } from '@/domain/recipe/embeddings';
+import { ensureEmbeddings, topSimilar } from '@/domain/recipe/similar';
+import { getEnv } from '@/lib/core/runtime';
+import { DAILY_BUDGETS } from '@/domain/daily-budget';
 
 /** How many suggestions to give when the client does not say. */
 const DEFAULT_SUGGESTIONS = 8;
@@ -43,7 +42,7 @@ const MAX_QUERY_LENGTH = 300;
  * `limit`. Needs a signed-in user: 401, and 502 or 409 when Drive or the model
  * is unavailable.
  */
-export async function GET(request: Request): Promise<NextResponse> {
+export async function GET(request: Request): Promise<Response> {
   const auth = await requireUser(request);
   if (!auth.ok) {
     return auth.response;

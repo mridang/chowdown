@@ -4,7 +4,10 @@ import { DriveIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { EmptyState } from '@/components/ui/empty-state';
-import { driveConnectHref, type DriveAttempt } from '@/lib/auth/drive-access';
+import {
+  driveConnectHref,
+  type DriveAttempt,
+} from '@/domain/auth/drive-access';
 
 /** What to tell someone whose last attempt didn't work. */
 const ATTEMPT_MESSAGE: Readonly<Record<DriveAttempt, string>> = {
