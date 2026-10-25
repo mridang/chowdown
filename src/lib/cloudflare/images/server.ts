@@ -1,10 +1,15 @@
 /**
  * @packageDocumentation
  *
- * What the image route reaches for in the running Worker: the Images binding,
- * the edge cache and the "run this after the response" hook. Each is looked up
- * when asked for and comes back empty where the runtime has none (plain Node,
- * tests), so the proxy still works there, just without scaling or a cache.
+ * The server side of the image proxy: the {@link ImageService} that serves a
+ * request with its runtime dependencies injected once, and the accessors that
+ * read those dependencies from the running Worker (the Images binding, the edge
+ * cache, and the "run this after the response" hook). Each accessor comes back
+ * empty where the runtime has none (plain Node, tests), so the proxy still
+ * works there, just without scaling or a cache.
+ *
+ * This file is kept out of the package index so none of it reaches the client
+ * bundle; the route imports it directly.
  */
 
 import { getCloudflareContext } from '@opennextjs/cloudflare';
@@ -13,7 +18,14 @@ import {
   isImagesBinding,
   type ImagesLike,
 } from '@/lib/cloudflare/images/proxy';
-import type { ImageCache } from '@/lib/cloudflare/images/service';
+import {
+  serveImage,
+  type ImageAccess,
+  type ImageCache,
+  type ImageServiceDeps,
+} from '@/lib/cloudflare/images/service';
+
+export type { ImageAccess };
 
 /** The Images binding, where the deployment has one. */
 export function imagesBinding(): ImagesLike | undefined {
@@ -58,5 +70,22 @@ export function runInBackground(work: Promise<unknown>): void {
     getCloudflareContext().ctx.waitUntil(guarded);
   } catch {
     // No request context: the promise already runs; nothing to extend.
+  }
+}
+
+/**
+ * The image proxy as a handle: build it with the access rules and the runtime
+ * dependencies, then answer requests through {@link serve}.
+ */
+export class ImageService {
+  readonly #deps: ImageServiceDeps;
+
+  constructor(deps: ImageServiceDeps) {
+    this.#deps = deps;
+  }
+
+  /** Serve one `/img` request: see {@link serveImage}. */
+  serve(request: Request): Promise<Response> {
+    return serveImage(request, this.#deps);
   }
 }

@@ -1,11 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { snapWidth } from '@/lib/cloudflare/images/address';
 import {
   fetchImage,
   isImagesBinding,
-  snapWidth,
   type ImageFetch,
-} from '@/lib/cloudflare/images';
+} from '@/lib/cloudflare/images/proxy';
 import { SITE_NAME } from '@/utils/site';
 
 const image = (type = 'image/jpeg', headers: Record<string, string> = {}) =>

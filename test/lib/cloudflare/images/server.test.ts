@@ -14,8 +14,8 @@ jest.unstable_mockModule('@opennextjs/cloudflare', () => ({
   },
 }));
 
-const { imageCache, imagesBinding, runInBackground } =
-  await import('@/lib/cloudflare/images');
+const { ImageService, imageCache, imagesBinding, runInBackground } =
+  await import('@/lib/cloudflare/images/server');
 
 const realCaches = Reflect.get(globalThis, 'caches');
 
@@ -92,5 +92,23 @@ describe('runInBackground', () => {
       expect.any(Error),
     );
     log.mockRestore();
+  });
+});
+
+describe('ImageService', () => {
+  it('serves a request through the access rules it was built with', async () => {
+    const refusal = new Response('no', { status: 403 });
+    const service = new ImageService({
+      access: {
+        authenticate: async () => refusal,
+        signatureValid: () => true,
+        mayFetch: async () => true,
+      },
+      background: () => undefined,
+    });
+    const answer = await service.serve(
+      new Request('https://app.test/img?url=https://photos.example.org/a.jpg'),
+    );
+    expect(answer.status).toBe(403);
   });
 });

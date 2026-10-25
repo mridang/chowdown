@@ -1,15 +1,14 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
-  ALLOWED_HOSTS,
-  ALLOWED_WIDTHS,
   IMAGE_PATH,
   imageSrc,
   imageSrcSet,
   isAllowedHost,
   isProxyableUrl,
   snapWidth,
-} from '@/lib/cloudflare/images';
+} from '@/lib/cloudflare/images/address';
+import { ALLOWED_HOSTS, ALLOWED_WIDTHS } from '@/lib/cloudflare/images/site';
 
 /** A host the app takes pictures from. */
 const HOST = ALLOWED_HOSTS?.[0] ?? 'photos.example.org';
