@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
 import { userHasCover } from '@/domain/images/cover-ownership';
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { sqliteDatabase, type SqliteDatabase } from '../../lib/db/sqlite-db';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import {
+  sqliteDatabase,
+  type SqliteDatabase,
+} from '../../lib/core/db/sqlite-db';
 
 const PHOTO = 'https://photos.example.org/soup.jpg?w=440,400';
 const OTHER = 'https://photos.example.org/stew.jpg';

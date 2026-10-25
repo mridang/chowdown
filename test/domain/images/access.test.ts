@@ -7,8 +7,11 @@ import {
   signatureFor,
   signatureValid,
 } from '@/domain/images/access';
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import {
+  installCloudflareContext,
+  sqliteD1,
+} from '../../lib/core/db/sqlite-d1';
 
 /** Who is signed in; null means nobody. Injected in place of the session cookie. */
 const session: { uid: number | null } = { uid: 7 };

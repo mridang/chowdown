@@ -11,7 +11,7 @@ import {
   fakeCookies,
   insertUser,
 } from '../../../../../../lib/auth/session-fixture';
-import { settleBackground } from '../../../../../../lib/db/sqlite-d1';
+import { settleBackground } from '../../../../../../lib/core/db/sqlite-d1';
 import {
   addRecipe,
   fakeGoogle,

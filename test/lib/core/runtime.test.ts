@@ -6,7 +6,7 @@ import {
   isDatabaseBound,
   runInBackground,
 } from '@/lib/core/runtime';
-import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
+import { installCloudflareContext, sqliteD1 } from './db/sqlite-d1';
 
 describe('without a Cloudflare context (tests, scripts)', () => {
   it('reports the database as not bound instead of throwing', () => {

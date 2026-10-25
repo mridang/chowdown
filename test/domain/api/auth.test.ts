@@ -3,8 +3,11 @@ import type { DatabaseSync } from 'node:sqlite';
 
 import { requireLiveUid, requireUid, requireUser } from '@/domain/api/auth';
 import type { Auth } from '@/domain/api/auth';
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import {
+  installCloudflareContext,
+  sqliteD1,
+} from '../../lib/core/db/sqlite-d1';
 import {
   insertUser,
   jar,

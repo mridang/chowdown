@@ -13,8 +13,8 @@ import {
   type RateLimit,
   type RateLimitStore,
 } from '@/lib/rate-limit';
-import { APP_MIGRATIONS } from '../lib/db/migrations';
-import { sqliteD1 } from '../lib/db/sqlite-d1';
+import { APP_MIGRATIONS } from '../lib/core/db/migrations';
+import { sqliteD1 } from '../lib/core/db/sqlite-d1';
 
 const NOW = 1_800_000_000;
 const SMALL: RateLimit = {

@@ -12,8 +12,11 @@ import { recipesFolderFor } from '@/domain/drive/recipes-folder';
 import { getUserById } from '@/domain/db/users';
 import { getDatabase } from '@/domain/db/client';
 import { insertUser } from '../../lib/auth/session-fixture';
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import {
+  installCloudflareContext,
+  sqliteD1,
+} from '../../lib/core/db/sqlite-d1';
 
 let raw: DatabaseSync;
 let restore: () => void;

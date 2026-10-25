@@ -10,12 +10,12 @@ import {
   sessionTokenFor,
   testEnv,
 } from '../../lib/auth/session-fixture';
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
   installCloudflareContext,
   settleBackground,
   sqliteD1,
-} from '../../lib/db/sqlite-d1';
+} from '../../lib/core/db/sqlite-d1';
 
 /** The address the app is served from in route tests. */
 export const ORIGIN = 'https://chowdown.test';

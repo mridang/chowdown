@@ -15,7 +15,7 @@ import {
   recipeUri,
 } from '@/domain/mcp/recipe-resources';
 import type { ToolContext } from '@/domain/mcp/tool-calls';
-import { sqliteDatabase } from '../../lib/db/sqlite-db';
+import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 const someone = { id: 1 } as User;
 

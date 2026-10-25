@@ -5,7 +5,7 @@ import {
   listFavouriteIds,
   setFavourite,
 } from '@/domain/db/favourites';
-import { fakeDb } from '../../lib/db/fake-db';
+import { fakeDb } from '../../lib/core/db/fake-db';
 
 describe('isFavourite', () => {
   it('is true when the heart is there', async () => {

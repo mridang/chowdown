@@ -4,8 +4,11 @@ import type { DatabaseSync } from 'node:sqlite';
 import { listRecipes } from '@/domain/api/recipe-list';
 import { encodeCursor, type ApiResponse } from '@/lib/core/api';
 import type { RecipeSummary } from '@/domain/api/recipe-resource';
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import {
+  installCloudflareContext,
+  sqliteD1,
+} from '../../lib/core/db/sqlite-d1';
 import { insertUser } from '../../lib/auth/session-fixture';
 
 /** The page a successful list produced, or a thrown failure for a refusal. */

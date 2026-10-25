@@ -7,7 +7,7 @@ import {
   saveSimilarLists,
   upsertEmbedding,
 } from '@/domain/db/embeddings';
-import { fakeDb } from '../../lib/db/fake-db';
+import { fakeDb } from '../../lib/core/db/fake-db';
 
 describe('listEmbeddings', () => {
   it("lists the user's cached rows", async () => {

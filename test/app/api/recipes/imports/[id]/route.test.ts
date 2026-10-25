@@ -8,11 +8,11 @@ import {
 } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
-import { APP_MIGRATIONS } from '../../../../../lib/db/migrations';
+import { APP_MIGRATIONS } from '../../../../../lib/core/db/migrations';
 import {
   installCloudflareContext,
   sqliteD1,
-} from '../../../../../lib/db/sqlite-d1';
+} from '../../../../../lib/core/db/sqlite-d1';
 
 /** Who is signed in; null means nobody. */
 const session: { uid: number | null } = { uid: 7 };

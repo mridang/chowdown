@@ -11,7 +11,10 @@ import type { DatabaseSync } from 'node:sqlite';
 import { handleConsent } from '@/app/oauth/consent/handler';
 import type { CurrentUserResolver } from '@/domain/api/auth';
 import { s256 } from '@/lib/oauth';
-import { installCloudflareContext, sqliteD1 } from '../../../lib/db/sqlite-d1';
+import {
+  installCloudflareContext,
+  sqliteD1,
+} from '../../../lib/core/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 
 /** Who is signed in; null means nobody. */

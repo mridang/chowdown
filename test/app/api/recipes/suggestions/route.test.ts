@@ -9,7 +9,7 @@ import {
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import type { DriveFile } from '@/lib/google';
-import { installCloudflareContext } from '../../../../lib/db/sqlite-d1';
+import { installCloudflareContext } from '../../../../lib/core/db/sqlite-d1';
 
 /** Who is signed in; null means nobody. */
 const session: { user: { id: number } | null } = { user: { id: 7 } };

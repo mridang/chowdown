@@ -12,9 +12,9 @@ import {
   setUserUnits,
   upsertUser,
 } from '@/domain/db/users';
-import { fakeDb } from '../../lib/db/fake-db';
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { sqliteDatabase } from '../../lib/db/sqlite-db';
+import { fakeDb } from '../../lib/core/db/fake-db';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 /** A database with every migration applied and two people in it. */
 function seeded() {

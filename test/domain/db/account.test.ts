@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { deleteAccountData } from '@/domain/db/account';
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { sqliteDatabase } from '../../lib/db/sqlite-db';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 /** Rows per table belonging to each of two people, so a delete can be checked for scope. */
 function seeded() {

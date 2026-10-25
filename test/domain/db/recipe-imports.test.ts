@@ -11,9 +11,9 @@ import {
   purgeExpiredRecipeImports,
 } from '@/domain/db/recipe-imports';
 import type { ImportItem } from '@/domain/recipe/prepare-import';
-import { fakeDb } from '../../lib/db/fake-db';
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { sqliteDatabase } from '../../lib/db/sqlite-db';
+import { fakeDb } from '../../lib/core/db/fake-db';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 const items = [{ kind: 'text', status: 'FAILED' }] as unknown as ImportItem[];
 const row = {

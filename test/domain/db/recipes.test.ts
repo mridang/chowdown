@@ -8,8 +8,8 @@ import {
   staleRecipeIds,
   upsertRecipe,
 } from '@/domain/db/recipes';
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { sqliteDatabase } from '../../lib/db/sqlite-db';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 /** A database with every migration applied and two people in it. */
 function seeded() {

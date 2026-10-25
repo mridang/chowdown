@@ -18,7 +18,10 @@ import {
   s256,
   type TokenResponse,
 } from '@/lib/oauth';
-import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
+import {
+  installCloudflareContext,
+  sqliteD1,
+} from '../../lib/core/db/sqlite-d1';
 
 const ORIGIN = 'https://chowdown.test';
 const URL = `${ORIGIN}/mcp`;

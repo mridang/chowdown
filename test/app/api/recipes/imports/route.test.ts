@@ -11,11 +11,11 @@ import type { DatabaseSync } from 'node:sqlite';
 import { DAILY_BUDGETS } from '@/domain/daily-budget';
 import type { ImportUnit } from '@/domain/recipe/import-blob';
 import type { ImportItem } from '@/domain/recipe/prepare-import';
-import { APP_MIGRATIONS } from '../../../../lib/db/migrations';
+import { APP_MIGRATIONS } from '../../../../lib/core/db/migrations';
 import {
   installCloudflareContext,
   sqliteD1,
-} from '../../../../lib/db/sqlite-d1';
+} from '../../../../lib/core/db/sqlite-d1';
 
 /** Who is signed in; null means nobody. */
 const session: { uid: number | null } = { uid: 7 };

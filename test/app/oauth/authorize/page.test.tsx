@@ -10,7 +10,10 @@ import type { DatabaseSync } from 'node:sqlite';
 import type { ReactElement } from 'react';
 
 import { s256 } from '@/lib/oauth';
-import { installCloudflareContext, sqliteD1 } from '../../../lib/db/sqlite-d1';
+import {
+  installCloudflareContext,
+  sqliteD1,
+} from '../../../lib/core/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 import { htmlAt } from '../../../components/render';
 

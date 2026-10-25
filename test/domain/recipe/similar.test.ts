@@ -15,8 +15,8 @@ import {
   type EmbeddingDeps,
   type SimilarRecipe,
 } from '@/domain/recipe/similar';
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { sqliteDatabase } from '../../lib/db/sqlite-db';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 /** An embedding row with the given 2-d vector. */
 function row(id: string, title: string, vector: number[]): EmbeddingRow {

@@ -10,8 +10,11 @@ import type { DatabaseSync } from 'node:sqlite';
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import { encryptSecret } from '@/lib/crypto';
-import { APP_MIGRATIONS } from '../../lib/db/migrations';
-import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import {
+  installCloudflareContext,
+  sqliteD1,
+} from '../../lib/core/db/sqlite-d1';
 import { insertUser, testEnv } from '../../lib/auth/session-fixture';
 
 const { forgetAccessTokens, getUserAccessToken } =

@@ -11,8 +11,8 @@ import {
 } from '@/domain/db/oauth';
 import { MAX_LIVE_GRANTS_PER_APP, OAUTH_LIMITS } from '@/lib/oauth';
 import type { RateLimitStore } from '@/lib/rate-limit';
-import { fakeDb } from '../../lib/db/fake-db';
-import { sqliteDatabase } from '../../lib/db/sqlite-db';
+import { fakeDb } from '../../lib/core/db/fake-db';
+import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 import { quietSecurityLogs } from '../../lib/oauth/quiet-logs';
 
 quietSecurityLogs();

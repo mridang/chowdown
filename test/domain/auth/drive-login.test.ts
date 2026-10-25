@@ -10,7 +10,10 @@ import {
 import { revokeDriveLogin } from '@/domain/auth/drive-login';
 import { encryptSecret } from '@/lib/crypto';
 import type { User } from '@/domain/db/users';
-import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
+import {
+  installCloudflareContext,
+  sqliteD1,
+} from '../../lib/core/db/sqlite-d1';
 import { testEnv } from '../../lib/auth/session-fixture';
 
 let restore: () => void;

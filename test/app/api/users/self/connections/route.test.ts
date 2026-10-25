@@ -6,7 +6,7 @@ import type { CurrentUserResolver } from '@/domain/api/auth';
 import {
   installCloudflareContext,
   sqliteD1,
-} from '../../../../../lib/db/sqlite-d1';
+} from '../../../../../lib/core/db/sqlite-d1';
 
 /** Who is signed in; null means nobody. */
 /** `ended`: the person signed out everywhere, though the cookie itself still verifies. */
