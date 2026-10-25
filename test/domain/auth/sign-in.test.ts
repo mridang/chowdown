@@ -24,10 +24,6 @@ const afterSignIn = jest
 jest.unstable_mockModule('@/domain/auth/store', () => ({
   upsertGoogleUser,
 }));
-jest.unstable_mockModule('@/lib/core/auth/hooks', () => ({
-  afterSignIn,
-  OTHER_FLOWS: {},
-}));
 
 const { completeSignIn, missingSignInSettings } =
   await import('@/domain/auth/sign-in');
@@ -78,11 +74,15 @@ describe('missingSignInSettings', () => {
 
 describe('completeSignIn', () => {
   it('records the person, runs the hook and issues the session on the way to the landing page', async () => {
-    const res = await completeSignIn(context(), {
-      sub: 'g1',
-      email: 'ada@example.com',
-      name: 'Ada',
-    });
+    const res = await completeSignIn(
+      context(),
+      {
+        sub: 'g1',
+        email: 'ada@example.com',
+        name: 'Ada',
+      },
+      afterSignIn,
+    );
     expect(res.headers.get('location')).toBe(`https://app.test${LANDING_PATH}`);
     expect(upsertGoogleUser).toHaveBeenCalledWith({
       sub: 'g1',
@@ -99,10 +99,14 @@ describe('completeSignIn', () => {
   });
 
   it('lands on the returnTo it is given', async () => {
-    const res = await completeSignIn(context({ returnTo: '/x/y' }), {
-      sub: 'g1',
-      email: 'ada@example.com',
-    });
+    const res = await completeSignIn(
+      context({ returnTo: '/x/y' }),
+      {
+        sub: 'g1',
+        email: 'ada@example.com',
+      },
+      afterSignIn,
+    );
     expect(res.headers.get('location')).toBe('https://app.test/x/y');
   });
 
@@ -110,23 +114,28 @@ describe('completeSignIn', () => {
     const res = await completeSignIn(
       context({ origin: 'http://localhost:3737' }),
       { sub: 'g1', email: 'ada@example.com' },
+      afterSignIn,
     );
     expect(res.cookies.get(SESSION_COOKIE)?.secure).toBe(false);
   });
 
   it('refuses a Google account with no email address, recording nothing', async () => {
-    await expect(completeSignIn(context(), { sub: 'g1' })).rejects.toThrow(
-      /email/,
-    );
+    await expect(
+      completeSignIn(context(), { sub: 'g1' }, afterSignIn),
+    ).rejects.toThrow(/email/);
     expect(upsertGoogleUser).not.toHaveBeenCalled();
   });
 
   it('fails closed without a session secret, recording nobody', async () => {
     await expect(
-      completeSignIn(context({ env: env({ SESSION_SECRET: undefined }) }), {
-        sub: 'g1',
-        email: 'ada@example.com',
-      }),
+      completeSignIn(
+        context({ env: env({ SESSION_SECRET: undefined }) }),
+        {
+          sub: 'g1',
+          email: 'ada@example.com',
+        },
+        afterSignIn,
+      ),
     ).rejects.toThrow(/SESSION_SECRET/);
     expect(upsertGoogleUser).not.toHaveBeenCalled();
     expect(afterSignIn).not.toHaveBeenCalled();

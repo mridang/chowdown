@@ -12,10 +12,10 @@ import type { NextRequest, NextResponse } from 'next/server';
 import { LANDING_PATH } from '@/domain/auth/app';
 import { finishFlow } from '@/lib/core/auth/flow-cookies';
 import type { GoogleUserResponse, TokenResponse } from '@/lib/google';
-import { afterSignIn } from '@/lib/core/auth/hooks';
+import { afterSignIn as defaultAfterSignIn } from '@/lib/core/auth/hooks';
 import { requireSessionSecret } from '@/lib/session';
 import { setSessionCookie } from '@/lib/core/auth/session-cookie';
-import { upsertGoogleUser } from '@/domain/auth/store';
+import { upsertGoogleUser, type User } from '@/domain/auth/store';
 
 /** Where a round trip stands: who is asking, and where it came from. */
 export interface FlowContext {
@@ -57,6 +57,7 @@ export function missingSignInSettings(env: CloudflareEnv): string[] {
 export async function completeSignIn(
   { env, origin, returnTo }: FlowContext,
   info: GoogleUserResponse,
+  afterSignIn: (user: Readonly<User>) => Promise<void> = defaultAfterSignIn,
 ): Promise<NextResponse> {
   if (!info.email) {
     // Signing in asked for the email scope, so Google not sharing one is a
