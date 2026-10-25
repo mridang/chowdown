@@ -17,30 +17,22 @@
  * limits is in its own `extras.ts`, which has the same exports everywhere.
  */
 
-import {
-  buildCsp,
-  cspSurfaceFor,
-  forwardedHeaders,
-  newNonce,
-} from '@/lib/core/http/csp';
+import { buildCsp, cspSurfaceFor, forwardedHeaders, newNonce } from './csp';
 import {
   edgeCache,
   edgeCacheKey,
   isEdgeCacheable,
   storableCopy,
   withFreshNonce,
-} from '@/lib/core/http/edge-cache';
+} from './edge-cache';
 import {
   edgeLimitRefusal,
   type EdgeLimitEnv,
   type EdgeLimits,
-} from '@/lib/core/http/edge-limits';
-import { EDGE_LIMITS } from '@/lib/core/http/extras';
-import {
-  applyResponseHeaders,
-  replacingHeaders,
-} from '@/lib/core/http/headers';
-import { CACHED_QUERY_PARAMS, EDGE_CACHED_PAGES } from '@/lib/core/http/site';
+} from './edge-limits';
+import { EDGE_LIMITS } from './extras';
+import { applyResponseHeaders, replacingHeaders } from './headers';
+import { CACHED_QUERY_PARAMS, EDGE_CACHED_PAGES } from './site';
 
 /** What the Worker is given besides the request. */
 export type ServeEnv = EdgeLimitEnv & {

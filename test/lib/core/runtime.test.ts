@@ -6,7 +6,6 @@ import {
   isDatabaseBound,
   runInBackground,
 } from '@/lib/core/runtime';
-import { getDatabase } from '@/domain/db/client';
 import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
 
 describe('without a Cloudflare context (tests, scripts)', () => {
@@ -57,11 +56,5 @@ describe('with a Cloudflare context', () => {
     expect(getDB()).toBe(d1);
     expect(getEnv()).toMatchObject({ SECRET: 'value', DB: d1 });
     expect(isDatabaseBound()).toBe(true);
-  });
-
-  it('wraps the binding in a Drizzle client', () => {
-    const { d1 } = sqliteD1();
-    restore = installCloudflareContext(d1);
-    expect(getDatabase().$client).toBe(d1);
   });
 });

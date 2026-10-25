@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { createElement, type ReactElement } from 'react';
+import { createElement } from 'react';
 
 import {
   isInstallPromptEvent,
@@ -9,7 +9,7 @@ import {
 import { html } from '../render';
 
 /** Says whether the hook offers an install action. */
-function Probe(): ReactElement {
+function Probe() {
   const { install } = useInstallPrompt();
   return createElement('p', null, install ? 'can install' : 'cannot install');
 }

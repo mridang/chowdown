@@ -30,9 +30,9 @@
  * request through.
  */
 
-import { clientSubject } from '@/utils/http/client-address';
-import { CSP_REPORT_PATH } from '@/lib/core/http/reporting';
-import { DISCOVERY_PATHS, STATIC_PREFIXES } from '@/lib/core/http/site';
+import { clientSubject } from './client-address';
+import { CSP_REPORT_PATH } from './reporting';
+import { DISCOVERY_PATHS, STATIC_PREFIXES } from './site';
 import { errorMessage, logError } from '@/utils/logging';
 
 /** One Workers Rate Limiting binding: `limit` says whether `key` may go ahead. */

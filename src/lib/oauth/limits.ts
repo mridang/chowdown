@@ -15,7 +15,7 @@
 import { errorMessage, logError } from '@/utils/logging';
 import { oauthError } from '@/lib/oauth/http';
 import { logSecurityEvent } from '@/lib/oauth/security-log';
-import { clientSubject } from '@/utils/http/client-address';
+import { clientSubject } from '@/lib/core/http/client-address';
 import {
   rateLimit,
   type RateLimit,

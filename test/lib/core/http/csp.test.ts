@@ -1,13 +1,13 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
-  EXTRA_DIRECTIVES,
-  EXTRA_IMG_SOURCES,
   buildCsp,
   cspSurfaceFor,
   forwardedHeaders,
   newNonce,
   nonceOf,
+  EXTRA_DIRECTIVES,
+  EXTRA_IMG_SOURCES,
 } from '@/lib/core/http';
 
 describe('newNonce', () => {

@@ -27,7 +27,7 @@
  */
 
 import openNextHandler from '../.open-next/worker.js';
-import { serve } from './lib/core/http/serve';
+import { serve } from './lib/core/http';
 import extraHandlers from './lib/core/worker-extras';
 
 export * from './lib/core/worker-extras';

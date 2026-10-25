@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { genericLimits, nonceOf, serve, type ServeApp } from '@/lib/core/http';
+import { nonceOf, genericLimits } from '@/lib/core/http';
+import { serve, type ServeApp } from '@/lib/core/http';
 
 /** What is rate limited in these tests: the classes every app has, with sessions in `app_session`. */
 const limits = genericLimits('app_session');
