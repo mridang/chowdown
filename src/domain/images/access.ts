@@ -14,9 +14,18 @@ import { getSessionUid } from '@/lib/core/auth/current-user';
 import { getDatabase } from '@/domain/db/client';
 import { userHasCover } from '@/domain/images/cover-ownership';
 
-/** Refuses a caller who is not signed in. */
-export async function authenticate(): Promise<Response | undefined> {
-  return (await getSessionUid()) === null ? problems.unauthorized() : undefined;
+/** Resolves the signed-in user's id, or null. Injected so tests need no cookie. */
+type SessionUid = () => Promise<number | null>;
+
+/**
+ * Refuses a caller who is not signed in. The request carries no identity of its
+ * own here (the session is a cookie), so it is ignored; `sessionUid` reads it.
+ */
+export async function authenticate(
+  _request?: Request,
+  sessionUid: SessionUid = getSessionUid,
+): Promise<Response | undefined> {
+  return (await sessionUid()) === null ? problems.unauthorized() : undefined;
 }
 
 /** This app does not sign its picture addresses: who may ask is decided by `mayFetch`. */
@@ -30,7 +39,10 @@ export function signatureValid(): boolean {
 }
 
 /** Whether one of the signed-in person's recipes lists the photo at `url`. */
-export async function mayFetch(url: string): Promise<boolean> {
-  const uid = await getSessionUid();
+export async function mayFetch(
+  url: string,
+  sessionUid: SessionUid = getSessionUid,
+): Promise<boolean> {
+  const uid = await sessionUid();
   return uid !== null && userHasCover(getDatabase(), uid, url);
 }

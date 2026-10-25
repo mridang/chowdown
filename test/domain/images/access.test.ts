@@ -1,25 +1,18 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
+import {
+  authenticate,
+  mayFetch,
+  signatureFor,
+  signatureValid,
+} from '@/domain/images/access';
 import { APP_MIGRATIONS } from '../../lib/db/migrations';
 import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
 
-/** Who is signed in; null means nobody. */
+/** Who is signed in; null means nobody. Injected in place of the session cookie. */
 const session: { uid: number | null } = { uid: 7 };
-
-jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
-  getSessionUid: async () => session.uid,
-}));
-
-const { authenticate, mayFetch, signatureFor, signatureValid } =
-  await import('@/domain/images/access');
+const sessionUid = async (): Promise<number | null> => session.uid;
 
 const PHOTO = 'https://photos.example.org/soup.jpg';
 const UNLISTED = 'https://photos.example.org/unlisted.jpg';
@@ -58,32 +51,32 @@ afterEach(() => {
 
 describe('authenticate', () => {
   it('lets a signed-in person go on', async () => {
-    expect(await authenticate()).toBeUndefined();
+    expect(await authenticate(undefined, sessionUid)).toBeUndefined();
   });
 
   it('answers 401 when nobody is signed in', async () => {
     session.uid = null;
-    expect((await authenticate())?.status).toBe(401);
+    expect((await authenticate(undefined, sessionUid))?.status).toBe(401);
   });
 });
 
 describe('mayFetch', () => {
   it('lets a person have a photo one of their recipes lists', async () => {
-    expect(await mayFetch(PHOTO)).toBe(true);
+    expect(await mayFetch(PHOTO, sessionUid)).toBe(true);
   });
 
   it('refuses a photo none of their recipes lists', async () => {
-    expect(await mayFetch(UNLISTED)).toBe(false);
+    expect(await mayFetch(UNLISTED, sessionUid)).toBe(false);
   });
 
   it("refuses a photo only someone else's recipe lists", async () => {
     session.uid = 8;
-    expect(await mayFetch(PHOTO)).toBe(false);
+    expect(await mayFetch(PHOTO, sessionUid)).toBe(false);
   });
 
   it('refuses everything when nobody is signed in', async () => {
     session.uid = null;
-    expect(await mayFetch(PHOTO)).toBe(false);
+    expect(await mayFetch(PHOTO, sessionUid)).toBe(false);
   });
 });
 
