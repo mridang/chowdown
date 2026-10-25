@@ -2,7 +2,7 @@
  * @packageDocumentation
  *
  * A small controller framework for the REST API, built on the pure
- * `lib/rest-json` primitives. A route registers typed endpoints — each with an
+ * JSON/problem primitives in this package. A route registers typed endpoints — each with an
  * optional `decode` (request → input), a `handle` (input → output) and an
  * optional `encode` (output → response) — and the controller wires the
  * pipeline: build the per-request context, decode (a thrown problem becomes the
@@ -11,13 +11,14 @@
  * 500 problem through `onError`. A method with no endpoint is simply not
  * mounted, so Next answers it 405.
  *
- * This is the one Next-aware seam over `lib/rest-json`: endpoints and their
+ * This is the one Next-aware seam over the pure JSON/problem primitives in
+ * this package: endpoints and their
  * controllers hold no framework code, so they grow without touching the route
  * file, which only mounts `handlers()`.
  */
 
-import { problem } from '@/lib/core/api/problem';
-import type { RouteContext } from '@/lib/core/api/route-context';
+import { problem } from './problem';
+import type { RouteContext } from './route-context';
 
 /** The HTTP methods an endpoint may answer. */
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
