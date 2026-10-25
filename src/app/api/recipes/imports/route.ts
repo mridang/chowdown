@@ -9,16 +9,18 @@
  * `/api/recipes`. A link that can't be fetched shows up as a `FAILED` item
  * rather than failing the whole import. One import holds at most ten links and
  * pasted recipes: each one costs a fetch and model calls.
+ *
+ * The behaviour lives in the `importsCollection` controller; the exported
+ * handlers only mount it.
  */
-
-import { NextResponse } from 'next/server';
 
 import { requireLiveUid } from '@/domain/api/auth';
 import { budgetRefusal } from '@/domain/api/daily-budget';
 import {
-  absoluteUrl,
+  ApiController,
+  created,
   decodeCursor,
-  pageBody,
+  page,
   parseLimit,
   problems,
   readJson,
@@ -41,94 +43,107 @@ import { getEnv } from '@/lib/core/runtime';
 import { getDatabase } from '@/domain/db/client';
 import { DAILY_BUDGETS } from '@/domain/daily-budget';
 
+export const dynamic = 'force-dynamic';
+
+/** The signed-in caller's id and the request. */
+interface UidContext {
+  readonly request: Request;
+  readonly uid: number;
+}
+
 /**
+ * The recipe-imports collection controller.
+ *
  * `POST /api/recipes/imports`: read the links and recipe text in `{ input }`
  * and make drafts of them. Answers 201 with the import and its `Location`, or
  * 400 for a missing or oversized `input`, when nothing in it looks like a link
  * or a recipe, or when it holds more than ten of them; 413 for a request body
- * over 1 MiB; 429 once the person has used the day's import allowance; 415 for a body that is not JSON. Needs a signed-in user: 401
- * without a session.
- */
-export async function POST(request: Request): Promise<Response> {
-  const auth = await requireLiveUid(request);
-  if (!auth.ok) {
-    return auth.response;
-  }
-  const body = await readJson(request, [], MAX_IMPORT_BODY_BYTES);
-  if (!body.ok) {
-    return body.response;
-  }
-  const input = parseImportInput(body.value);
-  if (!input.ok) {
-    return problems.badRequest('The import is not valid.', input.errors);
-  }
-
-  // Counted before any work starts: every unit costs a fetch and model calls,
-  // so the size of one request's bill is decided here, not by the length of
-  // the text.
-  const units = planImport(input.input);
-  if (units.length === 0) {
-    return problems.badRequest(
-      'No links or recipe text found in what you pasted.',
-    );
-  }
-  if (units.length > MAX_IMPORT_UNITS) {
-    return problems.badRequest(
-      `That is ${units.length} links and recipes; one import takes at most ${MAX_IMPORT_UNITS}. Split it into smaller imports.`,
-      [`input: at most ${MAX_IMPORT_UNITS} links or recipes per import.`],
-    );
-  }
-
-  const spent = await budgetRefusal(
-    DAILY_BUDGETS.import,
-    auth.value,
-    'recipe import',
-  );
-  if (spent) {
-    return spent;
-  }
-  const items = await prepareImport(units, getEnv());
-  const created = await createRecipeImport(getDatabase(), auth.value, items);
-  return NextResponse.json(created, {
-    status: 201,
-    headers: {
-      Location: absoluteUrl(request, `/api/recipes/imports/${created.id}`),
-    },
-  });
-}
-
-/**
+ * over 1 MiB; 429 once the person has used the day's import allowance; 415 for
+ * a body that is not JSON. Needs a signed-in user: 401 without a session.
+ *
  * `GET /api/recipes/imports`: the user's imports, newest first, as summaries
  * (no drafts). Answers 200 with a page, 400 for a bad `limit` or `cursor`, 401
  * when nobody is signed in.
  */
-export async function GET(request: Request): Promise<Response> {
-  const auth = await requireLiveUid(request);
-  if (!auth.ok) {
-    return auth.response;
-  }
-  const query = new URL(request.url).searchParams;
-  const limit = parseLimit(query.get('limit'));
-  if (typeof limit !== 'number') {
-    return limit;
-  }
-  const cursor = query.get('cursor');
-  const after = cursor ? decodeCursor(cursor) : undefined;
-  if (cursor && !after) {
-    return problems.badRequest('The cursor is not valid.');
-  }
+const importsCollection = new ApiController<UidContext>({
+  context: async (request) => {
+    const auth = await requireLiveUid(request);
+    if (!auth.ok) {
+      throw auth.response;
+    }
+    return { request, uid: auth.value };
+  },
+})
+  .on({
+    method: 'POST',
+    handle: async (_input, { request, uid }) => {
+      const body = await readJson(request, [], MAX_IMPORT_BODY_BYTES);
+      if (!body.ok) {
+        return body.response;
+      }
+      const input = parseImportInput(body.value);
+      if (!input.ok) {
+        return problems.badRequest('The import is not valid.', input.errors);
+      }
 
-  // Newest first: sort keys descend, so "after" means an older key.
-  const all = await listRecipeImports(getDatabase(), auth.value);
-  const page = sliceAfter(
-    all,
-    importPosition,
-    compareImportPositions,
-    after,
-    limit,
-  );
-  return NextResponse.json(
-    pageBody(request, page.items.map(importSummary), page.next),
-    { headers: { 'Cache-Control': 'private, no-cache' } },
-  );
-}
+      // Counted before any work starts: every unit costs a fetch and model
+      // calls, so the size of one request's bill is decided here, not by the
+      // length of the text.
+      const units = planImport(input.input);
+      if (units.length === 0) {
+        return problems.badRequest(
+          'No links or recipe text found in what you pasted.',
+        );
+      }
+      if (units.length > MAX_IMPORT_UNITS) {
+        return problems.badRequest(
+          `That is ${units.length} links and recipes; one import takes at most ${MAX_IMPORT_UNITS}. Split it into smaller imports.`,
+          [`input: at most ${MAX_IMPORT_UNITS} links or recipes per import.`],
+        );
+      }
+
+      const spent = await budgetRefusal(
+        DAILY_BUDGETS.import,
+        uid,
+        'recipe import',
+      );
+      if (spent) {
+        return spent;
+      }
+      const items = await prepareImport(units, getEnv());
+      const record = await createRecipeImport(getDatabase(), uid, items);
+      return created(record, `/api/recipes/imports/${record.id}`);
+    },
+    encode: (result) => result,
+  })
+  .on({
+    method: 'GET',
+    handle: async (_input, { request, uid }) => {
+      const query = new URL(request.url).searchParams;
+      const limit = parseLimit(query.get('limit'));
+      if (typeof limit !== 'number') {
+        return limit;
+      }
+      const cursor = query.get('cursor');
+      const after = cursor ? decodeCursor(cursor) : undefined;
+      if (cursor && !after) {
+        return problems.badRequest('The cursor is not valid.');
+      }
+
+      // Newest first: sort keys descend, so "after" means an older key.
+      const all = await listRecipeImports(getDatabase(), uid);
+      const slice = sliceAfter(
+        all,
+        importPosition,
+        compareImportPositions,
+        after,
+        limit,
+      );
+      return page(slice.items.map(importSummary), slice.next, {
+        'Cache-Control': 'private, no-cache',
+      });
+    },
+    encode: (result) => result,
+  });
+
+export const { GET, POST } = importsCollection.handlers();

@@ -8,8 +8,8 @@
  * validating its fields.
  */
 
-import { readJsonBody } from '@/lib/core/api/body';
-import { problem, problems } from '@/lib/core/api/problem';
+import { readJsonBody } from './body';
+import { problem, problems } from './problem';
 
 /**
  * The largest JSON body a route accepts unless it asks for more. Generous for

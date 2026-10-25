@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-import { USER_AGENT } from '@/lib/safe-fetch';
+import { SITE_NAME, SITE_URL } from '@/utils/site';
 import { fetchPage, PageFetchError } from '@/domain/recipe/fetch-page';
+
+/** The User-Agent `fetchPage` builds from the site's identity at the call site. */
+const USER_AGENT = `${SITE_NAME}/1.0 (+${SITE_URL})`;
 
 const realFetch = global.fetch;
 

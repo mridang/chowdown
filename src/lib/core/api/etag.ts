@@ -1,10 +1,12 @@
 /**
  * @packageDocumentation
  *
- * Entity tags for optimistic concurrency and cheap re-reads. A recipe's tag is
- * a hash of its Cooklang source, so it changes exactly when the content does.
- * `If-Match` on a write refuses (412) if someone changed the recipe meanwhile;
- * `If-None-Match` on a read answers 304 when nothing changed.
+ * Entity tags for optimistic concurrency and cheap re-reads. A tag is a hash of
+ * a resource's content, so it changes exactly when the content does.
+ * `If-Match` on a write refuses (412) if the resource changed meanwhile;
+ * `If-None-Match` on a read answers 304 when nothing changed. This is the
+ * generic HTTP machinery only — how a given resource derives its tag (and any
+ * per-representation variants) belongs to that resource's domain.
  */
 
 /** A strong entity tag for some text: the quoted first 16 hex digits of its SHA-256. */
@@ -18,26 +20,6 @@ export async function entityTag(text: string): Promise<string> {
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
   return `"${hex}"`;
-}
-
-/** The ways one recipe can be sent: JSON, Cooklang text, or schema.org JSON-LD. */
-export type RecipeRepresentation = 'json' | 'cooklang' | 'ld';
-
-/**
- * Different representations of one recipe (JSON, Cooklang text, JSON-LD) are
- * different entities, so each needs its own tag or a cache could mistake one for
- * another. JSON keeps the base tag; the others add a suffix.
- */
-export function representationTag(
-  base: string,
-  kind: RecipeRepresentation,
-): string {
-  return kind === 'json' ? base : `${base.slice(0, -1)}-${kind}"`;
-}
-
-/** The base (content) tag for a representation tag. */
-function baseTag(tag: string): string {
-  return tag.replace(/-(cooklang|ld)"$/, '"');
 }
 
 /** The tags in an `If-Match` / `If-None-Match` header (weak markers ignored). */
@@ -56,7 +38,7 @@ export function ifMatchSatisfied(
   if (header === null) {
     return true;
   }
-  const tags = tagsIn(header).map(baseTag);
+  const tags = tagsIn(header);
   return tags.includes('*') || tags.includes(current);
 }
 

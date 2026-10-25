@@ -11,10 +11,11 @@ import { sourceDomainOf } from '@/lib/cooklang';
 import { getDatabase } from '@/domain/db/client';
 import {
   decodeCursor,
-  pageBody,
+  page,
   parseLimit,
   problems,
   sliceAfter,
+  type ApiResponse,
 } from '@/lib/core/api';
 import {
   comparePositions,
@@ -51,7 +52,7 @@ export async function listRecipes(
   request: Request,
   userId: number,
   forced: Readonly<Record<string, string>> = {},
-): Promise<Response> {
+): Promise<ApiResponse<unknown> | Response> {
   const query = withForced(new URL(request.url).searchParams, forced);
   if (query.has('favourite') && !('favourite' in forced)) {
     return problems.badRequest(
@@ -93,19 +94,16 @@ export async function listRecipes(
   });
 
   const sorted = sortRecipes(filterRecipes(rows, query), order);
-  const page = sliceAfter(
+  const slice = sliceAfter(
     sorted,
     (r) => positionOf(r, order),
     comparePositions(order),
     after,
     limit,
   );
-  return Response.json(
-    pageBody(
-      request,
-      page.items.map((r) => r.summary),
-      page.next,
-    ),
-    { headers: { 'Cache-Control': 'private, no-cache' } },
+  return page(
+    slice.items.map((r) => r.summary),
+    slice.next,
+    { 'Cache-Control': 'private, no-cache' },
   );
 }

@@ -6,7 +6,7 @@
  * route file only mounts it.
  */
 
-import { ApiController, pageBody, problems } from '@/lib/core/api';
+import { ApiController, page, problems } from '@/lib/core/api';
 import { liveUid } from '@/domain/api/auth';
 import { getRecipePageRows } from '@/domain/db/recipe-page';
 import { parseSimilar } from '@/domain/recipe/similar';
@@ -18,12 +18,10 @@ import { getDatabase } from '@/domain/db/client';
  * for a recipe the user does not have, 401 when nobody is signed in.
  */
 export const recipeSimilar = new ApiController<{
-  readonly request: Request;
   readonly uid: number;
   readonly id: string;
 }>({
   context: async (request, route) => ({
-    request,
     uid: await liveUid(request),
     id: (await route.params)?.['id'] ?? '',
   }),
@@ -39,8 +37,6 @@ export const recipeSimilar = new ApiController<{
       title: s.title,
     }));
   },
-  encode: (items, { request }) => ({
-    body: pageBody(request, items),
-    headers: { 'Cache-Control': 'private, no-cache' },
-  }),
+  encode: (items) =>
+    page(items, undefined, { 'Cache-Control': 'private, no-cache' }),
 });

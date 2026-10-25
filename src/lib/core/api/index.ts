@@ -1,16 +1,19 @@
 /**
  * @packageDocumentation
  *
- * Public surface of the core/api package: the Next-aware REST controller
- * framework (ApiController + the route-context shapes and cursor pagination)
- * built on the pure REST/JSON primitives (RFC 9457 problems, size-checked body
- * reading, JSON helpers, ETags) that used to live in lib/rest-json.
+ * The server-side REST/JSON layer for the API, in one package: the pure
+ * primitives — RFC 9457 problem responses and the standard catalogue, size-
+ * and type-checked body reading, and the cursor-pagination primitives — the
+ * success vocabulary (`ok`/`created`/`noContent`/`page`) a handler returns, and
+ * the Next-aware ApiController that wires typed endpoints to them and renders
+ * the response. The browser-side helper for reading these responses lives in
+ * `@/components/api`, not here.
  */
-export * from './controller';
-export * from './route-context';
-export * from './pagination';
 export * from './problem';
-export * from './problem-message';
 export * from './json';
 export * from './body';
+export * from './pagination';
 export * from './etag';
+export * from './results';
+export * from './controller';
+export * from './route-context';

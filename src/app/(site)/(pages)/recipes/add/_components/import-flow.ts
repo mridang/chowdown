@@ -7,7 +7,7 @@
  * checked without a browser.
  */
 
-import { problemMessage } from '@/lib/core/api';
+import { problemMessage } from '@/components/api/problem-message';
 
 import {
   postImport,

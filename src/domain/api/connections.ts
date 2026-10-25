@@ -6,7 +6,7 @@
  * files only mount these.
  */
 
-import { ApiController, pageBody, problems } from '@/lib/core/api';
+import { ApiController, page, problems } from '@/lib/core/api';
 import {
   liveUid,
   requestCookieResolver,
@@ -16,9 +16,8 @@ import { connectedAppResource } from '@/domain/connected-apps';
 import { listConnectedApps, revokeConnectedApp } from '@/domain/db/oauth';
 import { getDatabase } from '@/domain/db/client';
 
-/** The signed-in person's id, plus the request (for building page URLs). */
+/** The signed-in person's id. */
 interface UidContext {
-  readonly request: Request;
   readonly uid: number;
 }
 
@@ -33,17 +32,14 @@ export function makeConnectionsCollection(
 ): ApiController<UidContext> {
   return new ApiController<UidContext>({
     context: async (request) => ({
-      request,
       uid: await liveUid(request, resolver),
     }),
   }).on({
     method: 'GET',
     handle: async (_input, { uid }) =>
       (await listConnectedApps(getDatabase(), uid)).map(connectedAppResource),
-    encode: (apps, { request }) => ({
-      body: pageBody(request, apps),
-      headers: { 'Cache-Control': 'private, no-cache' },
-    }),
+    encode: (apps) =>
+      page(apps, undefined, { 'Cache-Control': 'private, no-cache' }),
   });
 }
 

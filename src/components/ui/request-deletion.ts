@@ -6,7 +6,7 @@
  * the same kind of outcome and none of them has to handle a thrown error.
  */
 
-import { problemMessage } from '@/lib/core/api';
+import { problemMessage } from '@/components/api/problem-message';
 
 /** How a deletion ended: done, or the sentence to show the person. */
 export type DeletionResult =

@@ -1,62 +1,45 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  entityTag,
-  ifMatchSatisfied,
-  ifNoneMatchHit,
-  representationTag,
-} from '@/lib/core/api';
+import { entityTag, ifMatchSatisfied, ifNoneMatchHit } from '@/lib/core/api';
 
 describe('entityTag', () => {
-  it('is a quoted, stable hash that changes with the content', async () => {
-    const a = await entityTag('>> title: A');
+  it('is a quoted 16-hex-digit tag that changes with the content', async () => {
+    const a = await entityTag('one');
+    const b = await entityTag('two');
     expect(a).toMatch(/^"[0-9a-f]{16}"$/);
-    expect(a).toBe(await entityTag('>> title: A'));
-    expect(a).not.toBe(await entityTag('>> title: B'));
+    expect(a).not.toBe(b);
+    expect(await entityTag('one')).toBe(a);
   });
 });
 
 describe('ifMatchSatisfied', () => {
-  it('allows a write when there is no If-Match', () => {
+  it('allows the write when the header is absent', () => {
     expect(ifMatchSatisfied(null, '"abc"')).toBe(true);
   });
 
-  it('allows a matching tag, a list containing it, a weak tag, or *', () => {
+  it('allows it for a matching tag, a wildcard, or ignoring a weak marker', () => {
     expect(ifMatchSatisfied('"abc"', '"abc"')).toBe(true);
-    expect(ifMatchSatisfied('"zzz", "abc"', '"abc"')).toBe(true);
-    expect(ifMatchSatisfied('W/"abc"', '"abc"')).toBe(true);
     expect(ifMatchSatisfied('*', '"abc"')).toBe(true);
+    expect(ifMatchSatisfied('W/"abc"', '"abc"')).toBe(true);
+    expect(ifMatchSatisfied('"x", "abc"', '"abc"')).toBe(true);
   });
 
-  it('refuses a stale tag', () => {
-    expect(ifMatchSatisfied('"old"', '"abc"')).toBe(false);
+  it('refuses it when no tag matches', () => {
+    expect(ifMatchSatisfied('"x"', '"abc"')).toBe(false);
   });
 });
 
 describe('ifNoneMatchHit', () => {
-  it('is a hit only when the client already holds the current tag', () => {
-    expect(ifNoneMatchHit('"abc"', '"abc"')).toBe(true);
-    expect(ifNoneMatchHit('"old"', '"abc"')).toBe(false);
+  it('is false when the header is absent', () => {
     expect(ifNoneMatchHit(null, '"abc"')).toBe(false);
   });
-});
 
-describe('representationTag', () => {
-  it('keeps the base tag for JSON and gives each other representation its own', () => {
-    expect(representationTag('"abc"', 'json')).toBe('"abc"');
-    expect(representationTag('"abc"', 'cooklang')).toBe('"abc-cooklang"');
-    expect(representationTag('"abc"', 'ld')).toBe('"abc-ld"');
+  it('is true for a matching tag or a wildcard', () => {
+    expect(ifNoneMatchHit('"abc"', '"abc"')).toBe(true);
+    expect(ifNoneMatchHit('*', '"abc"')).toBe(true);
   });
 
-  it('is never mistaken for another representation by If-None-Match', () => {
-    const json = representationTag('"abc"', 'json');
-    const cook = representationTag('"abc"', 'cooklang');
-    expect(ifNoneMatchHit(json, cook)).toBe(false);
-    expect(ifNoneMatchHit(cook, cook)).toBe(true);
-  });
-
-  it('still lets any representation tag stand for the content in If-Match', () => {
-    expect(ifMatchSatisfied('"abc-cooklang"', '"abc"')).toBe(true);
-    expect(ifMatchSatisfied('"old-ld"', '"abc"')).toBe(false);
+  it('is false when nothing matches', () => {
+    expect(ifNoneMatchHit('"x"', '"abc"')).toBe(false);
   });
 });

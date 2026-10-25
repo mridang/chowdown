@@ -1,25 +1,24 @@
 import { drizzle, type DrizzleD1Database } from 'drizzle-orm/d1';
 
 /**
- * A Drizzle client bound to a D1 database, typed against the schema the caller
- * passes in. The library stays free of any one app's tables: the schema is a
- * type/value parameter, and the app supplies its own (see `domain/db/client`).
+ * A Drizzle client bound to a D1 database, typed against the schema `S` the
+ * caller supplies. Generic so this platform helper never needs to know the
+ * app's own tables.
  */
-export type Database<Schema extends Record<string, unknown>> =
-  DrizzleD1Database<Schema> & {
-    $client: D1Database;
-  };
+export type Database<
+  S extends Record<string, unknown> = Record<string, unknown>,
+> = DrizzleD1Database<S> & { $client: D1Database };
 
 /**
- * Wrap a raw D1 binding in a typed Drizzle client for `schema`. Code with a
- * request context gets one from the app's `getDatabase()`; code handed a
- * binding (a Workflow, a test) calls this directly with the app's schema.
+ * Wrap a raw D1 binding in a typed Drizzle client for the given schema. The
+ * schema is passed in — the app binds its own (see `domain/db`) — so this
+ * module stays free of any one app's tables.
  *
  * @public
  */
-export function createDatabase<Schema extends Record<string, unknown>>(
+export function createDatabase<S extends Record<string, unknown>>(
   d1: D1Database,
-  schema: Schema,
-): Database<Schema> {
-  return drizzle(d1, { schema }) as Database<Schema>;
+  schema: S,
+): Database<S> {
+  return drizzle(d1, { schema }) as Database<S>;
 }

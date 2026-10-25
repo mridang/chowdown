@@ -21,8 +21,8 @@ export const favouritesCollection = new ApiController<{
   context: async (request) => ({ request, uid: await liveUid(request) }),
 }).on({
   method: 'GET',
-  // listRecipes already builds the page Response; send it as-is.
+  // listRecipes already builds the page result; send it as-is.
   handle: (_input, { request, uid }) =>
     listRecipes(request, uid, { favourite: 'true' }),
-  encode: (response) => response,
+  encode: (result) => result,
 });

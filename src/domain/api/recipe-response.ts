@@ -10,14 +10,12 @@ import { getRecipePageRows } from '@/domain/db/recipe-page';
 import { recipeToJsonLd } from '@/domain/recipe/schema-org';
 import { parseRecipe } from '@/lib/cooklang';
 import { getDatabase } from '@/domain/db/client';
+import { entityTag, ifNoneMatchHit, problems } from '@/lib/core/api';
 import {
-  absoluteUrl,
-  entityTag,
-  ifNoneMatchHit,
-  problems,
   representationTag,
   type RecipeRepresentation,
-} from '@/lib/core/api';
+} from '@/domain/recipe/etag';
+import { appOrigin } from '@/lib/core/origin';
 import { recipeResource } from '@/domain/api/recipe-resource';
 
 /** The media type of a recipe's Cooklang source. */
@@ -79,7 +77,7 @@ export async function sendRecipe(
   if (kind === 'ld') {
     const parsed = parseRecipe(rows.recipe.source, rows.recipe.name);
     return Response.json(
-      recipeToJsonLd(parsed, absoluteUrl(request, `/recipe/${id}`)),
+      recipeToJsonLd(parsed, `${appOrigin(request)}/recipe/${id}`),
       { status, headers: { ...headers, 'Content-Type': JSON_LD_TYPE } },
     );
   }

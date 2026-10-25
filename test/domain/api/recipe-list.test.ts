@@ -2,9 +2,32 @@ import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import type { DatabaseSync } from 'node:sqlite';
 
 import { listRecipes } from '@/domain/api/recipe-list';
+import { encodeCursor, type ApiResponse } from '@/lib/core/api';
+import type { RecipeSummary } from '@/domain/api/recipe-resource';
 import { APP_MIGRATIONS } from '../../lib/db/migrations';
 import { installCloudflareContext, sqliteD1 } from '../../lib/db/sqlite-d1';
 import { insertUser } from '../../lib/auth/session-fixture';
+
+/** The page a successful list produced, or a thrown failure for a refusal. */
+function pageOf(result: ApiResponse<unknown> | Response): {
+  readonly items: readonly RecipeSummary[];
+  readonly next: string | undefined;
+  readonly cacheControl: string | undefined;
+} {
+  if (result instanceof Response) {
+    throw new Error(`expected a page, got a ${result.status} response`);
+  }
+  const page = result.page;
+  if (!page) {
+    throw new Error('expected a page result');
+  }
+  const items = page.items as readonly RecipeSummary[];
+  return {
+    items,
+    next: page.next ? encodeCursor(page.next) : undefined,
+    cacheControl: result.headers?.['Cache-Control'],
+  };
+}
 
 let raw: DatabaseSync;
 let restore: () => void;
@@ -51,26 +74,26 @@ beforeEach(() => {
 
 afterEach(() => restore());
 
-/** Call the list as person 1 and read the page back. */
+/** Call the list as person 1 and return the raw result (a page or a refusal). */
 async function list(
   query = '',
   forced: Record<string, string> = {},
   userId = 1,
-) {
-  const res = await listRecipes(
+): Promise<ApiResponse<unknown> | Response> {
+  return listRecipes(
     new Request(`https://chowdown.test/api/recipes${query}`),
     userId,
     forced,
   );
-  return {
-    res,
-    body: (await res.json()) as {
-      self?: string;
-      next?: string;
-      items?: { id: string; title: string; favourite: boolean }[];
-      status?: number;
-    },
-  };
+}
+
+/** The ids of the recipes on a successful page. */
+async function ids(
+  query = '',
+  forced: Record<string, string> = {},
+  userId = 1,
+): Promise<string[]> {
+  return pageOf(await list(query, forced, userId)).items.map((r) => r.id);
 }
 
 describe('listRecipes', () => {
@@ -89,72 +112,66 @@ describe('listRecipes', () => {
   });
 
   it("lists the person's recipes by title, with their hearts, and never anyone else's", async () => {
-    const { res, body } = await list();
-    expect(res.status).toBe(200);
-    expect(res.headers.get('cache-control')).toBe('private, no-cache');
-    expect(body.items?.map((r) => r.id)).toEqual(['a', 'b', 'c']);
-    expect(body.items?.map((r) => r.favourite)).toEqual([true, false, false]);
+    const page = pageOf(await list());
+    expect(page.cacheControl).toBe('private, no-cache');
+    expect(page.items.map((r) => r.id)).toEqual(['a', 'b', 'c']);
+    expect(page.items.map((r) => r.favourite)).toEqual([true, false, false]);
   });
 
   it('refuses a favourite filter, which belongs to the favourites list', async () => {
-    const { res, body } = await list('?favourite=true');
-    expect(res.status).toBe(400);
-    expect(body.status).toBe(400);
+    const res = await list('?favourite=true');
+    expect(res).toBeInstanceOf(Response);
+    expect((res as Response).status).toBe(400);
   });
 
   it('still lets the favourites list force its own favourite filter', async () => {
-    const { body } = await list('', { favourite: 'true' });
-    expect(body.items?.map((r) => r.id)).toEqual(['a']);
+    expect(await ids('', { favourite: 'true' })).toEqual(['a']);
   });
 
   it('sorts by the sort parameter, newest first with a minus', async () => {
-    const { body } = await list('?sort=-modified_at');
-    expect(body.items?.map((r) => r.id)).toEqual(['a', 'b', 'c']);
-    expect(
-      (await list('?sort=modified_at')).body.items?.map((r) => r.id),
-    ).toEqual(['c', 'b', 'a']);
+    expect(await ids('?sort=-modified_at')).toEqual(['a', 'b', 'c']);
+    expect(await ids('?sort=modified_at')).toEqual(['c', 'b', 'a']);
   });
 
   it('refuses a sort it does not know', async () => {
-    const { res } = await list('?sort=colour');
-    expect(res.status).toBe(400);
+    const res = await list('?sort=colour');
+    expect(res).toBeInstanceOf(Response);
+    expect((res as Response).status).toBe(400);
   });
 
   it('filters by the free-text query', async () => {
-    const { body } = await list('?q=carrot');
-    expect(body.items?.map((r) => r.id)).toEqual(['c']);
+    expect(await ids('?q=carrot')).toEqual(['c']);
   });
 
   it('filters by source site', async () => {
-    const { body } = await list('?source_site=cakes.example.com');
-    expect(body.items?.map((r) => r.id)).toEqual(['c']);
+    expect(await ids('?source_site=cakes.example.com')).toEqual(['c']);
   });
 
   it('pages with a cursor that carries on where the page ended', async () => {
-    const first = await list('?limit=2');
-    expect(first.body.items?.map((r) => r.id)).toEqual(['a', 'b']);
-    expect(first.body.next).toBeDefined();
-    const second = await list(
-      `?limit=2&cursor=${new URL(first.body.next!).searchParams.get('cursor')}`,
-    );
-    expect(second.body.items?.map((r) => r.id)).toEqual(['c']);
-    expect(second.body.next).toBeUndefined();
+    const first = pageOf(await list('?limit=2'));
+    expect(first.items.map((r) => r.id)).toEqual(['a', 'b']);
+    expect(first.next).toBeDefined();
+    const second = pageOf(await list(`?limit=2&cursor=${first.next ?? ''}`));
+    expect(second.items.map((r) => r.id)).toEqual(['c']);
+    expect(second.next).toBeUndefined();
   });
 
   it('refuses a limit out of range and a cursor it did not issue', async () => {
-    expect((await list('?limit=0')).res.status).toBe(400);
-    expect((await list('?limit=101')).res.status).toBe(400);
-    expect((await list('?cursor=not-a-cursor')).res.status).toBe(400);
+    const status = async (query: string): Promise<number | undefined> => {
+      const res = await list(query);
+      return res instanceof Response ? res.status : undefined;
+    };
+    expect(await status('?limit=0')).toBe(400);
+    expect(await status('?limit=101')).toBe(400);
+    expect(await status('?cursor=not-a-cursor')).toBe(400);
   });
 
   it('applies forced filters over whatever the client asked for', async () => {
-    const { body } = await list('?favourite=false', { favourite: 'true' });
-    expect(body.items?.map((r) => r.id)).toEqual(['a']);
+    expect(await ids('?favourite=false', { favourite: 'true' })).toEqual(['a']);
   });
 
   it('is an empty page for a person with no recipes', async () => {
     insertUser(raw, { id: 3, email: 'e@f.com' });
-    const { body } = await list('', {}, 3);
-    expect(body.items).toEqual([]);
+    expect(await ids('', {}, 3)).toEqual([]);
   });
 });

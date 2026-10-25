@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/field';
 import { useFocusOnChange } from '@/components/ui/use-focus-on-change';
 import { countOf } from '@/lib/intl';
-import { problemMessage } from '@/lib/core/api';
+import { problemMessage } from '@/components/api/problem-message';
 
 import {
   ANNOUNCEMENTS,

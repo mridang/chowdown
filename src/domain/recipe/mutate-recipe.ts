@@ -9,7 +9,8 @@
  * rules can be tested.
  */
 
-import { entityTag, ifMatchSatisfied } from '@/lib/core/api';
+import { entityTag } from '@/lib/core/api';
+import { ifMatchSatisfiedForRecipe } from '@/domain/recipe/etag';
 
 /** The side effects a mutation needs. */
 export interface MutateDeps {
@@ -57,7 +58,7 @@ export async function mutateRecipe<T>(
   if (current === undefined) {
     return { kind: 'not-found' };
   }
-  if (!ifMatchSatisfied(ifMatch, await entityTag(current))) {
+  if (!ifMatchSatisfiedForRecipe(ifMatch, await entityTag(current))) {
     return { kind: 'precondition-failed' };
   }
   const result = edit(current);

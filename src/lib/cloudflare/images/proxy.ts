@@ -13,6 +13,14 @@ import {
   type SafeFetcher,
 } from '@/lib/safe-fetch';
 import { snapWidth } from '@/lib/cloudflare/images/address';
+import { SITE_NAME, SITE_URL } from '@/utils/site';
+
+/**
+ * How the image proxy introduces itself to the sites it fetches pictures from.
+ * The shared fetcher no longer carries an identity of its own, so the caller
+ * states one; this is the same string the proxy has always sent.
+ */
+const USER_AGENT = `${SITE_NAME}/1.0 (+${SITE_URL})`;
 
 /** The most a picture may weigh before we refuse it. */
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -166,6 +174,7 @@ export async function fetchImage(
     acceptsType: isRasterImage,
     // Cloudflare-only: keep the original at the edge, ignored elsewhere.
     edgeCache: { cacheEverything: true, cacheTtl: ORIGINAL_KEEP_SECONDS },
+    userAgent: USER_AGENT,
     fetcher: deps.fetcher,
   });
   if (!fetched.ok) {

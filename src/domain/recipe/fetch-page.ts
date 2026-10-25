@@ -12,9 +12,18 @@
  */
 
 import { fetchCapped, type FetchFailure } from '@/lib/safe-fetch';
+import { SITE_NAME, SITE_URL } from '@/utils/site';
 
 /** Max characters of HTML kept, so a huge page can't blow a request up. */
 const MAX_HTML = 200_000;
+
+/**
+ * How we introduce ourselves to the sites we fetch pages from: the site's name
+ * and a contact address, so an operator who sees us in their logs can find out
+ * what we are. Built from the site's own identity, not the fetcher's neutral
+ * default.
+ */
+const USER_AGENT = `${SITE_NAME}/1.0 (+${SITE_URL})`;
 
 /**
  * Max bytes read from the network. Four bytes a character is the most UTF-8
@@ -88,6 +97,7 @@ export async function fetchPage(
     accept: 'text/html,application/xhtml+xml',
     acceptsType: (type) => PAGE_TYPES.has(type),
     overflow: 'truncate',
+    userAgent: USER_AGENT,
   });
   if (!result.ok) {
     throw new PageFetchError(describe(result));
