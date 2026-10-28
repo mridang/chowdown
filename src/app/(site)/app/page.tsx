@@ -25,7 +25,6 @@ import {
 } from '@/components/recipes/search-query';
 import { STICKY_SIDEBAR_CLASS } from '@/components/site/header-height';
 import { SortSelect } from '@/components/recipes/sort-select';
-import { PlusIcon } from '@/components/icons';
 import { Button, buttonClass, ButtonLink } from '@/components/ui/button';
 import { FilterChip } from '@/components/ui/chip';
 import { SearchField } from '@/components/ui/field';
@@ -89,16 +88,7 @@ export default async function AppPage({
 
   return (
     <>
-      <PageHeader
-        eyebrow="Your collection"
-        title="Recipes"
-        actions={
-          <ButtonLink href="/recipes/add" size="lg">
-            <PlusIcon size="md" />
-            Add recipe
-          </ButtonLink>
-        }
-      >
+      <PageHeader eyebrow="Your collection" title="Recipes">
         <form action="/app" role="search" className="mt-6 max-w-2xl">
           {/* Searching keeps the filters and order already chosen. */}
           {query.favourites ? (
