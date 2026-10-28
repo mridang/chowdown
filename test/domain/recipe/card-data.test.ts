@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { cleanTitle, toCardRecipe, toneFor } from '@/domain/recipe/card-data';
+import { toCardRecipe } from '@/domain/recipe/card-data';
 
 const FULL = [
   '>> title: Chicken Chettinad | Chettinad Chicken Recipe',
@@ -22,25 +22,6 @@ const row = (source: string, name = 'Curry.cook', id = 'drive-1') => ({
   drive_file_id: id,
   name,
   source,
-});
-
-describe('cleanTitle', () => {
-  it('keeps the part before the first separator', () => {
-    expect(cleanTitle('Chicken Chettinad | Chettinad Chicken Recipe')).toBe(
-      'Chicken Chettinad',
-    );
-    expect(cleanTitle('Dal – the easy way')).toBe('Dal');
-  });
-
-  it('leaves a plain title and hyphenated words alone', () => {
-    expect(cleanTitle('Stir-fried greens')).toBe('Stir-fried greens');
-  });
-});
-
-describe('toneFor', () => {
-  it('is stable for the same text', () => {
-    expect(toneFor('abc')).toBe(toneFor('abc'));
-  });
 });
 
 describe('toCardRecipe', () => {

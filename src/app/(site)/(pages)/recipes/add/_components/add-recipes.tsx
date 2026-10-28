@@ -20,6 +20,8 @@ import {
 import { useFocusOnChange } from '@/components/ui/use-focus-on-change';
 import { countOf } from '@/lib/intl';
 import { problemMessage } from '@/components/api/problem-message';
+import type { CardRecipe } from '@/domain/recipe/card-data';
+import { savedCard } from '@/domain/recipe/saved-card';
 
 import {
   ANNOUNCEMENTS,
@@ -32,6 +34,7 @@ import {
   postRecipe,
   type ImportDraft,
 } from '@/app/(site)/(pages)/recipes/add/_components/recipe-requests';
+import { SavedRecipes } from '@/app/(site)/(pages)/recipes/add/_components/saved-recipes';
 import { SHARED_HINT } from '@/app/(site)/(pages)/recipes/add/_components/shared-input';
 
 /** The wizard's heading for each phase. */
@@ -88,6 +91,8 @@ export function AddRecipes({
   /** Whether Save was pressed on this draft, which is when empty fields become errors. */
   const [attempted, setAttempted] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
+  /** The cards of what was saved, shown when the wizard finishes. */
+  const [savedCards, setSavedCards] = useState<readonly CardRecipe[]>([]);
   /** What the live region says, for screen readers. */
   const [announcement, setAnnouncement] = useState('');
   /** The import the drafts came from; discarded once the wizard finishes. */
@@ -177,6 +182,14 @@ export function AddRecipes({
         throw new Error(await problemMessage(res));
       }
       setSavedCount((c) => c + 1);
+      const card = savedCard(await res.json().catch(() => undefined));
+      if (card) {
+        // A recipe saved again (same source) answers with the one already there.
+        setSavedCards((cards) => [
+          ...cards.filter((c) => c.id !== card.id),
+          card,
+        ]);
+      }
       // Each saved recipe changes the list, even if they stop part-way through.
       onSaved();
       seek(drafts, index + 1);
@@ -352,6 +365,7 @@ export function AddRecipes({
           <p className="mt-3 text-lg" role="status">
             Saved {countOf(savedCount, 'recipe')} to your Drive.
           </p>
+          <SavedRecipes recipes={savedCards} />
           <div className="mt-5">
             <Button size="lg" onClick={onClose}>
               Done
