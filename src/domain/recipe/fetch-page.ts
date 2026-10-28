@@ -11,10 +11,15 @@
  * carry on with whatever content they already have.
  */
 
+import { withoutBulkMarkup } from '@/domain/recipe/html-text';
 import { fetchCapped, type FetchFailure } from '@/lib/safe-fetch';
 import { SITE_NAME, SITE_URL } from '@/utils/site';
 
-/** Max characters of HTML kept, so a huge page can't blow a request up. */
+/**
+ * Max characters of HTML kept, so a huge page can't blow a request up. It is
+ * measured after inline scripts and styles are removed (the JSON-LD is kept),
+ * so it counts the page's content, not its tooling.
+ */
 const MAX_HTML = 200_000;
 
 /**
@@ -77,9 +82,9 @@ function describe(failure: FetchFailure): PageFailure {
 }
 
 /**
- * Fetch a page's HTML, bounded in address, size and time. A page longer than
- * the limit is cut off rather than refused: the recipe is usually near the
- * top.
+ * Fetch a page's HTML, bounded in address, size and time, without its inline
+ * scripts and styles (its JSON-LD stays). A page still longer than the limit is
+ * cut off rather than refused: the recipe is usually near the top.
  *
  * @param url - The page to fetch (a public http/https address).
  * @param timeoutMs - Abort after this long (default 8s).
@@ -102,5 +107,8 @@ export async function fetchPage(
   if (!result.ok) {
     throw new PageFetchError(describe(result));
   }
-  return new TextDecoder().decode(result.bytes).slice(0, MAX_HTML);
+  return withoutBulkMarkup(new TextDecoder().decode(result.bytes)).slice(
+    0,
+    MAX_HTML,
+  );
 }

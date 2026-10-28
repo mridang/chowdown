@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   decodeEntities,
   visibleText,
+  withoutBulkMarkup,
   withoutScriptsAndStyles,
 } from '@/domain/recipe/html-text';
 
@@ -52,5 +53,24 @@ describe('visibleText', () => {
     visibleText('<'.repeat(200_000), 100);
     visibleText('<p '.repeat(100_000), 100);
     expect(Date.now() - started).toBeLessThan(500);
+  });
+});
+
+describe('withoutBulkMarkup', () => {
+  it('cuts scripts, styles and graphics but keeps JSON-LD', () => {
+    expect(
+      withoutBulkMarkup(
+        '<p>a</p><script>var x</script><style>p{}</style><svg><path/></svg>' +
+          '<script type="application/ld+json">{"@type":"Recipe"}</script><p>b</p>',
+      ),
+    ).toBe(
+      '<p>a</p><script type="application/ld+json">{"@type":"Recipe"}</script><p>b</p>',
+    );
+  });
+
+  it('drops everything after a block that is never closed', () => {
+    expect(withoutBulkMarkup('<p>a</p><script>never ends <p>b</p>')).toBe(
+      '<p>a</p>',
+    );
   });
 });

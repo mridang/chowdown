@@ -59,6 +59,16 @@ describe('fetchPage', () => {
     expect((await fetchPage('https://a.com/x')).length).toBe(200_000);
   });
 
+  it('keeps the JSON-LD that sits behind a lot of inline script and CSS', async () => {
+    const ld = '<script type="application/ld+json">{"@type":"Recipe"}</script>';
+    serving(
+      new Response(
+        `<p>top</p><script>${'x'.repeat(150_000)}</script><style>${'y'.repeat(150_000)}</style>${ld}`,
+      ),
+    );
+    await expect(fetchPage('https://a.com/x')).resolves.toBe(`<p>top</p>${ld}`);
+  });
+
   it('stops reading a page that never ends instead of buffering it', async () => {
     const pulls = { count: 0 };
     serving(
