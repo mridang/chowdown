@@ -13,3 +13,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 Keep it in step with the server. Its `version` must equal `version` in `package.json` and `SERVER_VERSION` in `src/lib/mcp/server-info.ts`, and its title, website, icons and endpoint must match `src/lib/site.ts` and `server-info.ts`. Its description may not be longer than 100 characters. `test/lib/mcp/server-info.test.ts` fails when any of these drift.
 
 Run `mcp-publisher validate` after editing it. Publish again only when the listing itself changes (the description, title, icons or endpoint), and give that publication a new version, for example the prerelease `0.1.0-1` when the app's version has not moved. A prerelease would fail the version check above, so change the check in the same commit.
+
+## Tailwind
+
+Tailwind 4 no longer gives `<button>` the pointer cursor, so the base layer of the app's stylesheet carries one rule that does (buttons, `summary`, `select`, `[role='button']` and button-like inputs, never disabled ones). Keep it, and keep it identical across the apps. Do not add `cursor-pointer` to individual buttons to work around its absence, and do not restyle a link or a button to fake the other: use `<a>` or `<Link>` when the click goes to a URL, and `<button>` when it acts on the current page.
