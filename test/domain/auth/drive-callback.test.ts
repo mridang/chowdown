@@ -9,7 +9,6 @@ import {
 import type { NextResponse } from 'next/server';
 
 import { SESSION_COOKIE, SIGN_IN_FAILED_PATH } from '@/domain/auth/app';
-import { completeDriveConnect } from '@/domain/auth/drive-callback';
 import { DRIVE_SCOPE } from '@/domain/auth/drive-oauth';
 import { SessionTokens } from '@/lib/session';
 import { decryptSecret } from '@/lib/crypto';
@@ -25,11 +24,18 @@ import {
   SESSION_SECRET,
   sessionTokenFor,
 } from '../../lib/auth/session-fixture';
+import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
+
+const tracing = installFakeTracing();
+const { completeDriveConnect } = await import('@/domain/auth/drive-callback');
 
 let world: World;
 
 beforeEach(() => {
   world = openWorld();
+  for (const key of Object.keys(tracing.attributes)) {
+    delete tracing.attributes[key];
+  }
   jest.spyOn(console, 'error').mockImplementation(() => undefined);
 });
 
@@ -86,6 +92,31 @@ function connect(
     },
   );
 }
+
+describe('completeDriveConnect — error context', () => {
+  it('names the person once they are known', async () => {
+    await signIn(world);
+    driveAnswers();
+    await connect({ [SESSION_COOKIE]: await sessionTokenFor({ id: 1 }) });
+    expect(tracing.attributes).toEqual({ 'user.id': 1 });
+  });
+
+  it('says no_session for someone who is not signed in, with no user', async () => {
+    driveAnswers();
+    await connect();
+    expect(tracing.attributes).toEqual({ 'auth.failure': 'no_session' });
+  });
+
+  it('says why a grant was turned away', async () => {
+    await signIn(world);
+    driveAnswers();
+    const cookies = { [SESSION_COOKIE]: await sessionTokenFor({ id: 1 }) };
+    await connect(cookies, { scope: 'openid' });
+    expect(tracing.attributes['auth.failure']).toBe('drive_not_granted');
+    await connect(cookies, { refresh: false });
+    expect(tracing.attributes['auth.failure']).toBe('drive_rejected');
+  });
+});
 
 describe('completeDriveConnect', () => {
   it('seals the refresh token, makes the folder, and reissues the session with Drive on', async () => {

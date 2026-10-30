@@ -11,6 +11,7 @@ import type { NextRequest, NextResponse } from 'next/server';
 
 import { LANDING_PATH } from '@/domain/auth/app';
 import { finishFlow } from '@/lib/core/auth/flow-cookies';
+import { setErrorContext } from '@/lib/core/observability/context';
 import { afterSignIn as defaultAfterSignIn } from '@/lib/core/auth/hooks';
 import { setSessionCookie } from '@/lib/core/auth/session-cookie';
 import type { GoogleUserResponse, TokenResponse } from '@/lib/google';
@@ -71,6 +72,8 @@ export async function completeSignIn(
     name: info.name,
     picture: info.picture,
   });
+  // From here an error is shown with the person it happened to.
+  await setErrorContext({ 'user.id': user.id });
   await afterSignIn(user);
   const response = finishFlow(origin, returnTo ?? LANDING_PATH);
   await setSessionCookie(response, user, {

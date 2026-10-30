@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { LANDING_PATH, SESSION_COOKIE, sessionClaims } from '@/domain/auth/app';
 import type { User } from '@/domain/auth/store';
 import { SESSION_SECRET, appRequest } from '../../lib/auth/auth-test-kit';
+import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
+
+const tracing = installFakeTracing();
 
 const person = {
   id: 4,
@@ -46,6 +49,9 @@ const context = (overrides: Record<string, unknown> = {}) => ({
 });
 
 beforeEach(() => {
+  for (const key of Object.keys(tracing.attributes)) {
+    delete tracing.attributes[key];
+  }
   upsertGoogleUser.mockClear();
   afterSignIn.mockClear();
 });
@@ -69,6 +75,17 @@ describe('missingSignInSettings', () => {
       'GOOGLE_OAUTH_CLIENT_SECRET',
       'SESSION_SECRET',
     ]);
+  });
+});
+
+describe('completeSignIn — error context', () => {
+  it('names the person by their internal number only', async () => {
+    await completeSignIn(
+      context(),
+      { sub: 'g1', email: 'ada@example.com', name: 'Ada' },
+      afterSignIn,
+    );
+    expect(tracing.attributes).toEqual({ 'user.id': 4 });
   });
 });
 

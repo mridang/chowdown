@@ -20,6 +20,7 @@ import { isDriveConnected } from '@/domain/auth/drive-access';
 import { buildDriveAuthUrl } from '@/domain/auth/drive-oauth';
 import { newState, safeReturnPath } from '@/lib/web-security';
 import { getEnv } from '@/lib/core/runtime';
+import { setErrorContext } from '@/lib/core/observability/context';
 import { appOrigin } from '@/lib/core/origin';
 
 /**
@@ -29,6 +30,11 @@ import { appOrigin } from '@/lib/core/origin';
  * Google's consent screen otherwise.
  */
 export async function GET(request: NextRequest): Promise<Response> {
+  await setErrorContext({
+    'auth.provider': 'google',
+    'auth.flow': 'drive',
+    'auth.step': 'start',
+  });
   const env = getEnv();
   const origin = appOrigin(request);
   const secure = origin.startsWith('https');
@@ -36,6 +42,7 @@ export async function GET(request: NextRequest): Promise<Response> {
 
   const user = await getCurrentUser();
   if (!user) {
+    await setErrorContext({ 'auth.step': 'sign_in_required' });
     const here = `/auth/drive${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`;
     return NextResponse.redirect(
       `${origin}/auth/login?returnTo=${encodeURIComponent(here)}`,
@@ -44,6 +51,7 @@ export async function GET(request: NextRequest): Promise<Response> {
 
   const force = request.nextUrl.searchParams.get('force') === '1';
   if (isDriveConnected(user) && !force) {
+    await setErrorContext({ 'auth.step': 'already_connected' });
     const response = NextResponse.redirect(`${origin}${returnTo ?? '/app'}`);
     await setSessionCookie(response, user, {
       secret: env.SESSION_SECRET,
@@ -54,6 +62,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     return response;
   }
 
+  await setErrorContext({ 'auth.step': 'consent' });
   const state = newState('drive');
   const response = NextResponse.redirect(
     buildDriveAuthUrl({

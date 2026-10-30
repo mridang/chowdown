@@ -18,6 +18,7 @@ import {
 } from '@/domain/db/users';
 import { ensureRecipesFolder } from '@/domain/drive/recipes-folder';
 import { getDatabase } from '@/domain/db/client';
+import { setErrorContext } from '@/lib/core/observability/context';
 import { logError } from '@/utils/logging';
 import {
   LANDING_PATH,
@@ -54,14 +55,20 @@ export async function completeDriveConnect(
       ? found
       : undefined;
   if (!user) {
+    await setErrorContext({ 'auth.failure': 'no_session' });
     return finishFlow(origin, SIGN_IN_FAILED_PATH);
   }
+  await setErrorContext({ 'user.id': user.id });
   const grant = checkDriveGrant({
     approvedBy: info.sub,
     signedInAs: user.google_sub,
     tokens,
   });
   if (!grant.ok) {
+    await setErrorContext({
+      'auth.failure':
+        grant.result === 'denied' ? 'drive_not_granted' : 'drive_rejected',
+    });
     if (grant.log) {
       logError({ event: 'auth.drive_grant_rejected', detail: grant.log });
     }

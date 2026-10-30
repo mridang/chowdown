@@ -16,6 +16,7 @@ import {
   jar,
   sessionTokenFor,
 } from '../../../lib/auth/session-fixture';
+import { installFakeTracing } from '../../../lib/core/observability/fake-tracing';
 import {
   locationOf,
   nextRequest,
@@ -24,6 +25,7 @@ import {
   type World,
 } from '../../api/world';
 
+const tracing = installFakeTracing();
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const { GET } = await import('@/app/auth/drive/route');
@@ -32,9 +34,26 @@ let world: World;
 
 beforeEach(() => {
   world = openWorld();
+  for (const key of Object.keys(tracing.attributes)) {
+    delete tracing.attributes[key];
+  }
 });
 
 afterEach(() => world.close());
+
+describe('GET /auth/drive — error context', () => {
+  it('names the flow and where the person is in it', async () => {
+    await GET(nextRequest('/auth/drive'));
+    expect(tracing.attributes).toMatchObject({
+      'auth.provider': 'google',
+      'auth.flow': 'drive',
+      'auth.step': 'sign_in_required',
+    });
+    await signIn(world);
+    await GET(nextRequest('/auth/drive'));
+    expect(tracing.attributes['auth.step']).toBe('consent');
+  });
+});
 
 describe('GET /auth/drive', () => {
   it('sends someone who is not signed in to sign in first, then straight back here', async () => {
