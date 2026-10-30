@@ -92,8 +92,9 @@ export function planImport(input: string): readonly ImportUnit[] {
   const prose = stripUrls(input, new Set(urls));
   return [
     ...urls.map((url): ImportUnit => ({ kind: 'url', url })),
-    ...splitTextBlocks(prose).map(
-      (text): ImportUnit => ({ kind: 'text', text }),
-    ),
+    ...splitTextBlocks(prose).map((text): ImportUnit => ({
+      kind: 'text',
+      text,
+    })),
   ];
 }

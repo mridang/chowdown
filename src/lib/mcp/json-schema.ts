@@ -27,13 +27,7 @@
 
 /** The JSON types a schema's `type` keyword may name. */
 export type JsonType =
-  | 'string'
-  | 'number'
-  | 'integer'
-  | 'boolean'
-  | 'array'
-  | 'object'
-  | 'null';
+  'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object' | 'null';
 
 /** The part of JSON Schema this module understands (see the file comment). */
 export interface JsonSchema {

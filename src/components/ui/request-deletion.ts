@@ -10,8 +10,7 @@ import { problemMessage } from '@/components/api/problem-message';
 
 /** How a deletion ended: done, or the sentence to show the person. */
 export type DeletionResult =
-  | Readonly<{ deleted: true }>
-  | Readonly<{ deleted: false; message: string }>;
+  Readonly<{ deleted: true }> | Readonly<{ deleted: false; message: string }>;
 
 /**
  * Send `DELETE` to an API address and say how it ended. Never throws: a

@@ -19,10 +19,7 @@
 
 /** One of the four common eating styles a recipe can be sorted into. */
 export type DietType =
-  | 'Vegan'
-  | 'Vegetarian'
-  | 'Pescatarian'
-  | 'Non-vegetarian';
+  'Vegan' | 'Vegetarian' | 'Pescatarian' | 'Non-vegetarian';
 
 /** Every eating style, strictest first. */
 export const DIET_TYPES = [

@@ -21,12 +21,10 @@ function clock(start = 1_000_000) {
 /** A mint that hands out `t1`, `t2`, … each valid for `expiresIn` seconds. */
 function minter(expiresIn = 3599) {
   const counter = { n: 0 };
-  return jest.fn(
-    async (): Promise<MintedToken> => ({
-      access_token: `t${++counter.n}`,
-      expires_in: expiresIn,
-    }),
-  );
+  return jest.fn(async (): Promise<MintedToken> => ({
+    access_token: `t${++counter.n}`,
+    expires_in: expiresIn,
+  }));
 }
 
 describe('accessTokenKey', () => {

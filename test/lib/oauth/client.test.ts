@@ -205,8 +205,7 @@ describe('fetchClientMetadata', () => {
     const result = await fetchClientMetadata(URL_ID, fetchImpl);
     expect(result.ok).toBe(true);
     const init = (fetchImpl as unknown as jest.Mock).mock.calls[0]?.[1] as
-      | RequestInit
-      | undefined;
+      RequestInit | undefined;
     expect(init?.redirect).toBe('manual');
   });
 
@@ -416,8 +415,7 @@ describe('fetchClientMetadata details', () => {
     const fetchImpl = respond(JSON.stringify(goodDoc));
     await fetchClientMetadata(URL_ID, fetchImpl);
     const init = (fetchImpl as unknown as jest.Mock).mock.calls[0]?.[1] as
-      | RequestInit
-      | undefined;
+      RequestInit | undefined;
     expect(init?.headers).toMatchObject({ 'User-Agent': FETCH_USER_AGENT });
     expect(FETCH_USER_AGENT).toMatch(/^chowdown-oauth\/1 \(\+https:\/\//);
   });

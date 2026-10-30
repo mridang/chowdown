@@ -9,8 +9,7 @@ import { problemError, problemText } from '@/components/api/problem-message';
 
 /** How saving a note ended: saved, or the sentence to show the person. */
 export type NoteResult =
-  | Readonly<{ saved: true }>
-  | Readonly<{ saved: false; message: string }>;
+  Readonly<{ saved: true }> | Readonly<{ saved: false; message: string }>;
 
 /**
  * Save a personal note on a recipe (`POST /api/recipes/:id/notes`). The note is

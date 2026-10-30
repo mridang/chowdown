@@ -18,9 +18,7 @@ export const REFRESH_PREFIX = 'cdn_rt';
 
 /** The kinds of secret there are, by prefix. */
 export type SecretPrefix =
-  | typeof CODE_PREFIX
-  | typeof ACCESS_PREFIX
-  | typeof REFRESH_PREFIX;
+  typeof CODE_PREFIX | typeof ACCESS_PREFIX | typeof REFRESH_PREFIX;
 
 /** A new random secret such as `cdn_at_Qk3…`. */
 export function newSecret(prefix: SecretPrefix): string {

@@ -167,9 +167,10 @@ export async function listRecipeImportSummaries(
     .from(recipeImports)
     .where(eq(recipeImports.user_id, userId))
     .orderBy(desc(recipeImports.created_at));
-  return rows.map(
-    (row): RecipeImportListing => ({ ...row, status: 'COMPLETED' }),
-  );
+  return rows.map((row): RecipeImportListing => ({
+    ...row,
+    status: 'COMPLETED',
+  }));
 }
 
 /** Delete one of the user's imports. Returns false if there was no such import. */

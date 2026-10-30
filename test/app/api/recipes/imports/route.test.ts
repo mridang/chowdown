@@ -34,13 +34,11 @@ jest.unstable_mockModule('@/domain/api/auth', () => ({
 const prepareImport = jest.fn<
   (units: readonly ImportUnit[], env: unknown) => Promise<readonly ImportItem[]>
 >(async (units) =>
-  units.map(
-    (unit): ImportItem => ({
-      title: unit.kind === 'url' ? unit.url : 'Pasted recipe',
-      status: 'DRAFT',
-      cooklang: '>> title: T\n',
-    }),
-  ),
+  units.map((unit): ImportItem => ({
+    title: unit.kind === 'url' ? unit.url : 'Pasted recipe',
+    status: 'DRAFT',
+    cooklang: '>> title: T\n',
+  })),
 );
 
 jest.unstable_mockModule('@/domain/recipe/prepare-import', () => ({
