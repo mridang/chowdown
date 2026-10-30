@@ -16,6 +16,7 @@ import {
   type AccessIdentity,
 } from '@/lib/oauth';
 import { getDatabase } from '@/domain/db/client';
+import { setErrorContext } from '@/lib/core/observability/context';
 
 /** Who the request is from, or why it is not allowed in. */
 export type McpAuth =
@@ -88,7 +89,14 @@ export async function authenticateMcpRequest(
   const { identify, findUser, now } = deps();
   const identity = await identify(token, resourceUri(origin), now());
   const user = identity ? await findUser(identity.userId) : undefined;
-  return identity && user
-    ? { kind: 'ok', user, scope: identity.scope }
-    : { kind: 'invalid-token' };
+  if (!identity || !user) {
+    return { kind: 'invalid-token' };
+  }
+  // Who and which grant, never the token itself.
+  await setErrorContext({
+    'user.id': user.id,
+    'auth.method': 'mcp',
+    'auth.grant_id': identity.grantId,
+  });
+  return { kind: 'ok', user, scope: identity.scope };
 }

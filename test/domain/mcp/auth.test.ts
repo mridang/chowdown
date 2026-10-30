@@ -2,7 +2,11 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import type { User } from '@/domain/db/users';
 import { ACCESS_PREFIX, REFRESH_PREFIX, newSecret } from '@/lib/oauth';
-import { authenticateMcpRequest, type McpAuthDeps } from '@/domain/mcp/auth';
+import type { McpAuthDeps } from '@/domain/mcp/auth';
+import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
+
+const tracing = installFakeTracing();
+const { authenticateMcpRequest } = await import('@/domain/mcp/auth');
 
 const ORIGIN = 'https://chowdown.test';
 const user = { id: 7 } as User;
@@ -28,6 +32,26 @@ function deps(overrides: Partial<McpAuthDeps> = {}): McpAuthDeps {
     ...overrides,
   };
 }
+
+describe('authenticateMcpRequest — error context', () => {
+  it('names the user and the grant for a good token, never the token', async () => {
+    await authenticateMcpRequest(withToken(GOOD), ORIGIN, () => deps());
+    expect(tracing.attributes).toEqual({
+      'user.id': 7,
+      'auth.method': 'mcp',
+      'auth.grant_id': 'g',
+    });
+    expect(JSON.stringify(tracing.attributes)).not.toContain(GOOD);
+  });
+
+  it('names no one for a token that is turned away', async () => {
+    for (const key of Object.keys(tracing.attributes)) {
+      delete tracing.attributes[key];
+    }
+    await authenticateMcpRequest(withToken(BAD), ORIGIN, () => deps());
+    expect(tracing.attributes).toEqual({});
+  });
+});
 
 describe('authenticateMcpRequest', () => {
   it('does not even open the database when no token was sent', async () => {
