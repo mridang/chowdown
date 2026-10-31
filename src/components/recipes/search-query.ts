@@ -41,6 +41,7 @@ export const SORTS = [
   ['title', 'Title A–Z'],
   ['time', 'Quickest first'],
   ['easy', 'Easiest first'],
+  ['new', 'Newest first'],
 ] as const;
 
 /** The URL value of one of the orders in {@link SORTS}. */
@@ -224,6 +225,15 @@ function byDifficulty(a: CardRecipe, b: CardRecipe): number {
   return rank(a) - rank(b) || 0;
 }
 
+/** Added later first, with a recipe of unknown date after every dated one. */
+function byNewest(a: CardRecipe, b: CardRecipe): number {
+  const added = (r: CardRecipe) =>
+    r.added === undefined ? -Infinity : Date.parse(r.added);
+  const [x, y] = [added(a), added(b)];
+  // (-Infinity - -Infinity is NaN, so equal dates are compared explicitly.)
+  return x === y ? 0 : y - x;
+}
+
 /**
  * How each order compares two recipes. Every order falls back to title so the
  * list never shuffles between visits.
@@ -232,6 +242,7 @@ const COMPARATORS = {
   title: byTitle,
   time: (a, b) => byMinutes(a, b) || byTitle(a, b),
   easy: (a, b) => byDifficulty(a, b) || byMinutes(a, b) || byTitle(a, b),
+  new: (a, b) => byNewest(a, b) || byTitle(a, b),
 } as const satisfies Record<SortKey, (a: CardRecipe, b: CardRecipe) => number>;
 
 /** Order recipes; every order falls back to title so the list never shuffles. */

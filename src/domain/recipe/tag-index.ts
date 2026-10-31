@@ -233,6 +233,7 @@ export async function syncRecipeTags(
       source,
       modified_time: file.modifiedTime ?? null,
       tags: JSON.stringify(tags),
+      added_at: file.createdTime ?? null,
     });
     return [file.id, tags];
   };

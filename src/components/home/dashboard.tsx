@@ -25,6 +25,7 @@ import {
   easyAndQuick,
   fromTheShelf,
   photosFirst,
+  recentlyAdded,
   ROW_SIZE,
   todaySeed,
 } from '@/components/home/shelves';
@@ -103,12 +104,13 @@ export async function Dashboard({
     toCardRecipe(row, hearted.has(row.drive_file_id)),
   );
 
+  const fresh = recentlyAdded(recipes).slice(0, ROW_SIZE);
   const favourites = photosFirst(recipes.filter((r) => r.favourite)).slice(
     0,
     ROW_SIZE,
   );
   const quick = photosFirst(easyAndQuick(recipes)).slice(0, ROW_SIZE);
-  const shown = new Set([...favourites, ...quick].map((r) => r.id));
+  const shown = new Set([...fresh, ...favourites, ...quick].map((r) => r.id));
   const shelf = fromTheShelf(recipes, todaySeed(), shown);
   const favouriteCount = recipes.filter((r) => r.favourite).length;
   // With no recipes and no Drive there is nothing to search or add to yet.
@@ -179,6 +181,12 @@ export async function Dashboard({
                 <DriveConnectNotice reconnect={drive.reconnect} returnTo="/" />
               </div>
             )}
+            <Row
+              eyebrow="New this week"
+              title="Just added to your collection"
+              href={listHref({ sort: 'new' })}
+              items={fresh}
+            />
             <Row
               eyebrow="Your favourites"
               title="The ones you keep coming back to"

@@ -211,6 +211,23 @@ describe('sortRecipes', () => {
     ).toEqual(['quick', 'slow', 'hard', 'bare']);
   });
 
+  it('puts the newest first, then by title, with undated recipes last', () => {
+    const old = recipe({ id: 'old', title: 'A old', added: '2026-01-01' });
+    const fresh = recipe({
+      id: 'fresh',
+      title: 'B fresh',
+      added: '2026-10-30',
+    });
+    const sameDay = recipe({
+      id: 'same',
+      title: 'A same',
+      added: '2026-10-30',
+    });
+    expect(
+      sortRecipes([BARE, old, fresh, sameDay], 'new').map((r) => r.id),
+    ).toEqual(['same', 'fresh', 'old', 'bare']);
+  });
+
   it('does not change the list it is given', () => {
     const list = [quick, slow];
     sortRecipes(list, 'time');

@@ -49,6 +49,8 @@ export interface CardRecipe {
   readonly method: readonly string[];
   readonly keywords: readonly string[];
   readonly favourite: boolean;
+  /** When it was added to the collection, as an ISO time; absent when not known. */
+  readonly added?: string;
   /** A stub the assistant or user jotted down but never curated (shown as an "idea"). */
   readonly uncurated?: boolean;
   readonly tone: Tone;
@@ -63,6 +65,7 @@ export function toCardRecipe(
   row: Readonly<
     Pick<Recipe, 'drive_file_id' | 'name' | 'source'> & {
       tags?: string | null;
+      first_opened_at?: string | null;
     }
   >,
   favourite: boolean,
@@ -91,6 +94,7 @@ export function toCardRecipe(
     method: tags['method'] ?? [],
     keywords: tags['keywords'] ?? [],
     favourite,
+    ...(row.first_opened_at ? { added: row.first_opened_at } : {}),
     ...(isUncurated(row.name) ? { uncurated: true } : {}),
     tone: toneFor(row.drive_file_id),
     cover: extractMedia(parsed).cover,

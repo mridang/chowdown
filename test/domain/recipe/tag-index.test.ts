@@ -115,6 +115,26 @@ describe('syncRecipeTags', () => {
     return { deps, saved };
   }
 
+  it('dates a new recipe by when its Drive file was created', async () => {
+    const { deps, saved } = fakes([], { a: SOURCE });
+    await syncRecipeTags(
+      user,
+      [
+        {
+          id: 'a',
+          name: 'Curry.cook',
+          modifiedTime: 'm1',
+          createdTime: '2025-03-04T05:06:07.000Z',
+        },
+      ],
+      'tok',
+      deps,
+    );
+    expect(saved).toEqual([
+      expect.objectContaining({ added_at: '2025-03-04T05:06:07.000Z' }),
+    ]);
+  });
+
   it('reads and indexes a file the cache has never seen', async () => {
     const { deps, saved } = fakes([], { a: SOURCE });
     const result = await syncRecipeTags(

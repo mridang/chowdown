@@ -57,6 +57,12 @@ export async function upsertRecipe(
     parse_error?: string | null;
     /** Curated taxonomy tags as a JSON string (`{ facet: string[] }`). */
     tags?: string | null;
+    /**
+     * When the recipe was added, for a recipe first seen in the cache now: the
+     * Drive file's creation time, so a file that has been in Drive for years
+     * does not look new. Used only when the row is first inserted; defaults to now.
+     */
+    added_at?: string | null;
   }>,
 ): Promise<void> {
   const timestamp = now();
@@ -72,7 +78,7 @@ export async function upsertRecipe(
       parse_error: input.parse_error ?? null,
       tags: input.tags ?? null,
       source_url: indexedSourceUrl(input.source),
-      first_opened_at: timestamp,
+      first_opened_at: input.added_at ?? timestamp,
       last_opened_at: timestamp,
     })
     .onConflictDoUpdate({

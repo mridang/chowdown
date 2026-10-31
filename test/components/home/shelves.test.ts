@@ -4,6 +4,7 @@ import {
   easyAndQuick,
   fromTheShelf,
   photosFirst,
+  recentlyAdded,
   todaySeed,
 } from '@/components/home/shelves';
 import type { CardRecipe } from '@/domain/recipe/card-data';
@@ -112,5 +113,46 @@ describe('fromTheShelf', () => {
 
   it('copes with a negative seed', () => {
     expect(fromTheShelf(many(10), -7)).toHaveLength(4);
+  });
+});
+
+describe('recentlyAdded', () => {
+  const now = Date.UTC(2026, 10, 1, 12);
+  const daysAgo = (days: number) =>
+    new Date(now - days * 86_400_000).toISOString();
+
+  it('keeps what was added in the last week, newest first', () => {
+    const found = recentlyAdded(
+      [
+        recipe('three', { added: daysAgo(3) }),
+        recipe('old', { added: daysAgo(30) }),
+        recipe('one', { added: daysAgo(1) }),
+      ],
+      now,
+    );
+    expect(found.map((r) => r.id)).toEqual(['one', 'three']);
+  });
+
+  it('counts the whole seventh day but not the eighth', () => {
+    const found = recentlyAdded(
+      [
+        recipe('edge', { added: daysAgo(7) }),
+        recipe('past', { added: daysAgo(7.01) }),
+      ],
+      now,
+    );
+    expect(found.map((r) => r.id)).toEqual(['edge']);
+  });
+
+  it('ignores recipes with no date or a date in the future', () => {
+    const found = recentlyAdded(
+      [
+        recipe('undated'),
+        recipe('future', { added: daysAgo(-2) }),
+        recipe('garbled', { added: 'yesterday-ish' }),
+      ],
+      now,
+    );
+    expect(found).toEqual([]);
   });
 });

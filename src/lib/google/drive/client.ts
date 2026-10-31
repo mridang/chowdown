@@ -140,7 +140,7 @@ export class DriveClient {
   ): Promise<readonly DriveFile[]> {
     const listing = await this.#list({
       q,
-      fields: 'nextPageToken,files(id,name,modifiedTime)',
+      fields: 'nextPageToken,files(id,name,modifiedTime,createdTime)',
       pageSize: '1000',
       orderBy: 'name',
       ...(pageToken ? { pageToken } : {}),

@@ -48,6 +48,35 @@ describe('upsertRecipe', () => {
     expect(rows).toEqual([{ source: '>> title: One, again\n' }]);
   });
 
+  it('stamps a new recipe with when it was added, and never moves that on an update', async () => {
+    const made = seeded();
+    const input = { user_id: 1, drive_file_id: 'f1', name: 'f1.cook' };
+    await upsertRecipe(made.db, {
+      ...input,
+      source: 'a',
+      added_at: '2020-01-02T00:00:00.000Z',
+    });
+    await upsertRecipe(made.db, {
+      ...input,
+      source: 'b',
+      added_at: '2026-01-01T00:00:00.000Z',
+    });
+    const row = made.raw
+      .prepare('SELECT first_opened_at AS added FROM recipes')
+      .get();
+    expect(row).toEqual({ added: '2020-01-02T00:00:00.000Z' });
+  });
+
+  it('stamps a new recipe with now when no added time is given', async () => {
+    const made = seeded();
+    const before = Date.now();
+    await save(made, 1, 'f1', 'a');
+    const row = made.raw
+      .prepare('SELECT first_opened_at AS added FROM recipes')
+      .get() as { added: string };
+    expect(Date.parse(row.added)).toBeGreaterThanOrEqual(before);
+  });
+
   it('records the normalised source address, or an empty marker when there is none', async () => {
     const made = seeded();
     await save(

@@ -7,6 +7,7 @@ export const DriveFileSchema = z.object({
   id: z.string(),
   name: z.string(),
   modifiedTime: z.string().optional(),
+  createdTime: z.string().optional(),
 });
 export type DriveFile = z.infer<typeof DriveFileSchema> & ApiModel;
 

@@ -22,6 +22,25 @@ export function todaySeed(now: number = Date.now()): number {
   return Math.floor(now / DAY_MS);
 }
 
+/** A recipe counts as new for this many days after it was added. */
+export const NEW_DAYS = 7;
+
+/**
+ * Recipes added within the last {@link NEW_DAYS} days, newest first; ones whose
+ * date is unknown (or in the future) don't count.
+ */
+export function recentlyAdded(
+  recipes: readonly CardRecipe[],
+  now: number = Date.now(),
+): readonly CardRecipe[] {
+  const since = now - NEW_DAYS * DAY_MS;
+  const added = (r: CardRecipe): number =>
+    r.added === undefined ? NaN : Date.parse(r.added);
+  return recipes
+    .filter((r) => added(r) >= since && added(r) <= now)
+    .toSorted((a, b) => added(b) - added(a));
+}
+
 /** Recipes with a photo first, keeping their order otherwise. */
 export function photosFirst(
   recipes: readonly CardRecipe[],

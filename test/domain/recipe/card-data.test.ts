@@ -44,6 +44,14 @@ describe('toCardRecipe', () => {
     expect(card.cooklang).toBeUndefined();
   });
 
+  it('carries when the recipe was added, if the row says', () => {
+    const added = '2026-10-30T12:00:00.000Z';
+    expect(
+      toCardRecipe({ ...row(FULL), first_opened_at: added }, false).added,
+    ).toBe(added);
+    expect(toCardRecipe(row(FULL), false).added).toBeUndefined();
+  });
+
   it('leaves missing facts undefined or empty instead of inventing them', () => {
     const card = toCardRecipe(row('Stir @egg{2} in a pan.\n'), false);
     expect(card.title).toBe('Curry');
