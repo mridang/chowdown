@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import type { ReactElement, ReactNode } from 'react';
 
 import { ServiceWorker } from '@/components/site/service-worker';
@@ -7,7 +6,7 @@ import { ThemeScript } from '@/components/site/theme-script';
 
 import { BODY_CLASS, HTML_ATTRIBUTES, HTML_CLASS } from '@/app/_fonts';
 import { siteMetadata, siteViewport } from '@/app/_metadata';
-import '@/app/globals.css';
+import './globals.css';
 
 /** What every page says about itself unless it says otherwise (see `_metadata.ts`). */
 export const metadata: Metadata = siteMetadata();
@@ -38,7 +37,7 @@ export default function RootLayout({
         <ThemeScript />
       </head>
       <body className={BODY_CLASS}>
-        <NuqsAdapter>{children}</NuqsAdapter>
+        {children}
         <ServiceWorker />
       </body>
     </html>
