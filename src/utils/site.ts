@@ -36,22 +36,17 @@ export const SECURITY_CONTACT = 'mailto:mridang.agarwalla@gmail.com';
 export const SECURITY_POLICY_URL = `${SITE_URL}/security-policy.txt`;
 
 /**
- * When the privacy notice last changed, as an ISO date. The sitemap publishes
- * it as the page's `lastmod`, so bump it together with the "Last updated" line
- * on the privacy page.
- */
-export const PRIVACY_LAST_UPDATED = '2026-10-18';
-
-/**
- * When the terms of service last changed, as an ISO date. The sitemap publishes
- * it as the page's `lastmod`, so bump it together with the "Last updated" line
- * on the terms page.
- */
-export const TERMS_LAST_UPDATED = '2026-11-01';
-
-/**
  * When this site's Global Privacy Control statement (`/.well-known/gpc.json`)
  * was last reviewed, as an ISO date. Move it forward only when the claim is
  * re-checked: nothing here sells or shares personal data.
  */
 export const GPC_LAST_UPDATE = '2026-10-19';
+
+/** Where the source code lives. */
+export const SOURCE_URL = 'https://github.com/mridang/chowdown';
+/** Where people write to about their data or these terms. */
+export const CONTACT_EMAIL = 'mridang.agarwalla@gmail.com';
+/** The day the privacy policy last changed, for the page and the sitemap. */
+export const PRIVACY_LAST_UPDATED = '2026-10-19';
+/** The day the terms of service last changed, for the page and the sitemap. */
+export const TERMS_LAST_UPDATED = '2026-11-01';

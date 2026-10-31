@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  CONTACT_EMAIL,
   GPC_LAST_UPDATE,
   MCP_URL,
   PRIVACY_LAST_UPDATED,
@@ -9,6 +10,7 @@ import {
   SITE_NAME,
   SITE_TITLE,
   SITE_URL,
+  SOURCE_URL,
   TERMS_LAST_UPDATED,
 } from '@/utils/site';
 
@@ -49,4 +51,14 @@ describe('date constants', () => {
       );
     },
   );
+});
+
+describe('the legal pages’ constants', () => {
+  it('points to the source on GitHub', () => {
+    expect(SOURCE_URL).toBe('https://github.com/mridang/chowdown');
+  });
+
+  it('gives a contact address for data and terms questions', () => {
+    expect(CONTACT_EMAIL).toBe('mridang.agarwalla@gmail.com');
+  });
 });
