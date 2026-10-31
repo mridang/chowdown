@@ -15,7 +15,7 @@ import {
   installEnv,
   jar,
   tokenFor,
-} from '../../../lib/auth/auth-test-kit';
+} from '../../../domain/auth/auth-test-kit';
 
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
@@ -41,7 +41,7 @@ jest.unstable_mockModule('@/domain/auth/store', () => ({
 }));
 
 const { DELETE } = await import('@/app/api/sessions/route');
-const { getCurrentUser } = await import('@/lib/core/auth/current-user');
+const { getCurrentUser } = await import('@/lib/core/auth');
 
 let restore: () => void;
 

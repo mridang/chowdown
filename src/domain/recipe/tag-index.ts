@@ -19,7 +19,7 @@ import {
   type Recipe,
 } from '@/domain/db/recipes';
 import { getFileContent } from '@/domain/drive/recipe-files';
-import { type DriveFile } from '@/lib/google';
+import { type DriveFile } from '@/lib/google/drive';
 import { getEnv, runInBackground } from '@/lib/core/runtime';
 import { getDatabase } from '@/domain/db/client';
 import { parseRecipe, type ParsedRecipe } from '@/lib/cooklang';

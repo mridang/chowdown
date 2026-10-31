@@ -15,7 +15,7 @@ import {
   installEnv,
   jar,
   tokenFor,
-} from '../../../lib/auth/auth-test-kit';
+} from '../../../domain/auth/auth-test-kit';
 
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
@@ -30,8 +30,7 @@ jest.unstable_mockModule('@/domain/auth/store', () => ({
   getSessionEpoch: async () => 0,
 }));
 
-const { crossSiteRefusal, requireSignedIn } =
-  await import('@/lib/core/auth/guard');
+const { crossSiteRefusal, requireSignedIn } = await import('@/lib/core/auth');
 
 let restore: () => void;
 

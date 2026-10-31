@@ -3,77 +3,88 @@ import { describe, expect, it } from '@jest/globals';
 import { bytesToBase64Url } from '@/utils/base64';
 import {
   SESSION_TTL_SECONDS,
+  SessionTokens,
+  type NewSession,
   requireSessionSecret,
   sessionIsCurrent,
-  SessionTokens,
 } from '@/lib/session';
 
 const SECRET = 'test-session-secret-value';
 
+// Thin adapters over the SessionTokens handle, so each case reads as a
+// one-line sign/verify.
+const createSessionToken = (payload: NewSession, secret: string = SECRET) =>
+  new SessionTokens(secret).create(payload);
+const verifySessionToken = (token: string, secret: string = SECRET) =>
+  new SessionTokens(secret).verify(token);
+
 describe('session tokens', () => {
   it('round-trips a valid session', async () => {
-    const token = await new SessionTokens(SECRET).create({
-      uid: 42,
-      email: 'a@b.com',
-    });
-    const payload = await new SessionTokens(SECRET).verify(token);
+    const token = await createSessionToken(
+      { uid: 42, email: 'a@b.com' },
+      SECRET,
+    );
+    const payload = await verifySessionToken(token, SECRET);
     expect(payload?.uid).toBe(42);
     expect(payload?.email).toBe('a@b.com');
     expect(payload?.exp).toBeGreaterThan(Math.floor(Date.now() / 1000));
   });
 
   it('carries the extra claims an app adds, and leaves out the undefined ones', async () => {
-    const payload = await new SessionTokens(SECRET).verify(
-      await new SessionTokens(SECRET).create({
-        uid: 1,
-        email: 'a@b.com',
-        hint: true,
-        off: false,
-        tag: 'x',
-        gone: undefined,
-      }),
+    const payload = await verifySessionToken(
+      await createSessionToken(
+        {
+          uid: 1,
+          email: 'a@b.com',
+          hint: true,
+          off: false,
+          tag: 'x',
+          gone: undefined,
+        },
+        SECRET,
+      ),
+      SECRET,
     );
     expect(payload).toMatchObject({ hint: true, off: false, tag: 'x' });
     expect(payload).not.toHaveProperty('gone');
   });
 
   it('rejects a tampered payload', async () => {
-    const token = await new SessionTokens(SECRET).create({
-      uid: 1,
-      email: 'x@y.com',
-    });
+    const token = await createSessionToken(
+      { uid: 1, email: 'x@y.com' },
+      SECRET,
+    );
     const [, sig] = token.split('.');
     const forged = `${btoa('{"uid":999,"email":"evil@z.com","exp":9999999999}')
       .replace(/=+$/, '')
       .replace(/\+/g, '-')
       .replace(/\//g, '_')}.${sig}`;
-    expect(await new SessionTokens(SECRET).verify(forged)).toBeNull();
+    expect(await verifySessionToken(forged, SECRET)).toBeNull();
   });
 
   it('rejects the wrong secret', async () => {
-    const token = await new SessionTokens(SECRET).create({
-      uid: 1,
-      email: 'x@y.com',
-    });
-    expect(await new SessionTokens('other-secret').verify(token)).toBeNull();
+    const token = await createSessionToken(
+      { uid: 1, email: 'x@y.com' },
+      SECRET,
+    );
+    expect(await verifySessionToken(token, 'other-secret')).toBeNull();
   });
 
   it('rejects an expired session', async () => {
-    const token = await new SessionTokens(SECRET).create({
-      uid: 1,
-      email: 'x@y.com',
-      exp: Math.floor(Date.now() / 1000) - 10,
-    });
-    expect(await new SessionTokens(SECRET).verify(token)).toBeNull();
+    const token = await createSessionToken(
+      { uid: 1, email: 'x@y.com', exp: Math.floor(Date.now() / 1000) - 10 },
+      SECRET,
+    );
+    expect(await verifySessionToken(token, SECRET)).toBeNull();
   });
 
   it('defaults expiry to the configured TTL', async () => {
     const before = Math.floor(Date.now() / 1000);
-    const token = await new SessionTokens(SECRET).create({
-      uid: 1,
-      email: 'x@y.com',
-    });
-    const payload = await new SessionTokens(SECRET).verify(token);
+    const token = await createSessionToken(
+      { uid: 1, email: 'x@y.com' },
+      SECRET,
+    );
+    const payload = await verifySessionToken(token, SECRET);
     expect(payload!.exp).toBeGreaterThanOrEqual(
       before + SESSION_TTL_SECONDS - 5,
     );
@@ -82,36 +93,40 @@ describe('session tokens', () => {
 
 describe('session profile', () => {
   it('carries the name and photo so the header needs no database read', async () => {
-    const token = await new SessionTokens(SECRET).create({
-      uid: 1,
-      email: 'x@y.com',
-      name: 'Ada Lovelace',
-      picture: 'https://lh3.googleusercontent.com/a/abc',
-    });
-    const payload = await new SessionTokens(SECRET).verify(token);
+    const token = await createSessionToken(
+      {
+        uid: 1,
+        email: 'x@y.com',
+        name: 'Ada Lovelace',
+        picture: 'https://lh3.googleusercontent.com/a/abc',
+      },
+      SECRET,
+    );
+    const payload = await verifySessionToken(token, SECRET);
     expect(payload?.name).toBe('Ada Lovelace');
     expect(payload?.picture).toBe('https://lh3.googleusercontent.com/a/abc');
   });
 
   it('leaves out a photo address too long for a cookie, and still verifies', async () => {
-    const token = await new SessionTokens(SECRET).create({
-      uid: 1,
-      email: 'x@y.com',
-      picture: `https://x.test/${'a'.repeat(500)}`,
-    });
-    const payload = await new SessionTokens(SECRET).verify(token);
+    const token = await createSessionToken(
+      {
+        uid: 1,
+        email: 'x@y.com',
+        picture: `https://x.test/${'a'.repeat(500)}`,
+      },
+      SECRET,
+    );
+    const payload = await verifySessionToken(token, SECRET);
     expect(payload?.picture).toBeUndefined();
     expect(payload?.uid).toBe(1);
   });
 
   it('still accepts a session issued before names were added', async () => {
-    const token = await new SessionTokens(SECRET).create({
-      uid: 7,
-      email: 'old@y.com',
-    });
-    expect(
-      (await new SessionTokens(SECRET).verify(token))?.name,
-    ).toBeUndefined();
+    const token = await createSessionToken(
+      { uid: 7, email: 'old@y.com' },
+      SECRET,
+    );
+    expect((await verifySessionToken(token, SECRET))?.name).toBeUndefined();
   });
 });
 
@@ -134,30 +149,26 @@ describe('a correctly signed token with the wrong contents', () => {
 
   it('is refused when the body is not JSON', async () => {
     expect(
-      await new SessionTokens(SECRET).verify(await signed('not json')),
+      await verifySessionToken(await signed('not json'), SECRET),
     ).toBeNull();
   });
 
   it('is refused when the body is not an object', async () => {
     for (const text of ['null', '3', '"x"', '[]']) {
-      expect(
-        await new SessionTokens(SECRET).verify(await signed(text)),
-      ).toBeNull();
+      expect(await verifySessionToken(await signed(text), SECRET)).toBeNull();
     }
   });
 
   it('is refused when it has no expiry', async () => {
     expect(
-      await new SessionTokens(SECRET).verify(await signed('{"uid":1}')),
+      await verifySessionToken(await signed('{"uid":1}'), SECRET),
     ).toBeNull();
   });
 
   it('is accepted once it has an expiry in the future', async () => {
     const exp = Math.floor(Date.now() / 1000) + 60;
     expect(
-      await new SessionTokens(SECRET).verify(
-        await signed(`{"uid":1,"exp":${exp}}`),
-      ),
+      await verifySessionToken(await signed(`{"uid":1,"exp":${exp}}`), SECRET),
     ).toMatchObject({ uid: 1 });
   });
 });
@@ -165,23 +176,21 @@ describe('a correctly signed token with the wrong contents', () => {
 describe('a malformed token', () => {
   it('is refused without a dot, or with an empty signature or a non-base64 one', async () => {
     for (const token of ['', 'abc', '.abc', 'abc.', 'abc.!!!']) {
-      expect(await new SessionTokens(SECRET).verify(token)).toBeNull();
+      expect(await verifySessionToken(token, SECRET)).toBeNull();
     }
   });
 });
 
 describe('session epoch', () => {
   it('carries the epoch the session was issued under, and omits it when unknown', async () => {
-    const issued = await new SessionTokens(SECRET).verify(
-      await new SessionTokens(SECRET).create({
-        uid: 1,
-        email: 'a@b.com',
-        ep: 3,
-      }),
+    const issued = await verifySessionToken(
+      await createSessionToken({ uid: 1, email: 'a@b.com', ep: 3 }, SECRET),
+      SECRET,
     );
     expect(issued?.ep).toBe(3);
-    const legacy = await new SessionTokens(SECRET).verify(
-      await new SessionTokens(SECRET).create({ uid: 1, email: 'a@b.com' }),
+    const legacy = await verifySessionToken(
+      await createSessionToken({ uid: 1, email: 'a@b.com' }, SECRET),
+      SECRET,
     );
     expect(legacy).not.toHaveProperty('ep');
   });
@@ -204,7 +213,7 @@ describe('session epoch', () => {
         await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body)),
       ),
     );
-    expect(await new SessionTokens(SECRET).verify(`${body}.${sig}`)).toBeNull();
+    expect(await verifySessionToken(`${body}.${sig}`, SECRET)).toBeNull();
   });
 
   it('honours a session only while the database holds the same epoch', () => {

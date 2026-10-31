@@ -15,7 +15,7 @@ import {
   fakeCookies,
   jar,
   sessionTokenFor,
-} from '../../../lib/auth/session-fixture';
+} from '../../../domain/auth/session-fixture';
 import { installFakeTracing } from '../../../lib/core/observability/fake-tracing';
 import {
   locationOf,

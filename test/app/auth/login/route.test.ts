@@ -7,7 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 
-import type { NextResponse } from 'next/server';
+import type { NextRequest, NextResponse } from 'next/server';
 
 import { GET } from '@/app/auth/login/route';
 import { RETURN_COOKIE, STATE_COOKIE } from '@/domain/auth/app';
@@ -15,7 +15,12 @@ import {
   SESSION_SECRET,
   appRequest,
   installEnv,
-} from '../../../lib/auth/auth-test-kit';
+} from '../../../domain/auth/auth-test-kit';
+
+// The redirect path answers a NextResponse (it sets cookies); the 503 path
+// answers a plain problem Response. Only the redirect cases read cookies.
+const redirect = async (request: NextRequest): Promise<NextResponse> =>
+  (await GET(request)) as NextResponse;
 
 let restore: () => void;
 
@@ -50,7 +55,7 @@ describe('GET /auth/login', () => {
   });
 
   it('keeps the same one-time state in the address and in an httpOnly cookie', async () => {
-    const res = (await GET(appRequest('GET', '/auth/login'))) as NextResponse;
+    const res = await redirect(appRequest('GET', '/auth/login'));
     const state = locationOf(res)?.searchParams.get('state');
     expect(state).toMatch(/^signin\./);
     expect(res.cookies.get(STATE_COOKIE)).toMatchObject({
@@ -71,9 +76,9 @@ describe('GET /auth/login', () => {
   });
 
   it('remembers a safe returnTo in a cookie', async () => {
-    const res = (await GET(
+    const res = await redirect(
       appRequest('GET', '/auth/login?returnTo=%2Fa%2Fb'),
-    )) as NextResponse;
+    );
     expect(res.cookies.get(RETURN_COOKIE)?.value).toBe('/a/b');
   });
 
@@ -84,9 +89,9 @@ describe('GET /auth/login', () => {
     'javascript:alert(1)',
     '/a\r\nb',
   ])('refuses to remember the returnTo %s', async (target) => {
-    const res = (await GET(
+    const res = await redirect(
       appRequest('GET', `/auth/login?returnTo=${encodeURIComponent(target)}`),
-    )) as NextResponse;
+    );
     expect(res.cookies.get(RETURN_COOKIE)?.value ?? '').toBe('');
   });
 

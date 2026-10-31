@@ -4,18 +4,14 @@
  * Stateless signed sessions. After OAuth we don't want to hit the database on
  * every request just to know who is logged in, so the user's id and email are
  * put in a compact token — `base64url(payload).base64url(HMAC-SHA256)` — and
- * stored in an httpOnly cookie. The HMAC (keyed by the `SESSION_SECRET`) makes
+ * stored in an httpOnly cookie. The HMAC (keyed by the session secret) makes
  * the token tamper-proof; a bad signature or past expiry yields no session.
  *
- * This is deliberately small: it carries identity only, plus whatever hints an
- * app adds (see `sessionClaims` in `app.ts`). Anything sensitive stays in the
- * database, never in the cookie.
- *
- * The token is a hand-rolled Web Crypto HMAC rather than a `jose` JWT on
- * purpose: this exact wire format is already in every signed-in user's cookie,
- * and a JWT would be a different format that invalidates all of them on deploy.
- * So the library's own "hand-roll when the dependency does not fit" rule
- * applies — the format is fixed by what is already deployed.
+ * This is deliberately small and self-contained: it carries identity only,
+ * plus whatever plain-value hints the caller adds. It knows nothing about the
+ * app — no cookie names, no routes — so it is a pure codec. The handle is
+ * {@link SessionTokens}, built once with the secret and used through its
+ * methods. Anything sensitive stays in the database, never in the token.
  */
 
 import {
@@ -39,7 +35,7 @@ export function requireSessionSecret(secret: string | undefined): string {
   return secret;
 }
 
-/** The extra claims an app adds (see `sessionClaims` in `app.ts`): plain values only. */
+/** The extra claims a caller adds: plain values only. */
 interface ExtraClaims {
   readonly [claim: string]: string | number | boolean | undefined;
 }
@@ -77,42 +73,36 @@ export type NewSession = ExtraClaims & {
   readonly exp?: number;
 };
 
-/** The HMAC-SHA-256 key for a session secret, usable for signing and verifying. */
-async function hmacKey(secret: string): Promise<CryptoKey> {
-  return crypto.subtle.importKey(
-    'raw',
-    bufferSource(new TextEncoder().encode(secret)),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign', 'verify'],
-  );
-}
-
 /**
- * Signed session tokens for one signing secret. Construct it once with the
- * `SESSION_SECRET` (it refuses an empty one, so no session is ever signed with
- * a guessable value) and use it to create and verify tokens.
+ * Signs and verifies the compact session token. Build one with the secret and
+ * use it through {@link create} and {@link verify}; it holds no other state.
  */
 export class SessionTokens {
   readonly #secret: string;
 
-  /**
-   * Build a token signer/verifier for one signing secret. An empty secret is
-   * accepted but can sign nothing worth trusting, so every token it verifies
-   * fails: callers that must refuse outright guard with {@link requireSessionSecret}.
-   */
   constructor(secret: string) {
     this.#secret = secret;
   }
 
+  /** The HMAC-SHA-256 key for the secret, usable for signing and verifying. */
+  async #key(): Promise<CryptoKey> {
+    return crypto.subtle.importKey(
+      'raw',
+      bufferSource(new TextEncoder().encode(this.#secret)),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign', 'verify'],
+    );
+  }
+
   /**
-   * Create a signed session token for a user. `exp` defaults to now +
+   * Create a signed session token. `exp` defaults to now +
    * {@link SESSION_TTL_SECONDS} but can be supplied (e.g. in tests).
    */
   async create(payload: NewSession): Promise<string> {
     const { uid, email, name, picture, ep, exp, ...extra } = payload;
     const full: SessionPayload = {
-      // The app's own claims go first so they can never replace the ones below.
+      // The caller's own claims go first so they can never replace the ones below.
       ...Object.fromEntries(
         Object.entries(extra).filter(([, value]) => value !== undefined),
       ),
@@ -127,11 +117,10 @@ export class SessionTokens {
     const body = bytesToBase64Url(
       new TextEncoder().encode(JSON.stringify(full)),
     );
-    const key = await hmacKey(this.#secret);
     const sig = new Uint8Array(
       await crypto.subtle.sign(
         'HMAC',
-        key,
+        await this.#key(),
         bufferSource(new TextEncoder().encode(body)),
       ),
     );
@@ -139,7 +128,7 @@ export class SessionTokens {
   }
 
   /**
-   * Verify a session token: checks the signature (constant-time via
+   * Verify a token: checks the signature (constant-time via
    * `crypto.subtle.verify`) and the expiry. Returns the payload or null.
    */
   async verify(token: string): Promise<SessionPayload | null> {
@@ -149,8 +138,7 @@ export class SessionTokens {
     }
     const body = token.slice(0, dot);
     const sig = token.slice(dot + 1);
-    const key = await hmacKey(this.#secret);
-    if (!(await signatureValid(key, body, sig))) {
+    if (!(await this.#signatureValid(body, sig))) {
       return null;
     }
     const payload = parsePayload(body);
@@ -159,23 +147,19 @@ export class SessionTokens {
     }
     return payload;
   }
-}
 
-/** Whether `sig` (URL-safe base64) is the HMAC of `body` under `key`; malformed signatures are simply invalid. */
-async function signatureValid(
-  key: CryptoKey,
-  body: string,
-  sig: string,
-): Promise<boolean> {
-  try {
-    return await crypto.subtle.verify(
-      'HMAC',
-      key,
-      bufferSource(base64UrlToBytes(sig)),
-      bufferSource(new TextEncoder().encode(body)),
-    );
-  } catch {
-    return false;
+  /** Whether `sig` (URL-safe base64) is the HMAC of `body`; malformed signatures are simply invalid. */
+  async #signatureValid(body: string, sig: string): Promise<boolean> {
+    try {
+      return await crypto.subtle.verify(
+        'HMAC',
+        await this.#key(),
+        bufferSource(base64UrlToBytes(sig)),
+        bufferSource(new TextEncoder().encode(body)),
+      );
+    } catch {
+      return false;
+    }
   }
 }
 
@@ -206,7 +190,7 @@ function isSessionPayload(value: unknown): value is SessionPayload {
 /**
  * Whether a verified session is still the current generation for its person:
  * the epoch it carries (0 for one issued before epochs existed) equals the
- * epoch in the database. A signature and an expiry only prove the cookie was
+ * epoch in the database. A signature and an expiry only prove the token was
  * issued by us once; this is what makes it revocable.
  */
 export function sessionIsCurrent(

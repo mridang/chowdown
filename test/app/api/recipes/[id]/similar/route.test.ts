@@ -7,7 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 
-import { fakeCookies } from '../../../../../lib/auth/session-fixture';
+import { fakeCookies } from '../../../../../domain/auth/session-fixture';
 import {
   addRecipe,
   fromApp,

@@ -9,7 +9,7 @@
  * finds "Crème brûlée".
  */
 
-import type { DriveFile } from '@/lib/google';
+import type { DriveFile } from '@/lib/google/drive';
 import { foldText } from '@/lib/intl';
 import { recipeDisplayName } from '@/lib/cooklang';
 

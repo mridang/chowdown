@@ -14,7 +14,7 @@ import { problems } from '@/lib/core/api';
 import { recipeSummary } from '@/domain/api/recipe-resource';
 import { setFavourite } from '@/domain/db/favourites';
 import { getRecipePageRows } from '@/domain/db/recipe-page';
-import { isDriveFileId } from '@/lib/google';
+import { isDriveFileId } from '@/lib/google/drive';
 import { setFavouriteAndTag } from '@/domain/recipe/favourite';
 import { getDatabase } from '@/domain/db/client';
 

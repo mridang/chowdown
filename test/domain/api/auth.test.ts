@@ -13,7 +13,7 @@ import {
   jar,
   sessionTokenFor,
   testEnv,
-} from '../../lib/auth/session-fixture';
+} from '../../domain/auth/session-fixture';
 
 const ORIGIN = 'https://chowdown.test';
 

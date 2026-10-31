@@ -9,7 +9,7 @@ import {
   jar,
   sessionTokenFor,
   testEnv,
-} from '../../lib/auth/session-fixture';
+} from '../../domain/auth/session-fixture';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
   installCloudflareContext,
@@ -229,4 +229,4 @@ export function locationOf(response: Response): URL | undefined {
   return target ? new URL(target) : undefined;
 }
 
-export { answerFetch } from '../../lib/auth/auth-test-kit';
+export { answerFetch } from '../../domain/auth/auth-test-kit';

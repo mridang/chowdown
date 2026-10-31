@@ -14,10 +14,11 @@ import {
   installEnv,
   jar,
   tokenFor,
-} from '../../../lib/auth/auth-test-kit';
+} from '../../../domain/auth/auth-test-kit';
 import { installFakeTracing } from '../observability/fake-tracing';
 
 const tracing = installFakeTracing();
+
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 /** The accounts that exist: id to the epoch their sessions must carry. */
@@ -36,7 +37,7 @@ jest.unstable_mockModule('@/domain/auth/store', () => ({
 }));
 
 const { getCurrentUser, getLiveSessionUid, getSession, getSessionUid } =
-  await import('@/lib/core/auth/current-user');
+  await import('@/lib/core/auth');
 
 let restore: () => void;
 

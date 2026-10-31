@@ -31,7 +31,7 @@ import {
   updateRecipeFile,
 } from '@/domain/drive/recipe-files';
 import { ensureRecipesFolder } from '@/domain/drive/recipes-folder';
-import { type DriveFile } from '@/lib/google';
+import { type DriveFile } from '@/lib/google/drive';
 import { countOf, foldText } from '@/lib/intl';
 import {
   appendCookingLog,

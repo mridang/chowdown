@@ -29,7 +29,7 @@ import {
   ROW_SIZE,
   todaySeed,
 } from '@/components/home/shelves';
-import type { ShellUser } from '@/lib/core/auth/shell-user';
+import type { ShellUser } from '@/domain/auth/shell-user';
 import { countOf } from '@/lib/intl';
 import { toCardRecipe, type CardRecipe } from '@/domain/recipe/card-data';
 import { loadCollection } from '@/domain/recipe/load-collection';

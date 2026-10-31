@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { EXTRA_PURPOSES } from '@/domain/auth/app';
 import { completeDriveConnect } from '@/domain/auth/drive-callback';
-import { OTHER_FLOWS, afterSignIn } from '@/lib/core/auth/hooks';
+import { OTHER_FLOWS, afterSignIn } from '@/domain/auth/hooks';
 import type { User } from '@/domain/auth/store';
 
 describe('afterSignIn', () => {

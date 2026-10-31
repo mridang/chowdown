@@ -11,7 +11,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { recipesFolderFor } from '@/domain/drive/recipes-folder';
 import { getUserById } from '@/domain/db/users';
 import { getDatabase } from '@/domain/db/client';
-import { insertUser } from '../../lib/auth/session-fixture';
+import { insertUser } from '../../domain/auth/session-fixture';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
   installCloudflareContext,

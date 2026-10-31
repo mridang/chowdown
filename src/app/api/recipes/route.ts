@@ -27,7 +27,7 @@ import { getUserAccessToken } from '@/domain/auth/user-access-token';
 import type { User } from '@/domain/db/users';
 import { findRecipeBySourceUrl } from '@/domain/db/recipes';
 import { createRecipeFile } from '@/domain/drive/recipe-files';
-import { type DriveFile } from '@/lib/google';
+import { type DriveFile } from '@/lib/google/drive';
 import { recipesFolderFor } from '@/domain/drive/recipes-folder';
 import { sourceUrlOf } from '@/lib/cooklang';
 import { indexRecipeWrite } from '@/domain/recipe/tag-index';

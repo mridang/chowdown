@@ -1,7 +1,8 @@
 /**
  * @packageDocumentation
  *
- * Public surface of the lib/web-security package.
+ * Small, framework-free web-security helpers: the same-origin (CSRF) check, the
+ * one-time OAuth `state` value, and safe same-site return paths.
  */
 export * from './csrf';
 export * from './oauth-state';

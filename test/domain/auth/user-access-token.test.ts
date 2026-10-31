@@ -15,7 +15,7 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
-import { insertUser, testEnv } from '../../lib/auth/session-fixture';
+import { insertUser, testEnv } from './session-fixture';
 
 const { forgetAccessTokens, getUserAccessToken } =
   await import('@/domain/auth/user-access-token');

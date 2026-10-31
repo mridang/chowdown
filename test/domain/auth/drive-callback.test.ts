@@ -20,10 +20,7 @@ import {
   signIn,
   type World,
 } from '../../app/api/world';
-import {
-  SESSION_SECRET,
-  sessionTokenFor,
-} from '../../lib/auth/session-fixture';
+import { SESSION_SECRET, sessionTokenFor } from './session-fixture';
 import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
 
 const tracing = installFakeTracing();

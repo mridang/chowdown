@@ -9,56 +9,84 @@ import {
 import { NextResponse } from 'next/server';
 
 import { STATE_COOKIE } from '@/domain/auth/app';
-import type { GoogleOAuthClient, GoogleUserResponse } from '@/lib/google';
-import { appRequest, installEnv, jar } from '../../../lib/auth/auth-test-kit';
+import type { User } from '@/domain/auth/store';
+import {
+  answerFetch,
+  appRequest,
+  installEnv,
+  jar,
+} from '../../../domain/auth/auth-test-kit';
 import { installFakeTracing } from '../observability/fake-tracing';
 
 const tracing = installFakeTracing();
+
+const person = { id: 7, email: 'a@b.com' } as User;
+const getCurrentUser = jest.fn<() => Promise<User | null>>();
+
+// Mock the specific module and import the kit from its own file: mocking the
+// package barrel would replace GoogleAuthKit too.
+jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
+  getCurrentUser,
+}));
+
 const { GoogleAuthKit } = await import('@/lib/core/auth/google-auth-kit');
 
-/** What the fake Google client answers. */
-interface Google {
-  exchange: 'ok' | 'fails' | 'throws';
-  userinfo: 'ok' | 'fails';
-}
-const google: Google = { exchange: 'ok', userinfo: 'ok' };
-
-const fakeClient = {
-  authUrl: () => 'https://accounts.google.com/auth',
-  exchangeCode: async () => {
-    if (google.exchange === 'throws') {
-      throw new Error('network down');
-    }
-    return google.exchange === 'ok'
-      ? { ok: true, value: { access_token: 'at' } }
-      : { ok: false, status: 400, raw: 'invalid_grant: SECRET-DETAIL' };
+/** A kit whose config is irrelevant to the current-user lookup. */
+const kit = new GoogleAuthKit({
+  scopes: ['openid'],
+  stateCookie: 's',
+  returnCookie: 'r',
+  signInFailedPath: '/login?error=auth',
+  signInPurpose: 'signin',
+  purposes: ['signin'],
+  otherFlows: {},
+  completeSignIn: async () => {
+    throw new Error('not used');
   },
-  getUserInfo: async () =>
-    google.userinfo === 'ok'
-      ? { ok: true, value: { sub: 's', email: 'e@x.test' } }
-      : { ok: false, status: 401 },
-} as unknown as GoogleOAuthClient;
+  missingSignInSettings: () => [],
+});
+
+describe('GoogleAuthKit.currentUser', () => {
+  it('delegates to the current-user lookup', async () => {
+    getCurrentUser.mockResolvedValueOnce(person);
+    expect(await kit.currentUser()).toBe(person);
+
+    getCurrentUser.mockResolvedValueOnce(null);
+    expect(await kit.currentUser()).toBeNull();
+  });
+});
+
+const TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo';
 
 let missing: string[] = [];
-const completeSignIn = jest.fn<
-  (context: unknown, info: GoogleUserResponse) => Promise<NextResponse>
->(async () => NextResponse.redirect('https://app.test/app'));
-const completeDrive = jest.fn(async () =>
-  NextResponse.redirect('https://app.test/drive-done'),
+const completeSignIn = jest.fn<() => Promise<NextResponse>>(async () =>
+  NextResponse.redirect('https://app.test/app'),
+);
+const completeOther = jest.fn<() => Promise<NextResponse>>(async () =>
+  NextResponse.redirect('https://app.test/other-done'),
 );
 
-const kit = new GoogleAuthKit({
-  oauthClient: () => fakeClient,
-  signInScopes: ['openid'],
-  callbackPath: '/auth/callback',
-  missingSettings: () => missing,
-  extraPurposes: ['drive'],
+/** A kit with one ask besides signing in, named `other`. */
+const contextKit = new GoogleAuthKit({
+  scopes: ['openid'],
+  stateCookie: STATE_COOKIE,
+  returnCookie: 'r',
+  signInFailedPath: '/login?error=auth',
+  signInPurpose: 'signin',
+  purposes: ['signin', 'other'],
   otherFlows: {
-    drive: { failurePath: () => '/drive-failed', complete: completeDrive },
+    other: { failurePath: () => '/other-failed', complete: completeOther },
   },
-  signInFailedPath: '/?signin=failed',
   completeSignIn,
+  missingSignInSettings: () => missing,
 });
+
+/** How Google answers the two calls a round trip makes. */
+const google = {
+  token: 'ok' as 'ok' | 'fails',
+  userinfo: 'ok' as 'ok' | 'fails',
+};
 
 let restore: () => void;
 
@@ -66,14 +94,25 @@ beforeEach(() => {
   restore = installEnv();
   jar.clear();
   missing = [];
-  google.exchange = 'ok';
+  google.token = 'ok';
   google.userinfo = 'ok';
   completeSignIn.mockClear();
+  completeOther.mockClear();
   for (const key of Object.keys(tracing.attributes)) {
     delete tracing.attributes[key];
   }
   jest.spyOn(console, 'error').mockImplementation(() => undefined);
   jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+  answerFetch({
+    [TOKEN_URL]: () =>
+      google.token === 'ok'
+        ? Response.json({ access_token: 'at', expires_in: 3599 })
+        : new Response('invalid_grant: SECRET-DETAIL', { status: 400 }),
+    [USERINFO_URL]: () =>
+      google.userinfo === 'ok'
+        ? Response.json({ sub: 's', email: 'e@x.test' })
+        : new Response('nope', { status: 401 }),
+  });
 });
 
 afterEach(() => {
@@ -87,12 +126,14 @@ function callback(query: string, cookie?: string): Promise<Response> {
   if (cookie) {
     jar.set(STATE_COOKIE, cookie);
   }
-  return kit.callbackHandler()(appRequest('GET', `/auth/callback?${query}`));
+  return contextKit.callbackHandler()(
+    appRequest('GET', `/auth/callback?${query}`),
+  );
 }
 
 describe('the error context of the login handler', () => {
   it('names the provider, the flow and the step', async () => {
-    await kit.loginHandler()(appRequest('GET', '/auth/login'));
+    await contextKit.loginHandler()(appRequest('GET', '/auth/login'));
     expect(tracing.attributes).toEqual({
       'auth.provider': 'google',
       'auth.flow': 'login',
@@ -102,7 +143,7 @@ describe('the error context of the login handler', () => {
 
   it('adds a fixed reason when sign-in is not set up', async () => {
     missing = ['SESSION_SECRET'];
-    await kit.loginHandler()(appRequest('GET', '/auth/login'));
+    await contextKit.loginHandler()(appRequest('GET', '/auth/login'));
     expect(tracing.attributes['auth.failure']).toBe('not_configured');
   });
 });
@@ -118,9 +159,9 @@ describe('the error context of the callback handler', () => {
   });
 
   it('names the other ask by its purpose', async () => {
-    await callback('code=c&state=drive.a', 'drive.a');
+    await callback('code=c&state=other.a', 'other.a');
     expect(tracing.attributes).toMatchObject({
-      'auth.flow': 'drive',
+      'auth.flow': 'other',
       'auth.step': 'done',
     });
   });
@@ -147,16 +188,13 @@ describe('the error context of the callback handler', () => {
   });
 
   it('says where the round trip failed, whatever the cause', async () => {
-    google.exchange = 'fails';
+    google.token = 'fails';
     await callback('code=c&state=signin.a', 'signin.a');
     expect(tracing.attributes).toMatchObject({
       'auth.step': 'exchange',
       'auth.failure': 'token_exchange_failed',
     });
-    google.exchange = 'throws';
-    await callback('code=c&state=signin.a', 'signin.a');
-    expect(tracing.attributes['auth.failure']).toBe('token_exchange_failed');
-    google.exchange = 'ok';
+    google.token = 'ok';
     google.userinfo = 'fails';
     await callback('code=c&state=signin.a', 'signin.a');
     expect(tracing.attributes).toMatchObject({
@@ -173,7 +211,7 @@ describe('the error context of the callback handler', () => {
   });
 
   it('never puts the state, the code, a token or Google’s text in the context', async () => {
-    google.exchange = 'fails';
+    google.token = 'fails';
     await callback('code=the-code&state=signin.a', 'signin.a');
     const everything = JSON.stringify(tracing.attributes);
     for (const secret of ['the-code', 'signin.a', 'SECRET-DETAIL', 'at']) {

@@ -10,7 +10,7 @@ import {
 import {
   fakeCookies,
   insertUser,
-} from '../../../../../../lib/auth/session-fixture';
+} from '../../../../../../domain/auth/session-fixture';
 import { settleBackground } from '../../../../../../lib/core/db/sqlite-d1';
 import {
   addRecipe,

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { LANDING_PATH, SESSION_COOKIE, sessionClaims } from '@/domain/auth/app';
 import type { User } from '@/domain/auth/store';
-import { SESSION_SECRET, appRequest } from '../../lib/auth/auth-test-kit';
+import { SESSION_SECRET, appRequest } from './auth-test-kit';
 import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
 
 const tracing = installFakeTracing();
@@ -26,6 +26,14 @@ const afterSignIn = jest
 
 jest.unstable_mockModule('@/domain/auth/store', () => ({
   upsertGoogleUser,
+  // Importing core/auth via its barrel now also loads the current-user lookup,
+  // which reads these; sign-in never calls them, so stubs keep the shape whole.
+  getUserById: jest.fn(async () => person),
+  getSessionEpoch: jest.fn(async () => 0),
+}));
+jest.unstable_mockModule('@/domain/auth/hooks', () => ({
+  afterSignIn,
+  OTHER_FLOWS: {},
 }));
 
 const { completeSignIn, missingSignInSettings } =
@@ -80,26 +88,27 @@ describe('missingSignInSettings', () => {
 
 describe('completeSignIn — error context', () => {
   it('names the person by their internal number only', async () => {
-    await completeSignIn(
-      context(),
-      { sub: 'g1', email: 'ada@example.com', name: 'Ada' },
-      afterSignIn,
-    );
+    await completeSignIn(context(), {
+      sub: 'g1',
+      email: 'ada@example.com',
+      name: 'Ada',
+    });
     expect(tracing.attributes).toEqual({ 'user.id': 4 });
+  });
+
+  it('names nobody when the sign-in fails', async () => {
+    await expect(completeSignIn(context(), { sub: 'g1' })).rejects.toThrow();
+    expect(tracing.attributes).toEqual({});
   });
 });
 
 describe('completeSignIn', () => {
   it('records the person, runs the hook and issues the session on the way to the landing page', async () => {
-    const res = await completeSignIn(
-      context(),
-      {
-        sub: 'g1',
-        email: 'ada@example.com',
-        name: 'Ada',
-      },
-      afterSignIn,
-    );
+    const res = await completeSignIn(context(), {
+      sub: 'g1',
+      email: 'ada@example.com',
+      name: 'Ada',
+    });
     expect(res.headers.get('location')).toBe(`https://app.test${LANDING_PATH}`);
     expect(upsertGoogleUser).toHaveBeenCalledWith({
       sub: 'g1',
@@ -116,14 +125,10 @@ describe('completeSignIn', () => {
   });
 
   it('lands on the returnTo it is given', async () => {
-    const res = await completeSignIn(
-      context({ returnTo: '/x/y' }),
-      {
-        sub: 'g1',
-        email: 'ada@example.com',
-      },
-      afterSignIn,
-    );
+    const res = await completeSignIn(context({ returnTo: '/x/y' }), {
+      sub: 'g1',
+      email: 'ada@example.com',
+    });
     expect(res.headers.get('location')).toBe('https://app.test/x/y');
   });
 
@@ -131,28 +136,23 @@ describe('completeSignIn', () => {
     const res = await completeSignIn(
       context({ origin: 'http://localhost:3737' }),
       { sub: 'g1', email: 'ada@example.com' },
-      afterSignIn,
     );
     expect(res.cookies.get(SESSION_COOKIE)?.secure).toBe(false);
   });
 
   it('refuses a Google account with no email address, recording nothing', async () => {
-    await expect(
-      completeSignIn(context(), { sub: 'g1' }, afterSignIn),
-    ).rejects.toThrow(/email/);
+    await expect(completeSignIn(context(), { sub: 'g1' })).rejects.toThrow(
+      /email/,
+    );
     expect(upsertGoogleUser).not.toHaveBeenCalled();
   });
 
   it('fails closed without a session secret, recording nobody', async () => {
     await expect(
-      completeSignIn(
-        context({ env: env({ SESSION_SECRET: undefined }) }),
-        {
-          sub: 'g1',
-          email: 'ada@example.com',
-        },
-        afterSignIn,
-      ),
+      completeSignIn(context({ env: env({ SESSION_SECRET: undefined }) }), {
+        sub: 'g1',
+        email: 'ada@example.com',
+      }),
     ).rejects.toThrow(/SESSION_SECRET/);
     expect(upsertGoogleUser).not.toHaveBeenCalled();
     expect(afterSignIn).not.toHaveBeenCalled();

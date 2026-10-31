@@ -1,30 +1,34 @@
 /**
  * @packageDocumentation
  *
- * The framework-tier kit that turns the pure Google OAuth client and signed
- * sessions into the route handlers an app registers. It owns the shared
- * sign-in orchestration — build the consent URL and remember where to return
- * (login), validate the round trip and finish it (callback) — and leaves the
- * app's own choices (scopes, extra asks, what finishing sign-in does) to its
- * options. Adopting sign-in is then: configure a kit and register its handlers.
+ * The framework-tier kit that composes the pure OAuth and session libraries
+ * with the app's own user store and settings into the two route handlers a
+ * Google sign-in needs, plus the current-user lookup. Signing in genuinely
+ * needs the framework (cookies, redirects), so it is not one pure library: this
+ * kit is where {@link GoogleOAuthClient}, the state and return-to helpers, the
+ * flow cookies and the app's `completeSignIn` meet.
+ *
+ * An app builds one kit with its configuration and mounts the handlers:
+ *
+ * ```ts
+ * // src/app/auth/login/route.ts
+ * export const GET = authKit.loginHandler();
+ * ```
  */
 
-import { type NextRequest, NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
-import { GoogleOAuthClient, type GoogleUserResponse } from '@/lib/google';
-import { problem } from '@/lib/core/api';
-import {
-  SIGN_IN_PURPOSE,
-  checkState,
-  newState,
-  safeReturnPath,
-} from '@/lib/web-security';
-import { finishFlow, startFlowCookies } from '@/lib/core/auth/flow-cookies';
-import { setErrorContext } from '@/lib/core/observability/context';
-import { appOrigin } from '@/lib/core/origin';
-import { RETURN_COOKIE, STATE_COOKIE } from '@/domain/auth/app';
-import { getEnv } from '@/lib/core/runtime';
+import { GoogleOAuthClient } from '@/lib/google/auth';
+import type { GoogleUserResponse } from '@/lib/google/auth';
+import { checkState, newState, safeReturnPath } from '@/lib/web-security';
+import { finishFlow, startFlowCookies } from './flow-cookies';
+import { getCurrentUser } from './current-user';
 import type { FlowContext, OtherFlow } from '@/domain/auth/sign-in';
+import type { User } from '@/domain/auth/store';
+import { problem } from '@/lib/core/api';
+import { setErrorContext } from '@/lib/core/observability/context';
+import { getEnv } from '@/lib/core/runtime';
+import { appOrigin } from '@/lib/core/origin';
 import { logError, logWarn } from '@/utils/logging';
 
 /**
@@ -49,54 +53,58 @@ const FAILURE_AT: Readonly<Record<CallbackStep, SignInFailure>> = {
   finish: 'finish_failed',
 };
 
-/** How a Google sign-in kit is wired for one app. */
-export interface GoogleAuthKitOptions {
-  /** A Google OAuth client configured with the app's credentials (from env). */
-  readonly oauthClient: () => GoogleOAuthClient;
+/** Everything the kit needs from the app to run a Google sign-in. */
+export interface GoogleAuthKitConfig {
   /** What signing in asks Google for. */
-  readonly signInScopes: readonly string[];
-  /** The path Google is sent back to (appended to the public origin). */
-  readonly callbackPath: string;
-  /** The names of any settings sign-in needs that are not set (empty when ready). */
-  readonly missingSettings: () => readonly string[];
-  /** The asks a round trip can be for besides signing in (the `state` labels). */
-  readonly extraPurposes: readonly string[];
-  /** How each of those asks finishes and where it sends failures. */
-  readonly otherFlows: Readonly<Partial<Record<string, OtherFlow>>>;
-  /** Where a failed sign-in lands, with a fixed flag rather than any detail. */
+  readonly scopes: readonly string[];
+  /** The cookie names for the one-time state and the return path. */
+  readonly stateCookie: string;
+  readonly returnCookie: string;
+  /** Where to send someone whose sign-in failed. */
   readonly signInFailedPath: string;
-  /** Finish a sign-in once the code has been exchanged. */
+  /** The label every app has, and the full set of valid purposes. */
+  readonly signInPurpose: string;
+  readonly purposes: readonly string[];
+  /** The asks besides signing in, by purpose label. */
+  readonly otherFlows: Readonly<Partial<Record<string, OtherFlow>>>;
+  /** Finish a sign-in: record the person, issue their session, send them on. */
   readonly completeSignIn: (
     context: FlowContext,
     info: GoogleUserResponse,
   ) => Promise<NextResponse>;
+  /** The settings signing in needs that are not set, in the order to report them. */
+  readonly missingSignInSettings: (env: CloudflareEnv) => string[];
 }
 
 /**
- * A configured Google sign-in kit. Build it with {@link GoogleAuthKitOptions}
- * and register its handlers on the login and callback routes.
+ * Composes the sign-in flow from the app's {@link GoogleAuthKitConfig}. Built
+ * once and used through {@link loginHandler}, {@link callbackHandler} and
+ * {@link currentUser}.
  */
 export class GoogleAuthKit {
-  readonly #options: GoogleAuthKitOptions;
+  readonly #config: GoogleAuthKitConfig;
 
-  constructor(options: GoogleAuthKitOptions) {
-    this.#options = options;
+  constructor(config: GoogleAuthKitConfig) {
+    this.#config = config;
   }
 
   /** Where to send someone whose round trip failed, by what it was for. */
   #failurePath(purpose: string, kind: 'error' | 'denied'): string {
-    return purpose === SIGN_IN_PURPOSE
-      ? this.#options.signInFailedPath
-      : (this.#options.otherFlows[purpose]?.failurePath(kind) ??
-          this.#options.signInFailedPath);
+    const { signInPurpose, signInFailedPath, otherFlows } = this.#config;
+    return purpose === signInPurpose
+      ? signInFailedPath
+      : (otherFlows[purpose]?.failurePath(kind) ?? signInFailedPath);
   }
 
-  /**
-   * `GET /auth/login`: start the Google sign-in flow. Generates a one-time
-   * `state`, stores it (and a safe `?returnTo=`) in short-lived cookies, and
-   * redirects to Google's consent screen; 503 naming the missing settings when
-   * the server is not set up for signing in.
-   */
+  #client(): GoogleOAuthClient {
+    const env = getEnv();
+    return new GoogleOAuthClient({
+      clientId: env.GOOGLE_OAUTH_CLIENT_ID,
+      clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+    });
+  }
+
+  /** `GET /auth/login`: send the browser to Google to sign in. */
   loginHandler(): (request: NextRequest) => Promise<Response> {
     return async (request) => {
       await setErrorContext({
@@ -104,7 +112,8 @@ export class GoogleAuthKit {
         'auth.flow': 'login',
         'auth.step': 'start',
       });
-      const missing = this.#options.missingSettings();
+      const env = getEnv();
+      const missing = this.#config.missingSignInSettings(env);
       if (missing.length > 0) {
         await setErrorContext({ 'auth.failure': 'not_configured' });
         logError({ event: 'auth.login.not_configured', missing });
@@ -116,12 +125,12 @@ export class GoogleAuthKit {
         );
       }
       const origin = appOrigin(request);
-      const state = newState(SIGN_IN_PURPOSE);
+      const state = newState(this.#config.signInPurpose);
       const response = NextResponse.redirect(
-        this.#options.oauthClient().authUrl({
-          redirectUri: `${origin}${this.#options.callbackPath}`,
+        this.#client().authUrl({
+          redirectUri: `${origin}/auth/callback`,
           state,
-          scopes: this.#options.signInScopes,
+          scopes: this.#config.scopes,
         }),
       );
       startFlowCookies(response, {
@@ -133,19 +142,17 @@ export class GoogleAuthKit {
     };
   }
 
-  /**
-   * `GET /auth/callback`: where Google sends the browser back. Acts only on a
-   * request whose `state` matches the cookie set when the trip began; always
-   * answers a redirect — on to the app on success, or back with a fixed flag on
-   * any failure.
-   */
-  callbackHandler(): (request: NextRequest) => Promise<Response> {
+  /** `GET /auth/callback`: where Google sends the browser back after consent. */
+  callbackHandler(): (request: NextRequest) => Promise<NextResponse> {
     return async (request) => {
+      const env = getEnv();
       const origin = appOrigin(request);
       const url = new URL(request.url);
       const code = url.searchParams.get('code');
       const state = url.searchParams.get('state');
-      const expectedState = request.cookies.get(STATE_COOKIE)?.value;
+      const expectedState = request.cookies.get(
+        this.#config.stateCookie,
+      )?.value;
       const oauthError = url.searchParams.get('error');
       await setErrorContext({
         'auth.provider': 'google',
@@ -153,11 +160,7 @@ export class GoogleAuthKit {
         'auth.step': 'state',
       });
 
-      const checked = checkState(
-        state,
-        expectedState,
-        this.#options.extraPurposes,
-      );
+      const checked = checkState(state, expectedState, this.#config.purposes);
       if (!checked.ok) {
         await setErrorContext({ 'auth.failure': 'state_mismatch' });
         logError({
@@ -168,13 +171,17 @@ export class GoogleAuthKit {
           oauthError,
         });
         return NextResponse.redirect(
-          `${origin}${this.#failurePath(checked.claimed ?? SIGN_IN_PURPOSE, 'error')}`,
+          `${origin}${this.#failurePath(
+            checked.claimed ?? this.#config.signInPurpose,
+            'error',
+          )}`,
         );
       }
       const { purpose } = checked;
       // Sign-in is the callback itself; the other asks are named by their purpose.
       await setErrorContext({
-        'auth.flow': purpose === SIGN_IN_PURPOSE ? 'callback' : purpose,
+        'auth.flow':
+          purpose === this.#config.signInPurpose ? 'callback' : purpose,
         'auth.step': 'consent',
       });
       if (!code) {
@@ -184,7 +191,7 @@ export class GoogleAuthKit {
         logWarn({ event: 'auth.callback.no_code', purpose, oauthError });
         return finishFlow(origin, this.#failurePath(purpose, 'denied'));
       }
-      const missing = this.#options.missingSettings();
+      const missing = this.#config.missingSignInSettings(env);
       if (missing.length > 0) {
         await setErrorContext({ 'auth.failure': 'not_configured' });
         logError({ event: 'auth.callback.not_configured', missing });
@@ -193,43 +200,51 @@ export class GoogleAuthKit {
 
       const context: FlowContext = {
         request,
-        env: getEnv(),
+        env,
         origin,
-        returnTo: safeReturnPath(request.cookies.get(RETURN_COOKIE)?.value),
+        returnTo: safeReturnPath(
+          request.cookies.get(this.#config.returnCookie)?.value,
+        ),
       };
       let step: CallbackStep = 'exchange';
       try {
         await setErrorContext({ 'auth.step': step });
-        const google = this.#options.oauthClient();
-        const exchanged = await google.exchangeCode({
+        const client = this.#client();
+        const tokens = await client.exchangeCode({
           code,
-          redirectUri: `${origin}${this.#options.callbackPath}`,
+          redirectUri: `${origin}/auth/callback`,
         });
-        if (!exchanged.ok) {
-          throw new Error(
-            `Token exchange failed: ${exchanged.status ?? '?'} ${exchanged.raw}`,
-          );
+        if (!tokens.ok) {
+          await setErrorContext({ 'auth.failure': FAILURE_AT[step] });
+          logError({
+            event: 'auth.callback.failed',
+            error: `token exchange: http ${tokens.status}`,
+          });
+          return finishFlow(origin, this.#failurePath(purpose, 'error'));
         }
-        const tokens = exchanged.value;
         step = 'userinfo';
         await setErrorContext({ 'auth.step': step });
-        const identity = await google.getUserInfo(tokens.access_token);
-        if (!identity.ok) {
-          throw new Error(`userinfo failed: ${identity.status ?? '?'}`);
+        const info = await client.getUserInfo(tokens.value.access_token);
+        if (!info.ok) {
+          await setErrorContext({ 'auth.failure': FAILURE_AT[step] });
+          logError({
+            event: 'auth.callback.failed',
+            error: `userinfo: http ${info.status}`,
+          });
+          return finishFlow(origin, this.#failurePath(purpose, 'error'));
         }
-        const info = identity.value;
         step = 'finish';
         await setErrorContext({ 'auth.step': step });
-        if (purpose === SIGN_IN_PURPOSE) {
-          const done = await this.#options.completeSignIn(context, info);
+        if (purpose === this.#config.signInPurpose) {
+          const done = await this.#config.completeSignIn(context, info.value);
           await setErrorContext({ 'auth.step': 'done' });
           return done;
         }
-        const other = this.#options.otherFlows[purpose];
+        const other = this.#config.otherFlows[purpose];
         if (!other) {
           throw new Error(`No flow is registered for "${purpose}"`);
         }
-        const done = await other.complete(context, info, tokens);
+        const done = await other.complete(context, info.value, tokens.value);
         await setErrorContext({ 'auth.step': 'done' });
         return done;
       } catch (err) {
@@ -242,5 +257,10 @@ export class GoogleAuthKit {
         return finishFlow(origin, this.#failurePath(purpose, 'error'));
       }
     };
+  }
+
+  /** The signed-in user for the current request, or null. */
+  currentUser(): Promise<User | null> {
+    return getCurrentUser();
   }
 }

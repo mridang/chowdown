@@ -6,7 +6,7 @@ import {
   menuLinks,
   VISITOR_NAV,
 } from '@/components/site/nav-links';
-import type { ShellUser } from '@/lib/core/auth/shell-user';
+import type { ShellUser } from '@/domain/auth/shell-user';
 
 const ADA: ShellUser = {
   firstName: 'Ada',

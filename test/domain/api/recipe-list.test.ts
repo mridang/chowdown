@@ -9,7 +9,7 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
-import { insertUser } from '../../lib/auth/session-fixture';
+import { insertUser } from '../../domain/auth/session-fixture';
 
 /** The page a successful list produced, or a thrown failure for a refusal. */
 function pageOf(result: ApiResponse<unknown> | Response): {

@@ -8,7 +8,7 @@ import {
 } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
-import type { DriveFile } from '@/lib/google';
+import type { DriveFile } from '@/lib/google/drive';
 import { installCloudflareContext } from '../../../../lib/core/db/sqlite-d1';
 
 /** Who is signed in; null means nobody. */

@@ -15,7 +15,7 @@ import { crossSiteRefusal } from '@/lib/core/auth';
  * 204, or 403 when the request came from another site (so a stranger's page
  * cannot sign people out).
  */
-export async function DELETE(request: Request): Promise<Response> {
+export async function DELETE(request: Request): Promise<NextResponse> {
   const refused = crossSiteRefusal(request);
   if (refused) {
     return refused;

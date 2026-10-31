@@ -1,8 +1,6 @@
 /**
  * @packageDocumentation
  *
- * Public surface of the lib/google vendor group: the OAuth and Drive client
- * packages.
+ * Public surface of the lib/google vendor group: the Google OAuth client package.
  */
 export * from './auth';
-export * from './drive';

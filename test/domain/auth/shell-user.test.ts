@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { firstNameOf } from '@/lib/core/auth/shell-user';
+import { firstNameOf } from '@/domain/auth/shell-user';
 
 describe('firstNameOf', () => {
   it('takes the first word of a name', () => {

@@ -8,7 +8,7 @@ import {
 } from '@jest/globals';
 
 import { SESSION_COOKIE } from '@/domain/auth/app';
-import { fakeCookies } from '../../../../lib/auth/session-fixture';
+import { fakeCookies } from '../../../../domain/auth/session-fixture';
 import { settleBackground } from '../../../../lib/core/db/sqlite-d1';
 import {
   addRecipe,

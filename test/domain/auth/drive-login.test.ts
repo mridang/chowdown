@@ -14,7 +14,7 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
-import { testEnv } from '../../lib/auth/session-fixture';
+import { testEnv } from './session-fixture';
 
 let restore: () => void;
 let env: Record<string, unknown>;

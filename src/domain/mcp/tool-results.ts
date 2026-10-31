@@ -17,7 +17,7 @@ import {
   recipeDisplayName,
   type UnitSystem,
 } from '@/lib/cooklang';
-import type { DriveFile } from '@/lib/google';
+import type { DriveFile } from '@/lib/google/drive';
 import { cardText, listText } from '@/domain/mcp/tool-text';
 import {
   CARD_RESOURCE_URI,

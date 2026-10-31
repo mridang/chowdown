@@ -8,7 +8,10 @@ import {
 } from '@jest/globals';
 
 import { entityTag } from '@/lib/core/api';
-import { fakeCookies, insertUser } from '../../../../lib/auth/session-fixture';
+import {
+  fakeCookies,
+  insertUser,
+} from '../../../../domain/auth/session-fixture';
 import {
   addRecipe,
   fakeGoogle,
