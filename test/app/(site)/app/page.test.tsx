@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 
 import { html } from '../../../components/render';
 
@@ -20,7 +21,11 @@ describe('AppPage', () => {
     ['with Drive', true],
   ])('leaves adding a recipe to the header, %s', async (_name, connected) => {
     collection.drive = { connected, reconnect: false, unreachable: false };
-    const out = html(await AppPage({ searchParams: Promise.resolve({}) }));
+    const out = html(
+      <NuqsTestingAdapter>
+        {await AppPage({ searchParams: Promise.resolve({}) })}
+      </NuqsTestingAdapter>,
+    );
     const header = out.slice(0, out.indexOf('</form>'));
     expect(header).toContain('>Recipes</h1>');
     expect(header).not.toContain('Add recipe');

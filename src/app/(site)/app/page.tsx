@@ -25,9 +25,9 @@ import {
 } from '@/components/recipes/search-query';
 import { STICKY_SIDEBAR_CLASS } from '@/components/site/header-height';
 import { SortSelect } from '@/components/recipes/sort-select';
-import { Button, buttonClass, ButtonLink } from '@/components/ui/button';
+import { buttonClass, ButtonLink } from '@/components/ui/button';
 import { FilterChip } from '@/components/ui/chip';
-import { SearchField } from '@/components/ui/field';
+import { LiveSearchField } from '@/components/ui/live-search-field';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Container } from '@/components/ui/layout';
 import { PageHeader } from '@/components/ui/page-header';
@@ -107,17 +107,11 @@ export default async function AppPage({
               />
             ) : null,
           )}
-          <SearchField
+          <LiveSearchField
             size="lg"
-            name="q"
-            defaultValue={query.q}
+            resets={['limit']}
             placeholder="Search recipes, sites or tags"
             aria-label="Search recipes"
-            action={
-              <Button type="submit" size="wide">
-                Search
-              </Button>
-            }
           />
         </form>
       </PageHeader>

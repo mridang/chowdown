@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import type { ReactElement, ReactNode } from 'react';
 
 import { ServiceWorker } from '@/components/site/service-worker';
@@ -37,7 +38,7 @@ export default function RootLayout({
         <ThemeScript />
       </head>
       <body className={BODY_CLASS}>
-        {children}
+        <NuqsAdapter>{children}</NuqsAdapter>
         <ServiceWorker />
       </body>
     </html>
