@@ -227,6 +227,35 @@ describe('image references', () => {
     expect(out).toContain('>> images: https://a.com/hero.jpg');
   });
 
+  it('imports a photo the page lists at four sizes as one cover, the original', () => {
+    const base = 'https://hot-thai-kitchen.com/wp-content/uploads/2016/01';
+    const out = extractRecipeFromHtml(
+      html([
+        {
+          '@graph': [
+            {
+              '@type': 'WebPage',
+              image: {
+                '@id':
+                  'https://hot-thai-kitchen.com/holy-basil-stir-fry/#primaryimage',
+              },
+            },
+            {
+              ...recipe,
+              image: [
+                `${base}/pad-gaprao-new-sq-3-225x225.jpg`,
+                `${base}/pad-gaprao-new-sq-3-260x195.jpg`,
+                `${base}/pad-gaprao-new-sq-3-320x180.jpg`,
+                `${base}/pad-gaprao-new-sq-3.jpg`,
+              ],
+            },
+          ],
+        },
+      ]),
+    );
+    expect(out).toContain(`>> images: ${base}/pad-gaprao-new-sq-3.jpg\n`);
+  });
+
   it('follows a reference to an ImageObject in a different script block', () => {
     const out = extractRecipeFromHtml(
       html([

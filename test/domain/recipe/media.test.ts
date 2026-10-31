@@ -34,6 +34,25 @@ describe('extractMedia', () => {
     expect(media.rest).toEqual([]);
   });
 
+  it('shows one photo listed at several sizes as its biggest copy', () => {
+    const base = 'https://hot-thai-kitchen.com/wp-content/uploads/2016/01';
+    const media = extractMedia(
+      recipe([
+        [
+          'images',
+          [
+            `${base}/pad-gaprao-new-sq-3-225x225.jpg`,
+            `${base}/pad-gaprao-new-sq-3-260x195.jpg`,
+            `${base}/pad-gaprao-new-sq-3-320x180.jpg`,
+            `${base}/pad-gaprao-new-sq-3.jpg`,
+          ].join(' '),
+        ],
+      ]),
+    );
+    expect(media.cover).toBe(`${base}/pad-gaprao-new-sq-3.jpg`);
+    expect(media.rest).toEqual([]);
+  });
+
   it('reads a video url', () => {
     const media = extractMedia(recipe([['video', 'https://youtu.be/abc']]));
     expect(media.video).toBe('https://youtu.be/abc');
@@ -72,6 +91,17 @@ describe('validImageUrls', () => {
       ]),
     ).toEqual(['https://a.com/1.jpg', 'http://b.com/2.png']);
   });
+
+  it('reduces the copies of one photo to the biggest', () => {
+    expect(
+      validImageUrls([
+        'https://a.com/p-225x225.jpg',
+        'https://a.com/p-320x180.jpg',
+        'https://a.com/p.jpg',
+        'https://a.com/q.jpg',
+      ]),
+    ).toEqual(['https://a.com/p.jpg', 'https://a.com/q.jpg']);
+  });
 });
 
 describe('withImages', () => {
@@ -88,6 +118,14 @@ describe('withImages', () => {
     ]);
     expect(out).toContain('>> images: https://a.com/1.jpg https://a.com/2.jpg');
     expect(out).not.toContain('old.com');
+  });
+
+  it('stores one address for a photo given at several sizes', () => {
+    const out = withImages('>> title: T\n', [
+      'https://a.com/p-225x225.jpg',
+      'https://a.com/p.jpg',
+    ]);
+    expect(out).toContain('>> images: https://a.com/p.jpg\n');
   });
 
   it('leaves the source alone when no url is valid', () => {

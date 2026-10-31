@@ -4,13 +4,16 @@
  * Read a recipe's media (images, video) out of its metadata. Imports capture
  * `>> images: url, url, …` and `>> video: url` (see import-schema-org), and
  * this turns those back into a structured gallery the recipe page renders: the
- * first image is treated as the cover, the rest as additional shots.
+ * first image is treated as the cover, the rest as additional shots. Copies of
+ * one photo at different sizes count as one image, the biggest copy (see
+ * image-renditions.ts), whether the list was saved before or after that rule.
  *
  * Pure and URL-validating — anything that isn't an http(s) URL is dropped, so a
  * malformed metadata value can never inject a bad `src`.
  */
 
 import { type ParsedRecipe, upsertMetadata } from '@/lib/cooklang';
+import { bestRenditions } from '@/domain/recipe/image-renditions';
 
 /** A recipe's media for display. */
 export interface RecipeMedia {
@@ -47,10 +50,12 @@ export const MEDIA_META_KEYS: ReadonlySet<string> = new Set([
 export function extractMedia(recipe: Readonly<ParsedRecipe>): RecipeMedia {
   // Split on whitespace, not commas: image URLs commonly contain commas (e.g.
   // a `?resize=440,400` query), but never spaces, so whitespace is safe.
-  const images = (meta(recipe, 'images') ?? '')
-    .split(/\s+/)
-    .map((s) => s.trim())
-    .filter((s) => isHttpUrl(s));
+  const images = bestRenditions(
+    (meta(recipe, 'images') ?? '')
+      .split(/\s+/)
+      .map((s) => s.trim())
+      .filter((s) => isHttpUrl(s)),
+  );
   const videoRaw = meta(recipe, 'video')?.trim();
   const video = videoRaw && isHttpUrl(videoRaw) ? videoRaw : undefined;
   return {
@@ -82,8 +87,8 @@ export function normalizeImageUrl(raw: string): string | undefined {
 
 /**
  * Keep only the usable, distinct image URLs from a list, normalised and in
- * order. Anything else (relative paths, `javascript:` URIs, placeholders) is
- * dropped.
+ * order, with the copies of one photo reduced to the biggest. Anything else
+ * (relative paths, `javascript:` URIs, placeholders) is dropped.
  */
 export function validImageUrls(urls: readonly string[]): readonly string[] {
   const usable = urls.flatMap((raw) => {
@@ -91,7 +96,7 @@ export function validImageUrls(urls: readonly string[]): readonly string[] {
     return url ? [url] : [];
   });
   // A Set keeps the first occurrence of each address, in order.
-  return [...new Set(usable)];
+  return bestRenditions([...new Set(usable)]);
 }
 
 /**
