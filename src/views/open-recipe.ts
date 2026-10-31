@@ -10,9 +10,34 @@
  */
 
 import type { RecipeCardData, RecipeListItem } from '@/domain/mcp/ui-types';
-import { openRecipePrompt } from '@/views/follow-up';
 import type { ListAction } from '@/views/list-state';
-import { isRecipeCardData, type ToolOutcome } from '@/views/payload';
+import { type ToolOutcome } from '@/views/payload';
+import { isRecipeCardData } from '@/views/guards';
+
+/**
+ * What a Drive file id looks like: letters, digits, `_` and `-`. Anything else
+ * in an "id" cannot be a real one, and the id is the only part of a recipe that
+ * is allowed into a message the person appears to have written.
+ */
+const RECIPE_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+
+/** Whether `value` has the shape of a recipe (Drive file) id. */
+export function isRecipeId(value: string): boolean {
+  return RECIPE_ID_PATTERN.test(value);
+}
+
+/**
+ * The sentence a tile sends to ask the assistant to open a recipe, or undefined
+ * when the id is not a plain id (so nothing is sent at all).
+ *
+ * A follow-up is shown by the host as if the person had typed it, and a recipe
+ * title is text from an imported web page or a file name: anyone who can get a
+ * recipe into the account could write instructions into it. So the message is a
+ * fixed phrase plus the id, which has a closed alphabet and cannot carry any.
+ */
+export function openRecipePrompt(id: string): string | undefined {
+  return isRecipeId(id) ? `Open the saved recipe with id ${id}` : undefined;
+}
 
 /** The tool a tap falls back to when the host cannot carry a message. */
 export const OPEN_RECIPE_TOOL = 'get_recipe';

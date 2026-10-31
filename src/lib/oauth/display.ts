@@ -3,7 +3,7 @@
  *
  * How an OAuth client is described to the person who has to approve it. The
  * approval screen is the only defence against a look-alike app asking for a
- * token that can change their recipes, so everything a client says about itself
+ * token that can change their data, so everything a client says about itself
  * is cleaned before it is shown, and everything we can know about it for sure
  * (the domain its `client_id` lives on, where approving sends them) is shown
  * next to what it merely claims (its name).
@@ -14,7 +14,7 @@
 
 import { redirectKind, type RedirectKind } from '@/lib/oauth/redirect-uri';
 import type { OAuthClient } from '@/lib/oauth/client';
-import { SCOPE_READ, SCOPE_WRITE } from '@/lib/oauth/scopes';
+import { SCOPE_TEXT } from '@/domain/mcp/app';
 import { parseUrl } from '@/utils/url';
 
 /** The longest client name we show. */
@@ -170,13 +170,6 @@ export function describeRedirect(
         : undefined,
   };
 }
-
-/** What each scope lets the app do, in plain words. */
-const SCOPE_TEXT: Readonly<Record<string, string>> = {
-  [SCOPE_READ]: 'See your recipes, search them and find similar ones',
-  [SCOPE_WRITE]:
-    'Add, edit, tag, favourite and annotate recipes, and change your settings',
-};
 
 /** The plain-words description of each requested scope; an unknown scope is shown as it is. */
 export function describeScopes(scopes: readonly string[]): readonly string[] {

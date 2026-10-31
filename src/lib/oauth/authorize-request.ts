@@ -23,6 +23,7 @@ import {
 } from '@/lib/oauth/redirect-uri';
 import { SCOPE_READ, normaliseScope, type Scope } from '@/lib/oauth/scopes';
 import { logSecurityEvent } from '@/lib/oauth/security-log';
+import { SITE_NAME } from '@/utils/site';
 import { withQueryParams } from '@/utils/query';
 
 /** A validated authorization request. */
@@ -154,7 +155,7 @@ export async function validateAuthorizeRequest(
     return {
       ok: false,
       error: 'invalid_client',
-      description: 'This application is not known to chowdown.',
+      description: `This application is not known to ${SITE_NAME}.`,
     };
   }
 

@@ -394,8 +394,8 @@ export async function exchangeRefreshToken(
     return fail('invalid_target', 'The resource is not this MCP server.');
   }
   if (request.scope) {
-    // Covered by the grant, not merely listed in it: a grant of `recipes:write`
-    // covers `recipes:read`. `offline_access` asks for what a refresh already is.
+    // Covered by the grant, not merely listed in it: a grant of the write scope
+    // covers the read one. `offline_access` asks for what a refresh already is.
     const asked = request.scope
       .split(/\s+/)
       .filter((s) => s !== '' && s !== SCOPE_OFFLINE_ACCESS);

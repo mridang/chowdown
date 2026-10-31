@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { REQUEST_ARGUMENTS } from '@/views/app';
 import type { ToolOutcome } from '@/views/payload';
 import {
   INITIAL_VIEW_STATE,
@@ -14,6 +15,9 @@ import {
 
 type Data = { readonly n: number };
 
+/** The arguments that name a request, best first. */
+const [FIRST = '', SECOND = ''] = REQUEST_ARGUMENTS;
+
 /** Run a list of actions from the initial state. */
 function run(...actions: readonly ViewAction<Data>[]): ViewState<Data> {
   return actions.reduce<ViewState<Data>>(
@@ -25,19 +29,21 @@ function run(...actions: readonly ViewAction<Data>[]): ViewState<Data> {
 const DATA: ToolOutcome<Data> = { kind: 'data', data: { n: 1 } };
 const ERROR: ToolOutcome<Data> = {
   kind: 'message',
-  text: 'No recipe found.',
+  text: 'Nothing found.',
   isError: true,
 };
 
 describe('describeRequest', () => {
-  it('names the recipe or the search the tool was asked for', () => {
-    expect(describeRequest({ name: ' Pasta ' })).toBe('Pasta');
-    expect(describeRequest({ query: 'soup' })).toBe('soup');
+  it('names what the tool was asked for, from the first argument given', () => {
+    expect(describeRequest({ [FIRST]: ' one ' })).toBe('one');
+    expect(describeRequest({ [SECOND]: 'two' })).toBe('two');
+    expect(describeRequest({ [FIRST]: 'one', [SECOND]: 'two' })).toBe('one');
+    expect(describeRequest({ [FIRST]: '  ', [SECOND]: 'two' })).toBe('two');
   });
 
   it('says nothing when the arguments do not', () => {
     expect(describeRequest(undefined)).toBeUndefined();
-    expect(describeRequest({ name: '  ', other: 3 })).toBeUndefined();
+    expect(describeRequest({ [FIRST]: '  ', other: 3 })).toBeUndefined();
   });
 });
 
@@ -61,14 +67,14 @@ describe('reduceViewState', () => {
 
   it('remembers what was asked for while waiting', () => {
     expect(
-      run({ type: 'connected' }, { type: 'input', args: { name: 'Pasta' } }),
-    ).toEqual({ phase: 'waiting', request: 'Pasta' });
+      run({ type: 'connected' }, { type: 'input', args: { [FIRST]: 'one' } }),
+    ).toEqual({ phase: 'waiting', request: 'one' });
   });
 
   it('never lets late input overwrite data', () => {
     const ready = run(
       { type: 'result', outcome: DATA },
-      { type: 'input', args: { name: 'x' } },
+      { type: 'input', args: { [FIRST]: 'x' } },
     );
     expect(ready.phase).toBe('ready');
   });
@@ -77,7 +83,7 @@ describe('reduceViewState', () => {
     expect(run({ type: 'result', outcome: ERROR })).toEqual({
       phase: 'failed',
       reason: 'error',
-      message: 'No recipe found.',
+      message: 'Nothing found.',
     });
   });
 
@@ -112,7 +118,7 @@ describe('reduceViewState', () => {
       { type: 'result', outcome: DATA },
       {
         type: 'result',
-        outcome: { kind: 'message', text: 'A card.', isError: false },
+        outcome: { kind: 'message', text: 'A note.', isError: false },
       },
     );
     expect(state).toEqual({ phase: 'ready', data: { n: 1 } });

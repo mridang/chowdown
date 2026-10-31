@@ -15,7 +15,7 @@
 export type DisplayMode = 'inline' | 'fullscreen' | 'pip';
 
 /**
- * Every display mode the chowdown Views know how to lay out. Declared to the
+ * Every display mode the Views know how to lay out. Declared to the
  * host in `appCapabilities.availableDisplayModes` during `ui/initialize` and,
  * for ChatGPT, mirrored in the resource's `openai/ui` metadata.
  */

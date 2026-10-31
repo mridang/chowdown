@@ -67,3 +67,27 @@ describe.each([
     });
   },
 );
+
+describe('the palettes', () => {
+  it('give light and dark the same colours to fill in', () => {
+    expect(Object.keys(DARK_PALETTE).toSorted()).toEqual(
+      Object.keys(LIGHT_PALETTE).toSorted(),
+    );
+  });
+
+  it('are written as six-digit hex colours, as the contrast check reads them', () => {
+    for (const colour of [
+      ON_ACCENT,
+      ...Object.values(LIGHT_PALETTE),
+      ...Object.values(DARK_PALETTE),
+    ]) {
+      expect(colour).toMatch(/^#[0-9a-f]{6}$/);
+    }
+  });
+
+  it('draw the dark card darker than the light one', () => {
+    expect(luminance(DARK_PALETTE.fallbackSurface)).toBeLessThan(
+      luminance(LIGHT_PALETTE.fallbackSurface),
+    );
+  });
+});

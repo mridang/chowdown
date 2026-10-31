@@ -9,10 +9,11 @@
  *  - authorization server metadata (RFC 8414): the endpoints and what they
  *    support.
  *
- * chowdown is both the resource server and its own authorization server, so
+ * This app is both the resource server and its own authorization server, so
  * both documents describe the same origin.
  */
 
+import { RESOURCE_NAME } from '@/domain/mcp/app';
 import { ASSERTION_ALGORITHMS } from '@/lib/oauth/client';
 import { SCOPE_OFFLINE_ACCESS, SUPPORTED_SCOPES } from '@/lib/oauth/scopes';
 import { parseUrl } from '@/utils/url';
@@ -90,7 +91,7 @@ export function protectedResourceMetadata(
     authorization_servers: [issuerOf(origin)],
     scopes_supported: SUPPORTED_SCOPES,
     bearer_methods_supported: ['header'],
-    resource_name: 'chowdown recipes',
+    resource_name: RESOURCE_NAME,
   };
 }
 

@@ -1,5 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { APP_STYLES } from '@/views/app';
+import { DARK_PALETTE, LIGHT_PALETTE } from '@/views/palette';
 import { STYLES } from '@/views/styles';
 
 describe('STYLES', () => {
@@ -81,5 +83,21 @@ describe('lists', () => {
     expect(STYLES.match(/list-style-type:""/g)?.length).toBeGreaterThanOrEqual(
       4,
     );
+  });
+});
+
+describe('the themes', () => {
+  it('writes the light palette into the page', () => {
+    expect(STYLES).toContain(`--accent: ${LIGHT_PALETTE.accent};`);
+  });
+
+  it('writes the dark palette into the page', () => {
+    expect(STYLES).toContain(`--accent: ${DARK_PALETTE.accent};`);
+  });
+});
+
+describe('the app’s own rules', () => {
+  it('are part of the stylesheet', () => {
+    expect(STYLES).toContain(APP_STYLES);
   });
 });

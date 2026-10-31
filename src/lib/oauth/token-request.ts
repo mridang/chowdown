@@ -22,6 +22,7 @@ import {
   type OAuthStore,
   type TokenResponse,
 } from '@/lib/oauth/token-endpoint';
+import { SITE_NAME } from '@/utils/site';
 
 /** What the endpoint answers with, ready to turn into a response. */
 export type TokenRequestResult =
@@ -51,7 +52,7 @@ export interface TokenRequestContext {
 }
 
 /** The challenge sent with a 401 from the token endpoint. This server only has public clients, so Basic is offered only to say it is not accepted as the way to identify. */
-const CLIENT_CHALLENGE = 'Basic realm="chowdown", charset="UTF-8"';
+const CLIENT_CHALLENGE = `Basic realm="${SITE_NAME}", charset="UTF-8"`;
 
 /** A form field's text, or undefined when it is missing or empty. */
 export function formField(form: FormFields, name: string): string | undefined {

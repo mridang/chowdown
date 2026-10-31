@@ -54,8 +54,8 @@ export interface JsonSchema {
 
 /**
  * The `pattern` that means "has at least one character that is not
- * whitespace". A plain `minLength: 1` lets `"   "` through, and a blank recipe
- * reference is exactly the input that must be refused early, so schemas use
+ * whitespace". A plain `minLength: 1` lets `"   "` through, and a blank name
+ * or reference is exactly the input that must be refused early, so schemas use
  * this and the checker words the failure as "must not be blank".
  */
 export const NOT_BLANK = '\\S';

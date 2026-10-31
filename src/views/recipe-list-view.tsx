@@ -26,7 +26,7 @@ import {
   type ListState,
 } from '@/views/list-state';
 import { openRecipe } from '@/views/open-recipe';
-import { isRecipeListData } from '@/views/payload';
+import { isRecipeListData } from '@/views/guards';
 import { CloseHint, FullRecipe, focusWhenShown } from '@/views/recipe-parts';
 import { Announcer, LoadingCard, MessageCard } from '@/views/status-panels';
 import { STYLES } from '@/views/styles';

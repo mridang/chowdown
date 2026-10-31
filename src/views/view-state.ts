@@ -9,6 +9,7 @@
  * "Loading…" forever: every way out has a state with a message.
  */
 
+import { REQUEST_ARGUMENTS } from '@/views/app';
 import type { ToolOutcome } from '@/views/payload';
 
 /** How long a View waits for data before it says so (milliseconds). */
@@ -36,7 +37,7 @@ export type ViewState<T> =
   | {
       /**
        * Connected, waiting for the result. `request` describes what was asked
-       * for, when the host has said (for example the recipe name).
+       * for, when the host has said (for example what was searched for).
        */
       readonly phase: 'waiting';
       readonly request?: string;
@@ -75,14 +76,14 @@ export function isPending<T>(state: ViewState<T>): boolean {
 }
 
 /**
- * A short phrase for what the tool was asked to do, taken from its arguments:
- * the recipe `name`, or the search `query`. Undefined when the arguments say
- * nothing useful.
+ * A short phrase for what the tool was asked to do: the first of the
+ * arguments in {@link REQUEST_ARGUMENTS} that is not blank. Undefined when the
+ * arguments say nothing useful.
  */
 export function describeRequest(
   args: Readonly<Record<string, unknown>> | undefined,
 ): string | undefined {
-  const label = [args?.['name'], args?.['query']].find(
+  const label = REQUEST_ARGUMENTS.map((name) => args?.[name]).find(
     (value): value is string =>
       typeof value === 'string' && value.trim() !== '',
   );

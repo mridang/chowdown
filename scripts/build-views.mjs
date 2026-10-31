@@ -22,18 +22,39 @@
 
 import * as esbuild from 'esbuild';
 import { createHash } from 'node:crypto';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = resolve(root, 'dist/views');
 
-/** The Views to bundle: the entry point name (src/views/<name>.tsx) and the page title. */
-const VIEWS = [
-  { name: 'recipe-card', title: 'chowdown recipe card' },
-  { name: 'recipe-list', title: 'chowdown recipe list' },
-];
+/** The app's name, as `src/utils/site.ts` gives it, for the page titles. */
+const SITE_NAME =
+  /export const SITE_NAME = '([^']+)'/.exec(
+    readFileSync(resolve(root, 'src/utils/site.ts'), 'utf8'),
+  )?.[1] ?? '';
+
+/**
+ * The Views to bundle: every entry point `src/views/<name>.tsx` that mounts a
+ * component of its own (`src/views/<name>-view.tsx`), titled with the app's
+ * name and the View's ("chowdown recipe card").
+ */
+const VIEWS = readdirSync(resolve(root, 'src/views'))
+  .filter((file) => file.endsWith('-view.tsx'))
+  .map((file) => file.slice(0, -'-view.tsx'.length))
+  .filter((name) => existsSync(resolve(root, `src/views/${name}.tsx`)))
+  .toSorted()
+  .map((name) => ({
+    name,
+    title: `${SITE_NAME} ${name.replaceAll('-', ' ')}`,
+  }));
 
 /**
  * Zod ships message catalogues for 50 languages and exposes them all as one

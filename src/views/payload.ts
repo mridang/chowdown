@@ -5,12 +5,11 @@
  * `CallToolResult`; the View wants either the typed `structuredContent` it
  * knows how to draw, or, when the call failed or carried no data, the message
  * text so it can say what happened instead of waiting forever. These helpers do
- * that narrowing without casts: the payload is untrusted input (the host and
+ * that narrowing without casts (the guards for this app's own data are in
+ * `guards.ts`): the payload is untrusted input (the host and
  * the model both sit between the server and the View), so it is checked before
  * it is used.
  */
-
-import type { RecipeCardData, RecipeListData } from '@/domain/mcp/ui-types';
 
 /** The parts of a `CallToolResult` a View reads. */
 export interface ToolResultLike {
@@ -32,7 +31,9 @@ export type ToolOutcome<T> =
     };
 
 /** Whether the value is a non-null object, so its keys can be read safely. */
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+export function isRecord(
+  value: unknown,
+): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null;
 }
 
@@ -51,7 +52,7 @@ export function textOf(content: readonly unknown[] | undefined): string {
 }
 
 /** Whether the value is an array whose every entry satisfies `check`. */
-function everyEntry(
+export function everyEntry(
   value: unknown,
   check: (entry: unknown) => boolean,
 ): value is readonly unknown[] {
@@ -59,40 +60,8 @@ function everyEntry(
 }
 
 /** Whether the value is a string. */
-function isString(value: unknown): value is string {
+export function isString(value: unknown): value is string {
   return typeof value === 'string';
-}
-
-/** Whether the value is an array of arrays (the shape of recipe steps). */
-function isArray(value: unknown): value is readonly unknown[] {
-  return Array.isArray(value);
-}
-
-/** Whether the value has the shape of the recipe card's `structuredContent`. */
-export function isRecipeCardData(value: unknown): value is RecipeCardData {
-  return (
-    isRecord(value) &&
-    isString(value['id']) &&
-    isString(value['title']) &&
-    typeof value['uncurated'] === 'boolean' &&
-    everyEntry(value['metadata'], isArray) &&
-    everyEntry(value['ingredients'], isRecord) &&
-    everyEntry(value['cookware'], isString) &&
-    everyEntry(value['steps'], isArray) &&
-    everyEntry(value['logs'], isRecord)
-  );
-}
-
-/** Whether the value has the shape of the recipe list's `structuredContent`. */
-export function isRecipeListData(value: unknown): value is RecipeListData {
-  return (
-    isRecord(value) &&
-    everyEntry(
-      value['recipes'],
-      (entry) =>
-        isRecord(entry) && isString(entry['id']) && isString(entry['title']),
-    )
-  );
 }
 
 /** The message shown when a result has neither usable data nor any text. */
@@ -102,7 +71,7 @@ export const NO_DATA_MESSAGE =
 /**
  * Interpret a tool result for a View. A failed call (`isError`) or a result
  * without data the View recognises becomes a message built from the result's
- * text, so the person sees what the server said ("No recipe found…") rather
+ * text, so the person sees what the server said ("Nothing found…") rather
  * than a placeholder that never resolves.
  *
  * @param result - The `CallToolResult` (or a lookalike) the host delivered.

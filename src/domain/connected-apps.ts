@@ -1,12 +1,13 @@
 /**
  * @packageDocumentation
  *
- * What the "Cook with AI" page needs to know about assistants: the addresses
+ * What the connect page needs to know about assistants: the addresses
  * people paste into them, and how a connected app is described in the list of
  * apps that have been given access.
  */
 
 import type { ConnectedApp as StoredConnectedApp } from '@/domain/db/oauth';
+import { SCOPE_WRITE } from '@/domain/mcp/app';
 
 /** An app the user has connected, as `GET /api/users/self/connections` returns it. */
 export interface ConnectedApp {
@@ -45,7 +46,7 @@ export function mcpUrl(origin: string): string {
 }
 
 /**
- * What an app may do, in words: the write scope means it can change recipes. An
+ * What an app may do, in words: the write scope means it can change things. An
  * app connected more than once says so ("Can edit (2 installs)"): the scopes
  * shown are the widest of any install, and disconnecting ends all of them.
  */
@@ -53,6 +54,6 @@ export function accessLabel(
   scopes: readonly string[],
   installs: number = 1,
 ): string {
-  const access = scopes.includes('recipes:write') ? 'Can edit' : 'Read only';
+  const access = scopes.includes(SCOPE_WRITE) ? 'Can edit' : 'Read only';
   return installs > 1 ? `${access} (${installs} installs)` : access;
 }

@@ -7,6 +7,8 @@
  * and answers with a plain, safe value instead of throwing.
  */
 
+import { ARGUMENT_ALIASES, LISTS_OF_TEXT } from '@/domain/mcp/app';
+
 /** The most results a tool returns unless asked for fewer. */
 const DEFAULT_LIMIT = 12;
 
@@ -56,31 +58,6 @@ export function offsetArg(value: unknown): number {
   const n = numberArg(value);
   return n === undefined ? 0 : Math.max(Math.floor(n), 0);
 }
-
-/**
- * Older or looser spellings of a tool's arguments, and the canonical name each
- * one stands for. The catalogue lists only the canonical names (so a model sees
- * one way to say each thing, and the input schemas stay closed), but a
- * connector that cached an earlier catalogue, or a model that carries an
- * argument over from a similar tool, must not start failing: its spelling is
- * renamed before the arguments are checked.
- */
-const ARGUMENT_ALIASES: Readonly<
-  Record<string, Readonly<Record<string, string>>>
-> = {
-  get_recipe: { name: 'recipe' },
-  find_similar: { name: 'recipe' },
-  browse_recipes: { diet: 'dietary_needs' },
-};
-
-/**
- * Arguments that are declared as a list of text but that models often send as
- * one piece of text ("3 tomatoes and 400 g pasta"). That text is wrapped into a
- * one-item list; the reader of the list already knows how to split a sentence.
- */
-const LISTS_OF_TEXT: Readonly<Record<string, readonly string[]>> = {
-  recipes_from_ingredients: ['ingredients'],
-};
 
 /**
  * The arguments of a call to `tool`, with the harmless slips of

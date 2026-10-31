@@ -14,7 +14,7 @@
 import { useState, type ReactElement } from 'react';
 
 import type { RecipeCardData } from '@/domain/mcp/ui-types';
-import { isRecipeCardData } from '@/views/payload';
+import { isRecipeCardData } from '@/views/guards';
 import {
   Eyebrow,
   FullRecipe,

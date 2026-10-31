@@ -2,52 +2,53 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   NO_DATA_MESSAGE,
-  isRecipeCardData,
-  isRecipeListData,
+  everyEntry,
+  isRecord,
+  isString,
   readOutcome,
   textOf,
 } from '@/views/payload';
 
-/** A card payload the server would send. */
-const CARD = {
-  id: 'abc',
-  title: 'Pasta',
-  uncurated: false,
-  metadata: [['servings', '4']],
-  ingredients: [{ name: 'pasta', quantity: '200 g' }],
-  cookware: ['pot'],
-  steps: [[{ kind: 'text', text: 'Boil.' }]],
-  logs: [],
-};
+/** The data a View in these tests draws: a list of names. */
+interface Names {
+  readonly names: readonly string[];
+}
 
-const LIST = { recipes: [{ id: '1', title: 'Pasta', uncurated: false }] };
+/** Whether the value has the shape of {@link Names}. */
+function isNames(value: unknown): value is Names {
+  return isRecord(value) && everyEntry(value['names'], isString);
+}
 
-describe('isRecipeCardData', () => {
-  it('accepts what the server sends', () => {
-    expect(isRecipeCardData(CARD)).toBe(true);
-  });
+const NAMES: Names = { names: ['one', 'two'] };
 
-  it('refuses anything that is missing a part the card draws', () => {
-    expect(isRecipeCardData({ ...CARD, steps: undefined })).toBe(false);
-    expect(isRecipeCardData({ ...CARD, id: 7 })).toBe(false);
-    expect(isRecipeCardData({ ...CARD, cookware: [1] })).toBe(false);
-    expect(isRecipeCardData({ ...CARD, uncurated: 'no' })).toBe(false);
-    expect(isRecipeCardData(null)).toBe(false);
-    expect(isRecipeCardData('text')).toBe(false);
+describe('isRecord', () => {
+  it('accepts objects and arrays, and nothing else', () => {
+    expect(isRecord({})).toBe(true);
+    expect(isRecord([])).toBe(true);
+    expect(isRecord(null)).toBe(false);
+    expect(isRecord('text')).toBe(false);
+    expect(isRecord(undefined)).toBe(false);
   });
 });
 
-describe('isRecipeListData', () => {
-  it('accepts a list, empty or not, with or without a query', () => {
-    expect(isRecipeListData(LIST)).toBe(true);
-    expect(isRecipeListData({ recipes: [] })).toBe(true);
-    expect(isRecipeListData({ ...LIST, query: 'soup' })).toBe(true);
+describe('isString', () => {
+  it('accepts strings only', () => {
+    expect(isString('')).toBe(true);
+    expect(isString(1)).toBe(false);
+    expect(isString(null)).toBe(false);
+  });
+});
+
+describe('everyEntry', () => {
+  it('accepts an array whose every entry passes, empty or not', () => {
+    expect(everyEntry(['a', 'b'], isString)).toBe(true);
+    expect(everyEntry([], isString)).toBe(true);
   });
 
-  it('refuses entries without an id and a title', () => {
-    expect(isRecipeListData({ recipes: [{ id: '1' }] })).toBe(false);
-    expect(isRecipeListData({ recipes: 'many' })).toBe(false);
-    expect(isRecipeListData(undefined)).toBe(false);
+  it('refuses an array with one entry that fails, and anything not an array', () => {
+    expect(everyEntry(['a', 1], isString)).toBe(false);
+    expect(everyEntry('ab', isString)).toBe(false);
+    expect(everyEntry(undefined, isString)).toBe(false);
   });
 });
 
@@ -73,8 +74,8 @@ describe('textOf', () => {
 describe('readOutcome', () => {
   it('returns the data when the result carries it', () => {
     expect(
-      readOutcome({ structuredContent: CARD, content: [] }, isRecipeCardData),
-    ).toEqual({ kind: 'data', data: CARD });
+      readOutcome({ structuredContent: NAMES, content: [] }, isNames),
+    ).toEqual({ kind: 'data', data: NAMES });
   });
 
   it('turns an error result into its message, not a loading state', () => {
@@ -82,13 +83,13 @@ describe('readOutcome', () => {
       readOutcome(
         {
           isError: true,
-          content: [{ type: 'text', text: 'No recipe found for "soup".' }],
+          content: [{ type: 'text', text: 'Nothing found for "soup".' }],
         },
-        isRecipeCardData,
+        isNames,
       ),
     ).toEqual({
       kind: 'message',
-      text: 'No recipe found for "soup".',
+      text: 'Nothing found for "soup".',
       isError: true,
     });
   });
@@ -96,8 +97,8 @@ describe('readOutcome', () => {
   it('does not trust data in a result that is flagged as an error', () => {
     expect(
       readOutcome(
-        { isError: true, structuredContent: CARD, content: [] },
-        isRecipeCardData,
+        { isError: true, structuredContent: NAMES, content: [] },
+        isNames,
       ),
     ).toMatchObject({ kind: 'message', isError: true });
   });
@@ -106,14 +107,14 @@ describe('readOutcome', () => {
     expect(
       readOutcome(
         { content: [{ type: 'text', text: 'Nothing saved yet.' }] },
-        isRecipeListData,
+        isNames,
       ),
     ).toEqual({ kind: 'message', text: 'Nothing saved yet.', isError: false });
   });
 
   it('treats data of the wrong shape as a message too', () => {
     expect(
-      readOutcome({ structuredContent: { recipes: 5 } }, isRecipeListData),
+      readOutcome({ structuredContent: { names: 5 } }, isNames),
     ).toMatchObject({ kind: 'message', text: NO_DATA_MESSAGE });
   });
 });

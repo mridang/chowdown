@@ -1,7 +1,7 @@
 /**
  * @packageDocumentation
  *
- * Shared stylesheet for the chowdown MCP Apps Views (recipe card + list). One
+ * Shared stylesheet for the MCP Apps Views. One
  * cohesive design system so every surface in the chat client looks like the
  * same product. Structure (background, text, borders, font) follows the host's
  * theme variables, applied by the hook from the host context; the brand colours
@@ -17,6 +17,7 @@ import {
   ON_ACCENT,
   type ThemePalette,
 } from '@/views/palette';
+import { APP_STYLES } from '@/views/app';
 
 /** The custom properties that differ between the light and dark themes. */
 function themeVariables(palette: ThemePalette): string {
@@ -134,42 +135,11 @@ button { font: inherit; }
   color: var(--text); background: var(--surface); border:1px solid var(--border); border-radius: var(--radius-sm); }
 .filter::placeholder { color: var(--muted); }
 
-/* Text only assistive technology reads (step numbers, the arrival announcement). */
+/* Text only assistive technology reads. */
 .sr-only { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden;
   clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
 
-/* --- fullscreen recipe --- */
-.full { max-width: 860px; margin:0 auto;
-  padding: calc(6px + var(--safe-top, 0px)) calc(6px + var(--safe-right, 0px))
-    calc(6px + var(--safe-bottom, 0px)) calc(6px + var(--safe-left, 0px)); }
-.full:focus { outline: none; }
-html[data-fixed-height] .full { min-height: 100vh; }
-.full .title { font-size:1.875rem; }
-.cols { display:grid; grid-template-columns:1fr; gap:22px; margin-top:18px; }
-@media (min-width:660px){ .cols { grid-template-columns: 17rem 1fr; align-items:start; } }
-.panel { background: var(--surface); border:1px solid var(--border); border-radius: var(--radius); padding:18px; }
-.h2 { margin:0 0 12px; font-size:.6875rem; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color: var(--muted); }
-.h2.spaced { margin-top:20px; }
-.ings, .cooks { margin:0; padding:0; list-style-type:""; }
-.ing { display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid var(--border); font-size:.84375rem; }
-.ing:last-child { border-bottom:0; }
-.ing .q { color: var(--muted); white-space:nowrap; }
-.cook { padding:5px 0; font-size:.84375rem; }
-ol.steps { margin:0; padding:0; list-style-type:""; }
-.step { display:flex; gap:13px; padding:13px 0; border-bottom:1px solid var(--border); }
-.step:last-child { border-bottom:0; }
-.num { flex:none; width:27px; height:27px; display:grid; place-items:center; border-radius:50%;
-  background: var(--accent); color: var(--on-accent); font-weight:700; font-size:.8125rem; }
-.step p { margin:0; line-height:1.6; }
-.tok-ing { background: var(--accent-soft); color: var(--accent-text); border-radius:5px; padding:1px 6px; font-weight:600; }
-.tok-ing .tok-q { font-weight:500; opacity:.85; }
-.tok-cook { background: var(--teal-soft); color: var(--teal-text); border-radius:5px; padding:1px 6px; font-weight:600; }
-.tok-timer { background: var(--violet-soft); color: var(--violet-text); border-radius:5px; padding:1px 6px; font-weight:600; }
-.logs { margin-top:22px; }
-.log { font-size:.8125rem; padding:8px 0; border-bottom:1px solid var(--border); }
-.log:last-child { border-bottom:0; }
-.log .d { color: var(--muted); font-size:.6875rem; font-weight:600; }
-
+${APP_STYLES}
 /* People who ask their device for less motion get none. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

@@ -1,7 +1,7 @@
 /**
  * @packageDocumentation
  *
- * The one place a chowdown View talks to its host. It connects with the
+ * The one place a View talks to its host. It connects with the
  * ext-apps `App` (the standard MCP Apps channel every compliant host speaks),
  * turns the host's notifications into the pure state machines in
  * `view-state.ts` and `display-mode.ts`, and hands the View plain values and
