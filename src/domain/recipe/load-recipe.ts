@@ -10,6 +10,7 @@ import { redirect } from 'next/navigation';
 import { cache } from 'react';
 
 import { ENDED_SESSION_PATH } from '@/domain/auth/app';
+import { entityTag } from '@/lib/core/api';
 import { getCurrentUser, getSession } from '@/lib/core/auth';
 import {
   DriveNotConnectedError,
@@ -54,6 +55,8 @@ export const ALSO_LIKE_COUNT = 4;
 /** What `loadRecipe` resolves to. */
 export interface RecipePageData {
   readonly recipe: ParsedRecipe;
+  /** The entity tag of the recipe's file, to send as `If-Match` when editing it. */
+  readonly etag: string;
   readonly notes: readonly Note[];
   readonly favourite: boolean;
   /** The recipe's curated tags, worked out from its source. */
@@ -261,6 +264,7 @@ export const loadRecipe = cache(
 
     return {
       recipe,
+      etag: await entityTag(rows.recipe.source),
       notes: extractNotes(rows.recipe.source),
       favourite: rows.favourite,
       tags: rowTags(rows.recipe, recipe),

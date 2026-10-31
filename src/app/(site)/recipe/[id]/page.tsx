@@ -124,6 +124,7 @@ export default async function RecipePage({
 
       <RecipeHero
         recipeId={id}
+        etag={data.etag}
         title={title}
         images={images}
         tone={data.tone}

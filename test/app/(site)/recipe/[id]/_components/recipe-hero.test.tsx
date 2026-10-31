@@ -42,6 +42,7 @@ describe('RecipeHero', () => {
     htmlAt(
       <RecipeHero
         recipeId="dal"
+        etag={'"abc"'}
         title="Dal"
         images={[]}
         tone="forest"
@@ -58,6 +59,10 @@ describe('RecipeHero', () => {
     const out = markup();
     expect(out.match(/<h1/g)).toHaveLength(1);
     expect(out).toMatch(/<h1[^>]*>Dal<\/h1>/);
+  });
+
+  it('lets the title be edited in place', () => {
+    expect(markup()).toContain('aria-label="Edit title"');
   });
 
   it('puts a breadcrumb trail above the title, ending at the cuisine', () => {

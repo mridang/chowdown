@@ -6,7 +6,7 @@ import { CookMode } from '@/components/recipe/cook-mode';
 import { HeroPhoto } from '@/components/recipe/hero-photo';
 import { MoreMenu, ShareButton } from '@/components/recipe/actions';
 import { Breadcrumb, type Crumb } from '@/components/ui/breadcrumb';
-import { Eyebrow, Heading } from '@/components/ui/layout';
+import { Eyebrow } from '@/components/ui/layout';
 import { TextLink } from '@/components/ui/text-link';
 import { sentenceCase } from '@/utils/text';
 import type { Tone } from '@/domain/recipe/card-data';
@@ -16,6 +16,7 @@ import {
   AuthorLine,
   SourceLine,
 } from '@/app/(site)/recipe/[id]/_components/byline';
+import { EditableTitle } from '@/app/(site)/recipe/[id]/_components/editable-title';
 
 /**
  * The trail above the title: always "Recipes", plus the recipe's cuisine (a
@@ -71,6 +72,7 @@ export function heroEyebrow(
  */
 export function RecipeHero({
   recipeId,
+  etag,
   title,
   images,
   tone,
@@ -84,6 +86,8 @@ export function RecipeHero({
   favourite,
 }: Readonly<{
   recipeId: string;
+  /** The recipe's entity tag, sent back when its title is edited. */
+  etag: string;
   /** The title, already cleaned for display. */
   title: string;
   /** Photo addresses, the cover first (empty when the recipe has none). */
@@ -145,9 +149,7 @@ export function RecipeHero({
         <div className="px-4 py-8 sm:px-6 lg:order-1 lg:py-14 lg:pr-16 lg:pl-[max(2.5rem,calc((100cqw-90rem)/2+2.5rem))]">
           <Breadcrumb crumbs={heroCrumbs(cuisine)} className="print:hidden" />
           {eyebrow ? <Eyebrow className="mt-5">{eyebrow}</Eyebrow> : null}
-          <Heading as="h1" variant="h1" className="mt-3 lg:text-6xl">
-            {title}
-          </Heading>
+          <EditableTitle recipeId={recipeId} title={title} etag={etag} />
           {authorSlot ? (
             <>
               {authorSlot}

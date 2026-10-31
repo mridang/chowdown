@@ -7,6 +7,7 @@ import {
   Html5Icon,
   HeartIcon,
   McpIcon,
+  PencilIcon,
   PlayIcon,
   ProteinIcon,
   SparklesIcon,
@@ -14,6 +15,12 @@ import {
 import { classOf, html } from './render';
 
 describe('icons', () => {
+  it('draw a pencil for editing in place', () => {
+    const out = html(<PencilIcon size="md" />);
+    expect(out).toContain('<path');
+    expect(out).toContain('aria-hidden="true"');
+  });
+
   it('follow the text around them unless given a size', () => {
     const out = html(<ClockIcon />);
     expect(out).toContain('width="1em"');
