@@ -5,7 +5,7 @@ import type { ReactElement } from 'react';
 import { buttonClass } from '@/components/ui/button';
 
 import { BRAND_NAME, ERROR_REASSURANCE } from '@/app/_brand';
-import '@/app/globals.css';
+import './globals.css';
 
 /**
  * The last resort: shown when the root layout itself fails, so nothing else on
