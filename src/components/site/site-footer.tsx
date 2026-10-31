@@ -42,7 +42,10 @@ const COLUMNS: readonly Readonly<{
   },
   {
     title: 'About',
-    links: [{ label: 'Privacy', href: '/privacy' }],
+    links: [
+      { label: 'Privacy', href: '/privacy' },
+      { label: 'Terms', href: '/terms' },
+    ],
   },
 ];
 

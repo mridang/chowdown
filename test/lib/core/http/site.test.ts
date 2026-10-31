@@ -24,8 +24,8 @@ describe('site settings', () => {
     expect(EDGE_TTL_SECONDS).toBe(300);
   });
 
-  it('lets search engines index only the front page and the privacy page', () => {
-    expect([...PUBLIC_PAGES]).toEqual(['/', '/privacy']);
+  it('lets search engines index only the front page and the legal pages', () => {
+    expect([...PUBLIC_PAGES]).toEqual(['/', '/privacy', '/terms']);
   });
 
   it.each([

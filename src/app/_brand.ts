@@ -20,6 +20,7 @@ import {
   SITE_NAME,
   SITE_TITLE,
   SITE_URL,
+  TERMS_LAST_UPDATED,
 } from '@/utils/site';
 
 /** The name of the app, as the wordmark, the tab title suffix and the home-screen label. */
@@ -68,7 +69,7 @@ export const COLOR_SCHEME = 'only light';
 export const INDEX_BY_DEFAULT = false;
 
 /** The only pages a crawler may read; everything else is private. */
-export const CRAWLABLE_PATHS: readonly string[] = ['/$', '/privacy'];
+export const CRAWLABLE_PATHS: readonly string[] = ['/$', '/privacy', '/terms'];
 
 /**
  * The paths crawlers must stay out of: somebody's own recipes, the sign-in
@@ -103,6 +104,7 @@ export const SITEMAP_PAGES: readonly Readonly<{
 }>[] = [
   { path: '/' },
   { path: '/privacy', lastModified: PRIVACY_LAST_UPDATED },
+  { path: '/terms', lastModified: TERMS_LAST_UPDATED },
 ];
 
 /** The name of the installed app, where there is room for more than the short name. */

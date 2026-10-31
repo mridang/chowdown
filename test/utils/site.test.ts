@@ -9,6 +9,7 @@ import {
   SITE_NAME,
   SITE_TITLE,
   SITE_URL,
+  TERMS_LAST_UPDATED,
 } from '@/utils/site';
 
 describe('site identity', () => {
@@ -39,7 +40,7 @@ describe('SECURITY_POLICY_URL', () => {
 });
 
 describe('date constants', () => {
-  it.each([PRIVACY_LAST_UPDATED, GPC_LAST_UPDATE])(
+  it.each([PRIVACY_LAST_UPDATED, TERMS_LAST_UPDATED, GPC_LAST_UPDATE])(
     '%s is a valid ISO calendar date',
     (date) => {
       expect(date).toMatch(/^\d{4}-\d{2}-\d{2}$/);

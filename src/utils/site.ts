@@ -43,6 +43,13 @@ export const SECURITY_POLICY_URL = `${SITE_URL}/security-policy.txt`;
 export const PRIVACY_LAST_UPDATED = '2026-10-18';
 
 /**
+ * When the terms of service last changed, as an ISO date. The sitemap publishes
+ * it as the page's `lastmod`, so bump it together with the "Last updated" line
+ * on the terms page.
+ */
+export const TERMS_LAST_UPDATED = '2026-11-01';
+
+/**
  * When this site's Global Privacy Control statement (`/.well-known/gpc.json`)
  * was last reviewed, as an ISO date. Move it forward only when the claim is
  * re-checked: nothing here sells or shares personal data.

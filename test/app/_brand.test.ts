@@ -10,7 +10,7 @@ import {
   PRIVATE_PATHS,
   SITEMAP_PAGES,
 } from '@/app/_brand';
-import { PRIVACY_LAST_UPDATED } from '@/utils/site';
+import { PRIVACY_LAST_UPDATED, TERMS_LAST_UPDATED } from '@/utils/site';
 import { pngSize } from '../png';
 
 describe('the brand', () => {
@@ -21,13 +21,18 @@ describe('the brand', () => {
 });
 
 describe('what crawlers may read', () => {
-  it('is the landing page and the privacy page only', () => {
-    expect(CRAWLABLE_PATHS).toEqual(['/$', '/privacy']);
-    expect(SITEMAP_PAGES.map((page) => page.path)).toEqual(['/', '/privacy']);
+  it('is the landing page and the legal pages only', () => {
+    expect(CRAWLABLE_PATHS).toEqual(['/$', '/privacy', '/terms']);
+    expect(SITEMAP_PAGES.map((page) => page.path)).toEqual([
+      '/',
+      '/privacy',
+      '/terms',
+    ]);
   });
 
-  it('dates the privacy page by the day its text last changed', () => {
+  it('dates the legal pages by the day their text last changed', () => {
     expect(SITEMAP_PAGES[1]?.lastModified).toBe(PRIVACY_LAST_UPDATED);
+    expect(SITEMAP_PAGES[2]?.lastModified).toBe(TERMS_LAST_UPDATED);
     expect(SITEMAP_PAGES[0]?.lastModified).toBeUndefined();
   });
 

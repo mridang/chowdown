@@ -14,7 +14,7 @@ describe('SiteFooter', () => {
   it('links only to pages anyone can open', () => {
     const hrefs = [...out.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
     expect(hrefs).toEqual(
-      expect.arrayContaining(['/#features', '/#faq', '/privacy']),
+      expect.arrayContaining(['/#features', '/#faq', '/privacy', '/terms']),
     );
     expect(hrefs.some((href) => href?.startsWith('/app'))).toBe(false);
     expect(hrefs.some((href) => href?.startsWith('/api'))).toBe(false);
