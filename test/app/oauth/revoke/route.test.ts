@@ -7,6 +7,8 @@ import {
   sqliteD1,
 } from '../../../lib/core/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
+import { SCOPE_READ } from '@/domain/mcp/app';
+import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 
 quietSecurityLogs();
 
@@ -14,14 +16,7 @@ let raw: DatabaseSync;
 let restore: () => void;
 
 beforeEach(() => {
-  const made = sqliteD1(
-    '0008_oauth.sql',
-    '0011_rate_limits.sql',
-    '0012_oauth_housekeeping.sql',
-    '0016_oauth_redirect_uri_sent.sql',
-    '0017_oauth_client_assertions.sql',
-    '0018_oauth_client_logo.sql',
-  );
+  const made = sqliteD1(...APP_MIGRATIONS);
   raw = made.raw;
   restore = installCloudflareContext(made.d1);
 });
@@ -33,7 +28,7 @@ const revoke = (
   headers: Record<string, string> = { 'cf-connecting-ip': '203.0.113.7' },
 ) =>
   POST(
-    new Request('https://chowdown.test/oauth/revoke', {
+    new Request('https://app.test/oauth/revoke', {
       method: 'POST',
       body,
       headers,
@@ -51,7 +46,7 @@ describe('POST /oauth/revoke', () => {
     const { hashSecret } = await import('@/lib/oauth');
     raw
       .prepare(
-        "INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g', 7, 'c', 'recipes:read', 'r', 'now')",
+        `INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g', 7, 'c', '${SCOPE_READ}', 'r', 'now')`,
       )
       .run();
     raw
@@ -96,7 +91,7 @@ describe('POST /oauth/revoke limits and body rules', () => {
     );
     expect(big.status).toBe(400);
     const json = await POST(
-      new Request('https://chowdown.test/oauth/revoke', {
+      new Request('https://app.test/oauth/revoke', {
         method: 'POST',
         body: '{"token":"x"}',
         headers: { 'content-type': 'application/json' },
@@ -104,7 +99,7 @@ describe('POST /oauth/revoke limits and body rules', () => {
     );
     expect(json.status).toBe(400);
     const binary = await POST(
-      new Request('https://chowdown.test/oauth/revoke', {
+      new Request('https://app.test/oauth/revoke', {
         method: 'POST',
         body: new Uint8Array([0xff, 0xfe]),
       }),

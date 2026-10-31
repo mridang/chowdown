@@ -7,6 +7,7 @@ import {
   sqliteD1,
 } from '../../../lib/core/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
+import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 
 const body = JSON.stringify({
   client_name: 'Assistant',
@@ -15,7 +16,7 @@ const body = JSON.stringify({
 
 const post = (text: string, headers: Record<string, string> = {}) =>
   POST(
-    new Request('https://chowdown.test/oauth/register', {
+    new Request('https://app.test/oauth/register', {
       method: 'POST',
       body: text,
       headers: { 'cf-connecting-ip': '203.0.113.7', ...headers },
@@ -28,14 +29,7 @@ let raw: DatabaseSync;
 let restore: () => void;
 
 beforeEach(() => {
-  const made = sqliteD1(
-    '0008_oauth.sql',
-    '0011_rate_limits.sql',
-    '0012_oauth_housekeeping.sql',
-    '0016_oauth_redirect_uri_sent.sql',
-    '0017_oauth_client_assertions.sql',
-    '0018_oauth_client_logo.sql',
-  );
+  const made = sqliteD1(...APP_MIGRATIONS);
   raw = made.raw;
   restore = installCloudflareContext(made.d1);
 });
@@ -113,7 +107,7 @@ describe('POST /oauth/register', () => {
       },
     });
     const res = await POST(
-      new Request('https://chowdown.test/oauth/register', {
+      new Request('https://app.test/oauth/register', {
         method: 'POST',
         body: stream,
         duplex: 'half',
@@ -137,7 +131,7 @@ describe('POST /oauth/register', () => {
 
   it('answers 400 for a body that is not valid UTF-8', async () => {
     const res = await POST(
-      new Request('https://chowdown.test/oauth/register', {
+      new Request('https://app.test/oauth/register', {
         method: 'POST',
         body: new Uint8Array([0xff, 0xfe, 0x7b]),
         headers: { 'cf-connecting-ip': '203.0.113.7' },
@@ -198,7 +192,7 @@ describe('POST /oauth/register', () => {
 
   it('falls back to X-Forwarded-For when Cloudflare sent no address', async () => {
     const res = await POST(
-      new Request('https://chowdown.test/oauth/register', {
+      new Request('https://app.test/oauth/register', {
         method: 'POST',
         body,
         headers: { 'x-forwarded-for': '192.0.2.44, 10.0.0.1' },

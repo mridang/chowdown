@@ -8,15 +8,13 @@ import {
 describe('GET /.well-known/oauth-authorization-server', () => {
   it('describes the endpoints of this origin, publicly', async () => {
     const res = GET(
-      new Request(
-        'https://chowdown.test/.well-known/oauth-authorization-server',
-      ),
+      new Request('https://app.test/.well-known/oauth-authorization-server'),
     );
     expect(res.status).toBe(200);
     expect(res.headers.get('access-control-allow-origin')).toBe('*');
     expect(await res.json()).toMatchObject({
-      issuer: 'https://chowdown.test',
-      token_endpoint: 'https://chowdown.test/oauth/token',
+      issuer: 'https://app.test',
+      token_endpoint: 'https://app.test/oauth/token',
       code_challenge_methods_supported: ['S256'],
       client_id_metadata_document_supported: true,
       revocation_endpoint_auth_methods_supported: ['none'],

@@ -7,6 +7,8 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../../../../lib/core/db/sqlite-d1';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import { APP_MIGRATIONS } from '../../../../../lib/core/db/migrations';
 
 /** Who is signed in; null means nobody. */
 /** `ended`: the person signed out everywhere, though the cookie itself still verifies. */
@@ -30,13 +32,7 @@ let restore: () => void;
 beforeEach(() => {
   session.uid = 7;
   session.ended = false;
-  const made = sqliteD1(
-    '0008_oauth.sql',
-    '0012_oauth_housekeeping.sql',
-    '0016_oauth_redirect_uri_sent.sql',
-    '0017_oauth_client_assertions.sql',
-    '0018_oauth_client_logo.sql',
-  );
+  const made = sqliteD1(...APP_MIGRATIONS);
   raw = made.raw;
   restore = installCloudflareContext(made.d1);
   const client = raw.prepare(
@@ -45,7 +41,7 @@ beforeEach(() => {
   client.run('c1', 'dcr', 'Claude', '[]', '2026-01-01T00:00:00.000Z');
   client.run('c2', 'dcr', 'ChatGPT', '[]', '2026-01-01T00:00:00.000Z');
   const grant = raw.prepare(
-    "INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at, last_used_at) VALUES (?, ?, ?, 'recipes:read', 'r', ?, ?)",
+    `INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at, last_used_at) VALUES (?, ?, ?, '${SCOPE_READ}', 'r', ?, ?)`,
   );
   grant.run('g1-old', 7, 'c1', '2026-02-01T00:00:00.000Z', null);
   grant.run(
@@ -61,7 +57,7 @@ beforeEach(() => {
 
 afterEach(() => restore());
 
-const URL = 'https://chowdown.test/api/users/self/connections';
+const URL = 'https://app.test/api/users/self/connections';
 
 describe('GET /api/users/self/connections', () => {
   it('lists each app once, newest first, with the latest use', async () => {
@@ -73,7 +69,7 @@ describe('GET /api/users/self/connections', () => {
       {
         id: 'g1',
         name: 'Claude',
-        scopes: ['recipes:read'],
+        scopes: [SCOPE_READ],
         installs: 2,
         connected_at: '2026-03-01T00:00:00.000Z',
         last_used_at: '2026-03-02T00:00:00.000Z',
@@ -81,7 +77,7 @@ describe('GET /api/users/self/connections', () => {
       {
         id: 'g2',
         name: 'ChatGPT',
-        scopes: ['recipes:read'],
+        scopes: [SCOPE_READ],
         installs: 1,
         connected_at: '2026-02-15T00:00:00.000Z',
       },
@@ -91,7 +87,7 @@ describe('GET /api/users/self/connections', () => {
   it('shows the widest access of an app, and says how many installs there are', async () => {
     raw
       .prepare(
-        "INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g1-edit', 7, 'c1', 'recipes:write', 'r', '2026-01-15T00:00:00.000Z')",
+        `INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g1-edit', 7, 'c1', '${SCOPE_WRITE}', 'r', '2026-01-15T00:00:00.000Z')`,
       )
       .run();
     const body = (await (await GET(new Request(URL))).json()) as {
@@ -99,7 +95,7 @@ describe('GET /api/users/self/connections', () => {
     };
     expect(body.items[0]).toMatchObject({
       id: 'g1',
-      scopes: ['recipes:read', 'recipes:write'],
+      scopes: [SCOPE_READ, SCOPE_WRITE],
       installs: 3,
     });
   });
@@ -112,7 +108,7 @@ describe('GET /api/users/self/connections', () => {
       .run();
     raw
       .prepare(
-        "INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g4', 7, 'https://claude.ai/meta.json', 'recipes:read', 'r', '2026-04-01T00:00:00.000Z')",
+        `INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g4', 7, 'https://claude.ai/meta.json', '${SCOPE_READ}', 'r', '2026-04-01T00:00:00.000Z')`,
       )
       .run();
     const body = (await (await GET(new Request(URL))).json()) as {

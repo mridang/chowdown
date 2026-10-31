@@ -3,7 +3,8 @@
 /* ==========================================================================
  * 1. This app's tokens: they differ per app (so do its own styles, section 4).
  *    The shared shell reads these roles: paper, ink, on-ink, surface, brand,
- *    accent, highlight, on-highlight, and the font-sans / font-display faces.
+ *    accent, highlight, on-highlight, success, and the font-sans / font-display
+ *    faces.
  * ======================================================================== */
 
 /* Non-inline, so a page can override the palette with a data attribute. */
@@ -30,6 +31,8 @@
   --color-accent: var(--color-ember);
   --color-highlight: var(--color-flame);
   --color-on-highlight: var(--color-ink);
+  /* A tick or other sign that something is allowed or went well. */
+  --color-success: var(--color-forest);
 
   /* Type. The `--font-*-face` variables come from next/font (see `_fonts.ts`). */
   --font-sans: var(--font-sans-face);

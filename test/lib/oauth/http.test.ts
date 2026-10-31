@@ -12,7 +12,7 @@ import {
 } from '@/lib/oauth';
 
 const withAuth = (value?: string) =>
-  new Request('https://chowdown.test/x', {
+  new Request('https://app.test/x', {
     headers: value === undefined ? {} : { authorization: value },
   });
 
@@ -136,7 +136,7 @@ describe('Pragma: no-cache on every JSON answer (RFC 6749 5.1)', () => {
 
 describe('readOAuthForm', () => {
   const post = (body: BodyInit, type?: string) =>
-    new Request('https://chowdown.test/oauth/token', {
+    new Request('https://app.test/oauth/token', {
       method: 'POST',
       body,
       ...(type ? { headers: { 'content-type': type } } : {}),

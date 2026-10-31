@@ -8,6 +8,7 @@ import {
   stringArg,
   stringListArg,
 } from '@/lib/mcp';
+import { ARGUMENT_ALIASES, LISTS_OF_TEXT } from '@/domain/mcp/app';
 
 describe('stringArg', () => {
   it('trims a string and gives empty for anything else', () => {
@@ -70,74 +71,97 @@ describe('offsetArg', () => {
   });
 });
 
+/** Every older spelling this app accepts: the tool, the alias and the name it stands for. */
+const ALIASES = Object.entries(ARGUMENT_ALIASES).flatMap(([tool, names]) =>
+  Object.entries(names).map(([alias, canonical]) => [tool, alias, canonical]),
+);
+
+/** Every argument this app accepts as one piece of text for a list: the tool and the argument. */
+const LISTS = Object.entries(LISTS_OF_TEXT).flatMap(([tool, names]) =>
+  names.map((name) => [tool, name]),
+);
+
+/** One of the aliases, for the tests that need just one. */
+const [[TOOL = '', ALIAS = '', CANONICAL = ''] = []] = ALIASES;
+
+/** One of the list arguments, for the tests that need just one. */
+const [[LIST_TOOL = '', LIST = ''] = []] = LISTS;
+
+/** What an argument sent as `value` under its canonical name ends up as. */
+function settled(tool: string, name: string, value: string): unknown {
+  return LISTS_OF_TEXT[tool]?.includes(name) ? [value] : value;
+}
+
 describe('canonicalArguments', () => {
-  it.each([
-    ['get_recipe', { name: 'pie' }, { recipe: 'pie' }],
-    ['find_similar', { name: 'pie' }, { recipe: 'pie' }],
-    [
-      'browse_recipes',
-      { diet: 'Gluten-free' },
-      { dietary_needs: 'Gluten-free' },
-    ],
-  ])(
-    'renames the older spelling of an argument of %s',
-    (tool, args, expected) => {
-      expect(canonicalArguments(tool, args)).toEqual(expected);
+  it('has an older spelling and a list of text to check', () => {
+    expect(ALIASES).not.toHaveLength(0);
+    expect(LISTS).not.toHaveLength(0);
+  });
+
+  it.each(ALIASES)(
+    'renames the older spelling of an argument of %s (%s)',
+    (tool, alias, canonical) => {
+      expect(canonicalArguments(tool, { [alias]: 'x' })).toEqual({
+        [canonical]: settled(tool, canonical, 'x'),
+      });
     },
   );
 
   it('keeps every other argument as it is', () => {
     expect(
-      canonicalArguments('browse_recipes', {
-        diet: 'x',
-        limit: 3,
-        cuisine: 'y',
-      }),
-    ).toEqual({ dietary_needs: 'x', limit: 3, cuisine: 'y' });
+      canonicalArguments(TOOL, { [ALIAS]: 'x', limit: 3, other_argument: 'y' }),
+    ).toEqual({
+      [CANONICAL]: settled(TOOL, CANONICAL, 'x'),
+      limit: 3,
+      other_argument: 'y',
+    });
   });
 
   it('leaves both spellings alone when both are given, so the check can refuse the older one', () => {
     expect(
-      canonicalArguments('get_recipe', { name: 'a', recipe: 'b' }),
-    ).toEqual({ name: 'a', recipe: 'b' });
+      canonicalArguments(TOOL, { [ALIAS]: 'a', [CANONICAL]: ['b'] }),
+    ).toEqual({ [ALIAS]: 'a', [CANONICAL]: ['b'] });
   });
 
   it('does not rename an argument of a tool that never had the older spelling', () => {
-    expect(canonicalArguments('add_recipe', { name: 'Soup' })).toEqual({
-      name: 'Soup',
+    expect(canonicalArguments('not_a_known_tool', { [ALIAS]: 'x' })).toEqual({
+      [ALIAS]: 'x',
     });
-    expect(canonicalArguments('constructor', { name: 'x' })).toEqual({
-      name: 'x',
+    expect(canonicalArguments('constructor', { [ALIAS]: 'x' })).toEqual({
+      [ALIAS]: 'x',
     });
   });
 
-  it('turns the pantry given as one piece of text into a list of one', () => {
-    expect(
-      canonicalArguments('recipes_from_ingredients', {
-        ingredients: '3 tomatoes and 400 g pasta',
-      }),
-    ).toEqual({ ingredients: ['3 tomatoes and 400 g pasta'] });
-  });
+  it.each(LISTS)(
+    'turns %s %s given as one piece of text into a list of one',
+    (tool, name) => {
+      expect(canonicalArguments(tool, { [name]: 'one thing' })).toEqual({
+        [name]: ['one thing'],
+      });
+    },
+  );
 
   it('leaves a list, and any other value, for the check to judge', () => {
-    expect(
-      canonicalArguments('recipes_from_ingredients', { ingredients: ['a'] }),
-    ).toEqual({ ingredients: ['a'] });
-    expect(
-      canonicalArguments('recipes_from_ingredients', { ingredients: 5 }),
-    ).toEqual({ ingredients: 5 });
-    expect(canonicalArguments('browse_recipes', { limit: '5' })).toEqual({
+    expect(canonicalArguments(LIST_TOOL, { [LIST]: ['a'] })).toEqual({
+      [LIST]: ['a'],
+    });
+    expect(canonicalArguments(LIST_TOOL, { [LIST]: 5 })).toEqual({
+      [LIST]: 5,
+    });
+    expect(canonicalArguments(LIST_TOOL, { limit: '5' })).toEqual({
       limit: '5',
     });
   });
 
   it('carries a key called __proto__ as an ordinary property', () => {
-    const args = JSON.parse('{"__proto__": 1, "name": "x"}') as Record<
+    const args = JSON.parse(`{"__proto__": 1, "${ALIAS}": "x"}`) as Record<
       string,
       unknown
     >;
-    const result = canonicalArguments('get_recipe', args);
-    expect(Object.keys(result).toSorted()).toEqual(['__proto__', 'recipe']);
+    const result = canonicalArguments(TOOL, args);
+    expect(Object.keys(result).toSorted()).toEqual(
+      ['__proto__', CANONICAL].toSorted(),
+    );
     expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
   });
 });

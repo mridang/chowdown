@@ -12,16 +12,17 @@ import {
 /** The statement the real store runs, read from the source so the test cannot drift from it. */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { APP_MIGRATIONS } from './core/db/migrations';
 
 const SOURCE = readFileSync(
   path.join(process.cwd(), 'src/lib/rate-limit.ts'),
   'utf8',
 );
 const HIT_SQL = /const HIT_SQL = `([^`]*)`/.exec(SOURCE)?.[1] ?? '';
-const SCHEMA = readFileSync(
-  path.join(process.cwd(), 'migrations/0011_rate_limits.sql'),
-  'utf8',
-);
+/** The whole schema, every migration in order: the rate-limit table is one of them. */
+const SCHEMA = APP_MIGRATIONS.map((file) =>
+  readFileSync(path.join(process.cwd(), 'migrations', file), 'utf8'),
+).join('\n');
 
 /** A store that runs the real SQL against an in-memory SQLite, as D1 would. */
 function sqliteStore(): RateLimitStore {

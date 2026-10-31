@@ -19,8 +19,9 @@ import {
   type TokenResponse,
   withinRefreshGrace,
 } from '@/lib/oauth';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 
-const RESOURCE = 'https://chowdown.example/mcp';
+const RESOURCE = 'https://site.example/mcp';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 const NOW = 1_000_000;
 
@@ -49,7 +50,7 @@ async function newCode(overrides: Partial<CodeRecord> = {}) {
       redirectUri: 'https://app.example/cb',
       redirectUriSent: true,
       codeChallenge: await s256(VERIFIER),
-      scope: ['recipes:read', 'recipes:write'],
+      scope: [SCOPE_READ, SCOPE_WRITE],
       resource: RESOURCE,
       ...overrides,
     },
@@ -98,7 +99,7 @@ describe('exchangeAuthorizationCode', () => {
     expect(tokens).toMatchObject({
       token_type: 'Bearer',
       expires_in: ACCESS_TTL_SECONDS,
-      scope: 'recipes:read recipes:write',
+      scope: `${SCOPE_READ} ${SCOPE_WRITE}`,
     });
     expect(tokens.access_token).toMatch(/^cdn_at_/);
     expect(tokens.refresh_token).toMatch(/^cdn_rt_/);
@@ -191,7 +192,7 @@ describe('authenticateAccessToken', () => {
         RESOURCE,
         NOW + 10,
       ),
-    ).toMatchObject({ userId: 7, scope: ['recipes:read', 'recipes:write'] });
+    ).toMatchObject({ userId: 7, scope: [SCOPE_READ, SCOPE_WRITE] });
   });
 
   it('rejects unknown tokens, refresh tokens and tokens for another resource', async () => {
@@ -346,7 +347,7 @@ describe('exchangeRefreshToken', () => {
       )) as TokenResponse;
       expect(isFailure(retry)).toBe(false);
       expect(retry.refresh_token).not.toBe(lost.refresh_token);
-      expect(retry.scope).toBe('recipes:read recipes:write');
+      expect(retry.scope).toBe(`${SCOPE_READ} ${SCOPE_WRITE}`);
       expect(
         await authenticateAccessToken(
           store,
@@ -410,7 +411,7 @@ describe('exchangeRefreshToken', () => {
     });
 
     it('still never widens the scope on a retry', async () => {
-      const readOnly = await newCode({ scope: ['recipes:read'] });
+      const readOnly = await newCode({ scope: [SCOPE_READ] });
       const first = (await redeem(readOnly)) as TokenResponse;
       await refresh(first.refresh_token);
       expect(
@@ -419,7 +420,7 @@ describe('exchangeRefreshToken', () => {
           {
             refreshToken: first.refresh_token,
             clientId: 'client-1',
-            scope: 'recipes:write',
+            scope: SCOPE_WRITE,
           },
           NOW + 105,
         ),
@@ -510,22 +511,22 @@ describe('exchangeRefreshToken', () => {
   });
 
   it('never widens the scope', async () => {
-    const readOnly = await newCode({ scope: ['recipes:read'] });
+    const readOnly = await newCode({ scope: [SCOPE_READ] });
     const first = (await redeem(readOnly)) as TokenResponse;
     expect(
       await refresh(first.refresh_token, {
-        scope: 'recipes:read recipes:write',
+        scope: `${SCOPE_READ} ${SCOPE_WRITE}`,
       }),
     ).toMatchObject({ ok: false, error: 'invalid_scope' });
   });
 
   it('reports the whole grant, since tokens are not narrowed one by one', async () => {
-    const code = await newCode({ scope: ['recipes:read', 'recipes:write'] });
+    const code = await newCode({ scope: [SCOPE_READ, SCOPE_WRITE] });
     const first = (await redeem(code)) as TokenResponse;
     const second = (await refresh(first.refresh_token, {
-      scope: 'recipes:read',
+      scope: SCOPE_READ,
     })) as TokenResponse;
-    expect(second.scope).toBe('recipes:read recipes:write');
+    expect(second.scope).toBe(`${SCOPE_READ} ${SCOPE_WRITE}`);
   });
 });
 
@@ -681,10 +682,10 @@ describe('refresh scope and resource', () => {
 
   it('lets a grant of write refresh with read, which write covers', async () => {
     const first = (await redeem(
-      await newCode({ scope: ['recipes:write'] }),
+      await newCode({ scope: [SCOPE_WRITE] }),
     )) as TokenResponse;
     const second = await refreshWith(first.refresh_token, {
-      scope: 'recipes:read',
+      scope: SCOPE_READ,
     });
     expect(isFailure(second)).toBe(false);
   });
@@ -694,7 +695,7 @@ describe('refresh scope and resource', () => {
     expect(
       isFailure(
         await refreshWith(first.refresh_token, {
-          scope: 'recipes:read offline_access',
+          scope: `${SCOPE_READ} offline_access`,
         }),
       ),
     ).toBe(false);
@@ -736,7 +737,7 @@ describe('security events', () => {
         event: 'oauth.grant_created',
         clientId: 'client-1',
         userId: 7,
-        scope: 'recipes:read recipes:write',
+        scope: `${SCOPE_READ} ${SCOPE_WRITE}`,
       }),
     ]);
     const text = JSON.stringify(logs.info().mock.calls);

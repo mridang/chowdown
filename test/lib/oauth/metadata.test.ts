@@ -8,8 +8,9 @@ import {
   resourceUri,
   wwwAuthenticate,
 } from '@/lib/oauth';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 
-const ORIGIN = 'https://chowdown.example';
+const ORIGIN = 'https://site.example';
 
 describe('resource and issuer', () => {
   it('names the MCP endpoint as the resource', () => {
@@ -24,17 +25,15 @@ describe('resource and issuer', () => {
   });
 
   it('accepts an upper-case scheme or host, which is the same address', () => {
-    expect(isOurResource('HTTPS://Chowdown.Example/mcp', ORIGIN)).toBe(true);
-    expect(isOurResource('https://CHOWDOWN.EXAMPLE/mcp/', ORIGIN)).toBe(true);
+    expect(isOurResource('HTTPS://Site.Example/mcp', ORIGIN)).toBe(true);
+    expect(isOurResource('https://SITE.EXAMPLE/mcp/', ORIGIN)).toBe(true);
   });
 
   it('refuses a resource with a query or fragment, another scheme or port, or no URL at all', () => {
     expect(isOurResource(`${ORIGIN}/mcp?x=1`, ORIGIN)).toBe(false);
     expect(isOurResource(`${ORIGIN}/mcp#frag`, ORIGIN)).toBe(false);
-    expect(isOurResource('http://chowdown.example/mcp', ORIGIN)).toBe(false);
-    expect(isOurResource('https://chowdown.example:8443/mcp', ORIGIN)).toBe(
-      false,
-    );
+    expect(isOurResource('http://site.example/mcp', ORIGIN)).toBe(false);
+    expect(isOurResource('https://site.example:8443/mcp', ORIGIN)).toBe(false);
     expect(isOurResource('not a url', ORIGIN)).toBe(false);
     expect(isOurResource(`${ORIGIN}/mcp/extra`, ORIGIN)).toBe(false);
   });
@@ -94,8 +93,8 @@ describe('authorizationServerMetadata', () => {
 
   it('advertises offline_access, because every grant gets a refresh token', () => {
     expect(doc.scopes_supported).toEqual([
-      'recipes:read',
-      'recipes:write',
+      SCOPE_READ,
+      SCOPE_WRITE,
       'offline_access',
     ]);
     expect(doc.grant_types_supported).toContain('refresh_token');
@@ -120,16 +119,16 @@ describe('wwwAuthenticate', () => {
     expect(header).toContain(
       `resource_metadata="${ORIGIN}/.well-known/oauth-protected-resource/mcp"`,
     );
-    expect(header).toContain('scope="recipes:read recipes:write"');
+    expect(header).toContain(`scope="${SCOPE_READ} ${SCOPE_WRITE}"`);
     expect(header.startsWith('Bearer ')).toBe(true);
   });
 
   it('reports an error and the scope an operation needs', () => {
     const header = wwwAuthenticate(ORIGIN, {
       error: 'insufficient_scope',
-      scope: 'recipes:write',
+      scope: SCOPE_WRITE,
     });
     expect(header).toContain('error="insufficient_scope"');
-    expect(header).toContain('scope="recipes:write"');
+    expect(header).toContain(`scope="${SCOPE_WRITE}"`);
   });
 });

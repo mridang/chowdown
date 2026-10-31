@@ -10,8 +10,10 @@ import {
   sqliteD1,
 } from '../../../lib/core/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 
-const ORIGIN = 'https://chowdown.test';
+const ORIGIN = 'https://app.test';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 
 quietSecurityLogs();
@@ -21,14 +23,7 @@ let restore: () => void;
 let database: ReturnType<typeof createDatabase>;
 
 beforeEach(() => {
-  const made = sqliteD1(
-    '0008_oauth.sql',
-    '0011_rate_limits.sql',
-    '0012_oauth_housekeeping.sql',
-    '0016_oauth_redirect_uri_sent.sql',
-    '0017_oauth_client_assertions.sql',
-    '0018_oauth_client_logo.sql',
-  );
+  const made = sqliteD1(...APP_MIGRATIONS);
   raw = made.raw;
   restore = installCloudflareContext(made.d1);
   database = createDatabase(made.d1);
@@ -46,7 +41,7 @@ async function newCode(): Promise<string> {
       redirectUri: 'https://app.example/cb',
       redirectUriSent: true,
       codeChallenge: await s256(VERIFIER),
-      scope: ['recipes:read', 'recipes:write'],
+      scope: [SCOPE_READ, SCOPE_WRITE],
       resource: `${ORIGIN}/mcp`,
     },
     Math.floor(Date.now() / 1000),
@@ -110,7 +105,7 @@ describe('POST /oauth/token', () => {
     expect(await res.json()).toMatchObject({
       token_type: 'Bearer',
       expires_in: 3600,
-      scope: 'recipes:read recipes:write',
+      scope: `${SCOPE_READ} ${SCOPE_WRITE}`,
     });
   });
 
@@ -173,7 +168,7 @@ describe('POST /oauth/token', () => {
         redirectUri: 'https://app.example/cb',
         redirectUriSent: false,
         codeChallenge: await s256(VERIFIER),
-        scope: ['recipes:read'],
+        scope: [SCOPE_READ],
         resource: `${ORIGIN}/mcp`,
       },
       Math.floor(Date.now() / 1000),

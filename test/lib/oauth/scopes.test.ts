@@ -8,6 +8,15 @@ import {
   scopeForMessage,
   scopeForTool,
 } from '@/lib/oauth';
+import { READ_ONLY_TOOLS } from '@/domain/mcp/app';
+import { TOOLS } from '@/domain/mcp/tool-definitions';
+
+/** A tool that only reads, and one that changes something. */
+const [READ_TOOL = ''] = READ_ONLY_TOOLS;
+const WRITE_TOOLS = TOOLS.map((tool) => tool.name).filter(
+  (name) => !READ_ONLY_TOOLS.has(name),
+);
+const [WRITE_TOOL = ''] = WRITE_TOOLS;
 
 describe('normaliseScope', () => {
   it('grants everything supported when nothing is asked for', () => {
@@ -16,11 +25,11 @@ describe('normaliseScope', () => {
   });
 
   it('grants only what was asked for', () => {
-    expect(normaliseScope('recipes:read')).toEqual([SCOPE_READ]);
+    expect(normaliseScope(SCOPE_READ)).toEqual([SCOPE_READ]);
   });
 
   it('drops unknown scopes but keeps the known ones', () => {
-    expect(normaliseScope('recipes:read admin offline_access')).toEqual([
+    expect(normaliseScope(`${SCOPE_READ} admin offline_access`)).toEqual([
       SCOPE_READ,
     ]);
   });
@@ -32,7 +41,9 @@ describe('normaliseScope', () => {
 
   it('ignores offline_access: it alone is the same as asking for nothing', () => {
     expect(normaliseScope('offline_access')).toEqual([SCOPE_READ, SCOPE_WRITE]);
-    expect(normaliseScope('recipes:read offline_access')).toEqual([SCOPE_READ]);
+    expect(normaliseScope(`${SCOPE_READ} offline_access`)).toEqual([
+      SCOPE_READ,
+    ]);
   });
 });
 
@@ -49,13 +60,16 @@ describe('hasScope', () => {
 
 describe('scopeForTool', () => {
   it('needs only read for viewing tools', () => {
-    expect(scopeForTool('get_recipe')).toBe(SCOPE_READ);
-    expect(scopeForTool('search_recipes')).toBe(SCOPE_READ);
-    expect(scopeForTool('recipes_from_ingredients')).toBe(SCOPE_READ);
+    for (const tool of READ_ONLY_TOOLS) {
+      expect(scopeForTool(tool)).toBe(SCOPE_READ);
+    }
   });
 
   it('needs write for anything that changes data, including unknown tools', () => {
-    expect(scopeForTool('import_recipe')).toBe(SCOPE_WRITE);
+    expect(WRITE_TOOLS).not.toHaveLength(0);
+    for (const tool of WRITE_TOOLS) {
+      expect(scopeForTool(tool)).toBe(SCOPE_WRITE);
+    }
     expect(scopeForTool('not_a_known_tool')).toBe(SCOPE_WRITE);
   });
 });
@@ -63,10 +77,10 @@ describe('scopeForTool', () => {
 describe('scopeForMessage', () => {
   it('uses the tool being called', () => {
     expect(
-      scopeForMessage({ method: 'tools/call', params: { name: 'get_recipe' } }),
+      scopeForMessage({ method: 'tools/call', params: { name: READ_TOOL } }),
     ).toBe(SCOPE_READ);
     expect(
-      scopeForMessage({ method: 'tools/call', params: { name: 'tag_recipe' } }),
+      scopeForMessage({ method: 'tools/call', params: { name: WRITE_TOOL } }),
     ).toBe(SCOPE_WRITE);
   });
 

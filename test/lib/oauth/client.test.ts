@@ -20,6 +20,7 @@ import {
   parseRegistrationText,
   registrationResponse,
 } from '@/lib/oauth';
+import { SITE_NAME } from '@/utils/site';
 
 const URL_ID = 'https://chatgpt.com/oauth/client.json';
 const goodDoc = {
@@ -379,7 +380,7 @@ describe('isMetadataDocumentUrl with a query', () => {
 
 describe('isMetadataDocumentUrl, own site, trailing dot and length', () => {
   it('never takes a document on this very site for a client', () => {
-    const own = 'https://chowdown.example';
+    const own = 'https://site.example';
     expect(
       isMetadataDocumentUrl(
         `${own}/.well-known/oauth-authorization-server`,
@@ -417,7 +418,9 @@ describe('fetchClientMetadata details', () => {
     const init = (fetchImpl as unknown as jest.Mock).mock.calls[0]?.[1] as
       RequestInit | undefined;
     expect(init?.headers).toMatchObject({ 'User-Agent': FETCH_USER_AGENT });
-    expect(FETCH_USER_AGENT).toMatch(/^chowdown-oauth\/1 \(\+https:\/\//);
+    expect(FETCH_USER_AGENT).toMatch(
+      new RegExp(`^${SITE_NAME}-oauth/1 \\(\\+https://`),
+    );
   });
 
   it('does not fetch a document hosted on this very site', async () => {

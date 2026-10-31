@@ -22,10 +22,17 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import { READ_ONLY_TOOLS, SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import { TOOLS } from '@/domain/mcp/tool-definitions';
 
-const ORIGIN = 'https://chowdown.test';
+const ORIGIN = 'https://app.test';
 const URL = `${ORIGIN}/mcp`;
 const OTHER = 'https://evil.example';
+/** A tool that only reads, and one that changes something. */
+const [READ_TOOL = ''] = READ_ONLY_TOOLS;
+const WRITE_TOOL =
+  TOOLS.map((tool) => tool.name).find((name) => !READ_ONLY_TOOLS.has(name)) ??
+  '';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 
 /** Every migration, in order: the route reads users, grants and rate-limit counters. */
@@ -48,7 +55,7 @@ beforeEach(() => {
     .prepare(
       'INSERT INTO users (id, google_sub, email, created_at, updated_at) VALUES (7, ?, ?, ?, ?)',
     )
-    .run('sub-7', 'cook@example.com', '2026-01-01', '2026-01-01');
+    .run('sub-7', 'someone@example.com', '2026-01-01', '2026-01-01');
 });
 
 afterEach(() => {
@@ -69,7 +76,7 @@ const rpc = (method: string, params?: Record<string, unknown>) =>
 
 /** Sign user 7 in through the real OAuth code exchange and return the access token. */
 async function accessToken(
-  scope: readonly string[] = ['recipes:read', 'recipes:write'],
+  scope: readonly string[] = [SCOPE_READ, SCOPE_WRITE],
 ): Promise<string> {
   const store = new D1OAuthStore(database);
   const now = Math.floor(Date.now() / 1000);
@@ -154,7 +161,7 @@ describe('without a token', () => {
     const res = await handler(request(method));
     expect(res.status).toBe(401);
     expect(res.headers.get('www-authenticate')).toContain(
-      'resource_metadata="https://chowdown.test/.well-known/oauth-protected-resource/mcp"',
+      'resource_metadata="https://app.test/.well-known/oauth-protected-resource/mcp"',
     );
     expect(res.headers.get('www-authenticate')).not.toContain('invalid_token');
     expect(await res.json()).toMatchObject({
@@ -215,7 +222,7 @@ describe('with a valid token', () => {
       result: { tools: { name: string }[] };
     };
     expect(body.id).toBe(1);
-    expect(body.result.tools.map((tool) => tool.name)).toContain('get_recipe');
+    expect(body.result.tools.map((tool) => tool.name)).toContain(READ_TOOL);
   });
 
   it('counts the call against the rate limit of that user', async () => {
@@ -227,13 +234,9 @@ describe('with a valid token', () => {
   });
 
   it('holds the user to the scopes they approved', async () => {
-    const token = await accessToken(['recipes:read']);
+    const token = await accessToken([SCOPE_READ]);
     const res = await POST(
-      request(
-        'POST',
-        bearer(token),
-        rpc('tools/call', { name: 'set_measurement_system' }),
-      ),
+      request('POST', bearer(token), rpc('tools/call', { name: WRITE_TOOL })),
     );
     expect(res.status).toBe(403);
     expect(res.headers.get('www-authenticate')).toContain(

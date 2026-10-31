@@ -15,6 +15,8 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../../../../../lib/core/db/sqlite-d1';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import { APP_MIGRATIONS } from '../../../../../../lib/core/db/migrations';
 
 /** Who is signed in; null means nobody. */
 /** `ended`: the person signed out everywhere, though the cookie itself still verifies. */
@@ -40,13 +42,7 @@ let restore: () => void;
 beforeEach(() => {
   session.uid = 7;
   session.ended = false;
-  const made = sqliteD1(
-    '0008_oauth.sql',
-    '0012_oauth_housekeeping.sql',
-    '0016_oauth_redirect_uri_sent.sql',
-    '0017_oauth_client_assertions.sql',
-    '0018_oauth_client_logo.sql',
-  );
+  const made = sqliteD1(...APP_MIGRATIONS);
   raw = made.raw;
   restore = installCloudflareContext(made.d1);
   const client = raw.prepare(
@@ -55,7 +51,7 @@ beforeEach(() => {
   client.run('c1', 'dcr', 'Claude', '[]', '2026-01-01T00:00:00.000Z');
   client.run('c2', 'dcr', 'ChatGPT', '[]', '2026-01-01T00:00:00.000Z');
   const grant = raw.prepare(
-    "INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at, last_used_at) VALUES (?, ?, ?, 'recipes:read', 'r', ?, ?)",
+    `INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at, last_used_at) VALUES (?, ?, ?, '${SCOPE_READ}', 'r', ?, ?)`,
   );
   grant.run('g1-old', 7, 'c1', '2026-02-01T00:00:00.000Z', null);
   grant.run(
@@ -71,7 +67,7 @@ beforeEach(() => {
 
 afterEach(() => restore());
 
-const URL = 'https://chowdown.test/api/users/self/connections';
+const URL = 'https://app.test/api/users/self/connections';
 
 describe('DELETE /api/users/self/connections/:grant_id', () => {
   const del = (id: string, headers: Record<string, string> = {}) =>
@@ -111,7 +107,7 @@ describe('DELETE /api/users/self/connections/:grant_id', () => {
   it('revokes an app with a newer read-only install and an older edit-capable one in one go', async () => {
     raw
       .prepare(
-        "INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g1-edit', 7, 'c1', 'recipes:write', 'r', '2026-01-15T00:00:00.000Z')",
+        `INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g1-edit', 7, 'c1', '${SCOPE_WRITE}', 'r', '2026-01-15T00:00:00.000Z')`,
       )
       .run();
     expect((await del('g1')).status).toBe(204);

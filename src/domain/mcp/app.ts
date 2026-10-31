@@ -21,6 +21,13 @@ export const SCOPE_TEXT: Readonly<Record<string, string>> = {
 };
 
 /**
+ * What a read-only connection may still do, in a few words, for the approval
+ * screen's choice to allow less than the app asked for ("Read only: …, but
+ * change nothing").
+ */
+export const READ_ONLY_TEXT = 'see and search recipes';
+
+/**
  * Tools that only read. Anything not listed here is treated as a write, so a
  * newly added tool is protected by default until someone classifies it.
  */

@@ -12,8 +12,9 @@ import {
 } from '@/lib/oauth';
 
 import { quietSecurityLogs } from './quiet-logs';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 
-const ORIGIN = 'https://chowdown.example';
+const ORIGIN = 'https://site.example';
 const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
 const client: OAuthClient = {
   clientId: 'dcr_abc',
@@ -47,7 +48,7 @@ describe('validateAuthorizeRequest', () => {
         redirectUri: 'https://claude.ai/cb',
         state: 'xyz',
         resource: `${ORIGIN}/mcp`,
-        scope: ['recipes:read', 'recipes:write'],
+        scope: [SCOPE_READ, SCOPE_WRITE],
       },
     });
   });
@@ -155,9 +156,9 @@ describe('validateAuthorizeRequest', () => {
   });
 
   it('narrows the scope to what was asked for and rejects unknown-only scopes', async () => {
-    expect(await check({ scope: 'recipes:read' })).toMatchObject({
+    expect(await check({ scope: SCOPE_READ })).toMatchObject({
       ok: true,
-      request: { scope: ['recipes:read'] },
+      request: { scope: [SCOPE_READ] },
     });
     expect(await check({ scope: 'admin' })).toMatchObject({
       ok: false,
@@ -249,17 +250,17 @@ describe('security events from the authorization request', () => {
 
 describe('grantedScope', () => {
   it('grants what was asked unless the person chose read only', () => {
-    const asked = ['recipes:read', 'recipes:write'] as const;
+    const asked = [SCOPE_READ, SCOPE_WRITE] as const;
     expect(grantedScope(asked, 'write')).toEqual(asked);
     expect(grantedScope(asked, null)).toEqual(asked);
     expect(grantedScope(asked, undefined)).toEqual(asked);
     expect(grantedScope(asked, 'anything else')).toEqual(asked);
-    expect(grantedScope(asked, 'read')).toEqual(['recipes:read']);
+    expect(grantedScope(asked, 'read')).toEqual([SCOPE_READ]);
   });
 
   it('never grants more than was asked', () => {
-    expect(grantedScope(['recipes:read'], 'write')).toEqual(['recipes:read']);
-    expect(grantedScope(['recipes:read'], 'read')).toEqual(['recipes:read']);
+    expect(grantedScope([SCOPE_READ], 'write')).toEqual([SCOPE_READ]);
+    expect(grantedScope([SCOPE_READ], 'read')).toEqual([SCOPE_READ]);
   });
 });
 
@@ -288,12 +289,12 @@ describe('authorizeParamsFrom', () => {
   it('keeps the authorization parameters that are text, and nothing else', () => {
     const form = new FormData();
     form.append('client_id', 'c');
-    form.append('scope', 'recipes:read');
+    form.append('scope', SCOPE_READ);
     form.append('decision', 'approve');
     form.append('resource', new Blob(['x']), 'x.txt');
     expect(authorizeParamsFrom(form)).toEqual({
       client_id: 'c',
-      scope: 'recipes:read',
+      scope: SCOPE_READ,
     });
   });
 

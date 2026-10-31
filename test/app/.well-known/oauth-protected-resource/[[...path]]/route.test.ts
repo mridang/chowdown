@@ -8,7 +8,7 @@ import {
 const get = (path?: readonly string[]) =>
   GET(
     new Request(
-      `https://chowdown.test/.well-known/oauth-protected-resource/${(path ?? []).join('/')}`,
+      `https://app.test/.well-known/oauth-protected-resource/${(path ?? []).join('/')}`,
     ),
     { params: Promise.resolve({ path }) },
   );
@@ -18,8 +18,8 @@ describe('GET /.well-known/oauth-protected-resource', () => {
     const res = await get();
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({
-      resource: 'https://chowdown.test/mcp',
-      authorization_servers: ['https://chowdown.test'],
+      resource: 'https://app.test/mcp',
+      authorization_servers: ['https://app.test'],
     });
   });
 
@@ -27,7 +27,7 @@ describe('GET /.well-known/oauth-protected-resource', () => {
     const res = await get(['mcp']);
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({
-      resource: 'https://chowdown.test/mcp',
+      resource: 'https://app.test/mcp',
     });
   });
 

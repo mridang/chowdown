@@ -12,6 +12,8 @@ import {
   type ClientIdentity,
   type RedirectDescription,
 } from '@/lib/oauth';
+import { BRAND_NAME } from '@/app/_brand';
+import { READ_ONLY_TEXT } from '@/domain/mcp/app';
 
 /** One hidden form field carrying part of the authorization request through to the decision. */
 export interface HiddenField {
@@ -41,7 +43,7 @@ function IdentityLine({
 }
 
 /**
- * How much to allow, offered only when the app asked to change recipes: the
+ * How much to allow, offered only when the app asked to change things: the
  * person may approve it as read-only instead. Editing is the default so an app
  * that needs it keeps working, and the choice is posted as the `access` field,
  * which `/oauth/consent` narrows the grant by.
@@ -72,8 +74,8 @@ function AccessChoice(): ReactElement {
             className="focus-ring mt-1"
           />
           <span className="leading-relaxed">
-            <span className="font-medium">Read only</span>: see and search
-            recipes, but change nothing
+            <span className="font-medium">Read only</span>: {READ_ONLY_TEXT},
+            but change nothing
           </span>
         </label>
       </div>
@@ -87,7 +89,7 @@ function AccessChoice(): ReactElement {
  * fake), what they may do, and exactly where approving sends the person,
  * with a warning when that is their own computer, a private network or an
  * installed app, and a choice to allow read-only access when the app asked to
- * change recipes.
+ * change things.
  *
  * The client's name is cleaned again here (it may have been saved before the
  * current rules) and is only ever rendered as text. The form posts the original
@@ -113,7 +115,7 @@ export function ConsentCard({
     <>
       <Eyebrow>Connect an app</Eyebrow>
       <Heading as="h1" variant="h3" className="mt-2 wrap-break-word">
-        Connect <span className="text-ember">{name}</span> to chowdown?
+        Connect <span className="text-accent">{name}</span> to {BRAND_NAME}?
       </Heading>
       <IdentityLine identity={identity} />
       <p className="mt-3 text-muted">
@@ -123,7 +125,7 @@ export function ConsentCard({
       <ul className="mt-4 flex flex-col gap-3">
         {describeScopes(scopes).map((text) => (
           <li key={text} className="flex items-start gap-3">
-            <CheckIcon size="md" className="mt-0.5 shrink-0 text-forest" />
+            <CheckIcon size="md" className="mt-0.5 shrink-0 text-success" />
             <span className="leading-relaxed">{text}</span>
           </li>
         ))}
@@ -135,8 +137,8 @@ export function ConsentCard({
         </span>
         <code className="block break-all">{redirect.address}</code>
         <span className="mt-1 block">
-          Only approve apps you trust. You can disconnect it any time from
-          chowdown.
+          Only approve apps you trust. You can disconnect it any time from{' '}
+          {BRAND_NAME}.
         </span>
       </Callout>
       {redirect.warning ? (

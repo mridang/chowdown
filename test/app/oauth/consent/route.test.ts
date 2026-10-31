@@ -16,6 +16,8 @@ import {
   sqliteD1,
 } from '../../../lib/core/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 
 /** Who is signed in; null means nobody. */
 /** `ended`: the person signed out everywhere, though the cookie itself still verifies. */
@@ -31,7 +33,7 @@ const resolver: CurrentUserResolver = {
   currentUser: async () => null,
 };
 
-const ORIGIN = 'https://chowdown.test';
+const ORIGIN = 'https://app.test';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 
 quietSecurityLogs();
@@ -43,14 +45,7 @@ let challenge: string;
 beforeEach(async () => {
   session.uid = 7;
   session.ended = false;
-  const made = sqliteD1(
-    '0008_oauth.sql',
-    '0011_rate_limits.sql',
-    '0012_oauth_housekeeping.sql',
-    '0016_oauth_redirect_uri_sent.sql',
-    '0017_oauth_client_assertions.sql',
-    '0018_oauth_client_logo.sql',
-  );
+  const made = sqliteD1(...APP_MIGRATIONS);
   raw = made.raw;
   restore = installCloudflareContext(made.d1);
   challenge = await s256(VERIFIER);
@@ -213,28 +208,28 @@ describe('POST /oauth/consent', () => {
 
     it('grants everything the app asked for when the person chose no narrower access', async () => {
       await consent({ access: 'write' });
-      expect(grantedScope()).toBe('recipes:read recipes:write');
+      expect(grantedScope()).toBe(`${SCOPE_READ} ${SCOPE_WRITE}`);
     });
 
     it('grants everything when the form has no access field, as a form posted before the choice existed', async () => {
       await consent();
-      expect(grantedScope()).toBe('recipes:read recipes:write');
+      expect(grantedScope()).toBe(`${SCOPE_READ} ${SCOPE_WRITE}`);
     });
 
     it('grants read-only when the person chose it', async () => {
       const res = await consent({ access: 'read' });
       expect(res.status).toBe(303);
-      expect(grantedScope()).toBe('recipes:read');
+      expect(grantedScope()).toBe(SCOPE_READ);
     });
 
     it('grants read-only to an app that asked only to edit, never more than asked', async () => {
-      await consent({ access: 'read', scope: 'recipes:write' });
-      expect(grantedScope()).toBe('recipes:read');
+      await consent({ access: 'read', scope: SCOPE_WRITE });
+      expect(grantedScope()).toBe(SCOPE_READ);
     });
 
     it('never widens: an access of write grants only what was asked', async () => {
-      await consent({ access: 'write', scope: 'recipes:read' });
-      expect(grantedScope()).toBe('recipes:read');
+      await consent({ access: 'write', scope: SCOPE_READ });
+      expect(grantedScope()).toBe(SCOPE_READ);
     });
 
     it('logs that the grant was narrowed', async () => {
@@ -246,8 +241,8 @@ describe('POST /oauth/consent', () => {
         expect.objectContaining({
           event: 'oauth.scope_narrowed',
           clientId: 'dcr_abc',
-          requested: 'recipes:read recipes:write',
-          granted: 'recipes:read',
+          requested: `${SCOPE_READ} ${SCOPE_WRITE}`,
+          granted: SCOPE_READ,
         }),
       );
       info.mockRestore();

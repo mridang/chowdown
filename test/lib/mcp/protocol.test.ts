@@ -625,7 +625,7 @@ describe('decodeHeaderValue', () => {
 });
 
 describe('isAllowedOrigin', () => {
-  const self = 'https://chowdown.apps.mrida.ng';
+  const self = 'https://site.example';
 
   it('lets through a request with no Origin and our own origin', () => {
     expect(isAllowedOrigin(null, self)).toBe(true);

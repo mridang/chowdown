@@ -5,12 +5,7 @@ import type { ReactElement } from 'react';
 
 import { CenteredCard } from '@/components/site/centered-card';
 import { Eyebrow, Heading } from '@/components/ui/layout';
-import { DriveConnectPanel } from '@/components/site/drive-connect';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
-import {
-  isDriveConnected,
-  wasDriveConnected,
-} from '@/domain/auth/drive-access';
 import { resolveClient } from '@/domain/db/oauth';
 import {
   AUTHORIZE_FIELDS,
@@ -24,6 +19,7 @@ import {
 import { getDatabase } from '@/domain/db/client';
 import { appOriginFromHeaders } from '@/lib/core/origin';
 
+import { approvalGate } from '@/app/oauth/authorize/app-gate';
 import { ConsentCard } from '@/app/oauth/authorize/consent-card';
 
 /** The tab title of the approval screen. */
@@ -60,7 +56,7 @@ function ReturnToApp({
       <a
         href={href}
         rel="noreferrer"
-        className="focus-ring rounded-control text-ember underline underline-offset-4 hover:text-ink"
+        className="focus-ring rounded-control text-accent underline underline-offset-4 hover:text-ink"
       >
         Return to the app
       </a>
@@ -140,18 +136,11 @@ export default async function AuthorizePage({
   if (!user) {
     redirect(`/auth/login?returnTo=${encodeURIComponent(here)}`);
   }
-  if (!isDriveConnected(user)) {
-    // An assistant has nothing to reach until the recipes' Drive is connected;
-    // connect it first, then come straight back to this approval.
-    return (
-      <CenteredCard framed={false}>
-        <DriveConnectPanel
-          heading="h1"
-          reconnect={wasDriveConnected(user)}
-          returnTo={here}
-        />
-      </CenteredCard>
-    );
+  // Whatever else this app needs before an approval (see `app-gate.tsx`) is
+  // asked for first, coming straight back here once it is done.
+  const gate = approvalGate(user, here);
+  if (gate) {
+    return gate;
   }
 
   const { client, redirectUri, scope } = check.request;

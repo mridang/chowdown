@@ -6,228 +6,163 @@ import {
   it,
   jest,
 } from '@jest/globals';
+import type { DatabaseSync } from 'node:sqlite';
 
 import { SESSION_COOKIE } from '@/domain/auth/app';
-import { fakeCookies } from '../../../../domain/auth/session-fixture';
-import { settleBackground } from '../../../../lib/core/db/sqlite-d1';
+import type { User } from '@/domain/db/users';
+import { SessionTokens } from '@/lib/session';
+import { APP_MIGRATIONS } from '../../../../lib/core/db/migrations';
 import {
-  addRecipe,
-  fakeGoogle,
-  fromApp,
-  openWorld,
-  signIn,
-  type World,
-} from '../../world';
+  installCloudflareContext,
+  sqliteD1,
+} from '../../../../lib/core/db/sqlite-d1';
 
-jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
+const SESSION_SECRET = 'test-session-secret-value-0123456789';
+const URL = 'https://app.test/api/users/self';
 
-const { DELETE, GET, PATCH } = await import('@/app/api/users/self/route');
+let raw: DatabaseSync;
+let restore: () => void;
+/** The Cookie header of the signed-in caller. */
+let cookie: string;
 
-let world: World;
+/** The ids left in a table, sorted. */
+const left = (table: string, column = 'id') =>
+  raw
+    .prepare(`SELECT ${column} AS id FROM ${table} ORDER BY ${column}`)
+    .all()
+    .map((row) => String(row['id']));
 
-beforeEach(() => {
-  world = openWorld();
+/** Each time the app tidied up after a deleted account: whose, and which users were left then. */
+const tidied: { id: number; users: string[] }[] = [];
+
+jest.unstable_mockModule('@/domain/account/app', () => ({
+  afterAccountDeleted: (user: Readonly<User>) => {
+    tidied.push({ id: user.id, users: left('users') });
+  },
+}));
+
+const { DELETE, GET, dynamic } = await import('@/app/api/users/self/route');
+
+beforeEach(async () => {
+  tidied.length = 0;
+  const made = sqliteD1(...APP_MIGRATIONS);
+  raw = made.raw;
+  restore = installCloudflareContext(made.d1, { SESSION_SECRET });
+  raw
+    .prepare(
+      "INSERT INTO users (id, google_sub, email, created_at, updated_at) VALUES (7, 'g7', 'a@b.com', '2026-01-01', 'now'), (8, 'g8', 'c@d.com', 'now', 'now')",
+    )
+    .run();
+  raw
+    .prepare(
+      "INSERT INTO oauth_clients (client_id, kind, client_name, redirect_uris, created_at) VALUES ('c', 'dcr', 'C', '[]', 'now')",
+    )
+    .run();
+  raw
+    .prepare(
+      "INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g7', 7, 'c', 's', 'r', 'now'), ('g8', 8, 'c', 's', 'r', 'now')",
+    )
+    .run();
+  raw
+    .prepare(
+      "INSERT INTO oauth_tokens (token_hash, kind, grant_id, expires_at) VALUES ('t7', 'access', 'g7', 1), ('t8', 'access', 'g8', 1)",
+    )
+    .run();
+  const token = await new SessionTokens(SESSION_SECRET).create({
+    uid: 7,
+    email: 'a@b.com',
+    ep: 0,
+  });
+  cookie = `${SESSION_COOKIE}=${token}`;
 });
 
-afterEach(() => world.close());
+afterEach(() => restore());
+
+/** A GET of the account with the given headers. */
+const read = (headers: Record<string, string> = { cookie }) =>
+  GET(new Request(URL, { headers }));
+
+/** A DELETE of the account with the given headers. */
+const remove = (headers: Record<string, string> = { cookie }) =>
+  DELETE(new Request(URL, { method: 'DELETE', headers }));
 
 describe('GET /api/users/self', () => {
-  it('answers 401 when nobody is signed in', async () => {
-    expect((await GET(fromApp('GET', '/api/users/self'))).status).toBe(401);
+  it('is never prerendered', () => {
+    expect(dynamic).toBe('force-dynamic');
   });
 
-  it('answers the profile', async () => {
-    await signIn(world, { email: 'ada@example.com' });
-    const res = await GET(fromApp('GET', '/api/users/self'));
+  it('answers the account the session cookie names', async () => {
+    const res = await read();
     expect(res.status).toBe(200);
-    expect(res.headers.get('cache-control')).toBe('private, no-cache');
-    expect(await res.json()).toEqual({ id: '1', email: 'ada@example.com' });
+    expect(await res.json()).toMatchObject({ email: 'a@b.com' });
   });
 
-  it('answers 401 once the session was ended', async () => {
-    await signIn(world);
-    world.raw.prepare('UPDATE users SET session_epoch = 1').run();
-    expect((await GET(fromApp('GET', '/api/users/self'))).status).toBe(401);
-  });
-});
-
-describe('PATCH /api/users/self', () => {
-  const patch = (json: unknown, type = 'application/merge-patch+json') =>
-    PATCH(fromApp('PATCH', '/api/users/self', { json, type }));
-
-  it('answers 401 when nobody is signed in', async () => {
-    expect((await patch({ measurement_system: 'US' })).status).toBe(401);
-  });
-
-  it('answers 403 for a request from another site', async () => {
-    await signIn(world);
-    const res = await PATCH(
-      fromApp('PATCH', '/api/users/self', {
-        json: {},
-        type: 'application/merge-patch+json',
-        headers: { 'sec-fetch-site': 'cross-site' },
-      }),
+  it('is never kept by a shared cache', async () => {
+    expect((await read()).headers.get('cache-control')).toBe(
+      'private, no-cache',
     );
-    expect(res.status).toBe(403);
   });
 
-  it('sets the measurement system with a merge patch', async () => {
-    await signIn(world);
-    const res = await patch({ measurement_system: 'US' });
-    expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ measurement_system: 'US' });
-    expect(world.raw.prepare('SELECT units FROM users').get()).toEqual({
-      units: 'us',
-    });
+  it('answers 401 without a session cookie', async () => {
+    expect((await read({})).status).toBe(401);
   });
 
-  it('clears it with null', async () => {
-    await signIn(world);
-    await patch({ measurement_system: 'METRIC' });
-    const res = await patch({ measurement_system: null });
-    expect((await res.json()) as object).not.toHaveProperty(
-      'measurement_system',
-    );
-    expect(world.raw.prepare('SELECT units FROM users').get()).toEqual({
-      units: null,
-    });
-  });
-
-  it('accepts plain JSON as well', async () => {
-    await signIn(world);
-    expect(
-      (await patch({ measurement_system: 'IMPERIAL' }, 'application/json'))
-        .status,
-    ).toBe(200);
-  });
-
-  it('answers 415 for another media type', async () => {
-    await signIn(world);
-    expect((await patch({}, 'text/plain')).status).toBe(415);
-  });
-
-  it('answers 400 for a patch that is not an object', async () => {
-    await signIn(world);
-    expect((await patch([])).status).toBe(400);
-  });
-
-  it('answers 400 for a value that is not allowed', async () => {
-    await signIn(world);
-    expect((await patch({ measurement_system: 'FURLONGS' })).status).toBe(400);
-  });
-
-  it('answers 400 for a field that cannot be edited, and changes nothing', async () => {
-    await signIn(world);
-    expect((await patch({ email: 'new@example.com' })).status).toBe(400);
-    expect(world.raw.prepare('SELECT email FROM users').get()).toEqual({
-      email: 'user1@example.com',
-    });
+  it('answers 401 once the session has been ended everywhere', async () => {
+    raw.prepare('UPDATE users SET session_epoch = 1 WHERE id = 7').run();
+    expect((await read()).status).toBe(401);
   });
 });
 
 describe('DELETE /api/users/self', () => {
-  const remove = (headers: Record<string, string> = {}) =>
-    DELETE(fromApp('DELETE', '/api/users/self', { headers }));
+  it('answers 204', async () => {
+    expect((await remove()).status).toBe(204);
+  });
 
-  /** Everything the person has, in every table that keeps something about them. */
-  async function populate() {
-    const uid = await signIn(world, { drive: true });
-    addRecipe(world, uid, 'f1', '>> title: A\n');
-    world.raw
-      .prepare(
-        "INSERT INTO embeddings (user_id, drive_file_id, title, vector) VALUES (?, 'f1', 'A', '[]')",
-      )
-      .run(uid);
-    world.raw
-      .prepare(
-        "INSERT INTO favourites (user_id, drive_file_id, created_at) VALUES (?, 'f1', 'n')",
-      )
-      .run(uid);
-    world.raw
-      .prepare(
-        "INSERT INTO recipe_imports (id, user_id, status, items, created_at) VALUES ('i', ?, 'COMPLETED', '[]', 'n')",
-      )
-      .run(uid);
-    world.raw
-      .prepare(
-        "INSERT INTO oauth_clients (client_id, kind, client_name, redirect_uris, created_at) VALUES ('c', 'dcr', 'C', '[]', 'n')",
-      )
-      .run();
-    world.raw
-      .prepare(
-        "INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g', ?, 'c', 's', 'r', 'n')",
-      )
-      .run(uid);
-    world.raw
-      .prepare(
-        "INSERT INTO oauth_tokens (token_hash, kind, grant_id, expires_at) VALUES ('t', 'access', 'g', 1)",
-      )
-      .run();
-    return fakeGoogle({ f1: { name: 'A.cook', content: '>> title: A\n' } });
-  }
+  it('clears the session cookie', async () => {
+    const res = await remove();
+    expect(res.headers.get('set-cookie')).toContain(`${SESSION_COOKIE}=;`);
+  });
 
-  const count = (table: string) =>
-    world.raw.prepare(`SELECT count(*) AS n FROM ${table}`).get();
+  it('ends the session: the same cookie no longer works', async () => {
+    await remove();
+    expect((await read()).status).toBe(401);
+  });
 
-  it('answers 401 when nobody is signed in', async () => {
+  it('deletes the account and nobody else’s', async () => {
+    await remove();
+    expect(left('users')).toEqual(['8']);
+  });
+
+  it('deletes the person’s connected apps and nobody else’s', async () => {
+    await remove();
+    expect(left('oauth_grants')).toEqual(['g8']);
+  });
+
+  it('deletes the tokens of the person’s connected apps and nobody else’s', async () => {
+    await remove();
+    expect(left('oauth_tokens', 'token_hash')).toEqual(['t8']);
+  });
+
+  it('lets the app tidy up after the person, once the account is gone', async () => {
+    await remove();
+    expect(tidied).toEqual([{ id: 7, users: ['8'] }]);
+  });
+
+  it('answers 401 without a session cookie, and deletes nothing', async () => {
+    expect((await remove({})).status).toBe(401);
+    expect(left('users')).toEqual(['7', '8']);
+    expect(tidied).toEqual([]);
+  });
+
+  it('answers 401 once the session has been ended everywhere', async () => {
+    raw.prepare('UPDATE users SET session_epoch = 1 WHERE id = 7').run();
     expect((await remove()).status).toBe(401);
   });
 
   it('answers 403 for a request from another site, and deletes nothing', async () => {
-    await populate();
-    expect((await remove({ 'sec-fetch-site': 'cross-site' })).status).toBe(403);
-    expect(count('users')).toEqual({ n: 1 });
-  });
-
-  it('deletes the account and everything kept about it, and answers 204', async () => {
-    await populate();
-    const res = await remove();
-    expect(res.status).toBe(204);
-    for (const table of [
-      'users',
-      'recipes',
-      'embeddings',
-      'favourites',
-      'recipe_imports',
-      'oauth_grants',
-      'oauth_tokens',
-    ]) {
-      expect(count(table)).toEqual({ n: 0 });
-    }
-  });
-
-  it('ends the session: the cookie is cleared and the same cookie no longer works', async () => {
-    await populate();
-    const res = await remove();
-    expect(res.headers.get('set-cookie')).toContain(`${SESSION_COOKIE}=;`);
-    expect((await GET(fromApp('GET', '/api/users/self'))).status).toBe(401);
-  });
-
-  it("leaves the person's files in their own Google Drive alone", async () => {
-    const google = await populate();
-    await remove();
-    expect(google.files.has('f1')).toBe(true);
-    expect(google.requests.some((r) => r.startsWith('PATCH'))).toBe(false);
-  });
-
-  it('gives the Drive login back to Google', async () => {
-    const google = await populate();
-    await remove();
-    await settleBackground();
-    expect(google.requests).toContain(
-      'POST https://oauth2.googleapis.com/revoke',
-    );
-  });
-
-  it("does not touch another person's data", async () => {
-    await populate();
-    await signIn(world, { id: 2, email: 'other@example.com' });
-    addRecipe(world, 2, 'other-file', '>> title: B\n');
-    // Delete as the second person.
-    await remove();
-    expect(count('users')).toEqual({ n: 1 });
-    expect(
-      world.raw.prepare('SELECT drive_file_id AS f FROM recipes').all(),
-    ).toEqual([{ f: 'f1' }]);
+    const res = await remove({ cookie, 'sec-fetch-site': 'cross-site' });
+    expect(res.status).toBe(403);
+    expect(left('users')).toEqual(['7', '8']);
+    expect(tidied).toEqual([]);
   });
 });

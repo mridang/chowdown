@@ -16,6 +16,7 @@ import {
 } from '../../../lib/core/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 import { htmlAt } from '../../../components/render';
+import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
 class Redirected extends Error {
@@ -24,11 +25,17 @@ class Redirected extends Error {
   }
 }
 
-/** The signed-in user (null for nobody) and the request headers the page sees. */
+/**
+ * The signed-in user (null for nobody), the request headers the page sees, and
+ * what this app's own gate before the approval shows (null lets the person
+ * through), with the return addresses it was handed.
+ */
 const state: {
-  user: { email: string; refresh_token_enc: string | null } | null;
+  user: { email: string } | null;
   requestHeaders: Record<string, string>;
-} = { user: null, requestHeaders: {} };
+  gate: ReactElement | null;
+  gatedReturns: string[];
+} = { user: null, requestHeaders: {}, gate: null, gatedReturns: [] };
 
 jest.unstable_mockModule('next/navigation', () => ({
   redirect: (to: string) => {
@@ -37,10 +44,16 @@ jest.unstable_mockModule('next/navigation', () => ({
 }));
 jest.unstable_mockModule('next/headers', () => ({
   headers: async () =>
-    new Headers({ host: 'chowdown.test', ...state.requestHeaders }),
+    new Headers({ host: 'app.test', ...state.requestHeaders }),
 }));
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
+}));
+jest.unstable_mockModule('@/app/oauth/authorize/app-gate', () => ({
+  approvalGate: (...args: readonly [unknown, string]) => {
+    state.gatedReturns.push(args[1]);
+    return state.gate;
+  },
 }));
 
 const { default: AuthorizePage } = await import('@/app/oauth/authorize/page');
@@ -55,19 +68,11 @@ let restore: () => void;
 let challenge: string;
 
 beforeEach(async () => {
-  state.user = {
-    email: 'cook@example.com',
-    refresh_token_enc: 'sealed',
-  };
+  state.user = { email: 'someone@example.com' };
   state.requestHeaders = {};
-  const made = sqliteD1(
-    '0008_oauth.sql',
-    '0011_rate_limits.sql',
-    '0012_oauth_housekeeping.sql',
-    '0016_oauth_redirect_uri_sent.sql',
-    '0017_oauth_client_assertions.sql',
-    '0018_oauth_client_logo.sql',
-  );
+  state.gate = null;
+  state.gatedReturns = [];
+  const made = sqliteD1(...APP_MIGRATIONS);
   raw = made.raw;
   restore = installCloudflareContext(made.d1);
   challenge = await s256(VERIFIER);
@@ -129,13 +134,13 @@ async function visit(
 }
 
 describe('the authorize page', () => {
-  it('shows the approval screen to a signed-in person with Drive connected', async () => {
+  it('shows the approval screen to a signed-in person the app lets through', async () => {
     const result = await visit();
     expect(result).toHaveProperty('markup');
     const { markup } = result as { markup: string };
     expect(markup).toContain('Connect <span');
     expect(markup).toContain('Assistant');
-    expect(markup).toContain('cook@example.com');
+    expect(markup).toContain('someone@example.com');
     expect(markup).toContain('action="/oauth/consent"');
     expect(markup).toContain('name="access"');
   });
@@ -148,18 +153,27 @@ describe('the authorize page', () => {
     expect(to).toMatch(/^\/auth\/login\?returnTo=/);
     const back = new URL(
       decodeURIComponent(to.split('returnTo=')[1] ?? ''),
-      'https://chowdown.test',
+      'https://app.test',
     );
     expect(back.pathname).toBe('/oauth/authorize');
     expect(back.searchParams.get('client_id')).toBe('dcr_abc');
     expect(back.searchParams.get('state')).toBe('xyz');
   });
 
-  it('asks a person without Drive to connect it first, then come back here', async () => {
-    state.user = { email: 'cook@example.com', refresh_token_enc: null };
+  it('shows what the app asks for first instead of the approval', async () => {
+    state.gate = <p>Do this first</p>;
     const { markup } = (await visit()) as { markup: string };
-    expect(markup).toContain('/auth/drive');
+    expect(markup).toContain('Do this first');
     expect(markup).not.toContain('action="/oauth/consent"');
+  });
+
+  it('hands the app the way back to the same request', async () => {
+    await visit();
+    const [back = ''] = state.gatedReturns;
+    const url = new URL(back, 'https://app.test');
+    expect(url.pathname).toBe('/oauth/authorize');
+    expect(url.searchParams.get('client_id')).toBe('dcr_abc');
+    expect(url.searchParams.get('state')).toBe('xyz');
   });
 
   describe('a problem with the request', () => {
@@ -192,7 +206,7 @@ describe('the authorize page', () => {
       expect(link.origin + link.pathname).toBe('https://app.example/cb');
       expect(link.searchParams.get('error')).toBe('unsupported_response_type');
       expect(link.searchParams.get('state')).toBe('xyz');
-      expect(link.searchParams.get('iss')).toBe('https://chowdown.test');
+      expect(link.searchParams.get('iss')).toBe('https://app.test');
     });
 
     it('does not redirect for a signed-out person either: the error comes before sign-in', async () => {
@@ -212,7 +226,7 @@ describe('the authorize page', () => {
       expect(to.origin + to.pathname).toBe('https://claude.ai/cb');
       expect(to.searchParams.get('error')).toBe('unsupported_response_type');
       expect(to.searchParams.get('state')).toBe('xyz');
-      expect(to.searchParams.get('iss')).toBe('https://chowdown.test');
+      expect(to.searchParams.get('iss')).toBe('https://app.test');
     });
 
     it('says the client is busy, not unknown, when too many documents are being fetched', async () => {
@@ -233,8 +247,8 @@ describe('the authorize page', () => {
   it('does not fetch a client document from this very site', async () => {
     const fetched = jest.spyOn(globalThis, 'fetch');
     const { markup } = (await visit({
-      client_id: 'https://chowdown.test/.well-known/oauth-authorization-server',
-      redirect_uri: 'https://chowdown.test/cb',
+      client_id: 'https://app.test/.well-known/oauth-authorization-server',
+      redirect_uri: 'https://app.test/cb',
     })) as { markup: string };
     expect(markup).toContain('invalid_client');
     expect(fetched).not.toHaveBeenCalled();

@@ -3,6 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { ConsentCard } from '@/app/oauth/authorize/consent-card';
 import { clientIdentity, describeRedirect } from '@/lib/oauth';
 import { html } from '../../../components/render';
+import { BRAND_NAME } from '@/app/_brand';
+import { SCOPE_READ, SCOPE_TEXT, SCOPE_WRITE } from '@/domain/mcp/app';
 
 const FIELDS = [
   { name: 'client_id', value: 'https://claude.ai/oauth/meta' },
@@ -24,7 +26,7 @@ function card(
     clientId = 'https://claude.ai/oauth/meta',
     kind = 'cimd',
     redirect = 'https://claude.ai/mcp/auth_callback',
-    scopes = ['recipes:read', 'recipes:write'],
+    scopes = [SCOPE_READ, SCOPE_WRITE],
   } = overrides;
   const identity = clientIdentity({ clientId, kind });
   return html(
@@ -33,7 +35,7 @@ function card(
       identity={identity}
       redirect={describeRedirect(redirect, identity)}
       scopes={scopes}
-      email="cook@example.com"
+      email="someone@example.com"
       fields={FIELDS}
     />,
   );
@@ -44,7 +46,9 @@ describe('ConsentCard', () => {
     const markup = card();
     expect(markup.match(/<h1/g)).toHaveLength(1);
     expect(markup).toMatch(
-      /<h1[^>]*>Connect <span[^>]*>Claude<\/span> to chowdown\?<\/h1>/,
+      new RegExp(
+        `<h1[^>]*>Connect <span[^>]*>Claude</span> to ${BRAND_NAME}\\?</h1>`,
+      ),
     );
   });
 
@@ -93,7 +97,7 @@ describe('ConsentCard', () => {
     expect(card()).not.toContain('is not on');
   });
 
-  it('offers a read-only choice when the app asked to change recipes, with everything as the default', () => {
+  it('offers a read-only choice when the app asked to change things, with everything as the default', () => {
     const markup = card();
     expect(markup).toContain('<legend');
     expect(markup).toMatch(/<input[^>]*name="access"[^>]*value="write"/);
@@ -105,7 +109,7 @@ describe('ConsentCard', () => {
   });
 
   it('offers no choice when the app asked only to read', () => {
-    expect(card({ scopes: ['recipes:read'] })).not.toContain('name="access"');
+    expect(card({ scopes: [SCOPE_READ] })).not.toContain('name="access"');
   });
 
   it('puts the choice before the buttons, so Enter still defaults to Cancel', () => {
@@ -136,11 +140,9 @@ describe('ConsentCard', () => {
   });
 
   it('lists the scopes in plain words', () => {
-    const markup = card({ scopes: ['recipes:read'] });
-    expect(markup).toContain(
-      'See your recipes, search them and find similar ones',
-    );
-    expect(markup).not.toContain('Add, edit, tag');
+    const markup = card({ scopes: [SCOPE_READ] });
+    expect(markup).toContain(SCOPE_TEXT[SCOPE_READ]);
+    expect(markup).not.toContain(SCOPE_TEXT[SCOPE_WRITE]);
   });
 
   it('cleans a hostile name and never renders it as HTML', () => {
@@ -173,6 +175,6 @@ describe('ConsentCard', () => {
   });
 
   it('says who is signed in', () => {
-    expect(card()).toContain('cook@example.com');
+    expect(card()).toContain('someone@example.com');
   });
 });

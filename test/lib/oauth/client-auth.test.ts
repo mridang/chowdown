@@ -21,8 +21,8 @@ import {
 
 const CLIENT = 'https://chatgpt.com/oauth/client.json';
 const JWKS_URI = 'https://chatgpt.com/oauth/jwks.json';
-const ENDPOINT = 'https://chowdown.example/oauth/token';
-const ISSUER = 'https://chowdown.example';
+const ENDPOINT = 'https://site.example/oauth/token';
+const ISSUER = 'https://site.example';
 const NOW = 1_800_000_000;
 const AUTH = { method: 'private_key_jwt', jwksUri: JWKS_URI } as const;
 

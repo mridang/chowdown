@@ -22,7 +22,7 @@ describe('isAcceptableRedirectUri', () => {
     'https://claude.com/mcp/auth_callback',
     'https://chatgpt.com/connector_platform_oauth_redirect',
     'https://chatgpt.com/connector/oauth/abc123',
-    'cursor://anysphere.cursor-retrieval/oauth/user-chowdown/callback',
+    'cursor://anysphere.cursor-retrieval/oauth/user-app/callback',
     'http://127.0.0.1:33418/',
     'https://vscode.dev/redirect',
     'vscode://ms-vscode.mcp/auth',

@@ -18,8 +18,10 @@ import {
 } from '@/lib/oauth';
 import { MemoryStore } from './memory-store';
 import { quietSecurityLogs } from './quiet-logs';
+import { SCOPE_READ } from '@/domain/mcp/app';
+import { SITE_NAME } from '@/utils/site';
 
-const ORIGIN = 'https://chowdown.example';
+const ORIGIN = 'https://site.example';
 const RESOURCE = `${ORIGIN}/mcp`;
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 const NOW = 1_000_000;
@@ -44,7 +46,7 @@ async function newCode() {
       redirectUri: 'https://app.example/cb',
       redirectUriSent: true,
       codeChallenge: await s256(VERIFIER),
-      scope: ['recipes:read'],
+      scope: [SCOPE_READ],
       resource: RESOURCE,
     },
     NOW,
@@ -101,7 +103,7 @@ describe('handleTokenRequest', () => {
     ).toMatchObject({
       error: 'invalid_client',
       status: 401,
-      wwwAuthenticate: expect.stringMatching(/^Basic realm="chowdown"/),
+      wwwAuthenticate: expect.stringMatching(`Basic realm="${SITE_NAME}"`),
     });
   });
 
@@ -178,7 +180,7 @@ describe('handleTokenRequest', () => {
     );
     expect(result).toMatchObject({
       ok: true,
-      tokens: { token_type: 'Bearer', scope: 'recipes:read' },
+      tokens: { token_type: 'Bearer', scope: SCOPE_READ },
     });
   });
 
@@ -357,7 +359,7 @@ describe('handleTokenRequest for a client that signs its requests', () => {
         redirectUri: REDIRECT,
         redirectUriSent: true,
         codeChallenge: await s256(VERIFIER),
-        scope: ['recipes:read'],
+        scope: [SCOPE_READ],
         resource: RESOURCE,
       },
       NOW,
