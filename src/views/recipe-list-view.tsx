@@ -64,7 +64,7 @@ function RecipeGrid({
     expanded,
     filter,
   });
-  const count = `${matching} ${matching === 1 ? 'recipe' : 'recipes'}`;
+  const count = countOf(matching, 'recipe');
   return (
     <>
       <div className="list-head">
