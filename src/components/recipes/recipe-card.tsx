@@ -14,6 +14,15 @@ import { duration, sentenceCase } from '@/utils/text';
 import type { CardRecipe, Tone } from '@/domain/recipe/card-data';
 
 /**
+ * How wide a photo in the grid is laid out. The grid has one column, then two,
+ * then three (four on very wide screens) and the container stops growing at
+ * 90rem. Browsers that cannot measure the laid-out image (`sizes="auto"`) read
+ * this.
+ */
+const GRID_PHOTO_SIZES =
+  '(min-width: 1700px) 25vw, (min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw';
+
+/**
  * A recipe photo. With a cover it shows the photo (falling back to the tint if
  * the image fails to load); without one, a soft tinted block. The caller sets
  * the shape with `className` (an aspect ratio or a height).
@@ -23,12 +32,15 @@ export function PhotoBlock({
   cover,
   className,
   priority,
+  sizes = GRID_PHOTO_SIZES,
 }: Readonly<{
   tone: Tone;
   cover?: string;
   className?: string;
   /** The photo is above the fold, so load it straight away. */
   priority?: boolean;
+  /** How wide the photo is laid out, for choosing which size to fetch. */
+  sizes?: string;
 }>): ReactElement {
   // A recipe without a cover still gets a quiet block of colour.
   const tile = <TintTile tone={tone} className="size-full" />;
@@ -41,10 +53,7 @@ export function PhotoBlock({
           // photo loads.
           width={640}
           height={480}
-          // The grid has one column, then two, then three (four on very wide
-          // screens) and the container stops growing at 90rem. Browsers that
-          // cannot measure the laid-out image (`sizes="auto"`) read this.
-          sizes="(min-width: 1700px) 25vw, (min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
+          sizes={sizes}
           fallback={tile}
           priority={priority}
           className="absolute inset-0 size-full object-cover"

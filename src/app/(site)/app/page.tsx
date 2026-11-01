@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import type { ReactElement } from 'react';
 
@@ -11,7 +12,9 @@ import {
 import { FavouritesLink } from '@/components/recipes/favourites-link';
 import { FilterDrawer } from '@/components/recipes/filter-drawer';
 import { FilterPanel } from '@/components/recipes/filter-panel';
+import { parseListView, VIEW_COOKIE } from '@/components/recipes/list-view';
 import { RecipeCard, RecipeGrid } from '@/components/recipes/recipe-card';
+import { RecipeRow, RecipeRows } from '@/components/recipes/recipe-row';
 import {
   activeFilters,
   buildFacets,
@@ -25,6 +28,7 @@ import {
 } from '@/components/recipes/search-query';
 import { STICKY_SIDEBAR_CLASS } from '@/components/site/header-height';
 import { SortSelect } from '@/components/recipes/sort-select';
+import { ViewToggle } from '@/components/recipes/view-toggle';
 import { buttonClass, ButtonLink } from '@/components/ui/button';
 import { FilterChip } from '@/components/ui/chip';
 import { LiveSearchField } from '@/components/ui/live-search-field';
@@ -67,6 +71,7 @@ export default async function AppPage({
     toCardRecipe(row, hearted.has(row.drive_file_id)),
   );
 
+  const view = parseListView((await cookies()).get(VIEW_COOKIE)?.value);
   const query = parseQuery(params);
   const facets = buildFacets(recipes, query);
   const found = sortRecipes(
@@ -170,28 +175,45 @@ export default async function AppPage({
                     </Link>
                   ) : null}
                 </div>
-                <SortSelect
-                  value={query.sort}
-                  options={SORTS.map(([value, label]) => ({
-                    value,
-                    label,
-                    href: hrefFor({ ...query, sort: value }),
-                  }))}
-                />
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                  <SortSelect
+                    value={query.sort}
+                    options={SORTS.map(([value, label]) => ({
+                      value,
+                      label,
+                      href: hrefFor({ ...query, sort: value }),
+                    }))}
+                  />
+                  <ViewToggle value={view} />
+                </div>
               </div>
 
               {shown.length > 0 ? (
-                <RecipeGrid>
-                  {shown.map((recipe, i) => (
-                    <RecipeCard
-                      key={recipe.id}
-                      recipe={recipe}
-                      live
-                      headingLevel="h2"
-                      priority={i < ABOVE_THE_FOLD}
-                    />
-                  ))}
-                </RecipeGrid>
+                view === 'list' ? (
+                  <RecipeRows>
+                    {shown.map((recipe, i) => (
+                      <RecipeRow
+                        key={recipe.id}
+                        recipe={recipe}
+                        live
+                        headingLevel="h2"
+                        priority={i < ABOVE_THE_FOLD}
+                      />
+                    ))}
+                  </RecipeRows>
+                ) : (
+                  <RecipeGrid>
+                    {shown.map((recipe, i) => (
+                      <RecipeCard
+                        key={recipe.id}
+                        recipe={recipe}
+                        live
+                        headingLevel="h2"
+                        priority={i < ABOVE_THE_FOLD}
+                      />
+                    ))}
+                  </RecipeGrid>
+                )
               ) : (
                 <EmptyState
                   title="Nothing matches those filters"

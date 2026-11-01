@@ -19,6 +19,17 @@ const SOURCE = [
 ].join('\n');
 
 describe('PhotoBlock', () => {
+  it('tells the browser how wide the photo is laid out', () => {
+    const out = html(
+      <PhotoBlock
+        tone="marigold"
+        cover="https://images.example.com/a.jpg"
+        sizes="96px"
+      />,
+    );
+    expect(out).toContain('96px');
+  });
+
   it('is a tinted tile in the recipe colour without a cover', () => {
     const out = html(<PhotoBlock tone="marigold" />);
     expect(out).toContain('bg-marigold/30');
