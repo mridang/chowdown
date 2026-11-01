@@ -132,3 +132,66 @@ export function listAnd(items: readonly string[]): string {
 export function listOr(items: readonly string[]): string {
   return orList.format(items);
 }
+
+/** A rating or score, always with one decimal place: "8.0", "7.4". */
+const ratings = new Intl.NumberFormat(LOCALE, {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+/** A size in gigabytes, one decimal place at most: "1.5 GB". */
+const gigabytes = new Intl.NumberFormat(LOCALE, {
+  style: 'unit',
+  unit: 'gigabyte',
+  unitDisplay: 'short',
+  maximumFractionDigits: 1,
+});
+
+/** A size in whole megabytes: "640 MB". */
+const megabytes = new Intl.NumberFormat(LOCALE, {
+  style: 'unit',
+  unit: 'megabyte',
+  unitDisplay: 'short',
+  maximumFractionDigits: 0,
+});
+
+/** A share of a whole (0.25) as a percentage with no decimals. */
+const percents = new Intl.NumberFormat(LOCALE, {
+  style: 'percent',
+  maximumFractionDigits: 0,
+});
+
+/** A rating or score with exactly one decimal place: "8.0". */
+export function formatRating(value: number): string {
+  return ratings.format(value);
+}
+
+/** A size in gigabytes, to one decimal place at most: "1.5 GB". */
+export function formatGigabytes(gigabyteCount: number): string {
+  return gigabytes.format(gigabyteCount);
+}
+
+/** A file size in bytes, in gigabytes from 1 GB up and megabytes below: "640 MB". */
+export function formatSize(bytes: number): string {
+  return bytes >= 1_000_000_000
+    ? gigabytes.format(bytes / 1_000_000_000)
+    : megabytes.format(bytes / 1_000_000);
+}
+
+/** A fraction as a whole-number percentage: `formatPercent(0.256)` is "26%". */
+export function formatPercent(fraction: number): string {
+  return percents.format(fraction);
+}
+
+/** Writes an hour of the day (0 to 23) as a clock time: "07:00". */
+const hours = new Intl.DateTimeFormat(LOCALE, {
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+  timeZone: 'UTC',
+});
+
+/** An hour of the day (0 to 23) as a 24-hour clock time: `formatHour(7)` is "07:00". */
+export function formatHour(hour: number): string {
+  return hours.format(Date.UTC(1970, 0, 1, hour));
+}

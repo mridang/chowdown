@@ -1,3 +1,4 @@
+import { compareText } from '@/lib/intl';
 /**
  * @packageDocumentation
  *
@@ -264,7 +265,7 @@ export function normalizeSourceUrl(url: string): string {
     const host = u.hostname.toLowerCase().replace(/^www\./, '');
     const kept = [...u.searchParams.entries()]
       .filter(([key]) => !TRACKING_PARAM.test(key))
-      .toSorted(([a], [b]) => a.localeCompare(b));
+      .toSorted(([a], [b]) => compareText(a, b));
     const query = kept.length
       ? `?${kept.map(([k, v]) => `${k}=${v}`).join('&')}`
       : '';

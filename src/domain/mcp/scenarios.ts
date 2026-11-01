@@ -10,7 +10,7 @@
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import type { Recipe } from '@/domain/db/recipes';
-import { countOf, foldText, listAnd } from '@/lib/intl';
+import { compareText, countOf, foldText, listAnd } from '@/lib/intl';
 import {
   parseRecipe,
   recipeDisplayName,
@@ -108,7 +108,7 @@ function dietOf(recipe: ScenarioRecipe): string {
 
 /** Order recipes by name, the way the tool results list them. */
 function byName(a: ScenarioRecipe, b: ScenarioRecipe): number {
-  return a.name.localeCompare(b.name);
+  return compareText(a.name, b.name);
 }
 
 /**
@@ -528,7 +528,7 @@ export function filterOverview(
     const entries = [...counts].toSorted(([a, x], [b, y]) =>
       f.key === 'diet_type'
         ? dietPosition(a) - dietPosition(b)
-        : y - x || a.localeCompare(b),
+        : y - x || compareText(a, b),
     );
     return [
       `\n${f.label} (${f.key}): ${entries.map(([v, n]) => `${v} ${n}`).join(', ')}`,

@@ -1,3 +1,4 @@
+import { countOf } from '@/lib/intl';
 /**
  * @packageDocumentation
  *
@@ -189,12 +190,12 @@ function nameOf(path: Path, root: string): string {
 
 /** "1 character", "2 characters". */
 function characters(n: number): string {
-  return `${n} character${n === 1 ? '' : 's'}`;
+  return countOf(n, 'character');
 }
 
 /** "1 item", "2 items". */
 function items(n: number): string {
-  return `${n} item${n === 1 ? '' : 's'}`;
+  return countOf(n, 'item');
 }
 
 /** The problems with a string against `minLength`, `maxLength` and `pattern`. */

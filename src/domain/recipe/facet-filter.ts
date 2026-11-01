@@ -11,7 +11,7 @@
  * and any tag value.
  */
 
-import { foldText } from '@/lib/intl';
+import { compareText, foldText } from '@/lib/intl';
 import { FACETS } from '@/domain/recipe/taxonomy';
 import type { RecipeTags } from '@/domain/recipe/tag-index';
 
@@ -183,7 +183,7 @@ export function buildFacetView(
           .toSorted(([a], [b]) =>
             f.ordered
               ? allowed.indexOf(a) - allowed.indexOf(b)
-              : a.localeCompare(b),
+              : compareText(a, b),
           )
           .map(([value, count]) => ({
             value,
@@ -213,7 +213,7 @@ export function buildDomainFacet(
       ([domain, count]) =>
         count >= MIN_DOMAIN_RECIPES || state.domains.includes(domain),
     )
-    .toSorted((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .toSorted((a, b) => b[1] - a[1] || compareText(a[0], b[0]))
     .map(([value, count]) => ({
       value,
       count,

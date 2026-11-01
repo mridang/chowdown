@@ -374,7 +374,7 @@ function byListOrder(order: readonly string[]) {
 
 /** Most recipes first; equal counts fall back to alphabetical. */
 function byPopularity(a: Count, b: Count): number {
-  return b[1] - a[1] || a[0].localeCompare(b[0]);
+  return b[1] - a[1] || compareText(a[0], b[0]);
 }
 
 /** How a filter's values are ordered: difficulty, time and diet follow their natural order, the rest by popularity. */

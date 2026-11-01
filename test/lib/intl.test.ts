@@ -4,7 +4,12 @@ import {
   compareText,
   countOf,
   foldText,
+  formatGigabytes,
+  formatHour,
+  formatPercent,
   formatQuantityNumber,
+  formatRating,
+  formatSize,
   listAnd,
   listOr,
   relativeTime,
@@ -102,5 +107,43 @@ describe('lists', () => {
       'METRIC, US, or IMPERIAL',
     );
     expect(listOr(['one'])).toBe('one');
+  });
+});
+
+describe('formatRating', () => {
+  it('always keeps one decimal place', () => {
+    expect(formatRating(8)).toBe('8.0');
+    expect(formatRating(7.449)).toBe('7.4');
+  });
+});
+
+describe('formatGigabytes', () => {
+  it('keeps at most one decimal place and the unit', () => {
+    expect(formatGigabytes(1.54)).toBe('1.5 GB');
+    expect(formatGigabytes(412)).toBe('412 GB');
+  });
+});
+
+describe('formatSize', () => {
+  it('uses gigabytes from 1 GB up', () => {
+    expect(formatSize(1_500_000_000)).toBe('1.5 GB');
+  });
+
+  it('uses whole megabytes below 1 GB', () => {
+    expect(formatSize(640_400_000)).toBe('640 MB');
+  });
+});
+
+describe('formatPercent', () => {
+  it('rounds a fraction to a whole percentage', () => {
+    expect(formatPercent(0.256)).toBe('26%');
+  });
+});
+
+describe('formatHour', () => {
+  it('writes an hour as a 24-hour clock time', () => {
+    expect(formatHour(0)).toBe('00:00');
+    expect(formatHour(7)).toBe('07:00');
+    expect(formatHour(23)).toBe('23:00');
   });
 });
