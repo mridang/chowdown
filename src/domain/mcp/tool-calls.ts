@@ -1082,7 +1082,7 @@ export async function callToolOrExplain(
   } catch (error) {
     if (error instanceof DriveNotConnectedError) {
       return errorResult(
-        `Google Drive isn't connected to chowdown yet, so there are no recipes to reach. Ask the user to open ${SITE_URL}/app, choose "Connect Google Drive", and then try again.`,
+        `Google Drive isn't connected to Chowdown yet, so there are no recipes to reach. Ask the user to open ${SITE_URL}/app, choose "Connect Google Drive", and then try again.`,
       );
     }
     if (error instanceof BackendFailure) {

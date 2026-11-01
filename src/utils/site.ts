@@ -7,13 +7,13 @@
  */
 
 /** The name of the site, as it appears in titles and structured data. */
-export const SITE_NAME = 'chowdown';
+export const SITE_NAME = 'Chowdown';
 /** The site's public address, with no trailing slash. */
 export const SITE_URL = 'https://chowdown.apps.mrida.ng';
 
 /** The site's default page title. */
 export const SITE_TITLE =
-  'chowdown: your recipes, kept in your own Google Drive';
+  'Chowdown: your recipes, kept in your own Google Drive';
 /** The site's default description, for page metadata and structured data. */
 export const SITE_DESCRIPTION =
   'Keep every recipe as a plain text file in your own Google Drive, then ' +

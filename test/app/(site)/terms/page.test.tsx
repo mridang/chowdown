@@ -13,7 +13,7 @@ describe('TermsPage', () => {
 
   it('covers use, recipes, AI, the service, the code, data and contact', () => {
     for (const heading of [
-      'Using chowdown',
+      'Using Chowdown',
       'Your recipes',
       'Artificial intelligence',
       'The service',
@@ -50,7 +50,7 @@ describe('TermsPage', () => {
   });
 
   it('links back home', () => {
-    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to chowdown<\/a>/);
+    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to Chowdown<\/a>/);
   });
 });
 
@@ -63,6 +63,6 @@ describe('the terms page’s metadata', () => {
   it('has its own social card', () => {
     expect(metadata.openGraph?.url).toBe('/terms');
     expect(metadata.title).toBe('Terms');
-    expect(metadata.twitter?.title).toBe('Terms · chowdown');
+    expect(metadata.twitter?.title).toBe('Terms · Chowdown');
   });
 });

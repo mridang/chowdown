@@ -12,19 +12,19 @@ import { Section } from '@/components/ui/section';
 /** The questions and their answers, in the order they are shown. */
 export const FAQ = [
   {
-    question: 'Is chowdown free?',
+    question: 'Is Chowdown free?',
     answer:
-      'Yes. chowdown is free to use, and your recipes live in your own Google Drive.',
+      'Yes. Chowdown is free to use, and your recipes live in your own Google Drive.',
   },
   {
-    question: 'What can chowdown see in my Drive?',
+    question: 'What can Chowdown see in my Drive?',
     answer:
       'Only the files it creates. It uses the narrow Drive permission that cannot read anything else you have stored there.',
   },
   {
     question: 'What if I want to leave?',
     answer:
-      'Remove chowdown in your Google account settings. Your Recipes folder and every file in it stay exactly where they are.',
+      'Remove Chowdown in your Google account settings. Your Recipes folder and every file in it stay exactly where they are.',
   },
   {
     question: 'Which AI assistants work with it?',

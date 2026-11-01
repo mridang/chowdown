@@ -99,7 +99,7 @@ export function SiteFooter(): ReactElement {
       <div className="bg-marigold">
         <Container className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 py-3 text-xs">
           <span>
-            © 2026 chowdown. Your recipes stay in your own Google Drive.
+            © 2026 Chowdown. Your recipes stay in your own Google Drive.
           </span>
         </Container>
       </div>

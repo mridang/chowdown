@@ -12,7 +12,7 @@ import {
 /** What to tell someone whose last attempt didn't work. */
 const ATTEMPT_MESSAGE: Readonly<Record<DriveAttempt, string>> = {
   denied:
-    'Google Drive was not connected: the permission was not granted. chowdown needs it to keep your recipes in your Drive.',
+    'Google Drive was not connected: the permission was not granted. Chowdown needs it to keep your recipes in your Drive.',
   error:
     'Something went wrong connecting Google Drive. Nothing was changed, so you can try again.',
 };
@@ -73,11 +73,11 @@ export function DriveConnectPanel({
     >
       <p className="mx-auto mt-3 max-w-xl leading-relaxed text-muted">
         {reconnect
-          ? 'Google stopped accepting chowdown’s access to your Drive, perhaps because it was removed. Your recipes are still in your Drive. Reconnect to sync them again.'
-          : 'chowdown keeps your recipes as plain text files in a “Recipes” folder in your own Google Drive. Connect it to see, add and edit them.'}
+          ? 'Google stopped accepting Chowdown’s access to your Drive, perhaps because it was removed. Your recipes are still in your Drive. Reconnect to sync them again.'
+          : 'Chowdown keeps your recipes as plain text files in a “Recipes” folder in your own Google Drive. Connect it to see, add and edit them.'}
       </p>
       <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-subtle">
-        chowdown can only see the files it creates there, and nothing else in
+        Chowdown can only see the files it creates there, and nothing else in
         your Drive.
       </p>
       {attempt ? (

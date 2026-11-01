@@ -28,7 +28,7 @@ const MAX_HTML = 200_000;
  * what we are. Built from the site's own identity, not the fetcher's neutral
  * default.
  */
-const USER_AGENT = `${SITE_NAME}/1.0 (+${SITE_URL})`;
+const USER_AGENT = `${SITE_NAME.toLowerCase()}/1.0 (+${SITE_URL})`;
 
 /**
  * Max bytes read from the network. Four bytes a character is the most UTF-8

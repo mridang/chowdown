@@ -77,7 +77,7 @@ describe('SERVER_INFO', () => {
   it('names the server, describes it and points to its website', () => {
     expect(SERVER_INFO).toMatchObject({
       name: 'chowdown',
-      title: 'chowdown',
+      title: 'Chowdown',
       version: SERVER_VERSION,
       websiteUrl: 'https://chowdown.apps.mrida.ng',
     });

@@ -63,7 +63,7 @@ export const MAX_CLIENT_ID_LENGTH = 2048;
  * How we introduce ourselves when fetching a client's document, so its host can
  * recognise and allow-list us and knows whom to ask about the traffic.
  */
-export const FETCH_USER_AGENT = `${SITE_NAME}-oauth/1 (+${SITE_URL})`;
+export const FETCH_USER_AGENT = `${SITE_NAME.toLowerCase()}-oauth/1 (+${SITE_URL})`;
 
 /** How long to wait for a client's metadata document. */
 const FETCH_TIMEOUT_MS = 5000;

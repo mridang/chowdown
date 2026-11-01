@@ -13,7 +13,7 @@ import {
 
 /** What the person is told when the request could not be made at all. */
 const OFFLINE_MESSAGE =
-  "Couldn't reach chowdown. Nothing was deleted; please try again.";
+  "Couldn't reach Chowdown. Nothing was deleted; please try again.";
 
 /**
  * Ask the server to delete the signed-in person's account and everything it

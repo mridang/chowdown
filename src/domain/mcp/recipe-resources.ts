@@ -139,7 +139,7 @@ export async function readRecipeResource(
     if (error instanceof DriveNotConnectedError) {
       throw new RpcError(
         ERROR_INTERNAL,
-        "Google Drive isn't connected to chowdown yet, so there are no recipes to reach. Ask the user to connect it from chowdown's account menu.",
+        "Google Drive isn't connected to Chowdown yet, so there are no recipes to reach. Ask the user to connect it from Chowdown's account menu.",
       );
     }
     throw error;

@@ -7,7 +7,7 @@ describe('Logo', () => {
   it('is the wordmark and a descriptor, linking home', () => {
     const out = html(<Logo />);
     expect(out).toContain('href="/"');
-    expect(out).toContain('chowdown');
+    expect(out).toContain('Chowdown');
     expect(out).toContain('Recipe keeper');
   });
 

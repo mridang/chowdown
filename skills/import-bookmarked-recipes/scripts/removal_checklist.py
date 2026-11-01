@@ -7,7 +7,7 @@ sync can bring back anything edited behind its back. The checklist is what the
 user (or an agent that can operate the browser's bookmark manager) works from.
 
 Input is the JSON produced by ``scan_bookmarks.py --json`` plus the ids that were
-imported and verified, so only bookmarks that definitely made it into chowdown
+imported and verified, so only bookmarks that definitely made it into Chowdown
 are ever listed.
 
 Usage:

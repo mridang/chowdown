@@ -20,7 +20,7 @@ import {
 export const metadata: Metadata = pageMetadata({
   title: 'Privacy',
   description:
-    'What chowdown stores, what it asks Google for, and what stays in your own Drive.',
+    'What Chowdown stores, what it asks Google for, and what stays in your own Drive.',
   path: '/privacy',
   index: true,
 });
@@ -39,7 +39,7 @@ export default function PrivacyPage(): ReactElement {
         updated={PRIVACY_LAST_UPDATED}
       >
         <p>
-          chowdown is a personal recipe app. It stores your recipes as Cooklang
+          Chowdown is a personal recipe app. It stores your recipes as Cooklang
           (<LegalCode>.cook</LegalCode>) files in your own Google Drive. This
           policy explains what it accesses and keeps.
         </p>
@@ -55,7 +55,7 @@ export default function PrivacyPage(): ReactElement {
               in: Google Drive, using the <LegalCode>drive.file</LegalCode>{' '}
               scope only. This grants access{' '}
               <strong>
-                solely to the recipe files chowdown itself creates
+                solely to the recipe files Chowdown itself creates
               </strong>{' '}
               in a “Recipes” folder — never the rest of your Drive.
             </LegalItem>
@@ -94,20 +94,20 @@ export default function PrivacyPage(): ReactElement {
 
         <LegalSection title="Artificial intelligence">
           <p>
-            When you import a recipe, or ask chowdown to tag one, the recipe
+            When you import a recipe, or ask Chowdown to tag one, the recipe
             text is sent to Cloudflare Workers AI, which runs the model on
             Cloudflare’s network. It turns pasted text into Cooklang, picks
             tags, and makes the embeddings above. The text is sent only for that
-            job and the result is stored with your recipe. chowdown does not use
+            job and the result is stored with your recipe. Chowdown does not use
             your recipes to train any model.
           </p>
         </LegalSection>
 
         <LegalSection title="Links you paste">
           <p>
-            When you import a link, chowdown’s server fetches that page (and the
+            When you import a link, Chowdown’s server fetches that page (and the
             recipe’s picture) for you, so the site you linked to sees a request
-            from chowdown rather than from your browser. Pictures in your
+            from Chowdown rather than from your browser. Pictures in your
             recipes are loaded the same way. Only web addresses that point to
             the public internet are fetched.
           </p>
@@ -139,7 +139,7 @@ export default function PrivacyPage(): ReactElement {
               No advertising or analytics cookies, and no trackers.
             </LegalItem>
             <LegalItem>
-              Cloudflare, which hosts chowdown, records each request (the
+              Cloudflare, which hosts Chowdown, records each request (the
               address it came from, the page asked for, the time and the result)
               in logs that we use to keep the service running and secure. They
               are kept for a short time and are not used to profile you.
@@ -159,11 +159,11 @@ export default function PrivacyPage(): ReactElement {
           <p>
             You can delete your account yourself: sign in, open the account menu
             and choose <strong>Delete account</strong>. That removes everything
-            described above from chowdown (your sign-in record, the saved copy
+            described above from Chowdown (your sign-in record, the saved copy
             of your recipes, embeddings, favourites, connected assistants and
             drafts) and signs you out. Your <LegalCode>.cook</LegalCode> files
             always remain yours in your Drive, and are not touched. To also
-            withdraw Google’s permission, remove chowdown at{' '}
+            withdraw Google’s permission, remove Chowdown at{' '}
             <LegalLink href="https://myaccount.google.com/permissions">
               your Google account permissions
             </LegalLink>

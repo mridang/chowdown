@@ -86,7 +86,7 @@ export function DeleteDialog({
         </DialogTitle>
         <DialogDescription className="mt-2 text-sm leading-relaxed text-muted">
           <span className="font-semibold text-ink">{title}</span> will be
-          removed from chowdown and moved to the trash in your Google Drive,
+          removed from Chowdown and moved to the trash in your Google Drive,
           where you can restore it for about 30 days.
         </DialogDescription>
         {error ? (

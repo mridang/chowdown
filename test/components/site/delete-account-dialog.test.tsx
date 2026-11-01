@@ -23,7 +23,7 @@ describe('DeleteAccountDialog', () => {
 
   it('says what goes, that Drive is untouched, and that it cannot be undone', () => {
     const out = markup(true);
-    expect(out).toContain('everything chowdown keeps about you');
+    expect(out).toContain('everything Chowdown keeps about you');
     expect(out).toContain('stay in your Google Drive');
     expect(out).toContain('cannot be undone');
   });

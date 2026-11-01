@@ -1,4 +1,4 @@
-chowdown security policy
+Chowdown security policy
 
 Report a vulnerability in https://chowdown.apps.mrida.ng, including its MCP
 server at /mcp, by email to mridang.agarwalla@gmail.com. Please include
@@ -21,7 +21,7 @@ In scope
 
 Out of scope
 - Google's own services (Sign-In, Drive), Cloudflare's platform, and the
-  assistants (ChatGPT, Claude and others) that connect to chowdown.
+  assistants (ChatGPT, Claude and others) that connect to Chowdown.
 - Denial of service by volume, spam, social engineering, and physical attacks.
 - Missing headers or settings with no demonstrable impact.
 

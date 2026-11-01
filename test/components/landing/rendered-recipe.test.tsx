@@ -9,7 +9,7 @@ describe('RenderedRecipe', () => {
   const out = html(<RenderedRecipe recipe={recipe} />);
 
   it('is labelled with the recipe it shows', () => {
-    expect(out).toContain(`aria-label="${recipe.title} in chowdown"`);
+    expect(out).toContain(`aria-label="${recipe.title} in Chowdown"`);
   });
 
   it('shows the title, the servings and a time', () => {

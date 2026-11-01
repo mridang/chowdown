@@ -15,7 +15,7 @@ import { pngSize } from '../png';
 
 describe('the brand', () => {
   it('is named and placed as the site says', () => {
-    expect(BRAND_NAME).toBe('chowdown');
+    expect(BRAND_NAME).toBe('Chowdown');
     expect(BRAND_URL).toBe('https://chowdown.apps.mrida.ng');
   });
 });

@@ -1,4 +1,4 @@
-# 🍳 chowdown
+# 🍳 Chowdown
 
 A recipe app for [Cooklang](https://cooklang.org) `.cook` files, kept in the
 person's own Google Drive. Built as a Next.js app on Cloudflare Workers (OpenNext).
@@ -28,7 +28,7 @@ Google consent screen:
 2. **Connect Google Drive** (the button in the header, the account menu, and on
    pages that need it; `GET /auth/drive`) adds the `drive.file` scope and an
    offline refresh token, then creates the app-managed "Recipes" folder.
-   `drive.file` is non-sensitive and only reaches files chowdown created, so
+   `drive.file` is non-sensitive and only reaches files Chowdown created, so
    there is **no Google verification** and nothing is published to the
    Marketplace.
 
@@ -59,14 +59,14 @@ TOKEN_ENCRYPTION_KEY=...    # openssl rand -base64 32 — seals Drive refresh to
 
 ## Connecting an assistant (MCP)
 
-chowdown is an MCP server at `https://<your-domain>/mcp`, protected with
+Chowdown is an MCP server at `https://<your-domain>/mcp`, protected with
 OAuth 2.1 as the [MCP authorization spec](https://modelcontextprotocol.io/specification/latest/basic/authorization)
 describes. Add that URL as a connector in ChatGPT, Claude or any MCP client, sign
 in with Google when asked, and approve. There is no secret to copy. The person
 needs to have connected Google Drive (see above); until then the assistant is
 told so instead of being shown an empty collection.
 
-chowdown is listed in the [MCP Registry](https://registry.modelcontextprotocol.io)
+Chowdown is listed in the [MCP Registry](https://registry.modelcontextprotocol.io)
 as `io.github.mridang/chowdown`; the listing is `server.json` in this repository.
 
 - **Scopes:** `recipes:read` (browse and search) and `recipes:write` (add, edit,
@@ -193,7 +193,7 @@ work in Claude Code, Cowork, GitHub Copilot and other agents that read it.
 
 | Skill                                                                    | What it does                                                                                                                                                                                                                                                                                                                         |
 | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [`import-bookmarked-recipes`](skills/import-bookmarked-recipes/SKILL.md) | Finds recipe links in your browser bookmarks, imports them into chowdown through your MCP connector, fixes missing cover photos, verifies the result, and offers to remove the imported bookmarks only after you say yes. Can also run on a schedule ("periodically import my recipes"), in which case it imports but never deletes. |
+| [`import-bookmarked-recipes`](skills/import-bookmarked-recipes/SKILL.md) | Finds recipe links in your browser bookmarks, imports them into Chowdown through your MCP connector, fixes missing cover photos, verifies the result, and offers to remove the imported bookmarks only after you say yes. Can also run on a schedule ("periodically import my recipes"), in which case it imports but never deletes. |
 
 To install one, copy or symlink its folder into your agent's skills folder:
 
@@ -206,5 +206,5 @@ mkdir -p .github/skills && cp -R skills/import-bookmarked-recipes .github/skills
 ```
 
 In Cowork, upload the folder (zipped) as a custom skill. The skill also needs
-chowdown added to the agent as an MCP connector: use the MCP server address on the home page or
+Chowdown added to the agent as an MCP connector: use the MCP server address on the home page or
 the app's "Cook with AI" page, then approve the connection.

@@ -10,6 +10,7 @@ import {
   EDGE_CACHED_PAGES,
   EDGE_TTL_SECONDS,
 } from '@/lib/core/http';
+import { SITE_NAME } from '@/utils/site';
 
 /** The pages these tests let the edge keep a copy of. */
 const pages: ReadonlySet<string> = new Set(['/', '/privacy']);
@@ -181,6 +182,12 @@ describe('edgeCacheKey', () => {
     const a = edgeCacheKey(get('/'), 'v1').url;
     const b = edgeCacheKey(get('/'), 'v2').url;
     expect(a).not.toBe(b);
+  });
+
+  it('lives on a lower-case internal host, whatever the name looks like on screen', () => {
+    expect(edgeCacheKey(get('/'), 'v1').url).toMatch(
+      new RegExp(`^https://edge\\.${SITE_NAME.toLowerCase()}\\.invalid/`),
+    );
   });
 
   it('has the release id in it', () => {

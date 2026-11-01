@@ -55,7 +55,7 @@ export function HomeLanding({
             Your rules.
           </Heading>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">
-            chowdown keeps every recipe as a plain text file in a folder you
+            Chowdown keeps every recipe as a plain text file in a folder you
             own, then makes them a pleasure to search, scale and cook from, and
             ready for your AI assistant.
           </p>

@@ -93,8 +93,8 @@ const PROMPTS: readonly Prompt[] = [
       const mood = given(args, 'mood');
       return [
         mood
-          ? `I'd like to cook something from my chowdown recipes. What I feel like: ${mood}.`
-          : "I'd like to cook something from my chowdown recipes, and I haven't decided what.",
+          ? `I'd like to cook something from my Chowdown recipes. What I feel like: ${mood}.`
+          : "I'd like to cook something from my Chowdown recipes, and I haven't decided what.",
         'Look through my collection (list_filters shows what it holds, browse_recipes narrows it down), then suggest two or three recipes and say why each fits.',
         'Show the one I pick with get_recipe.',
       ].join(' ');
@@ -148,7 +148,7 @@ const PROMPTS: readonly Prompt[] = [
       const days = planDays(given(args, 'days'));
       const preferences = given(args, 'preferences');
       return [
-        `Plan ${days} dinners for me from my chowdown recipes.`,
+        `Plan ${days} dinners for me from my Chowdown recipes.`,
         preferences ? `What I want: ${preferences}.` : '',
         'Vary the cuisines and main ingredients, use browse_recipes to find candidates, and list the plan day by day with a line on why each recipe was chosen.',
         'Offer to put together the shopping list from the ingredients.',

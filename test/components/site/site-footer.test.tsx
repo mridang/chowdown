@@ -8,7 +8,7 @@ describe('SiteFooter', () => {
 
   it('is the page’s footer landmark, with the wordmark', () => {
     expect(out.startsWith('<footer')).toBe(true);
-    expect(out).toContain('chowdown');
+    expect(out).toContain('Chowdown');
   });
 
   it('links only to pages anyone can open', () => {

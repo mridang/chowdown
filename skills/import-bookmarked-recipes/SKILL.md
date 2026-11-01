@@ -1,20 +1,20 @@
 ---
 name: import-bookmarked-recipes
-description: Find the recipe links saved in the user's browser bookmarks (Chrome, Edge, Brave, Chromium, Vivaldi), import them into their chowdown recipe collection through the chowdown MCP connector, fix up missing cover photos, verify the result, and then — only after the user explicitly agrees — help remove the imported bookmarks. Use when the user says things like "import my bookmarked recipes", "move my saved recipes into chowdown", "periodically import my recipes", or "clean up my recipe bookmarks".
+description: Find the recipe links saved in the user's browser bookmarks (Chrome, Edge, Brave, Chromium, Vivaldi), import them into their Chowdown recipe collection through the Chowdown MCP connector, fix up missing cover photos, verify the result, and then — only after the user explicitly agrees — help remove the imported bookmarks. Use when the user says things like "import my bookmarked recipes", "move my saved recipes into Chowdown", "periodically import my recipes", or "clean up my recipe bookmarks".
 ---
 
-# Import bookmarked recipes into chowdown
+# Import bookmarked recipes into Chowdown
 
 Turns the recipe links scattered across a person's browser bookmarks into proper
-recipes in their chowdown collection (Cooklang files in their own Google Drive),
+recipes in their Chowdown collection (Cooklang files in their own Google Drive),
 then helps tidy the bookmarks away.
 
 ## What you need
 
-- **The chowdown MCP connector**, with these tools: `import_recipe`,
+- **The Chowdown MCP connector**, with these tools: `import_recipe`,
   `set_recipe_images`, `list_recipes`, `get_recipe`. If they are missing, stop and
-  tell the user to add chowdown as a connector: the MCP server URL shown at the
-  top of the chowdown app (`…/mcp`), then sign in and approve when asked.
+  tell the user to add Chowdown as a connector: the MCP server URL shown at the
+  top of the Chowdown app (`…/mcp`), then sign in and approve when asked.
   The approval must include the `recipes:write` access, or imports will be
   refused. Do not try to work around it.
 - **Python 3.8+** to run the helper scripts in `scripts/` (standard library only).
@@ -41,7 +41,7 @@ then helps tidy the bookmarks away.
    anything that is not a recipe link.
 6. **Don't invent content.** Never pass placeholder text ("recipe unavailable"),
    a summary you wrote, or Cooklang you generated to `import_recipe`. Pass the
-   page's real text. chowdown writes the Cooklang itself.
+   page's real text. Chowdown writes the Cooklang itself.
 
 ## Workflow
 
@@ -83,7 +83,7 @@ For each approved link, one `import_recipe` call:
 - `content`: the page's real text, fetched yourself.
 - `images`: the recipe photo's address if you can see it (see step 5).
 
-Work in batches of about ten and keep going if one fails. chowdown de-duplicates
+Work in batches of about ten and keep going if one fails. Chowdown de-duplicates
 by source address, so running again is safe: a link already imported is reported
 as such, and an earlier import that saved no ingredients or steps is repaired in
 place. If the server refuses a page ("no ingredients or steps") believe it: the
@@ -91,7 +91,7 @@ page had no readable recipe. Do not retry with filler text.
 
 ### 4. Verify — do not trust summaries
 
-Check chowdown itself, not your own account of what happened. With `list_recipes`
+Check Chowdown itself, not your own account of what happened. With `list_recipes`
 and `get_recipe`, confirm for each imported link that:
 
 - the recipe exists and its `source` is that link;
@@ -103,7 +103,7 @@ Anything that fails is **not** safe to remove from the bookmarks.
 
 ### 5. Fix missing cover photos
 
-chowdown fetches the page itself to find a photo, but many sites refuse automated
+Chowdown fetches the page itself to find a photo, but many sites refuse automated
 requests, so some recipes arrive without one. For each recipe still without a
 cover:
 

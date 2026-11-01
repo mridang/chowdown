@@ -168,7 +168,7 @@ export const OPENAI_WIDGET_DOMAIN = SITE_URL;
 
 /** What ChatGPT tells the model when a view appears, so it does not repeat the content. */
 const WIDGET_DESCRIPTION =
-  'A chowdown recipe view is now showing on screen. Do not repeat its contents; invite the person to look at it or ask for changes.';
+  'A Chowdown recipe view is now showing on screen. Do not repeat its contents; invite the person to look at it or ask for changes.';
 
 /** The metadata a view's resource carries (on both its listing and its contents). */
 export interface ViewResourceMeta {
@@ -267,7 +267,7 @@ export const APP_RESOURCES: readonly AppResource[] = [
   ...entriesFor(
     {
       name: 'Recipe card',
-      description: 'Interactive chowdown recipe card.',
+      description: 'Interactive Chowdown recipe card.',
       html: recipeCardHtml,
     },
     CARD_RESOURCE_URI,
@@ -276,7 +276,7 @@ export const APP_RESOURCES: readonly AppResource[] = [
   ...entriesFor(
     {
       name: 'Recipe list',
-      description: 'The chowdown recipe list.',
+      description: 'The Chowdown recipe list.',
       html: recipeListHtml,
     },
     LIST_RESOURCE_URI,

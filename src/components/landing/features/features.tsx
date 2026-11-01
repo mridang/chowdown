@@ -33,7 +33,7 @@ export function Features({
           flip
           eyebrow="Save from anywhere"
           title="Paste a link, get a recipe"
-          body="Drop in a web address or a whole list of them. chowdown reads each page, tidies it up and tags it, and you check the draft before anything is saved."
+          body="Drop in a web address or a whole list of them. Chowdown reads each page, tidies it up and tags it, and you check the draft before anything is saved."
         >
           <ImportVisual recipe={importer} />
         </Feature>

@@ -16,7 +16,7 @@ export function driveNotConnected(): Response {
     409,
     '/problems/drive-not-connected',
     'Google Drive is not connected',
-    'Connect your Google Drive in chowdown first, then try again.',
+    'Connect your Google Drive in Chowdown first, then try again.',
   );
 }
 

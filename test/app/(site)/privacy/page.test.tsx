@@ -37,7 +37,7 @@ describe('PrivacyPage', () => {
   });
 
   it('says pasted links are fetched by the server', () => {
-    expect(out).toContain('chowdown’s server fetches that page');
+    expect(out).toContain('Chowdown’s server fetches that page');
   });
 
   it('describes connected assistants and where to disconnect them', () => {
@@ -52,7 +52,7 @@ describe('PrivacyPage', () => {
 
   it('mentions Cloudflare’s request logs', () => {
     expect(out).toContain(
-      'Cloudflare, which hosts chowdown, records each request',
+      'Cloudflare, which hosts Chowdown, records each request',
     );
   });
 
@@ -73,7 +73,7 @@ describe('PrivacyPage', () => {
   });
 
   it('links back home', () => {
-    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to chowdown<\/a>/);
+    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to Chowdown<\/a>/);
   });
 });
 
@@ -86,6 +86,6 @@ describe('the privacy page’s metadata', () => {
   it('has its own social card', () => {
     expect(metadata.openGraph?.url).toBe('/privacy');
     expect(metadata.title).toBe('Privacy');
-    expect(metadata.twitter?.title).toBe('Privacy · chowdown');
+    expect(metadata.twitter?.title).toBe('Privacy · Chowdown');
   });
 });

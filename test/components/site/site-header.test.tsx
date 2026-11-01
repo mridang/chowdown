@@ -15,7 +15,7 @@ describe('SiteHeader for a visitor', () => {
   const out = htmlAt(<SiteHeader user={null} />);
 
   it('links to the wordmark’s home page', () => {
-    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*chowdown/);
+    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Chowdown/);
   });
 
   it('jumps to the landing page’s sections', () => {

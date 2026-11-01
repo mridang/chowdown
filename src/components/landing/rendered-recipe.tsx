@@ -13,7 +13,7 @@ export function RenderedRecipe({
   recipe,
 }: Readonly<{ recipe: SampleRecipe }>): ReactElement {
   return (
-    <WindowFrame label={`${recipe.title} in chowdown`}>
+    <WindowFrame label={`${recipe.title} in Chowdown`}>
       <TintTile tone={recipe.tone} className="aspect-video" />
       <div className="p-5">
         <Eyebrow>

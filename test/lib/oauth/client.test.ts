@@ -419,7 +419,7 @@ describe('fetchClientMetadata details', () => {
       RequestInit | undefined;
     expect(init?.headers).toMatchObject({ 'User-Agent': FETCH_USER_AGENT });
     expect(FETCH_USER_AGENT).toMatch(
-      new RegExp(`^${SITE_NAME}-oauth/1 \\(\\+https://`),
+      new RegExp(`^${SITE_NAME.toLowerCase()}-oauth/1 \\(\\+https://`),
     );
   });
 

@@ -22,7 +22,7 @@ export function ConnectBand(): ReactElement {
           </Eyebrow>
           <Heading className="mt-3">Ask your assistant what to cook</Heading>
           <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted">
-            Add chowdown to your AI assistant with one address. It can search
+            Add Chowdown to your AI assistant with one address. It can search
             your recipes, suggest dinner from what you have saved, and file new
             ones for you.
           </p>

@@ -16,7 +16,7 @@ export function BrandMark({
 }
 
 /**
- * The wordmark: a heavy heading face, lower case, with a small descriptor
+ * The wordmark: a heavy heading face, with a small descriptor
  * beneath, linking home. Used in the site header and, scaled up, the footer.
  */
 export function Logo({

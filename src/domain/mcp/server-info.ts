@@ -45,7 +45,7 @@ const SERVER_ICONS = [
 
 /** The name, version and look this server reports about itself. */
 export const SERVER_INFO = {
-  name: SITE_NAME,
+  name: SITE_NAME.toLowerCase(),
   title: SITE_NAME,
   version: SERVER_VERSION,
   description: SITE_DESCRIPTION,
@@ -78,11 +78,11 @@ export const CAPABILITIES = {
  * a host may put all of it in the model's context, so a test caps its length.
  */
 export const INSTRUCTIONS =
-  "chowdown keeps the user's cooking recipes as Cooklang files in their own Google Drive. " +
+  "Chowdown keeps the user's cooking recipes as Cooklang files in their own Google Drive. " +
   'A tool that takes a recipe accepts its name, or its id (shown next to every recipe in a list) when two names are alike; ' +
   'long lists come a page at a time, and `offset` asks for the next. ' +
   'To add a recipe from a web page, open the page yourself and call import_recipe with the ' +
-  "recipe's text as `content` (plus its `url` and photo links); chowdown converts it " +
+  "recipe's text as `content` (plus its `url` and photo links); Chowdown converts it " +
   'to Cooklang, so do not write the Cooklang yourself, and it may fetch that page once more to ' +
   'find a cover image. Use add_recipe only for a recipe the user dictates as Cooklang, ' +
   'capture_idea for a wish with no recipe yet, and log_cooking or annotate_recipe for notes. ' +
