@@ -319,7 +319,7 @@ export function Popover({
           }
         }}
         className={cn(
-          'min-w-56 rounded-card border border-line bg-white p-1.5 text-ink',
+          'min-w-56 rounded-card border border-line bg-surface p-1.5 text-ink',
           panelClassName,
         )}
       >
