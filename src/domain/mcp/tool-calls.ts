@@ -439,7 +439,7 @@ const listRecipes: Handler = async (args, ctx) => {
       : page.length === 0
         ? pastTheEnd(files.length, offset, 'recipe')
         : page.length === files.length
-          ? `Showing your ${files.length} recipes.`
+          ? `Showing your ${countOf(files.length, 'recipe')}.`
           : `Showing recipes ${rangeText(files.length, offset, page.length)}.${nextPageHint(files.length, offset, page.length)}`;
   return recipeListResult(page, message);
 };

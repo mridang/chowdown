@@ -32,6 +32,7 @@ import { Announcer, LoadingCard, MessageCard } from '@/views/status-panels';
 import { STYLES } from '@/views/styles';
 import { useWidgetData } from '@/views/use-widget-data';
 import type { ViewState } from '@/views/view-state';
+import { countOf } from '@/lib/intl';
 
 /** What {@link RecipeGrid} needs besides the recipes themselves. */
 interface RecipeGridProps {
@@ -236,7 +237,7 @@ export function RecipeListScreen({
       <Announcer
         message={
           state.phase === 'ready'
-            ? `${state.data.recipes.length} recipes loaded`
+            ? `${countOf(state.data.recipes.length, 'recipe')} loaded`
             : ''
         }
       />

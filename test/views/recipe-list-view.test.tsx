@@ -216,6 +216,12 @@ describe('RecipeListScreen at scale', () => {
     expect(out).toContain('Use the close button in the header');
   });
 
+  it('announces one recipe in the singular', () => {
+    expect(screen({ phase: 'ready', data: recipes(1) })).toContain(
+      '1 recipe loaded',
+    );
+  });
+
   it('announces how many recipes arrived', () => {
     expect(screen({ phase: 'ready', data: recipes(12) })).toContain(
       '12 recipes loaded',

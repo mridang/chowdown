@@ -25,6 +25,7 @@ import { SCOPE_READ, normaliseScope, type Scope } from '@/lib/oauth/scopes';
 import { logSecurityEvent } from '@/lib/oauth/security-log';
 import { SITE_NAME } from '@/utils/site';
 import { withQueryParams } from '@/utils/query';
+import { countOf } from '@/lib/intl';
 
 /** A validated authorization request. */
 export interface AuthorizeRequest {
@@ -143,7 +144,7 @@ export async function validateAuthorizeRequest(
     return {
       ok: false,
       error: 'temporarily_unavailable',
-      description: `Too many applications are being checked right now. Try again in ${client.retryAfterSeconds} seconds.`,
+      description: `Too many applications are being checked right now. Try again in ${countOf(client.retryAfterSeconds, 'second')}.`,
       retryAfterSeconds: client.retryAfterSeconds,
     };
   }

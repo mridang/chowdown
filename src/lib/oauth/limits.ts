@@ -21,6 +21,7 @@ import {
   type RateLimit,
   type RateLimitStore,
 } from '@/lib/rate-limit';
+import { countOf } from '@/lib/intl';
 
 /**
  * The limits. Registration is generous per hour (a legitimate assistant
@@ -107,7 +108,7 @@ export function tooManyRequests(retryAfterSeconds: number, endpoint: string) {
   logSecurityEvent('oauth.rate_limited', { endpoint, retryAfterSeconds });
   return oauthError(
     'temporarily_unavailable',
-    `Too many requests. Try again in ${retryAfterSeconds} seconds.`,
+    `Too many requests. Try again in ${countOf(retryAfterSeconds, 'second')}.`,
     429,
     { 'Retry-After': String(retryAfterSeconds) },
   );
