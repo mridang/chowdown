@@ -2,9 +2,9 @@
  * @packageDocumentation
  *
  * A tiny in-memory store of favourite toggles made in this browser tab. The
- * server renders each heart's initial state, but pages are prefetched and kept
- * in Next's client cache, so a heart toggled on the grid would otherwise look
- * stale on an already-prefetched recipe page (and the other way round). Every
+ * server renders each heart's initial state, but the back and forward buttons
+ * restore pages from Next's client cache, so a heart toggled on the grid would
+ * otherwise look stale on a recipe page restored that way (and the other way round). Every
  * heart reads `override ?? initial` from here, so they all agree instantly,
  * with no refetch. A full page load starts clean from fresh server data.
  */

@@ -1,7 +1,7 @@
+import Link from 'next/link';
 import type { ReactElement, ReactNode } from 'react';
 
 import { CoverImage } from '@/components/cover-image';
-import { IntentLink } from '@/components/ui/intent-link';
 
 import { ClockIcon, FlameIcon, ProteinIcon } from '@/components/icons';
 import { CardFact } from '@/components/recipes/card-fact';
@@ -120,11 +120,9 @@ export function RecipeCard({
   return (
     <div className={priority ? undefined : SKIP_WHEN_OFFSCREEN}>
       <article className="group relative h-full">
-        <IntentLink
-          // Live cards fetch their page as soon as it is wanted; the landing
-          // page's demo cards go nowhere, so they fetch nothing.
-          enabled={live}
-          eager={priority}
+        <Link
+          // The landing page's demo cards go nowhere, so they fetch nothing.
+          prefetch={live ? null : false}
           href={`/recipe/${recipe.id}`}
           className="focus-ring flex h-full flex-col overflow-hidden rounded-card border border-line bg-white transition group-hover:border-ink/30"
         >
@@ -165,7 +163,7 @@ export function RecipeCard({
               ) : null}
             </div>
           </div>
-        </IntentLink>
+        </Link>
         {recipe.uncurated ? (
           <span className="absolute top-3 left-3 rounded-full border border-line bg-white px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-ink uppercase">
             Idea
