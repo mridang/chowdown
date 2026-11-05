@@ -300,9 +300,7 @@ type Handler = (
 ) => Promise<Response>;
 
 /** The module of each route, by its path in the document. */
-const ROUTES: Readonly<
-  Record<string, () => Promise<Readonly<Record<string, Handler>>>>
-> = {
+const ROUTES: Readonly<Record<string, () => Promise<object>>> = {
   '/api/recipes': () => import('@/app/api/recipes/route'),
   '/api/recipes/{id}': () => import('@/app/api/recipes/[id]/route'),
   '/api/recipes/{id}/notes': () => import('@/app/api/recipes/[id]/notes/route'),
@@ -354,7 +352,7 @@ async function call(
   if (!load) {
     throw new Error(`${key} has no route module in ROUTES`);
   }
-  const routeModule = await load();
+  const routeModule = (await load()) as Readonly<Record<string, Handler>>;
   const handler = routeModule[method];
   if (!handler) {
     throw new Error(`${key} is documented but its route does not export it`);
