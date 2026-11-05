@@ -118,6 +118,28 @@ describe('GET /api/users/self/connections', () => {
     expect(body.items.find((a) => a.id === 'g1')).not.toHaveProperty('domain');
   });
 
+  it('pages the list: a short page links to the next, and the cursor continues after it', async () => {
+    const first = (await (await GET(new Request(`${URL}?limit=1`))).json()) as {
+      next?: string;
+      items: { id: string }[];
+    };
+    expect(first.items.map((a) => a.id)).toEqual(['g1']);
+    expect(first.next).toContain('cursor=');
+    const second = (await (
+      await GET(new Request(first.next ?? ''))
+    ).json()) as { next?: string; items: { id: string }[] };
+    expect(second.items.map((a) => a.id)).toEqual(['g2']);
+    expect(second.next).toBeUndefined();
+  });
+
+  it('answers 400 for a limit out of range and for a cursor it did not issue', async () => {
+    for (const query of ['limit=0', 'limit=101', 'limit=x', 'cursor=nope']) {
+      const res = await GET(new Request(`${URL}?${query}`));
+      expect(res.status).toBe(400);
+      expect(res.headers.get('content-type')).toBe('application/problem+json');
+    }
+  });
+
   it('answers 401 for a session that was ended everywhere', async () => {
     session.ended = true;
     expect((await GET(new Request(URL))).status).toBe(401);

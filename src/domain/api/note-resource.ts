@@ -28,6 +28,9 @@ const WIRE_SCOPES = {
 /** The longest note text accepted. */
 const MAX_TEXT = 2000;
 
+/** The highest step number a note may be attached to. */
+export const MAX_STEP = 1000;
+
 /** A note as a resource; `index` is 0-based. */
 export function noteResource(
   note: Readonly<Note>,
@@ -73,8 +76,8 @@ export function parseNoteInput(
     (typeof ingredient !== 'string' || !ingredient.trim())
       ? ['ingredient: must be a non-empty string.']
       : []),
-    ...(step !== undefined && !isPositiveInteger(step)
-      ? ['step: must be a whole number from 1.']
+    ...(step !== undefined && !isStepNumber(step)
+      ? [`step: must be a whole number from 1 to ${MAX_STEP}.`]
       : []),
     ...(typeof ingredient === 'string' &&
     ingredient.trim() &&
@@ -107,9 +110,14 @@ export function parseNoteInput(
   return { ok: true, note: { scope: 'general', key: '', text: text.trim() } };
 }
 
-/** Whether a value is a whole number of at least 1. */
-function isPositiveInteger(value: unknown): boolean {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 1;
+/** Whether a value is a whole number from 1 to {@link MAX_STEP}. */
+function isStepNumber(value: unknown): boolean {
+  return (
+    typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= MAX_STEP
+  );
 }
 
 /** What is wrong with the `text` member, if anything. */

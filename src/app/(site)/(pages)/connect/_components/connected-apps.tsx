@@ -119,7 +119,9 @@ export function ConnectedApps(): ReactElement {
     // Leaving the page cancels the request, and a cancelled request must not
     // set state on a component that has gone.
     const controller = new AbortController();
-    fetch('/api/users/self/connections', { signal: controller.signal })
+    fetch('/api/users/self/connections?limit=100', {
+      signal: controller.signal,
+    })
       .then(async (res) => {
         if (!res.ok) {
           throw new Error(String(res.status));

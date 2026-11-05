@@ -17,3 +17,7 @@ Run `mcp-publisher validate` after editing it. Publish again only when the listi
 ## Tailwind
 
 Tailwind 4 no longer gives `<button>` the pointer cursor, so the base layer of the app's stylesheet carries one rule that does (buttons, `summary`, `select`, `[role='button']` and button-like inputs, never disabled ones). Keep it, and keep it identical across the apps. Do not add `cursor-pointer` to individual buttons to work around its absence, and do not restyle a link or a button to fake the other: use `<a>` or `<Link>` when the click goes to a URL, and `<button>` when it acts on the current page.
+
+## HTTP API
+
+`openapi.json` at the repository root describes exactly the REST contract under `/api` and nothing else (OAuth, sign-in, `/mcp`, `/health`, `/img` and `/csp/reports` stay outside it). It is written by hand. `test/openapi.test.ts` fails when it drifts from the route files, so a new or changed route, body, query parameter or status code changes `openapi.json` in the same commit. Everything that is not a resource lives at the root, never under `/api`; errors under `/api` are always `application/problem+json` built with `problems`.

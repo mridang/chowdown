@@ -1,0 +1,2423 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "chowdown API",
+    "version": "0.1.0",
+    "summary": "The REST API of chowdown: recipes kept as Cooklang files in the person's own Google Drive.",
+    "description": "The REST contract under `/api` follows the [Zalando RESTful API Guidelines](https://opensource.zalando.com/restful-api-guidelines/) with the deviations of the `api-design` skill: JSON properties are snake_case, timestamps are RFC 3339, path segments have no hyphens, lists are paged with a cursor (`self`, `next`, `items`), and every error is `application/problem+json` (RFC 9457).\n\nOnly the REST contract under `/api` is described here. What is not REST sits outside it and is not part of the contract: the Google sign-in and Drive-connection redirects (`/auth/*`), the OAuth server (`/oauth/*`, `/.well-known/*`), the MCP endpoint (`/mcp`), the health check (`/health`), the image proxy (`/img`) and the CSP report sink (`/csp/reports`).\n\nEvery operation but signing out needs a signed-in person and declares the `session` security scheme: `401` without a live session, and `403` for a request that changes something and comes from another site (a browser reports that in `Sec-Fetch-Site`; a client that sends neither that nor an `Origin` header is not refused). Every query is scoped to the signed-in person, so another person's recipe is `404`. The tokens of the MCP endpoint and the OAuth server are not accepted under `/api`.\n\nSigning in does not connect Google Drive. Until the person has connected it in the app, everything that reads or writes a recipe file in Drive answers `409` (`/problems/drive-not-connected`).\n\nRequests are rate limited by the platform, and a blocked request is answered with `429` and `Retry-After`; importing and suggesting also have a daily allowance per person.\n\nTesting the whole contract as an ordinary person: every operation here can be called by one signed-in account with its session cookie, once that account has connected Google Drive. There is no administrator role and no operation that needs one. Two operations end the account or its session (`deleteCurrentUser`, `deleteSessions`) and are the ones a test run should leave for last or leave out.",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    }
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "recipes",
+      "description": "Recipes, kept as Cooklang files in Google Drive."
+    },
+    {
+      "name": "notes",
+      "description": "The notes on a recipe."
+    },
+    {
+      "name": "imports",
+      "description": "Drafts made from pasted links and text."
+    },
+    {
+      "name": "favourites",
+      "description": "The recipes the person has hearted."
+    },
+    {
+      "name": "account",
+      "description": "The signed-in person, their connected apps and their sessions."
+    }
+  ],
+  "paths": {
+    "/api/recipes": {
+      "get": {
+        "operationId": "listRecipes",
+        "tags": ["recipes"],
+        "summary": "List recipes",
+        "description": "The signed-in person's recipes, from the cache, so it never waits on Drive. Filtered by the query, sorted, and paged with a cursor.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Words to find in the title, the site and the tags.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "source_site",
+            "in": "query",
+            "description": "Only recipes from these sites (`example.com`), commas for several.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "protein",
+            "in": "query",
+            "description": "Only recipes with this protein. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cuisine",
+            "in": "query",
+            "description": "Only recipes of this cuisine. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Only recipes of this course. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "diet_type",
+            "in": "query",
+            "description": "Only recipes of this diet type. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "diet",
+            "in": "query",
+            "description": "Only recipes that suit this diet. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "difficulty",
+            "in": "query",
+            "description": "Only recipes of this difficulty. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "description": "Only recipes cooked this way. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keywords",
+            "in": "query",
+            "description": "Only recipes with this keyword. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "`title` or `modified_at`, optionally prefixed with `+` or `-`.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[+-]?(title|modified_at)$",
+              "default": "title"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of recipes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createRecipe",
+        "tags": ["recipes"],
+        "summary": "Create a recipe",
+        "description": "Writes the file to the person's Google Drive and indexes it. A recipe whose source link is already saved is not made twice: that recipe is answered with 200.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewRecipe"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A recipe with the same source link already exists.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              },
+              "text/x-cooklang": {
+                "schema": {
+                  "type": "string",
+                  "description": "The Cooklang text."
+                }
+              },
+              "application/ld+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeJsonLd"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "The recipe's entity tag.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Location": {
+                "description": "The address of the existing recipe.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "The recipe was created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              },
+              "text/x-cooklang": {
+                "schema": {
+                  "type": "string",
+                  "description": "The Cooklang text."
+                }
+              },
+              "application/ld+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeJsonLd"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "The recipe's entity tag.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Location": {
+                "description": "The address of the new recipe.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/DriveNotConnected"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamFailure"
+          }
+        }
+      }
+    },
+    "/api/recipes/{id}": {
+      "get": {
+        "operationId": "getRecipe",
+        "tags": ["recipes"],
+        "summary": "Read a recipe",
+        "description": "As JSON, as Cooklang text (`Accept: text/x-cooklang`) or as schema.org JSON-LD (`Accept: application/ld+json`).",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RecipeId"
+          },
+          {
+            "$ref": "#/components/parameters/IfNoneMatch"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The recipe.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              },
+              "text/x-cooklang": {
+                "schema": {
+                  "type": "string",
+                  "description": "The Cooklang text."
+                }
+              },
+              "application/ld+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeJsonLd"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "The recipe's entity tag.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Vary": {
+                "description": "`Accept`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "replaceRecipe",
+        "tags": ["recipes"],
+        "summary": "Replace a recipe's Cooklang text",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RecipeId"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecipeReplacement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The recipe as it now stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              },
+              "text/x-cooklang": {
+                "schema": {
+                  "type": "string",
+                  "description": "The Cooklang text."
+                }
+              },
+              "application/ld+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeJsonLd"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "The recipe's entity tag.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/DriveNotConnected"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamFailure"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateRecipe",
+        "tags": ["recipes"],
+        "summary": "Change a recipe's title, images or tags",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RecipeId"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/merge-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecipePatch"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecipePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The recipe as it now stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              },
+              "text/x-cooklang": {
+                "schema": {
+                  "type": "string",
+                  "description": "The Cooklang text."
+                }
+              },
+              "application/ld+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeJsonLd"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "The recipe's entity tag.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/DriveNotConnected"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamFailure"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteRecipe",
+        "tags": ["recipes"],
+        "summary": "Delete a recipe",
+        "description": "The file goes to the trash in Google Drive.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RecipeId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The recipe was deleted."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/DriveNotConnected"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamFailure"
+          }
+        }
+      }
+    },
+    "/api/recipes/{id}/notes": {
+      "get": {
+        "operationId": "listRecipeNotes",
+        "tags": ["notes"],
+        "summary": "List the notes on a recipe",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RecipeId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The notes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotePage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createRecipeNote",
+        "tags": ["notes"],
+        "summary": "Add a note to a recipe",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RecipeId"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The note was added.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "The recipe's entity tag.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Location": {
+                "description": "The address of the new note.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/DriveNotConnected"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamFailure"
+          }
+        }
+      }
+    },
+    "/api/recipes/{id}/notes/{note_id}": {
+      "get": {
+        "operationId": "getRecipeNote",
+        "tags": ["notes"],
+        "summary": "Read a note",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RecipeId"
+          },
+          {
+            "$ref": "#/components/parameters/NoteId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The note.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "replaceRecipeNote",
+        "tags": ["notes"],
+        "summary": "Replace a note",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RecipeId"
+          },
+          {
+            "$ref": "#/components/parameters/NoteId"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The note as it now stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "The recipe's entity tag.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/DriveNotConnected"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamFailure"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteRecipeNote",
+        "tags": ["notes"],
+        "summary": "Delete a note",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RecipeId"
+          },
+          {
+            "$ref": "#/components/parameters/NoteId"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The note was deleted.",
+            "headers": {
+              "ETag": {
+                "description": "The recipe's entity tag.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/DriveNotConnected"
+          },
+          "412": {
+            "$ref": "#/components/responses/PreconditionFailed"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamFailure"
+          }
+        }
+      }
+    },
+    "/api/recipes/{id}/similar": {
+      "get": {
+        "operationId": "listSimilarRecipes",
+        "tags": ["recipes"],
+        "summary": "List the recipes similar to one",
+        "description": "Most similar first, precomputed from the recipes' embeddings. Empty until they are computed.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RecipeId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The similar recipes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuggestionPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/recipes/suggestions": {
+      "get": {
+        "operationId": "listRecipeSuggestions",
+        "tags": ["recipes"],
+        "summary": "Suggest recipes for a wish",
+        "description": "The recipes closest in meaning to the text in `q`, best first. The most expensive read there is: it counts against a daily allowance, and answers 429 once that is used up.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "What the person feels like, such as `something light with chicken`.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many suggestions to return.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 8
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The suggestions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuggestionPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/DriveNotConnected"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "502": {
+            "$ref": "#/components/responses/UpstreamFailure"
+          }
+        }
+      }
+    },
+    "/api/recipes/imports": {
+      "get": {
+        "operationId": "listRecipeImports",
+        "tags": ["imports"],
+        "summary": "List the recipe imports",
+        "description": "The person's imports, newest first, without their drafts. Imports are kept for seven days.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of imports.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeImportSummaryPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createRecipeImport",
+        "tags": ["imports"],
+        "summary": "Import recipes from links and pasted text",
+        "description": "Each link is fetched and converted to Cooklang into a draft; a link that cannot be fetched is a `FAILED` item instead of failing the whole import. Nothing becomes a recipe until a draft is posted to `/api/recipes`. Counts against a daily allowance.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecipeImportInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The import and its drafts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeImport"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "The address of the import.",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/recipes/imports/{id}": {
+      "get": {
+        "operationId": "getRecipeImport",
+        "tags": ["imports"],
+        "summary": "Read a recipe import with its drafts",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ImportId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The import.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeImport"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteRecipeImport",
+        "tags": ["imports"],
+        "summary": "Discard a recipe import",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ImportId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The import was discarded."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/self": {
+      "get": {
+        "operationId": "getCurrentUser",
+        "tags": ["account"],
+        "summary": "Read the signed-in person's account",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateCurrentUser",
+        "tags": ["account"],
+        "summary": "Change a preference",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/merge-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPatch"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The account as it now stands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteCurrentUser",
+        "tags": ["account"],
+        "summary": "Delete the account",
+        "description": "Deletes everything the app keeps about the person, ends their session and revokes the Drive connection. Their recipe files stay in their Google Drive. **Destructive:** the account that calls this is gone.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The account was deleted. The session cookie is cleared."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/self/favourites": {
+      "get": {
+        "operationId": "listFavourites",
+        "tags": ["favourites"],
+        "summary": "List the favourite recipes",
+        "description": "The recipes the person has hearted. Takes the same query as `GET /api/recipes`, except `favourite`, which is implied.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Words to find in the title, the site and the tags.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "source_site",
+            "in": "query",
+            "description": "Only recipes from these sites (`example.com`), commas for several.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "protein",
+            "in": "query",
+            "description": "Only recipes with this protein. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cuisine",
+            "in": "query",
+            "description": "Only recipes of this cuisine. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Only recipes of this course. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "diet_type",
+            "in": "query",
+            "description": "Only recipes of this diet type. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "diet",
+            "in": "query",
+            "description": "Only recipes that suit this diet. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "difficulty",
+            "in": "query",
+            "description": "Only recipes of this difficulty. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "description": "Only recipes cooked this way. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keywords",
+            "in": "query",
+            "description": "Only recipes with this keyword. Several values separated by commas match any of them.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "`title` or `modified_at`, optionally prefixed with `+` or `-`.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[+-]?(title|modified_at)$",
+              "default": "title"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of recipes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/self/favourites/{recipe_id}": {
+      "get": {
+        "operationId": "getFavourite",
+        "tags": ["favourites"],
+        "summary": "Read a favourite recipe",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/FavouriteRecipeId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The recipe, when it is one of the person's favourites.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "put": {
+        "operationId": "addFavourite",
+        "tags": ["favourites"],
+        "summary": "Favourite a recipe",
+        "description": "Idempotent: favouriting twice is fine. Only the person's own recipes can be favourited.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/FavouriteRecipeId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The recipe is a favourite."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeFavourite",
+        "tags": ["favourites"],
+        "summary": "Un-favourite a recipe",
+        "description": "Idempotent: removing one that is not there is fine, even for a recipe that no longer exists.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/FavouriteRecipeId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The recipe is not a favourite."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/self/connections": {
+      "get": {
+        "operationId": "listConnections",
+        "tags": ["account"],
+        "summary": "List the connected apps",
+        "description": "The apps (ChatGPT, Claude and so on) the person has approved with sign-in and not disconnected, newest first.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of apps.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectedAppPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/self/connections/{grant_id}": {
+      "delete": {
+        "operationId": "deleteConnection",
+        "tags": ["account"],
+        "summary": "Disconnect an app",
+        "description": "Its access and refresh tokens stop working at once, for every install of the app.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/GrantId"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The app was disconnected."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/sessions": {
+      "delete": {
+        "operationId": "deleteSessions",
+        "tags": ["account"],
+        "summary": "Sign out everywhere",
+        "description": "Ends every session of the person, on every device, this one included: the cookies already issued stop being accepted. **Destructive for a test run:** the session that calls it is over.",
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Every session has ended. The session cookie is cleared."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/sessions/self": {
+      "delete": {
+        "operationId": "deleteCurrentSession",
+        "tags": ["account"],
+        "summary": "Sign out",
+        "description": "Clears this browser's session cookie. Public and idempotent: signing out twice, or when already signed out, is fine. The session itself is a signed token that is not stored, so other devices stay signed in.",
+        "security": [],
+        "responses": {
+          "204": {
+            "description": "The session cookie is cleared."
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "chowdown_session",
+        "description": "The signed session cookie that signing in with Google at `/auth/login` sets. To test as one account, sign in with a browser and send the value of the `chowdown_session` cookie as `Cookie: chowdown_session=<value>`. It is a bearer credential for that account: keep it out of logs and files."
+      }
+    },
+    "parameters": {
+      "RecipeId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "The Drive file id of the recipe. An id that is not one of the caller's recipes is a 404.",
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "ImportId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "The id of the import. An id that is not one of the caller's imports is a 404.",
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "NoteId": {
+        "name": "note_id",
+        "in": "path",
+        "required": true,
+        "description": "The note's position among the recipe's notes, from 1. Anything else is a 404.",
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[1-9][0-9]{0,5}$"
+        }
+      },
+      "FavouriteRecipeId": {
+        "name": "recipe_id",
+        "in": "path",
+        "required": true,
+        "description": "The Drive file id of the recipe.",
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "GrantId": {
+        "name": "grant_id",
+        "in": "path",
+        "required": true,
+        "description": "The `id` of a connected app.",
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "description": "How many items to return.",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        }
+      },
+      "Cursor": {
+        "name": "cursor",
+        "in": "query",
+        "description": "The cursor of the next page: take it from the `next` link, never build one.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "IfMatch": {
+        "name": "If-Match",
+        "in": "header",
+        "description": "The `ETag` of the recipe as last read. The change is refused with 412 when the recipe has changed since.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "IfNoneMatch": {
+        "name": "If-None-Match",
+        "in": "header",
+        "description": "The `ETag` of the recipe as last read. Answered with 304 when it has not changed.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "The request is not valid. `errors` names each field that failed.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Nobody is signed in, or the session has ended.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The request came from another site.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "No such resource, or it belongs to someone else.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "DriveNotConnected": {
+        "description": "Google Drive is not connected: the person has to connect it in the app first.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "PreconditionFailed": {
+        "description": "`If-Match` no longer matches: the recipe changed since it was read.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "PayloadTooLarge": {
+        "description": "The request body is over the limit of the route.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "UnsupportedMediaType": {
+        "description": "The body is not in an accepted media type.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Rate limited by the platform, or the day's allowance is used up.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        },
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds to wait.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      },
+      "UpstreamFailure": {
+        "description": "Google Drive failed; nothing was changed.",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "NotModified": {
+        "description": "The recipe has not changed since the `ETag` in `If-None-Match`."
+      }
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "description": "An RFC 9457 problem document.",
+        "required": ["type", "title", "status"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "A relative URI naming the kind of problem, such as `/problems/not-found`."
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          },
+          "detail": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "One message per field that failed validation."
+          }
+        }
+      },
+      "RecipeTags": {
+        "type": "object",
+        "description": "The recipe's tags: the facet (`protein`, `cuisine`, `category`, `diet_type`, `diet`, `difficulty`, `method`, `keywords`) and its values.",
+        "additionalProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "RecipeSummary": {
+        "type": "object",
+        "required": ["id", "title", "tags", "favourite", "uncurated"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The Google Drive file id of the recipe."
+          },
+          "title": {
+            "type": "string"
+          },
+          "source_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Where the recipe came from (`>> source:`); absent when it has none."
+          },
+          "cover_url": {
+            "type": "string",
+            "description": "The first image of the recipe; absent when it has none."
+          },
+          "tags": {
+            "$ref": "#/components/schemas/RecipeTags"
+          },
+          "favourite": {
+            "type": "boolean"
+          },
+          "uncurated": {
+            "type": "boolean",
+            "description": "True while the file still has the name it was imported under."
+          },
+          "modified_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the file last changed in Drive; absent when not known."
+          }
+        }
+      },
+      "Recipe": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "tags",
+          "favourite",
+          "uncurated",
+          "images",
+          "cooklang",
+          "ingredients",
+          "cookware",
+          "steps"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The Google Drive file id of the recipe."
+          },
+          "title": {
+            "type": "string"
+          },
+          "source_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Where the recipe came from (`>> source:`); absent when it has none."
+          },
+          "cover_url": {
+            "type": "string",
+            "description": "The first image of the recipe; absent when it has none."
+          },
+          "tags": {
+            "$ref": "#/components/schemas/RecipeTags"
+          },
+          "favourite": {
+            "type": "boolean"
+          },
+          "uncurated": {
+            "type": "boolean",
+            "description": "True while the file still has the name it was imported under."
+          },
+          "modified_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the file last changed in Drive; absent when not known."
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Cover first."
+          },
+          "cooklang": {
+            "type": "string",
+            "description": "The recipe as Cooklang text: the one writable representation."
+          },
+          "ingredients": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name"],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "cookware": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "RecipeJsonLd": {
+        "type": "object",
+        "description": "The recipe as schema.org JSON-LD."
+      },
+      "NewRecipe": {
+        "type": "object",
+        "description": "Unknown members are ignored.",
+        "required": ["name", "cooklang"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Names the file in Drive."
+          },
+          "cooklang": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200000,
+            "description": "The recipe as Cooklang text, at most 5000 lines."
+          }
+        }
+      },
+      "RecipeReplacement": {
+        "type": "object",
+        "description": "Unknown members are ignored.",
+        "required": ["cooklang"],
+        "properties": {
+          "cooklang": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200000,
+            "description": "The recipe's new Cooklang text, at most 5000 lines."
+          }
+        }
+      },
+      "RecipePatch": {
+        "type": "object",
+        "description": "A JSON Merge Patch (RFC 7396). Only these members can change; a patch that names anything else is refused with 400.",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "images": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            },
+            "description": "Cover first; `null` or an empty list removes them all."
+          },
+          "tags": {
+            "type": "object",
+            "description": "Per facet, its new values; `null` removes the facet. `diet_type` is worked out from the ingredients and cannot be set.",
+            "additionalProperties": {
+              "type": ["array", "null"],
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Note": {
+        "type": "object",
+        "description": "A note is a comment line in the recipe's file, so its id is its position among the recipe's notes (`1` is the first). Positions shift when an earlier note is deleted: send the recipe's `ETag` as `If-Match` when changing one.",
+        "required": ["id", "scope", "text"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,5}$"
+          },
+          "scope": {
+            "type": "string",
+            "enum": ["GENERAL", "INGREDIENT", "STEP"]
+          },
+          "ingredient": {
+            "type": "string",
+            "description": "Present when the scope is `INGREDIENT`."
+          },
+          "step": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Present when the scope is `STEP`."
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "NoteInput": {
+        "type": "object",
+        "description": "At most one of `ingredient` and `step`; which one is present decides the scope. Unknown members are ignored.",
+        "required": ["text"],
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "ingredient": {
+            "type": "string",
+            "minLength": 1
+          },
+          "step": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000
+          }
+        }
+      },
+      "Suggestion": {
+        "type": "object",
+        "required": ["id", "title"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "RecipeImportInput": {
+        "type": "object",
+        "description": "Unknown members are ignored.",
+        "required": ["input"],
+        "properties": {
+          "input": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100000,
+            "description": "Links and pasted recipe text; at most ten links and recipes."
+          }
+        }
+      },
+      "ImportItem": {
+        "type": "object",
+        "required": ["title", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "source_url": {
+            "type": "string",
+            "description": "The page it came from, for links."
+          },
+          "title": {
+            "type": "string",
+            "description": "The suggested name, or the link when it failed."
+          },
+          "status": {
+            "type": "string",
+            "enum": ["DRAFT", "FAILED"]
+          },
+          "cooklang": {
+            "type": "string",
+            "description": "The generated Cooklang, editable before it is saved as a recipe."
+          },
+          "problem": {
+            "type": "string",
+            "description": "Why it failed, for a failed item."
+          }
+        }
+      },
+      "RecipeImport": {
+        "type": "object",
+        "required": ["id", "status", "created_at", "items"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["COMPLETED"]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportItem"
+            }
+          }
+        }
+      },
+      "RecipeImportSummary": {
+        "type": "object",
+        "required": ["id", "status", "created_at", "item_count"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["COMPLETED"]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "item_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "required": ["id", "email"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "picture_url": {
+            "type": "string"
+          },
+          "measurement_system": {
+            "$ref": "#/components/schemas/MeasurementSystem"
+          }
+        }
+      },
+      "MeasurementSystem": {
+        "type": "string",
+        "enum": ["METRIC", "US", "IMPERIAL"]
+      },
+      "UserPatch": {
+        "type": "object",
+        "description": "A JSON Merge Patch (RFC 7396). Only `measurement_system` can change; a patch that names anything else is refused with 400.",
+        "additionalProperties": false,
+        "properties": {
+          "measurement_system": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MeasurementSystem"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`null` clears the preference."
+          }
+        }
+      },
+      "ConnectedApp": {
+        "type": "object",
+        "required": ["id", "name", "scopes", "installs", "connected_at"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The newest grant of the app. Disconnecting it ends every install of the app."
+          },
+          "name": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "installs": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "How many separate installs of the app are connected."
+          },
+          "domain": {
+            "type": "string",
+            "description": "The domain that published the app; absent for an app that registered itself without any check."
+          },
+          "logo_uri": {
+            "type": "string",
+            "description": "The picture the app publishes for itself."
+          },
+          "connected_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_used_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RecipePage": {
+        "type": "object",
+        "description": "One page of recipes.",
+        "required": ["self", "items"],
+        "additionalProperties": false,
+        "properties": {
+          "self": {
+            "type": "string",
+            "format": "uri",
+            "description": "The address of this page."
+          },
+          "next": {
+            "type": "string",
+            "format": "uri",
+            "description": "The address of the next page; absent on the last page."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecipeSummary"
+            }
+          }
+        }
+      },
+      "NotePage": {
+        "type": "object",
+        "description": "The recipe's notes, in order. They all fit one page.",
+        "required": ["self", "items"],
+        "additionalProperties": false,
+        "properties": {
+          "self": {
+            "type": "string",
+            "format": "uri",
+            "description": "The address of this page."
+          },
+          "next": {
+            "type": "string",
+            "format": "uri",
+            "description": "The address of the next page; absent on the last page."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Note"
+            }
+          }
+        }
+      },
+      "SuggestionPage": {
+        "type": "object",
+        "description": "Recipes, most relevant first. At most `limit` of them; there is no next page.",
+        "required": ["self", "items"],
+        "additionalProperties": false,
+        "properties": {
+          "self": {
+            "type": "string",
+            "format": "uri",
+            "description": "The address of this page."
+          },
+          "next": {
+            "type": "string",
+            "format": "uri",
+            "description": "The address of the next page; absent on the last page."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Suggestion"
+            }
+          }
+        }
+      },
+      "RecipeImportSummaryPage": {
+        "type": "object",
+        "description": "One page of imports, newest first.",
+        "required": ["self", "items"],
+        "additionalProperties": false,
+        "properties": {
+          "self": {
+            "type": "string",
+            "format": "uri",
+            "description": "The address of this page."
+          },
+          "next": {
+            "type": "string",
+            "format": "uri",
+            "description": "The address of the next page; absent on the last page."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecipeImportSummary"
+            }
+          }
+        }
+      },
+      "ConnectedAppPage": {
+        "type": "object",
+        "description": "One page of connected apps, newest first.",
+        "required": ["self", "items"],
+        "additionalProperties": false,
+        "properties": {
+          "self": {
+            "type": "string",
+            "format": "uri",
+            "description": "The address of this page."
+          },
+          "next": {
+            "type": "string",
+            "format": "uri",
+            "description": "The address of the next page; absent on the last page."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConnectedApp"
+            }
+          }
+        }
+      }
+    }
+  }
+}

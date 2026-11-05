@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  MAX_STEP,
   noteIndex,
   noteResource,
   parseNoteInput,
@@ -91,5 +92,11 @@ describe('parseNoteInput', () => {
   it('refuses a very long note and a fractional step', () => {
     expect(parseNoteInput({ text: 'x'.repeat(2001) }).ok).toBe(false);
     expect(parseNoteInput({ text: 'x', step: 1.5 }).ok).toBe(false);
+  });
+
+  it('refuses a step above the highest a note may be attached to', () => {
+    expect(parseNoteInput({ text: 'x', step: MAX_STEP }).ok).toBe(true);
+    expect(parseNoteInput({ text: 'x', step: MAX_STEP + 1 }).ok).toBe(false);
+    expect(parseNoteInput({ text: 'x', step: 1e21 }).ok).toBe(false);
   });
 });

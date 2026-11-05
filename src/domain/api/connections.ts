@@ -6,13 +6,26 @@
  * files only mount these.
  */
 
-import { ApiController, page, problems } from '@/lib/core/api';
+import {
+  ApiController,
+  decodeCursor,
+  page,
+  parseLimit,
+  problems,
+  sliceAfter,
+  type CursorPosition,
+  type Slice,
+} from '@/lib/core/api';
+import { compareNewestFirst } from '@/domain/api/newest-first';
 import {
   liveUid,
   requestCookieResolver,
   type CurrentUserResolver,
 } from '@/domain/api/auth';
-import { connectedAppResource } from '@/domain/connected-apps';
+import {
+  connectedAppResource,
+  type ConnectedApp,
+} from '@/domain/connected-apps';
 import { listConnectedApps, revokeConnectedApp } from '@/domain/db/oauth';
 import { getDatabase } from '@/domain/db/client';
 
@@ -21,11 +34,23 @@ interface UidContext {
   readonly uid: number;
 }
 
+/** The page asked for: how many apps, and where to start after. */
+interface PageRequest {
+  readonly limit: number;
+  readonly after?: CursorPosition;
+}
+
+/** A connected app's place in the list, for cursors. */
+function appPosition(app: Readonly<ConnectedApp>): CursorPosition {
+  return { key: app.connected_at, id: app.id };
+}
+
 /**
  * `GET /api/users/self/connections`: the apps the user has approved and not
- * disconnected, newest first. 200 with a page of apps, 401 when nobody is
- * signed in. The resolver decides who is calling; it defaults to the production
- * one and is injected in tests.
+ * disconnected, newest first, one page at a time (`limit`, `cursor`). 200 with
+ * a page of apps, 400 for a bad `limit` or `cursor`, 401 when nobody is signed
+ * in. The resolver decides who is calling; it defaults to the production one
+ * and is injected in tests.
  */
 export function makeConnectionsCollection(
   resolver: CurrentUserResolver = requestCookieResolver,
@@ -34,12 +59,31 @@ export function makeConnectionsCollection(
     context: async (request) => ({
       uid: await liveUid(request, resolver),
     }),
-  }).on({
+  }).on<PageRequest, Slice<ConnectedApp>>({
     method: 'GET',
-    handle: async (_input, { uid }) =>
-      (await listConnectedApps(getDatabase(), uid)).map(connectedAppResource),
-    encode: (apps) =>
-      page(apps, undefined, { 'Cache-Control': 'private, no-cache' }),
+    decode: (request): PageRequest => {
+      const query = new URL(request.url).searchParams;
+      const limit = parseLimit(query.get('limit'));
+      if (typeof limit !== 'number') {
+        throw limit;
+      }
+      const cursor = query.get('cursor');
+      const after = cursor ? decodeCursor(cursor) : undefined;
+      if (cursor && !after) {
+        throw problems.badRequest('The cursor is not valid.');
+      }
+      return { limit, after };
+    },
+    handle: async ({ limit, after }, { uid }) =>
+      sliceAfter(
+        (await listConnectedApps(getDatabase(), uid)).map(connectedAppResource),
+        appPosition,
+        compareNewestFirst,
+        after,
+        limit,
+      ),
+    encode: (slice) =>
+      page(slice.items, slice.next, { 'Cache-Control': 'private, no-cache' }),
   });
 }
 

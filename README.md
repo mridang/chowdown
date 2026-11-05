@@ -96,17 +96,18 @@ JSON Merge Patch, `ETag` / `If-Match`, `X-Flow-ID`). The deliberate departures a
 the `/api` prefix and path segments without hyphens (`recipes/imports`, not
 `recipe-imports`).
 
-| Resource                                     | Methods                                     |
-| -------------------------------------------- | ------------------------------------------- |
-| `/api/recipes`, `/api/recipes/{recipe_id}`   | list, create · read, replace, patch, delete |
-| `/api/recipes/{recipe_id}/notes[/{note-id}]` | list, create · read, replace, delete        |
-| `/api/recipes/{recipe_id}/similar`           | list                                        |
-| `/api/recipes/suggestions?q=`                | list                                        |
-| `/api/recipes/imports[/{import-id}]`         | list, create · read, delete                 |
-| `/api/users/self`                            | read, patch                                 |
-| `/api/users/self/favourites[/{recipe_id}]`   | list · read, put, delete                    |
-| `/api/users/self/connections[/{grant_id}]`   | list · delete                               |
-| `/api/sessions/self`                         | delete (sign out)                           |
+| Resource                                   | Methods                                     |
+| ------------------------------------------ | ------------------------------------------- |
+| `/api/recipes`, `/api/recipes/{id}`        | list, create · read, replace, patch, delete |
+| `/api/recipes/{id}/notes[/{note_id}]`      | list, create · read, replace, delete        |
+| `/api/recipes/{id}/similar`                | list                                        |
+| `/api/recipes/suggestions?q=`              | list                                        |
+| `/api/recipes/imports[/{id}]`              | list, create · read, delete                 |
+| `/api/users/self`                          | read, patch, delete                         |
+| `/api/users/self/favourites[/{recipe_id}]` | list · read, put, delete                    |
+| `/api/users/self/connections[/{grant_id}]` | list · delete                               |
+| `/api/sessions`                            | delete (sign out everywhere)                |
+| `/api/sessions/self`                       | delete (sign out)                           |
 
 Auth is the signed session cookie. Writes must come from the app's own pages
 (cross-site writes get `403`). Signing in does not connect Google Drive: writes
@@ -115,6 +116,39 @@ the person has connected it in the browser. Everything that is not a resource st
 of the API: MCP (`/mcp`), OAuth (`/oauth/*`, `/.well-known/*`), the Google
 sign-in and Drive-connection redirects (`/auth/*`), the health check (`/health`), the
 image proxy (`/img`), CSP reports (`/csp/reports`).
+
+### OpenAPI
+
+[`openapi.json`](openapi.json) at the root of the repository describes exactly
+the routes under `src/app/api`, nothing else. `test/openapi.test.ts` fails when
+the two drift: every exported `METHOD /path` must be an operation and the other
+way round, a public operation must answer without a session and a secured one
+must answer `401`, bad input must answer a documented status as
+`application/problem+json`, and good answers must fit their schemas.
+
+### Testing the API with Schemathesis
+
+Every operation can be called by one ordinary signed-in account; there is no
+administrator role. Sign in with Google in a browser, connect Google Drive once
+(until then the operations that read or write recipe files answer `409`), and
+copy the value of the `chowdown_session` cookie from the browser's developer
+tools into an environment variable. Then run, against a local or deployed
+instance:
+
+```sh
+export CHOWDOWN_SESSION='<the cookie value>'   # a credential: keep it out of logs and files
+schemathesis run openapi.json --url https://your-instance.example \
+  --header "Cookie: chowdown_session=$CHOWDOWN_SESSION" \
+  --exclude-operation-id deleteCurrentUser \
+  --exclude-operation-id deleteSessions
+```
+
+Leave the last two operations out of a long run: they delete the account and
+end every session, so the account is gone after the first call. The requests
+Schemathesis generates carry no `Sec-Fetch-Site` or `Origin` header, which the
+cross-site check lets through; they count against the platform's rate limits
+and the daily allowances of importing and suggesting, so expect some `429`s
+with `Retry-After`.
 
 ## Local development
 
