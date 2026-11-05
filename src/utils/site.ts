@@ -3,7 +3,8 @@
  *
  * What the site calls itself and where it lives, in one place for the page
  * metadata, the structured data and outbound fetches (see `http/safe-fetch.ts`).
- * The first four constants are in every app; the rest are this app's own.
+ * The first four constants are in every app; the structured-data ones (category,
+ * requirements, features) are each app's own value; the rest are this app's own.
  */
 
 /** The name of the site, as it appears in titles and structured data. */
@@ -18,6 +19,19 @@ export const SITE_TITLE =
 export const SITE_DESCRIPTION =
   'Keep every recipe as a plain text file in your own Google Drive, then ' +
   'search, scale and cook from them, and ask your AI assistant what to make.';
+
+/** The schema.org application category of the app, for the structured data. */
+export const SITE_APPLICATION_CATEGORY = 'LifestyleApplication';
+/** What a visitor needs to use the app, for the structured data. */
+export const SITE_REQUIREMENTS =
+  'Requires a modern web browser and a Google account';
+/** What the app does, one short sentence each, for the structured data. */
+export const SITE_FEATURES: readonly string[] = [
+  'Recipes kept as plain Cooklang text files in your own Google Drive',
+  'Search, filter and scale recipes, and switch between metric and US units',
+  'Cook mode with one step at a time',
+  'Connect ChatGPT, Claude or any MCP assistant to your recipes',
+];
 
 /** The address assistants connect to (the connect page and the home page's call to action). */
 export const MCP_URL = `${SITE_URL}/mcp`;

@@ -64,7 +64,7 @@ export const COLOR_SCHEME = 'only light';
  * Whether pages may be indexed unless they say otherwise. Almost every page is
  * someone's own recipes, so crawlers are told to keep out; the public pages
  * opt back in with `pageMetadata({ index: true })`. robots.txt and an
- * `X-Robots-Tag` header (see `lib/http/headers.ts`) say the same thing.
+ * `X-Robots-Tag` header (see `lib/core/http/headers.ts`) say the same thing.
  */
 export const INDEX_BY_DEFAULT = false;
 

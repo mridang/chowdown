@@ -23,7 +23,7 @@ export function CopyField({
 }>): ReactElement {
   const [copied, setCopied] = useState(false);
   return (
-    <div className="flex h-12 items-center gap-2 rounded-control border border-field bg-white pr-1 pl-4">
+    <div className="flex h-12 items-center gap-2 rounded-control border border-field bg-surface pr-1 pl-4">
       <code
         aria-label={label}
         className="min-w-0 flex-1 truncate font-mono text-sm"

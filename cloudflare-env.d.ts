@@ -18,4 +18,6 @@ interface CloudflareEnv extends Cloudflare.Env {
    * from the request when unset (local dev).
    */
   APP_URL?: string;
+  /** Bearer token for the operator endpoints; where unset they are open (local development). */
+  CRON_SECRET?: string;
 }

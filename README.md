@@ -199,7 +199,7 @@ client call `/mcp`; leave it unset for assistants that run on a server.
 
 1. Cloudflare Workers Rate Limiting bindings (`ratelimits` in `wrangler.jsonc`,
    thirteen of them), checked in the Worker before the app runs. Which request
-   counts against which binding is in `src/lib/http/edge-limits.ts`, and a test
+   counts against which binding is in `src/lib/core/http/edge-limits.ts`, and a test
    keeps the two in step. They are per Cloudflare location and eventually
    consistent: a cost guard that refuses floods, not an accounting system.
    Optionally add one Cloudflare WAF rate-limiting rule on top (dashboard:

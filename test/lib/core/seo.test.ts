@@ -1,6 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { jsonLdText, landingJsonLd } from '@/lib/core/seo';
+import {
+  SITE_APPLICATION_CATEGORY,
+  SITE_FEATURES,
+  SITE_REQUIREMENTS,
+} from '@/utils/site';
 
 describe('landingJsonLd', () => {
   const graph = landingJsonLd()['@graph'] as Record<string, unknown>[];
@@ -27,6 +32,14 @@ describe('landingJsonLd', () => {
     expect(app['isAccessibleForFree']).toBe(true);
     expect((app['offers'] as { price: string }).price).toBe('0');
     expect(app['operatingSystem']).toBe('Any');
+  });
+
+  it("takes what is particular to the app from the site's constants", () => {
+    const app = byType('WebApplication');
+    expect(app['applicationCategory']).toBe(SITE_APPLICATION_CATEGORY);
+    expect(app['browserRequirements']).toBe(SITE_REQUIREMENTS);
+    expect(app['featureList']).toEqual(SITE_FEATURES);
+    expect(SITE_FEATURES.length).toBeGreaterThan(0);
   });
 });
 

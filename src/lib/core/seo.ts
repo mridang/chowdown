@@ -5,9 +5,20 @@
  * search engines and assistants can say what the site is without guessing.
  */
 
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/utils/site';
+import {
+  SITE_APPLICATION_CATEGORY,
+  SITE_DESCRIPTION,
+  SITE_FEATURES,
+  SITE_NAME,
+  SITE_REQUIREMENTS,
+  SITE_URL,
+} from '@/utils/site';
 
-/** The landing page's structured data: the organisation, the site and the app. */
+/**
+ * The landing page's structured data: the organisation, the site and the app.
+ * What is particular to the app (its schema.org category, what a visitor must
+ * have, and its feature list) comes from `@/utils/site`.
+ */
 export function landingJsonLd(): Readonly<Record<string, unknown>> {
   return {
     '@context': 'https://schema.org',
@@ -34,18 +45,12 @@ export function landingJsonLd(): Readonly<Record<string, unknown>> {
         name: SITE_NAME,
         url: SITE_URL,
         description: SITE_DESCRIPTION,
-        applicationCategory: 'LifestyleApplication',
+        applicationCategory: SITE_APPLICATION_CATEGORY,
         operatingSystem: 'Any',
-        browserRequirements:
-          'Requires a modern web browser and a Google account',
+        browserRequirements: SITE_REQUIREMENTS,
         isAccessibleForFree: true,
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-        featureList: [
-          'Recipes kept as plain Cooklang text files in your own Google Drive',
-          'Search, filter and scale recipes, and switch between metric and US units',
-          'Cook mode with one step at a time',
-          'Connect ChatGPT, Claude or any MCP assistant to your recipes',
-        ],
+        featureList: SITE_FEATURES,
         publisher: { '@id': `${SITE_URL}/#organization` },
       },
     ],

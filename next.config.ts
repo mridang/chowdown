@@ -32,9 +32,9 @@ const nextConfig: NextConfig = {
 };
 
 /**
- * The Cloudflare bindings (D1, AI, Images) are only emulated for `next dev`. A
- * production build must not try: the AI binding is remote-only, so starting the
- * emulation needs Cloudflare credentials, and a build has no use for them.
+ * The Cloudflare bindings are only emulated for `next dev`. A production build
+ * must not try: a remote-only binding needs Cloudflare credentials to start,
+ * and a build has no use for them.
  */
 export default function config(phase: string): NextConfig {
   if (phase === PHASE_DEVELOPMENT_SERVER) {

@@ -2,7 +2,7 @@
  * @packageDocumentation
  *
  * Daily budgets for the calls that cost model time. The edge limits (see
- * `lib/http/edge-limits.ts`) cap how fast a person can go, but a patient
+ * `lib/core/http/edge-limits.ts`) cap how fast a person can go, but a patient
  * script that stays under them still adds up over a day, and every import,
  * tagging run or suggestion search spends Workers AI and Drive quota. A budget
  * is a durable count in D1 (the same `rate_limits` table, with a 24-hour
