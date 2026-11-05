@@ -35,7 +35,7 @@ import {
 } from '@/domain/api/recipe-import-resource';
 import {
   createRecipeImport,
-  listRecipeImports,
+  listRecipeImportSummaries,
 } from '@/domain/db/recipe-imports';
 import { MAX_IMPORT_UNITS, planImport } from '@/domain/recipe/import-blob';
 import { prepareImport } from '@/domain/recipe/prepare-import';
@@ -131,7 +131,8 @@ const importsCollection = new ApiController<UidContext>({
       }
 
       // Newest first: sort keys descend, so "after" means an older key.
-      const all = await listRecipeImports(getDatabase(), uid);
+      // Summaries only: the drafts stay in D1 and are not read for a list.
+      const all = await listRecipeImportSummaries(getDatabase(), uid);
       const slice = sliceAfter(
         all,
         importPosition,

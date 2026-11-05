@@ -1,19 +1,84 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
-  countEmbeddings,
   deleteEmbeddingsNotIn,
+  deleteOrphanEmbeddings,
   listEmbeddings,
   saveSimilarLists,
   upsertEmbedding,
 } from '@/domain/db/embeddings';
 import { fakeDb } from '../../lib/core/db/fake-db';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 describe('listEmbeddings', () => {
   it("lists the user's cached rows", async () => {
     const rows = [{ drive_file_id: 'a' }];
     const { db } = fakeDb({ findMany: { embeddings: rows } });
     expect(await listEmbeddings(db, 1)).toBe(rows);
+  });
+});
+
+/** A real database with recipes (and a user) to hang embeddings on. */
+function withRecipes(...ids: readonly string[]) {
+  const made = sqliteDatabase(...APP_MIGRATIONS);
+  made.raw.exec(
+    "INSERT INTO users (id, google_sub, email, created_at, updated_at) VALUES (1, 's', 'a@b.c', 't', 't')",
+  );
+  const insert = made.raw.prepare(
+    "INSERT INTO recipes (user_id, drive_file_id, name, source, first_opened_at, last_opened_at) VALUES (1, ?, ?, '', 't', 't')",
+  );
+  ids.forEach((id) => insert.run(id, `${id}.cook`));
+  return made;
+}
+
+/** The `embedded_at` of each recipe, by Drive file id. */
+function stamps(made: ReturnType<typeof withRecipes>) {
+  return Object.fromEntries(
+    made.raw
+      .prepare('SELECT drive_file_id, embedded_at FROM recipes')
+      .all()
+      .map((row) => [row['drive_file_id'], row['embedded_at'] !== null]),
+  );
+}
+
+const vector = (id: string) => ({
+  user_id: 1,
+  drive_file_id: id,
+  title: id,
+  modified_time: null,
+  vector: '[1]',
+});
+
+describe('embedded_at', () => {
+  it('is stamped on the recipe when its embedding is stored', async () => {
+    const made = withRecipes('a', 'b');
+    await upsertEmbedding(made.db, vector('a'));
+    expect(stamps(made)).toEqual({ a: true, b: false });
+  });
+
+  it('is cleared with the embedding when the file is gone from the folder', async () => {
+    const made = withRecipes('a', 'b');
+    await upsertEmbedding(made.db, vector('a'));
+    await upsertEmbedding(made.db, vector('b'));
+    await deleteEmbeddingsNotIn(made.db, 1, ['a']);
+    expect(stamps(made)).toEqual({ a: true, b: false });
+    expect(
+      made.raw.prepare('SELECT drive_file_id FROM embeddings').all(),
+    ).toEqual([{ drive_file_id: 'a' }]);
+  });
+
+  it('is kept by the orphan sweep for recipes that still exist', async () => {
+    const made = withRecipes('a');
+    await upsertEmbedding(made.db, vector('a'));
+    made.raw.exec(
+      "INSERT INTO embeddings (user_id, drive_file_id, title, vector) VALUES (1, 'orphan', 't', '[1]')",
+    );
+    await deleteOrphanEmbeddings(made.db, 1);
+    expect(stamps(made)).toEqual({ a: true });
+    expect(
+      made.raw.prepare('SELECT drive_file_id FROM embeddings').all(),
+    ).toEqual([{ drive_file_id: 'a' }]);
   });
 });
 
@@ -64,17 +129,5 @@ describe('saveSimilarLists', () => {
     const { db, batches } = fakeDb();
     await saveSimilarLists(db, 1, new Map());
     expect(batches).toEqual([]);
-  });
-});
-
-describe('countEmbeddings', () => {
-  it('counts the cached rows', async () => {
-    expect(await countEmbeddings(fakeDb({ select: [[{ n: 4 }]] }).db, 1)).toBe(
-      4,
-    );
-  });
-
-  it('is zero when there is no answer', async () => {
-    expect(await countEmbeddings(fakeDb({ select: [[]] }).db, 1)).toBe(0);
   });
 });

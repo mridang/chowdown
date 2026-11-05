@@ -115,6 +115,21 @@ describe('syncRecipeTags', () => {
     return { deps, saved };
   }
 
+  it('uses the cached rows it is handed instead of reading them again', async () => {
+    const { deps, saved } = fakes([], { a: SOURCE });
+    const listCached = jest.fn(deps.listCached);
+    const handed = [cachedRow('a', 'm1', '{"cuisine":["indian"]}')];
+    await syncRecipeTags(
+      user,
+      [{ id: 'a', name: 'Curry.cook', modifiedTime: 'm1' }],
+      'tok',
+      { ...deps, listCached },
+      handed,
+    );
+    expect(listCached).not.toHaveBeenCalled();
+    expect(saved).toEqual([]);
+  });
+
   it('dates a new recipe by when its Drive file was created', async () => {
     const { deps, saved } = fakes([], { a: SOURCE });
     await syncRecipeTags(

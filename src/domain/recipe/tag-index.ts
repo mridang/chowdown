@@ -14,7 +14,7 @@
 import type { Database } from '@/domain/db/client';
 import type { User } from '@/domain/db/users';
 import {
-  listRecipesByUser,
+  listRecipesForSync,
   upsertRecipe,
   type Recipe,
 } from '@/domain/db/recipes';
@@ -186,7 +186,7 @@ type RecipeRow = Parameters<typeof upsertRecipe>[1];
 /** The real database and Drive. */
 const liveSyncDeps: TagSyncDeps = {
   database: getDatabase,
-  listCached: listRecipesByUser,
+  listCached: listRecipesForSync,
   readFile: getFileContent,
   save: upsertRecipe,
 };
@@ -197,15 +197,18 @@ const liveSyncDeps: TagSyncDeps = {
  * not yet indexed; everything else is served from the D1 cache.
  *
  * @param deps Where to read and write; leave out for the real thing.
+ * @param cached The user's cached recipes if the caller has just read them, so
+ *   the sync does not read them again; read through `deps` when left out.
  */
 export async function syncRecipeTags(
   user: Readonly<User>,
   files: readonly DriveFile[],
   token: string,
   deps: TagSyncDeps = liveSyncDeps,
+  cached?: Awaited<ReturnType<TagSyncDeps['listCached']>>,
 ): Promise<ReadonlyMap<string, RecipeTags>> {
   const db = deps.database();
-  const existing = await deps.listCached(db, user.id);
+  const existing = cached ?? (await deps.listCached(db, user.id));
   const byId = new Map(existing.map((r) => [r.drive_file_id, r]));
 
   /** The tags of one file: from the cache if it is current, else re-read. */

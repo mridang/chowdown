@@ -18,6 +18,7 @@ import {
   oauthCodes,
   oauthGrants,
   oauthTokens,
+  recipeImages,
   recipeImports,
   recipes,
   users,
@@ -25,7 +26,7 @@ import {
 
 /**
  * Delete the user row and every row that hangs off it: cached recipes and
- * their embeddings, hearts, import drafts, and the connections they gave to
+ * their embeddings (`embedded_at` goes with the recipe rows), hearts, import drafts, and the connections they gave to
  * assistants (grants, with the tokens and unspent codes behind them). The
  * recipes go before the user because they reference it.
  */
@@ -50,6 +51,7 @@ export async function deleteAccountData(
     db.delete(recipeImports).where(eq(recipeImports.user_id, userId)),
     db.delete(favourites).where(eq(favourites.user_id, userId)),
     db.delete(embeddings).where(eq(embeddings.user_id, userId)),
+    db.delete(recipeImages).where(eq(recipeImages.user_id, userId)),
     db.delete(recipes).where(eq(recipes.user_id, userId)),
     db.delete(users).where(eq(users.id, userId)),
   ]);

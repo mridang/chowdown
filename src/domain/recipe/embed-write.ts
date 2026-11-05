@@ -9,8 +9,8 @@
  */
 
 import type { Database } from '@/domain/db/client';
-import { listEmbeddings, upsertEmbedding } from '@/domain/db/embeddings';
-import { listRecipesByUser } from '@/domain/db/recipes';
+import { upsertEmbedding } from '@/domain/db/embeddings';
+import { listUnembeddedRecipes } from '@/domain/db/recipes';
 import { parseRecipe, recipeDisplayName } from '@/lib/cooklang';
 import { buildEmbeddingText, embedText } from '@/domain/recipe/embeddings';
 import { mapSequentially } from '@/lib/async';
@@ -21,24 +21,22 @@ import { refreshSimilarLists } from '@/domain/recipe/similar';
  * small fakes. The default is the real database and Workers AI.
  */
 export interface EmbedWriteDeps {
-  /** The user's cached recipes. */
-  readonly listRecipes: (
+  /**
+   * Up to `limit` of the user's recipes that parse and have no embedding yet,
+   * in name order (no reads of the embeddings table).
+   */
+  readonly listMissing: (
     db: Database,
     userId: number,
+    limit: number,
   ) => Promise<
     readonly {
       readonly drive_file_id: string;
       readonly name: string;
       readonly source: string;
       readonly modified_time: string | null;
-      readonly parse_error?: unknown;
     }[]
   >;
-  /** The user's cached embeddings. */
-  readonly listEmbeddings: (
-    db: Database,
-    userId: number,
-  ) => Promise<readonly { readonly drive_file_id: string }[]>;
   /** Store (or update) one embedding. */
   readonly save: (
     db: Database,
@@ -59,8 +57,7 @@ export interface EmbedWriteDeps {
 
 /** The real thing. */
 const liveDeps: EmbedWriteDeps = {
-  listRecipes: listRecipesByUser,
-  listEmbeddings,
+  listMissing: listUnembeddedRecipes,
   save: upsertEmbedding,
   embed: embedText,
   refreshLists: refreshSimilarLists,
@@ -132,14 +129,7 @@ export async function backfillEmbeddings(
   limit = 20,
   deps: EmbedWriteDeps = liveDeps,
 ): Promise<number> {
-  const [recipes, embedded] = await Promise.all([
-    deps.listRecipes(db, userId),
-    deps.listEmbeddings(db, userId),
-  ]);
-  const have = new Set(embedded.map((e) => e.drive_file_id));
-  const missing = recipes
-    .filter((r) => !have.has(r.drive_file_id) && !r.parse_error)
-    .slice(0, limit);
+  const missing = await deps.listMissing(db, userId, limit);
   // One at a time: each calls Workers AI, which has tight concurrency limits.
   await mapSequentially(missing, (r) =>
     embedAndStore(

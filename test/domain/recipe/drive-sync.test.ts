@@ -14,6 +14,16 @@ const db = { fake: 'db' } as unknown as Database;
 const user = (folder: string | null) =>
   ({ id: 7, recipes_folder_id: folder }) as unknown as User;
 
+/** The user's cached recipes, as the one shared read returns them. */
+const cachedRows = [
+  {
+    drive_file_id: 'a',
+    modified_time: null,
+    tags: null,
+    last_opened_at: '2025-01-01T00:00:00.000Z',
+  },
+];
+
 /** Fake collaborators that record what they were asked, in order. */
 function fakes(overrides: Partial<DriveSyncDeps> = {}) {
   const calls: string[] = [];
@@ -38,6 +48,10 @@ function fakes(overrides: Partial<DriveSyncDeps> = {}) {
         { id: 'b', name: 'B.cook' },
       ];
     }),
+    listCached: jest.fn(async () => {
+      calls.push('listCached');
+      return cachedRows;
+    }),
     syncTags: jest.fn(async () => {
       calls.push('syncTags');
     }),
@@ -59,6 +73,7 @@ describe('syncFromDrive', () => {
     expect(calls).toEqual([
       'token',
       'list',
+      'listCached',
       'syncTags',
       'pruneRecipes',
       'pruneEmbeddings',
@@ -74,8 +89,21 @@ describe('syncFromDrive', () => {
       7,
       ['a', 'b'],
       '2026-01-01T00:00:00.000Z',
+      cachedRows,
     );
     expect(deps.pruneEmbeddings).toHaveBeenCalledWith(expect.anything(), 7);
+  });
+
+  it('reads the cached recipes once and hands the same rows to the tag index and the prune', async () => {
+    const { deps } = fakes();
+    await syncFromDrive(user('folder'), deps);
+    expect(deps.listCached).toHaveBeenCalledTimes(1);
+    expect(deps.syncTags).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      'tok',
+      cachedRows,
+    );
   });
 
   it('creates and remembers the folder for a first-time user', async () => {

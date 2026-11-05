@@ -1,7 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { Database } from '@/domain/db/client';
-import { getRecipePageRows } from '@/domain/db/recipe-page';
+import { getAppPageRows, getRecipePageRows } from '@/domain/db/recipe-page';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 /** A query builder stub: every method chains, and the batch returns canned rows. */
 function dbReturning(results: unknown[]): { db: Database; queries: number } {
@@ -65,5 +67,27 @@ describe('getRecipePageRows', () => {
       units: null,
       sessionEpoch: undefined,
     });
+  });
+});
+
+describe('getAppPageRows', () => {
+  it('reads the user, recipes and hearts without touching the embeddings table', async () => {
+    const made = sqliteDatabase(...APP_MIGRATIONS);
+    made.raw.exec(`
+      INSERT INTO users (id, google_sub, email, created_at, updated_at) VALUES (1, 's', 'a@b.c', 't', 't');
+      INSERT INTO recipes (user_id, drive_file_id, name, source, embedded_at, first_opened_at, last_opened_at) VALUES (1, 'a', 'a.cook', '', 'stamp', 't', 't');
+      INSERT INTO favourites (user_id, drive_file_id, created_at) VALUES (1, 'a', 't');
+    `);
+    const sent: string[] = [];
+    const prepare = made.raw.prepare.bind(made.raw);
+    made.raw.prepare = (sql: string) => {
+      sent.push(sql);
+      return prepare(sql);
+    };
+    const rows = await getAppPageRows(made.db, 1);
+    expect(rows.recipes.map((r) => r.embedded_at)).toEqual(['stamp']);
+    expect(rows.favouriteIds).toEqual(['a']);
+    expect(sent).toHaveLength(3);
+    expect(sent.some((sql) => sql.includes('embeddings'))).toBe(false);
   });
 });

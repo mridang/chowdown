@@ -122,6 +122,8 @@ export function row(name: string, source: string): Recipe {
     parse_error: null,
     tags: null,
     source_url: null,
+    embedded_at: null,
+    images_indexed: 0,
     first_opened_at: '2026-01-01',
     last_opened_at: '2026-01-01',
   };

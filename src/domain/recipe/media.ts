@@ -110,3 +110,15 @@ export function withImages(source: string, urls: readonly string[]): string {
     ? source
     : upsertMetadata(source, [['images', valid.join(' ')]]);
 }
+
+/**
+ * Every photo a recipe lists, cover first, as the address the recipe stores
+ * (what the pages ask the image proxy for). Empty when it lists none. This is
+ * what the `recipe_images` table holds for the recipe.
+ */
+export function recipeImageUrls(
+  recipe: Readonly<ParsedRecipe>,
+): readonly string[] {
+  const media = extractMedia(recipe);
+  return media.cover ? [media.cover, ...media.rest] : [];
+}

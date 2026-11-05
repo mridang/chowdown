@@ -26,6 +26,11 @@ function seeded() {
       .run(id, `file-${id}`);
     raw
       .prepare(
+        "INSERT INTO recipe_images (user_id, drive_file_id, url) VALUES (?, ?, 'https://x.test/a.jpg')",
+      )
+      .run(id, `file-${id}`);
+    raw
+      .prepare(
         "INSERT INTO favourites (user_id, drive_file_id, created_at) VALUES (?, ?, 'n')",
       )
       .run(id, `file-${id}`);
@@ -78,6 +83,7 @@ const TABLES = [
   'users',
   'recipes',
   'embeddings',
+  'recipe_images',
   'favourites',
   'recipe_imports',
   'oauth_grants',

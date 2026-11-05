@@ -59,7 +59,7 @@ export interface CollectionDeps {
   readonly session: () => Promise<SessionPayload | null>;
   /** The D1 database. */
   readonly database: () => Database;
-  /** The user, cached recipes, embedding count and favourites in one read. */
+  /** The user, cached recipes and favourites in one read. */
   readonly pageRows: (db: Database, userId: number) => Promise<AppPageRows>;
   /**
    * Take the turn to start a Drive sync for the person; false when one started
@@ -155,8 +155,8 @@ async function backfillIfFree(
 /**
  * Load the collection for the signed-in person, or redirect.
  *
- * Identity comes from the signed cookie, and the user, the cached recipes and
- * the embedding count come back in ONE D1 round trip (the same read confirms
+ * Identity comes from the signed cookie, and the user, the cached recipes
+ * come back in ONE D1 round trip (the same read confirms
  * the session has not been ended); no Google or Drive call sits on the fast
  * path. Someone signed out goes home; a session that has been ended goes
  * through the route that clears it.
@@ -186,7 +186,7 @@ export async function loadCollection(
   const status = isFirstVisit
     ? await syncFirstVisit(deps, db, user)
     : { connected: hasDrive, unreachable: false };
-  const { recipes, embeddedCount, favouriteIds } = isFirstVisit
+  const { recipes, favouriteIds } = isFirstVisit
     ? await deps.pageRows(db, session.uid)
     : first;
 
@@ -196,7 +196,12 @@ export async function loadCollection(
     // appears on a later view.
     deps.background(syncIfDue(deps, db, user));
   }
-  if (embeddedCount < recipes.length) {
+  // Recipes that fail to parse never get an embedding, so they are not counted:
+  // otherwise one broken recipe would start a top-up on every visit for ever.
+  // `embedded_at` is on the rows already read, so no extra query is needed.
+  if (
+    recipes.some((recipe) => !recipe.parse_error && recipe.embedded_at === null)
+  ) {
     // Top up missing embeddings (bounded per visit) so "find similar" fills in.
     deps.background(backfillIfFree(deps, db, session.uid));
   }

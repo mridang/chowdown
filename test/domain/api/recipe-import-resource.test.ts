@@ -51,14 +51,13 @@ describe('MAX_IMPORT_BODY_BYTES', () => {
 });
 
 describe('importSummary', () => {
-  it('counts the drafts instead of listing them', () => {
+  it('shows the stored draft count instead of the drafts', () => {
     expect(
       importSummary({
-        ...imported,
-        items: [
-          { kind: 'text', status: 'FAILED' },
-          { kind: 'text', status: 'FAILED' },
-        ] as unknown as RecipeImport['items'],
+        id: 'abc',
+        status: 'COMPLETED',
+        created_at: '2026-01-02T00:00:00.000Z',
+        item_count: 2,
       }),
     ).toEqual({
       id: 'abc',

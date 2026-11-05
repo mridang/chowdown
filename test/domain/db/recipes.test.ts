@@ -1,14 +1,22 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+
 import { describe, expect, it } from '@jest/globals';
 
 import type { Database } from '@/domain/db/client';
 import {
   deleteRecipeData,
+  deleteRecipesNotIn,
   findRecipeBySourceUrl,
   getRecipeByFileId,
+  listRecipesByUser,
+  listRecipesForSync,
+  listUnembeddedRecipes,
   staleRecipeIds,
   upsertRecipe,
 } from '@/domain/db/recipes';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import { indexedPlan, planOf } from '../../lib/core/db/plan';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 /** A database with every migration applied and two people in it. */
@@ -158,7 +166,30 @@ describe('findRecipeBySourceUrl', () => {
       )
       .all()
       .map((row) => String(row['detail']));
-    expect(plan.join(' ')).toContain('idx_recipes_user_source_url');
+    expect(plan.join(' ')).toContain('idx_recipes_user_source_url_name');
+  });
+
+  it("lists a user's recipes from the name index, without sorting them", async () => {
+    const made = seeded();
+    const plan = made.raw
+      .prepare(
+        'EXPLAIN QUERY PLAN SELECT * FROM recipes WHERE user_id = 1 ORDER BY name',
+      )
+      .all()
+      .map((row) => String(row['detail']))
+      .join(' ');
+    expect(plan).toContain('idx_recipes_user_name');
+    expect(plan).not.toContain('TEMP B-TREE');
+  });
+
+  it("lists only the user's own recipes, in name order", async () => {
+    const made = seeded();
+    await save(made, 1, 'b', '', 'b.cook');
+    await save(made, 1, 'a', '', 'a.cook');
+    await save(made, 2, 'c', '', 'c.cook');
+    expect(
+      (await listRecipesByUser(made.db, 1)).map((r) => r.drive_file_id),
+    ).toEqual(['a', 'b']);
   });
 
   it('finds a recipe cached before the address was indexed, and fills the rest in', async () => {
@@ -194,7 +225,7 @@ describe('findRecipeBySourceUrl', () => {
 });
 
 describe('deleteRecipeData', () => {
-  it('clears the recipe, its embedding and its heart in one batch', async () => {
+  it('clears the recipe, its photo addresses, its embedding and its heart in one batch', async () => {
     const statements: unknown[] = [];
     const db = {
       delete: () => ({ where: () => ({}) }),
@@ -204,7 +235,246 @@ describe('deleteRecipeData', () => {
       },
     } as unknown as Database;
     await deleteRecipeData(db, 1, 'abc');
-    expect(statements).toHaveLength(3);
+    expect(statements).toHaveLength(4);
+  });
+});
+
+describe('recipe_images', () => {
+  const A = 'https://img.example.org/a.jpg';
+  const B = 'https://img.example.org/b.jpg';
+  const images = (made: ReturnType<typeof seeded>) =>
+    made.raw
+      .prepare(
+        'SELECT user_id, drive_file_id, url FROM recipe_images ORDER BY user_id, drive_file_id, url',
+      )
+      .all();
+
+  it('is filled with the recipe, and marks the recipe as indexed', async () => {
+    const made = seeded();
+    await save(made, 1, 'f1', `>> images: ${A} ${B}\n`);
+    expect(images(made)).toEqual([
+      { user_id: 1, drive_file_id: 'f1', url: A },
+      { user_id: 1, drive_file_id: 'f1', url: B },
+    ]);
+    expect(
+      made.raw.prepare('SELECT images_indexed AS i FROM recipes').get(),
+    ).toEqual({ i: 1 });
+  });
+
+  it("is replaced when the recipe's photos change, and emptied when it has none", async () => {
+    const made = seeded();
+    await save(made, 1, 'f1', `>> images: ${A} ${B}\n`);
+    await save(made, 1, 'f1', `>> images: ${B}\n`);
+    expect(images(made).map((r) => r['url'])).toEqual([B]);
+    await save(made, 1, 'f1', '>> title: none\n');
+    expect(images(made)).toEqual([]);
+  });
+
+  it('is left alone for other recipes and other people', async () => {
+    const made = seeded();
+    await save(made, 1, 'f1', `>> images: ${A}\n`);
+    await save(made, 1, 'f2', `>> images: ${B}\n`);
+    await save(made, 2, 'f3', `>> images: ${A}\n`);
+    await save(made, 1, 'f1', `>> images: ${B}\n`);
+    expect(images(made).map((r) => [r['drive_file_id'], r['url']])).toEqual([
+      ['f1', B],
+      ['f2', B],
+      ['f3', A],
+    ]);
+  });
+
+  it('goes with the recipe when it is deleted', async () => {
+    const made = seeded();
+    await save(made, 1, 'f1', `>> images: ${A}\n`);
+    await save(made, 1, 'f2', `>> images: ${B}\n`);
+    await deleteRecipeData(made.db, 1, 'f1');
+    expect(images(made).map((r) => r['drive_file_id'])).toEqual(['f2']);
+  });
+
+  it('goes with the recipe when a sync finds its file gone', async () => {
+    const made = seeded();
+    await save(made, 1, 'f1', `>> images: ${A}\n`);
+    await save(made, 1, 'f2', `>> images: ${B}\n`);
+    await deleteRecipesNotIn(made.db, 1, ['f2'], '2999-01-01T00:00:00.000Z');
+    expect(images(made).map((r) => r['drive_file_id'])).toEqual(['f2']);
+  });
+
+  it('is probed by the covering index on user and address, with no scan', () => {
+    const plan = planOf(
+      seeded().raw,
+      'SELECT 1 FROM recipe_images WHERE user_id = ? AND url = ? LIMIT 1',
+      1,
+      'x',
+    );
+    expect(plan).toContain('idx_recipe_images_url');
+    expect(indexedPlan(plan)).toEqual({
+      usesIndex: true,
+      scans: false,
+      sorts: false,
+    });
+  });
+
+  it('finds the recipes still to index through the partial index only', () => {
+    const plan = planOf(
+      seeded().raw,
+      'SELECT drive_file_id, name, source FROM recipes WHERE user_id = ? AND "recipes"."images_indexed" = 0',
+      1,
+    );
+    expect(plan).toContain('idx_recipes_images_unindexed');
+    expect(indexedPlan(plan).scans).toBe(false);
+  });
+
+  it("clears a recipe's rows by the primary key prefix", () => {
+    const plan = planOf(
+      seeded().raw,
+      'DELETE FROM recipe_images WHERE user_id = ? AND drive_file_id IN (?, ?)',
+      1,
+      'a',
+      'b',
+    );
+    expect(indexedPlan(plan).scans).toBe(false);
+  });
+});
+
+describe('listRecipesForSync and deleteRecipesNotIn', () => {
+  const FUTURE = '2999-01-01T00:00:00.000Z';
+
+  it("lists the user's recipes without their text, from the name index", async () => {
+    const made = seeded();
+    await save(made, 1, 'a', 'secret text');
+    await save(made, 2, 'b', '');
+    const rows = await listRecipesForSync(made.db, 1);
+    expect(rows.map((r) => r.drive_file_id)).toEqual(['a']);
+    expect(Object.keys(rows[0] ?? {}).toSorted()).toEqual([
+      'drive_file_id',
+      'last_opened_at',
+      'modified_time',
+      'tags',
+    ]);
+    const plan = planOf(
+      made.raw,
+      'SELECT drive_file_id, modified_time, tags, last_opened_at FROM recipes WHERE user_id = ?',
+      1,
+    );
+    expect(indexedPlan(plan)).toMatchObject({ usesIndex: true, scans: false });
+  });
+
+  it('prunes from the rows it is handed without reading the recipes again', async () => {
+    const made = seeded();
+    await save(made, 1, 'keep', '');
+    await save(made, 1, 'gone', '');
+    const cached = await listRecipesForSync(made.db, 1);
+    const sent: string[] = [];
+    const prepare = made.raw.prepare.bind(made.raw);
+    made.raw.prepare = (sql: string) => {
+      sent.push(sql);
+      return prepare(sql);
+    };
+    await deleteRecipesNotIn(made.db, 1, ['keep'], FUTURE, cached);
+    expect(sent.some((sql) => /^\s*select/i.test(sql))).toBe(false);
+    expect(made.raw.prepare('SELECT drive_file_id FROM recipes').all()).toEqual(
+      [{ drive_file_id: 'keep' }],
+    );
+  });
+
+  it('reads the recipes itself when it is not handed any', async () => {
+    const made = seeded();
+    await save(made, 1, 'keep', '');
+    await save(made, 1, 'gone', '');
+    await deleteRecipesNotIn(made.db, 1, ['keep'], FUTURE);
+    expect(made.raw.prepare('SELECT drive_file_id FROM recipes').all()).toEqual(
+      [{ drive_file_id: 'keep' }],
+    );
+  });
+});
+
+describe('migration 0021', () => {
+  it('leaves every existing recipe unindexed, to be indexed lazily', () => {
+    const before = APP_MIGRATIONS.filter((file) => file < '0021');
+    const made = sqliteDatabase(...before);
+    made.raw.exec(`
+      INSERT INTO users (id, google_sub, email, created_at, updated_at) VALUES (1, 's', 'a@b.c', 't', 't');
+      INSERT INTO recipes (user_id, drive_file_id, name, source, first_opened_at, last_opened_at) VALUES (1, 'a', 'a.cook', '>> images: https://x.test/a.jpg', 't', 't');
+    `);
+    made.raw.exec(
+      readFileSync(
+        path.join(process.cwd(), 'migrations', '0021_recipe_images.sql'),
+        'utf8',
+      ),
+    );
+    expect(
+      made.raw.prepare('SELECT images_indexed AS i FROM recipes').get(),
+    ).toEqual({ i: 0 });
+    expect(made.raw.prepare('SELECT * FROM recipe_images').all()).toEqual([]);
+  });
+});
+
+describe('listUnembeddedRecipes', () => {
+  it('lists the recipes that parse and have no embedding, in name order, up to the limit', async () => {
+    const made = seeded();
+    await save(made, 1, 'c', '');
+    await save(made, 1, 'a', '');
+    await save(made, 1, 'b', '');
+    await save(made, 1, 'broken', '');
+    await save(made, 1, 'done', '');
+    await save(made, 2, 'other', '');
+    made.raw.exec(
+      "UPDATE recipes SET parse_error = 'bad' WHERE drive_file_id = 'broken'; UPDATE recipes SET embedded_at = 't' WHERE drive_file_id = 'done'",
+    );
+    const rows = await listUnembeddedRecipes(made.db, 1, 2);
+    expect(rows.map((r) => r.drive_file_id)).toEqual(['a', 'b']);
+    expect(Object.keys(rows[0] ?? {}).toSorted()).toEqual([
+      'drive_file_id',
+      'modified_time',
+      'name',
+      'source',
+    ]);
+  });
+
+  it('reads only the partial index, with no scan and no sort', () => {
+    const made = seeded();
+    const plan = planOf(
+      made.raw,
+      'SELECT drive_file_id, name, source, modified_time FROM recipes WHERE user_id = ? AND embedded_at IS NULL AND parse_error IS NULL ORDER BY name ASC LIMIT ?',
+    );
+    expect(plan).toContain('idx_recipes_unembedded');
+    expect(indexedPlan(plan)).toEqual({
+      usesIndex: true,
+      scans: false,
+      sorts: false,
+    });
+  });
+});
+
+describe('migration 0020', () => {
+  it('stamps the recipes that already have an embedding and no others', () => {
+    const before = APP_MIGRATIONS.filter((file) => file < '0020');
+    const made = sqliteDatabase(...before);
+    made.raw.exec(`
+      INSERT INTO users (id, google_sub, email, created_at, updated_at) VALUES (1, 's', 'a@b.c', 't', 't'), (2, 'u', 'c@d.e', 't', 't');
+      INSERT INTO recipes (user_id, drive_file_id, name, source, first_opened_at, last_opened_at) VALUES
+        (1, 'has', 'has.cook', '', 't', 't'),
+        (1, 'lacks', 'lacks.cook', '', 't', 't'),
+        (2, 'theirs', 'theirs.cook', '', 't', 't');
+      INSERT INTO embeddings (user_id, drive_file_id, title, vector) VALUES (1, 'has', 't', '[1]'), (1, 'orphan', 't', '[1]'), (1, 'theirs', 't', '[1]');
+    `);
+    made.raw.exec(
+      readFileSync(
+        path.join(process.cwd(), 'migrations', '0020_recipes_embedded_at.sql'),
+        'utf8',
+      ),
+    );
+    const stamped = made.raw
+      .prepare(
+        'SELECT drive_file_id, embedded_at IS NOT NULL AS s FROM recipes',
+      )
+      .all()
+      .map((row) => [row['drive_file_id'], row['s']]);
+    expect(stamped).toEqual([
+      ['has', 1],
+      ['lacks', 0],
+      ['theirs', 0],
+    ]);
   });
 });
 

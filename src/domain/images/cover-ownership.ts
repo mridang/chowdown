@@ -8,47 +8,33 @@
  * pages ever ask for.
  */
 
-import { and, eq, sql } from 'drizzle-orm';
-
 import type { Database } from '@/domain/db/client';
-import { recipes } from '@/domain/db/schema';
-import { parseRecipe } from '@/lib/cooklang';
-import { extractMedia } from '@/domain/recipe/media';
-
-/**
- * How many recipes that mention the address anywhere are looked at. The text
- * match is only a quick way to narrow down; the real test reads each
- * candidate's image list.
- */
-const CANDIDATES = 20;
-
-/** Every photo a recipe lists (the cover first). */
-function imagesOf(
-  row: Readonly<{ name: string; source: string }>,
-): readonly string[] {
-  const media = extractMedia(parseRecipe(row.source, row.name));
-  return media.cover ? [media.cover, ...media.rest] : [];
-}
+import {
+  hasIndexedImage,
+  indexUnindexedRecipes,
+} from '@/domain/db/recipe-images';
 
 /**
  * Whether one of the person's recipes lists `url` among its photos. The address
  * has to match the one the recipe stores, character for character, which is how
  * the pages build their requests.
+ *
+ * This is a probe of the `recipe_images` index (what each recipe lists, kept in
+ * step with the recipe when it is written), not a search through every recipe's
+ * text. Recipes written before the table existed are not in it yet: when the
+ * address is not found, the person's unindexed recipes are indexed once (a read
+ * of an empty partial index in the steady state) and the probe is repeated, so
+ * the answer is the same as reading every recipe's text.
  */
 export async function userHasCover(
   db: Database,
   userId: number,
   url: string,
 ): Promise<boolean> {
-  const rows = await db
-    .select({ name: recipes.name, source: recipes.source })
-    .from(recipes)
-    .where(
-      and(
-        eq(recipes.user_id, userId),
-        sql`instr(${recipes.source}, ${url}) > 0`,
-      ),
-    )
-    .limit(CANDIDATES);
-  return rows.some((row) => imagesOf(row).includes(url));
+  if (await hasIndexedImage(db, userId, url)) {
+    return true;
+  }
+  return (await indexUnindexedRecipes(db, userId)) > 0
+    ? hasIndexedImage(db, userId, url)
+    : false;
 }

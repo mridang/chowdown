@@ -21,14 +21,14 @@ const recipe = (id: string, extra: object = {}) => ({
   ...extra,
 });
 
-/** Fake collaborators: the given recipes, and ids that already have vectors. */
-function fakes(
-  recipes: readonly ReturnType<typeof recipe>[],
-  embedded: readonly string[] = [],
-) {
+/** Fake collaborators: `missing` are the recipes with no embedding yet. */
+function fakes(missing: readonly ReturnType<typeof recipe>[]) {
+  const listMissing = jest.fn(
+    async (_db: Database, _userId: number, limit: number) =>
+      missing.slice(0, limit),
+  );
   const deps: EmbedWriteDeps = {
-    listRecipes: async () => recipes,
-    listEmbeddings: async () => embedded.map((id) => ({ drive_file_id: id })),
+    listMissing,
     save: jest.fn(async () => undefined),
     embed: jest.fn(async () => [0.5, 0.25]),
     refreshLists: jest.fn(async () => undefined),
@@ -83,8 +83,8 @@ describe('embedRecipe', () => {
 });
 
 describe('backfillEmbeddings', () => {
-  it('embeds only the recipes that have no vector yet', async () => {
-    const deps = fakes([recipe('a'), recipe('b'), recipe('c')], ['b']);
+  it('embeds the recipes the repository says have no vector yet', async () => {
+    const deps = fakes([recipe('a'), recipe('c')]);
     expect(await backfillEmbeddings(db, env, 1, 20, deps)).toBe(2);
     const saved = (deps.save as jest.Mock).mock.calls.map(
       ([, row]) => (row as { drive_file_id: string }).drive_file_id,
@@ -95,19 +95,15 @@ describe('backfillEmbeddings', () => {
     expect(asCalls(deps.refreshLists)).toHaveBeenCalledWith(db, 1, ['a', 'c']);
   });
 
-  it('is bounded by the limit', async () => {
+  it('asks for no more than the limit', async () => {
     const deps = fakes([recipe('a'), recipe('b'), recipe('c')]);
     expect(await backfillEmbeddings(db, env, 1, 2, deps)).toBe(2);
+    expect(asCalls(deps.listMissing)).toHaveBeenCalledWith(db, 1, 2);
     expect(asCalls(deps.save)).toHaveBeenCalledTimes(2);
   });
 
-  it('skips recipes that could not be parsed', async () => {
-    const deps = fakes([recipe('a', { parse_error: 'bad' }), recipe('b')]);
-    expect(await backfillEmbeddings(db, env, 1, 20, deps)).toBe(1);
-  });
-
   it('does nothing, not even refreshing, when all are embedded', async () => {
-    const deps = fakes([recipe('a')], ['a']);
+    const deps = fakes([]);
     expect(await backfillEmbeddings(db, env, 1, 20, deps)).toBe(0);
     expect(asCalls(deps.save)).not.toHaveBeenCalled();
     expect(asCalls(deps.refreshLists)).not.toHaveBeenCalled();

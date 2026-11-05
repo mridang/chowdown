@@ -10,7 +10,11 @@
 import { getUserAccessToken } from '@/domain/auth/user-access-token';
 import type { Database } from '@/domain/db/client';
 import { deleteOrphanEmbeddings } from '@/domain/db/embeddings';
-import { deleteRecipesNotIn } from '@/domain/db/recipes';
+import {
+  deleteRecipesNotIn,
+  listRecipesForSync,
+  type SyncRecipeRow,
+} from '@/domain/db/recipes';
 import { setRecipesFolderId, type User } from '@/domain/db/users';
 import { listRecipeFiles } from '@/domain/drive/recipe-files';
 import { ensureRecipesFolder } from '@/domain/drive/recipes-folder';
@@ -43,11 +47,17 @@ export interface DriveSyncDeps {
     folderId: string,
     token: string,
   ) => Promise<readonly DriveFile[]>;
+  /** The user's cached recipes, read once for the whole sync. */
+  readonly listCached: (
+    db: Database,
+    userId: number,
+  ) => Promise<readonly SyncRecipeRow[]>;
   /** Refresh the cached source and tags of new or changed files. */
   readonly syncTags: (
     user: Readonly<User>,
     files: readonly DriveFile[],
     token: string,
+    cached: readonly SyncRecipeRow[],
   ) => Promise<unknown>;
   /** Drop cache rows for files not in `keep` that were not saved after `since`. */
   readonly pruneRecipes: (
@@ -55,6 +65,7 @@ export interface DriveSyncDeps {
     userId: number,
     keep: readonly string[],
     since: string,
+    cached: readonly SyncRecipeRow[],
   ) => Promise<unknown>;
   /** Drop embeddings whose recipe is gone. */
   readonly pruneEmbeddings: (db: Database, userId: number) => Promise<unknown>;
@@ -68,10 +79,12 @@ const liveDeps: DriveSyncDeps = {
   ensureFolder: ensureRecipesFolder,
   rememberFolder: setRecipesFolderId,
   listFiles: listRecipeFiles,
-  syncTags: syncRecipeTags,
+  listCached: listRecipesForSync,
+  syncTags: (user, files, token, cached) =>
+    syncRecipeTags(user, files, token, undefined, cached),
   // The database helper takes a plain array; hand it a copy of ours.
-  pruneRecipes: (db, userId, keep, since) =>
-    deleteRecipesNotIn(db, userId, [...keep], since),
+  pruneRecipes: (db, userId, keep, since, cached) =>
+    deleteRecipesNotIn(db, userId, [...keep], since, cached),
   pruneEmbeddings: deleteOrphanEmbeddings,
 };
 
@@ -98,7 +111,8 @@ export async function recipesFolderOf(
 }
 
 /**
- * Sync one user's Drive folder into D1: list the files, refresh the cached
+ * Sync one user's Drive folder into D1: list the files, read the cached recipes
+ * once, refresh the cached
  * source and tags of anything new or changed, and drop cache rows for files
  * that no longer exist. Returns the Drive file count.
  *
@@ -120,12 +134,17 @@ export async function syncFromDrive(
   const token = await deps.accessToken(user);
   const folderId = await recipesFolderOf(db, user, token, deps);
   const files = await deps.listFiles(folderId, token);
-  await deps.syncTags(user, files, token);
+  // One read of the user's recipes serves both the tag index and the prune. It
+  // is taken after the listing, so anything saved since `startedAt` is in it
+  // with a newer `last_opened_at` and is left alone by the prune.
+  const cached = await deps.listCached(db, user.id);
+  await deps.syncTags(user, files, token, cached);
   await deps.pruneRecipes(
     db,
     user.id,
     files.map((f) => f.id),
     startedAt,
+    cached,
   );
   await deps.pruneEmbeddings(db, user.id);
   return files.length;

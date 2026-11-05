@@ -8,12 +8,18 @@
  * upserted during sync.
  */
 
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 
 import { normalizeSourceUrl, sourceUrlOf } from '@/lib/cooklang';
 import { chunked } from '@/domain/db/chunk';
 import type { Database } from '@/domain/db/client';
-import { embeddings, favourites, recipes } from '@/domain/db/schema';
+import { replaceRecipeImages } from '@/domain/db/recipe-images';
+import {
+  embeddings,
+  favourites,
+  recipeImages,
+  recipes,
+} from '@/domain/db/schema';
 
 /** A full recipe row. */
 export type Recipe = typeof recipes.$inferSelect;
@@ -66,24 +72,13 @@ export async function upsertRecipe(
   }>,
 ): Promise<void> {
   const timestamp = now();
-  await db
-    .insert(recipes)
-    .values({
-      user_id: input.user_id,
-      drive_file_id: input.drive_file_id,
-      name: input.name,
-      title: input.title ?? null,
-      source: input.source,
-      modified_time: input.modified_time ?? null,
-      parse_error: input.parse_error ?? null,
-      tags: input.tags ?? null,
-      source_url: indexedSourceUrl(input.source),
-      first_opened_at: input.added_at ?? timestamp,
-      last_opened_at: timestamp,
-    })
-    .onConflictDoUpdate({
-      target: [recipes.user_id, recipes.drive_file_id],
-      set: {
+  // The recipe and its photo addresses go in one batch, so they cannot disagree.
+  const [first, ...rest] = [
+    db
+      .insert(recipes)
+      .values({
+        user_id: input.user_id,
+        drive_file_id: input.drive_file_id,
         name: input.name,
         title: input.title ?? null,
         source: input.source,
@@ -91,9 +86,33 @@ export async function upsertRecipe(
         parse_error: input.parse_error ?? null,
         tags: input.tags ?? null,
         source_url: indexedSourceUrl(input.source),
+        images_indexed: 1,
+        first_opened_at: input.added_at ?? timestamp,
         last_opened_at: timestamp,
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: [recipes.user_id, recipes.drive_file_id],
+        set: {
+          name: input.name,
+          title: input.title ?? null,
+          source: input.source,
+          modified_time: input.modified_time ?? null,
+          parse_error: input.parse_error ?? null,
+          tags: input.tags ?? null,
+          source_url: indexedSourceUrl(input.source),
+          images_indexed: 1,
+          last_opened_at: timestamp,
+        },
+      }),
+    ...replaceRecipeImages(
+      db,
+      input.user_id,
+      input.drive_file_id,
+      input.name,
+      input.source,
+    ),
+  ];
+  await db.batch([first, ...rest]);
 }
 
 /** All cached recipes for a user, most-recently-modified-looking order by name. */
@@ -105,6 +124,71 @@ export async function listRecipesByUser(
     where: eq(recipes.user_id, userId),
     orderBy: (r, { asc }) => [asc(r.name)],
   });
+}
+
+/** What a Drive sync needs to know about each cached recipe. */
+export type SyncRecipeRow = Pick<
+  Recipe,
+  'drive_file_id' | 'modified_time' | 'tags' | 'last_opened_at'
+>;
+
+/**
+ * The user's cached recipes as far as a Drive sync cares: which Drive file each
+ * is, when it was last modified, its stored tags, and when it was last seen.
+ * One read serves both the tag index (what needs re-reading) and the prune
+ * (what is gone), where each used to read the user's recipes on its own. The
+ * recipe text is left out. Served by `idx_recipes_user_name`.
+ */
+export async function listRecipesForSync(
+  db: Database,
+  userId: number,
+): Promise<readonly SyncRecipeRow[]> {
+  return db
+    .select({
+      drive_file_id: recipes.drive_file_id,
+      modified_time: recipes.modified_time,
+      tags: recipes.tags,
+      last_opened_at: recipes.last_opened_at,
+    })
+    .from(recipes)
+    .where(eq(recipes.user_id, userId));
+}
+
+/** What embedding a recipe needs. */
+export type UnembeddedRecipe = Pick<
+  Recipe,
+  'drive_file_id' | 'name' | 'source' | 'modified_time'
+>;
+
+/**
+ * Up to `limit` of the user's recipes that can be embedded but have no
+ * embedding yet (`embedded_at` is empty and they parse), in name order. Served
+ * by the partial index `idx_recipes_unembedded`, which holds only those rows,
+ * so when everything is embedded it reads nothing, and otherwise only the rows
+ * returned.
+ */
+export async function listUnembeddedRecipes(
+  db: Database,
+  userId: number,
+  limit: number,
+): Promise<readonly UnembeddedRecipe[]> {
+  return db
+    .select({
+      drive_file_id: recipes.drive_file_id,
+      name: recipes.name,
+      source: recipes.source,
+      modified_time: recipes.modified_time,
+    })
+    .from(recipes)
+    .where(
+      and(
+        eq(recipes.user_id, userId),
+        isNull(recipes.embedded_at),
+        isNull(recipes.parse_error),
+      ),
+    )
+    .orderBy(asc(recipes.name))
+    .limit(limit);
 }
 
 /** Fetch one cached recipe for a user by its Drive file id. */
@@ -216,30 +300,46 @@ export function staleRecipeIds(
  * out what to drop here and deletes it a few ids at a time (D1 limits the
  * parameters in a statement), and leaves anything newer than `since` alone (see
  * {@link staleRecipeIds}).
+ *
+ * @param cached The user's recipes if the caller has just read them (see
+ *   {@link listRecipesForSync}); read here when left out.
  */
 export async function deleteRecipesNotIn(
   db: Database,
   userId: number,
   keepFileIds: readonly string[],
   since: string,
+  cached?: readonly SyncRecipeRow[],
 ): Promise<void> {
-  const cached = await db
-    .select({ id: recipes.drive_file_id, seenAt: recipes.last_opened_at })
-    .from(recipes)
-    .where(eq(recipes.user_id, userId));
-  const stale = staleRecipeIds(cached, new Set(keepFileIds), since);
+  const known = cached ?? (await listRecipesForSync(db, userId));
+  const stale = staleRecipeIds(
+    known.map((row) => ({ id: row.drive_file_id, seenAt: row.last_opened_at })),
+    new Set(keepFileIds),
+    since,
+  );
   for (const ids of chunked(stale)) {
-    await db
-      .delete(recipes)
-      .where(
-        and(eq(recipes.user_id, userId), inArray(recipes.drive_file_id, ids)),
-      );
+    await db.batch([
+      db
+        .delete(recipes)
+        .where(
+          and(eq(recipes.user_id, userId), inArray(recipes.drive_file_id, ids)),
+        ),
+      db
+        .delete(recipeImages)
+        .where(
+          and(
+            eq(recipeImages.user_id, userId),
+            inArray(recipeImages.drive_file_id, ids),
+          ),
+        ),
+    ]);
   }
 }
 
 /**
  * Forget one recipe everywhere the cache holds it — the recipe row, its
- * embedding and the user's heart — in a single D1 round trip.
+ * embedding, its photo addresses and the user's heart — in a single D1 round trip. The recipe row
+ * carries `embedded_at`, so deleting it clears that too.
  */
 export async function deleteRecipeData(
   db: Database,
@@ -253,6 +353,14 @@ export async function deleteRecipeData(
         and(
           eq(recipes.user_id, userId),
           eq(recipes.drive_file_id, driveFileId),
+        ),
+      ),
+    db
+      .delete(recipeImages)
+      .where(
+        and(
+          eq(recipeImages.user_id, userId),
+          eq(recipeImages.drive_file_id, driveFileId),
         ),
       ),
     db

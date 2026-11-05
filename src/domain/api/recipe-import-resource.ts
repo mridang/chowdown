@@ -6,7 +6,10 @@
  * (with the cursor positions that go with it).
  */
 
-import type { RecipeImport } from '@/domain/db/recipe-imports';
+import type {
+  RecipeImport,
+  RecipeImportListing,
+} from '@/domain/db/recipe-imports';
 import type { CursorPosition } from '@/lib/core/api';
 
 /** Largest pasted blob accepted, in characters. */
@@ -46,19 +49,21 @@ export interface ImportSummary {
   readonly item_count: number;
 }
 
-/** The summary of an import: no drafts, just how many there are. */
-export function importSummary(imported: Readonly<RecipeImport>): ImportSummary {
+/** The summary of an import, from the listing that carries no drafts (only their count). */
+export function importSummary(
+  imported: Readonly<RecipeImportListing>,
+): ImportSummary {
   return {
     id: imported.id,
     status: imported.status,
     created_at: imported.created_at,
-    item_count: imported.items.length,
+    item_count: imported.item_count,
   };
 }
 
 /** An import's place in the list, for cursors. */
 export function importPosition(
-  imported: Readonly<RecipeImport>,
+  imported: Readonly<Pick<RecipeImport, 'id' | 'created_at'>>,
 ): CursorPosition {
   return { key: imported.created_at, id: imported.id };
 }

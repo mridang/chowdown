@@ -6,7 +6,7 @@
  * re-embedded when it actually changes.
  */
 
-import { and, count, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 
 import { chunked } from '@/domain/db/chunk';
 import type { Database } from '@/domain/db/client';
@@ -25,7 +25,12 @@ export async function listEmbeddings(
   });
 }
 
-/** Insert or update a recipe's cached embedding. */
+/**
+ * Insert or update a recipe's cached embedding, and stamp the recipe's
+ * `embedded_at` in the same batch, so the fact "this recipe has an embedding"
+ * can be read from the recipes the page already loads and never drifts from the
+ * embeddings table.
+ */
 export async function upsertEmbedding(
   db: Database,
   input: Readonly<{
@@ -36,17 +41,28 @@ export async function upsertEmbedding(
     vector: string;
   }>,
 ): Promise<void> {
-  await db
-    .insert(embeddings)
-    .values(input)
-    .onConflictDoUpdate({
-      target: [embeddings.user_id, embeddings.drive_file_id],
-      set: {
-        title: input.title,
-        modified_time: input.modified_time,
-        vector: input.vector,
-      },
-    });
+  await db.batch([
+    db
+      .insert(embeddings)
+      .values(input)
+      .onConflictDoUpdate({
+        target: [embeddings.user_id, embeddings.drive_file_id],
+        set: {
+          title: input.title,
+          modified_time: input.modified_time,
+          vector: input.vector,
+        },
+      }),
+    db
+      .update(recipes)
+      .set({ embedded_at: new Date().toISOString() })
+      .where(
+        and(
+          eq(recipes.user_id, input.user_id),
+          eq(recipes.drive_file_id, input.drive_file_id),
+        ),
+      ),
+  ]);
 }
 
 /**
@@ -66,21 +82,31 @@ export async function deleteEmbeddingsNotIn(
     .where(eq(embeddings.user_id, userId));
   const stale = cached.map((row) => row.id).filter((id) => !keep.has(id));
   for (const ids of chunked(stale)) {
-    await db
-      .delete(embeddings)
-      .where(
-        and(
-          eq(embeddings.user_id, userId),
-          inArray(embeddings.drive_file_id, ids),
+    // The recipe stays, so its `embedded_at` is cleared in the same batch.
+    await db.batch([
+      db
+        .delete(embeddings)
+        .where(
+          and(
+            eq(embeddings.user_id, userId),
+            inArray(embeddings.drive_file_id, ids),
+          ),
         ),
-      );
+      db
+        .update(recipes)
+        .set({ embedded_at: null })
+        .where(
+          and(eq(recipes.user_id, userId), inArray(recipes.drive_file_id, ids)),
+        ),
+    ]);
   }
 }
 
 /**
  * Drop cached embeddings whose recipe is no longer cached. Safe to run beside a
  * save: a recipe written during a sync has its row (and so keeps its
- * embedding), whatever the folder listing taken earlier said.
+ * embedding), whatever the folder listing taken earlier said. There is no recipe
+ * row left to clear `embedded_at` on.
  */
 export async function deleteOrphanEmbeddings(
   db: Database,
@@ -126,16 +152,4 @@ export async function saveSimilarLists(
       await db.batch([first, ...rest]);
     }
   }
-}
-
-/** How many recipes the user has an embedding for (a count, not the vectors). */
-export async function countEmbeddings(
-  db: Database,
-  userId: number,
-): Promise<number> {
-  const [row] = await db
-    .select({ n: count() })
-    .from(embeddings)
-    .where(eq(embeddings.user_id, userId));
-  return row?.n ?? 0;
 }

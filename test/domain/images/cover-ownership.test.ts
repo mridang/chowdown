@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
+import { indexUnindexedRecipes } from '@/domain/db/recipe-images';
+import { upsertRecipe } from '@/domain/db/recipes';
 import { userHasCover } from '@/domain/images/cover-ownership';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
@@ -86,5 +88,97 @@ describe('userHasCover', () => {
     expect(await userHasCover(database.db, 1, 'https://a.com/100%')).toBe(
       false,
     );
+  });
+});
+
+describe('userHasCover with the recipe_images index', () => {
+  /** Every statement sent to the database while `work` runs. */
+  async function sentWhile(work: () => Promise<unknown>): Promise<string[]> {
+    const sent: string[] = [];
+    const prepare = database.raw.prepare.bind(database.raw);
+    database.raw.prepare = (sql: string) => {
+      sent.push(sql);
+      return prepare(sql);
+    };
+    await work();
+    database.raw.prepare = prepare;
+    return sent;
+  }
+
+  /** Cache a recipe the way a sync does, so it is indexed. */
+  const save = (userId: number, fileId: string, source: string) =>
+    upsertRecipe(database.db, {
+      user_id: userId,
+      drive_file_id: fileId,
+      name: `${fileId}.cook`,
+      source,
+    });
+
+  it('answers from the index without reading any recipe text', async () => {
+    await save(1, 'a', `>> images: ${PHOTO}\n`);
+    const sent = await sentWhile(async () => {
+      expect(await userHasCover(database.db, 1, PHOTO)).toBe(true);
+    });
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toContain('recipe_images');
+    expect(sent[0]).not.toContain('source');
+  });
+
+  it('refuses an address no indexed recipe lists with only the probe and an empty look for unindexed recipes', async () => {
+    await save(1, 'a', `>> images: ${OTHER}\n`);
+    const sent = await sentWhile(async () => {
+      expect(await userHasCover(database.db, 1, PHOTO)).toBe(false);
+    });
+    expect(sent).toHaveLength(2);
+  });
+
+  it('indexes recipes written before the table existed, then answers from the index', async () => {
+    recipe(1, 'old', `>> title: Soup\n>> images: ${PHOTO}\n`);
+    expect(await userHasCover(database.db, 1, PHOTO)).toBe(true);
+    expect(
+      database.raw
+        .prepare(
+          'SELECT images_indexed AS i FROM recipes WHERE drive_file_id = ?',
+        )
+        .get('old'),
+    ).toEqual({ i: 1 });
+    const sent = await sentWhile(async () => {
+      expect(await userHasCover(database.db, 1, PHOTO)).toBe(true);
+    });
+    expect(sent).toHaveLength(1);
+  });
+
+  it("indexes only the asking person's recipes", async () => {
+    recipe(2, 'theirs', `>> images: ${PHOTO}\n`);
+    expect(await userHasCover(database.db, 1, PHOTO)).toBe(false);
+    expect(
+      database.raw.prepare('SELECT images_indexed AS i FROM recipes').get(),
+    ).toEqual({ i: 0 });
+  });
+
+  it('stops allowing a photo once the recipe that listed it is rewritten without it', async () => {
+    await save(1, 'a', `>> images: ${PHOTO}\n`);
+    await save(1, 'a', `>> images: ${OTHER}\n`);
+    expect(await userHasCover(database.db, 1, PHOTO)).toBe(false);
+    expect(await userHasCover(database.db, 1, OTHER)).toBe(true);
+  });
+
+  it('does not overwrite a recipe that was indexed from newer text while the old text was being read', async () => {
+    recipe(1, 'a', `>> images: ${PHOTO}\n`);
+    // Rewrite the recipe after the text was read but before the batch runs.
+    const original = database.db.batch.bind(database.db);
+    let rewritten = false;
+    (database.db as { batch: unknown }).batch = async (
+      statements: Parameters<typeof original>[0],
+    ) => {
+      if (!rewritten) {
+        rewritten = true;
+        await save(1, 'a', `>> images: ${OTHER}\n`);
+      }
+      return original(statements);
+    };
+    await indexUnindexedRecipes(database.db, 1);
+    expect(await userHasCover(database.db, 1, OTHER)).toBe(true);
+    expect(await userHasCover(database.db, 1, PHOTO)).toBe(false);
   });
 });

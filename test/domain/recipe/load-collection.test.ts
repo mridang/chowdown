@@ -23,7 +23,7 @@ class Redirected extends Error {
 const session = (drive: boolean | undefined = true) =>
   ({ uid: 1, email: 'a@b.c', exp: 0, drive }) as SessionPayload;
 
-/** Page rows for a user with the given token, recipes and embedding count. */
+/** Page rows for a user with the given token, recipes and how many carry an embedding stamp. */
 function rows(
   options: {
     token?: string | null;
@@ -45,10 +45,12 @@ function rows(
             recipes_folder_id: folder,
             session_epoch: options.epoch ?? 0,
           } as AppPageRows['user']),
+    // The first `embedded` recipes carry an embedding stamp, the rest do not.
     recipes: Array.from({ length: recipes }, (_, i) => ({
       drive_file_id: `r${i}`,
+      parse_error: null,
+      embedded_at: i < (options.embedded ?? recipes) ? 'stamp' : null,
     })) as unknown as AppPageRows['recipes'],
-    embeddedCount: options.embedded ?? recipes,
     favouriteIds: ['r0'],
   };
 }
@@ -161,6 +163,22 @@ describe('loadCollection', () => {
     await Promise.all(background);
     expect(asCalls(deps.backfill)).toHaveBeenCalledWith(db, 1, 20);
     expect(background).toHaveLength(2);
+  });
+
+  it('does not top up for a recipe that failed to parse, which never gets an embedding', async () => {
+    const page = rows({ recipes: 2, embedded: 1 });
+    const { deps, background } = fakes([
+      {
+        ...page,
+        recipes: [
+          { drive_file_id: 'a', parse_error: null, embedded_at: 'stamp' },
+          { drive_file_id: 'b', parse_error: 'bad line', embedded_at: null },
+        ] as unknown as AppPageRows['recipes'],
+      },
+    ]);
+    await loadCollection('/app', deps);
+    await Promise.all(background);
+    expect(deps.backfill).not.toHaveBeenCalled();
   });
 
   it('leaves the top-up alone while another request holds the lease on it', async () => {

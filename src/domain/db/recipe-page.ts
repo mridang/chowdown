@@ -10,7 +10,7 @@
  * out together as one batch, which D1 runs in a single call.
  */
 
-import { and, count, eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 
 import type { Database } from '@/domain/db/client';
 import { embeddings, favourites, recipes, users } from '@/domain/db/schema';
@@ -127,31 +127,26 @@ export async function getRecipePageRows(
 export interface AppPageRows {
   readonly user: typeof users.$inferSelect | undefined;
   readonly recipes: readonly (typeof recipes.$inferSelect)[];
-  /** How many recipes have an embedding (a count, not the vectors). */
-  readonly embeddedCount: number;
   /** Drive file ids the user has hearted. */
   readonly favouriteIds: readonly string[];
 }
 
 /**
- * The user row, their cached recipes and their embedding count in one D1 batch
- * — the whole `/app` grid in a single round trip, with no Google or Drive call.
+ * The user row, their cached recipes (which carry `embedded_at`, so no read of
+ * the embeddings table is needed) and their hearts in one D1 batch — the whole
+ * `/app` grid in a single round trip, with no Google or Drive call.
  */
 export async function getAppPageRows(
   db: Database,
   userId: number,
 ): Promise<AppPageRows> {
-  const [userRows, recipeRows, countRows, favouriteRows] = await db.batch([
+  const [userRows, recipeRows, favouriteRows] = await db.batch([
     db.select().from(users).where(eq(users.id, userId)).limit(1),
     db
       .select()
       .from(recipes)
       .where(eq(recipes.user_id, userId))
       .orderBy(recipes.name),
-    db
-      .select({ n: count() })
-      .from(embeddings)
-      .where(eq(embeddings.user_id, userId)),
     db
       .select({ id: favourites.drive_file_id })
       .from(favourites)
@@ -160,7 +155,6 @@ export async function getAppPageRows(
   return {
     user: userRows[0],
     recipes: recipeRows,
-    embeddedCount: countRows[0]?.n ?? 0,
     favouriteIds: favouriteRows.map((r) => r.id),
   };
 }

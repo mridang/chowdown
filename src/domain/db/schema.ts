@@ -18,6 +18,7 @@ import {
   text,
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
 
 /**
  * One row per signed-in Google account. `google_sub` is Google's stable,
@@ -87,15 +88,55 @@ export const recipes = sqliteTable(
      * imported from a link. Null: not worked out yet; empty: it has none.
      */
     source_url: text('source_url'),
+    /**
+     * When the recipe's embedding was stored; null when it has none. Kept in
+     * step with the embeddings table in the same batch (migration 0020).
+     */
+    embedded_at: text('embedded_at'),
+    /** 1 once the recipe's photo addresses are in `recipe_images` (migration 0021). */
+    images_indexed: integer('images_indexed').notNull().default(0),
     first_opened_at: text('first_opened_at').notNull(),
     last_opened_at: text('last_opened_at').notNull(),
   },
   (table) => [
-    index('idx_recipes_user_id').on(table.user_id),
+    // Every "all recipes for this user" read, in name order (migration 0019).
+    index('idx_recipes_user_name').on(table.user_id, table.name),
     // A recipe belongs to one user and one Drive file; upserts conflict on
     // this pair so one person's sync can never overwrite another's row.
     uniqueIndex('idx_recipes_user_file').on(table.user_id, table.drive_file_id),
-    index('idx_recipes_user_source_url').on(table.user_id, table.source_url),
+    index('idx_recipes_user_source_url_name').on(
+      table.user_id,
+      table.source_url,
+      table.name,
+    ),
+    // The recipes still waiting for an embedding, in name order (migration 0020).
+    index('idx_recipes_unembedded')
+      .on(table.user_id, table.name)
+      .where(sql`embedded_at is null and parse_error is null`),
+    // The recipes whose photos are not in recipe_images yet (migration 0021).
+    index('idx_recipes_images_unindexed')
+      .on(table.user_id)
+      .where(sql`images_indexed = 0`),
+  ],
+);
+
+/**
+ * The photo addresses a recipe lists in `>> images:`, one row each, so the
+ * image proxy can check ownership by index. Kept in step with the recipe's
+ * text in the same batch that writes it (migration 0021).
+ */
+export const recipeImages = sqliteTable(
+  'recipe_images',
+  {
+    user_id: integer('user_id').notNull(),
+    drive_file_id: text('drive_file_id').notNull(),
+    url: text('url').notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.user_id, table.drive_file_id, table.url],
+    }),
+    index('idx_recipe_images_url').on(table.user_id, table.url),
   ],
 );
 
@@ -115,10 +156,7 @@ export const embeddings = sqliteTable(
     /** Precomputed nearest recipes: JSON `[{ id, title }]` (see similar.ts). */
     similar: text('similar'),
   },
-  (table) => [
-    primaryKey({ columns: [table.user_id, table.drive_file_id] }),
-    index('idx_embeddings_user').on(table.user_id),
-  ],
+  (table) => [primaryKey({ columns: [table.user_id, table.drive_file_id] })],
 );
 
 /**
@@ -133,10 +171,7 @@ export const favourites = sqliteTable(
     drive_file_id: text('drive_file_id').notNull(),
     created_at: text('created_at').notNull(),
   },
-  (table) => [
-    primaryKey({ columns: [table.user_id, table.drive_file_id] }),
-    index('idx_favourites_user').on(table.user_id),
-  ],
+  (table) => [primaryKey({ columns: [table.user_id, table.drive_file_id] })],
 );
 
 /**
@@ -145,22 +180,30 @@ export const favourites = sqliteTable(
  * Metadata Document (cached; `fetched_at` says how fresh). `redirect_uris` is a
  * JSON array.
  */
-export const oauthClients = sqliteTable('oauth_clients', {
-  client_id: text('client_id').primaryKey(),
-  kind: text('kind').notNull(),
-  client_name: text('client_name').notNull(),
-  redirect_uris: text('redirect_uris').notNull(),
-  created_at: text('created_at').notNull(),
-  fetched_at: text('fetched_at'),
-  /** Until when a fetched document may be reused (from its cache headers); null for older rows and registered clients. */
-  expires_at: text('expires_at'),
-  /** How the client proves itself at the token endpoint: `none` (PKCE only) or `private_key_jwt`. */
-  auth_method: text('auth_method').notNull().default('none'),
-  /** Where the client publishes the keys it signs assertions with; set only for `private_key_jwt`. */
-  jwks_uri: text('jwks_uri'),
-  /** The picture the client publishes for itself; set only for a client fetched from its metadata document. */
-  logo_uri: text('logo_uri'),
-});
+export const oauthClients = sqliteTable(
+  'oauth_clients',
+  {
+    client_id: text('client_id').primaryKey(),
+    kind: text('kind').notNull(),
+    client_name: text('client_name').notNull(),
+    redirect_uris: text('redirect_uris').notNull(),
+    created_at: text('created_at').notNull(),
+    fetched_at: text('fetched_at'),
+    /** Until when a fetched document may be reused (from its cache headers); null for older rows and registered clients. */
+    expires_at: text('expires_at'),
+    /** How the client proves itself at the token endpoint: `none` (PKCE only) or `private_key_jwt`. */
+    auth_method: text('auth_method').notNull().default('none'),
+    /** Where the client publishes the keys it signs assertions with; set only for `private_key_jwt`. */
+    jwks_uri: text('jwks_uri'),
+    /** The picture the client publishes for itself; set only for a client fetched from its metadata document. */
+    logo_uri: text('logo_uri'),
+  },
+  (table) => [
+    // The background sweep finds unused clients by kind and age (migration 0019).
+    index('idx_oauth_clients_kind_created').on(table.kind, table.created_at),
+    index('idx_oauth_clients_kind_fetched').on(table.kind, table.fetched_at),
+  ],
+);
 
 /** Client assertions already accepted (by `jti`), kept until they expire so none is used twice. */
 export const oauthAssertions = sqliteTable(
@@ -190,9 +233,14 @@ export const oauthGrants = sqliteTable(
     revoked_at: text('revoked_at'),
   },
   (table) => [
-    index('idx_oauth_grants_user').on(table.user_id),
     index('idx_oauth_grants_user_client').on(table.user_id, table.client_id),
     index('idx_oauth_grants_client').on(table.client_id),
+    // The idle and revoked sweeps (migration 0019); the expression matches the
+    // one in the sweep's query so the planner can use it.
+    index('idx_oauth_grants_revoked_used').on(
+      table.revoked_at,
+      sql`coalesce(${table.last_used_at}, ${table.created_at})`,
+    ),
   ],
 );
 
