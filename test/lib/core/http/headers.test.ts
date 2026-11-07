@@ -253,10 +253,19 @@ describe('SECURITY_HEADERS', () => {
     expect(SECURITY_HEADERS['Origin-Agent-Cluster']).toBe('?1');
   });
 
-  it('names no permissions feature that browsers have removed', () => {
-    expect(SECURITY_HEADERS['Permissions-Policy']).not.toContain(
-      'interest-cohort',
-    );
+  it('switches off every powerful feature except clipboard-write', () => {
+    const parts = (SECURITY_HEADERS['Permissions-Policy'] ?? '').split(', ');
+    expect(parts).toHaveLength(29);
+    expect(parts).toContain('interest-cohort=()');
+    expect(parts).toContain('sync-xhr=()');
+    expect(parts.filter((part) => !part.endsWith('=()'))).toEqual([
+      'clipboard-write=(self)',
+    ]);
+  });
+
+  it('turns off DNS prefetching and cross-domain policy files', () => {
+    expect(SECURITY_HEADERS['X-DNS-Prefetch-Control']).toBe('off');
+    expect(SECURITY_HEADERS['X-Permitted-Cross-Domain-Policies']).toBe('none');
   });
 });
 
