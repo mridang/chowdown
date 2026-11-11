@@ -220,10 +220,7 @@ describe('declared ingredient lines (linear-time rewrite)', () => {
   });
   it('scans on a long adversarial input', () => {
     const started = performance.now();
-    parseRecipe(
-      `@a${' '.repeat(100_000)}\n@b\n\nMix.`,
-      'a.cook',
-    );
+    parseRecipe(`@a${' '.repeat(100_000)}\n@b\n\nMix.`, 'a.cook');
     expect(performance.now() - started).toBeLessThan(FAST_MS);
   });
 });
