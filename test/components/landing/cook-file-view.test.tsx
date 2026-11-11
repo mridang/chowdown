@@ -10,8 +10,7 @@ describe('CookFile', () => {
   it('is a window titled with the recipe file name', () => {
     const out = html(<CookFile recipe={recipe} />);
     expect(out).toContain('aria-label="A recipe as a plain text file"');
-    // eslint-disable-next-line sonarjs/super-linear-regex -- test input is one fixed render of a short fixture, so the scan is bounded
-    expect(out).toMatch(/[a-z0-9-]+\.cook/);
+    expect(out).toMatch(/[a-z0-9-]\.cook/);
   });
 
   it('highlights ingredients in the file', () => {
