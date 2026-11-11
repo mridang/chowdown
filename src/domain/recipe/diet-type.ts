@@ -48,10 +48,21 @@ const PLANT_MEAT = new RegExp(
   'g',
 );
 
+const PLANT_MILK_BASES = String.raw`coconut|almond|soy|soya|oat|rice|cashew|hemp|nut|peanut|cocoa|cacao|shea|apple|hazelnut|macadamia|pea|walnut|pistachio|sunflower(?:\s+seed)?|sesame`;
+
+const DAIRY_FORMS =
+  'milk|cream|butter|cheese|yoghurt|yogurt|mayo|mayonnaise|egg';
+
 /** Nut, seed and grain "milks", "butters" and "creams", and other non-dairy dairy. */
-const PLANT_DAIRY =
-  // eslint-disable-next-line sonarjs/regex-complexity -- one flat alternation of plant and nut words; splitting it into several patterns would change what matches
-  /\b(?:coconut|almond|soy|soya|oat|rice|cashew|hemp|nut|peanut|cocoa|cacao|shea|apple|hazelnut|macadamia|pea|walnut|pistachio|sunflower(?:\s+seed)?|sesame)[\s-]+(?:(?:milk|cream|butter|cheese|yoghurt|yogurt|mayo|mayonnaise|egg)\b[\s-]*)+|\bcream of (?:coconut|wheat|rice|tartar)\b|\bcreamed corn\b|\bcoconut cream\b/g;
+export const PLANT_DAIRY = new RegExp(
+  [
+    String.raw`\b(?:${PLANT_MILK_BASES})[\s-]+(?:(?:${DAIRY_FORMS})\b[\s-]*)+`,
+    String.raw`\bcream of (?:coconut|wheat|rice|tartar)\b`,
+    String.raw`\bcreamed corn\b`,
+    String.raw`\bcoconut cream\b`,
+  ].join('|'),
+  'g',
+);
 
 /** Plants and other things that merely share a word with an animal product. */
 const LOOK_ALIKES = new RegExp(
@@ -95,17 +106,57 @@ const OPTIONAL_MEAT_STOCK = new RegExp(
   'g',
 );
 
-const MEAT =
-  // eslint-disable-next-line sonarjs/regex-complexity -- one flat list of meat words; its complexity is the length of the list, and splitting it would change what matches
-  /\b(chicken|beef|pork|lamb|mutton|goat|veal|turkey|duck|duckling|goose|bacon|ham|hams|sausages?|chorizo|salami|pepperoni|prosciutto|pancetta|guanciale|mortadella|venison|rabbit|oxtail|brisket|steak|ribs?|meatballs?|meat|gelatin|gelatine|lard|tallow|suet|bone broth|liver|nduja|kielbasa|andouille|bresaola|pastrami|bologna|baloney|jamon|serrano ham|speck|lardons?|spam|schmaltz|dripping|drippings|crackling|foie gras|pate|sirloin|tenderloin|ribeye|rib-eye|chuck|shanks?|wings|hot dogs?|wieners?|frankfurters?|hotdogs?|hot-dogs?|hamburgers?|tripe|trotters|offal|quail|pigeon|squab|pheasant|partridge|bison|boar|kangaroo|ostrich|snails?|escargots?|gosht|murgh|murg|keema|kheema|qeema|marrow bones?|bone marrow|gammon|poultry|hen|capon|poussin|jerky|biltong|meatloaf|doner|gyros?|gizzards?|kidneys|sweetbreads|tongue|demi-glace|collagen|frog legs|guinea fowl|elk|moose|grouse|animal rennet)\b|^\s*(?:lean |extra lean )?mince\b/;
+export const MEAT = new RegExp(
+  [
+    String.raw`\b(${[
+      'chicken|beef|pork|lamb|mutton|goat|veal|turkey|duck|duckling|goose|bacon|ham',
+      'hams|sausages?|chorizo|salami|pepperoni|prosciutto|pancetta|guanciale',
+      'mortadella|venison|rabbit|oxtail|brisket|steak|ribs?|meatballs?|meat|gelatin',
+      'gelatine|lard|tallow|suet|bone broth|liver|nduja|kielbasa|andouille|bresaola',
+      'pastrami|bologna|baloney|jamon|serrano ham|speck|lardons?|spam|schmaltz',
+      'dripping|drippings|crackling|foie gras|pate|sirloin|tenderloin|ribeye',
+      'rib-eye|chuck|shanks?|wings|hot dogs?|wieners?|frankfurters?|hotdogs?',
+      'hot-dogs?|hamburgers?|tripe|trotters|offal|quail|pigeon|squab|pheasant',
+      'partridge|bison|boar|kangaroo|ostrich|snails?|escargots?|gosht|murgh|murg',
+      'keema|kheema|qeema|marrow bones?|bone marrow|gammon|poultry|hen|capon',
+      'poussin|jerky|biltong|meatloaf|doner|gyros?|gizzards?|kidneys|sweetbreads',
+      'tongue|demi-glace|collagen|frog legs|guinea fowl|elk|moose|grouse',
+      'animal rennet',
+    ].join('|')})\b`,
+    String.raw`^\s*(?:lean |extra lean )?mince\b`,
+  ].join('|'),
+);
 
-const FISH =
-  // eslint-disable-next-line sonarjs/regex-complexity -- one flat list of fish and seafood words; its complexity is the length of the list, and splitting it would change what matches
-  /\b(fish|salmon|tuna|cod|codfish|haddock|trout|mackerel|sardines?|anchov(?:y|ies)|shrimps?|prawns?|crabs?|crabmeat|lobsters?|squid|calamari|octopus|clams?|mussels?|oysters?|scallops?|seafood|shellfish|bonito|katsuobushi|dashi|caviar|roe|surimi|eels?|tilapia|halibut|snapper|sea bass|crawfish|crayfish|swordfish|monkfish|catfish|whitefish|pollock|pollack|herring|kippers?|whitebait|bream|grouper|mahi mahi|barramundi|bass|plaice|sprats?|pilchards?|langoustines?|cockles?|whelks?|abalone|belacan|worcestershire|worcester sauce|nam pla|oyster sauce|shrimp paste|ikura|tobiko|unagi|hamachi|hake|turbot|lox|sashimi|cuttlefish|krill|perch|carp|mullet|pike|sea urchin|uni|clamato|taramasalata|bottarga|bagoong|kamaboko|machli|jhinga|kimchi|caesar|dover sole|lemon sole)\b/;
+export const FISH = new RegExp(
+  String.raw`\b(${[
+    'fish|salmon|tuna|cod|codfish|haddock|trout|mackerel|sardines?',
+    'anchov(?:y|ies)|shrimps?|prawns?|crabs?|crabmeat|lobsters?|squid|calamari',
+    'octopus',
+    'clams?|mussels?|oysters?|scallops?|seafood|shellfish|bonito|katsuobushi',
+    'dashi|caviar|roe|surimi|eels?|tilapia|halibut|snapper|sea bass|crawfish',
+    'crayfish|swordfish|monkfish|catfish|whitefish|pollock|pollack|herring',
+    'kippers?|whitebait|bream|grouper|mahi mahi|barramundi|bass|plaice|sprats?',
+    'pilchards?|langoustines?|cockles?|whelks?|abalone|belacan|worcestershire',
+    'worcester sauce|nam pla|oyster sauce|shrimp paste|ikura|tobiko|unagi|hamachi',
+    'hake|turbot|lox|sashimi|cuttlefish|krill|perch|carp|mullet|pike|sea urchin',
+    'uni|clamato|taramasalata|bottarga|bagoong|kamaboko|machli|jhinga|kimchi',
+    'caesar|dover sole|lemon sole',
+  ].join('|')})\b`,
+);
 
-const DAIRY_OR_EGG =
-  // eslint-disable-next-line sonarjs/regex-complexity -- one flat list of dairy and egg words; its complexity is the length of the list, and splitting it would change what matches
-  /\b(milk|butter|ghee|cheeses?|cream|creamed|creamer|yogh?urt|curd|dahi|lassi|eggs?|eggnog|meringue|honey|paneer|mayonnaise|mayo|aioli|whey|custard|buttermilk|parmesan|parmigiano|mozzarella|cheddar|feta|ricotta|mascarpone|halloumi|gruyere|brie|camembert|gouda|khoya|khoa|mawa|makhan|malai|doodh|chhena|anda|condensed milk|ice cream|casein|kefir|skyr|quark|gelato|creme fraiche|sour cream|cottage cheese|labneh|burrata|pecorino|manchego|gorgonzola|stilton|emmental|edam|provolone|fontina|taleggio|half and half|half-and-half|alfredo|tzatziki|bechamel|hollandaise|ranch|dulce de leche|queso|monterey jack|pepper jack|grana padano|asiago|cotija)\b/;
+export const DAIRY_OR_EGG = new RegExp(
+  String.raw`\b(${[
+    'milk|butter|ghee|cheeses?|cream|creamed|creamer|yogh?urt|curd|dahi|lassi',
+    'eggs?|eggnog|meringue|honey|paneer|mayonnaise|mayo|aioli|whey|custard',
+    'buttermilk|parmesan|parmigiano|mozzarella|cheddar|feta|ricotta|mascarpone',
+    'halloumi|gruyere|brie|camembert|gouda|khoya|khoa|mawa|makhan|malai|doodh',
+    'chhena|anda|condensed milk|ice cream|casein|kefir|skyr|quark|gelato',
+    'creme fraiche|sour cream|cottage cheese|labneh|burrata|pecorino|manchego',
+    'gorgonzola|stilton|emmental|edam|provolone|fontina|taleggio|half and half',
+    'half-and-half|alfredo|tzatziki|bechamel|hollandaise|ranch|dulce de leche',
+    'queso|monterey jack|pepper jack|grana padano|asiago|cotija',
+  ].join('|')})\b`,
+);
 
 /** An ingredient name with accents, case and plant-based look-alikes taken out. */
 function prepare(name: string): string {

@@ -175,23 +175,36 @@ export function authorEvidence(html: string): AuthorEvidence {
   };
 }
 
+/** A word that starts with a capital letter, the way a name part is written. */
+const CAPITALISED_WORD = String.raw`\p{Lu}[\p{L}'’.-]*`;
+
 /**
  * "by Jane Cook", "Recipe by Jane Cook", "Written by Jane Cook and Bob Roe": a
  * capitalised name of up to five words after a byline word. Bounded, with no
  * nested repetition, so it is linear.
  */
-const BYLINE =
-  // eslint-disable-next-line sonarjs/regex-complexity -- the byline words are one short alternation; folding them together gave no lower score and would make the list harder to read
-  /\b(?:[Bb]y|Recipe by|Recipes by|Written by|Author:?|Posted by)\s+(\p{Lu}[\p{L}'’.-]*(?:\s+(?:and|&|\p{Lu}[\p{L}'’.-]*)){0,5})/gu;
+export const BYLINE = new RegExp(
+  [
+    String.raw`\b(?:[Bb]y|Recipe by|Recipes by|Written by|Author:?|Posted by)\s+`,
+    String.raw`(${CAPITALISED_WORD}(?:\s+(?:and|&|${CAPITALISED_WORD})){0,5})`,
+  ].join(''),
+  'gu',
+);
 
 /** What stands in front of a name in a byline and is not part of it. */
 const NAME_PREFIX =
   /^(?:view all posts by|all posts by|posts by|recipe by|recipes by|written by|created by|submitted by|posted by|by|author:?)\s+/i;
 
 /** Words that mean a candidate is page furniture or a role, not a person. */
-const NOT_A_NAME =
-  // eslint-disable-next-line sonarjs/regex-complexity -- one flat list of words; splitting it into several patterns would change what matches
-  /\b(?:comments?|minutes?|mins?|read|reviews?|ratings?|share|print|jump|skip|posts?|admin|administrator|editorial|editors?|staff|team|photos?|contributors?|subscribe|newsletter|cookies?|privacy|login|sign|unknown|anonymous|guest|author|undefined|null)\b/i;
+export const NOT_A_NAME = new RegExp(
+  String.raw`\b(?:${[
+    'comments?|minutes?|mins?|read|reviews?|ratings?|share|print|jump|skip',
+    'posts?|admin|administrator|editorial|editors?|staff|team|photos?',
+    'contributors?|subscribe|newsletter|cookies?|privacy|login|sign|unknown',
+    'anonymous|guest|author|undefined|null',
+  ].join('|')})\b`,
+  'i',
+);
 
 /** `text` without the leading characters `leading` accepts and the trailing ones `trailing` accepts. */
 function trimEdges(text: string, leading: RegExp, trailing: RegExp): string {

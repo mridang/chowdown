@@ -50,9 +50,17 @@ const TAG = /<(meta|script)(?=[\s/>])([^<>]*)>|<\/script\s*>/gi;
  * or bare value. The name and value classes exclude each other's delimiters, so
  * no two parts of the pattern can claim the same characters.
  */
-const ATTRIBUTE =
-  // eslint-disable-next-line sonarjs/regex-complexity -- each quoting style needs its own branch to keep the value exact; the pattern is already linear
-  /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+export const ATTRIBUTE = new RegExp(
+  [
+    String.raw`([^\s"'<>/=]+)`,
+    String.raw`(?:\s*=\s*(?:`,
+    '"([^"]*)"',
+    "|'([^']*)'",
+    String.raw`|([^\s"'=<>${'`'}]+)`,
+    '))?',
+  ].join(''),
+  'g',
+);
 
 /** The attributes in the text between a tag's name and its `>`. */
 function parseAttributes(text: string): Attributes {

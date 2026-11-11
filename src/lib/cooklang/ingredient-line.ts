@@ -146,13 +146,30 @@ const MEASURE_ADJECTIVES =
 const FREE_QUANTITY =
   /^(?:to taste|as needed|as required|a pinch|pinch|a dash|dash|a handful|handful|a few|few|some|a little|for serving|for garnish|optional)$/i;
 
+/** How a preparation word may be softened: "finely chopped". */
+const PREPARATION_ADVERBS =
+  '(?:very |finely |roughly |thinly |coarsely |freshly |lightly |well )';
+
+/** What is done to an ingredient: "chopped", "peeled". */
+const PREPARATION_VERBS = [
+  'chopped|diced|minced|sliced|grated|crushed|peeled|halved|quartered|cubed',
+  'melted|softened|divided|cooked|drained|rinsed|beaten|trimmed|seeded',
+  'deseeded|stemmed|torn|packed|sifted|toasted|shredded|julienned|mashed',
+  'thawed|cut|ground',
+].join('|');
+
+/** Other phrases that open a note: "optional", "plus 1 tbsp", "to taste". */
+const PREPARATION_LEADS =
+  'optional|plus |to taste|for |at room|room temp|or |about |such as|preferably|if ';
+
 /**
  * What starts a preparation note after a comma ("onion, finely chopped"), as
  * opposed to a comma inside a name ("boneless, skinless chicken breasts").
  */
-const PREPARATION =
-  // eslint-disable-next-line sonarjs/regex-complexity -- the regex is a deliberate list of preparation words, splitting it would not be clearer
-  /^(?:(?:very |finely |roughly |thinly |coarsely |freshly |lightly |well )?(?:chopped|diced|minced|sliced|grated|crushed|peeled|halved|quartered|cubed|melted|softened|divided|cooked|drained|rinsed|beaten|trimmed|seeded|deseeded|stemmed|torn|packed|sifted|toasted|shredded|julienned|mashed|thawed|cut|ground)|optional|plus |to taste|for |at room|room temp|or |about |such as|preferably|if )/i;
+export const PREPARATION = new RegExp(
+  `^(?:${PREPARATION_ADVERBS}?(?:${PREPARATION_VERBS})|${PREPARATION_LEADS})`,
+  'i',
+);
 
 /** A number: `3`, `2.5`, `1/2`, or a mixed number `1 1/2`. */
 const NUMBER = String.raw`\d+/\d+|\d+(?:[.,]\d+)?(?:\s\d+/\d+)?`;

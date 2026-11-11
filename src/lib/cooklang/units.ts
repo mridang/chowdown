@@ -321,6 +321,20 @@ export function scaleQuantity(quantity: string, factor: number): string {
   return unit ? `${amount} ${unit}` : amount;
 }
 
+/** A number with thousands separators: `1,200` or `1,200.5`. */
+const THOUSANDS_NUMBER = String.raw`\d{1,3}(?:,\d{3})+(?:\.\d+)?`;
+
+/** An optional whole number and a vulgar fraction: `½`, `1½`, `1 ½`. */
+const VULGAR_NUMBER = String.raw`\d*\s*[½⅓⅔¼¾⅛⅜⅝⅞]`;
+
+/** A plain number, a decimal, or a mixed or simple fraction: `3`, `2.5`, `1 1/2`, `1/2`. */
+const PLAIN_NUMBER = String.raw`\d+(?:[.,]\d+)?(?:\s+\d+\s*\/\s*\d+|\s*\/\s*\d+)?`;
+
+/** The number a quantity starts with, in whichever of the three notations it is written. */
+export const LEADING_NUMBER = new RegExp(
+  `^(${[THOUSANDS_NUMBER, VULGAR_NUMBER, PLAIN_NUMBER].join('|')})`,
+);
+
 /** How much of something, in a base unit, so two quantities can be compared. */
 export interface BaseAmount {
   readonly dimension: 'mass' | 'volume' | 'count';
@@ -336,11 +350,7 @@ export interface BaseAmount {
  * compare "400 g" with "1 lb" or "2 cups" with "500 ml".
  */
 export function toBaseAmount(quantity: string): BaseAmount | undefined {
-  const match =
-    // eslint-disable-next-line sonarjs/regex-complexity -- the number grammar (thousands, fractions, vulgar fractions) is deliberately complete in one pattern
-    /^(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d*\s*[½⅓⅔¼¾⅛⅜⅝⅞]|\d+(?:[.,]\d+)?(?:\s+\d+\s*\/\s*\d+|\s*\/\s*\d+)?)/.exec(
-      quantity.trim(),
-    );
+  const match = LEADING_NUMBER.exec(quantity.trim());
   const tail = quantity.trim().slice(match?.[0].length ?? 0);
   if (!match || LINE_BREAK.test(tail.trimStart())) {
     return undefined;

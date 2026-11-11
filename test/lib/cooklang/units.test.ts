@@ -6,7 +6,9 @@ import {
   scaleQuantity,
   toBaseAmount,
 } from '@/lib/cooklang';
+import { LEADING_NUMBER } from '@/lib/cooklang/units';
 
+import { expectSamePattern, fuzzInputs } from '../../regex-equivalence';
 describe('isUnitSystem', () => {
   it('accepts the three systems and rejects others', () => {
     expect(isUnitSystem('metric')).toBe(true);
@@ -167,5 +169,65 @@ describe('quantity scanning (linear-time rewrites)', () => {
     convertQuantity(`1${' '.repeat(100_000)}\n`, 'us');
     toBaseAmount(`1${' '.repeat(100_000)}\n`);
     expect(performance.now() - started).toBeLessThan(FAST_MS);
+  });
+});
+
+describe('LEADING_NUMBER, rewritten', () => {
+  const original = new RegExp(
+    [
+      String.raw`^(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d*\s*[½⅓⅔¼¾⅛⅜⅝⅞]|\d+(?:[.,]\d+)?(?:\s+`,
+      String.raw`\d+\s*\/\s*\d+|\s*\/\s*\d+)?)`,
+    ].join(''),
+    '',
+  );
+  const pieces = [
+    '1',
+    '2',
+    '0',
+    '9',
+    ',',
+    '.',
+    '000',
+    ' ',
+    '/',
+    '½',
+    '¼',
+    '⅞',
+    '1,200',
+    'x',
+    'g',
+    '-',
+  ];
+  const table = [
+    '400 g',
+    '1,200.5 g',
+    '1 1/2 cups',
+    '1/2',
+    '½ cup',
+    '1½',
+    '1 ½',
+    '2.5',
+    '2,5',
+    '1,2',
+    '12,345,678',
+    '1 / 2',
+    '3',
+    '',
+    'abc',
+    '.5',
+    '1,23',
+  ];
+
+  it('is the original pattern, rewritten', () => {
+    expectSamePattern(original, LEADING_NUMBER, table);
+  });
+
+  it('finds the same things in random text', () => {
+    expectSamePattern(original, LEADING_NUMBER, fuzzInputs(9000, 3000, pieces));
+  });
+
+  it('finds the same things in a very long input', () => {
+    const long = fuzzInputs(9001, 1, pieces).join('').repeat(5000);
+    expectSamePattern(original, LEADING_NUMBER, [long, 'x'.repeat(200_000)]);
   });
 });
