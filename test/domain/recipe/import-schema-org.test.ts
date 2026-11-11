@@ -11,6 +11,7 @@ import {
   resolveImageRefs,
   schemaOrgToCook,
 } from '@/domain/recipe/import-schema-org';
+import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
 describe('humaniseDuration', () => {
   it('formats hours and minutes', () => {
@@ -92,8 +93,7 @@ describe('schemaOrgToCook', () => {
         recipeCuisine: 'Indian',
         recipeCategory: 'Main course',
         cookingMethod: 'Simmering',
-        // eslint-disable-next-line unicorn/prefer-https -- test fixture: the vocabulary URL as the page writes it
-        suitableForDiet: ['http://schema.org/GlutenFreeDiet', 'HalalDiet'],
+        suitableForDiet: [urls.schemaGluten, 'HalalDiet'],
         prepTime: 'PT15M',
         datePublished: '2024-06-01',
         author: { '@type': 'Person', name: 'Asma Khan' },

@@ -1,0 +1,14 @@
+{
+  "loopbackV6": "::1",
+  "loopbackV4": "127.0.0.1",
+  "loopbackMappedV4": "::ffff:127.0.0.1",
+  "upperV6": "2001:DB8::",
+  "upperV6One": "2001:DB8::1",
+  "linkLocalZoned": "fe80::1%eth0",
+  "mappedV4": "::ffff:192.0.2.1",
+  "forwardedHop": "1.1.1.1",
+  "private192": "192.168.1.1",
+  "edgeCounterSubject": "a:2001:db8:1:2::/64",
+  "zeroSubject": "0:0:0:0::/64",
+  "linkLocalSubject": "fe80:0:0:0::/64"
+}

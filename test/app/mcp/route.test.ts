@@ -1,4 +1,3 @@
-import { readdirSync } from 'node:fs';
 import {
   afterEach,
   beforeEach,
@@ -19,6 +18,7 @@ import {
   s256,
   type TokenResponse,
 } from '@/lib/oauth';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
   installCloudflareContext,
   sqliteD1,
@@ -37,10 +37,7 @@ const WRITE_TOOL =
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 
 /** Every migration, in order: the route reads users, grants and rate-limit counters. */
-// eslint-disable-next-line n/no-sync -- sync is fine in a test bootstrap
-const MIGRATIONS = readdirSync('migrations')
-  .filter((file) => file.endsWith('.sql'))
-  .toSorted((a, b) => a.localeCompare(b));
+const MIGRATIONS = APP_MIGRATIONS;
 
 let raw: DatabaseSync;
 let restore: () => void;

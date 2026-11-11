@@ -1,10 +1,9 @@
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
 
-// eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: the stylesheet is read once at load for synchronous describe blocks
-const css = readFileSync(
+const css = await readFile(
   path.join(process.cwd(), 'src', 'app', 'globals.css'),
   'utf8',
 );

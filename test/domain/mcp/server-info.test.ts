@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
@@ -17,35 +17,32 @@ import { TOOLS } from '@/domain/mcp/tool-definitions';
 const root = process.cwd();
 
 /** The width and height written in a PNG file's header. */
-function pngSize(file: string): string {
-  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
-  const bytes = readFileSync(path.join(root, 'public', file));
+async function pngSize(file: string): Promise<string> {
+  const bytes = await readFile(path.join(root, 'public', file));
   return `${bytes.readUInt32BE(16)}x${bytes.readUInt32BE(20)}`;
 }
 
 describe('SERVER_VERSION', () => {
-  it('is the version in package.json', () => {
+  it('is the version in package.json', async () => {
     const manifest = JSON.parse(
-      // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
-      readFileSync(path.join(root, 'package.json'), 'utf8'),
+      await readFile(path.join(root, 'package.json'), 'utf8'),
     ) as { version: string };
     expect(SERVER_VERSION).toBe(manifest.version);
   });
 });
 
-describe('server.json', () => {
-  const listing = JSON.parse(
-    // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
-    readFileSync(path.join(root, 'server.json'), 'utf8'),
-  ) as {
-    version: string;
-    title: string;
-    description: string;
-    websiteUrl: string;
-    icons: { src: string; mimeType: string; sizes: string[] }[];
-    remotes: { type: string; url: string }[];
-  };
+const listing = JSON.parse(
+  await readFile(path.join(root, 'server.json'), 'utf8'),
+) as {
+  version: string;
+  title: string;
+  description: string;
+  websiteUrl: string;
+  icons: { src: string; mimeType: string; sizes: string[] }[];
+  remotes: { type: string; url: string }[];
+};
 
+describe('server.json', () => {
   it('has the version of the server', () => {
     expect(listing.version).toBe(SERVER_VERSION);
   });
@@ -91,14 +88,14 @@ describe('SERVER_INFO', () => {
     expect(SERVER_INFO_META_KEY).toBe('io.modelcontextprotocol/serverInfo');
   });
 
-  it('lists icons that are absolute HTTPS addresses on this site, to real PNG files of the size they claim', () => {
+  it('lists icons that are absolute HTTPS addresses on this site, to real PNG files of the size they claim', async () => {
     expect(SERVER_INFO.icons.length).toBeGreaterThan(0);
     for (const icon of SERVER_INFO.icons) {
       expect(icon.src.startsWith(`${SITE_URL}/icons/`)).toBe(true);
       expect(new URL(icon.src).protocol).toBe('https:');
       expect(icon.mimeType).toBe('image/png');
       const file = new URL(icon.src).pathname.slice(1);
-      expect(icon.sizes).toEqual([pngSize(file)]);
+      expect(icon.sizes).toEqual([await pngSize(file)]);
     }
   });
 });

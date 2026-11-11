@@ -13,6 +13,7 @@ import {
 
 import { quietSecurityLogs } from './quiet-logs';
 import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
 const ORIGIN = 'https://site.example';
 const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
@@ -72,8 +73,7 @@ describe('validateAuthorizeRequest', () => {
     const old: OAuthClient = {
       ...client,
       clientId: 'dcr_old',
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      redirectUris: ['http://example.com/cb', 'myapp://cb'],
+      redirectUris: [urls.exampleCallback, 'myapp://cb'],
     };
     for (const uri of old.redirectUris) {
       const result = await validateAuthorizeRequest(

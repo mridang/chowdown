@@ -245,8 +245,7 @@ describe('hrefFor and friends', () => {
   it('round-trips a query through its link', () => {
     const q = query({ protein: 'beef,lamb', diet_type: 'Pescatarian' });
     const params = Object.fromEntries(
-      // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture
-      new URL(hrefFor(q), 'http://x').searchParams,
+      new URL(hrefFor(q), 'https://x').searchParams,
     );
     expect(parseQuery(params)).toEqual(q);
   });

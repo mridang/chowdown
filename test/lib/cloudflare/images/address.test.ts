@@ -9,6 +9,7 @@ import {
   snapWidth,
 } from '@/lib/cloudflare/images/address';
 import { ALLOWED_HOSTS, ALLOWED_WIDTHS } from '@/lib/cloudflare/images/site';
+import urls from '../../../fixtures/insecure-urls.json' with { type: 'json' };
 
 /** A host the app takes pictures from. */
 const HOST = ALLOWED_HOSTS?.[0] ?? 'photos.example.org';
@@ -102,17 +103,13 @@ describe('isProxyableUrl', () => {
 
   it.each([
     'file:///etc/passwd',
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture: a protocol that must be refused
-    'ftp://a.com/x.jpg',
+    urls.ftpImage,
     'javascript:alert(1)',
     'https://localhost/x.jpg',
     'http://127.0.0.1/x.jpg',
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture: a private address that must be refused
-    'http://10.0.0.5/x.jpg',
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture: a private address that must be refused
-    'http://192.168.1.1/x.jpg',
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture: a private address that must be refused
-    'http://172.20.0.1/x.jpg',
+    urls.private10Image,
+    urls.private192Image,
+    urls.private172Image,
     'http://169.254.169.254/latest/meta-data',
     'http://[::1]/x.jpg',
     'http://2130706433/x.jpg',

@@ -1,18 +1,23 @@
 import { describe, expect, it } from '@jest/globals';
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { BRAND_NAME, BRAND_URL, SECURITY_CONTACT } from '@/app/_brand';
 
 const read = (name: string) =>
-  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
-  readFileSync(path.join(process.cwd(), 'public', name), 'utf8');
+  readFile(path.join(process.cwd(), 'public', name), 'utf8');
+
+const [llmsText, policyText, headersText] = await Promise.all([
+  read('llms.txt'),
+  read('security-policy.txt'),
+  read('_headers'),
+]);
 
 /** Plain-text files are served without a charset, so they must be ASCII. */
 const NON_ASCII = /[\u0080-￿]/;
 
 describe('public/llms.txt', () => {
-  const text = read('llms.txt');
+  const text = llmsText;
   /** The part before `## Optional`: what an assistant should read first. */
   const main = text.split('\n## Optional', 1)[0] ?? '';
 
@@ -42,7 +47,7 @@ describe('public/llms.txt', () => {
 });
 
 describe('public/security-policy.txt', () => {
-  const text = read('security-policy.txt');
+  const text = policyText;
 
   it('names the app and its address', () => {
     expect(text.startsWith(`${BRAND_NAME} security policy\n`)).toBe(true);
@@ -66,7 +71,7 @@ describe('public/security-policy.txt', () => {
 });
 
 describe('public/_headers', () => {
-  const file = read('_headers');
+  const file = headersText;
 
   it('caches the security policy for a day and lets other sites fetch it', () => {
     const block = file.split('\n/security-policy.txt\n', 2)[1] ?? '';

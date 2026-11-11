@@ -169,8 +169,7 @@ describe('POST /api/recipes/imports', () => {
 
   it('turns away thousands of tiny links in one request just the same', async () => {
     const res = await postInput(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      Array.from({ length: 5000 }, (_, i) => `http://a.b/${i}`).join(' '),
+      Array.from({ length: 5000 }, (_, i) => `https://a.b/${i}`).join(' '),
     );
     expect(res.status).toBe(400);
     expect(prepareImport).not.toHaveBeenCalled();

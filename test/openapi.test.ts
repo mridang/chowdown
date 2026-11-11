@@ -7,7 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 import Ajv2020 from 'ajv/dist/2020.js';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { createRecipeImport } from '@/domain/db/recipe-imports';
@@ -76,8 +76,7 @@ const ROOT = process.cwd();
 /** A value that is deliberately missing, as opposed to a key that is left out. */
 let absent: undefined;
 const spec = JSON.parse(
-  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
-  readFileSync(path.join(ROOT, 'openapi.json'), 'utf8'),
+  await readFile(path.join(ROOT, 'openapi.json'), 'utf8'),
 ) as Spec;
 
 const METHODS = ['get', 'put', 'post', 'patch', 'delete'] as const;
@@ -129,19 +128,24 @@ const sorted = (values: readonly string[]) =>
 const API_DIR = path.join(ROOT, 'src', 'app', 'api');
 
 /** Every `route.ts` below `dir`. */
-function routeFiles(dir: string): readonly string[] {
-  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    if (entry.isDirectory()) {
-      return routeFiles(path.join(dir, entry.name));
-    }
-    return entry.name === 'route.ts' ? [path.join(dir, entry.name)] : [];
-  });
+async function routeFiles(dir: string): Promise<readonly string[]> {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const found = await Promise.all(
+    entries.map(async (entry) => {
+      if (entry.isDirectory()) {
+        return routeFiles(path.join(dir, entry.name));
+      }
+      return entry.name === 'route.ts' ? [path.join(dir, entry.name)] : [];
+    }),
+  );
+  return found.flat();
 }
 
 /** Every `METHOD /path` the route files export, with `[x]` written `{x}`. */
-function registered(): readonly string[] {
-  return routeFiles(API_DIR).flatMap((file) => {
+async function registered(): Promise<readonly string[]> {
+  const files = await routeFiles(API_DIR);
+  const texts = await Promise.all(files.map((file) => readFile(file, 'utf8')));
+  return files.flatMap((file, index) => {
     const url = `/api${path
       .relative(API_DIR, path.dirname(file))
       .split(path.sep)
@@ -149,8 +153,7 @@ function registered(): readonly string[] {
       .map((segment) => `/${segment}`)
       .join('')
       .replaceAll(/\[([a-z_]+)\]/g, '{$1}')}`;
-    // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
-    const text = readFileSync(file, 'utf8');
+    const text = texts[index] ?? '';
     return METHODS.map((method) => method.toUpperCase())
       .filter((method) =>
         new RegExp(
@@ -405,8 +408,8 @@ describe('openapi.json', () => {
     }
   });
 
-  it('describes exactly the methods the routes under src/app/api export', () => {
-    const real = registered();
+  it('describes exactly the methods the routes under src/app/api export', async () => {
+    const real = await registered();
     expect(real.length).toBeGreaterThan(0);
     expect(sorted(operations.map(([key]) => key))).toEqual(sorted(real));
   });

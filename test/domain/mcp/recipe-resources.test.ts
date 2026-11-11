@@ -1,6 +1,3 @@
-import { readdirSync } from 'node:fs';
-import path from 'node:path';
-
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
@@ -15,6 +12,7 @@ import {
   recipeUri,
 } from '@/domain/mcp/recipe-resources';
 import type { ToolContext } from '@/domain/mcp/tool-calls';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 const someone = { id: 1 } as User;
@@ -197,11 +195,7 @@ describe('readRecipeResource', () => {
 describe('cachedRecipeLister', () => {
   /** A real database with every migration applied and a few cached recipes. */
   function seeded() {
-    // eslint-disable-next-line n/no-sync -- test helper; seeded() must stay synchronous for its callers
-    const migrations = readdirSync(path.join(process.cwd(), 'migrations'))
-      .filter((file) => file.endsWith('.sql'))
-      .toSorted((a, b) => a.localeCompare(b));
-    const database = sqliteDatabase(...migrations);
+    const database = sqliteDatabase(...APP_MIGRATIONS);
     const now = '2026-01-01T00:00:00.000Z';
     database.raw.exec(
       `INSERT INTO users (id, google_sub, email, created_at, updated_at) VALUES

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import { SITE_NAME, SITE_URL } from '@/utils/site';
 import { fetchPage, PageFetchError } from '@/domain/recipe/fetch-page';
+import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
 /** The User-Agent `fetchPage` builds from the site's identity at the call site. */
 const USER_AGENT = `${SITE_NAME.toLowerCase()}/1.0 (+${SITE_URL})`;
@@ -143,8 +144,7 @@ describe('fetchPage', () => {
   it.each([
     'http://localhost/x',
     'http://127.0.0.1/x',
-    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture: a private address that must be refused
-    'http://10.1.2.3/x',
+    urls.private10Page,
     'https://a.com:8443/x',
     'https://user:pw@a.com/x',
     'file:///etc/passwd',

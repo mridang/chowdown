@@ -1,7 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import vm from 'node:vm';
+
+/** The worker's source, read once so `loadWorker` stays synchronous for every spec. */
+const WORKER_SOURCE = await readFile(
+  path.join(process.cwd(), 'public/sw.js'),
+  'utf8',
+);
 
 type Listener = (event: never) => void;
 
@@ -78,11 +84,7 @@ function loadWorker(options: {
     },
   });
   // eslint-disable-next-line sonarjs/code-eval -- test runs the repository's own public/sw.js in a sandbox
-  vm.runInContext(
-    // eslint-disable-next-line n/no-sync -- sync is fine in a test helper; async would ripple through every synchronous spec
-    readFileSync(path.join(process.cwd(), 'public/sw.js'), 'utf8'),
-    context,
-  );
+  vm.runInContext(WORKER_SOURCE, context);
   return { listeners, calls, windows };
 }
 

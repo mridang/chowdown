@@ -9,6 +9,7 @@ import {
 } from '../../../lib/core/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
+import urls from '../../../fixtures/insecure-urls.json' with { type: 'json' };
 
 const body = JSON.stringify({
   client_name: 'Assistant',
@@ -59,8 +60,7 @@ describe('POST /oauth/register', () => {
 
   it('answers 400 with an OAuth error for an unacceptable redirect address', async () => {
     const res = await post(
-      // eslint-disable-next-line unicorn/prefer-https -- test fixture
-      JSON.stringify({ redirect_uris: ['http://example.com/cb'] }),
+      JSON.stringify({ redirect_uris: [urls.exampleCallback] }),
     );
     expect(res.status).toBe(400);
     expect(await res.json()).toMatchObject({ error: 'invalid_redirect_uri' });

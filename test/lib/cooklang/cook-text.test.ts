@@ -20,6 +20,7 @@ import {
   uncuratedFilename,
   upsertMetadata,
 } from '@/lib/cooklang';
+import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
 describe('uncurated filenames', () => {
   it('builds a marked filename', () => {
@@ -120,8 +121,7 @@ describe('normalizeSourceUrl', () => {
   it('ignores www, scheme, query, fragment and trailing slash', () => {
     const a = normalizeSourceUrl('https://www.Example.com/post/pasta/?utm=1#x');
     expect(a).toBe('example.com/post/pasta');
-    // eslint-disable-next-line unicorn/prefer-https -- test fixture
-    expect(normalizeSourceUrl('http://example.com/post/pasta')).toBe(a);
+    expect(normalizeSourceUrl(urls.examplePost)).toBe(a);
   });
 
   it('keeps parameters that identify the page, so two videos differ', () => {

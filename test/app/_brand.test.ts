@@ -80,7 +80,9 @@ describe('what the installed app offers', () => {
       expect(shot.label).toBeTruthy();
       expect(shot.src.startsWith('/screenshots/')).toBe(true);
       expect(await exists(path.join(root, 'public', shot.src))).toBe(true);
-      const { width, height } = pngSize(path.join(root, 'public', shot.src));
+      const { width, height } = await pngSize(
+        path.join(root, 'public', shot.src),
+      );
       expect(shot.sizes).toBe(`${width}x${height}`);
     }
   });

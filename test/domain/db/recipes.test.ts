@@ -18,6 +18,7 @@ import {
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { indexedPlan, planOf } from '../../lib/core/db/plan';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
 /** A database with every migration applied and two people in it. */
 function seeded() {
@@ -126,12 +127,7 @@ describe('findRecipeBySourceUrl', () => {
       'a',
       '>> title: A\n>> source: https://www.site.com/post/a/?utm=1\n',
     );
-    const hit = await findRecipeBySourceUrl(
-      made.db,
-      1,
-      // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture
-      'http://site.com/post/a',
-    );
+    const hit = await findRecipeBySourceUrl(made.db, 1, urls.sitePost);
     expect(hit?.drive_file_id).toBe('a');
   });
 
