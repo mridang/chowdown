@@ -244,8 +244,7 @@ function withoutParentheses(line: string): {
   return {
     text: walked.text.replaceAll(/\s+/g, ' ').trim(),
     notes: notes
-      // eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short note, backtracking is bounded
-      .map((note) => note.replaceAll(/^[\s,;:]+|[\s,;:]+$/g, '').trim())
+      .map((note) => trimEdges(note, /[\s,;:]/, /[\s,;:]/).trim())
       .filter((note) => note !== ''),
   };
 }
@@ -283,12 +282,7 @@ function leadingQuantity(text: string): LeadingQuantity | undefined {
   if (!match || /^0\d/.test(match[1] ?? '')) {
     return undefined;
   }
-  const quantity = (match[1] ?? '')
-    // eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short quantity, backtracking is bounded
-    .replace(/\s+to\s+/i, '-')
-    // eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short quantity, backtracking is bounded
-    .replaceAll(/\s*-\s*/g, '-')
-    .trim();
+  const quantity = tightHyphens(withHyphenForTo(match[1] ?? '')).trim();
   const afterQuantity = text.slice(match[0].length);
   const described = MEASURE_ADJECTIVES.exec(afterQuantity);
   const afterNumber = described
@@ -356,16 +350,59 @@ function amountPhrase(phrase: string): LeadingQuantity | undefined {
     : undefined;
 }
 
+/** `text` without the leading characters `leading` accepts and the trailing ones `trailing` accepts. */
+function trimEdges(text: string, leading: RegExp, trailing: RegExp): string {
+  let start = 0;
+  let end = text.length;
+  while (start < end && leading.test(text.charAt(start))) {
+    start += 1;
+  }
+  while (end > start && trailing.test(text.charAt(end - 1))) {
+    end -= 1;
+  }
+  return text.slice(start, end);
+}
+
+/** `text` with its first whitespace-padded `to` ("1 to 2") turned into a hyphen. */
+function withHyphenForTo(text: string): string {
+  for (const found of text.matchAll(/to/gi)) {
+    let from = found.index;
+    let end = from + 2;
+    if (!/\s/.test(text.charAt(from - 1)) || !/\s/.test(text.charAt(end))) {
+      continue;
+    }
+    while (from > 0 && /\s/.test(text.charAt(from - 1))) {
+      from -= 1;
+    }
+    while (end < text.length && /\s/.test(text.charAt(end))) {
+      end += 1;
+    }
+    return `${text.slice(0, from)}-${text.slice(end)}`;
+  }
+  return text;
+}
+
+/** `text` with the whitespace around every hyphen removed. */
+function tightHyphens(text: string): string {
+  const parts = text.split('-');
+  const last = parts.length - 1;
+  return parts
+    .map((part, i) => {
+      const left = i > 0 ? part.trimStart() : part;
+      return i < last ? left.trimEnd() : left;
+    })
+    .join('-');
+}
+
 /** Strip punctuation that is left dangling after parts of the line were taken out. */
 function cleanedName(text: string): string {
-  return (
-    text
-      .replace(/^(?:of|x)\s+/i, '')
-      // eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short name, backtracking is bounded
-      .replaceAll(/^[\s,;:./-]+|[\s,;:./-]+$/g, '')
-      .replaceAll(/\s+/g, ' ')
-      .trim()
-  );
+  return trimEdges(
+    text.replace(/^(?:of|x)\s+/i, ''),
+    /[\s,;:./-]/,
+    /[\s,;:./-]/,
+  )
+    .replaceAll(/\s+/g, ' ')
+    .trim();
 }
 
 /** Join the notes into one, without repeats. */

@@ -70,6 +70,76 @@ function stripUrls(input: string, urls: ReadonlySet<string>): string {
 /** Prose blocks shorter than this are noise (stray lines left after URLs went). */
 const MIN_BLOCK = 20;
 
+/** The index after the whitespace run that starts at `from`. */
+function whitespaceEnd(text: string, from: number): number {
+  let end = from;
+  while (end < text.length && /\s/.test(text.charAt(end))) {
+    end += 1;
+  }
+  return end;
+}
+
+/** How many line breaks `text` holds from `from` up to (not including) `to`, and the index after the last. */
+function lineBreaks(
+  text: string,
+  from: number,
+  to: number,
+): { readonly count: number; readonly after: number } {
+  let count = 0;
+  let after = to;
+  for (let i = from; i < to; i += 1) {
+    if (text.charAt(i) === '\n') {
+      count += 1;
+      after = i + 1;
+    }
+  }
+  return { count, after };
+}
+
+/**
+ * Where a separator that starts at the line break `at` ends, or -1 when none
+ * does: whitespace holding three or more line breaks, a line of three or more
+ * dashes between line breaks, or whitespace holding two line breaks. They are
+ * tried in that order.
+ */
+function separatorEnd(text: string, at: number): number {
+  const runEnd = whitespaceEnd(text, at);
+  const run = lineBreaks(text, at, runEnd);
+  if (run.count >= 3) {
+    return run.after;
+  }
+  let dashEnd = runEnd;
+  while (text.charAt(dashEnd) === '-') {
+    dashEnd += 1;
+  }
+  if (dashEnd - runEnd >= 3) {
+    const trailing = lineBreaks(text, dashEnd, whitespaceEnd(text, dashEnd));
+    if (trailing.count > 0) {
+      return trailing.after;
+    }
+  }
+  return run.count === 2 ? run.after : -1;
+}
+
+/** `input` cut at every separator (see {@link separatorEnd}). */
+function splitAtSeparators(input: string): readonly string[] {
+  const parts: string[] = [];
+  let start = 0;
+  let at = input.indexOf('\n');
+  while (at !== -1) {
+    const end = separatorEnd(input, at);
+    if (end === -1) {
+      at = input.indexOf('\n', at + 1);
+    } else {
+      parts.push(input.slice(start, at));
+      start = end;
+      at = input.indexOf('\n', end);
+    }
+  }
+  parts.push(input.slice(start));
+  return parts;
+}
+
 /**
  * Split pasted prose into recipe blocks. Blocks are separated by a run of two
  * or more newlines or by a markdown horizontal rule (`---`). Blocks shorter
@@ -77,13 +147,9 @@ const MIN_BLOCK = 20;
  * behind after URLs were stripped).
  */
 export function splitTextBlocks(input: string): readonly string[] {
-  return (
-    input
-      // eslint-disable-next-line sonarjs/super-linear-regex -- the \s* runs must cross blank lines exactly as pasted text does; a stricter class would split blocks differently
-      .split(/\n\s*\n\s*\n+|\n\s*-{3,}\s*\n|\n\s*\n/)
-      .map((b) => b.trim())
-      .filter((b) => b.length >= MIN_BLOCK)
-  );
+  return splitAtSeparators(input)
+    .map((b) => b.trim())
+    .filter((b) => b.length >= MIN_BLOCK);
 }
 
 /**

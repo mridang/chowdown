@@ -160,19 +160,24 @@ function formatVolume(ml: number, system: UnitSystem): string {
   return `${roundTo(ml / smallestSize, 0.5)} ${smallestUnit}`;
 }
 
+/** What ends a line for `.` in a regular expression. */
+const LINE_BREAK = /[\n\r\u2028\u2029]/;
+
 /**
  * Convert a single quantity string (e.g. "200 g", "2 cups", "180 C") to the
  * target system. Returns the input unchanged when there is no number, no unit,
  * or the unit is not recognised (counts like "2" stay "2").
  */
 export function convertQuantity(quantity: string, system: UnitSystem): string {
-  // eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short quantity, backtracking is bounded
-  const match = /^([\d.,/]+)\s*(.*)$/.exec(quantity.trim());
-  if (!match) {
+  const text = quantity.trim();
+  const number = /^[\d.,/]+/.exec(text)?.[0];
+  const tail = text.slice(number?.length ?? 0);
+  // The unit is the rest of one line: a line break in it is not a quantity.
+  if (number === undefined || LINE_BREAK.test(tail.trimStart())) {
     return quantity;
   }
-  const value = parseNumber((match[1] ?? '').trim());
-  const unit = (match[2] ?? '')
+  const value = parseNumber(number.trim());
+  const unit = tail
     .trim()
     .toLowerCase()
     .replaceAll('.', '')
@@ -332,18 +337,19 @@ export interface BaseAmount {
  */
 export function toBaseAmount(quantity: string): BaseAmount | undefined {
   const match =
-    // eslint-disable-next-line sonarjs/regex-complexity, sonarjs/super-linear-regex -- the number grammar (thousands, fractions, vulgar fractions) is deliberately complete in one pattern
-    /^(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d*\s*[½⅓⅔¼¾⅛⅜⅝⅞]|\d+(?:[.,]\d+)?(?:\s+\d+\s*\/\s*\d+|\s*\/\s*\d+)?)\s*(.*)$/.exec(
+    // eslint-disable-next-line sonarjs/regex-complexity -- the number grammar (thousands, fractions, vulgar fractions) is deliberately complete in one pattern
+    /^(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d*\s*[½⅓⅔¼¾⅛⅜⅝⅞]|\d+(?:[.,]\d+)?(?:\s+\d+\s*\/\s*\d+|\s*\/\s*\d+)?)/.exec(
       quantity.trim(),
     );
-  if (!match) {
+  const tail = quantity.trim().slice(match?.[0].length ?? 0);
+  if (!match || LINE_BREAK.test(tail.trimStart())) {
     return undefined;
   }
   const value = amountValue((match[1] ?? '').trim());
   if (value === undefined) {
     return undefined;
   }
-  const unit = (match[2] ?? '')
+  const unit = tail
     .trim()
     .toLowerCase()
     .replaceAll('.', '')

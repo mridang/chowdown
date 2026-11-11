@@ -209,3 +209,28 @@ describe('toCookIngredient', () => {
     ).toBe('@sugar evil pan 5{1}(a b c)');
   });
 });
+
+const FAST_MS = 1000;
+
+describe('ingredient line scanning (linear-time rewrites)', () => {
+  it.each([
+    ['1 to 2 cups flour', { quantity: '1-2', unit: 'cups', name: 'flour' }],
+    ['1 - 2 cups', { quantity: '1-2', unit: 'cups', name: '1 - 2 cups' }],
+    ['8-12 tortillas', { quantity: '8-12', name: 'tortillas' }],
+    ['x 1 TO 3 eggs', { name: '1 TO 3 eggs' }],
+    [
+      '2 cups of  , flour ;',
+      { quantity: '2', unit: 'cups', name: 'of', note: ', flour ;' },
+    ],
+    ['flour (sifted), chopped;', { name: 'flour', note: 'sifted; , chopped;' }],
+  ])('parses %j', (input, expected) => {
+    expect(parseIngredientLine(input as string)).toEqual(expected);
+  });
+  it('scans on a long adversarial input', () => {
+    const started = performance.now();
+    parseIngredientLine(`1${' '.repeat(100_000)}x`);
+    parseIngredientLine(`1${' - '.repeat(50_000)}x`);
+    parseIngredientLine(`flour (${' ,;'.repeat(50_000)})`);
+    expect(performance.now() - started).toBeLessThan(FAST_MS);
+  });
+});

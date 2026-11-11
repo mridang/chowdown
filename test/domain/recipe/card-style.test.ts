@@ -33,3 +33,27 @@ describe('levelOf', () => {
     expect(levelOf(undefined)).toBeUndefined();
   });
 });
+
+const FAST_MS = 1000;
+
+describe('cleanTitle separators (linear-time rewrite)', () => {
+  it.each([
+    ['Chicken Chettinad | Chettinad Recipe', 'Chicken Chettinad'],
+    ['A|B', 'A|B'],
+    ['A | B | C', 'A'],
+    ['  | x', '  | x'],
+    ['A \u2014  B', 'A'],
+    ['plain', 'plain'],
+  ])(
+    'keeps the part before the first padded separator %j',
+    (input, expected) => {
+      expect(cleanTitle(input as string)).toEqual(expected);
+    },
+  );
+  it('scans on a long adversarial input', () => {
+    const started = performance.now();
+    cleanTitle(`${' '.repeat(100_000)}x${' '.repeat(100_000)}`);
+    cleanTitle('| '.repeat(50_000));
+    expect(performance.now() - started).toBeLessThan(FAST_MS);
+  });
+});

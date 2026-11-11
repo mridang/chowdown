@@ -149,8 +149,43 @@ function repaired(item: Readonly<Shown>): Shown {
  * would take for something else (`~` starts a timer, `#` cookware), which is
  * exactly why these lines are read here rather than by the parser.
  */
-// eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short ingredient line, backtracking is bounded
-const INGREDIENT_LINE = /^@([^{}]+?)\s*(?:\{([^{}]*)\}(?:\([^()]*\))?)?\s*$/;
+/**
+ * Read an ingredient line, `@name`, `@name{amount}` or `@name{amount}(note)`:
+ * the name (without the whitespace before any `{`) and the raw amount, which
+ * is empty when there is no `{amount}`. Undefined for anything else.
+ */
+function ingredientLine(
+  line: string,
+): { readonly name: string; readonly amount: string } | undefined {
+  if (!line.startsWith('@')) {
+    return undefined;
+  }
+  const rest = line.slice(1);
+  const brace = rest.search(/[{}]/);
+  if (brace === -1) {
+    return rest === ''
+      ? undefined
+      : { name: rest.trimEnd() || rest.charAt(0), amount: '' };
+  }
+  if (brace === 0 || rest.charAt(brace) === '}') {
+    return undefined;
+  }
+  const close = rest.indexOf('}', brace + 1);
+  const amount = close === -1 ? '' : rest.slice(brace + 1, close);
+  if (close === -1 || amount.includes('{')) {
+    return undefined;
+  }
+  let after = rest.slice(close + 1);
+  if (after.startsWith('(')) {
+    const end = after.indexOf(')');
+    if (end !== -1 && !after.slice(1, end).includes('(')) {
+      after = after.slice(end + 1);
+    }
+  }
+  return after.trim() === ''
+    ? { name: rest.slice(0, brace).trimEnd() || rest.charAt(0), amount }
+    : undefined;
+}
 
 /** What an ingredient line's `{amount}` says: `200%g` is 200 g, `to taste` is itself, empty is nothing. */
 function amountLabel(amount: string): string {
@@ -183,13 +218,11 @@ function splitDeclaration(source: string): Declaration {
   }
   const afterBlock = lines.findIndex(
     (line, index) =>
-      index >= firstBody &&
-      line.trim() !== '' &&
-      !INGREDIENT_LINE.test(line.trim()),
+      index >= firstBody && line.trim() !== '' && !ingredientLine(line.trim()),
   );
   const block = lines
     .slice(firstBody, afterBlock === -1 ? lines.length : afterBlock)
-    .map((line) => INGREDIENT_LINE.exec(line.trim()))
+    .map((line) => ingredientLine(line.trim()))
     .flatMap((match) => (match ? [match] : []));
   // Needs a method to be separate from, and more than one line to be a block.
   if (afterBlock === -1 || block.length < 2) {
@@ -198,8 +231,8 @@ function splitDeclaration(source: string): Declaration {
   return {
     declared: block.map((match) =>
       repaired({
-        name: (match[1] ?? '').trim(),
-        quantity: amountLabel(match[2] ?? ''),
+        name: match.name.trim(),
+        quantity: amountLabel(match.amount),
       }),
     ),
     rest: [...lines.slice(0, firstBody), ...lines.slice(afterBlock)].join('\n'),

@@ -34,8 +34,14 @@ export function toneFor(text: string): Tone {
  * before the first separator.
  */
 export function cleanTitle(title: string): string {
-  // eslint-disable-next-line sonarjs/super-linear-regex -- the spacing rule has to stay exact (a title keeps spaces that are not around a separator), and page titles are short
-  return (title.split(/\s+[|–—]\s+/, 1)[0] ?? title).trim() || title;
+  // The first separator with whitespace on both sides ends the title.
+  for (const found of title.matchAll(/[|–—]/g)) {
+    const at = found.index;
+    if (/\s/.test(title.charAt(at - 1)) && /\s/.test(title.charAt(at + 1))) {
+      return title.slice(0, at).trim() || title;
+    }
+  }
+  return title.trim() || title;
 }
 
 /** The difficulties a tag can name, in order. */

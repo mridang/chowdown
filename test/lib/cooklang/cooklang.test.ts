@@ -192,3 +192,38 @@ describe('ingredients that were stored badly', () => {
     ]);
   });
 });
+
+const FAST_MS = 1000;
+
+describe('declared ingredient lines (linear-time rewrite)', () => {
+  it.each([
+    [
+      '@salt{}\n@oil{2%tbsp}(fine)\n@ x {1}\n\nMix.',
+      [
+        { name: 'salt', quantity: '' },
+        { name: 'oil', quantity: '2 tbsp' },
+        { name: 'x', quantity: '1' },
+      ],
+    ],
+    [
+      '@a\n@b{1}(x',
+      [
+        { name: 'a', quantity: '' },
+        { name: 'b', quantity: '1' },
+      ],
+    ],
+    ['@a{\n', [{ name: 'a', quantity: '' }]],
+  ])('declares %j', (input, expected) => {
+    expect(parseRecipe(input as string, 'a.cook').ingredients).toEqual(
+      expected,
+    );
+  });
+  it('scans on a long adversarial input', () => {
+    const started = performance.now();
+    parseRecipe(
+      `@a${' '.repeat(100_000)}\n@b\n\nMix.`,
+      'a.cook',
+    );
+    expect(performance.now() - started).toBeLessThan(FAST_MS);
+  });
+});

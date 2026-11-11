@@ -501,10 +501,24 @@ function withImplied(words: readonly string[]): readonly string[] {
   ];
 }
 
+/** `name` with every `(…)` group, up to the first `)` after its `(`, replaced by a space. */
+function withoutParentheses(name: string): string {
+  let out = '';
+  let from = 0;
+  for (;;) {
+    const open = name.indexOf('(', from);
+    const close = open === -1 ? -1 : name.indexOf(')', open + 1);
+    if (close === -1) {
+      return out + name.slice(from);
+    }
+    out += `${name.slice(from, open)} `;
+    from = close + 1;
+  }
+}
+
 /** The meaningful words of an ingredient name: singular, synonyms folded. */
 export function ingredientWords(name: string): readonly string[] {
-  // eslint-disable-next-line sonarjs/super-linear-regex -- input is a short ingredient name, backtracking is bounded
-  const words = foldText(name.replaceAll(/\([^)]*\)/g, ' '))
+  const words = foldText(withoutParentheses(name))
     .split(/[^a-z]+/)
     .filter((w) => w && !DESCRIPTORS.has(w))
     .map((w) => stem(w))
@@ -590,8 +604,7 @@ const STAPLE_WORDS = new Set([
  * coconut water are not, and neither are pepper flakes or garlic powder.
  */
 export function isStaple(name: string): boolean {
-  // eslint-disable-next-line sonarjs/super-linear-regex -- input is a short ingredient name, backtracking is bounded
-  const words = foldText(name.replaceAll(/\([^)]*\)/g, ' '))
+  const words = foldText(withoutParentheses(name))
     .split(/[^a-z]+/)
     .filter(Boolean);
   return (

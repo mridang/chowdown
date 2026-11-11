@@ -3,6 +3,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import {
   askForAuthor,
   authorEvidence,
+  authorFromSource,
   cleanAuthorName,
   declaredAuthor,
   findAuthor,
@@ -350,5 +351,34 @@ describe('hasAuthor and withAuthor', () => {
     const { env } = envReplying('{"author": null}');
     const cook = '>> title: Soup\n\nBoil.\n';
     expect(await withAuthor(cook, page('<title>Soup</title>'), env)).toBe(cook);
+  });
+});
+
+const FAST_MS = 1000;
+
+describe('author text scanning (linear-time rewrites)', () => {
+  it.each([
+    ['  , Jane Cook ;: ', 'Jane Cook'],
+    ['Jane Cook.', 'Jane Cook'],
+    ['Jane Cook | Some Blog', 'Jane Cook'],
+    [',;: ', null],
+    ['Jane Cook...  ', 'Jane Cook'],
+  ])('cleans %j', (input, expected) => {
+    expect(cleanAuthorName(input as string) ?? null).toEqual(expected);
+  });
+  it.each([
+    ['>> author: Jane Doe  \t\nx', 'Jane Doe'],
+    ['>> by:\tBob\r\nx', 'Bob'],
+    ['>>author:   \n', null],
+    ['>> title: x\n>> author:A B', 'A B'],
+    ['x>> author: q', null],
+  ])('reads the source byline %j', (input, expected) => {
+    expect(authorFromSource(input as string) ?? null).toEqual(expected);
+  });
+  it('scans on a long adversarial input', () => {
+    const started = performance.now();
+    cleanAuthorName(`${' ,;:'.repeat(50_000)}a${' ,;:.'.repeat(50_000)}`);
+    authorFromSource(`>> author:${' \t'.repeat(50_000)}x`);
+    expect(performance.now() - started).toBeLessThan(FAST_MS);
   });
 });

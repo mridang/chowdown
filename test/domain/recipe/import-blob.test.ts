@@ -121,3 +121,50 @@ describe('planImport leftovers', () => {
     ]);
   });
 });
+
+const FAST_MS = 1000;
+
+describe('splitTextBlocks separators (linear-time rewrite)', () => {
+  it.each([
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    ],
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n---\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    ],
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n\n---\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    ],
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n\n\n---\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '---\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    ],
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n  \n \naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    ],
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n ----  \naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    ],
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    ],
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n---',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n---'],
+    ],
+  ])('splits %j', (input, expected) => {
+    expect(splitTextBlocks(input as string)).toEqual(expected);
+  });
+  it('scans on a long adversarial input', () => {
+    const started = performance.now();
+    splitTextBlocks(`${'a'.repeat(30)}${'\n '.repeat(50_000)}x`);
+    splitTextBlocks(`${'\n --- '.repeat(20_000)}`);
+    expect(performance.now() - started).toBeLessThan(FAST_MS);
+  });
+});

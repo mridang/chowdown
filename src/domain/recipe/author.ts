@@ -193,6 +193,19 @@ const NOT_A_NAME =
   // eslint-disable-next-line sonarjs/regex-complexity -- one flat list of words; splitting it into several patterns would change what matches
   /\b(?:comments?|minutes?|mins?|read|reviews?|ratings?|share|print|jump|skip|posts?|admin|administrator|editorial|editors?|staff|team|photos?|contributors?|subscribe|newsletter|cookies?|privacy|login|sign|unknown|anonymous|guest|author|undefined|null)\b/i;
 
+/** `text` without the leading characters `leading` accepts and the trailing ones `trailing` accepts. */
+function trimEdges(text: string, leading: RegExp, trailing: RegExp): string {
+  let start = 0;
+  let end = text.length;
+  while (start < end && leading.test(text.charAt(start))) {
+    start += 1;
+  }
+  while (end > start && trailing.test(text.charAt(end - 1))) {
+    end -= 1;
+  }
+  return text.slice(start, end);
+}
+
 /**
  * Tidy a name found on a page and say whether it can be one: `undefined` for
  * anything that is plainly not a person or a blog's name (a date, "2 COMMENTS",
@@ -204,14 +217,16 @@ export function cleanAuthorName(raw: string): string | undefined {
   if (raw.includes('@')) {
     return undefined;
   }
-  const stripped = decodeEntities(raw)
-    .replaceAll(/\s+/g, ' ')
-    .trim()
-    .replace(NAME_PREFIX, '')
-    // "Jane Cook | Some Blog" and "Jane Cook - Some Blog" are the name and a site.
-    .replace(/\s[|–—-]\s.*$/, '')
-    // eslint-disable-next-line sonarjs/super-linear-regex -- the trailing run is one page value's punctuation; a plain trim is the only exact rule here
-    .replaceAll(/^[\s,;:]+|[\s,;:.]+$/g, '');
+  const stripped = trimEdges(
+    decodeEntities(raw)
+      .replaceAll(/\s+/g, ' ')
+      .trim()
+      .replace(NAME_PREFIX, '')
+      // "Jane Cook | Some Blog" and "Jane Cook - Some Blog" are the name and a site.
+      .replace(/\s[|–—-]\s.*$/, ''),
+    /[\s,;:]/,
+    /[\s,;:.]/,
+  );
   const words = stripped.split(' ').filter(Boolean);
   const lengthOk =
     stripped.length >= 2 && stripped.length <= 60 && words.length <= 5;
@@ -387,8 +402,11 @@ export async function findAuthor(
 
 /** The author a recipe's Cooklang source names (`>> author:` or `>> by:`), if it names one. */
 export function authorFromSource(cook: string): string | undefined {
-  // eslint-disable-next-line sonarjs/super-linear-regex -- the captured name must stop before trailing spaces and tabs, which a simpler pattern would keep
-  return /^>>\s*(?:author|by):[ \t]*(\S[^\r\n]*?)[ \t]*$/im.exec(cook)?.[1];
+  const name = /^>>\s*(?:author|by):[ \t]*(\S[^\n\r\u2028\u2029]*)/im.exec(
+    cook,
+  )?.[1];
+  // The name stops before any trailing spaces and tabs.
+  return name === undefined ? undefined : trimEdges(name, /(?!)/, /[ \t]/);
 }
 
 /** Whether Cooklang source already names an author. */
