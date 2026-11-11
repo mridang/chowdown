@@ -8,6 +8,8 @@ describe('minutesOf', () => {
     expect(minutesOf('1 hour 20 min')).toBe(80);
     expect(minutesOf('2 hours')).toBe(120);
     expect(minutesOf('1.5 hours')).toBe(90);
+    expect(minutesOf('100 hours 30 min')).toBe(6030);
+    expect(minutesOf('0 hours 45 min')).toBe(45);
   });
 
   it('reads the Cooklang quantity form and bare numbers', () => {
