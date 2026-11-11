@@ -135,7 +135,7 @@ describe('POST /oauth/register', () => {
     const res = await POST(
       new Request('https://app.test/oauth/register', {
         method: 'POST',
-        // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
         body: new Uint8Array([0xff, 0xfe, 0x7b]),
         headers: { 'cf-connecting-ip': '203.0.113.7' },
       }),

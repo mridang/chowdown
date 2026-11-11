@@ -219,7 +219,7 @@ describe('POST /oauth/token, bodies and rate limits', () => {
     const res = await POST(
       new Request(`${ORIGIN}/oauth/token`, {
         method: 'POST',
-        // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
         body: new Uint8Array([0xff, 0xfe]),
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
       }),

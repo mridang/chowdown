@@ -104,12 +104,12 @@ function hashOf(text: string): number {
   );
   const fnv = units.reduce(
     (hash, unit) => Math.imul(hash ^ unit, 0x01_00_01_93),
-    // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
     0x81_1c_9d_c5,
   );
-  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
   const half = Math.imul(fnv ^ (fnv >>> 16), 0x85_eb_ca_6b);
-  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
   const whole = Math.imul(half ^ (half >>> 13), 0xc2_b2_ae_35);
   return (whole ^ (whole >>> 16)) >>> 0;
 }

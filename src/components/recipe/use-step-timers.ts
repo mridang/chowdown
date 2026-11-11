@@ -106,7 +106,7 @@ export function useStepTimers(recipeTitle: string): StepTimers {
       return;
     }
     alarm.current?.ring();
-    // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the browser navigator, which the Node rule wrongly reports as experimental; used on purpose
+
     vibrateOnFinish(navigator);
     setAnnouncement(finishedAnnouncement(fresh));
   }, [view]);

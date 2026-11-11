@@ -15,7 +15,6 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { APP_MIGRATIONS } from './core/db/migrations';
 
-// eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
 const SOURCE = readFileSync(
   path.join(process.cwd(), 'src/lib/rate-limit.ts'),
   'utf8',
@@ -23,7 +22,6 @@ const SOURCE = readFileSync(
 const HIT_SQL = /const HIT_SQL = `([^`]*)`/.exec(SOURCE)?.[1] ?? '';
 /** The whole schema, every migration in order: the rate-limit table is one of them. */
 const SCHEMA = APP_MIGRATIONS.map((file) =>
-  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
   readFileSync(path.join(process.cwd(), 'migrations', file), 'utf8'),
 ).join('\n');
 

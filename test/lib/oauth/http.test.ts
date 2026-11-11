@@ -178,7 +178,6 @@ describe('readOAuthForm', () => {
   });
 
   it('refuses a body that is not text', async () => {
-    // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
     const form = await readOAuthForm(post(new Uint8Array([0xff, 0xfe])));
     expect(form.kind).toBe('unreadable');
   });

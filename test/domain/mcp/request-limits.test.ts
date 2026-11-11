@@ -63,9 +63,9 @@ describe('readJsonBody', () => {
   it.each([
     ['text that is not JSON', encode('{nope')],
     ['an empty body', encode('')],
-    // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
     ['bytes that are not UTF-8', Uint8Array.of(0x7b, 0x22, 0xff, 0x22, 0x7d)],
-    // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
     ['a character cut off at the end', Uint8Array.of(0x22, 0xe2, 0x82)],
   ])('calls %s unparseable', async (_name, bytes) => {
     expect(await readJsonBody(streamed([bytes]))).toEqual({

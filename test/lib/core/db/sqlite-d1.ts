@@ -78,7 +78,6 @@ export function sqliteD1(...migrations: readonly string[]): {
   const raw = new DatabaseSync(':memory:');
   migrations.forEach((file) =>
     raw.exec(
-      // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
       readFileSync(path.join(process.cwd(), 'migrations', file), 'utf8'),
     ),
   );

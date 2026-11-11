@@ -99,7 +99,6 @@ export function keepScreenAwake(environment: WakeLockEnvironment): () => void {
 /** The real browser: its wake lock if it has one, and the document's visibility. */
 function browserEnvironment(): WakeLockEnvironment {
   return {
-    // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the browser navigator, which the Node rule wrongly reports as experimental; used on purpose
     wakeLock: 'wakeLock' in navigator ? navigator.wakeLock : undefined,
     isVisible: () => document.visibilityState === 'visible',
     // eslint-disable-next-line promise/prefer-await-to-callbacks -- a DOM listener parameter, not a Node-style callback; the listener API is synchronous by design

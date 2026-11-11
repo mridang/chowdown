@@ -106,7 +106,7 @@ describe('POST /oauth/revoke limits and body rules', () => {
     const binary = await POST(
       new Request('https://app.test/oauth/revoke', {
         method: 'POST',
-        // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
         body: new Uint8Array([0xff, 0xfe]),
       }),
     );

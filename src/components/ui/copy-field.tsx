@@ -34,11 +34,11 @@ export function CopyField({
       <Button
         onClick={async () => {
           // `clipboard` is missing on insecure pages; then there is nothing to confirm.
-          // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the browser navigator, which the Node rule wrongly reports as experimental; used on purpose
+
           if (!navigator.clipboard) {
             return;
           }
-          // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the browser navigator, which the Node rule wrongly reports as experimental; used on purpose
+
           await navigator.clipboard.writeText(value);
           setCopied(true);
           setTimeout(() => setCopied(false), CONFIRMATION_MS);

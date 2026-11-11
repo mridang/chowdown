@@ -56,19 +56,19 @@ export type ShareParams = Readonly<
  */
 const NOT_TEXT: readonly (readonly [number, number])[] = [
   [0x00, 0x08],
-  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
   [0x0b, 0x0c],
-  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
   [0x0e, 0x1f],
-  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
   [0x7f, 0x9f],
-  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
   [0x20_0b, 0x20_0f],
-  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
   [0x20_2a, 0x20_2e],
   [0x20_60, 0x20_60],
   [0x20_66, 0x20_69],
-  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
   [0xfe_ff, 0xfe_ff],
 ];
 
@@ -85,9 +85,7 @@ function first(value: string | readonly string[] | undefined): string {
 
 /** The code points that end a line other than `\n`: carriage return, line and paragraph separators. */
 const OTHER_LINE_BREAKS: ReadonlySet<number> = new Set([
-  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
-  0x0d,
-  0x20_28, 0x20_29,
+  0x0d, 0x20_28, 0x20_29,
 ]);
 
 /**

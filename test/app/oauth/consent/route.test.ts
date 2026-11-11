@@ -190,7 +190,7 @@ describe('POST /oauth/consent', () => {
     const res = await handleConsent(
       new Request(`${ORIGIN}/oauth/consent`, {
         method: 'POST',
-        // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+
         body: new Uint8Array([0xff, 0xfe]),
         headers: { 'sec-fetch-site': 'same-origin' },
       }),
