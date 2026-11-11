@@ -42,7 +42,11 @@ export function connectedAppResource(
 
 /** The address an assistant connects to, for the site served at `origin`. */
 export function mcpUrl(origin: string): string {
-  return `${origin.replace(/\/+$/, '')}/mcp`;
+  let base = origin;
+  while (base.endsWith('/')) {
+    base = base.slice(0, -1);
+  }
+  return `${base}/mcp`;
 }
 
 /**

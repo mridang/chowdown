@@ -46,13 +46,15 @@
   const byId = {};
   const walk = (value) => {
     if (Array.isArray(value)) {
-      value.forEach(walk);
+      value.forEach((item) => walk(item));
     } else if (value && typeof value === 'object') {
       nodes.push(value);
       if (value['@id']) {
         byId[value['@id']] = value;
       }
-      Object.values(value).forEach(walk);
+      Object.values(value).forEach((item) => walk(item));
+    } else {
+      // Primitives carry no structured data, so there is nothing to index.
     }
   };
   document
@@ -69,7 +71,7 @@
       return;
     }
     if (Array.isArray(value)) {
-      value.forEach(fromImageField);
+      value.forEach((item) => fromImageField(item));
     } else if (typeof value === 'string') {
       add(value);
     } else if (value.url || value.contentUrl) {
@@ -80,6 +82,8 @@
       byId[value['@id']] !== value
     ) {
       fromImageField(byId[value['@id']]);
+    } else {
+      // Nothing usable in this value, so there is no cover to take from it.
     }
   };
   nodes
@@ -103,10 +107,12 @@
           img.complete &&
           img.naturalWidth >= 300 &&
           img.naturalHeight >= 200 &&
-          img.getBoundingClientRect().width > 200 &&
-          !skip.test(new URL(img.currentSrc || img.src, base).pathname),
+          img.getBoundingClientRect().width > 200,
       )
-      .sort(
+      .filter(
+        (img) => !skip.test(new URL(img.currentSrc || img.src, base).pathname),
+      )
+      .toSorted(
         (a, b) =>
           b.naturalWidth * b.naturalHeight - a.naturalWidth * a.naturalHeight,
       )[0];

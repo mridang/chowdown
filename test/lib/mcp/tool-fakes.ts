@@ -66,10 +66,11 @@ export function folder(
   const updates: [string, string][] = [];
   const indexed: [string, string, string][] = [];
   const nameOf = (id: string) => id.replace(/^id-/, '');
+  let unsetSystem: ToolContext['system'];
   const ctx: ToolContext = {
     user: USER,
     token: 'tok',
-    system: undefined,
+    system: unsetSystem,
     files: {
       list: async () =>
         [...contents.keys()].map((name) => ({ id: `id-${name}`, name })),

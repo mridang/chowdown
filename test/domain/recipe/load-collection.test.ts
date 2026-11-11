@@ -13,9 +13,10 @@ import {
 const db = {} as Database;
 
 /** Thrown by the fake redirect so a test can see where it went. */
-class Redirected extends Error {
+class RedirectedError extends Error {
   constructor(readonly to: string) {
     super(`redirect ${to}`);
+    this.name = 'RedirectedError';
   }
 }
 
@@ -34,22 +35,29 @@ function rows(
     epoch?: number;
   } = {},
 ): AppPageRows {
-  const { token = 'sealed', folder = 'folder', recipes = 2 } = options;
+  const {
+    token = 'sealed',
+    folder = 'folder',
+    recipes = 2,
+    user,
+    epoch,
+    embedded,
+  } = options;
   return {
     user:
-      options.user === false
+      user === false
         ? undefined
         : ({
             id: 1,
             refresh_token_enc: token,
             recipes_folder_id: folder,
-            session_epoch: options.epoch ?? 0,
+            session_epoch: epoch ?? 0,
           } as AppPageRows['user']),
     // The first `embedded` recipes carry an embedding stamp, the rest do not.
     recipes: Array.from({ length: recipes }, (_, i) => ({
       drive_file_id: `r${i}`,
       parse_error: null,
-      embedded_at: i < (options.embedded ?? recipes) ? 'stamp' : null,
+      embedded_at: i < (embedded ?? recipes) ? 'stamp' : null,
     })) as unknown as AppPageRows['recipes'],
     favouriteIds: ['r0'],
   };
@@ -75,7 +83,7 @@ function fakes(
       background.push(work);
     },
     redirect: (to) => {
-      throw new Redirected(to);
+      throw new RedirectedError(to);
     },
     ...overrides,
   };
@@ -202,6 +210,7 @@ describe('loadCollection', () => {
     // Waited for inline, so the sync is not also queued for later.
     expect(background).toHaveLength(0);
     // And recorded, so the next view does not start another straight away.
+    // eslint-disable-next-line n/no-sync -- claimSync is a dependency method name, not a blocking fs call
     expect(deps.claimSync).toHaveBeenCalledTimes(1);
   });
 
@@ -253,6 +262,7 @@ describe('loadCollection', () => {
     });
     const collection = await loadCollection('/app', deps);
     expect(deps.sync).not.toHaveBeenCalled();
+    // eslint-disable-next-line n/no-sync -- claimSync is a dependency method name, not a blocking fs call
     expect(deps.claimSync).not.toHaveBeenCalled();
     expect(collection.drive).toEqual({
       connected: false,

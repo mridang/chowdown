@@ -94,7 +94,9 @@ describe('upsertEmbedding', () => {
     });
     const conflict = calls.find((c) => c.method === 'onConflictDoUpdate');
     expect(
-      Object.keys((conflict?.args[0] as { set: object }).set).toSorted(),
+      Object.keys((conflict?.args[0] as { set: object }).set).toSorted((a, b) =>
+        a.localeCompare(b),
+      ),
     ).toEqual(['modified_time', 'title', 'vector']);
   });
 });

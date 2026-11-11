@@ -330,7 +330,7 @@ export interface RefreshExchange {
   /** The scope asked for, which may not exceed the grant (and does not narrow it). */
   readonly scope: string | undefined;
   /** The `resource` in the request, if sent (RFC 8707 allows it on a refresh too). */
-  readonly resource?: string | undefined;
+  readonly resource?: string;
 }
 
 /** Whether a refresh token used at `usedAt` may still be presented again (see {@link REFRESH_GRACE_SECONDS}). */
@@ -373,7 +373,7 @@ export async function exchangeRefreshToken(
   if (!token || token.kind !== 'refresh') {
     return fail('invalid_grant', 'The refresh token is not valid.');
   }
-  const { grant } = token;
+  const { grant, usedAt, expiresAt } = token;
   if (grant.revoked) {
     return fail('invalid_grant', 'Access for this application was revoked.');
   }
@@ -383,14 +383,14 @@ export async function exchangeRefreshToken(
       'The refresh token belongs to a different client.',
     );
   }
-  const spent = token.usedAt !== null;
-  if (spent && !withinRefreshGrace(token.usedAt, now)) {
+  const spent = usedAt !== null;
+  if (spent && !withinRefreshGrace(usedAt, now)) {
     // An already-rotated token came back late: assume theft and end the grant.
     await store.revokeGrant(grant.id);
-    logReuse(grant, token.usedAt, now);
+    logReuse(grant, usedAt, now);
     return fail('invalid_grant', 'The refresh token was already used.');
   }
-  if (token.expiresAt <= now) {
+  if (expiresAt <= now) {
     return fail('invalid_grant', 'The refresh token has expired.');
   }
 

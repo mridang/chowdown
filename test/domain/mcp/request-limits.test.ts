@@ -63,8 +63,10 @@ describe('readJsonBody', () => {
   it.each([
     ['text that is not JSON', encode('{nope')],
     ['an empty body', encode('')],
-    ['bytes that are not UTF-8', Uint8Array.of(0x7B, 0x22, 0xFF, 0x22, 0x7D)],
-    ['a character cut off at the end', Uint8Array.of(0x22, 0xE2, 0x82)],
+    // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+    ['bytes that are not UTF-8', Uint8Array.of(0x7b, 0x22, 0xff, 0x22, 0x7d)],
+    // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+    ['a character cut off at the end', Uint8Array.of(0x22, 0xe2, 0x82)],
   ])('calls %s unparseable', async (_name, bytes) => {
     expect(await readJsonBody(streamed([bytes]))).toEqual({
       kind: 'unparseable',
@@ -203,10 +205,9 @@ describe('checkRateLimits', () => {
       ),
     );
     expect(await checkRateLimits(someone, [list], deps(store))).toBeNull();
-    expect([...counters.keys()].toSorted()).toEqual([
-      'mcp-request:7',
-      'mcp-tool-call:7',
-    ]);
+    expect([...counters.keys()].toSorted((a, b) => a.localeCompare(b))).toEqual(
+      ['mcp-request:7', 'mcp-tool-call:7'],
+    );
   });
 
   it('counts each user on their own', async () => {

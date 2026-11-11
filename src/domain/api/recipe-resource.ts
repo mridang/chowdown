@@ -99,6 +99,6 @@ export function recipeResource(
       i.quantity ? { name: i.name, quantity: i.quantity } : { name: i.name },
     ),
     cookware: parsed.cookware,
-    steps: parsed.steps.map(stepText),
+    steps: parsed.steps.map((step) => stepText(step)),
   };
 }

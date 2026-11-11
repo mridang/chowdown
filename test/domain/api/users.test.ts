@@ -36,7 +36,8 @@ describe('PATCH /api/users/self', () => {
     PATCH(fromApp('PATCH', '/api/users/self', { json, type }));
 
   it('answers 401 when nobody is signed in', async () => {
-    expect((await patch({ measurement_system: 'US' })).status).toBe(401);
+    const res = await patch({ measurement_system: 'US' });
+    expect(res.status).toBe(401);
   });
 
   it('answers 403 for a request from another site', async () => {
@@ -75,30 +76,35 @@ describe('PATCH /api/users/self', () => {
 
   it('accepts plain JSON as well', async () => {
     await signIn(world);
-    expect(
-      (await patch({ measurement_system: 'IMPERIAL' }, 'application/json'))
-        .status,
-    ).toBe(200);
+    const res = await patch(
+      { measurement_system: 'IMPERIAL' },
+      'application/json',
+    );
+    expect(res.status).toBe(200);
   });
 
   it('answers 415 for another media type', async () => {
     await signIn(world);
-    expect((await patch({}, 'text/plain')).status).toBe(415);
+    const res = await patch({}, 'text/plain');
+    expect(res.status).toBe(415);
   });
 
   it('answers 400 for a patch that is not an object', async () => {
     await signIn(world);
-    expect((await patch([])).status).toBe(400);
+    const res = await patch([]);
+    expect(res.status).toBe(400);
   });
 
   it('answers 400 for a value that is not allowed', async () => {
     await signIn(world);
-    expect((await patch({ measurement_system: 'FURLONGS' })).status).toBe(400);
+    const res = await patch({ measurement_system: 'FURLONGS' });
+    expect(res.status).toBe(400);
   });
 
   it('answers 400 for a field that cannot be edited, and changes nothing', async () => {
     await signIn(world);
-    expect((await patch({ email: 'new@example.com' })).status).toBe(400);
+    const res = await patch({ email: 'new@example.com' });
+    expect(res.status).toBe(400);
     expect(world.raw.prepare('SELECT email FROM users').get()).toEqual({
       email: 'user1@example.com',
     });

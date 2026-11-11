@@ -57,7 +57,7 @@ describe('MCP tool scopes', () => {
     const readTools = TOOLS.filter(
       (t) => scopeForTool(t.name) === SCOPE_READ,
     ).map((t) => t.name);
-    expect(readTools.sort()).toEqual([
+    expect(readTools.toSorted((a, b) => a.localeCompare(b))).toEqual([
       'browse_recipes',
       'find_recipes',
       'find_similar',
@@ -310,6 +310,7 @@ describe('the tool catalogue', () => {
     const empty = {
       user: { id: 1 } as User,
       token: 'tok',
+      // eslint-disable-next-line sonarjs/no-undefined-assignment -- ToolContext.system is a required key typed UnitSystem | undefined, so it cannot be omitted
       system: undefined,
       files: {
         list: async () => [],
@@ -335,11 +336,10 @@ describe('the tool catalogue', () => {
       }
     };
     const candidates = TOOLS.filter((t) => !needsDatabase.includes(t.name));
-    const unknown = (
-      await Promise.all(
-        candidates.map(async (t) => ((await isUnknown(t.name)) ? t.name : '')),
-      )
-    ).filter(Boolean);
+    const results = await Promise.all(
+      candidates.map(async (t) => ((await isUnknown(t.name)) ? t.name : '')),
+    );
+    const unknown = results.filter(Boolean);
     expect(unknown).toEqual([]);
   });
 

@@ -33,12 +33,14 @@ const request = () => fromApp('GET', '/api/recipes/f1/similar');
 
 describe('GET /api/recipes/:id/similar', () => {
   it('answers 401 when nobody is signed in', async () => {
-    expect((await GET(request(), ctx('f1'))).status).toBe(401);
+    const res = await GET(request(), ctx('f1'));
+    expect(res.status).toBe(401);
   });
 
   it('answers 404 for a recipe the person does not have', async () => {
     await signIn(world);
-    expect((await GET(request(), ctx('none'))).status).toBe(404);
+    const res = await GET(request(), ctx('none'));
+    expect(res.status).toBe(404);
   });
 
   it('answers an empty page when the list has not been computed yet', async () => {

@@ -115,11 +115,11 @@ describe('planBackfill', () => {
     name: `R${n}.cook`,
     modifiedTime,
   });
-  const row = (n: number, modified_time: string | null): EmbeddingRow => ({
+  const row = (n: number, modifiedTime: string | null): EmbeddingRow => ({
     user_id: 1,
     drive_file_id: `f${n}`,
     title: `R${n}`,
-    modified_time,
+    modified_time: modifiedTime,
     vector: '[1]',
     similar: null,
   });

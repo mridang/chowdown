@@ -47,7 +47,8 @@ async function withNotes() {
 
 describe('GET /api/recipes/:id/notes/:note_id', () => {
   it('answers 401 when nobody is signed in', async () => {
-    expect((await GET(fromApp('GET', '/x'), ctx('1'))).status).toBe(401);
+    const res = await GET(fromApp('GET', '/x'), ctx('1'));
+    expect(res.status).toBe(401);
   });
 
   it('answers the note at that position', async () => {
@@ -65,15 +66,15 @@ describe('GET /api/recipes/:id/notes/:note_id', () => {
     'answers 404 for the note id %s',
     async (id) => {
       await withNotes();
-      expect((await GET(fromApp('GET', '/x'), ctx(id))).status).toBe(404);
+      const res = await GET(fromApp('GET', '/x'), ctx(id));
+      expect(res.status).toBe(404);
     },
   );
 
   it('answers 404 for a recipe the person does not have', async () => {
     await signIn(world);
-    expect((await GET(fromApp('GET', '/x'), ctx('1', 'none'))).status).toBe(
-      404,
-    );
+    const res = await GET(fromApp('GET', '/x'), ctx('1', 'none'));
+    expect(res.status).toBe(404);
   });
 });
 
@@ -85,7 +86,8 @@ describe('PUT /api/recipes/:id/notes/:note_id', () => {
   ) => PUT(fromApp('PUT', '/x', { json, headers }), ctx(noteId));
 
   it('answers 401 when nobody is signed in', async () => {
-    expect((await replace('1', { text: 'x' })).status).toBe(401);
+    const res = await replace('1', { text: 'x' });
+    expect(res.status).toBe(401);
   });
 
   it('replaces the note in the Drive file and answers 200 with the new ETag', async () => {
@@ -99,20 +101,22 @@ describe('PUT /api/recipes/:id/notes/:note_id', () => {
 
   it('answers 400 for a note without text', async () => {
     await withNotes();
-    expect((await replace('1', {})).status).toBe(400);
+    const res = await replace('1', {});
+    expect(res.status).toBe(400);
   });
 
   it('answers 404 for a note that does not exist', async () => {
     await withNotes();
-    expect((await replace('9', { text: 'x' })).status).toBe(404);
-    expect((await replace('abc', { text: 'x' })).status).toBe(404);
+    const missing = await replace('9', { text: 'x' });
+    expect(missing.status).toBe(404);
+    const malformed = await replace('abc', { text: 'x' });
+    expect(malformed.status).toBe(404);
   });
 
   it('answers 412 when If-Match is stale', async () => {
     await withNotes();
-    expect(
-      (await replace('1', { text: 'x' }, { 'if-match': '"stale"' })).status,
-    ).toBe(412);
+    const res = await replace('1', { text: 'x' }, { 'if-match': '"stale"' });
+    expect(res.status).toBe(412);
   });
 });
 
@@ -121,14 +125,14 @@ describe('DELETE /api/recipes/:id/notes/:note_id', () => {
     DELETE(fromApp('DELETE', '/x', { headers }), ctx(noteId));
 
   it('answers 401 when nobody is signed in', async () => {
-    expect((await remove('1')).status).toBe(401);
+    const res = await remove('1');
+    expect(res.status).toBe(401);
   });
 
   it('answers 403 for a request from another site', async () => {
     await withNotes();
-    expect((await remove('1', { 'sec-fetch-site': 'cross-site' })).status).toBe(
-      403,
-    );
+    const res = await remove('1', { 'sec-fetch-site': 'cross-site' });
+    expect(res.status).toBe(403);
   });
 
   it('removes the note from the Drive file and answers 204 with the new ETag', async () => {
@@ -142,14 +146,14 @@ describe('DELETE /api/recipes/:id/notes/:note_id', () => {
 
   it('answers 404 for a note that does not exist', async () => {
     await withNotes();
-    expect((await remove('7')).status).toBe(404);
+    const res = await remove('7');
+    expect(res.status).toBe(404);
   });
 
   it('answers 404 for a recipe the person does not have', async () => {
     await signIn(world, { drive: true });
     fakeGoogle();
-    expect(
-      (await DELETE(fromApp('DELETE', '/x'), ctx('1', 'none'))).status,
-    ).toBe(404);
+    const res = await DELETE(fromApp('DELETE', '/x'), ctx('1', 'none'));
+    expect(res.status).toBe(404);
   });
 });

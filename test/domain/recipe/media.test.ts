@@ -62,6 +62,7 @@ describe('extractMedia', () => {
     const media = extractMedia(
       recipe([
         ['images', 'not-a-url https://a.com/ok.jpg javascript:alert(1)'],
+        // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture: a protocol that must be refused
         ['video', 'ftp://x'],
       ]),
     );
@@ -86,9 +87,11 @@ describe('validImageUrls', () => {
         'javascript:alert(1)',
         '/relative.jpg',
         ' https://a.com/1.jpg ',
+        // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture: an insecure image address that must be kept
         'http://b.com/2.png',
         '',
       ]),
+      // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture: an insecure image address that must be kept
     ).toEqual(['https://a.com/1.jpg', 'http://b.com/2.png']);
   });
 

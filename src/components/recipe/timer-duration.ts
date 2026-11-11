@@ -56,7 +56,7 @@ interface Term {
 }
 
 /** What may sit between two terms that belong together: "1 hour and 30 minutes", "1 hr, 30 min". */
-const CONNECTOR = /^\s*(?:,|and|&|\+)?\s*$/i;
+const CONNECTOR = /^\s*(?:(?:,|and|&|\+)\s*)?$/i;
 
 /**
  * The terms at the start of the label that run on from one another. A label
@@ -96,23 +96,20 @@ function termsOf(label: string): readonly Term[] {
 function totalOf(terms: readonly Term[]): number | null {
   const summed = terms.reduce<{
     readonly total: number;
-    readonly previous: number | undefined;
+    readonly previous: number | null;
   }>(
     ({ total, previous }, term) => {
       const unitMs =
         term.unitMs ??
-        (previous === undefined ? undefined : IMPLIED_UNIT_MS[previous]);
+        (previous === null ? undefined : IMPLIED_UNIT_MS[previous]);
       return {
         total: total + term.amount * (unitMs ?? Number.NaN),
-        previous: unitMs,
+        previous: unitMs ?? null,
       };
     },
-    { total: 0, previous: undefined },
+    { total: 0, previous: null },
   );
-  return terms.length > 0 &&
-    Number.isFinite(summed.total) &&
-    summed.total > 0 &&
-    summed.total <= LONGEST_MS
+  return terms.length > 0 && summed.total > 0 && summed.total <= LONGEST_MS
     ? Math.round(summed.total)
     : null;
 }

@@ -60,7 +60,8 @@ export async function GET(
   if (!auth.ok) {
     return auth.response;
   }
-  return sendRecipe(request, auth.value, (await params).id);
+  const { id } = await params;
+  return sendRecipe(request, auth.value, id);
 }
 
 /**
@@ -162,7 +163,8 @@ export async function DELETE(
     return auth.response;
   }
   try {
-    const outcome = await deleteRecipeForUser(auth.value, (await params).id);
+    const { id } = await params;
+    const outcome = await deleteRecipeForUser(auth.value, id);
     return outcome === 'deleted'
       ? new NextResponse(null, { status: 204 })
       : problems.notFound('recipe');

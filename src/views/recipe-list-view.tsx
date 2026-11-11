@@ -254,7 +254,16 @@ export function RecipeListScreen({
 export function RecipeListApp(): ReactElement {
   const bridge = useWidgetData('chowdown-recipe-list', isRecipeListData);
   const [list, dispatch] = useReducer(reduceListState, INITIAL_LIST_STATE);
-  const { sendFollowUp, canCallTools, callTool, expanded, collapse } = bridge;
+  const {
+    sendFollowUp,
+    canCallTools,
+    callTool,
+    expanded,
+    collapse,
+    state,
+    closeHint,
+    openLink,
+  } = bridge;
 
   const open = useCallback(
     (recipe: RecipeListItem) =>
@@ -268,7 +277,7 @@ export function RecipeListApp(): ReactElement {
 
   return (
     <RecipeListScreen
-      state={bridge.state}
+      state={state}
       list={list}
       onOpen={(recipe) => void open(recipe)}
       onCloseDetail={() => dispatch({ type: 'closed-detail' })}
@@ -276,8 +285,10 @@ export function RecipeListApp(): ReactElement {
       onExpand={() => void bridge.expand()}
       onCollapse={() => void collapse()}
       onFilter={(value) => dispatch({ type: 'filter-changed', value })}
-      closeHint={bridge.closeHint}
-      onOpenLink={bridge.openLink}
+      closeHint={closeHint}
+      onOpenLink={openLink}
     />
   );
 }
+
+/* eslint-enable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts, not in a CSS file. */

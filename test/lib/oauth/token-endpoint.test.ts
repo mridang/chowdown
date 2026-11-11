@@ -268,6 +268,7 @@ describe('authenticateAccessToken', () => {
   });
 });
 
+// eslint-disable-next-line sonarjs/max-lines-per-function -- one suite covers the whole refresh grant; splitting it is a large restructure
 describe('exchangeRefreshToken', () => {
   const refresh = (
     token: string,

@@ -37,9 +37,9 @@ export type DetailState =
 export interface ListState {
   readonly detail: DetailState;
   /** The tile waiting for an answer, so it can show it is busy. */
-  readonly pendingId: string | undefined;
+  readonly pendingId?: string;
   /** A short line telling the person what happened to their tap. */
-  readonly notice: string | undefined;
+  readonly notice?: string;
   /** What the person typed in the expanded list's filter box. */
   readonly filter: string;
 
@@ -53,8 +53,6 @@ export interface ListState {
 /** The state before anything has been tapped. */
 export const INITIAL_LIST_STATE: ListState = {
   detail: { status: 'closed' },
-  pendingId: undefined,
-  notice: undefined,
   filter: '',
   refocus: false,
 };
@@ -150,6 +148,16 @@ export function visibleRecipes(
   return { shown, matching: shown.length, hidden: 0 };
 }
 
+/** The state with no tile waiting for an answer, everything else kept. */
+function withoutPending(state: ListState): ListState {
+  return {
+    detail: state.detail,
+    notice: state.notice,
+    filter: state.filter,
+    refocus: state.refocus,
+  };
+}
+
 /** The next list state. */
 export function reduceListState(
   state: ListState,
@@ -158,16 +166,15 @@ export function reduceListState(
   switch (action.type) {
     case 'tapped': {
       return {
-        ...state,
+        detail: state.detail,
+        filter: state.filter,
         pendingId: action.id,
-        notice: undefined,
         refocus: false,
       };
     }
     case 'asked-assistant': {
       return {
-        ...state,
-        pendingId: undefined,
+        ...withoutPending(state),
         notice: `Asked the assistant to open “${shortTitle(action.title)}”.`,
       };
     }
@@ -179,8 +186,7 @@ export function reduceListState(
     }
     case 'fetched': {
       return {
-        ...state,
-        pendingId: undefined,
+        ...withoutPending(state),
         detail:
           action.outcome.kind === 'data'
             ? { status: 'ready', recipe: action.outcome.data }
@@ -193,8 +199,7 @@ export function reduceListState(
     }
     case 'unavailable': {
       return {
-        ...state,
-        pendingId: undefined,
+        ...withoutPending(state),
         notice: `This app cannot open recipes by itself here. Ask the assistant to open “${shortTitle(action.title)}”.`,
       };
     }

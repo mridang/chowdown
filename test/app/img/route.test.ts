@@ -17,10 +17,13 @@ import {
 } from '@/lib/cloudflare/images/site';
 
 /** What the mocked access rules answer. */
-const rules = {
+const rules: {
+  signed: boolean;
+  allowed: boolean;
+  refusal?: Response;
+} = {
   signed: true,
   allowed: true,
-  refusal: undefined as Response | undefined,
 };
 
 jest.unstable_mockModule('@/domain/images/access', () => ({
@@ -77,7 +80,7 @@ const ask = (url = PHOTO, width: string | number = WIDTH) =>
 beforeEach(() => {
   rules.signed = true;
   rules.allowed = true;
-  rules.refusal = undefined;
+  delete rules.refusal;
   context.env = {};
   context.waiting = [];
   fetched = [];
@@ -111,25 +114,29 @@ describe('GET /img', () => {
 
   it("sends the access rules' refusal as it is, without fetching", async () => {
     rules.refusal = new Response('no', { status: 401 });
-    expect((await ask()).status).toBe(401);
+    const res = await ask();
+    expect(res.status).toBe(401);
     expect(fetched).toEqual([]);
   });
 
   it('answers 403, without fetching, when the access rules do not allow the picture', async () => {
     rules.allowed = false;
-    expect((await ask()).status).toBe(403);
+    const denied = await ask();
+    expect(denied.status).toBe(403);
     rules.allowed = true;
     rules.signed = false;
-    expect((await ask()).status).toBe(403);
+    const unsigned = await ask();
+    expect(unsigned.status).toBe(403);
     expect(fetched).toEqual([]);
   });
 
   it('answers 400 for an address that is not a public image, and for none', async () => {
-    expect((await ask('http://127.0.0.1/x.png')).status).toBe(400);
-    expect((await ask('file:///etc/passwd')).status).toBe(400);
-    expect((await GET(new Request('https://app.test/img?w=640'))).status).toBe(
-      400,
-    );
+    const plain = await ask('http://127.0.0.1/x.png');
+    expect(plain.status).toBe(400);
+    const file = await ask('file:///etc/passwd');
+    expect(file.status).toBe(400);
+    const none = await GET(new Request('https://app.test/img?w=640'));
+    expect(none.status).toBe(400);
     expect(fetched).toEqual([]);
   });
 
@@ -183,7 +190,8 @@ describe('GET /img', () => {
     );
     const res = await ask();
     expect(res.headers.get('content-type')).toBe('image/jpeg');
-    expect((await res.arrayBuffer()).byteLength).toBe(100_000);
+    const body = await res.arrayBuffer();
+    expect(body.byteLength).toBe(100_000);
   });
 
   describe('with an edge cache', () => {
@@ -215,7 +223,8 @@ describe('GET /img', () => {
 
     it('keeps a copy of a picture it fetched, after the response is sent', async () => {
       const puts = installCache();
-      expect((await ask()).status).toBe(200);
+      const res = await ask();
+      expect(res.status).toBe(200);
       await Promise.all(context.waiting);
       expect(puts).toEqual([
         `https://images.invalid/${WIDTH}/${encodeURIComponent(PHOTO)}`,

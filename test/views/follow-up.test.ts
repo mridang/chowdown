@@ -65,6 +65,7 @@ describe('sourceHost', () => {
     expect(sourceHost('https://www.example.com/a/b?c=1')).toBe(
       'www.example.com',
     );
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture: the plain http link is the input being normalised
     expect(sourceHost(' http://example.org ')).toBe('example.org');
   });
 
@@ -83,6 +84,7 @@ describe('safeHttpUrl', () => {
     expect(safeHttpUrl(' https://example.com/a b ')).toBe(
       'https://example.com/a%20b',
     );
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture: the plain http link is the input being normalised
     expect(safeHttpUrl('http://example.com')).toBe('http://example.com/');
   });
 

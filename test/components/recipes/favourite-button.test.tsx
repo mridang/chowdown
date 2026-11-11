@@ -27,6 +27,7 @@ describe('FavouriteButton, overlay', () => {
     const out = html(
       <FavouriteButton recipeId="dal" initial={false} variant="overlay" />,
     );
+    // eslint-disable-next-line sonarjs/super-linear-regex -- test input is one fixed render of a short fixture, so the scan is bounded
     expect(out.replaceAll(/<[^>]*>/g, '')).toBe('');
   });
 

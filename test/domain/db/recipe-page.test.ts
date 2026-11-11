@@ -59,13 +59,11 @@ describe('getRecipePageRows', () => {
     const stub = dbReturning([[], [], [], [], [], []]);
     const rows = await getRecipePageRows(stub.db, 1, 'gone');
     expect(rows).toEqual({
-      recipe: undefined,
       favourite: false,
       similarJson: null,
       similarRecipes: [],
       similarFavouriteIds: [],
       units: null,
-      sessionEpoch: undefined,
     });
   });
 });

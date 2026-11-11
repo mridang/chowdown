@@ -104,7 +104,10 @@ function amountPhrase(text: string, withUnit: boolean): Phrase {
 /** A unit as it is said: singular or plural as asked; unknown words pass through. */
 function unitWords(unit: string, singular: boolean): string {
   const words = UNIT_WORDS[unit.toLowerCase().replace(/\.$/, '')];
-  return words ? words[singular ? 0 : 1] : unit;
+  if (!words) {
+    return unit;
+  }
+  return words[singular ? 0 : 1];
 }
 
 /** `5 min`, `1/2 tsp`, `1-2 hours`: an amount, an optional range end, then the rest. */
@@ -157,7 +160,7 @@ function speakDegrees(text: string): string {
 function tidy(text: string): string {
   return text
     .replaceAll(/\s+/g, ' ')
-    .replaceAll(/\s+([,.;:!?])/g, '$1')
+    .replaceAll(/ ([,.;:!?])/g, '$1')
     .replaceAll(/,(\s*,)+/g, ',')
     .replaceAll(/,\s*([.;:!?])/g, '$1')
     .trim();

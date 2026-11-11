@@ -64,7 +64,7 @@ describe('AuthorLine', () => {
   it('sets the name in a handwriting face, and nothing else', () => {
     expect(out.match(/font-hand-/g)).toHaveLength(1);
     expect(out).toMatch(
-      /class="[^"]*font-hand-\w+[^"]*"[^>]*>Ethan Chlebowski</,
+      /class="[^"]*font-hand-\w[^"]*"[^>]*>Ethan Chlebowski</,
     );
   });
 

@@ -86,11 +86,11 @@ function mappedIpv4(host: string): string | undefined {
  */
 export function isLoopbackHost(host: string): boolean {
   const ipv4 = ipv4Octets(mappedIpv4(host) ?? host);
+  if (host === 'localhost' || host.endsWith('.localhost')) {
+    return true;
+  }
   return (
-    host === 'localhost' ||
-    host.endsWith('.localhost') ||
-    host === '[::1]' ||
-    host === '[::]' ||
+    ['[::1]', '[::]'].includes(host) ||
     (ipv4 !== undefined && (ipv4[0] === 127 || ipv4.every((n) => n === 0)))
   );
 }
@@ -106,6 +106,7 @@ export function isPrivateHost(host: string): boolean {
   if (ipv4) {
     const [a = 0, b = 0] = ipv4;
     return (
+      // eslint-disable-next-line sonarjs/expression-complexity -- logic rewrite would be large: one flat clause per private block, kept in RFC order
       a === 10 ||
       (a === 172 && b >= 16 && b <= 31) ||
       (a === 192 && b === 168) ||
@@ -216,8 +217,10 @@ export function redirectUriMatches(
   }
   return registered.some((r) => {
     const have = parseUrl(r);
+    if (have === undefined) {
+      return false;
+    }
     return (
-      have !== undefined &&
       have.protocol === 'http:' &&
       have.hostname === want.hostname &&
       have.pathname === want.pathname &&

@@ -62,11 +62,13 @@ describe('GET /api/recipes', () => {
 });
 
 describe('POST /api/recipes', () => {
-  const create = (json: unknown = { name: 'Curry', cooklang: CURRY }) =>
+  const curry = { name: 'Curry', cooklang: CURRY };
+  const create = (json: unknown = curry) =>
     POST(fromApp('POST', '/api/recipes', { json }));
 
   it('answers 401 when nobody is signed in', async () => {
-    expect((await create()).status).toBe(401);
+    const res = await create();
+    expect(res.status).toBe(401);
   });
 
   it('answers 403 for a request from another site', async () => {
@@ -90,7 +92,8 @@ describe('POST /api/recipes', () => {
 
   it('answers 400 for a body that is not a JSON object', async () => {
     await signIn(world, { drive: true });
-    expect((await create([1, 2])).status).toBe(400);
+    const res = await create([1, 2]);
+    expect(res.status).toBe(400);
   });
 
   it('answers 400 with the problems for an invalid recipe', async () => {
@@ -192,6 +195,7 @@ describe('POST /api/recipes', () => {
   it('refuses a session that has been ended', async () => {
     await signIn(world, { drive: true });
     world.raw.prepare('UPDATE users SET session_epoch = 5').run();
-    expect((await create()).status).toBe(401);
+    const res = await create();
+    expect(res.status).toBe(401);
   });
 });

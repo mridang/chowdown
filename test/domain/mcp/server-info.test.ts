@@ -18,6 +18,7 @@ const root = process.cwd();
 
 /** The width and height written in a PNG file's header. */
 function pngSize(file: string): string {
+  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
   const bytes = readFileSync(path.join(root, 'public', file));
   return `${bytes.readUInt32BE(16)}x${bytes.readUInt32BE(20)}`;
 }
@@ -25,6 +26,7 @@ function pngSize(file: string): string {
 describe('SERVER_VERSION', () => {
   it('is the version in package.json', () => {
     const manifest = JSON.parse(
+      // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
       readFileSync(path.join(root, 'package.json'), 'utf8'),
     ) as { version: string };
     expect(SERVER_VERSION).toBe(manifest.version);
@@ -33,6 +35,7 @@ describe('SERVER_VERSION', () => {
 
 describe('server.json', () => {
   const listing = JSON.parse(
+    // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
     readFileSync(path.join(root, 'server.json'), 'utf8'),
   ) as {
     version: string;

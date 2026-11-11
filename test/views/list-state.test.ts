@@ -24,7 +24,10 @@ const RECIPE: RecipeCardData = {
 
 /** Apply actions in order from the initial state. */
 function run(...actions: readonly ListAction[]): ListState {
-  return actions.reduce(reduceListState, INITIAL_LIST_STATE);
+  return actions.reduce(
+    (state, action) => reduceListState(state, action),
+    INITIAL_LIST_STATE,
+  );
 }
 
 describe('reduceListState', () => {

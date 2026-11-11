@@ -26,7 +26,8 @@ export type UnitSystem = 'metric' | 'us' | 'imperial';
 
 /** Narrow an arbitrary string to a {@link UnitSystem}. */
 export function isUnitSystem(value: string): value is UnitSystem {
-  return value === 'metric' || value === 'us' || value === 'imperial';
+  const systems: readonly string[] = ['metric', 'us', 'imperial'];
+  return systems.includes(value);
 }
 
 /** Mass units → grams. */
@@ -137,14 +138,20 @@ function formatMass(grams: number, system: UnitSystem): string {
   return oz >= 16 ? `${roundTo(oz / 16, 0.05)} lb` : `${roundTo(oz, 0.1)} oz`;
 }
 
+/** The rounding step for each volume unit; any other unit rounds to halves. */
+const ROUNDING_STEP: Readonly<Record<string, number>> = {
+  ml: 1,
+  l: 0.01,
+  cup: 0.25,
+};
+
 /** Format a volume given in millilitres for the target system. */
 function formatVolume(ml: number, system: UnitSystem): string {
   const targets = VOL_TARGETS[system];
   const fitting = targets.find(([, size]) => ml >= size);
   if (fitting) {
     const [unit, size] = fitting;
-    const step =
-      unit === 'ml' ? 1 : unit === 'l' ? 0.01 : unit === 'cup' ? 0.25 : 0.5;
+    const step = own(ROUNDING_STEP, unit) ?? 0.5;
     const amount = roundTo(ml / size, step);
     return `${amount} ${unit === 'cup' && Number(amount) > 1 ? 'cups' : unit}`;
   }
@@ -159,6 +166,7 @@ function formatVolume(ml: number, system: UnitSystem): string {
  * or the unit is not recognised (counts like "2" stay "2").
  */
 export function convertQuantity(quantity: string, system: UnitSystem): string {
+  // eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short quantity, backtracking is bounded
   const match = /^([\d.,/]+)\s*(.*)$/.exec(quantity.trim());
   if (!match) {
     return quantity;
@@ -180,12 +188,12 @@ export function convertQuantity(quantity: string, system: UnitSystem): string {
   if (mlPerUnit !== undefined) {
     return formatVolume(value * mlPerUnit, system);
   }
-  if (unit === 'c' || unit === '°c' || unit === 'celsius') {
+  if (['c', '°c', 'celsius'].includes(unit)) {
     return system === 'metric'
       ? `${Math.round(value)} °C`
       : `${Math.round((value * 9) / 5 + 32)} °F`;
   }
-  if (unit === 'f' || unit === '°f' || unit === 'fahrenheit') {
+  if (['f', '°f', 'fahrenheit'].includes(unit)) {
     return system === 'metric'
       ? `${Math.round(((value - 32) * 5) / 9)} °C`
       : `${Math.round(value)} °F`;
@@ -324,6 +332,7 @@ export interface BaseAmount {
  */
 export function toBaseAmount(quantity: string): BaseAmount | undefined {
   const match =
+    // eslint-disable-next-line sonarjs/regex-complexity, sonarjs/super-linear-regex -- the number grammar (thousands, fractions, vulgar fractions) is deliberately complete in one pattern
     /^(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d*\s*[½⅓⅔¼¾⅛⅜⅝⅞]|\d+(?:[.,]\d+)?(?:\s+\d+\s*\/\s*\d+|\s*\/\s*\d+)?)\s*(.*)$/.exec(
       quantity.trim(),
     );

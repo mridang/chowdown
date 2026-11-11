@@ -20,7 +20,7 @@ function luminance(hex: string): number {
 
 /** WCAG contrast ratio between two colours. */
 function contrast(a: string, b: string): number {
-  const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  const [light, dark] = [luminance(a), luminance(b)].toSorted((x, y) => y - x);
   return ((light ?? 0) + 0.05) / ((dark ?? 0) + 0.05);
 }
 
@@ -70,8 +70,10 @@ describe.each([
 
 describe('the palettes', () => {
   it('give light and dark the same colours to fill in', () => {
-    expect(Object.keys(DARK_PALETTE).toSorted()).toEqual(
-      Object.keys(LIGHT_PALETTE).toSorted(),
+    expect(
+      Object.keys(DARK_PALETTE).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(
+      Object.keys(LIGHT_PALETTE).toSorted((a, b) => a.localeCompare(b)),
     );
   });
 

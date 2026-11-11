@@ -109,8 +109,6 @@ describe('describeRedirect', () => {
       address: 'https://claude.ai/mcp/auth_callback',
       kind: 'web',
       short: 'claude.ai',
-      warning: undefined,
-      note: undefined,
     });
   });
 

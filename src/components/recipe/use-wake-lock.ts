@@ -64,17 +64,18 @@ export function keepScreenAwake(environment: WakeLockEnvironment): () => void {
         if (holding.current.phase === 'stopped') {
           // Stopped while the request was in flight: give it straight back.
           void sentinel.release();
-          return;
+        } else {
+          holding.current = { phase: 'held', sentinel };
+          // The browser releases it when the page is hidden. Note that, and ask
+          // again if the page is still visible (released for another reason).
+          sentinel.addEventListener('release', () => {
+            if (holding.current.phase !== 'stopped') {
+              holding.current = { phase: 'idle' };
+              acquire();
+            }
+          });
         }
-        holding.current = { phase: 'held', sentinel };
-        // The browser releases it when the page is hidden. Note that, and ask
-        // again if the page is still visible (released for another reason).
-        sentinel.addEventListener('release', () => {
-          if (holding.current.phase !== 'stopped') {
-            holding.current = { phase: 'idle' };
-            acquire();
-          }
-        });
+        return sentinel;
       })
       .catch(() => {
         if (holding.current.phase !== 'stopped') {
@@ -98,8 +99,10 @@ export function keepScreenAwake(environment: WakeLockEnvironment): () => void {
 /** The real browser: its wake lock if it has one, and the document's visibility. */
 function browserEnvironment(): WakeLockEnvironment {
   return {
+    // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the browser navigator, which the Node rule wrongly reports as experimental; used on purpose
     wakeLock: 'wakeLock' in navigator ? navigator.wakeLock : undefined,
     isVisible: () => document.visibilityState === 'visible',
+    // eslint-disable-next-line promise/prefer-await-to-callbacks -- a DOM listener parameter, not a Node-style callback; the listener API is synchronous by design
     onVisibilityChange: (callback) => {
       document.addEventListener('visibilitychange', callback);
       return () => document.removeEventListener('visibilitychange', callback);
@@ -115,7 +118,7 @@ function browserEnvironment(): WakeLockEnvironment {
 export function useWakeLock(active: boolean): void {
   useEffect(() => {
     if (!active) {
-      return;
+      return () => undefined;
     }
     return keepScreenAwake(browserEnvironment());
   }, [active]);

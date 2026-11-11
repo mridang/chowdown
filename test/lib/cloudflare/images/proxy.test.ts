@@ -249,9 +249,8 @@ describe('fetchImage', () => {
           headers: { 'content-type': 'image/jpeg' },
         }),
       );
-      expect(
-        (await fetchImage('https://a.com/x.jpg', 640, { fetcher })).ok,
-      ).toBe(true);
+      const result = await fetchImage('https://a.com/x.jpg', 640, { fetcher });
+      expect(result.ok).toBe(true);
     });
 
     it('says the image is gone for a 410 as well', async () => {

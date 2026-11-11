@@ -7,6 +7,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
 import { DELETE, GET, OPTIONS, POST } from '@/app/mcp/route';
@@ -36,9 +37,10 @@ const WRITE_TOOL =
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 
 /** Every migration, in order: the route reads users, grants and rate-limit counters. */
+// eslint-disable-next-line n/no-sync -- sync is fine in a test bootstrap
 const MIGRATIONS = readdirSync('migrations')
   .filter((file) => file.endsWith('.sql'))
-  .toSorted();
+  .toSorted((a, b) => a.localeCompare(b));
 
 let raw: DatabaseSync;
 let restore: () => void;

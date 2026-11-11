@@ -21,10 +21,11 @@ export const recipeSimilar = new ApiController<{
   readonly uid: number;
   readonly id: string;
 }>({
-  context: async (request, route) => ({
-    uid: await liveUid(request),
-    id: (await route.params)?.['id'] ?? '',
-  }),
+  context: async (request, route) => {
+    const uid = await liveUid(request);
+    const params = await route.params;
+    return { uid, id: params?.['id'] ?? '' };
+  },
 }).on({
   method: 'GET',
   handle: async (_input, { uid, id }) => {

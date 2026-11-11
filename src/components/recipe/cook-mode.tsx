@@ -57,6 +57,9 @@ export function stepOffsetForKey(key: string): -1 | 0 | 1 {
   }
 }
 
+/** The element names of the controls that use the arrow keys themselves. */
+const controlTags = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
+
 /**
  * Whether the target of a key press is somewhere the person is typing or
  * choosing with the arrow keys (a text box, a list, a slider, rich text), where
@@ -73,9 +76,7 @@ export function usesArrowKeys(target: EventTarget | null): boolean {
       ? target.tagName.toUpperCase()
       : '';
   return (
-    tag === 'INPUT' ||
-    tag === 'TEXTAREA' ||
-    tag === 'SELECT' ||
+    controlTags.has(tag) ||
     ('isContentEditable' in target && target.isContentEditable === true)
   );
 }
@@ -127,7 +128,7 @@ export function CookMode({
   // Left and right arrows move between steps.
   useEffect(() => {
     if (!open) {
-      return;
+      return undefined;
     }
     const onKey = (event: KeyboardEvent) => {
       const offset = stepOffsetForEvent(event);

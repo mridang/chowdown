@@ -74,9 +74,9 @@ describe('the tool catalogue', () => {
   });
 
   it('has a set of good arguments for every tool, and for no other', () => {
-    expect(Object.keys(GOOD_ARGUMENTS).toSorted()).toEqual(
-      TOOLS.map((t) => t.name).toSorted(),
-    );
+    expect(
+      Object.keys(GOOD_ARGUMENTS).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(TOOLS.map((t) => t.name).toSorted((a, b) => a.localeCompare(b)));
   });
 
   it('finds a tool by name', () => {
@@ -149,8 +149,10 @@ describe('how the tools name what they take', () => {
     const withName = TOOLS.filter((t) =>
       Object.keys(propertiesOf(t.name)).includes('name'),
     ).map((t) => t.name);
-    expect(withName.toSorted()).toEqual(
-      ['add_recipe', 'capture_idea', 'import_recipe'].toSorted(),
+    expect(withName.toSorted((a, b) => a.localeCompare(b))).toEqual(
+      ['add_recipe', 'capture_idea', 'import_recipe'].toSorted((a, b) =>
+        a.localeCompare(b),
+      ),
     );
   });
 
@@ -437,13 +439,20 @@ describe('the input schemas', () => {
         Record<string, unknown>
       > = 'properties' in tool.inputSchema ? tool.inputSchema.properties : {};
       for (const [key, schema] of Object.entries(properties)) {
-        const bounded =
-          schema['type'] === 'boolean' ||
-          schema['enum'] !== undefined ||
-          (schema['type'] === 'string' && schema['maxLength'] !== undefined) ||
-          (schema['type'] === 'array' && schema['maxItems'] !== undefined) ||
-          (['integer', 'number'].includes(String(schema['type'])) &&
-            schema['minimum'] !== undefined);
+        const isBoundedText =
+          schema['type'] === 'string' && schema['maxLength'] !== undefined;
+        const isBoundedList =
+          schema['type'] === 'array' && schema['maxItems'] !== undefined;
+        const isBoundedNumber =
+          ['integer', 'number'].includes(String(schema['type'])) &&
+          schema['minimum'] !== undefined;
+        const bounded = [
+          schema['type'] === 'boolean',
+          schema['enum'] !== undefined,
+          isBoundedText,
+          isBoundedList,
+          isBoundedNumber,
+        ].some(Boolean);
         expect({ tool: tool.name, key, bounded }).toEqual({
           tool: tool.name,
           key,
@@ -540,7 +549,9 @@ describe('every result conforms to the tool that returned it', () => {
   const OUTPUT_TOOLS = TOOLS.filter((t) => 'outputSchema' in t);
 
   it('has an output schema for the tools that draw a card or a list', () => {
-    expect(OUTPUT_TOOLS.map((t) => t.name).toSorted()).toEqual([
+    expect(
+      OUTPUT_TOOLS.map((t) => t.name).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual([
       'add_recipe',
       'annotate_recipe',
       'browse_recipes',

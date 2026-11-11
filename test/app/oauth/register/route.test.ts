@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
 import { OPTIONS, POST } from '@/app/oauth/register/route';
@@ -58,6 +59,7 @@ describe('POST /oauth/register', () => {
 
   it('answers 400 with an OAuth error for an unacceptable redirect address', async () => {
     const res = await post(
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       JSON.stringify({ redirect_uris: ['http://example.com/cb'] }),
     );
     expect(res.status).toBe(400);
@@ -133,7 +135,8 @@ describe('POST /oauth/register', () => {
     const res = await POST(
       new Request('https://app.test/oauth/register', {
         method: 'POST',
-        body: new Uint8Array([0xFF, 0xFE, 0x7B]),
+        // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
+        body: new Uint8Array([0xff, 0xfe, 0x7b]),
         headers: { 'cf-connecting-ip': '203.0.113.7' },
       }),
     );
@@ -172,22 +175,24 @@ describe('POST /oauth/register', () => {
     for (let i = 0; i < 20; i += 1) {
       await post(body);
     }
-    expect((await post(body)).status).toBe(429);
-    expect(
-      (await post(body, { 'cf-connecting-ip': '198.51.100.9' })).status,
-    ).toBe(201);
+    const again = await post(body);
+    expect(again.status).toBe(429);
+    const other = await post(body, { 'cf-connecting-ip': '198.51.100.9' });
+    expect(other.status).toBe(201);
   });
 
   it('counts every address of one IPv6 network as the same caller', async () => {
     for (let i = 0; i < 20; i += 1) {
       await post(body, { 'cf-connecting-ip': `2001:db8:1:2:${i}::1` });
     }
-    expect(
-      (await post(body, { 'cf-connecting-ip': '2001:db8:1:2:ffff::9' })).status,
-    ).toBe(429);
-    expect(
-      (await post(body, { 'cf-connecting-ip': '2001:db8:1:3::1' })).status,
-    ).toBe(201);
+    const sameNetwork = await post(body, {
+      'cf-connecting-ip': '2001:db8:1:2:ffff::9',
+    });
+    expect(sameNetwork.status).toBe(429);
+    const otherNetwork = await post(body, {
+      'cf-connecting-ip': '2001:db8:1:3::1',
+    });
+    expect(otherNetwork.status).toBe(201);
   });
 
   it('falls back to X-Forwarded-For when Cloudflare sent no address', async () => {

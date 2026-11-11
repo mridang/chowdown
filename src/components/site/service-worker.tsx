@@ -35,14 +35,14 @@ export interface WorkerEnvironment {
 export function registerWhenLoaded(
   environment: WorkerEnvironment,
 ): (() => void) | undefined {
-  const { serviceWorker } = environment;
-  if (!environment.production || !serviceWorker) {
+  const { production, readyState, serviceWorker } = environment;
+  if (!production || !serviceWorker) {
     return undefined;
   }
   const register = () => {
     void serviceWorker.register(WORKER_URL, { scope: '/' });
   };
-  if (environment.readyState === 'complete') {
+  if (readyState === 'complete') {
     register();
     return undefined;
   }
@@ -60,6 +60,7 @@ export function ServiceWorker(): null {
       registerWhenLoaded({
         production: process.env.NODE_ENV === 'production',
         serviceWorker:
+          // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the browser navigator, which the Node rule wrongly reports as experimental; used on purpose
           'serviceWorker' in navigator ? navigator.serviceWorker : undefined,
         readyState: document.readyState,
         onLoad: (listener) => {

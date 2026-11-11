@@ -6,6 +6,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
 import { APP_MIGRATIONS } from '../../../../../lib/core/db/migrations';
@@ -59,9 +60,8 @@ const URL = 'https://chowdown.test/api/recipes/imports';
 describe('GET /api/recipes/imports/:id', () => {
   it('answers 401 when nobody is signed in', async () => {
     session.uid = null;
-    expect(
-      (await GET(new Request(`${URL}/mine`), context('mine'))).status,
-    ).toBe(401);
+    const res = await GET(new Request(`${URL}/mine`), context('mine'));
+    expect(res.status).toBe(401);
   });
 
   it('returns the import with its drafts, for the person who made it only', async () => {
@@ -76,12 +76,10 @@ describe('GET /api/recipes/imports/:id', () => {
   });
 
   it("answers 404 for another person's import and for one that does not exist", async () => {
-    expect(
-      (await GET(new Request(`${URL}/theirs`), context('theirs'))).status,
-    ).toBe(404);
-    expect(
-      (await GET(new Request(`${URL}/nope`), context('nope'))).status,
-    ).toBe(404);
+    const theirs = await GET(new Request(`${URL}/theirs`), context('theirs'));
+    expect(theirs.status).toBe(404);
+    const missing = await GET(new Request(`${URL}/nope`), context('nope'));
+    expect(missing.status).toBe(404);
   });
 });
 
@@ -91,7 +89,8 @@ describe('DELETE /api/recipes/imports/:id', () => {
 
   it('answers 401 when nobody is signed in, and deletes nothing', async () => {
     session.uid = null;
-    expect((await remove('mine')).status).toBe(401);
+    const res = await remove('mine');
+    expect(res.status).toBe(401);
     expect(raw.prepare('SELECT id FROM recipe_imports').all()).toHaveLength(2);
   });
 
@@ -104,7 +103,8 @@ describe('DELETE /api/recipes/imports/:id', () => {
   });
 
   it("answers 404 for another person's import, and leaves it alone", async () => {
-    expect((await remove('theirs')).status).toBe(404);
+    const res = await remove('theirs');
+    expect(res.status).toBe(404);
     expect(
       raw.prepare("SELECT id FROM recipe_imports WHERE id = 'theirs'").all(),
     ).toHaveLength(1);
@@ -112,6 +112,7 @@ describe('DELETE /api/recipes/imports/:id', () => {
 
   it('answers 404 the second time', async () => {
     await remove('mine');
-    expect((await remove('mine')).status).toBe(404);
+    const res = await remove('mine');
+    expect(res.status).toBe(404);
   });
 });

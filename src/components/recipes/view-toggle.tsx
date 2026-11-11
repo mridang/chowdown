@@ -42,6 +42,7 @@ export function ViewToggle({
       options={OPTIONS}
       onValueChange={(next) => {
         setChosen(next);
+        // eslint-disable-next-line unicorn/no-document-cookie -- CookieStore is not in every browser this app runs in, so document.cookie is the portable write
         document.cookie = viewCookie(next, location.protocol === 'https:');
         startTransition(() => router.refresh());
       }}

@@ -201,7 +201,7 @@ function hasAny(
   if (wanted.length === 0) {
     return true;
   }
-  const have = new Set((recipe.tags[key] ?? []).map(foldText));
+  const have = new Set((recipe.tags[key] ?? []).map((tag) => foldText(tag)));
   return wanted.some((w) => have.has(foldText(w)));
 }
 
@@ -311,9 +311,13 @@ export function browseRecipes(
     };
   }
   const next = offset + shown.length;
+  const nextPage =
+    next < hits.length
+      ? `; call again with offset=${next} for the next page`
+      : '';
   const more =
     offset > 0 || hits.length > shown.length
-      ? ` (showing ${shownOf(hits.length, offset, shown.length)}, a mix of eating styles${next < hits.length ? `; call again with offset=${next} for the next page` : ''})`
+      ? ` (showing ${shownOf(hits.length, offset, shown.length)}, a mix of eating styles${nextPage})`
       : '';
   return {
     message: `${countOf(hits.length, 'recipe')}${subject}${more}:\n\n${groupedByDiet(shown)}${note}`,
@@ -345,12 +349,11 @@ function brief(name: string): string {
 
 /** What stands between the person and cooking this, in a few words. */
 function gapText(match: PantryMatch, listUpTo = Infinity): string {
-  const shown = match.missing.slice(0, listUpTo).map(brief);
+  const shown = match.missing.slice(0, listUpTo).map((item) => brief(item));
   const rest = match.missing.length - shown.length;
+  const andMore = rest > 0 ? ` and ${rest} more` : '';
   const missing =
-    match.missing.length > 0
-      ? [`missing ${listAnd(shown)}${rest > 0 ? ` and ${rest} more` : ''}`]
-      : [];
+    match.missing.length > 0 ? [`missing ${listAnd(shown)}${andMore}`] : [];
   const short = match.short.map(
     (s) => `need more ${brief(s.name)} (have ${s.have}, need ${s.need})`,
   );
@@ -530,9 +533,8 @@ export function filterOverview(
         ? dietPosition(a) - dietPosition(b)
         : y - x || compareText(a, b),
     );
-    return [
-      `\n${f.label} (${f.key}): ${entries.map(([v, n]) => `${v} ${n}`).join(', ')}`,
-    ];
+    const listed = entries.map(([v, n]) => `${v} ${n}`).join(', ');
+    return [`\n${f.label} (${f.key}): ${listed}`];
   });
   return {
     message: [`${countOf(recipes.length, 'recipe')} saved.`, ...sections].join(

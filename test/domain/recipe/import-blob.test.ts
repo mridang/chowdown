@@ -10,8 +10,12 @@ import {
 describe('extractUrls', () => {
   it('pulls out http(s) URLs in order', () => {
     expect(
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture: an insecure link in the text being parsed
       extractUrls('see https://a.com/x and http://b.com/y please'),
-    ).toEqual(['https://a.com/x', 'http://b.com/y']);
+    ).toEqual(
+      // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture: an insecure link in the text being parsed
+      ['https://a.com/x', 'http://b.com/y'],
+    );
   });
   it('trims trailing punctuation', () => {
     expect(extractUrls('recipe at https://a.com/pasta.')).toEqual([
@@ -76,18 +80,23 @@ function milliseconds(work: () => unknown): number {
 
 describe('hostile text', () => {
   it('trims a long run of trailing punctuation in linear time', () => {
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture: insecure links in the text being parsed
     const text = `see http://a.com/${'.'.repeat(90_000)}x and http://b.com/${'.'.repeat(5000)}`;
     expect(milliseconds(() => extractUrls(text))).toBeLessThan(100);
     expect(extractUrls(text)).toEqual([
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture: an insecure link in the text being parsed
       `http://a.com/${'.'.repeat(90_000)}x`,
+      // eslint-disable-next-line sonarjs/no-clear-text-protocols, unicorn/prefer-https -- test fixture: an insecure link in the text being parsed
       'http://b.com/',
     ]);
   });
 
   it('plans thousands of links in linear time', () => {
-    const text = Array.from({ length: 5000 }, (_, i) => `http://a.b/${i}`).join(
-      ' ',
-    );
+    const text = Array.from(
+      { length: 5000 },
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture: insecure links in the text being parsed
+      (_, i) => `http://a.b/${i}`,
+    ).join(' ');
     expect(milliseconds(() => planImport(text))).toBeLessThan(200);
     expect(planImport(text)).toHaveLength(5000);
   });

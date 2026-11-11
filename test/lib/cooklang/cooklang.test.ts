@@ -63,8 +63,8 @@ describe('parseRecipe', () => {
 function shown(source: string) {
   const recipe = parseRecipe(source, 'x.cook');
   return {
-    ingredients: recipe.ingredients.map(
-      (i) => `${i.name}${i.quantity ? ` — ${i.quantity}` : ''}`,
+    ingredients: recipe.ingredients.map((i) =>
+      i.quantity ? `${i.name} — ${i.quantity}` : `${i.name}`,
     ),
     steps: recipe.steps.map((step) =>
       step.map((t) => (t.kind === 'text' ? t.text : `[${t.kind}]`)).join(''),

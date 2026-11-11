@@ -11,26 +11,20 @@ import { relativeTime } from '@/lib/intl';
 
 /** Whether a value has the members of a {@link ConnectedApp} that this list shows. */
 function isConnectedApp(value: unknown): value is ConnectedApp {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'id' in value &&
-    typeof value.id === 'string' &&
-    'name' in value &&
-    typeof value.name === 'string' &&
-    'scopes' in value &&
-    Array.isArray(value.scopes)
-  );
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const hasId = 'id' in value && typeof value.id === 'string';
+  const hasName = 'name' in value && typeof value.name === 'string';
+  return hasId && hasName && 'scopes' in value && Array.isArray(value.scopes);
 }
 
 /** The apps in the answer of `GET /api/users/self/connections`; anything unreadable is left out. */
 function appsOf(body: unknown): readonly ConnectedApp[] {
-  return typeof body === 'object' &&
-    body !== null &&
-    'items' in body &&
-    Array.isArray(body.items)
-    ? body.items.filter(isConnectedApp)
-    : [];
+  if (typeof body !== 'object' || body === null || !('items' in body)) {
+    return [];
+  }
+  return Array.isArray(body.items) ? body.items.filter(isConnectedApp) : [];
 }
 
 /** The app's own picture, or a plug when it has none or the picture cannot be shown. */
@@ -126,12 +120,11 @@ export function ConnectedApps(): ReactElement {
         if (!res.ok) {
           throw new Error(String(res.status));
         }
-        return appsOf(await res.json());
-      })
-      .then((items) => {
+        const items = appsOf(await res.json());
         if (!controller.signal.aborted) {
           setApps(items);
         }
+        return items;
       })
       .catch(() => {
         if (!controller.signal.aborted) {

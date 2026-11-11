@@ -90,6 +90,7 @@ export function isMetadataDocumentUrl(
   const url =
     clientId.length <= MAX_CLIENT_ID_LENGTH ? parseUrl(clientId) : undefined;
   return (
+    // eslint-disable-next-line sonarjs/expression-complexity -- logic rewrite would be large: one flat check per CIMD rule, kept in draft order
     url !== undefined &&
     url.origin !== ownOrigin &&
     url.protocol === 'https:' &&
@@ -131,14 +132,13 @@ function logoOf(value: unknown): string | undefined {
     typeof value === 'string' && value.length <= MAX_CLIENT_ID_LENGTH
       ? parseUrl(value)
       : undefined;
-  return url?.protocol === 'https:' &&
-    !url.hash &&
-    !url.username &&
-    !url.password &&
-    isPublicWebUrl(url.href) &&
-    url.href === value
-    ? url.href
-    : undefined;
+  if (url === undefined || url.href !== value || !isPublicWebUrl(url.href)) {
+    return undefined;
+  }
+  if (url.protocol !== 'https:' || url.hash || url.username || url.password) {
+    return undefined;
+  }
+  return url.href;
 }
 
 /** Whether a value is a JSON object (or array) whose members can be looked up by name. */
@@ -246,6 +246,7 @@ function documentAuth(
   const jwksUri = doc['jwks_uri'];
   const jwks = typeof jwksUri === 'string' ? parseUrl(jwksUri) : undefined;
   if (
+    // eslint-disable-next-line sonarjs/expression-complexity -- logic rewrite would be large: one flat check per JWKS URL rule
     typeof jwksUri !== 'string' ||
     jwksUri.length > MAX_CLIENT_ID_LENGTH ||
     !jwks ||
@@ -289,6 +290,13 @@ export type ClientParse =
       readonly description: string;
     };
 
+/** The refusal every failed metadata check returns: `invalid_client` with the reason. */
+function invalidClient(
+  description: string,
+): Extract<ClientParse, { readonly ok: false }> {
+  return { ok: false, error: 'invalid_client', description };
+}
+
 /**
  * Validate a fetched Client ID Metadata Document. The `client_id` inside must
  * equal the URL it was fetched from, or anyone could claim to be anyone.
@@ -297,11 +305,7 @@ export function parseClientMetadataDocument(
   document: unknown,
   url: string,
 ): ClientParse {
-  const bad = (description: string): ClientParse => ({
-    ok: false,
-    error: 'invalid_client',
-    description,
-  });
+  const bad = invalidClient;
   if (!isRecord(document)) {
     return bad('The client metadata document is not a JSON object.');
   }
@@ -435,11 +439,7 @@ export async function fetchClientMetadata(
   fetchImpl: typeof fetch = fetch,
   ownOrigin?: string,
 ): Promise<ClientFetch> {
-  const bad = (description: string): ClientFetch => ({
-    ok: false,
-    error: 'invalid_client',
-    description,
-  });
+  const bad = invalidClient;
   if (!isMetadataDocumentUrl(url, ownOrigin)) {
     return bad('The client_id is not a usable metadata document URL.');
   }

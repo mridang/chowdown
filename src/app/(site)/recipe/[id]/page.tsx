@@ -80,7 +80,18 @@ export default async function RecipePage({
     notFound();
   }
 
-  const { recipe, tags, similar } = data;
+  const {
+    recipe,
+    tags,
+    similar,
+    minutes,
+    notes,
+    units,
+    etag,
+    tone,
+    sourceUrl,
+    favourite,
+  } = data;
   // Cached for the request (the header reads the same value), so this is no extra work.
   const jsonLd = recipeToJsonLd(recipe, `${SITE_URL}/recipe/${id}`);
   const media = extractMedia(recipe);
@@ -91,7 +102,7 @@ export default async function RecipePage({
     ([key]) => key.toLowerCase() === 'source',
   )?.[1];
   const facts = buildFacts({
-    minutes: data.minutes,
+    minutes,
     serves: declaredServings(recipe.metadata),
     tags,
   });
@@ -99,7 +110,7 @@ export default async function RecipePage({
   // Personal notes go beside the ingredient or step they belong to; the rest
   // (whole-recipe notes and any whose target is gone) are listed below.
   const ingredientNames = recipe.ingredients.map((i) => i.name);
-  const grouped = groupNotes(data.notes, ingredientNames, recipe.steps.length);
+  const grouped = groupNotes(notes, ingredientNames, recipe.steps.length);
   const panelIngredients: readonly PanelIngredient[] = recipe.ingredients.map(
     (ingredient, index) => ({
       name: ingredient.name,
@@ -112,7 +123,7 @@ export default async function RecipePage({
   return (
     <RecipeStateProvider
       servings={servingsOf(recipe.metadata)}
-      initialUnits={data.units}
+      initialUnits={units}
     >
       {/* Structured data for search engines and recipe scrapers. */}
       <script
@@ -124,18 +135,18 @@ export default async function RecipePage({
 
       <RecipeHero
         recipeId={id}
-        etag={data.etag}
+        etag={etag}
         title={title}
         images={images}
-        tone={data.tone}
+        tone={tone}
         cuisine={firstTag(tags, 'cuisine')}
         course={firstTag(tags, 'category')}
         sourceText={sourceText}
-        sourceUrl={data.sourceUrl}
+        sourceUrl={sourceUrl}
         author={authorOf(recipe.metadata)}
         video={media.video}
         steps={recipe.steps}
-        favourite={data.favourite}
+        favourite={favourite}
       />
 
       <Container>

@@ -6,6 +6,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
 import { SESSION_COOKIE } from '@/domain/auth/app';
@@ -79,12 +80,14 @@ beforeEach(async () => {
 afterEach(() => restore());
 
 /** A GET of the account with the given headers. */
-const read = (headers: Record<string, string> = { cookie }) =>
-  GET(new Request(URL, { headers }));
+const read = (headers?: Record<string, string>) =>
+  GET(new Request(URL, { headers: headers ?? { cookie } }));
 
 /** A DELETE of the account with the given headers. */
-const remove = (headers: Record<string, string> = { cookie }) =>
-  DELETE(new Request(URL, { method: 'DELETE', headers }));
+const remove = (headers?: Record<string, string>) =>
+  DELETE(
+    new Request(URL, { method: 'DELETE', headers: headers ?? { cookie } }),
+  );
 
 describe('GET /api/users/self', () => {
   it('is never prerendered', () => {
@@ -98,24 +101,26 @@ describe('GET /api/users/self', () => {
   });
 
   it('is never kept by a shared cache', async () => {
-    expect((await read()).headers.get('cache-control')).toBe(
-      'private, no-cache',
-    );
+    const res = await read();
+    expect(res.headers.get('cache-control')).toBe('private, no-cache');
   });
 
   it('answers 401 without a session cookie', async () => {
-    expect((await read({})).status).toBe(401);
+    const res = await read({});
+    expect(res.status).toBe(401);
   });
 
   it('answers 401 once the session has been ended everywhere', async () => {
     raw.prepare('UPDATE users SET session_epoch = 1 WHERE id = 7').run();
-    expect((await read()).status).toBe(401);
+    const res = await read();
+    expect(res.status).toBe(401);
   });
 });
 
 describe('DELETE /api/users/self', () => {
   it('answers 204', async () => {
-    expect((await remove()).status).toBe(204);
+    const res = await remove();
+    expect(res.status).toBe(204);
   });
 
   it('clears the session cookie', async () => {
@@ -125,7 +130,8 @@ describe('DELETE /api/users/self', () => {
 
   it('ends the session: the same cookie no longer works', async () => {
     await remove();
-    expect((await read()).status).toBe(401);
+    const res = await read();
+    expect(res.status).toBe(401);
   });
 
   it('deletes the account and nobody else’s', async () => {
@@ -149,14 +155,16 @@ describe('DELETE /api/users/self', () => {
   });
 
   it('answers 401 without a session cookie, and deletes nothing', async () => {
-    expect((await remove({})).status).toBe(401);
+    const res = await remove({});
+    expect(res.status).toBe(401);
     expect(left('users')).toEqual(['7', '8']);
     expect(tidied).toEqual([]);
   });
 
   it('answers 401 once the session has been ended everywhere', async () => {
     raw.prepare('UPDATE users SET session_epoch = 1 WHERE id = 7').run();
-    expect((await remove()).status).toBe(401);
+    const res = await remove();
+    expect(res.status).toBe(401);
   });
 
   it('answers 403 for a request from another site, and deletes nothing', async () => {

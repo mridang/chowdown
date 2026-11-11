@@ -6,6 +6,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
 import { makeConnectionItem } from '@/domain/api/connections';
@@ -80,7 +81,8 @@ describe('DELETE /api/users/self/connections/:grant_id', () => {
     );
 
   it('disconnects the app, including any older grant for it, with 204', async () => {
-    expect((await del('g1')).status).toBe(204);
+    const res = await del('g1');
+    expect(res.status).toBe(204);
     expect(
       raw
         .prepare(
@@ -92,7 +94,8 @@ describe('DELETE /api/users/self/connections/:grant_id', () => {
   });
 
   it("answers 404 for another user's grant and leaves it alone", async () => {
-    expect((await del('g3')).status).toBe(404);
+    const res = await del('g3');
+    expect(res.status).toBe(404);
     expect(
       raw
         .prepare("SELECT revoked_at FROM oauth_grants WHERE id = 'g3'")
@@ -101,7 +104,8 @@ describe('DELETE /api/users/self/connections/:grant_id', () => {
   });
 
   it('answers 404 for a grant that does not exist', async () => {
-    expect((await del('nope')).status).toBe(404);
+    const res = await del('nope');
+    expect(res.status).toBe(404);
   });
 
   it('revokes an app with a newer read-only install and an older edit-capable one in one go', async () => {
@@ -110,7 +114,8 @@ describe('DELETE /api/users/self/connections/:grant_id', () => {
         `INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g1-edit', 7, 'c1', '${SCOPE_WRITE}', 'r', '2026-01-15T00:00:00.000Z')`,
       )
       .run();
-    expect((await del('g1')).status).toBe(204);
+    const res = await del('g1');
+    expect(res.status).toBe(204);
     expect(
       raw
         .prepare(
@@ -139,7 +144,8 @@ describe('DELETE /api/users/self/connections/:grant_id', () => {
 
   it('answers 401 for a session that was ended everywhere, and revokes nothing', async () => {
     session.ended = true;
-    expect((await del('g1')).status).toBe(401);
+    const res = await del('g1');
+    expect(res.status).toBe(401);
     expect(
       raw
         .prepare(
@@ -151,12 +157,12 @@ describe('DELETE /api/users/self/connections/:grant_id', () => {
 
   it('answers 401 when nobody is signed in', async () => {
     session.uid = null;
-    expect((await del('g1')).status).toBe(401);
+    const res = await del('g1');
+    expect(res.status).toBe(401);
   });
 
   it('answers 403 to a cross-site request', async () => {
-    expect((await del('g1', { 'sec-fetch-site': 'cross-site' })).status).toBe(
-      403,
-    );
+    const res = await del('g1', { 'sec-fetch-site': 'cross-site' });
+    expect(res.status).toBe(403);
   });
 });

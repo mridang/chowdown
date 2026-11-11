@@ -51,6 +51,7 @@ const TAG = /<(meta|script)(?=[\s/>])([^<>]*)>|<\/script\s*>/gi;
  * no two parts of the pattern can claim the same characters.
  */
 const ATTRIBUTE =
+  // eslint-disable-next-line sonarjs/regex-complexity -- each quoting style needs its own branch to keep the value exact; the pattern is already linear
   /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
 
 /** The attributes in the text between a tag's name and its `>`. */

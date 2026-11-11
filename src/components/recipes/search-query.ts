@@ -133,29 +133,38 @@ export function parseQuery(params: RawParams): Query {
 export function valuesOf(recipe: CardRecipe, key: FacetKey): readonly string[] {
   const values = ((): readonly (string | undefined)[] => {
     switch (key) {
-      case 'difficulty':
+      case 'difficulty': {
         return [recipe.difficulty];
-      case 'time':
+      }
+      case 'time': {
         return [
           recipe.minutes === undefined ? undefined : timeBucket(recipe.minutes),
         ];
-      case 'protein':
+      }
+      case 'protein': {
         return [recipe.protein];
-      case 'cuisine':
+      }
+      case 'cuisine': {
         return [recipe.cuisine];
-      case 'category':
+      }
+      case 'category': {
         return [recipe.category];
-      case 'diet_type':
+      }
+      case 'diet_type': {
         return [recipe.dietType];
-      case 'diet':
+      }
+      case 'diet': {
         return recipe.diet;
-      case 'method':
+      }
+      case 'method': {
         return recipe.method;
-      case 'site':
+      }
+      case 'site': {
         return [recipe.site];
+      }
     }
   })();
-  return values.filter((v): v is string => Boolean(v));
+  return values.filter((v): v is string => typeof v === 'string' && v !== '');
 }
 
 /**
@@ -189,8 +198,8 @@ function matchesFacet(
   key: FacetKey,
   wanted: readonly string[],
 ): boolean {
-  const have = valuesOf(recipe, key).map((v) => v.toLowerCase());
-  return wanted.some((v) => have.includes(v.toLowerCase()));
+  const have = new Set(valuesOf(recipe, key).map((v) => v.toLowerCase()));
+  return wanted.some((v) => have.has(v.toLowerCase()));
 }
 
 /** Whether a recipe passes every part of the query. */
@@ -258,7 +267,7 @@ export function hrefFor(query: Query): string {
   const pairs: readonly (readonly [string, string])[] = [
     ...(query.q ? [['q', query.q] as const] : []),
     ...(query.favourites ? [['fav', '1'] as const] : []),
-    ...(query.sort !== 'title' ? [['sort', query.sort] as const] : []),
+    ...(query.sort === 'title' ? [] : [['sort', query.sort] as const]),
     ...FACET_KEYS.flatMap((key) => {
       const values = query.selected[key];
       return values?.length ? [[key, values.join(',')] as const] : [];
@@ -287,12 +296,15 @@ export function toggled(query: Query, key: FacetKey, value: string): Query {
 /** What a filter value is called on screen: a time bucket by its range, a site as it is, the rest in sentence case. */
 function labelFor(key: FacetKey, value: string): string {
   switch (key) {
-    case 'time':
+    case 'time': {
       return TIME_BUCKETS.find(([v]) => v === value)?.[1] ?? value;
-    case 'site':
+    }
+    case 'site': {
       return value;
-    default:
+    }
+    default: {
       return sentenceCase(value);
+    }
   }
 }
 
@@ -380,14 +392,18 @@ function byPopularity(a: Count, b: Count): number {
 /** How a filter's values are ordered: difficulty, time and diet follow their natural order, the rest by popularity. */
 function orderFor(key: FacetKey): (a: Count, b: Count) => number {
   switch (key) {
-    case 'difficulty':
+    case 'difficulty': {
       return byListOrder(DIFFICULTY_ORDER);
-    case 'time':
+    }
+    case 'time': {
       return byListOrder(TIME_ORDER);
-    case 'diet_type':
+    }
+    case 'diet_type': {
       return byListOrder(DIET_TYPES);
-    default:
+    }
+    default: {
       return byPopularity;
+    }
   }
 }
 

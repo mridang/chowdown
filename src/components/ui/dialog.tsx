@@ -136,6 +136,8 @@ export function syncModal(
     dialog.showModal();
   } else if (!open && dialog.open) {
     dialog.close();
+  } else {
+    // Already in step with `open`: nothing to do.
   }
 }
 
@@ -222,11 +224,11 @@ function useMounted(open: boolean): boolean {
     setLeaving(!open);
   }
   useEffect(() => {
-    if (!leaving) {
-      return;
+    if (leaving) {
+      const timer = setTimeout(() => setLeaving(false), LEAVE_MS);
+      return () => clearTimeout(timer);
     }
-    const timer = setTimeout(() => setLeaving(false), LEAVE_MS);
-    return () => clearTimeout(timer);
+    return undefined;
   }, [leaving]);
   return open || leaving;
 }
@@ -302,12 +304,12 @@ export function DialogContent({
   // itself under `closedby="any"`; this is only for the ones that cannot.
   useEffect(() => {
     const dialog = ref.current;
-    if (!dialog || !dismissable || supportsLightDismiss(dialog)) {
-      return;
+    if (dialog && dismissable && !supportsLightDismiss(dialog)) {
+      const onClick = backdropClickHandler(dialog, () => setOpen(false));
+      dialog.addEventListener('click', onClick);
+      return () => dialog.removeEventListener('click', onClick);
     }
-    const onClick = backdropClickHandler(dialog, () => setOpen(false));
-    dialog.addEventListener('click', onClick);
-    return () => dialog.removeEventListener('click', onClick);
+    return undefined;
   }, [dismissable, setOpen]);
 
   return (

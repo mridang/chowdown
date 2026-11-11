@@ -28,12 +28,14 @@ function TimerEntry({
 }: Readonly<{ timer: StepTimer; timers: StepTimers }>): ReactElement {
   const view = describeTimer(timer, timer.label, timers.now);
   const step = timer.step + 1;
-  const main =
-    view.state === 'running'
-      ? () => timers.pause(timer.id)
-      : view.state === 'paused'
-        ? () => timers.resume(timer.id)
-        : () => timers.restart(timer.id);
+  let main = () => timers.restart(timer.id);
+  if (view.state === 'running') {
+    main = () => timers.pause(timer.id);
+  } else if (view.state === 'paused') {
+    main = () => timers.resume(timer.id);
+  } else {
+    // Done: the main button runs the timer again from the top.
+  }
   return (
     <li
       className={cn(

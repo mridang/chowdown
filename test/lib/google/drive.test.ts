@@ -77,10 +77,8 @@ describe('listRecipeFiles', () => {
         { id: '3', name: 'B.COOK' },
       ],
     });
-    expect((await listRecipeFiles('folder', 'tok')).map((f) => f.id)).toEqual([
-      '1',
-      '3',
-    ]);
+    const files = await listRecipeFiles('folder', 'tok');
+    expect(files.map((f) => f.id)).toEqual(['1', '3']);
   });
 
   it('gives up after a sane number of pages rather than looping forever', async () => {

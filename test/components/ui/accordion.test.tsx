@@ -50,3 +50,5 @@ describe('Accordion', () => {
     expect(out.startsWith('<div class="faq">')).toBe(true);
   });
 });
+
+/* eslint-enable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */

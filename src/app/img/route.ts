@@ -9,7 +9,7 @@
  * edge cache when they can, and a browser keeps them for a month.
  */
 
-import * as access from '@/domain/images/access';
+import { authenticate, mayFetch, signatureValid } from '@/domain/images/access';
 import {
   ImageService,
   imageCache,
@@ -27,7 +27,7 @@ import {
  */
 export async function GET(request: Request): Promise<Response> {
   return new ImageService({
-    access,
+    access: { authenticate, mayFetch, signatureValid },
     cache: imageCache(),
     images: imagesBinding(),
     background: runInBackground,

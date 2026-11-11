@@ -25,8 +25,8 @@ function fakeEnvironment() {
       return 42;
     },
     clearInterval,
-    onVisible: (callback) => {
-      callbacks.visible.push(callback);
+    onVisible: (listener) => {
+      callbacks.visible.push(listener);
       return stopWatching;
     },
   };

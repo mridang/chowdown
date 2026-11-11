@@ -5,8 +5,13 @@
  * writing the session cookie and the OAuth flow cookies, the sign-out guard,
  * and the GoogleAuthKit that composes a Google sign-in.
  */
-export * from './current-user';
-export * from './session-cookie';
-export * from './flow-cookies';
-export * from './guard';
-export * from './google-auth-kit';
+export {
+  getCurrentUser,
+  getSession,
+  getSessionUid,
+  getLiveSessionUid,
+} from './current-user';
+export { setSessionCookie } from './session-cookie';
+export { type FlowStart, startFlowCookies, finishFlow } from './flow-cookies';
+export { crossSiteRefusal, type Caller, requireSignedIn } from './guard';
+export { type GoogleAuthKitConfig, GoogleAuthKit } from './google-auth-kit';

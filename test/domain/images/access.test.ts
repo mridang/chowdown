@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
 import {
@@ -63,7 +64,8 @@ describe('authenticate', () => {
 
   it('answers 401 when nobody is signed in', async () => {
     session.uid = null;
-    expect((await authenticate(undefined, sessionUid))?.status).toBe(401);
+    const res = await authenticate(undefined, sessionUid);
+    expect(res?.status).toBe(401);
   });
 });
 

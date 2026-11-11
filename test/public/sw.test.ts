@@ -77,7 +77,9 @@ function loadWorker(options: {
       return new Response('from the network');
     },
   });
+  // eslint-disable-next-line sonarjs/code-eval -- test runs the repository's own public/sw.js in a sandbox
   vm.runInContext(
+    // eslint-disable-next-line n/no-sync -- sync is fine in a test helper; async would ripple through every synchronous spec
     readFileSync(path.join(process.cwd(), 'public/sw.js'), 'utf8'),
     context,
   );
@@ -103,13 +105,9 @@ function fetchEvent(
 describe('public/sw.js', () => {
   it('listens for install, activate and fetch', () => {
     const { listeners } = loadWorker({ online: true, preload: true });
-    expect([...listeners.keys()].toSorted()).toEqual([
-      'activate',
-      'fetch',
-      'install',
-      'notificationclick',
-      'push',
-    ]);
+    expect(
+      [...listeners.keys()].toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(['activate', 'fetch', 'install', 'notificationclick', 'push']);
   });
 
   it('takes over straight away on install', () => {
@@ -152,13 +150,15 @@ describe('public/sw.js', () => {
       'navigate',
       Promise.resolve(new Response('preloaded')),
     );
-    expect(await (await handled.response)?.text()).toBe('preloaded');
+    const response = await handled.response;
+    expect(await response?.text()).toBe('preloaded');
   });
 
   it('fetches the page itself when nothing was preloaded', async () => {
     const { listeners } = loadWorker({ online: true, preload: false });
     const handled = fetchEvent(listeners, 'navigate');
-    expect(await (await handled.response)?.text()).toBe('from the network');
+    const response = await handled.response;
+    expect(await response?.text()).toBe('from the network');
   });
 
   it('says it is offline, with a 503 page, when the network fails', async () => {
@@ -177,9 +177,8 @@ describe('public/sw.js', () => {
       preload: false,
       query: '?name=Pantry&theme=%23112233&background=%23ffeedd',
     });
-    const page = await (
-      await fetchEvent(listeners, 'navigate').response
-    )?.text();
+    const response = await fetchEvent(listeners, 'navigate').response;
+    const page = await response?.text();
     expect(page).toContain('Offline · Pantry');
     expect(page).toContain('Pantry needs a connection');
     expect(page).toContain('<meta name="theme-color" content="#112233">');
@@ -192,9 +191,8 @@ describe('public/sw.js', () => {
       preload: false,
       query: '?name=%3Cb%3Ex%3C/b%3E&theme=red&background=url(x)',
     });
-    const page = await (
-      await fetchEvent(listeners, 'navigate').response
-    )?.text();
+    const response = await fetchEvent(listeners, 'navigate').response;
+    const page = await response?.text();
     expect(page).toContain('&lt;b&gt;x&lt;/b&gt;');
     expect(page).not.toContain('<b>x</b>');
     expect(page).not.toContain('url(x)');
@@ -211,19 +209,17 @@ describe('public/sw.js', () => {
       preload: false,
       query: '?background=%23fbf8f2',
     });
-    expect(
-      await (await fetchEvent(dark.listeners, 'navigate').response)?.text(),
-    ).toContain('color: #f3f3f6');
-    expect(
-      await (await fetchEvent(light.listeners, 'navigate').response)?.text(),
-    ).toContain('color: #15120e');
+    const darkResponse = await fetchEvent(dark.listeners, 'navigate').response;
+    const lightResponse = await fetchEvent(light.listeners, 'navigate')
+      .response;
+    expect(await darkResponse?.text()).toContain('color: #f3f3f6');
+    expect(await lightResponse?.text()).toContain('color: #15120e');
   });
 
   it('gives the offline page an icon and a retry button', async () => {
     const { listeners } = loadWorker({ online: false, preload: false });
-    const page = await (
-      await fetchEvent(listeners, 'navigate').response
-    )?.text();
+    const response = await fetchEvent(listeners, 'navigate').response;
+    const page = await response?.text();
     expect(page).toContain('<link rel="icon" href="/icon.svg"');
     expect(page).toContain('location.reload()');
   });

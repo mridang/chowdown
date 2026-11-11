@@ -69,7 +69,7 @@ function fakeRate(over: Partial<RateLimitDeps> = {}): {
   };
   return {
     deps: { store: () => store, now: () => 5000, random: () => 0.5, ...over },
-    keys: () => [...counters.keys()].toSorted(),
+    keys: () => [...counters.keys()].toSorted((a, b) => a.localeCompare(b)),
     purged,
   };
 }
@@ -289,7 +289,8 @@ describe('handleMcpPost — scopes', () => {
   });
 
   it('treats a token with no scopes as able to do nothing', async () => {
-    expect((await send(write, {}, [])).status).toBe(403);
+    const res = await send(write, {}, []);
+    expect(res.status).toBe(403);
   });
 
   it('tells a read-only token that a tool does not exist, rather than that it lacks a scope for it', async () => {
@@ -780,7 +781,8 @@ describe('handleMcpPost — rate limiting', () => {
   it('answers a user over their tool-call allowance with 429, Retry-After and a JSON-RPC error', async () => {
     const rate = fakeRate();
     for (let i = 0; i < 120; i++) {
-      expect((await send(call(i), {}, ALL_SCOPES, rate.deps)).status).toBe(200);
+      const res = await send(call(i), {}, ALL_SCOPES, rate.deps);
+      expect(res.status).toBe(200);
     }
     const { status, headers, json } = await send(
       call(121),
@@ -900,7 +902,8 @@ describe('handleMcpPost — rate limiting', () => {
         throw new Error('no database');
       },
     });
-    expect((await send(call(1), {}, ALL_SCOPES, broken.deps)).status).toBe(200);
+    const res = await send(call(1), {}, ALL_SCOPES, broken.deps);
+    expect(res.status).toBe(200);
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
   });
@@ -947,10 +950,11 @@ describe('handleMcpPost — junk bodies and the rate limit', () => {
     const rate = fakeRate();
     const statuses = await Array.from({ length: 601 }).reduce<
       Promise<readonly number[]>
-    >(
-      async (done) => [...(await done), (await junk(rate.deps)).status],
-      Promise.resolve([]),
-    );
+    >(async (done) => {
+      const earlier = await done;
+      const response = await junk(rate.deps);
+      return [...earlier, response.status];
+    }, Promise.resolve([]));
     expect(statuses.slice(0, 600).every((status) => status === 400)).toBe(true);
     expect(statuses[600]).toBe(429);
     expect(rate.keys()).toEqual(['mcp-request:1']);

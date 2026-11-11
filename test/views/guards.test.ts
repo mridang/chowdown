@@ -22,7 +22,9 @@ describe('isRecipeCardData', () => {
   });
 
   it('refuses anything that is missing a part the card draws', () => {
-    expect(isRecipeCardData({ ...CARD, steps: undefined })).toBe(false);
+    const withoutSteps: Partial<typeof CARD> = { ...CARD };
+    delete withoutSteps.steps;
+    expect(isRecipeCardData(withoutSteps)).toBe(false);
     expect(isRecipeCardData({ ...CARD, id: 7 })).toBe(false);
     expect(isRecipeCardData({ ...CARD, cookware: [1] })).toBe(false);
     expect(isRecipeCardData({ ...CARD, uncurated: 'no' })).toBe(false);

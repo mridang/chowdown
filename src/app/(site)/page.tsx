@@ -42,6 +42,7 @@ export default async function Home({
     );
   }
   // `?error=auth` is where a failed Google sign-in lands.
-  const signInFailed = (await searchParams)['error'] === 'auth';
+  const params = await searchParams;
+  const signInFailed = params['error'] === 'auth';
   return <HomeLanding signInFailed={signInFailed} />;
 }

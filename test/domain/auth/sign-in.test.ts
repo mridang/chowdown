@@ -40,7 +40,7 @@ const { completeSignIn, missingSignInSettings } =
   await import('@/domain/auth/sign-in');
 const { SessionTokens } = await import('@/lib/session');
 
-const env = (overrides: Record<string, string | undefined> = {}) =>
+const env = (overrides: Record<string, string | null> = {}) =>
   ({
     SESSION_SECRET,
     GOOGLE_OAUTH_CLIENT_ID: 'id',
@@ -52,6 +52,7 @@ const context = (overrides: Record<string, unknown> = {}) => ({
   request: appRequest('GET', '/auth/callback'),
   env: env(),
   origin: 'https://app.test',
+  // eslint-disable-next-line sonarjs/no-undefined-assignment -- FlowContext requires returnTo, whose type is string | undefined
   returnTo: undefined,
   ...overrides,
 });
@@ -73,9 +74,9 @@ describe('missingSignInSettings', () => {
     expect(
       missingSignInSettings(
         env({
-          GOOGLE_OAUTH_CLIENT_ID: undefined,
+          GOOGLE_OAUTH_CLIENT_ID: null,
           GOOGLE_OAUTH_CLIENT_SECRET: '',
-          SESSION_SECRET: undefined,
+          SESSION_SECRET: null,
         }),
       ),
     ).toEqual([
@@ -114,7 +115,6 @@ describe('completeSignIn', () => {
       sub: 'g1',
       email: 'ada@example.com',
       name: 'Ada',
-      picture: undefined,
     });
     expect(afterSignIn).toHaveBeenCalledWith(person);
     expect(
@@ -149,7 +149,7 @@ describe('completeSignIn', () => {
 
   it('fails closed without a session secret, recording nobody', async () => {
     await expect(
-      completeSignIn(context({ env: env({ SESSION_SECRET: undefined }) }), {
+      completeSignIn(context({ env: env({ SESSION_SECRET: null }) }), {
         sub: 'g1',
         email: 'ada@example.com',
       }),

@@ -63,16 +63,17 @@ export async function POST(request: Request) {
     },
   );
   sweepSometimes(oauthSweeps(db), runInBackground);
-  return result.ok
-    ? noStoreJson(result.tokens)
-    : oauthError(
-        result.error,
-        result.description,
-        result.status,
-        result.wwwAuthenticate
-          ? { 'WWW-Authenticate': result.wwwAuthenticate }
-          : {},
-      );
+  if (result.ok) {
+    return noStoreJson(result.tokens);
+  }
+  return oauthError(
+    result.error,
+    result.description,
+    result.status,
+    result.wwwAuthenticate
+      ? { 'WWW-Authenticate': result.wwwAuthenticate }
+      : {},
+  );
 }
 
 /** `OPTIONS /oauth/token`: the CORS preflight for browser-based assistants. Answers 204. */

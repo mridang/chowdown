@@ -56,7 +56,7 @@ export function everyEntry(
   value: unknown,
   check: (entry: unknown) => boolean,
 ): value is readonly unknown[] {
-  return Array.isArray(value) && value.every(check);
+  return Array.isArray(value) && value.every((entry) => check(entry));
 }
 
 /** Whether the value is a string. */

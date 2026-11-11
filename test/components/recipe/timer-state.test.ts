@@ -26,7 +26,10 @@ const spec = (id: string, durationMs = 5 * MIN, step = 0): TimerSpec => ({
 
 /** Apply actions in order from no timers. */
 const run = (...actions: readonly TimerAction[]): readonly StepTimer[] =>
-  actions.reduce<readonly StepTimer[]>(timerReducer, []);
+  actions.reduce<readonly StepTimer[]>(
+    (timers, action) => timerReducer(timers, action),
+    [],
+  );
 
 const toggle = (s: TimerSpec, now: number): TimerAction => ({
   type: 'toggle',

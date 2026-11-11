@@ -172,6 +172,9 @@ export const HERO_RECIPE: SampleRecipe = {
 };
 
 /** The sample recipes the landing page draws, the featured one first. */
-export const RECIPES: SampleRecipes = [HERO_RECIPE, ...REST.map(toSample)];
+export const RECIPES: SampleRecipes = [
+  HERO_RECIPE,
+  ...REST.map((base) => toSample(base)),
+];
 
 export { type Tone } from '@/domain/recipe/card-data';

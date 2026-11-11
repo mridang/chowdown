@@ -220,6 +220,7 @@ export function AddRecipes({
   // Empty fields only count as errors once Save has been pressed, and stop
   // counting as soon as they are filled in.
   const fieldErrors = attempted ? missingFieldErrors(name, cook) : {};
+  const saveLabel = index + 1 < drafts.length ? 'Save & next' : 'Save & finish';
 
   return (
     <Card as="section" aria-labelledby="add-recipes-heading">
@@ -344,11 +345,7 @@ export function AddRecipes({
               aria-busy={busy}
               className="disabled:opacity-50"
             >
-              {busy
-                ? 'Saving…'
-                : (index + 1 < drafts.length
-                  ? 'Save & next'
-                  : 'Save & finish')}
+              {busy ? 'Saving…' : saveLabel}
             </Button>
             <Button
               variant="outline"

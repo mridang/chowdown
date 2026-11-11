@@ -56,7 +56,7 @@ function patchTitle(state: PatchState, title: unknown): PatchState {
   return edited(
     state,
     upsertMetadata(state.source, [
-      ['title', title.trim().replace(/\s+/g, ' ')],
+      ['title', title.trim().replaceAll(/\s+/g, ' ')],
     ]),
   );
 }
@@ -150,8 +150,9 @@ export function applyRecipePatch(
   source: string,
   patch: Readonly<Record<string, unknown>>,
 ): PatchResult {
+  const editable: readonly string[] = EDITABLE;
   const notEditable = Object.keys(patch).flatMap((key) =>
-    EDITABLE.some((field) => field === key)
+    editable.includes(key)
       ? []
       : [`${key}: not editable here (editable: ${listAnd(EDITABLE)}).`],
   );

@@ -49,3 +49,5 @@ describe('Card', () => {
     expect(out).toContain('type="button"');
   });
 });
+
+/* eslint-enable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */

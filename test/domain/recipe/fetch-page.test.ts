@@ -29,6 +29,7 @@ function serving(...responses: readonly Response[]) {
 /** Why fetching `url` failed, in the words import shows. */
 async function failure(url: string, timeoutMs?: number): Promise<string> {
   const error = await fetchPage(url, timeoutMs).catch(
+    // eslint-disable-next-line sonarjs/variable-name -- unicorn/catch-error-name requires the error_ name, which this rule rejects
     (error_: unknown) => error_,
   );
   expect(error).toBeInstanceOf(PageFetchError);
@@ -58,7 +59,8 @@ describe('fetchPage', () => {
 
   it('keeps at most 200,000 characters of a very large page', async () => {
     serving(new Response('x'.repeat(300_000)));
-    expect((await fetchPage('https://a.com/x')).length).toBe(200_000);
+    const page = await fetchPage('https://a.com/x');
+    expect(page).toHaveLength(200_000);
   });
 
   it('keeps the JSON-LD that sits behind a lot of inline script and CSS', async () => {
@@ -83,7 +85,8 @@ describe('fetchPage', () => {
         }),
       ),
     );
-    expect((await fetchPage('https://a.com/x')).length).toBe(200_000);
+    const page = await fetchPage('https://a.com/x');
+    expect(page).toHaveLength(200_000);
     // 800,000 bytes is the limit: a handful of pulls, not the whole internet.
     expect(pulls.count).toBeLessThan(20);
   });
@@ -140,6 +143,7 @@ describe('fetchPage', () => {
   it.each([
     'http://localhost/x',
     'http://127.0.0.1/x',
+    // eslint-disable-next-line sonarjs/no-clear-text-protocols -- test fixture: a private address that must be refused
     'http://10.1.2.3/x',
     'https://a.com:8443/x',
     'https://user:pw@a.com/x',

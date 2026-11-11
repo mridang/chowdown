@@ -83,7 +83,8 @@ async function completeProfile(
 
 /** The signed-in person for the header, or null when signed out. */
 export const getShellUser = cache(async (): Promise<ShellUser | null> => {
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  const jar = await cookies();
+  const token = jar.get(SESSION_COOKIE)?.value;
   if (!token) {
     return null;
   }

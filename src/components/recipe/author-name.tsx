@@ -97,13 +97,19 @@ function normalisedName(name: string): string {
  * surname) unevenly across the low bits that the final `% 7` keeps.
  */
 function hashOf(text: string): number {
-  const fnv = Array.from({ length: text.length }, (_, index) =>
-    text.charCodeAt(index),
-  ).reduce(
+  // Each UTF-16 code unit on its own (not code points), as the hash has always used.
+  const units = Array.from(
+    { length: text.length },
+    (_, index) => text.charAt(index).codePointAt(0) ?? 0,
+  );
+  const fnv = units.reduce(
     (hash, unit) => Math.imul(hash ^ unit, 0x01_00_01_93),
+    // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
     0x81_1c_9d_c5,
   );
+  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
   const half = Math.imul(fnv ^ (fnv >>> 16), 0x85_eb_ca_6b);
+  // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
   const whole = Math.imul(half ^ (half >>> 13), 0xc2_b2_ae_35);
   return (whole ^ (whole >>> 16)) >>> 0;
 }

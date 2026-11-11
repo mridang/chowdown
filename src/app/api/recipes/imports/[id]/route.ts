@@ -27,11 +27,8 @@ export async function GET(
   if (!auth.ok) {
     return auth.response;
   }
-  const found = await getRecipeImport(
-    getDatabase(),
-    auth.value,
-    (await params).id,
-  );
+  const { id } = await params;
+  const found = await getRecipeImport(getDatabase(), auth.value, id);
   return found
     ? NextResponse.json(found, {
         headers: { 'Cache-Control': 'private, no-cache' },
@@ -51,11 +48,8 @@ export async function DELETE(
   if (!auth.ok) {
     return auth.response;
   }
-  const removed = await deleteRecipeImport(
-    getDatabase(),
-    auth.value,
-    (await params).id,
-  );
+  const { id } = await params;
+  const removed = await deleteRecipeImport(getDatabase(), auth.value, id);
   return removed
     ? new NextResponse(null, { status: 204 })
     : problems.notFound('recipe import');

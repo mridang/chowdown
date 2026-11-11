@@ -86,7 +86,7 @@ export function useStepTimers(recipeTitle: string): StepTimers {
   const [announcement, setAnnouncement] = useState('');
 
   // The beeper, made on a tap (see `prime`).
-  const alarm = useRef<Alarm | undefined>(undefined);
+  const alarm = useRef<Alarm | null>(null);
   // Which finished timers have already rung, so each rings once.
   const alerted = useRef<ReadonlySet<string>>(new Set());
 
@@ -106,6 +106,7 @@ export function useStepTimers(recipeTitle: string): StepTimers {
       return;
     }
     alarm.current?.ring();
+    // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the browser navigator, which the Node rule wrongly reports as experimental; used on purpose
     vibrateOnFinish(navigator);
     setAnnouncement(finishedAnnouncement(fresh));
   }, [view]);
@@ -117,7 +118,7 @@ export function useStepTimers(recipeTitle: string): StepTimers {
   );
   useEffect(() => {
     if (finishedTitle === null) {
-      return;
+      return () => undefined;
     }
     const original = document.title;
     const page = { querySelector: () => document.querySelector('title') };
@@ -135,7 +136,7 @@ export function useStepTimers(recipeTitle: string): StepTimers {
   useEffect(
     () => () => {
       alarm.current?.close();
-      alarm.current = undefined;
+      alarm.current = null;
     },
     [],
   );
@@ -143,7 +144,7 @@ export function useStepTimers(recipeTitle: string): StepTimers {
   // Every press of a timer's control is a tap, which is when the browser lets a
   // page make its beeper; make it on the first one.
   const prime = useCallback(() => {
-    alarm.current ??= createAlarm(browserAudioContext());
+    alarm.current ??= createAlarm(browserAudioContext()) ?? null;
   }, []);
   const toggle = useCallback(
     (spec: TimerSpec) => {
@@ -185,7 +186,7 @@ export function useStepTimers(recipeTitle: string): StepTimers {
     dispatch({ type: 'clear' });
     setAnnouncement('');
     alarm.current?.close();
-    alarm.current = undefined;
+    alarm.current = null;
   }, []);
 
   return {

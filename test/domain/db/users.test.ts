@@ -61,7 +61,7 @@ describe('upsertUser', () => {
     const { db, calls } = fakeDb({ insert: [[saved]] });
     await upsertUser(db, { google_sub: 's', email: 'a@b.com', name: 'Ann' });
     const set = updateOf(calls);
-    expect(Object.keys(set).toSorted()).toEqual([
+    expect(Object.keys(set).toSorted((a, b) => a.localeCompare(b))).toEqual([
       'email',
       'name',
       'updated_at',

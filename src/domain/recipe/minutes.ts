@@ -17,7 +17,9 @@ export function minutesOf(value: string | undefined): number | undefined {
   if (!iso) {
     return undefined;
   }
+  // eslint-disable-next-line sonarjs/super-linear-regex -- iso is the short ISO duration toIsoDuration builds from two numbers, so its digit runs are short
   const h = /(\d+)H/.exec(iso);
+  // eslint-disable-next-line sonarjs/super-linear-regex -- iso is the short ISO duration toIsoDuration builds from two numbers, so its digit runs are short
   const m = /(\d+)M/.exec(iso);
   return (h ? Number(h[1]) * 60 : 0) + (m ? Number(m[1]) : 0);
 }

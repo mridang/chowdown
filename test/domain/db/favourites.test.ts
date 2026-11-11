@@ -16,7 +16,7 @@ describe('isFavourite', () => {
   });
 
   it('is false when it is not', async () => {
-    const { db } = fakeDb({ findFirst: { favourites: undefined } });
+    const { db } = fakeDb({ findFirst: {} });
     expect(await isFavourite(db, 1, 'a')).toBe(false);
   });
 });

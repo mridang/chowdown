@@ -45,17 +45,17 @@ async function withRecipe(source = SOURCE) {
 
 describe('GET /api/recipes/:id/notes', () => {
   it('answers 401 when nobody is signed in', async () => {
-    expect(
-      (await GET(fromApp('GET', '/api/recipes/f1/notes'), ctx())).status,
-    ).toBe(401);
+    const res = await GET(fromApp('GET', '/api/recipes/f1/notes'), ctx());
+    expect(res.status).toBe(401);
   });
 
   it('answers 404 for a recipe the person does not have', async () => {
     await signIn(world);
-    expect(
-      (await GET(fromApp('GET', '/api/recipes/none/notes'), ctx('none')))
-        .status,
-    ).toBe(404);
+    const res = await GET(
+      fromApp('GET', '/api/recipes/none/notes'),
+      ctx('none'),
+    );
+    expect(res.status).toBe(404);
   });
 
   it('lists the notes numbered from 1', async () => {
@@ -76,7 +76,8 @@ describe('POST /api/recipes/:id/notes', () => {
     POST(fromApp('POST', '/api/recipes/f1/notes', { json, headers }), ctx());
 
   it('answers 401 when nobody is signed in', async () => {
-    expect((await add({ text: 'x' })).status).toBe(401);
+    const res = await add({ text: 'x' });
+    expect(res.status).toBe(401);
   });
 
   it('answers 403 for a request from another site', async () => {
@@ -87,14 +88,14 @@ describe('POST /api/recipes/:id/notes', () => {
 
   it('answers 400 for a note without text', async () => {
     await withRecipe();
-    expect((await add({})).status).toBe(400);
+    const res = await add({});
+    expect(res.status).toBe(400);
   });
 
   it('answers 400 when both an ingredient and a step are given', async () => {
     await withRecipe();
-    expect(
-      (await add({ text: 'x', ingredient: 'onion', step: 1 })).status,
-    ).toBe(400);
+    const res = await add({ text: 'x', ingredient: 'onion', step: 1 });
+    expect(res.status).toBe(400);
   });
 
   it('appends the note to the Drive file and answers 201 with Location and ETag', async () => {
@@ -136,13 +137,13 @@ describe('POST /api/recipes/:id/notes', () => {
 
   it('answers 412 when If-Match is stale', async () => {
     await withRecipe();
-    expect((await add({ text: 'x' }, { 'if-match': '"stale"' })).status).toBe(
-      412,
-    );
+    const res = await add({ text: 'x' }, { 'if-match': '"stale"' });
+    expect(res.status).toBe(412);
   });
 
   it('answers 409 when Google Drive is not connected', async () => {
     await signIn(world, { drive: false });
-    expect((await add({ text: 'x' })).status).toBe(409);
+    const res = await add({ text: 'x' });
+    expect(res.status).toBe(409);
   });
 });

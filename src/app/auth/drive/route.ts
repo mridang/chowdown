@@ -43,7 +43,8 @@ export async function GET(request: NextRequest): Promise<Response> {
   const user = await getCurrentUser();
   if (!user) {
     await setErrorContext({ 'auth.step': 'sign_in_required' });
-    const here = `/auth/drive${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`;
+    const query = returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : '';
+    const here = `/auth/drive${query}`;
     return NextResponse.redirect(
       `${origin}/auth/login?returnTo=${encodeURIComponent(here)}`,
     );
@@ -53,11 +54,12 @@ export async function GET(request: NextRequest): Promise<Response> {
   if (isDriveConnected(user) && !force) {
     await setErrorContext({ 'auth.step': 'already_connected' });
     const response = NextResponse.redirect(`${origin}${returnTo ?? '/app'}`);
+    const session = await getSession();
     await setSessionCookie(response, user, {
       secret: env.SESSION_SECRET,
       secure,
       // Same lifetime as before: this only corrects the hint.
-      exp: (await getSession())?.exp,
+      exp: session?.exp,
     });
     return response;
   }

@@ -36,8 +36,10 @@ export function requireSessionSecret(secret: string | undefined): string {
 }
 
 /** The extra claims a caller adds: plain values only. */
+type ClaimValue = string | number | boolean;
+
 interface ExtraClaims {
-  readonly [claim: string]: string | number | boolean | undefined;
+  readonly [claim: string]: ClaimValue | undefined;
 }
 
 /** The claims carried in the session token. */
@@ -179,9 +181,10 @@ function parsePayload(body: string): SessionPayload | null {
 
 /** Whether a parsed value carries the claims every session token we issue has. */
 function isSessionPayload(value: unknown): value is SessionPayload {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
   return (
-    typeof value === 'object' &&
-    value !== null &&
     'exp' in value &&
     typeof value.exp === 'number' &&
     // Optional, but a wrong type means the token is not one of ours.

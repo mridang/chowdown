@@ -196,15 +196,12 @@ function nameOf(path: Path, root: string): string {
   if (path.length === 0) {
     return root;
   }
-  const text = path.reduce<string>(
-    (soFar, part) =>
-      typeof part === 'number'
-        ? `${soFar}[${part}]`
-        : (soFar
-          ? `${soFar}.${quotedKey(part)}`
-          : quotedKey(part)),
-    '',
-  );
+  const text = path.reduce<string>((soFar, part) => {
+    if (typeof part === 'number') {
+      return `${soFar}[${part}]`;
+    }
+    return soFar ? `${soFar}.${quotedKey(part)}` : quotedKey(part);
+  }, '');
   return `\`${text}\``;
 }
 
@@ -371,12 +368,7 @@ function problemsAt(
   root: string,
 ): readonly string[] {
   const subject = nameOf(path, root);
-  const types =
-    schema.type === undefined
-      ? []
-      : (Array.isArray(schema.type)
-        ? schema.type
-        : [schema.type]);
+  const types = schema.type === undefined ? [] : [schema.type].flat();
   if (types.length > 0 && !types.some((type) => hasType(type, value))) {
     return [
       `${subject} must be ${types.map(typeWords).join(' or ')}, not ${actualWords(value)}.`,
@@ -443,13 +435,16 @@ export function unsupportedKeywords(schema: unknown): readonly string[] {
       CHECKED_KEYWORDS.has(key) || ANNOTATION_KEYWORDS.has(key) ? [] : [key];
     // Only these three hold further schemas; the rest hold plain values.
     if (key === 'properties' && isJsonObject(sub)) {
-      return [...unknown, ...Object.values(sub).flatMap(unsupportedKeywords)];
+      return [
+        ...unknown,
+        ...Object.values(sub).flatMap((item) => unsupportedKeywords(item)),
+      ];
     }
     if (key === 'items') {
       return [...unknown, ...unsupportedKeywords(sub)];
     }
     if (key === 'anyOf' && Array.isArray(sub)) {
-      return [...unknown, ...sub.flatMap(unsupportedKeywords)];
+      return [...unknown, ...sub.flatMap((item) => unsupportedKeywords(item))];
     }
     return unknown;
   });

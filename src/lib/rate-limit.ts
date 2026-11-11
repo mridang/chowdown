@@ -53,9 +53,10 @@ RETURNING count, window_start`;
 function isHitRow(
   value: unknown,
 ): value is Readonly<{ count: number; window_start: number }> {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
   return (
-    typeof value === 'object' &&
-    value !== null &&
     'count' in value &&
     typeof value.count === 'number' &&
     'window_start' in value &&

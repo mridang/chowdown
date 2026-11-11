@@ -107,7 +107,7 @@ export function settle(
 ): readonly StepTimer[] {
   const due = (timer: StepTimer): boolean =>
     timer.phase.status === 'running' && timer.phase.endsAt <= now;
-  return timers.some(due)
+  return timers.some((timer) => due(timer))
     ? timers.map((timer) =>
         due(timer) ? withPhase(timer, { status: 'done' }) : timer,
       )
@@ -285,12 +285,15 @@ export function formatRemaining(ms: number): string {
     : `${minutes}:${two(seconds)}`;
 }
 
+/** The words a timer's main button can say for what pressing it does. */
+type TimerButtonAction = 'Start' | 'Pause' | 'Resume' | 'Restart';
+
 /** How a timer button or tray entry should look and what pressing it does. */
 export interface TimerView {
   /** The phase, for styling. `idle` is a timer that has not been started. */
   readonly state: 'idle' | TimerPhase['status'];
   /** What pressing the main button does: the words for assistive technology. */
-  readonly action: 'Start' | 'Pause' | 'Resume' | 'Restart';
+  readonly action: TimerButtonAction;
   /** The time to show: the recipe's label until started, then the countdown. */
   readonly time: string;
 }

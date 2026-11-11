@@ -100,7 +100,8 @@ export function createAccessTokenCache(
     const pending = mintEntry(mint);
     remember(key, pending);
     try {
-      return (await pending).token;
+      const minted = await pending;
+      return minted.token;
     } catch (error) {
       // Only forget our own failed attempt, not a newer one that replaced it.
       if (entries.get(key) === pending) {

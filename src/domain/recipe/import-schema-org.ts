@@ -141,12 +141,10 @@ function normaliseInstructions(value: Json): readonly string[] {
  * a line of its own.
  */
 function firstString(value: Json): string | undefined {
-  const text =
-    typeof value === 'string'
-      ? value
-      : (Array.isArray(value) && typeof value[0] === 'string'
-        ? value[0]
-        : undefined);
+  const head: Json = Array.isArray(value) ? value[0] : undefined;
+  const text = [value, head].find(
+    (item): item is string => typeof item === 'string',
+  );
   return text?.replaceAll(/\s+/g, ' ').trim();
 }
 
@@ -182,7 +180,10 @@ export function imageUrls(value: Json): readonly string[] {
 
 /** A value as a list: itself if it is one, nothing if it is missing, else just it. */
 function listOf(value: Json): readonly Json[] {
-  return Array.isArray(value) ? value : (value === undefined ? [] : [value]);
+  if (Array.isArray(value)) {
+    return value;
+  }
+  return value === undefined ? [] : [value];
 }
 
 /** Video URL from schema.org `video` (VideoObject contentUrl/embedUrl/url). */
@@ -318,7 +319,9 @@ export function extractOgImage(
   html: string,
   baseUrl?: string,
 ): string | undefined {
-  const raw = scanHtml(html).metas.map(ogImageOf).find(Boolean);
+  const raw = scanHtml(html)
+    .metas.map((meta) => ogImageOf(meta))
+    .find(Boolean);
   if (!raw) {
     return undefined;
   }
@@ -417,8 +420,12 @@ export function extractRecipeFromHtml(
   });
   // The first block to define an id wins, so the entries are reversed on the
   // way into the Map (a later entry overwrites an earlier one).
-  const byId = new Map(blocks.flatMap(collectById).toReversed());
-  const node = blocks.map(findRecipeNode).find((found) => found !== null);
+  const byId = new Map(
+    blocks.flatMap((block) => collectById(block)).toReversed(),
+  );
+  const node = blocks
+    .map((block) => findRecipeNode(block))
+    .find((found) => found !== null);
   if (!node) {
     return null;
   }

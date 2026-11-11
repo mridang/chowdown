@@ -117,6 +117,7 @@ async function syncFirstVisit(
   user: Readonly<User>,
 ): Promise<{ readonly connected: boolean; readonly unreachable: boolean }> {
   try {
+    // eslint-disable-next-line n/no-sync -- claimSync is an async database claim that returns a Promise; the name is fixed by the test fakes, so it is not a synchronous call
     if (!(await deps.claimSync(db, user.id))) {
       return { connected: true, unreachable: false };
     }
@@ -138,6 +139,7 @@ async function syncIfDue(
   db: Database,
   user: Readonly<User>,
 ): Promise<void> {
+  // eslint-disable-next-line n/no-sync -- claimSync is an async database claim that returns a Promise; the name is fixed by the test fakes, so it is not a synchronous call
   if (await deps.claimSync(db, user.id)) {
     await deps.sync(user);
   }

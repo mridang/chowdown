@@ -1,11 +1,24 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 
 import type { Database } from '@/domain/db/client';
-import * as schema from '@/domain/db/schema';
+import {
+  users,
+  recipes,
+  recipeImages,
+  embeddings,
+  favourites,
+  oauthClients,
+  oauthAssertions,
+  oauthGrants,
+  oauthCodes,
+  oauthTokens,
+  recipeImports,
+} from '@/domain/db/schema';
 
 /** The method Drizzle asks the driver to run a statement with. */
 type Method = 'run' | 'all' | 'values' | 'get';
@@ -25,12 +38,27 @@ export interface SqliteDatabase {
  * one transaction that rolls back if any statement fails, as D1's does. That is
  * enough to test repositories against the real SQL rather than a stub.
  */
+const schema = {
+  users,
+  recipes,
+  recipeImages,
+  embeddings,
+  favourites,
+  oauthClients,
+  oauthAssertions,
+  oauthGrants,
+  oauthCodes,
+  oauthTokens,
+  recipeImports,
+};
+
 export function sqliteDatabase(
   ...migrations: readonly string[]
 ): SqliteDatabase {
   const raw = new DatabaseSync(':memory:');
   migrations.forEach((file) =>
     raw.exec(
+      // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
       readFileSync(path.join(process.cwd(), 'migrations', file), 'utf8'),
     ),
   );

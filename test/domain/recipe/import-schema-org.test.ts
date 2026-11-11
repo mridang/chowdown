@@ -92,6 +92,7 @@ describe('schemaOrgToCook', () => {
         recipeCuisine: 'Indian',
         recipeCategory: 'Main course',
         cookingMethod: 'Simmering',
+        // eslint-disable-next-line unicorn/prefer-https -- test fixture: the vocabulary URL as the page writes it
         suitableForDiet: ['http://schema.org/GlutenFreeDiet', 'HalalDiet'],
         prepTime: 'PT15M',
         datePublished: '2024-06-01',

@@ -76,7 +76,7 @@ describe('list_recipes', () => {
           call('list_recipes', { offset }, fake),
         ),
       );
-      const all = pages.flatMap(idsOf);
+      const all = pages.flatMap((page) => idsOf(page));
       expect(all).toHaveLength(250);
       expect(new Set(all).size).toBe(250);
       expect(said(pages[4]!)).not.toContain('Call again');

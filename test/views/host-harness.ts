@@ -25,9 +25,13 @@ export function recordingRoot(): DocumentRoot & {
     properties,
     attributes,
     style: {
-      setProperty: (name, value) => void properties.set(name, value),
+      setProperty: (name, value) => {
+        properties.set(name, value);
+      },
     },
-    setAttribute: (name, value) => void attributes.set(name, value),
+    setAttribute: (name, value) => {
+      attributes.set(name, value);
+    },
     toggleAttribute: (name, force) => {
       if (force === true) {
         attributes.set(name, '');
@@ -64,10 +68,11 @@ export async function joinedHost(
   const listeners = new Set<
     (event: { data: unknown; source: unknown }) => void
   >();
-  const deliver = (data: unknown, source: unknown) =>
-    void setTimeout(() => {
+  const deliver = (data: unknown, source: unknown) => {
+    setTimeout(() => {
       [...listeners].forEach((listener) => listener({ data, source }));
     }, 0);
+  };
   const viewWindow: { postMessage: (data: unknown) => void } = {
     postMessage: (data) => deliver(data, hostWindow),
   };

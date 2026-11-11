@@ -42,9 +42,7 @@ describe('prepareImport', () => {
       kind: 'prepared',
       prepared: {
         id: 'imp1',
-        drafts: [
-          { title: 'Dal', cook: 'x', source: undefined, error: undefined },
-        ],
+        drafts: [{ title: 'Dal', cook: 'x' }],
       },
     });
   });

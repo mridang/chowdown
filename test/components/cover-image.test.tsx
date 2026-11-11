@@ -125,3 +125,5 @@ describe('CoverImage sizes', () => {
     expect(html(<CoverImage {...props} />)).toContain('sizes="50vw"');
   });
 });
+
+/* eslint-enable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
 import { OPTIONS, POST } from '@/app/oauth/revoke/route';
@@ -23,9 +24,11 @@ beforeEach(() => {
 
 afterEach(() => restore());
 
+const DEFAULT_CALLER = { 'cf-connecting-ip': '203.0.113.7' };
+
 const revoke = (
   body: URLSearchParams,
-  headers: Record<string, string> = { 'cf-connecting-ip': '203.0.113.7' },
+  headers: Record<string, string> = DEFAULT_CALLER,
 ) =>
   POST(
     new Request('https://app.test/oauth/revoke', {
@@ -77,12 +80,14 @@ describe('POST /oauth/revoke limits and body rules', () => {
         'cf-connecting-ip': ip,
       });
     for (let i = 0; i < 60; i += 1) {
-      expect((await hit('203.0.113.7')).status).toBe(200);
+      const ok = await hit('203.0.113.7');
+      expect(ok.status).toBe(200);
     }
     const limited = await hit('203.0.113.7');
     expect(limited.status).toBe(429);
     expect(limited.headers.get('retry-after')).toMatch(/^\d+$/);
-    expect((await hit('198.51.100.9')).status).toBe(200);
+    const other = await hit('198.51.100.9');
+    expect(other.status).toBe(200);
   });
 
   it('answers 400 for a form over 16 KiB, a body that is not a form, and a body that is not text', async () => {
@@ -101,6 +106,7 @@ describe('POST /oauth/revoke limits and body rules', () => {
     const binary = await POST(
       new Request('https://app.test/oauth/revoke', {
         method: 'POST',
+        // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
         body: new Uint8Array([0xff, 0xfe]),
       }),
     );

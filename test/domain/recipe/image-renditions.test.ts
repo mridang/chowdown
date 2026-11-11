@@ -20,7 +20,7 @@ describe('bestRenditions', () => {
   });
 
   it('keeps the same choice whatever order the copies come in', () => {
-    expect(bestRenditions([...WORDPRESS_COPIES].reverse())).toEqual([
+    expect(bestRenditions([...WORDPRESS_COPIES].toReversed())).toEqual([
       `${UPLOADS}/pad-gaprao-new-sq-3.jpg`,
     ]);
   });

@@ -32,6 +32,7 @@ describe('resource and issuer', () => {
   it('refuses a resource with a query or fragment, another scheme or port, or no URL at all', () => {
     expect(isOurResource(`${ORIGIN}/mcp?x=1`, ORIGIN)).toBe(false);
     expect(isOurResource(`${ORIGIN}/mcp#frag`, ORIGIN)).toBe(false);
+    // eslint-disable-next-line unicorn/prefer-https -- test fixture
     expect(isOurResource('http://site.example/mcp', ORIGIN)).toBe(false);
     expect(isOurResource('https://site.example:8443/mcp', ORIGIN)).toBe(false);
     expect(isOurResource('not a url', ORIGIN)).toBe(false);

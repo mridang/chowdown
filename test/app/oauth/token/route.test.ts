@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import type { DatabaseSync } from 'node:sqlite';
 
 import { OPTIONS, POST } from '@/app/oauth/token/route';
@@ -48,10 +49,12 @@ async function newCode(): Promise<string> {
   );
 }
 
+const DEFAULT_CALLER = { 'cf-connecting-ip': '203.0.113.7' };
+
 /** A token request with the given form fields. */
 const token = (
   fields: Record<string, string>,
-  headers: Record<string, string> = { 'cf-connecting-ip': '203.0.113.7' },
+  headers: Record<string, string> = DEFAULT_CALLER,
 ) =>
   POST(
     new Request(`${ORIGIN}/oauth/token`, {
@@ -181,7 +184,9 @@ describe('POST /oauth/token', () => {
     });
     expect(res.status).toBe(200);
   });
+});
 
+describe('POST /oauth/token, bodies and rate limits', () => {
   it('answers 400 invalid_request for a form over 16 KiB, unread', async () => {
     const res = await token({ client_id: 'c', padding: 'x'.repeat(20_000) });
     expect(res.status).toBe(400);
@@ -214,6 +219,7 @@ describe('POST /oauth/token', () => {
     const res = await POST(
       new Request(`${ORIGIN}/oauth/token`, {
         method: 'POST',
+        // eslint-disable-next-line unicorn/number-literal-case -- conflicts with Prettier formatting
         body: new Uint8Array([0xff, 0xfe]),
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
       }),
@@ -296,7 +302,8 @@ describe('POST /oauth/token', () => {
         { 'cf-connecting-ip': ip },
       );
     for (let i = 0; i < 120; i += 1) {
-      expect((await hit('203.0.113.7')).status).toBe(400);
+      const refusedAgain = await hit('203.0.113.7');
+      expect(refusedAgain.status).toBe(400);
     }
     const limited = await hit('203.0.113.7');
     expect(limited.status).toBe(429);
@@ -304,7 +311,8 @@ describe('POST /oauth/token', () => {
     expect(await limited.json()).toMatchObject({
       error: 'temporarily_unavailable',
     });
-    expect((await hit('198.51.100.9')).status).toBe(400);
+    const other = await hit('198.51.100.9');
+    expect(other.status).toBe(400);
   });
 });
 

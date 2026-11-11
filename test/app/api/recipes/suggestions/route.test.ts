@@ -84,7 +84,8 @@ const ask = (query: string) =>
 describe('GET /api/recipes/suggestions', () => {
   it('answers 401 when nobody is signed in, touching nothing', async () => {
     session.user = null;
-    expect((await ask('q=soup')).status).toBe(401);
+    const res = await ask('q=soup');
+    expect(res.status).toBe(401);
     expect(getUserAccessToken).not.toHaveBeenCalled();
     expect(embedText).not.toHaveBeenCalled();
   });
@@ -93,7 +94,8 @@ describe('GET /api/recipes/suggestions', () => {
     ['q is required', ''],
     ['q is blank', 'q=%20%20'],
   ])('answers 400 when %s', async (_name, query) => {
-    expect((await ask(query)).status).toBe(400);
+    const res = await ask(query);
+    expect(res.status).toBe(400);
     expect(embedText).not.toHaveBeenCalled();
   });
 
@@ -108,13 +110,15 @@ describe('GET /api/recipes/suggestions', () => {
   });
 
   it('accepts a wish of exactly 300 characters', async () => {
-    expect((await ask(`q=${'x'.repeat(300)}`)).status).toBe(200);
+    const res = await ask(`q=${'x'.repeat(300)}`);
+    expect(res.status).toBe(200);
   });
 
   it.each(['limit=0', 'limit=101', 'limit=x'])(
     'answers 400 to %s',
     async (limit) => {
-      expect((await ask(`q=soup&${limit}`)).status).toBe(400);
+      const res = await ask(`q=soup&${limit}`);
+      expect(res.status).toBe(400);
       expect(embedText).not.toHaveBeenCalled();
     },
   );

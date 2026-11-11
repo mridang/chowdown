@@ -117,7 +117,7 @@ export function finishedMessage(timer: Pick<StepTimer, 'step'>): string {
 export function finishedAnnouncement(
   timers: readonly Pick<StepTimer, 'step'>[],
 ): string {
-  return timers.map(finishedMessage).join('. ');
+  return timers.map((timer) => finishedMessage(timer)).join('. ');
 }
 
 /**

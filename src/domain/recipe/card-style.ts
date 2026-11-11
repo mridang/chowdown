@@ -21,6 +21,7 @@ export function toneFor(text: string): Tone {
   // A small rolling hash over the characters; kept below 997 so it never
   // outgrows a safe integer however long the text is.
   const hash = [...text].reduce(
+    // eslint-disable-next-line unicorn/prefer-code-point -- codePointAt would change the hash for names with emoji and move those recipes to another colour
     (sum, char) => (sum * 31 + char.charCodeAt(0)) % 997,
     0,
   );
@@ -33,14 +34,16 @@ export function toneFor(text: string): Tone {
  * before the first separator.
  */
 export function cleanTitle(title: string): string {
+  // eslint-disable-next-line sonarjs/super-linear-regex -- the spacing rule has to stay exact (a title keeps spaces that are not around a separator), and page titles are short
   return (title.split(/\s+[|–—]\s+/, 1)[0] ?? title).trim() || title;
 }
+
+/** The difficulties a tag can name, in order. */
+const LEVELS: readonly DifficultyLevel[] = ['Easy', 'Medium', 'Hard'];
 
 /** The difficulty a tag value names, or nothing if it isn't one of the three. */
 export function levelOf(
   value: string | undefined,
 ): DifficultyLevel | undefined {
-  return value === 'Easy' || value === 'Medium' || value === 'Hard'
-    ? value
-    : undefined;
+  return LEVELS.find((level) => level === value);
 }

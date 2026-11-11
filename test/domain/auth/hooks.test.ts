@@ -13,9 +13,9 @@ describe('afterSignIn', () => {
 
 describe('OTHER_FLOWS', () => {
   it('has a flow for every extra ask the app can start', () => {
-    expect(Object.keys(OTHER_FLOWS).toSorted()).toEqual(
-      [...EXTRA_PURPOSES].toSorted(),
-    );
+    expect(
+      Object.keys(OTHER_FLOWS).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual([...EXTRA_PURPOSES].toSorted((a, b) => a.localeCompare(b)));
   });
 
   it('finishes a Drive round trip by connecting Drive', () => {

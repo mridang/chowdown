@@ -50,7 +50,7 @@ function constructing(context: object): never {
   } as never;
 }
 
-const settled = () => new Promise((done) => setTimeout(done, 0));
+const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('createAlarm', () => {
   it('gives no alarm where the browser has no audio', () => {

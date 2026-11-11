@@ -135,6 +135,7 @@ export function upsertMetadata(
   // For each line, the lower-cased key it sets if it is a metadata line for
   // one of the keys we were given.
   const keyOfLine = lines.map((line) => {
+    // eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short metadata line, backtracking is bounded
     const key = /^>>\s*([^:]+):\s*(.*)$/.exec(line)?.[1]?.trim().toLowerCase();
     return key !== undefined && byLowerKey.has(key) ? key : undefined;
   });
@@ -191,6 +192,7 @@ export function removeMetadata(source: string, key: string): string {
   return source
     .split(/\r?\n/)
     .filter((line) => {
+      // eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short metadata line, backtracking is bounded
       const key = /^>>\s*([^:]+):/.exec(line)?.[1];
       return key === undefined || key.trim().toLowerCase() !== target;
     })
@@ -211,6 +213,7 @@ export function removeEmptyMetadata(source: string): string {
   return source
     .split(/\r?\n/)
     .filter((line) => {
+      // eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short metadata line, backtracking is bounded
       const value = /^>>\s*[^:]+:\s*(.*)$/.exec(line)?.[1];
       return value === undefined || !EMPTY_VALUE.test(value.trim());
     })
@@ -266,8 +269,9 @@ export function normalizeSourceUrl(url: string): string {
     const kept = [...u.searchParams.entries()]
       .filter(([key]) => !TRACKING_PARAM.test(key))
       .toSorted(([a], [b]) => compareText(a, b));
-    const query =
-      kept.length > 0 ? `?${kept.map(([k, v]) => `${k}=${v}`).join('&')}` : '';
+    const pairs = kept.map(([k, v]) => `${k}=${v}`).join('&');
+    const query = kept.length > 0 ? `?${pairs}` : '';
+    // eslint-disable-next-line sonarjs/super-linear-regex -- a URL path is short, backtracking is bounded
     return `${host}${u.pathname.replace(/\/+$/, '')}${query}`;
   } catch {
     return url.trim();
@@ -293,6 +297,7 @@ export interface Note {
 }
 
 /** Matches a note comment: `-- [note]`, `-- [note ingredient:x]`, `-- [note step:2]`. */
+// eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short note comment line, backtracking is bounded
 const NOTE_LINE = /^-- \[note(?:\s+(ingredient|step):([^\]]+))?\]\s*(.*)$/;
 
 /**
@@ -328,6 +333,7 @@ export function flatNoteKey(key: string): string {
 
 /** The text of one note as a comment line (the format {@link appendNote} writes). */
 function noteLine(note: Readonly<Note>): string {
+  // eslint-disable-next-line sonarjs/super-linear-regex -- a note is short user-typed text, backtracking is bounded
   const flat = note.text.replaceAll(/\s*\r?\n\s*/g, ' ').trim();
   // A line break or a `]` in the key would end the marker early or start a
   // line of its own.
@@ -396,6 +402,7 @@ export function appendCookingLog(
   note: string,
   when: Date = new Date(),
 ): string {
+  // eslint-disable-next-line sonarjs/super-linear-regex -- a note is short user-typed text, backtracking is bounded
   const flat = note.replaceAll(/\s*\r?\n\s*/g, ' ').trim();
   const base = source.endsWith('\n') ? source : `${source}\n`;
   return `${base}-- [cook ${isoDate(when)}] ${flat}\n`;

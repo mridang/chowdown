@@ -173,6 +173,7 @@ describe('when the model cannot convert', () => {
   /** Why converting `content` with `env` failed, in the words import shows. */
   async function failure(env: CloudflareEnv): Promise<string> {
     const error = await convertToCooklang('Boil an egg.', env).catch(
+      // eslint-disable-next-line sonarjs/variable-name -- unicorn/catch-error-name requires the error_ name, which this rule rejects
       (error_: unknown) => error_,
     );
     expect(error).toBeInstanceOf(ConversionError);

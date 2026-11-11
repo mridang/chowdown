@@ -51,6 +51,7 @@ export function FavouriteButton({
 }>): ReactElement {
   const { on, busy, toggle } = useFavourite(recipeId, initial);
   const label = on ? 'Remove from favourites' : 'Add to favourites';
+  const labelledText = on ? 'Favourited' : 'Favourite';
 
   return (
     <button
@@ -71,7 +72,7 @@ export function FavouriteButton({
       )}
     >
       <HeartIcon size="menu" filled={on} />
-      {variant === 'labelled' ? (on ? 'Favourited' : 'Favourite') : null}
+      {variant === 'labelled' ? labelledText : null}
     </button>
   );
 }

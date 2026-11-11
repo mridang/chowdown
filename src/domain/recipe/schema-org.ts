@@ -64,7 +64,9 @@ function metaLookup(recipe: Readonly<ParsedRecipe>): MetaLookup {
  * string carries no recognisable hours/minutes.
  */
 export function toIsoDuration(value: string): string | undefined {
+  // eslint-disable-next-line sonarjs/super-linear-regex -- durations are short user-typed strings, backtracking is bounded
   const hours = /(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b/i.exec(value);
+  // eslint-disable-next-line sonarjs/super-linear-regex -- durations are short user-typed strings, backtracking is bounded
   const mins = /(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)\b/i.exec(value);
   // A bare number with no unit is read as minutes ("prep: 20").
   const bare = hours || mins ? null : /^\s*(\d+(?:\.\d+)?)\s*$/.exec(value);
@@ -81,7 +83,9 @@ export function toIsoDuration(value: string): string | undefined {
   if (h === 0 && m === 0) {
     return undefined;
   }
-  return `PT${h > 0 ? `${h}H` : ''}${m > 0 ? `${Math.round(m)}M` : ''}`;
+  const hoursPart = h > 0 ? `${h}H` : '';
+  const minutesPart = m > 0 ? `${Math.round(m)}M` : '';
+  return `PT${hoursPart}${minutesPart}`;
 }
 
 /** Split a comma/semicolon-separated metadata value into trimmed parts. */

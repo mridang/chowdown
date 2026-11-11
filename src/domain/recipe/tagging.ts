@@ -80,9 +80,8 @@ export async function suggestTags(
   // Workers AI usually returns `response` as a JSON string, but some models
   // hand back an already-parsed object — accept either.
   const raw = isObject(result) ? result['response'] : undefined;
-  const proposed = isObject(raw)
-    ? raw
-    : extractJson(typeof raw === 'string' ? raw : '');
+  const text = typeof raw === 'string' ? raw : '';
+  const proposed = isObject(raw) ? raw : extractJson(text);
   if (!proposed) {
     return [];
   }
@@ -119,7 +118,8 @@ export async function tagCookSourceBestEffort(
   env: CloudflareEnv,
 ): Promise<string> {
   try {
-    return (await tagCookSource(source, filename, env)).source;
+    const tagged = await tagCookSource(source, filename, env);
+    return tagged.source;
   } catch {
     return source;
   }

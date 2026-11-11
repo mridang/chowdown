@@ -141,7 +141,8 @@ function cursorAt(offset: number): string {
  * @throws {RpcError} `-32602` for a cursor this server did not issue.
  */
 function offsetOfCursor(cursor: unknown): number {
-  if (cursor === undefined || cursor === null || cursor === '') {
+  const absent: readonly unknown[] = [undefined, null, ''];
+  if (absent.includes(cursor)) {
     return 0;
   }
   const text = typeof cursor === 'string' ? decodedCursor(cursor) : undefined;
@@ -195,7 +196,7 @@ async function resourceListResult(
   );
   const page = found.slice(0, RESOURCE_PAGE_SIZE);
   return {
-    resources: [...views, ...page.map(recipeResource)],
+    resources: [...views, ...page.map((recipe) => recipeResource(recipe))],
     ...(found.length > page.length
       ? { nextCursor: cursorAt(offset + page.length) }
       : {}),

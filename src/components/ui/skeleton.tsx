@@ -19,14 +19,14 @@ export function Skeleton({
   className?: string;
 }>): ReactElement {
   const colour = tone === 'bar' ? 'bg-ink/10' : 'bg-ink/5';
-  const corners =
-    shape === 'square'
-      ? ''
-      : shape === 'circle'
-        ? 'rounded-full'
-        : tone === 'bar'
-          ? 'rounded-control'
-          : 'rounded-card';
+  let corners: string;
+  if (shape === 'square') {
+    corners = '';
+  } else if (shape === 'circle') {
+    corners = 'rounded-full';
+  } else {
+    corners = tone === 'bar' ? 'rounded-control' : 'rounded-card';
+  }
   return <div className={cn(colour, corners, className)} />;
 }
 

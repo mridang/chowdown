@@ -244,3 +244,5 @@ describe('DialogContent markup', () => {
     expect(dialog(false)).toContain('closedby="none"');
   });
 });
+
+/* eslint-enable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */

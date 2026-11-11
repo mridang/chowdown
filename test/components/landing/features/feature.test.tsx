@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { Feature } from '@/components/landing/features/feature';
 import { html } from '../../render';
 
-const feature = (flip?: boolean) =>
+const feature = (flip = false) =>
   html(
     <Feature eyebrow="Eyebrow" title="Title" body="Body text" flip={flip}>
       <span>picture</span>

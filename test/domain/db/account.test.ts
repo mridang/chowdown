@@ -69,12 +69,14 @@ function countFor(
   table: string,
   userId: number,
 ): number {
-  const sql =
-    table === 'oauth_tokens'
-      ? 'SELECT count(*) AS n FROM oauth_tokens WHERE grant_id = ?'
-      : table === 'users'
-        ? 'SELECT count(*) AS n FROM users WHERE id = ?'
-        : `SELECT count(*) AS n FROM ${table} WHERE user_id = ?`;
+  let sql: string;
+  if (table === 'oauth_tokens') {
+    sql = 'SELECT count(*) AS n FROM oauth_tokens WHERE grant_id = ?';
+  } else if (table === 'users') {
+    sql = 'SELECT count(*) AS n FROM users WHERE id = ?';
+  } else {
+    sql = `SELECT count(*) AS n FROM ${table} WHERE user_id = ?`;
+  }
   const arg = table === 'oauth_tokens' ? `grant-${userId}` : userId;
   return Number(made.raw.prepare(sql).get(arg)?.['n']);
 }

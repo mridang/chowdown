@@ -140,9 +140,13 @@ const importsCollection = new ApiController<UidContext>({
         after,
         limit,
       );
-      return page(slice.items.map(importSummary), slice.next, {
-        'Cache-Control': 'private, no-cache',
-      });
+      return page(
+        slice.items.map((item) => importSummary(item)),
+        slice.next,
+        {
+          'Cache-Control': 'private, no-cache',
+        },
+      );
     },
     encode: (result) => result,
   });

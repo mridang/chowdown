@@ -316,12 +316,13 @@ describe('serveImage', () => {
         },
       };
       const deps = { access, fetcher, background: () => undefined };
-      expect((await serveImage(ask(PHOTO, '&sig=bad'), deps)).status).toBe(403);
-      expect((await serveImage(ask(), deps)).status).toBe(403);
+      const bad = await serveImage(ask(PHOTO, '&sig=bad'), deps);
+      expect(bad.status).toBe(403);
+      const unsigned = await serveImage(ask(), deps);
+      expect(unsigned.status).toBe(403);
       expect(fetcher).not.toHaveBeenCalled();
-      expect((await serveImage(ask(PHOTO, '&sig=good'), deps)).status).toBe(
-        200,
-      );
+      const good = await serveImage(ask(PHOTO, '&sig=good'), deps);
+      expect(good.status).toBe(200);
       expect(checked).toEqual(['bad', null, 'good']);
     });
 
@@ -339,12 +340,14 @@ describe('serveImage', () => {
         '',
         `https://${HOST}/${'a'.repeat(3000)}`,
       ]) {
-        expect((await serveImage(ask(url), deps)).status).toBe(400);
+        const res = await serveImage(ask(url), deps);
+        expect(res.status).toBe(400);
       }
-      expect(
-        (await serveImage(new Request('https://app.test/img?w=640'), deps))
-          .status,
-      ).toBe(400);
+      const plain = await serveImage(
+        new Request('https://app.test/img?w=640'),
+        deps,
+      );
+      expect(plain.status).toBe(400);
       expect(mayFetch).not.toHaveBeenCalled();
       expect(signatureValid).not.toHaveBeenCalled();
     });

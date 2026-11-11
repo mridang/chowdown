@@ -37,9 +37,10 @@ const TRAILING: ReadonlySet<string> = new Set('.,;:!?)]}>\'"');
  * position in it (quadratic in the length of the run).
  */
 function trimTrailing(raw: string): string {
-  // Code units are enough: every character that can trail a link is ASCII.
-  const keep = raw.split('').findLastIndex((char) => !TRAILING.has(char));
-  return raw.slice(0, keep + 1);
+  // Code points, so a surrogate pair is never split; every trailing character is ASCII.
+  const chars = [...raw];
+  const keep = chars.findLastIndex((char) => !TRAILING.has(char));
+  return chars.slice(0, keep + 1).join('');
 }
 
 /**
@@ -76,10 +77,13 @@ const MIN_BLOCK = 20;
  * behind after URLs were stripped).
  */
 export function splitTextBlocks(input: string): readonly string[] {
-  return input
-    .split(/\n\s*\n\s*\n+|\n\s*-{3,}\s*\n|\n\s*\n/)
-    .map((b) => b.trim())
-    .filter((b) => b.length >= MIN_BLOCK);
+  return (
+    input
+      // eslint-disable-next-line sonarjs/super-linear-regex -- the \s* runs must cross blank lines exactly as pasted text does; a stricter class would split blocks differently
+      .split(/\n\s*\n\s*\n+|\n\s*-{3,}\s*\n|\n\s*\n/)
+      .map((b) => b.trim())
+      .filter((b) => b.length >= MIN_BLOCK)
+  );
 }
 
 /**

@@ -47,8 +47,12 @@ async function session(
   const joined = await joinedHost(
     (app) =>
       attachHostListeners(app, {
-        dispatch: (action) => void actions.push(action),
-        dispatchLayout: (action) => void layouts.push(action),
+        dispatch: (action) => {
+          actions.push(action);
+        },
+        dispatchLayout: (action) => {
+          layouts.push(action);
+        },
         root,
         guard: isData,
       }),
@@ -180,10 +184,18 @@ describe('applyDocumentContext and applyHostContext', () => {
   it('does nothing without a context, and only reports modes it knows', () => {
     const layouts: LayoutAction[] = [];
     const root = recordingRoot();
-    applyHostContext(undefined, (action) => void layouts.push(action), root);
+    applyHostContext(
+      undefined,
+      (action) => {
+        layouts.push(action);
+      },
+      root,
+    );
     applyHostContext(
       Object.fromEntries([['displayMode', 'window']]),
-      (action) => void layouts.push(action),
+      (action) => {
+        layouts.push(action);
+      },
       root,
     );
     expect(layouts).toEqual([]);
@@ -262,7 +274,9 @@ describe('sendFollowUpMessage', () => {
       };
     });
     const openai: OpenAiApi = {
-      sendFollowUpMessage: ({ prompt }) => void prompts.push(prompt),
+      sendFollowUpMessage: ({ prompt }) => {
+        prompts.push(prompt);
+      },
     };
     expect(await sendFollowUpMessage(app, openai, 'hello')).toBe(true);
     expect(prompts).toEqual(['hello']);

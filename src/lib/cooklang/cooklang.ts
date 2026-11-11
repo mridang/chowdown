@@ -66,10 +66,7 @@ export interface ParsedRecipe {
 export function formatQuantity(item: Readonly<RawQuantity>): string {
   const { quantity, units } = item;
   const hasQuantity =
-    quantity !== undefined &&
-    quantity !== null &&
-    quantity !== '' &&
-    quantity !== 'some';
+    quantity != null && quantity !== '' && quantity !== 'some';
   const q = hasQuantity ? String(quantity) : '';
   if (q && units) {
     return `${q} ${units}`;
@@ -152,6 +149,7 @@ function repaired(item: Readonly<Shown>): Shown {
  * would take for something else (`~` starts a timer, `#` cookware), which is
  * exactly why these lines are read here rather than by the parser.
  */
+// eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short ingredient line, backtracking is bounded
 const INGREDIENT_LINE = /^@([^{}]+?)\s*(?:\{([^{}]*)\}(?:\([^()]*\))?)?\s*$/;
 
 /** What an ingredient line's `{amount}` says: `200%g` is 200 g, `to taste` is itself, empty is nothing. */
@@ -241,7 +239,7 @@ export function parseRecipe(source: string, filename: string): ParsedRecipe {
     cookware: (raw.cookwares ?? []).map((c) => c.name ?? ''),
     steps: (raw.steps ?? []).map((step) =>
       step
-        .map(toToken)
+        .map((item) => toToken(item))
         .map((token) =>
           token.kind === 'ingredient'
             ? { ...token, ...repaired(token) }

@@ -71,7 +71,8 @@ export default async function AppPage({
     toCardRecipe(row, hearted.has(row.drive_file_id)),
   );
 
-  const view = parseListView((await cookies()).get(VIEW_COOKIE)?.value);
+  const cookieStore = await cookies();
+  const view = parseListView(cookieStore.get(VIEW_COOKIE)?.value);
   const query = parseQuery(params);
   const facets = buildFacets(recipes, query);
   const found = sortRecipes(
@@ -82,6 +83,12 @@ export default async function AppPage({
   const chips = activeFilters(query);
   // Counted from the recipes that still exist, in case a favourite outlived its file.
   const serverFavourites = recipes.filter((r) => r.favourite).map((r) => r.id);
+
+  const emptyNotice = drive.connected ? (
+    <EmptyCollection />
+  ) : (
+    <DriveConnectPanel reconnect={drive.reconnect} attempt={attempt} />
+  );
 
   const favouritesLink = (
     <FavouritesLink
@@ -123,13 +130,7 @@ export default async function AppPage({
 
       {recipes.length === 0 ? (
         <Container className="py-10">
-          {drive.unreachable ? (
-            <DriveUnreachable />
-          ) : (drive.connected ? (
-            <EmptyCollection />
-          ) : (
-            <DriveConnectPanel reconnect={drive.reconnect} attempt={attempt} />
-          ))}
+          {drive.unreachable ? <DriveUnreachable /> : emptyNotice}
         </Container>
       ) : (
         <>
@@ -188,33 +189,33 @@ export default async function AppPage({
                 </div>
               </div>
 
-              {shown.length > 0 ? (
-                view === 'list' ? (
-                  <RecipeRows>
-                    {shown.map((recipe, i) => (
-                      <RecipeRow
-                        key={recipe.id}
-                        recipe={recipe}
-                        live
-                        headingLevel="h2"
-                        priority={i < ABOVE_THE_FOLD}
-                      />
-                    ))}
-                  </RecipeRows>
-                ) : (
-                  <RecipeGrid>
-                    {shown.map((recipe, i) => (
-                      <RecipeCard
-                        key={recipe.id}
-                        recipe={recipe}
-                        live
-                        headingLevel="h2"
-                        priority={i < ABOVE_THE_FOLD}
-                      />
-                    ))}
-                  </RecipeGrid>
-                )
-              ) : (
+              {shown.length > 0 && view === 'list' ? (
+                <RecipeRows>
+                  {shown.map((recipe, i) => (
+                    <RecipeRow
+                      key={recipe.id}
+                      recipe={recipe}
+                      live
+                      headingLevel="h2"
+                      priority={i < ABOVE_THE_FOLD}
+                    />
+                  ))}
+                </RecipeRows>
+              ) : null}
+              {shown.length > 0 && view !== 'list' ? (
+                <RecipeGrid>
+                  {shown.map((recipe, i) => (
+                    <RecipeCard
+                      key={recipe.id}
+                      recipe={recipe}
+                      live
+                      headingLevel="h2"
+                      priority={i < ABOVE_THE_FOLD}
+                    />
+                  ))}
+                </RecipeGrid>
+              ) : null}
+              {shown.length === 0 ? (
                 <EmptyState
                   title="Nothing matches those filters"
                   actions={
@@ -227,7 +228,7 @@ export default async function AppPage({
                     Try removing one, or start over.
                   </p>
                 </EmptyState>
-              )}
+              ) : null}
 
               {found.length > shown.length ? (
                 <div className="mt-10 flex justify-center">

@@ -7,7 +7,14 @@ describe('Fact', () => {
   it('is a term and its description, for a definition list', () => {
     const out = html(
       <dl>
-        <Fact icon={<svg />} label="Serves">
+        <Fact
+          icon={
+            <svg>
+              <title>Serves icon</title>
+            </svg>
+          }
+          label="Serves"
+        >
           4
         </Fact>
       </dl>,
@@ -21,7 +28,14 @@ describe('Fact', () => {
   it('keeps the icon inside the term and hidden from assistive technology', () => {
     const out = html(
       <dl>
-        <Fact icon={<svg />} label="Serves">
+        <Fact
+          icon={
+            <svg>
+              <title>Serves icon</title>
+            </svg>
+          }
+          label="Serves"
+        >
           4
         </Fact>
       </dl>,

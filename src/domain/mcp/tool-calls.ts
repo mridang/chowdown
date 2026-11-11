@@ -177,7 +177,7 @@ function notFound(files: readonly DriveFile[], asked: string): ToolResult {
   return errorResult(
     `No recipe found matching "${asked.trim()}". ` +
       (near.length > 0
-        ? `Recipes with similar names: ${near.map(candidate).join('; ')}.`
+        ? `Recipes with similar names: ${near.map((file) => candidate(file)).join('; ')}.`
         : 'list_recipes shows every saved recipe and search_recipes finds one by name.'),
   );
 }
@@ -190,8 +190,9 @@ function ambiguous(
 ): ToolResult {
   const shown = matches.slice(0, SUGGESTION_COUNT);
   const more = matches.length - shown.length;
+  const andMore = more > 0 ? `; and ${more} more` : '';
   return errorResult(
-    `Several recipes match "${asked.trim()}", so nothing was changed: ${shown.map(candidate).join('; ')}${more > 0 ? `; and ${more} more` : ''}. ` +
+    `Several recipes match "${asked.trim()}", so nothing was changed: ${shown.map((file) => candidate(file)).join('; ')}${andMore}. ` +
       `Call again with the id of the one you mean as \`${key}\`.`,
   );
 }
@@ -291,7 +292,10 @@ function alsoMatchingNote(
   others: readonly DriveFile[],
 ): string {
   return others.length > 0
-    ? ` "${textArg(asked).trim()}" also matches ${others.slice(0, SUGGESTION_COUNT).map(candidate).join('; ')}; use an id to choose.`
+    ? ` "${textArg(asked).trim()}" also matches ${others
+        .slice(0, SUGGESTION_COUNT)
+        .map((file) => candidate(file))
+        .join('; ')}; use an id to choose.`
     : '';
 }
 
@@ -428,39 +432,61 @@ function pageWindow(args: Args, fallback: number, max: number): PageWindow {
   };
 }
 
+/** What `list_recipes` says about the page it shows, out of `total` recipes. */
+function listingMessage(total: number, offset: number, shown: number): string {
+  if (total === 0) {
+    return 'No recipes yet.';
+  }
+  if (shown === 0) {
+    return pastTheEnd(total, offset, 'recipe');
+  }
+  if (shown === total) {
+    return `Showing your ${countOf(total, 'recipe')}.`;
+  }
+  return `Showing recipes ${rangeText(total, offset, shown)}.${nextPageHint(total, offset, shown)}`;
+}
+
 /** `list_recipes`: the saved recipes, a page at a time. */
 const listRecipes: Handler = async (args, ctx) => {
   const files = await ctx.files.list();
   const { offset, limit } = pageWindow(args, PAGE_DEFAULT, PAGE_MAX);
   const page = files.slice(offset, offset + limit);
-  const message =
-    files.length === 0
-      ? 'No recipes yet.'
-      : page.length === 0
-        ? pastTheEnd(files.length, offset, 'recipe')
-        : page.length === files.length
-          ? `Showing your ${countOf(files.length, 'recipe')}.`
-          : `Showing recipes ${rangeText(files.length, offset, page.length)}.${nextPageHint(files.length, offset, page.length)}`;
-  return recipeListResult(page, message);
+  return recipeListResult(
+    page,
+    listingMessage(files.length, offset, page.length),
+  );
 };
+
+/** What `search_recipes` says about the page it shows, out of `total` matches. */
+function searchingMessage(
+  queryRaw: string,
+  total: number,
+  offset: number,
+  shown: number,
+): string {
+  if (total === 0) {
+    return `No recipes match "${queryRaw}".`;
+  }
+  if (shown === 0) {
+    return pastTheEnd(total, offset, 'matching recipe');
+  }
+  if (shown === total) {
+    return `Found ${countOf(total, 'recipe')} matching "${queryRaw}".`;
+  }
+  return `Found ${countOf(total, 'recipe')} matching "${queryRaw}"; showing ${rangeText(total, offset, shown)}.${nextPageHint(total, offset, shown)}`;
+}
 
 /** `search_recipes`: recipes whose name contains the query, accents and case ignored. */
 const searchRecipes: Handler = async (args, ctx) => {
   const queryRaw = textArg(args['query']);
   const query = foldText(queryRaw);
-  const hits = (await ctx.files.list()).filter((f) =>
+  const listed = await ctx.files.list();
+  const hits = listed.filter((f) =>
     foldText(recipeDisplayName(f.name)).includes(query),
   );
   const { offset, limit } = pageWindow(args, PAGE_DEFAULT, PAGE_MAX);
   const page = hits.slice(offset, offset + limit);
-  const message =
-    hits.length === 0
-      ? `No recipes match "${queryRaw}".`
-      : page.length === 0
-        ? pastTheEnd(hits.length, offset, 'matching recipe')
-        : page.length === hits.length
-          ? `Found ${countOf(hits.length, 'recipe')} matching "${queryRaw}".`
-          : `Found ${countOf(hits.length, 'recipe')} matching "${queryRaw}"; showing ${rangeText(hits.length, offset, page.length)}.${nextPageHint(hits.length, offset, page.length)}`;
+  const message = searchingMessage(queryRaw, hits.length, offset, page.length);
   return recipeListResult(page, message, queryRaw);
 };
 
@@ -542,12 +568,14 @@ const importRecipeTool: Handler = async (args, ctx, services) => {
     );
   }
   const name = plainTitle(recipeDisplayName(outcome.name));
-  const message =
-    outcome.kind === 'existing'
-      ? `"${name}" is already in your recipes.`
-      : outcome.kind === 'repaired'
-        ? `Repaired "${name}" — the earlier import had no ingredients or steps.`
-        : `Imported "${name}".`;
+  let message: string;
+  if (outcome.kind === 'existing') {
+    message = `"${name}" is already in your recipes.`;
+  } else if (outcome.kind === 'repaired') {
+    message = `Repaired "${name}" — the earlier import had no ingredients or steps.`;
+  } else {
+    message = `Imported "${name}".`;
+  }
   return recipeCardResult(
     outcome.id,
     outcome.name,
@@ -821,11 +849,12 @@ function noteTargetProblem(
 ): string | undefined {
   if (target.scope === 'step') {
     const count = recipe.steps.length;
-    return Number(target.key) > count
-      ? count === 0
+    if (Number(target.key) > count) {
+      return count === 0
         ? 'That recipe has no numbered steps, so a note cannot be attached to one. Nothing was changed; leave `step` out for a note on the whole recipe.'
-        : `That recipe has ${countOf(count, 'step')}, so there is no step ${target.key}. Nothing was changed.`
-      : undefined;
+        : `That recipe has ${countOf(count, 'step')}, so there is no step ${target.key}. Nothing was changed.`;
+    }
+    return undefined;
   }
   if (target.scope === 'ingredient') {
     const wanted = foldText(target.key);
@@ -833,18 +862,24 @@ function noteTargetProblem(
       const name = foldText(ingredient.name);
       return name.includes(wanted) || wanted.includes(name);
     });
-    return fits
-      ? undefined
-      : `That recipe has no ingredient called "${plainTitle(target.key)}". ` +
-          (recipe.ingredients.length > 0
-            ? `Its ingredients are: ${recipe.ingredients
-                .slice(0, INGREDIENTS_LISTED)
-                .map((i) => plainTitle(i.name))
-                .join(
-                  ', ',
-                )}${recipe.ingredients.length > INGREDIENTS_LISTED ? ', and more' : ''}. `
-            : '') +
-          'Nothing was changed; leave `ingredient` out for a note on the whole recipe.';
+    if (fits) {
+      return undefined;
+    }
+    const listed = recipe.ingredients
+      .slice(0, INGREDIENTS_LISTED)
+      .map((i) => plainTitle(i.name))
+      .join(', ');
+    const more =
+      recipe.ingredients.length > INGREDIENTS_LISTED ? ', and more' : '';
+    const its =
+      recipe.ingredients.length > 0
+        ? `Its ingredients are: ${listed}${more}. `
+        : '';
+    return (
+      `That recipe has no ingredient called "${plainTitle(target.key)}". ` +
+      its +
+      'Nothing was changed; leave `ingredient` out for a note on the whole recipe.'
+    );
   }
   return undefined;
 }

@@ -220,18 +220,14 @@ const tokenValues = (tokens: readonly TokenRow[]) =>
 
 /** How many rows a statement changed, from the result D1 returned for it. */
 function changesOf(result: unknown): number {
-  if (
-    typeof result === 'object' &&
-    result !== null &&
-    'meta' in result &&
-    typeof result.meta === 'object' &&
-    result.meta !== null &&
-    'changes' in result.meta &&
-    typeof result.meta.changes === 'number'
-  ) {
-    return result.meta.changes;
+  if (typeof result !== 'object' || result === null || !('meta' in result)) {
+    return 0;
   }
-  return 0;
+  const { meta } = result;
+  if (typeof meta !== 'object' || meta === null || !('changes' in meta)) {
+    return 0;
+  }
+  return typeof meta.changes === 'number' ? meta.changes : 0;
 }
 
 /** The {@link OAuthStore} backed by a D1-bound Drizzle client. */
@@ -243,7 +239,7 @@ export class D1OAuthStore implements OAuthStore {
   }
 
   async saveCode(hash: string, code: CodeRecord): Promise<void> {
-    await this.#db.insert(oauthCodes).values({
+    const insert = this.#db.insert(oauthCodes).values({
       code_hash: hash,
       client_id: code.clientId,
       user_id: code.userId,
@@ -255,6 +251,7 @@ export class D1OAuthStore implements OAuthStore {
       expires_at: code.expiresAt,
       grant_id: null,
     });
+    await insert;
   }
 
   async findCode(hash: string): Promise<CodeRecord | undefined> {
@@ -332,7 +329,8 @@ export class D1OAuthStore implements OAuthStore {
 
   async saveTokens(tokens: readonly TokenRow[]): Promise<void> {
     if (tokens.length > 0) {
-      await this.#db.insert(oauthTokens).values(tokenValues(tokens));
+      const insert = this.#db.insert(oauthTokens).values(tokenValues(tokens));
+      await insert;
     }
   }
 
@@ -483,7 +481,7 @@ export async function listConnectedApps(
       const all = [newest, ...older];
       const lastUsed = all
         .flatMap((r) => (r.grant.last_used_at ? [r.grant.last_used_at] : []))
-        .toSorted()
+        .toSorted((a, b) => a.localeCompare(b))
         .at(-1);
       const identity = clientIdentity({
         clientId: newest.grant.client_id,

@@ -138,23 +138,25 @@ function sameSite(a: string, b: string): boolean {
  * neutral note, since the domain is the one thing about the app that is
  * verified.
  */
+const UNVERIFIED_IDENTITY: ClientIdentity = { kind: 'unverified' };
+
 export function describeRedirect(
   redirectUri: string,
-  identity: Readonly<ClientIdentity> = { kind: 'unverified' },
+  identity: Readonly<ClientIdentity> = UNVERIFIED_IDENTITY,
 ): RedirectDescription {
   const kind = redirectKind(redirectUri);
   const url = parseUrl(redirectUri);
   const short = url ? url.host || url.protocol : asciiOnly(redirectUri);
-  const warnings: Readonly<Record<RedirectKind, string | undefined>> = {
-    web: undefined,
+  const warnings: Readonly<Partial<Record<RedirectKind, string>>> = {
     loopback: LOOPBACK_WARNING,
     private: PRIVATE_WARNING,
     app: APP_SCHEME_WARNING,
   };
+  const isWebOrPrivate = kind === 'web' || kind === 'private';
   const elsewhere =
     identity.kind === 'domain' &&
     url !== undefined &&
-    (kind === 'web' || kind === 'private') &&
+    isWebOrPrivate &&
     !sameSite(
       url.hostname,
       parseUrl(`https://${identity.domain}`)?.hostname ?? '',

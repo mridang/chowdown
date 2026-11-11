@@ -90,7 +90,7 @@ export function isAuthFailure(error: unknown): boolean {
  * counts as out of date: reissuing it once saves a database read on every page.
  */
 export function sessionHintStale(
-  hint: boolean | undefined,
+  hint: boolean | undefined = undefined,
   connected: boolean,
 ): boolean {
   return hint !== connected;

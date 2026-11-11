@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
 
+// eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap: the stylesheet is read once at load for synchronous describe blocks
 const css = readFileSync(
-  join(process.cwd(), 'src', 'app', 'globals.css'),
+  path.join(process.cwd(), 'src', 'app', 'globals.css'),
   'utf8',
 );
 
@@ -45,7 +46,9 @@ function contrast(
   a: readonly [number, number, number],
   b: readonly [number, number, number],
 ): number {
-  const [light, dark] = [luminance(a), luminance(b)].toSorted().toReversed();
+  const [light, dark] = [luminance(a), luminance(b)]
+    .toSorted((x, y) => x - y)
+    .toReversed();
   return ((light ?? 0) + 0.05) / ((dark ?? 0) + 0.05);
 }
 
@@ -84,7 +87,7 @@ describe('the control border token', () => {
 
 describe('reduced motion', () => {
   const block =
-    /@media \(prefers-reduced-motion: reduce\) \{([^}]*\{[^}]*\})/.exec(
+    /@media \(prefers-reduced-motion: reduce\) \{([^{}]*\{[^}]*\})/.exec(
       css,
     )?.[1];
 
@@ -134,7 +137,8 @@ function blockOf(prelude: string): string {
     throw new Error(`no rule for ${prelude}`);
   }
   const open = css.indexOf('{', start);
-  const body = [...css.slice(open + 1)].reduce<{
+  const rest = css.slice(open + 1);
+  const body = [...rest].reduce<{
     readonly depth: number;
     readonly text: string;
     readonly done: boolean;

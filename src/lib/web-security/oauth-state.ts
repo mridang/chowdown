@@ -41,7 +41,8 @@ export function checkState(
   validPurposes: readonly string[],
 ): StateCheck {
   const purpose = state ? purposeOf(state, validPurposes) : undefined;
-  return state && expected && state === expected && purpose
+  // A non-empty `expected` that equals `state` means `state` is non-empty too.
+  return expected && state === expected && purpose
     ? { ok: true, purpose }
     : { ok: false, claimed: purpose };
 }

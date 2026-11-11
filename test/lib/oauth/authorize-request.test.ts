@@ -36,6 +36,9 @@ const good: AuthorizeParams = {
   state: 'xyz',
 };
 
+// An absent parameter: a key set to this overrides the valid default with undefined.
+let unset: string | undefined;
+
 const check = (overrides: AuthorizeParams = {}) =>
   validateAuthorizeRequest({ ...good, ...overrides }, ORIGIN, resolve);
 
@@ -69,6 +72,7 @@ describe('validateAuthorizeRequest', () => {
     const old: OAuthClient = {
       ...client,
       clientId: 'dcr_old',
+      // eslint-disable-next-line unicorn/prefer-https -- test fixture
       redirectUris: ['http://example.com/cb', 'myapp://cb'],
     };
     for (const uri of old.redirectUris) {
@@ -109,13 +113,13 @@ describe('validateAuthorizeRequest', () => {
   });
 
   it('shows an error when there is no client_id', async () => {
-    const result = await check({ client_id: undefined });
+    const result = await check({ client_id: unset });
     expect(result).toMatchObject({ ok: false, error: 'invalid_request' });
     expect(result.ok === false && result.redirect).toBeFalsy();
   });
 
   it('uses the only registered redirect URI when none is sent', async () => {
-    const result = await check({ redirect_uri: undefined });
+    const result = await check({ redirect_uri: unset });
     expect(result).toMatchObject({
       ok: true,
       request: { redirectUri: 'https://claude.ai/cb' },
@@ -132,7 +136,7 @@ describe('validateAuthorizeRequest', () => {
   });
 
   it('requires PKCE with S256', async () => {
-    expect(await check({ code_challenge: undefined })).toMatchObject({
+    expect(await check({ code_challenge: unset })).toMatchObject({
       ok: false,
       error: 'invalid_request',
     });
@@ -201,7 +205,7 @@ describe('what the request said about its redirect address', () => {
       ok: true,
       request: { redirectUriSent: true },
     });
-    expect(await check({ redirect_uri: undefined })).toMatchObject({
+    expect(await check({ redirect_uri: unset })).toMatchObject({
       ok: true,
       request: { redirectUriSent: false },
     });
@@ -268,7 +272,7 @@ describe('redirectWith', () => {
   it('adds parameters, keeps existing ones and skips undefined', () => {
     const url = redirectWith('https://a.com/cb?keep=1', {
       code: 'abc',
-      state: undefined,
+      state: unset,
       iss: ORIGIN,
     });
     const parsed = new URL(url);
@@ -314,11 +318,11 @@ describe('authorizeParamsFrom', () => {
 
 describe('error_description is printable ASCII without quotes or backslashes (RFC 6749 4.1.2.1)', () => {
   it.each([
-    { client_id: undefined },
+    { client_id: unset },
     { client_id: 'nobody' },
     { redirect_uri: 'https://evil.example/cb' },
     { response_type: 'token' },
-    { code_challenge: undefined },
+    { code_challenge: unset },
     { code_challenge: 'short' },
     { resource: 'https://other.example/mcp' },
     { scope: 'admin' },

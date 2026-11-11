@@ -56,7 +56,7 @@ describe('session tokens', () => {
     );
     const [, sig] = token.split('.');
     const forged = `${btoa('{"uid":999,"email":"evil@z.com","exp":9999999999}')
-      .replace(/=+$/, '')
+      .replaceAll('=', '')
       .replaceAll('+', '-')
       .replaceAll('/', '_')}.${sig}`;
     expect(await verifySessionToken(forged, SECRET)).toBeNull();
@@ -126,7 +126,8 @@ describe('session profile', () => {
       { uid: 7, email: 'old@y.com' },
       SECRET,
     );
-    expect((await verifySessionToken(token, SECRET))?.name).toBeUndefined();
+    const payload = await verifySessionToken(token, SECRET);
+    expect(payload?.name).toBeUndefined();
   });
 });
 

@@ -113,8 +113,10 @@ describe('mutateRecipeForUser', () => {
   it('indexes under the file id when the cached row has vanished mid-write', async () => {
     let lookups = 0;
     const deps = fakes({ a: 'one\n' }, ['a'], {
-      findRecipe: async () =>
-        ++lookups === 1 ? { name: 'a.cook' } : undefined,
+      findRecipe: async () => {
+        lookups += 1;
+        return lookups === 1 ? { name: 'a.cook' } : undefined;
+      },
     });
     await mutateRecipeForUser(user, 'a', null, append, deps);
     expect(asCalls(deps.index)).toHaveBeenCalledWith(

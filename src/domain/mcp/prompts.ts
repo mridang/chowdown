@@ -51,7 +51,7 @@ function given(
   name: string,
 ): string | undefined {
   const value = args[name]?.trim();
-  return value ? value : undefined;
+  return value || undefined;
 }
 
 /** How many dinners a plan covers when the person does not say. */
@@ -184,9 +184,10 @@ export function getPrompt(name: unknown, rawArguments: unknown): PromptResult {
     (argument) => argument.required && given(args, argument.name) === undefined,
   );
   if (missing.length > 0) {
+    const needed = missing.map((m) => `\`${m.name}\``).join(' and ');
     throw new RpcError(
       ERROR_INVALID_PARAMS,
-      `Prompt ${prompt.definition.name} needs ${missing.map((m) => `\`${m.name}\``).join(' and ')}.`,
+      `Prompt ${prompt.definition.name} needs ${needed}.`,
       { prompt: prompt.definition.name, missing: missing.map((m) => m.name) },
     );
   }

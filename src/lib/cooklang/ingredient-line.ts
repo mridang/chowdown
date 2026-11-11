@@ -151,6 +151,7 @@ const FREE_QUANTITY =
  * opposed to a comma inside a name ("boneless, skinless chicken breasts").
  */
 const PREPARATION =
+  // eslint-disable-next-line sonarjs/regex-complexity -- the regex is a deliberate list of preparation words, splitting it would not be clearer
   /^(?:(?:very |finely |roughly |thinly |coarsely |freshly |lightly |well )?(?:chopped|diced|minced|sliced|grated|crushed|peeled|halved|quartered|cubed|melted|softened|divided|cooked|drained|rinsed|beaten|trimmed|seeded|deseeded|stemmed|torn|packed|sifted|toasted|shredded|julienned|mashed|thawed|cut|ground)|optional|plus |to taste|for |at room|room temp|or |about |such as|preferably|if )/i;
 
 /** A number: `3`, `2.5`, `1/2`, or a mixed number `1 1/2`. */
@@ -243,6 +244,7 @@ function withoutParentheses(line: string): {
   return {
     text: walked.text.replaceAll(/\s+/g, ' ').trim(),
     notes: notes
+      // eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short note, backtracking is bounded
       .map((note) => note.replaceAll(/^[\s,;:]+|[\s,;:]+$/g, '').trim())
       .filter((note) => note !== ''),
   };
@@ -282,7 +284,9 @@ function leadingQuantity(text: string): LeadingQuantity | undefined {
     return undefined;
   }
   const quantity = (match[1] ?? '')
+    // eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short quantity, backtracking is bounded
     .replace(/\s+to\s+/i, '-')
+    // eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short quantity, backtracking is bounded
     .replaceAll(/\s*-\s*/g, '-')
     .trim();
   const afterQuantity = text.slice(match[0].length);
@@ -295,12 +299,17 @@ function leadingQuantity(text: string): LeadingQuantity | undefined {
   const attachedUnit = attached?.[1];
   const spaced = /^\s+([A-Za-z]+)\.?(?=$|[\s,/])/.exec(afterNumber);
   const spacedUnit = spaced?.[1];
-  const [unit, consumed] =
-    attachedUnit && UNITS.has(unitKey(attachedUnit))
-      ? [attachedUnit, attached?.[0].length ?? 0]
-      : (spacedUnit && UNITS.has(unitKey(spacedUnit))
-        ? [spacedUnit, spaced?.[0].length ?? 0]
-        : [undefined, 0]);
+  let unit: string | undefined;
+  let consumed = 0;
+  if (attachedUnit && UNITS.has(unitKey(attachedUnit))) {
+    unit = attachedUnit;
+    consumed = attached?.[0].length ?? 0;
+  } else if (spacedUnit && UNITS.has(unitKey(spacedUnit))) {
+    unit = spacedUnit;
+    consumed = spaced?.[0].length ?? 0;
+  } else {
+    // No unit follows the number, so nothing is consumed.
+  }
   const rest = afterNumber.slice(consumed);
   // "7up" and "2x4" are names with a digit in them, not an amount and a word.
   if (!unit && /^[A-Za-z]/.test(afterNumber)) {
@@ -349,11 +358,14 @@ function amountPhrase(phrase: string): LeadingQuantity | undefined {
 
 /** Strip punctuation that is left dangling after parts of the line were taken out. */
 function cleanedName(text: string): string {
-  return text
-    .replace(/^(?:of|x)\s+/i, '')
-    .replaceAll(/^[\s,;:./-]+|[\s,;:./-]+$/g, '')
-    .replaceAll(/\s+/g, ' ')
-    .trim();
+  return (
+    text
+      .replace(/^(?:of|x)\s+/i, '')
+      // eslint-disable-next-line sonarjs/super-linear-regex -- matched against one short name, backtracking is bounded
+      .replaceAll(/^[\s,;:./-]+|[\s,;:./-]+$/g, '')
+      .replaceAll(/\s+/g, ' ')
+      .trim()
+  );
 }
 
 /** Join the notes into one, without repeats. */
@@ -477,7 +489,7 @@ export function leadingUnit(
   text: string,
 ): { readonly unit: string; readonly rest: string } | undefined {
   const match =
-    /^(?:(?:heaping|heaped|level|rounded|scant|generous)\s+)?([A-Za-z]+)\.?(?:\s+of)?(?:\s+|$)/i.exec(
+    /^(?:(?:heaping|heaped|level|rounded|scant|generous)\s+)?([a-z]+)\.?(?:\s+of)?(?:\s+|$)/i.exec(
       text.trim(),
     );
   const word = match?.[1];
@@ -508,5 +520,6 @@ export function toCookIngredient(ing: Readonly<ParsedIngredientLine>): string {
       ? `${safe(ing.quantity)}%${safe(ing.unit)}`
       : safe(ing.quantity ?? '');
   const note = ing.note ? safe(ing.note) : '';
-  return `@${safe(ing.name)}{${amount}}${note ? `(${note})` : ''}`;
+  const notePart = note ? `(${note})` : '';
+  return `@${safe(ing.name)}{${amount}}${notePart}`;
 }

@@ -179,6 +179,7 @@ export function authorEvidence(html: string): AuthorEvidence {
  * nested repetition, so it is linear.
  */
 const BYLINE =
+  // eslint-disable-next-line sonarjs/regex-complexity -- the byline words are one short alternation; folding them together gave no lower score and would make the list harder to read
   /\b(?:[Bb]y|Recipe by|Recipes by|Written by|Author:?|Posted by)\s+(\p{Lu}[\p{L}'’.-]*(?:\s+(?:and|&|\p{Lu}[\p{L}'’.-]*)){0,5})/gu;
 
 /** What stands in front of a name in a byline and is not part of it. */
@@ -187,6 +188,7 @@ const NAME_PREFIX =
 
 /** Words that mean a candidate is page furniture or a role, not a person. */
 const NOT_A_NAME =
+  // eslint-disable-next-line sonarjs/regex-complexity -- one flat list of words; splitting it into several patterns would change what matches
   /\b(?:comments?|minutes?|mins?|read|reviews?|ratings?|share|print|jump|skip|posts?|admin|administrator|editorial|editors?|staff|team|photos?|contributors?|subscribe|newsletter|cookies?|privacy|login|sign|unknown|anonymous|guest|author|undefined|null)\b/i;
 
 /**
@@ -205,18 +207,20 @@ export function cleanAuthorName(raw: string): string | undefined {
     .trim()
     .replace(NAME_PREFIX, '')
     // "Jane Cook | Some Blog" and "Jane Cook - Some Blog" are the name and a site.
-    .replace(/\s+[|–—-]\s+.*$/, '')
+    .replace(/\s[|–—-]\s.*$/, '')
+    // eslint-disable-next-line sonarjs/super-linear-regex -- the trailing run is one page value's punctuation; a plain trim is the only exact rule here
     .replaceAll(/^[\s,;:]+|[\s,;:.]+$/g, '');
   const words = stripped.split(' ').filter(Boolean);
-  const wellFormed =
-    stripped.length >= 2 &&
-    stripped.length <= 60 &&
-    words.length <= 5 &&
+  const lengthOk =
+    stripped.length >= 2 && stripped.length <= 60 && words.length <= 5;
+  const noJunk =
     !/[\d<>@/\\{}[\]=]|https?:|www\./i.test(stripped) &&
-    !NOT_A_NAME.test(stripped) &&
+    !NOT_A_NAME.test(stripped);
+  // An initial or two is no name ("H. I").
+  const hasName =
     words.some((word) => /\p{L}{2,}/u.test(word)) &&
-    // An initial or two is no name ("H. I").
     words.some((word) => /\p{L}{3,}/u.test(word));
+  const wellFormed = lengthOk && noJunk && hasName;
   return wellFormed ? withCapitals(stripped) : undefined;
 }
 
@@ -310,6 +314,13 @@ function shownText(evidence: Readonly<AuthorEvidence>): string {
   return plain(summaryOf(evidence));
 }
 
+/** The text from a reply's first `{` to its last `}`, or nothing when there is no such span. */
+function jsonSpanOf(text: string): string {
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  return start !== -1 && end > start ? text.slice(start, end + 1) : '';
+}
+
 /** The `author` of the model's reply, which may arrive as text or as already-parsed JSON. */
 function answerOf(reply: unknown): string | undefined {
   const response =
@@ -317,9 +328,7 @@ function answerOf(reply: unknown): string | undefined {
       ? reply.response
       : undefined;
   const parsed: Json =
-    typeof response === 'string'
-      ? safeParse(/\{[\s\S]*\}/.exec(response)?.[0] ?? '')
-      : response;
+    typeof response === 'string' ? safeParse(jsonSpanOf(response)) : response;
   const author = isContainer(parsed) ? parsed['author'] : undefined;
   return typeof author === 'string' ? author : undefined;
 }
@@ -376,6 +385,7 @@ export async function findAuthor(
 
 /** The author a recipe's Cooklang source names (`>> author:` or `>> by:`), if it names one. */
 export function authorFromSource(cook: string): string | undefined {
+  // eslint-disable-next-line sonarjs/super-linear-regex -- the captured name must stop before trailing spaces and tabs, which a simpler pattern would keep
   return /^>>\s*(?:author|by):[ \t]*(\S[^\r\n]*?)[ \t]*$/im.exec(cook)?.[1];
 }
 

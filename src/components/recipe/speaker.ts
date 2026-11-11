@@ -66,7 +66,7 @@ export function stopSpeaking(
 
 /** The browser's speech environment, or `undefined` where there is no speech synthesis. */
 export function browserSpeech(): SpeechEnvironment | undefined {
-  return globalThis.window !== undefined && 'speechSynthesis' in globalThis
+  return globalThis.window != undefined && 'speechSynthesis' in globalThis
     ? {
         synthesiser: globalThis.speechSynthesis,
         createUtterance: (text) => new SpeechSynthesisUtterance(text),

@@ -31,7 +31,9 @@ export interface DisplayModeHostContext {
 
 /** Whether the value is one of the three modes the spec defines. */
 export function isDisplayMode(value: unknown): value is DisplayMode {
-  return value === 'inline' || value === 'fullscreen' || value === 'pip';
+  return (
+    typeof value === 'string' && ['inline', 'fullscreen', 'pip'].includes(value)
+  );
 }
 
 /**

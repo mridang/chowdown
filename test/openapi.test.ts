@@ -73,6 +73,7 @@ interface Spec {
 
 const ROOT = process.cwd();
 const spec = JSON.parse(
+  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
   readFileSync(path.join(ROOT, 'openapi.json'), 'utf8'),
 ) as Spec;
 
@@ -106,7 +107,7 @@ function deref(node: Described): Described {
 /** The `$ref`s anywhere inside a node. */
 function refsIn(node: unknown): readonly string[] {
   if (Array.isArray(node)) {
-    return node.flatMap(refsIn);
+    return node.flatMap((child) => refsIn(child));
   }
   if (node && typeof node === 'object') {
     return Object.entries(node).flatMap(([key, value]) =>
@@ -116,19 +117,23 @@ function refsIn(node: unknown): readonly string[] {
   return [];
 }
 
+/** A copy of strings in the locale's sort order, leaving the original as it is. */
+const sorted = (values: readonly string[]) =>
+  values.toSorted((a, b) => a.localeCompare(b));
+
 // ---------------------------------------------------------------- the routes
 
 const API_DIR = path.join(ROOT, 'src', 'app', 'api');
 
 /** Every `route.ts` below `dir`. */
 function routeFiles(dir: string): readonly string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
-    entry.isDirectory()
-      ? routeFiles(path.join(dir, entry.name))
-      : entry.name === 'route.ts'
-        ? [path.join(dir, entry.name)]
-        : [],
-  );
+  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    if (entry.isDirectory()) {
+      return routeFiles(path.join(dir, entry.name));
+    }
+    return entry.name === 'route.ts' ? [path.join(dir, entry.name)] : [];
+  });
 }
 
 /** Every `METHOD /path` the route files export, with `[x]` written `{x}`. */
@@ -141,6 +146,7 @@ function registered(): readonly string[] {
       .map((segment) => `/${segment}`)
       .join('')
       .replaceAll(/\[([a-z_]+)\]/g, '{$1}')}`;
+    // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
     const text = readFileSync(file, 'utf8');
     return METHODS.map((method) => method.toUpperCase())
       .filter((method) =>
@@ -347,7 +353,8 @@ async function call(
       value === 'IMPORT' ? importId() : value,
     ]),
   );
-  const target = `${fill(url, params)}${merged.query === undefined ? '' : `?${merged.query}`}`;
+  const query = merged.query === undefined ? '' : `?${merged.query}`;
+  const target = `${fill(url, params)}${query}`;
   const load = ROUTES[url];
   if (!load) {
     throw new Error(`${key} has no route module in ROUTES`);
@@ -398,12 +405,12 @@ describe('openapi.json', () => {
   it('describes exactly the methods the routes under src/app/api export', () => {
     const real = registered();
     expect(real.length).toBeGreaterThan(0);
-    expect(operations.map(([key]) => key).toSorted()).toEqual(real.toSorted());
+    expect(sorted(operations.map(([key]) => key))).toEqual(sorted(real));
   });
 
   it('has a route module to call for every path it describes', () => {
-    expect(Object.keys(ROUTES).toSorted()).toEqual(
-      Object.keys(spec.paths).toSorted(),
+    expect(sorted(Object.keys(ROUTES))).toEqual(
+      sorted(Object.keys(spec.paths)),
     );
   });
 
@@ -423,7 +430,7 @@ describe('openapi.json', () => {
     const ids = operations.map(([, operation]) => operation.operationId);
     expect(ids.every(Boolean)).toBe(true);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids.toSorted()).toEqual(Object.keys(GOOD).toSorted());
+    expect(sorted(ids)).toEqual(sorted(Object.keys(GOOD)));
   });
 
   it('uses lowercase, hyphen-free path segments', () => {
@@ -438,7 +445,9 @@ describe('openapi.json', () => {
 describe.each(operations)('%s', (key, operation) => {
   const good = GOOD[operation.operationId] ?? { status: 0 };
   const open = (operation.security ?? []).length === 0;
-  const parameters = (operation.parameters ?? []).map(deref);
+  const parameters = (operation.parameters ?? []).map((parameter) =>
+    deref(parameter),
+  );
   const inQuery = new Set(
     parameters.filter((p) => p.in === 'query').map((p) => p.name),
   );
