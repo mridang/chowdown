@@ -11,7 +11,7 @@ describe('FavouriteButton, overlay', () => {
     expect(out).toContain('type="button"');
     expect(out).toContain('aria-pressed="false"');
     expect(out).toContain('aria-label="Add to favourites"');
-    expect(out).toContain('title="Add to favourites"');
+    expect(out).not.toContain('title=');
   });
 
   it('says it is on, and offers to remove, for a favourite', () => {
@@ -20,7 +20,7 @@ describe('FavouriteButton, overlay', () => {
     );
     expect(out).toContain('aria-pressed="true"');
     expect(out).toContain('aria-label="Remove from favourites"');
-    expect(out).toContain('title="Remove from favourites"');
+    expect(out).not.toContain('title=');
   });
 
   it('has only an icon, so no visible text', () => {
@@ -51,7 +51,7 @@ describe('FavouriteButton, labelled', () => {
     expect(out).toContain('>Favourite</button>');
     expect(out).toContain('aria-pressed="false"');
     expect(out).not.toContain('aria-label');
-    expect(out).toContain('title="Add to favourites"');
+    expect(out).not.toContain('title=');
   });
 
   it('reads "Favourited" for a favourite', () => {
@@ -60,6 +60,6 @@ describe('FavouriteButton, labelled', () => {
     );
     expect(out).toContain('>Favourited</button>');
     expect(out).toContain('aria-pressed="true"');
-    expect(out).toContain('title="Remove from favourites"');
+    expect(out).not.toContain('title=');
   });
 });

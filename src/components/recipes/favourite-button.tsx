@@ -54,16 +54,14 @@ export function FavouriteButton({
   const labelledText = on ? 'Favourited' : 'Favourite';
 
   return (
-    // eslint-disable-next-line github/a11y-no-title-attribute -- the name is already given (visible text or aria-label); the title is the intended native hover tooltip, which the tests assert
     <button
       type="button"
       onClick={() => void toggle()}
       disabled={busy}
       aria-pressed={on}
       // The labelled button's visible text is its name; the overlay has only an
-      // icon, so it needs an explicit one. Both explain the action on hover.
+      // icon, so it needs an explicit one.
       aria-label={variant === 'overlay' ? label : undefined}
-      title={label}
       className={cn(
         HEART_BUTTON_BASE,
         variant === 'overlay'

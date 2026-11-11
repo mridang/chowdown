@@ -26,13 +26,11 @@ function Token({ token }: Readonly<{ token: StepToken }>): ReactElement {
     }
     case 'ingredient': {
       return (
-        // eslint-disable-next-line github/a11y-no-title-attribute -- the amount is supplementary text shown as the native hover tooltip, by design
-        <span
-          // The amount for the servings and units chosen, on hover.
-          title={token.quantity ? quantity(token.quantity) : undefined}
-          className={`${HIGHLIGHT} bg-marigold/25 text-ink`}
-        >
+        <span className={`${HIGHLIGHT} bg-marigold/25 text-ink`}>
           {token.name}
+          {token.quantity ? (
+            <span className="sr-only"> ({quantity(token.quantity)})</span>
+          ) : null}
         </span>
       );
     }

@@ -29,6 +29,19 @@ describe('Method', () => {
     expect(out.indexOf('Fry.')).toBeLessThan(out.indexOf('Less oil'));
   });
 
+  it('reads an ingredient amount out as screen-reader text, with no tooltip', () => {
+    const withAmount = html(
+      <RecipeStateProvider servings={4} initialUnits="original">
+        <Method
+          steps={[[{ kind: 'ingredient', name: 'pasta', quantity: '200 g' }]]}
+          notes={[[]]}
+        />
+      </RecipeStateProvider>,
+    );
+    expect(withAmount).toContain('pasta<span class="sr-only"> (200 g)</span>');
+    expect(withAmount).not.toContain('title=');
+  });
+
   it('says so when the recipe has no method', () => {
     const empty = html(
       <RecipeStateProvider servings={4} initialUnits="original">
