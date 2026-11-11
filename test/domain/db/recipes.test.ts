@@ -10,7 +10,7 @@ import {
   findRecipeBySourceUrl,
   getRecipeByFileId,
   listRecipesByUser,
-  listRecipesForSync,
+  listSyncRecipes,
   listUnembeddedRecipes,
   staleRecipeIds,
   upsertRecipe,
@@ -334,14 +334,14 @@ describe('recipe_images', () => {
   });
 });
 
-describe('listRecipesForSync and deleteRecipesNotIn', () => {
+describe('listSyncRecipes and deleteRecipesNotIn', () => {
   const FUTURE = '2999-01-01T00:00:00.000Z';
 
   it("lists the user's recipes without their text, from the name index", async () => {
     const made = seeded();
     await save(made, 1, 'a', 'secret text');
     await save(made, 2, 'b', '');
-    const rows = await listRecipesForSync(made.db, 1);
+    const rows = await listSyncRecipes(made.db, 1);
     expect(rows.map((r) => r.drive_file_id)).toEqual(['a']);
     expect(
       Object.keys(rows[0] ?? {}).toSorted((a, b) => a.localeCompare(b)),
@@ -358,7 +358,7 @@ describe('listRecipesForSync and deleteRecipesNotIn', () => {
     const made = seeded();
     await save(made, 1, 'keep', '');
     await save(made, 1, 'gone', '');
-    const cached = await listRecipesForSync(made.db, 1);
+    const cached = await listSyncRecipes(made.db, 1);
     const sent: string[] = [];
     const prepare = made.raw.prepare.bind(made.raw);
     made.raw.prepare = (sql: string) => {

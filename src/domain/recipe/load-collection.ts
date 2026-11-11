@@ -23,7 +23,7 @@ import type { Database } from '@/domain/db/client';
 import { getAppPageRows, type AppPageRows } from '@/domain/db/recipe-page';
 import {
   claimBackfillLease,
-  claimDriveSync,
+  claimDriveLease,
   type User,
 } from '@/domain/db/users';
 import { getEnv, runInBackground } from '@/lib/core/runtime';
@@ -66,7 +66,7 @@ export interface CollectionDeps {
    * Take the turn to start a Drive sync for the person; false when one started
    * within the last minute and this view should leave it alone.
    */
-  readonly claimSync: (db: Database, userId: number) => Promise<boolean>;
+  readonly claimLease: (db: Database, userId: number) => Promise<boolean>;
   /** Bring the cache in line with Drive. */
   readonly sync: (user: Readonly<User>) => Promise<unknown>;
 
@@ -92,7 +92,7 @@ const liveDeps: CollectionDeps = {
   session: getSession,
   database: getDatabase,
   pageRows: getAppPageRows,
-  claimSync: claimDriveSync,
+  claimLease: claimDriveLease,
   sync: syncFromDrive,
   claimBackfill: claimBackfillLease,
   backfill: (db, userId, limit) =>
@@ -117,8 +117,7 @@ async function syncFirstVisit(
   user: Readonly<User>,
 ): Promise<{ readonly connected: boolean; readonly unreachable: boolean }> {
   try {
-    // eslint-disable-next-line n/no-sync -- claimSync is an async database claim that returns a Promise; the name is fixed by the test fakes, so it is not a synchronous call
-    if (!(await deps.claimSync(db, user.id))) {
+    if (!(await deps.claimLease(db, user.id))) {
       return { connected: true, unreachable: false };
     }
     await deps.sync(user);
@@ -139,8 +138,7 @@ async function syncIfDue(
   db: Database,
   user: Readonly<User>,
 ): Promise<void> {
-  // eslint-disable-next-line n/no-sync -- claimSync is an async database claim that returns a Promise; the name is fixed by the test fakes, so it is not a synchronous call
-  if (await deps.claimSync(db, user.id)) {
+  if (await deps.claimLease(db, user.id)) {
     await deps.sync(user);
   }
 }

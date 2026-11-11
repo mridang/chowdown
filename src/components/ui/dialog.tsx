@@ -132,6 +132,7 @@ export function syncModal(
   dialog: Pick<HTMLDialogElement, 'open' | 'showModal' | 'close'>,
   open: boolean,
 ): void {
+  // eslint-disable-next-line sonarjs/no-selector-parameter -- mirrors the `open` state of the component that calls it; the helper exists to make the dialog match that flag
   if (open && !dialog.open) {
     dialog.showModal();
   } else if (!open && dialog.open) {

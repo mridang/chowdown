@@ -7,7 +7,11 @@ import {
   callToolOrExplain,
   noteTarget,
 } from '@/domain/mcp/tool-calls';
-import { BackendFailure, InvalidToolArguments, UnknownTool } from '@/lib/mcp';
+import {
+  BackendFailureError,
+  InvalidToolArgumentsError,
+  UnknownToolError,
+} from '@/lib/mcp';
 import { guardFileOps } from '@/domain/mcp/tool-services';
 import { RECIPE_TEXT_CLOSE, RECIPE_TEXT_OPEN } from '@/domain/mcp/tool-text';
 import {
@@ -1211,7 +1215,7 @@ describe('the arguments are checked before anything runs', () => {
       throw new DriveNotConnectedError();
     });
     const attempt = callTool(USER, { name: 'make_coffee' }, open);
-    await expect(attempt).rejects.toBeInstanceOf(UnknownTool);
+    await expect(attempt).rejects.toBeInstanceOf(UnknownToolError);
     await expect(attempt).rejects.toMatchObject({ tool: 'make_coffee' });
     expect(open).not.toHaveBeenCalled();
   });
@@ -1220,7 +1224,7 @@ describe('the arguments are checked before anything runs', () => {
     'refuses a call with no usable tool name (%j)',
     async (params) => {
       await expect(callTool(USER, params)).rejects.toBeInstanceOf(
-        InvalidToolArguments,
+        InvalidToolArgumentsError,
       );
     },
   );
@@ -1346,7 +1350,9 @@ describe('the arguments are checked before anything runs', () => {
       expect(fake.created).toEqual([]);
     },
   );
+});
 
+describe('refusals say what to change', () => {
   it('closes every refusal with the arguments the tool takes, marking the required ones', async () => {
     const result = await call(
       'annotate_recipe',
@@ -1470,7 +1476,7 @@ describe('callToolOrExplain', () => {
       .mockImplementation(() => undefined);
     const services = fakeServices({
       embedQuery: jest.fn(async () => {
-        throw new BackendFailure('the AI model', new Error('internal'));
+        throw new BackendFailureError('the AI model', new Error('internal'));
       }),
     });
     const result = await callToolOrExplain(
@@ -1504,13 +1510,13 @@ describe('callToolOrExplain', () => {
   it('lets malformed requests through for the router to answer as protocol errors', async () => {
     await expect(
       callToolOrExplain(USER, { name: 'make_coffee' }, open),
-    ).rejects.toBeInstanceOf(UnknownTool);
+    ).rejects.toBeInstanceOf(UnknownToolError);
     await expect(
       callToolOrExplain(USER, { name: 'get_recipe', arguments: 5 }, open),
-    ).rejects.toBeInstanceOf(InvalidToolArguments);
+    ).rejects.toBeInstanceOf(InvalidToolArgumentsError);
     await expect(
       callToolOrExplain(USER, { arguments: {} }, open),
-    ).rejects.toBeInstanceOf(InvalidToolArguments);
+    ).rejects.toBeInstanceOf(InvalidToolArgumentsError);
   });
 
   it('answers arguments that do not fit as a tool error, not a protocol error', async () => {

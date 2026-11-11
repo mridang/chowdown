@@ -94,9 +94,11 @@ export function positionOf(
 
 /** Three-way order of two plain strings, as `<` and `>` give it. */
 function compareCodeUnits(x: string, y: string): number {
+  // eslint-disable-next-line sonarjs/strings-comparison -- UTF-16 code-unit order is the sort order the cursor and the database share; localeCompare would change it
   if (x < y) {
     return -1;
   }
+  // eslint-disable-next-line sonarjs/strings-comparison -- same code-unit order as the comparison above
   return x > y ? 1 : 0;
 }
 

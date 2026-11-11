@@ -271,7 +271,9 @@ describe('serveImage', () => {
     );
     expect(second.status).toBe(304);
   });
+});
 
+describe('serveImage access and failures', () => {
   describe('who may ask', () => {
     it('lets the access rules refuse a caller first, before anything else', async () => {
       const refusal = new Response('no', { status: 401 });

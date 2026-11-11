@@ -41,10 +41,10 @@ import { getDatabase } from '@/domain/db/client';
 import { errorMessage, logError } from '@/utils/logging';
 import type { ScenarioDeps } from '@/domain/mcp/scenarios';
 import type { FileOps } from '@/domain/mcp/tool-calls';
-import { BackendFailure } from '@/lib/mcp';
+import { BackendFailureError } from '@/lib/mcp';
 
 /**
- * Run one outside call and turn any failure of it into a {@link BackendFailure}
+ * Run one outside call and turn any failure of it into a {@link BackendFailureError}
  * naming the `service`. Failures that already mean something specific pass
  * through unchanged: Drive not being connected is explained to the person in its
  * own words, and a failure already named is not renamed.
@@ -62,11 +62,11 @@ export async function guarded<T>(
   } catch (error) {
     if (
       error instanceof DriveNotConnectedError ||
-      error instanceof BackendFailure
+      error instanceof BackendFailureError
     ) {
       throw error;
     }
-    throw new BackendFailure(service, error);
+    throw new BackendFailureError(service, error);
   }
 }
 
@@ -96,7 +96,7 @@ async function bestEffort(
 
 /**
  * Wrap the Drive file operations so a Drive failure becomes a
- * {@link BackendFailure}, and the cache refresh that follows a write never fails
+ * {@link BackendFailureError}, and the cache refresh that follows a write never fails
  * the tool (the file is already saved by then).
  */
 export function guardFileOps(files: FileOps): FileOps {

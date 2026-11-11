@@ -19,10 +19,10 @@ const BROWSER: ClockEnvironment = {
   setInterval: (callback, ms) => window.setInterval(callback, ms),
   // eslint-disable-next-line unicorn/prefer-global-this -- paired with the DOM setInterval above, which hands back a number
   clearInterval: (handle) => window.clearInterval(handle),
-  onVisible: (callback) => {
+  onVisible: (notify) => {
     const onChange = () => {
       if (document.visibilityState === 'visible') {
-        callback();
+        notify();
       }
     };
     document.addEventListener('visibilitychange', onChange);

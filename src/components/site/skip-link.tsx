@@ -6,6 +6,7 @@ import type { ReactElement } from 'react';
  */
 export function SkipLink(): ReactElement {
   return (
+    // eslint-disable-next-line github/a11y-no-visually-hidden-interactive-element -- a skip link is hidden only until it receives focus, which reveals it
     <a
       href="#main"
       className="sr-only z-50 bg-ink px-4 py-2 text-sm font-semibold text-on-ink focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:rounded-control"

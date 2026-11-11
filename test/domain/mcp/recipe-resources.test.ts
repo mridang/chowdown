@@ -5,7 +5,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import type { User } from '@/domain/db/users';
-import { BackendFailure, RpcError } from '@/lib/mcp';
+import { BackendFailureError, RpcError } from '@/lib/mcp';
 import {
   RECIPE_TEMPLATE,
   cachedRecipeLister,
@@ -264,6 +264,8 @@ describe('cachedRecipeLister', () => {
     const list = cachedRecipeLister(() => {
       throw new Error('D1 is down');
     });
-    await expect(list(someone, 0, 1)).rejects.toBeInstanceOf(BackendFailure);
+    await expect(list(someone, 0, 1)).rejects.toBeInstanceOf(
+      BackendFailureError,
+    );
   });
 });

@@ -73,15 +73,15 @@ describe('convertImport', () => {
   });
 
   it('does not fetch when no source url is given', async () => {
-    const spy = jest.fn();
-    globalThis.fetch = spy as unknown as typeof fetch;
+    const spy = jest.fn<typeof fetch>();
+    globalThis.fetch = spy;
     await convertImport('article', envWith('>> title: T\n\nMix.\n'));
     expect(spy).not.toHaveBeenCalled();
   });
 
   it('uses structured data already present in the content without fetching', async () => {
-    const spy = jest.fn();
-    globalThis.fetch = spy as unknown as typeof fetch;
+    const spy = jest.fn<typeof fetch>();
+    globalThis.fetch = spy;
     const cook = await convertImport(jsonLdPage, envWith('x'), {
       sourceUrl: 'https://a.com/x',
     });
@@ -236,8 +236,8 @@ describe('hostile pages', () => {
 
 describe('addMissingCover', () => {
   it('leaves a recipe that already has images alone', async () => {
-    const spy = jest.fn();
-    globalThis.fetch = spy as unknown as typeof fetch;
+    const spy = jest.fn<typeof fetch>();
+    globalThis.fetch = spy;
     const src =
       '>> title: T\n>> source: https://a.com/x\n>> images: https://a.com/i.jpg\n';
     expect(await addMissingCover(src)).toBe(src);
@@ -245,8 +245,8 @@ describe('addMissingCover', () => {
   });
 
   it('leaves a recipe with no source alone', async () => {
-    const spy = jest.fn();
-    globalThis.fetch = spy as unknown as typeof fetch;
+    const spy = jest.fn<typeof fetch>();
+    globalThis.fetch = spy;
     const src = '>> title: T\n\nCook.\n';
     expect(await addMissingCover(src)).toBe(src);
     expect(spy).not.toHaveBeenCalled();

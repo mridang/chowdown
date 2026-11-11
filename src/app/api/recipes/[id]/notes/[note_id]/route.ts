@@ -1,3 +1,5 @@
+/* eslint-disable unicorn/filename-case -- the framework requires this name: the directory name is the route parameter name */
+/* eslint-enable unicorn/filename-case -- the exemption covers only the file name checked on line 1 */
 /**
  * One note on a recipe. The id is the note's position ("1" is the first); send
  * the recipe's `ETag` as `If-Match` so a shifted position can't hit the wrong

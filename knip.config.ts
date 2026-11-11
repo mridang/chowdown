@@ -1,20 +1,30 @@
-import { existsSync } from 'node:fs';
+import { access } from 'node:fs/promises';
 
 /** The globs, only for a folder this app has, so knip finds nothing to hint about. */
-const whenPresent = (folder: string, glob: string) =>
-  // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
-  existsSync(folder) ? [glob] : [];
-
-export default {
-  entry: [
-    'open-next.config.ts',
-    // Bundled to standalone pages by build:views, never imported.
-    ...whenPresent('src/views', 'src/views/*.tsx'),
-  ],
-  ignore: ['public/**', ...whenPresent('skills', 'skills/**')],
-  // Knip reads the `cloudflare:workers` import of the Workflows as a package
-  // called `cloudflare`. The @emnapi packages are listed only so the lockfile
-  // carries the WebAssembly runtime that `npm ci` needs on Linux.
-  ignoreDependencies: ['cloudflare', /^@emnapi\//],
-  tags: ['+public'],
+const whenPresent = async (folder: string, glob: string) => {
+  try {
+    await access(folder);
+    return [glob];
+  } catch {
+    return [];
+  }
 };
+
+/** The knip configuration; a function, because looking for the folders is asynchronous. */
+async function config() {
+  return {
+    entry: [
+      'open-next.config.ts',
+      // Bundled to standalone pages by build:views, never imported.
+      ...(await whenPresent('src/views', 'src/views/*.tsx')),
+    ],
+    ignore: ['public/**', ...(await whenPresent('skills', 'skills/**'))],
+    // Knip reads the `cloudflare:workers` import of the Workflows as a package
+    // called `cloudflare`. The @emnapi packages are listed only so the lockfile
+    // carries the WebAssembly runtime that `npm ci` needs on Linux.
+    ignoreDependencies: ['cloudflare', /^@emnapi\//],
+    tags: ['+public'],
+  };
+}
+
+export default config;

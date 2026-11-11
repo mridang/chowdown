@@ -23,7 +23,7 @@ import {
   getRecipePageRows,
   type RecipePageRows,
 } from '@/domain/db/recipe-page';
-import { claimDriveSync, type User } from '@/domain/db/users';
+import { claimDriveLease, type User } from '@/domain/db/users';
 import { getFileContent, listRecipeFiles } from '@/domain/drive/recipe-files';
 import { getDatabase } from '@/domain/db/client';
 import {
@@ -187,7 +187,7 @@ const liveDeps: RecipeLoadDeps = {
   database: getDatabase,
   pageRows: getRecipePageRows,
   currentUser: getCurrentUser,
-  claimLookup: claimDriveSync,
+  claimLookup: claimDriveLease,
   lookUp: lookUpInDrive,
   redirect,
 };

@@ -27,6 +27,7 @@ export function hasFavouriteTag(source: string): boolean {
  * left exactly as they were.
  */
 export function withFavouriteTag(source: string, on: boolean): string {
+  // eslint-disable-next-line sonarjs/no-selector-parameter -- the flag mirrors the favourite state the callers already hold, and the two paths are one line each
   return on
     ? upsertMetadata(source, [[FAVOURITE_KEY, 'true']])
     : removeMetadata(source, FAVOURITE_KEY);

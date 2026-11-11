@@ -14,7 +14,7 @@
 import type { Database } from '@/domain/db/client';
 import type { User } from '@/domain/db/users';
 import {
-  listRecipesForSync,
+  listSyncRecipes,
   upsertRecipe,
   type Recipe,
 } from '@/domain/db/recipes';
@@ -186,7 +186,7 @@ type RecipeRow = Parameters<typeof upsertRecipe>[1];
 /** The real database and Drive. */
 const liveSyncDeps: TagSyncDeps = {
   database: getDatabase,
-  listCached: listRecipesForSync,
+  listCached: listSyncRecipes,
   readFile: getFileContent,
   save: upsertRecipe,
 };

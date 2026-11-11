@@ -161,20 +161,21 @@ describe('fetchPage', () => {
   });
 
   it('says timed out when the site is too slow', async () => {
-    globalThis.fetch = ((_url: string, init: RequestInit) =>
-      new Promise((_resolve, reject) =>
-        init.signal?.addEventListener('abort', () =>
-          reject(init.signal?.reason),
+    globalThis.fetch = jest.fn<typeof fetch>(
+      (_url, init) =>
+        new Promise<Response>((_resolve, reject) =>
+          init?.signal?.addEventListener('abort', () =>
+            reject(init.signal?.reason),
+          ),
         ),
-      )) as unknown as typeof fetch;
+    );
     expect(await failure('https://a.com/x', 20)).toBe('timed out');
   });
 
   it('says unreachable when the request fails outright', async () => {
-    const spy = jest.fn(async () => {
+    globalThis.fetch = jest.fn<typeof fetch>(async () => {
       throw new TypeError('fetch failed');
     });
-    globalThis.fetch = spy as unknown as typeof fetch;
     expect(await failure('https://a.com/x')).toBe('unreachable');
   });
 });

@@ -22,7 +22,7 @@ import {
   type ToolRunner,
 } from '@/domain/mcp/server';
 import { callTool } from '@/domain/mcp/tool-calls';
-import { InvalidToolArguments, UnknownTool } from '@/lib/mcp';
+import { InvalidToolArgumentsError, UnknownToolError } from '@/lib/mcp';
 import {
   CAPABILITIES,
   INSTRUCTIONS,
@@ -332,7 +332,7 @@ describe('the tool catalogue', () => {
         );
         return result.content[0]?.text.startsWith('Unknown tool') ?? false;
       } catch (error) {
-        return error instanceof UnknownTool;
+        return error instanceof UnknownToolError;
       }
     };
     const candidates = TOOLS.filter((t) => !needsDatabase.includes(t.name));
@@ -603,22 +603,23 @@ describe('handleMcpMessage — what the server says about itself', () => {
   });
 });
 
-describe('handleMcpMessage — refusals', () => {
-  const someone = { id: 1, refresh_token_enc: null } as User;
-  const neverRun: ToolRunner = async () => {
-    throw new Error('the tool must not run');
-  };
-  const send = (
-    message: Record<string, unknown>,
-    runTool: ToolRunner = neverRun,
-  ) =>
-    handleMcpMessage(
-      someone,
-      { jsonrpc: '2.0', id: 'q1', ...message },
-      runTool,
-      noRecipes,
-    );
+/** The setup the refusal tests share. */
+const someone = { id: 1, refresh_token_enc: null } as User;
+const neverRun: ToolRunner = async () => {
+  throw new Error('the tool must not run');
+};
+const send = (
+  message: Record<string, unknown>,
+  runTool: ToolRunner = neverRun,
+) =>
+  handleMcpMessage(
+    someone,
+    { jsonrpc: '2.0', id: 'q1', ...message },
+    runTool,
+    noRecipes,
+  );
 
+describe('handleMcpMessage — refusals', () => {
   it('echoes the request id on every error', async () => {
     for (const message of [
       { method: 'nope' },
@@ -678,7 +679,7 @@ describe('handleMcpMessage — refusals', () => {
     const reply = await send(
       { method: 'tools/call', params: { name: 'list_recipes' } },
       async () => {
-        throw new UnknownTool('ghost');
+        throw new UnknownToolError('ghost');
       },
     );
     expect(reply).toMatchObject({
@@ -691,7 +692,7 @@ describe('handleMcpMessage — refusals', () => {
     const reply = await send(
       { method: 'tools/call', params: { name: 'get_recipe' } },
       async () => {
-        throw new InvalidToolArguments([
+        throw new InvalidToolArgumentsError([
           'Missing "name".',
           '"limit" must be a number.',
         ]);
@@ -711,7 +712,9 @@ describe('handleMcpMessage — refusals', () => {
       },
     });
   });
+});
 
+describe('handleMcpMessage — tool errors and other faults', () => {
   it('answers arguments that do not fit the tool as an error result the model can read, not as a protocol error', async () => {
     const reply = await handleMcpMessage(
       someone,

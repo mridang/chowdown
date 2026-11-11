@@ -53,9 +53,9 @@ import { SITE_URL } from '@/utils/site';
 import { getDatabase } from '@/domain/db/client';
 import { errorMessage, logError } from '@/utils/logging';
 import {
-  BackendFailure,
-  InvalidToolArguments,
-  UnknownTool,
+  BackendFailureError,
+  InvalidToolArgumentsError,
+  UnknownToolError,
   canonicalArguments,
   isJsonObject,
   numberArg,
@@ -1007,14 +1007,14 @@ type Checked = { readonly args: Args } | { readonly refusal: ToolResult };
  * the assistant can correct, so they come back as an `isError` result naming
  * each problem and the arguments the tool takes (the spec lists input validation
  * among tool execution errors, which a host always shows the model).
- * @throws {InvalidToolArguments} If `arguments` is not an object at all: that is
+ * @throws {InvalidToolArgumentsError} If `arguments` is not an object at all: that is
  *   a malformed request, not a mistaken call.
  */
 function checkedArguments(tool: ToolSchema, rawArgs: unknown): Checked {
   // Omitted arguments count as none, so the schema can say what is required.
   const given = rawArgs === undefined ? {} : rawArgs;
   if (!isJsonObject(given)) {
-    throw new InvalidToolArguments(['`arguments` must be an object.']);
+    throw new InvalidToolArgumentsError(['`arguments` must be an object.']);
   }
   const args = canonicalArguments(tool.name, given);
   const problems = validateJson(tool.inputSchema, args, 'The arguments');
@@ -1034,12 +1034,12 @@ function checkedArguments(tool: ToolSchema, rawArgs: unknown): Checked {
  * @returns The tool's result; for arguments that do not fit the tool's schema,
  * an `isError` result saying what to change. Nothing is opened or run for
  * those.
- * @throws {UnknownTool} If no such tool exists.
- * @throws {InvalidToolArguments} If the request has no tool name, or its
+ * @throws {UnknownToolError} If no such tool exists.
+ * @throws {InvalidToolArgumentsError} If the request has no tool name, or its
  *   `arguments` is not an object (both are malformed requests).
  * @throws {DriveNotConnectedError} If the tool needs Drive and it is not
  *   connected.
- * @throws {BackendFailure} If Drive, the database or a model failed mid-call.
+ * @throws {BackendFailureError} If Drive, the database or a model failed mid-call.
  */
 export async function callTool(
   user: Readonly<User>,
@@ -1051,11 +1051,11 @@ export async function callTool(
 ): Promise<ToolResult> {
   const name: unknown = params?.['name'];
   if (typeof name !== 'string' || name === '') {
-    throw new InvalidToolArguments(['`name` must be the name of a tool.']);
+    throw new InvalidToolArgumentsError(['`name` must be the name of a tool.']);
   }
   const tool = toolNamed(name);
   if (!tool) {
-    throw new UnknownTool(name);
+    throw new UnknownToolError(name);
   }
   const checked = checkedArguments(tool, params?.['arguments']);
   if ('refusal' in checked) {
@@ -1115,7 +1115,7 @@ export async function callToolOrExplain(
         `Google Drive isn't connected to Chowdown yet, so there are no recipes to reach. Ask the user to open ${SITE_URL}/app, choose "Connect Google Drive", and then try again.`,
       );
     }
-    if (error instanceof BackendFailure) {
+    if (error instanceof BackendFailureError) {
       // What actually failed stays in our logs; it can hold Google's replies or
       // database details that should not travel on to an assistant.
       logError({

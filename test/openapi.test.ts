@@ -72,6 +72,9 @@ interface Spec {
 }
 
 const ROOT = process.cwd();
+
+/** A value that is deliberately missing, as opposed to a key that is left out. */
+let absent: undefined;
 const spec = JSON.parse(
   // eslint-disable-next-line n/no-sync -- sync is fine in a script or bootstrap
   readFileSync(path.join(ROOT, 'openapi.json'), 'utf8'),
@@ -518,7 +521,7 @@ describe.each(operations)('%s', (key, operation) => {
     it('refuses a body in another media type with 415', async () => {
       await arrange();
       const response = await call(key, good, {
-        json: undefined,
+        json: absent,
         body: 'text',
         type: 'text/plain',
       });
@@ -535,7 +538,7 @@ describe.each(operations)('%s', (key, operation) => {
     ])('refuses a body %s with 400', async (_what, override) => {
       await arrange();
       const response = await call(key, good, {
-        json: undefined,
+        json: absent,
         ...override,
         type,
       });

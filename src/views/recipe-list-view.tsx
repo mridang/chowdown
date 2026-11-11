@@ -96,6 +96,7 @@ function RecipeGrid({
         <ul className="grid" aria-label="Recipes">
           {shown.map((recipe) => (
             <li key={recipe.id}>
+              {/* eslint-disable-next-line github/a11y-no-title-attribute -- the tile text is cut off with an ellipsis; the native tooltip shows the whole title, which the tests assert */}
               <button
                 type="button"
                 className="tile"

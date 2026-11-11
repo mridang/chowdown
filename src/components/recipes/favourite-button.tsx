@@ -54,6 +54,7 @@ export function FavouriteButton({
   const labelledText = on ? 'Favourited' : 'Favourite';
 
   return (
+    // eslint-disable-next-line github/a11y-no-title-attribute -- the name is already given (visible text or aria-label); the title is the intended native hover tooltip, which the tests assert
     <button
       type="button"
       onClick={() => void toggle()}

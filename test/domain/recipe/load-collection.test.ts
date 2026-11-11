@@ -75,7 +75,7 @@ function fakes(
     session: async () => session(),
     database: () => db,
     pageRows,
-    claimSync: jest.fn<CollectionDeps['claimSync']>(async () => true),
+    claimLease: jest.fn<CollectionDeps['claimLease']>(async () => true),
     sync: jest.fn(async () => undefined),
     claimBackfill: jest.fn<CollectionDeps['claimBackfill']>(async () => true),
     backfill: jest.fn(async () => undefined),
@@ -139,7 +139,7 @@ describe('loadCollection', () => {
 
   it('does not start another sync while one started within the last minute', async () => {
     const { deps, background } = fakes([rows()], {
-      claimSync: async () => false,
+      claimLease: async () => false,
     });
     await loadCollection('/app', deps);
     await Promise.all(background);
@@ -148,10 +148,10 @@ describe('loadCollection', () => {
 
   it('starts only one sync when several views arrive together', async () => {
     const turns = [true, false, false];
-    const claimSync = jest.fn<CollectionDeps['claimSync']>(
+    const claimLease = jest.fn<CollectionDeps['claimLease']>(
       async () => turns.shift() ?? false,
     );
-    const views = [0, 1, 2].map(() => fakes([rows()], { claimSync }));
+    const views = [0, 1, 2].map(() => fakes([rows()], { claimLease }));
     await Promise.all(
       views.map(async ({ deps, background }) => {
         await loadCollection('/app', deps);
@@ -210,13 +210,12 @@ describe('loadCollection', () => {
     // Waited for inline, so the sync is not also queued for later.
     expect(background).toHaveLength(0);
     // And recorded, so the next view does not start another straight away.
-    // eslint-disable-next-line n/no-sync -- claimSync is a dependency method name, not a blocking fs call
-    expect(deps.claimSync).toHaveBeenCalledTimes(1);
+    expect(deps.claimLease).toHaveBeenCalledTimes(1);
   });
 
   it('shows what is cached on a first visit when a sync has just started elsewhere', async () => {
     const { deps } = fakes([rows({ recipes: 0 }), rows({ recipes: 0 })], {
-      claimSync: async () => false,
+      claimLease: async () => false,
     });
     const collection = await loadCollection('/app', deps);
     expect(deps.sync).not.toHaveBeenCalled();
@@ -262,8 +261,7 @@ describe('loadCollection', () => {
     });
     const collection = await loadCollection('/app', deps);
     expect(deps.sync).not.toHaveBeenCalled();
-    // eslint-disable-next-line n/no-sync -- claimSync is a dependency method name, not a blocking fs call
-    expect(deps.claimSync).not.toHaveBeenCalled();
+    expect(deps.claimLease).not.toHaveBeenCalled();
     expect(collection.drive).toEqual({
       connected: false,
       reconnect: false,

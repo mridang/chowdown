@@ -140,7 +140,7 @@ export type SyncRecipeRow = Pick<
  * (what is gone), where each used to read the user's recipes on its own. The
  * recipe text is left out. Served by `idx_recipes_user_name`.
  */
-export async function listRecipesForSync(
+export async function listSyncRecipes(
   db: Database,
   userId: number,
 ): Promise<readonly SyncRecipeRow[]> {
@@ -291,7 +291,12 @@ export function staleRecipeIds(
   since: string,
 ): readonly string[] {
   return cached
-    .filter((row) => !keep.has(row.id) && row.seenAt < since)
+    .filter(
+      (row) =>
+        !keep.has(row.id) &&
+        // eslint-disable-next-line sonarjs/strings-comparison -- both are fixed-width timestamps from the same clock, which order correctly as text
+        row.seenAt < since,
+    )
     .map((row) => row.id);
 }
 
@@ -302,7 +307,7 @@ export function staleRecipeIds(
  * parameters in a statement), and leaves anything newer than `since` alone (see
  * {@link staleRecipeIds}).
  * @param cached - The user's recipes if the caller has just read them (see
- * {@link listRecipesForSync}); read here when left out.
+ * {@link listSyncRecipes}); read here when left out.
  */
 export async function deleteRecipesNotIn(
   db: Database,
@@ -311,7 +316,7 @@ export async function deleteRecipesNotIn(
   since: string,
   cached?: readonly SyncRecipeRow[],
 ): Promise<void> {
-  const known = cached ?? (await listRecipesForSync(db, userId));
+  const known = cached ?? (await listSyncRecipes(db, userId));
   const stale = staleRecipeIds(
     known.map((row) => ({ id: row.drive_file_id, seenAt: row.last_opened_at })),
     new Set(keepFileIds),

@@ -204,9 +204,7 @@ describe('parseClientMetadataDocument', () => {
 
 /** A fetch stub that answers every request with `body` and `status`. */
 const respond = (body: string, status = 200) =>
-  jest.fn(
-    async () => new Response(body, { status }),
-  ) as unknown as typeof fetch;
+  jest.fn<typeof fetch>(async () => new Response(body, { status }));
 
 /** A copy of a document with one key left out, as if the client never sent it. */
 function withoutKey(document: Record<string, unknown>, key: string) {

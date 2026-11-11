@@ -12,7 +12,7 @@ import type { Database } from '@/domain/db/client';
 import { deleteOrphanEmbeddings } from '@/domain/db/embeddings';
 import {
   deleteRecipesNotIn,
-  listRecipesForSync,
+  listSyncRecipes,
   type SyncRecipeRow,
 } from '@/domain/db/recipes';
 import { setRecipesFolderId, type User } from '@/domain/db/users';
@@ -79,7 +79,7 @@ const liveDeps: DriveSyncDeps = {
   ensureFolder: ensureRecipesFolder,
   rememberFolder: setRecipesFolderId,
   listFiles: listRecipeFiles,
-  listCached: listRecipesForSync,
+  listCached: listSyncRecipes,
   syncTags: (user, files, token, cached) =>
     syncRecipeTags(user, files, token, undefined, cached),
   // The database helper takes a plain array; hand it a copy of ours.

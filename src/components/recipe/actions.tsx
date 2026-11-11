@@ -62,6 +62,7 @@ export function ShareButton({
 }: Readonly<{ title: string }>): ReactElement {
   const [copied, setCopied] = useState(false);
   const share = async () => {
+    // eslint-disable-next-line n/no-unsupported-features/node-builtins -- the browser navigator, which the Node rule wrongly reports as experimental; used on purpose
     const outcome = await shareLink(navigator, {
       title,
       url: globalThis.location.href,

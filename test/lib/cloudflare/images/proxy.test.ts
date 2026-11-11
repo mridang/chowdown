@@ -153,7 +153,9 @@ describe('fetchImage', () => {
     });
     expect(result).toMatchObject({ ok: false, status: 502 });
   });
+});
 
+describe('fetchImage with the shared safe fetch', () => {
   describe('the shared safe fetch', () => {
     /** A fetcher that answers each call from `responses` and remembers the calls. */
     function serving(...responses: readonly Response[]) {

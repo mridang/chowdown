@@ -1,3 +1,5 @@
+/* eslint-disable unicorn/filename-case -- the framework requires this name: the directory name is the route parameter name */
+/* eslint-enable unicorn/filename-case -- the exemption covers only the file name checked on line 1 */
 import {
   afterEach,
   beforeEach,

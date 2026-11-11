@@ -11,6 +11,9 @@ import {
 
 const SECRET = 'test-session-secret-value';
 
+/** A value that is deliberately missing, as opposed to a key that is left out. */
+let absent: undefined;
+
 // Thin adapters over the SessionTokens handle, so each case reads as a
 // one-line sign/verify.
 const createSessionToken = (payload: NewSession, secret: string = SECRET) =>
@@ -39,7 +42,7 @@ describe('session tokens', () => {
           hint: true,
           off: false,
           tag: 'x',
-          gone: undefined,
+          gone: absent,
         },
         SECRET,
       ),
