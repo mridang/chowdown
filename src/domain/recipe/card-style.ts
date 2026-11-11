@@ -16,13 +16,23 @@ export type DifficultyLevel = 'Easy' | 'Medium' | 'Hard';
 /** The placeholder colours, in the order a hash picks from them. */
 const TONES = ['flame', 'marigold', 'forest', 'sand', 'ink'] as const;
 
+/**
+ * The first UTF-16 unit of a single character: for one outside the BMP that is
+ * its high surrogate, which keeps the tones of names with emoji where they were.
+ */
+function firstUnit(char: string): number {
+  const point = char.codePointAt(0) ?? 0;
+  return point > 0xff_ff
+    ? 0xd8_00 + Math.floor((point - 0x1_00_00) / 0x4_00)
+    : point;
+}
+
 /** A stable tone for a recipe, so its placeholder colour doesn't change. */
 export function toneFor(text: string): Tone {
   // A small rolling hash over the characters; kept below 997 so it never
   // outgrows a safe integer however long the text is.
   const hash = [...text].reduce(
-    // eslint-disable-next-line unicorn/prefer-code-point -- codePointAt would change the hash for names with emoji and move those recipes to another colour
-    (sum, char) => (sum * 31 + char.charCodeAt(0)) % 997,
+    (sum, char) => (sum * 31 + firstUnit(char)) % 997,
     0,
   );
   return TONES.at(hash % TONES.length) ?? TONES[0];

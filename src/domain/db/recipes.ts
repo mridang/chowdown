@@ -11,6 +11,7 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 
 import { normalizeSourceUrl, sourceUrlOf } from '@/lib/cooklang';
+import { compareCodeUnits } from '@/lib/intl';
 import { chunked } from '@/domain/db/chunk';
 import type { Database } from '@/domain/db/client';
 import { replaceRecipeImages } from '@/domain/db/recipe-images';
@@ -292,10 +293,7 @@ export function staleRecipeIds(
 ): readonly string[] {
   return cached
     .filter(
-      (row) =>
-        !keep.has(row.id) &&
-        // eslint-disable-next-line sonarjs/strings-comparison -- both are fixed-width timestamps from the same clock, which order correctly as text
-        row.seenAt < since,
+      (row) => !keep.has(row.id) && compareCodeUnits(row.seenAt, since) < 0,
     )
     .map((row) => row.id);
 }

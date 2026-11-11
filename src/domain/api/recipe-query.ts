@@ -13,7 +13,7 @@ import {
   type FilterableRecipe,
   type SearchParams,
 } from '@/domain/recipe/facet-filter';
-import { compareText } from '@/lib/intl';
+import { compareCodeUnits, compareText } from '@/lib/intl';
 import type { CursorPosition } from '@/lib/core/api';
 
 /** A recipe as the query needs it. */
@@ -90,16 +90,6 @@ export function positionOf(
   order: SortOrder,
 ): CursorPosition {
   return { key: keyOf(recipe, order), id: recipe.id };
-}
-
-/** Three-way order of two plain strings, as `<` and `>` give it. */
-function compareCodeUnits(x: string, y: string): number {
-  // eslint-disable-next-line sonarjs/strings-comparison -- UTF-16 code-unit order is the sort order the cursor and the database share; localeCompare would change it
-  if (x < y) {
-    return -1;
-  }
-  // eslint-disable-next-line sonarjs/strings-comparison -- same code-unit order as the comparison above
-  return x > y ? 1 : 0;
 }
 
 /** Compare two positions the way the list is sorted. */

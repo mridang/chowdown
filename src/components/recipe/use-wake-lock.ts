@@ -101,10 +101,9 @@ function browserEnvironment(): WakeLockEnvironment {
   return {
     wakeLock: 'wakeLock' in navigator ? navigator.wakeLock : undefined,
     isVisible: () => document.visibilityState === 'visible',
-    // eslint-disable-next-line promise/prefer-await-to-callbacks -- a DOM listener parameter, not a Node-style callback; the listener API is synchronous by design
-    onVisibilityChange: (callback) => {
-      document.addEventListener('visibilitychange', callback);
-      return () => document.removeEventListener('visibilitychange', callback);
+    onVisibilityChange: (listener) => {
+      document.addEventListener('visibilitychange', listener);
+      return () => document.removeEventListener('visibilitychange', listener);
     },
   };
 }

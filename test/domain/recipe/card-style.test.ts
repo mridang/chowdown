@@ -57,3 +57,17 @@ describe('cleanTitle separators (linear-time rewrite)', () => {
     expect(performance.now() - started).toBeLessThan(FAST_MS);
   });
 });
+
+describe('toneFor characters outside the BMP', () => {
+  it.each([
+    ['Dal \u{1F35B}', 'forest'],
+    ['\u{1F355}\u{1F355}', 'flame'],
+    ['plain', 'ink'],
+    ['\u00E9', 'sand'],
+    ['\uD800x', 'sand'],
+    ['\u{1D49C}bc', 'flame'],
+    ['\u65E5\u672C', 'sand'],
+  ])('keeps the tone of %j', (name, tone) => {
+    expect(toneFor(name)).toBe(tone);
+  });
+});

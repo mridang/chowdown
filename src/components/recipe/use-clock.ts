@@ -15,10 +15,11 @@ export interface ClockEnvironment {
 
 /** The real browser's scheduling and visibility. */
 const BROWSER: ClockEnvironment = {
-  // eslint-disable-next-line unicorn/prefer-global-this -- the DOM typing returns a number handle, globalThis returns a Node Timeout
-  setInterval: (callback, ms) => window.setInterval(callback, ms),
-  // eslint-disable-next-line unicorn/prefer-global-this -- paired with the DOM setInterval above, which hands back a number
-  clearInterval: (handle) => window.clearInterval(handle),
+  // The browser hands back a number; Number() also gives one under the Node typing.
+  setInterval: (callback, ms) => Number(globalThis.setInterval(callback, ms)),
+  clearInterval: (handle) => {
+    globalThis.clearInterval(handle);
+  },
   onVisible: (notify) => {
     const onChange = () => {
       if (document.visibilityState === 'visible') {

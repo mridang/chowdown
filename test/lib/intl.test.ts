@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   characterCount,
+  compareCodeUnits,
   compareText,
   countOf,
   foldText,
@@ -194,5 +195,23 @@ describe('truncate', () => {
   it('never cuts an emoji in half', () => {
     expect(truncate('ab 👨‍👩‍👧👨‍👩‍👧 cd', 4)).toMatch(/^ab( 👨‍👩‍👧)?…$/);
     expect(characterCount('👨‍👩‍👧')).toBe(1);
+  });
+});
+
+describe('compareCodeUnits', () => {
+  it.each([
+    ['a', 'b', -1],
+    ['b', 'a', 1],
+    ['a', 'a', 0],
+    ['', 'a', -1],
+    ['ab', 'a', 1],
+    ['B', 'a', -1],
+    ['\u{1F600}', '\uFFFF', -1],
+    ['\uFFFF', '\u{1F600}', 1],
+    ['a\u{1F600}', 'a\uFFFF', -1],
+    ['\uD83D', '\uDE00', -1],
+    ['2026-01-01T00:00:00Z', '2026-01-02T00:00:00Z', -1],
+  ])('orders %j and %j by code unit', (x, y, expected) => {
+    expect(compareCodeUnits(x, y)).toBe(expected);
   });
 });
