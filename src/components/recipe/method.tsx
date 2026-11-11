@@ -21,9 +21,10 @@ const HIGHLIGHT = 'box-decoration-clone rounded px-1 py-px font-semibold';
 function Token({ token }: Readonly<{ token: StepToken }>): ReactElement {
   const { quantity } = useRecipeState();
   switch (token.kind) {
-    case 'text':
+    case 'text': {
       return <>{token.text}</>;
-    case 'ingredient':
+    }
+    case 'ingredient': {
       return (
         <span
           // The amount for the servings and units chosen, on hover.
@@ -33,19 +34,22 @@ function Token({ token }: Readonly<{ token: StepToken }>): ReactElement {
           {token.name}
         </span>
       );
-    case 'cookware':
+    }
+    case 'cookware': {
       return (
         <span className={`${HIGHLIGHT} bg-forest/10 text-forest`}>
           {token.name}
         </span>
       );
-    case 'timer':
+    }
+    case 'timer': {
       return (
         <span className={`${HIGHLIGHT} bg-flame/10 text-ember`}>
           <ClockIcon size="sm" className="mr-1 inline-block -translate-y-px" />
           {token.label}
         </span>
       );
+    }
   }
 }
 

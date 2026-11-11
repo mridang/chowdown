@@ -1,4 +1,5 @@
 /* eslint-disable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts, not in a CSS file. */
+
 /**
  * @packageDocumentation
  *
@@ -82,6 +83,7 @@ export interface RecipeCardScreenProps {
   readonly expanded: boolean;
   readonly onExpand: () => void;
   readonly onCollapse: () => void;
+
   /**
    * True when the person has just left the expanded layout with Back, so focus
    * goes to the control that opens it again (the Back button has gone away and
@@ -110,16 +112,18 @@ export function RecipeCardScreen({
   const body = ((): ReactElement => {
     switch (state.phase) {
       case 'connecting':
-      case 'waiting':
+      case 'waiting': {
         return (
           <LoadingCard
             noun="recipe"
             request={state.phase === 'waiting' ? state.request : undefined}
           />
         );
-      case 'failed':
+      }
+      case 'failed': {
         return <MessageCard reason={state.reason} message={state.message} />;
-      case 'ready':
+      }
+      case 'ready': {
         return expanded ? (
           <FullRecipe
             recipe={state.data}
@@ -134,6 +138,7 @@ export function RecipeCardScreen({
             focusButton={returned}
           />
         );
+      }
     }
   })();
   return (

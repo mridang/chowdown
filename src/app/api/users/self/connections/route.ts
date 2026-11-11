@@ -1,7 +1,7 @@
 /**
  * The apps (ChatGPT, Claude…) the user has connected with sign-in.
  *
- *   GET /api/users/self/connections
+ *   GET /api/users/self/connections.
  *
  * The behaviour lives in the `connectionsCollection` controller; this file only
  * mounts it.

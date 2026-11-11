@@ -5,18 +5,16 @@ import { FacetSection } from '@/components/ui/facet';
 import type { FacetData, FacetKey } from '@/components/recipes/search-query';
 
 /** The groups that start open even when nothing in them is switched on. */
-const OPEN_BY_DEFAULT: readonly FacetKey[] = [
+const OPEN_BY_DEFAULT: ReadonlySet<FacetKey> = new Set([
   'difficulty',
   'time',
   'protein',
   'diet_type',
-];
+]);
 
 /** Whether a group starts open: a key one, or one with a filter switched on. */
 function startsOpen(facet: FacetData): boolean {
-  return (
-    OPEN_BY_DEFAULT.includes(facet.key) || facet.options.some((o) => o.active)
-  );
+  return OPEN_BY_DEFAULT.has(facet.key) || facet.options.some((o) => o.active);
 }
 
 /**

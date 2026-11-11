@@ -37,7 +37,7 @@ describe('viewCookie', () => {
   });
 
   it('round-trips through the reader', () => {
-    const value = viewCookie('list', false).split(';')[0]?.split('=')[1];
+    const value = viewCookie('list', false).split(';', 1)[0]?.split('=', 2)[1];
     expect(parseListView(value)).toBe('list');
   });
 });

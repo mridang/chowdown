@@ -1,4 +1,5 @@
 import { compareText } from '@/lib/intl';
+
 /**
  * @packageDocumentation
  *
@@ -44,8 +45,8 @@ function isoDate(when: Date = new Date()): string {
  */
 export function sanitiseName(name: string): string {
   return name
-    .replace(/[/\\]+/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/[/\\]+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .replace(/^\.+/, '')
     .trim();
 }
@@ -70,7 +71,7 @@ export function recipeDisplayName(filename: string): string {
   return filename
     .replace(/\.cook$/i, '')
     .replace(new RegExp(`\\s*\\${UNCURATED_MARKER}\\s*`, 'i'), ' ')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 
@@ -85,7 +86,7 @@ function asComment(text: string): string {
 /**
  * Build the body of an uncurated stub. The original prompt is preserved
  * verbatim as a comment so nothing the user said is lost, and a `draft` (e.g.
- * a recipe the calling assistant generated) is included as the method when
+ * A recipe the calling assistant generated) is included as the method when
  * provided; otherwise a gentle placeholder stands in until the user curates it.
  */
 export function buildStubSource(
@@ -119,7 +120,6 @@ export function buildStubSource(
  * metadata block stays together and the method below is untouched. Like the
  * rest of this module, it's text surgery — it never round-trips through the
  * parser, so comments, ordering and the cooking log all survive.
- *
  * @param source - The `.cook` source.
  * @param pairs - `[key, value]` metadata to set (one line each).
  */
@@ -176,10 +176,10 @@ export function upsertMetadata(
  */
 function lastMetadataLine(lines: readonly string[]): number {
   const blockEnd = lines.findIndex(
-    (line) => !/^>>/.test(line) && line.trim() !== '',
+    (line) => !line.startsWith('>>') && line.trim() !== '',
   );
   const block = blockEnd === -1 ? lines : lines.slice(0, blockEnd);
-  return block.findLastIndex((line) => /^>>/.test(line));
+  return block.findLastIndex((line) => line.startsWith('>>'));
 }
 
 /**
@@ -266,9 +266,8 @@ export function normalizeSourceUrl(url: string): string {
     const kept = [...u.searchParams.entries()]
       .filter(([key]) => !TRACKING_PARAM.test(key))
       .toSorted(([a], [b]) => compareText(a, b));
-    const query = kept.length
-      ? `?${kept.map(([k, v]) => `${k}=${v}`).join('&')}`
-      : '';
+    const query =
+      kept.length > 0 ? `?${kept.map(([k, v]) => `${k}=${v}`).join('&')}` : '';
     return `${host}${u.pathname.replace(/\/+$/, '')}${query}`;
   } catch {
     return url.trim();
@@ -324,12 +323,12 @@ export function extractNotes(source: string): readonly Note[] {
  * be written at all.
  */
 export function flatNoteKey(key: string): string {
-  return key.replace(/[\]\s]+/g, ' ').trim();
+  return key.replaceAll(/[\]\s]+/g, ' ').trim();
 }
 
 /** The text of one note as a comment line (the format {@link appendNote} writes). */
 function noteLine(note: Readonly<Note>): string {
-  const flat = note.text.replace(/\s*\r?\n\s*/g, ' ').trim();
+  const flat = note.text.replaceAll(/\s*\r?\n\s*/g, ' ').trim();
   // A line break or a `]` in the key would end the marker early or start a
   // line of its own.
   const key = flatNoteKey(note.key);
@@ -397,7 +396,7 @@ export function appendCookingLog(
   note: string,
   when: Date = new Date(),
 ): string {
-  const flat = note.replace(/\s*\r?\n\s*/g, ' ').trim();
+  const flat = note.replaceAll(/\s*\r?\n\s*/g, ' ').trim();
   const base = source.endsWith('\n') ? source : `${source}\n`;
   return `${base}-- [cook ${isoDate(when)}] ${flat}\n`;
 }

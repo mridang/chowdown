@@ -51,7 +51,6 @@ const HASH_LENGTH_IN_URI = 12;
 /**
  * The content-hashed `ui://` address of a view: stable while its HTML is
  * unchanged, different as soon as it changes.
- *
  * @param name - The view's file name stem, such as `recipe-card`.
  * @param contentHash - SHA-256 (hex) of the view's HTML, from the build step.
  */
@@ -87,7 +86,6 @@ export const LIST_RESOURCE_URI = hashedResourceUri(
  * Tool metadata that links a tool to its view: the standard `_meta.ui` form,
  * the deprecated flat key older hosts read, and ChatGPT's `openai/outputTemplate`
  * alias, all pointing at the same address.
- *
  * @param resourceUri - The view's `ui://` address.
  */
 export function viewToolMeta(resourceUri: string): {
@@ -218,12 +216,14 @@ export interface AppResource {
   readonly html: string;
   /** Metadata for both `resources/list` and `resources/read`. */
   readonly meta: ViewResourceMeta;
+
   /**
    * True for the old hash-free addresses, served so that hosts and
    * conversations that cached them keep working. New tool definitions never
    * point at these.
    */
   readonly legacy: boolean;
+
   /**
    * True only for the content-hashed address the tool definitions point at:
    * the HTML behind it can never change, so a host may keep it for a long

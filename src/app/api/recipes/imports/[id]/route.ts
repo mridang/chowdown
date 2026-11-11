@@ -2,7 +2,7 @@
  * One recipe import.
  *
  *   GET    /api/recipes/imports/:id   the import and its drafts
- *   DELETE /api/recipes/imports/:id   discard it
+ *   DELETE /api/recipes/imports/:id   discard it.
  */
 
 import { NextResponse } from 'next/server';

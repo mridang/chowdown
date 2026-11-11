@@ -32,7 +32,7 @@ import {
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
 /** Max characters of source content sent to the model (keeps within context). */
-const MAX_CONTENT = 12000;
+const MAX_CONTENT = 12_000;
 
 /** Our Cooklang authoring rules — the single place the format is defined. */
 const SYSTEM_PROMPT = `You convert recipes into Cooklang. Output ONLY valid Cooklang — no commentary, no explanations, no markdown code fences.
@@ -60,7 +60,7 @@ export type ConversionFailure = 'not a recipe' | 'converter unavailable';
 export class ConversionError extends Error {
   override readonly name = 'ConversionError';
 
-  /** @param failure Which way it failed, in words that are safe to show. */
+  /** @param failure - Which way it failed, in words that are safe to show. */
   constructor(readonly failure: ConversionFailure) {
     super(failure);
   }
@@ -106,7 +106,6 @@ function stripFences(text: string): string {
 
 /**
  * Convert fetched recipe `content` (plain text or HTML) into Cooklang source.
- *
  * @param content - Raw page text/HTML the assistant fetched.
  * @param env - Worker env (for the AI binding).
  * @param opts - Optional source URL and name to seed metadata.

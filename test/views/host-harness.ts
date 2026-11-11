@@ -53,7 +53,6 @@ export interface JoinedHost {
  * transports listen on the global `window` and tell the two senders apart by
  * `event.source`, so one fake `window` that delivers each posted message with
  * the other side as its source is enough. No DOM is needed.
- *
  * @param prepare - Called with the app before the handshake, to attach listeners.
  * @param configure - Called with the bridge before the handshake, to set host handlers.
  */

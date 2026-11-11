@@ -144,10 +144,10 @@ function firstString(value: Json): string | undefined {
   const text =
     typeof value === 'string'
       ? value
-      : Array.isArray(value) && typeof value[0] === 'string'
+      : (Array.isArray(value) && typeof value[0] === 'string'
         ? value[0]
-        : undefined;
-  return text?.replace(/\s+/g, ' ').trim();
+        : undefined);
+  return text?.replaceAll(/\s+/g, ' ').trim();
 }
 
 /** Author display name from schema.org `author` (string, object, or array). */
@@ -182,7 +182,7 @@ export function imageUrls(value: Json): readonly string[] {
 
 /** A value as a list: itself if it is one, nothing if it is missing, else just it. */
 function listOf(value: Json): readonly Json[] {
-  return Array.isArray(value) ? value : value === undefined ? [] : [value];
+  return Array.isArray(value) ? value : (value === undefined ? [] : [value]);
 }
 
 /** Video URL from schema.org `video` (VideoObject contentUrl/embedUrl/url). */
@@ -211,7 +211,7 @@ export function dietNames(value: Json): string | undefined {
         .trim(),
     )
     .filter(Boolean);
-  return names.length ? names.join(', ') : undefined;
+  return names.length > 0 ? names.join(', ') : undefined;
 }
 
 /**
@@ -263,7 +263,6 @@ function metadataLines(
  * emitted as a leading block of `@name{qty%unit}` tokens (so the parser and
  * the ingredients panel pick them up), followed by one step per instruction.
  * Known metadata (servings, time, source, tags) is written as `>>` lines.
- *
  * @param recipe - A node already confirmed to be a `Recipe`.
  * @param sourceUrl - The page it came from, recorded as `>> source:`.
  */
@@ -287,7 +286,7 @@ export function schemaOrgToCook(
     meta.join('\n'),
     // One paragraph of ingredient tokens → a single "gather" step the parser
     // reads for the ingredients panel. The user curates it into the method.
-    ...(ingredientLines.length ? [ingredientLines.join('\n')] : []),
+    ...(ingredientLines.length > 0 ? [ingredientLines.join('\n')] : []),
     ...steps,
   ];
   return `${blocks.join('\n\n')}\n`;
@@ -304,7 +303,7 @@ function ogImageOf(meta: Attributes): string | undefined {
   const marksImage = [meta.get('property'), meta.get('name')].some(
     (key) => key !== undefined && OG_IMAGE_KEYS.has(key.trim().toLowerCase()),
   );
-  const content = meta.get('content')?.replace(/&amp;/g, '&').trim();
+  const content = meta.get('content')?.replaceAll('&amp;', '&').trim();
   return marksImage && content ? content : undefined;
 }
 

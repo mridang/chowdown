@@ -219,7 +219,7 @@ describe('what the tools accept as text', () => {
       const good = GOOD_ARGUMENTS[name] ?? {};
       const problems = validateJson(
         tool?.inputSchema ?? {},
-        { ...good, [key]: '   ' },
+        { ...good, [key]: ' '.repeat(3) },
         'The arguments',
       );
       expect(problems).not.toEqual([]);
@@ -287,19 +287,21 @@ describe('what the model has to read', () => {
 describe('the _meta of a tool', () => {
   const LABEL = '[A-Za-z](?:[A-Za-z0-9-]*[A-Za-z0-9])?';
   const NAME = '[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?';
-  const GRAMMAR = new RegExp(`^(?:${LABEL}(?:\\.${LABEL})*/)?${NAME}$`);
+  const GRAMMAR = new RegExp(
+    String.raw`^(?:${LABEL}(?:\.${LABEL})*/)?${NAME}$`,
+  );
 
   /** The keys ChatGPT documents, which have a second `/` and so break the spec's grammar. */
-  const OPENAI_STATUS_KEYS = [
+  const OPENAI_STATUS_KEYS = new Set([
     'openai/toolInvocation/invoking',
     'openai/toolInvocation/invoked',
-  ];
+  ]);
 
   it('uses keys the MCP spec allows, apart from the two ChatGPT status keys', () => {
     const keys = [...new Set(TOOLS.flatMap((t) => Object.keys(t._meta)))];
     expect(keys.length).toBeGreaterThan(4);
     const offenders = keys.filter(
-      (key) => !GRAMMAR.test(key) && !OPENAI_STATUS_KEYS.includes(key),
+      (key) => !GRAMMAR.test(key) && !OPENAI_STATUS_KEYS.has(key),
     );
     expect(offenders).toEqual([]);
     // The exception is exactly these two: if the grammar ever accepts them,
@@ -476,7 +478,7 @@ describe('the input checker agrees with ajv', () => {
     51,
     1001,
     '',
-    '   ',
+    ' '.repeat(3),
     'x',
     'Easy',
     'easy',
@@ -592,7 +594,7 @@ describe('every result conforms to the tool that returned it', () => {
       ],
       ['set_recipe_images', { recipe: 'pancakes', images: ['nope'] }],
       ['annotate_recipe', { recipe: 'pizza', note: 'x' }],
-      ['annotate_recipe', { recipe: 'pancakes', note: '   ' }],
+      ['annotate_recipe', { recipe: 'pancakes', note: ' '.repeat(3) }],
       ['favourite_recipe', { recipe: 'pizza' }],
       ['browse_recipes', { cuisine: 'Martian' }],
       ['recipes_from_ingredients', { ingredients: ['  '] }],

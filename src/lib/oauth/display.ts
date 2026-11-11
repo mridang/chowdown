@@ -52,8 +52,8 @@ export function sanitiseDisplayName(
     .normalize('NFKC')
     // Line and paragraph separators and tabs are whitespace, not invisible;
     // turn them into spaces before the invisible characters are dropped.
-    .replace(/\s+/gu, ' ')
-    .replace(INVISIBLE, '')
+    .replaceAll(/\s+/gu, ' ')
+    .replaceAll(INVISIBLE, '')
     .trim();
   const capped = [...cleaned].slice(0, maxLength).join('').trim();
   return capped || fallback;
@@ -118,9 +118,9 @@ export const APP_SCHEME_WARNING =
 function asciiOnly(text: string): string {
   return [...text]
     .map((ch) =>
-      /^[\x21-\x7e]$/.test(ch)
+      /^[\u0021-\u007E]$/.test(ch)
         ? ch
-        : `\\u{${(ch.codePointAt(0) ?? 0).toString(16)}}`,
+        : String.raw`\u{${(ch.codePointAt(0) ?? 0).toString(16)}}`,
     )
     .join('');
 }

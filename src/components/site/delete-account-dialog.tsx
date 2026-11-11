@@ -49,7 +49,7 @@ export function DeleteAccountDialog({
     if (result.deleted) {
       // A full load, not a client navigation: nothing cached about the
       // signed-in person should survive their account.
-      window.location.assign('/');
+      globalThis.location.assign('/');
       return;
     }
     setError(result.message);

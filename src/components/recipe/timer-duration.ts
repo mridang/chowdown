@@ -36,7 +36,7 @@ const LONGEST_MS = 24 * HOUR;
  * ignored (a range counts from its lower bound), and the unit if it has one.
  */
 const TERM = new RegExp(
-  `(?<amount>${AMOUNT_PATTERN})(?:\\s*(?:[-–—]|to)\\s*(?:${AMOUNT_PATTERN}))?\\s*(?<unit>[a-z]+)?`,
+  String.raw`(?<amount>${AMOUNT_PATTERN})(?:\s*(?:[-–—]|to)\s*(?:${AMOUNT_PATTERN}))?\s*(?<unit>[a-z]+)?`,
   'gi',
 );
 
@@ -126,8 +126,7 @@ function totalOf(terms: readonly Term[]): number | null {
  * "1h30", "1 hour and 30 minutes". A range such as "1-2 hours" or "5 to 10
  * minutes" counts from its lower bound, because the cook can always add time
  * and cannot take it back.
- *
- * @param label The timer's label as the recipe wrote it.
+ * @param label - The timer's label as the recipe wrote it.
  */
 export function parseDurationMs(label: string): number | null {
   // "1 hour - 1 hour 30 min" is a range between two durations; take the first.

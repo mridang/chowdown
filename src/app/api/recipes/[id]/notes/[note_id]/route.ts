@@ -5,7 +5,7 @@
  *
  *   GET    /api/recipes/:id/notes/:note_id
  *   PUT    /api/recipes/:id/notes/:note_id   replace it
- *   DELETE /api/recipes/:id/notes/:note_id
+ *   DELETE /api/recipes/:id/notes/:note_id.
  */
 
 import { NextResponse } from 'next/server';

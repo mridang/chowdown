@@ -47,11 +47,13 @@ export type AuthorizeCheck =
       /** OAuth error code. */
       readonly error: string;
       readonly description: string;
+
       /**
        * Set when the problem is "too busy right now" rather than a bad request:
        * seconds to wait before trying again (a 429 where the caller can send one).
        */
       readonly retryAfterSeconds?: number;
+
       /**
        * Where to send the error. Absent when the client or redirect URI could
        * not be trusted, in which case the error is shown to the user instead.
@@ -59,6 +61,7 @@ export type AuthorizeCheck =
       readonly redirect?: {
         readonly uri: string;
         readonly state: string | undefined;
+
         /**
          * Whether the error may be sent there without the person choosing to go.
          * True only for a client whose redirect addresses come from a document

@@ -47,7 +47,7 @@ describe('ConsentCard', () => {
     expect(markup.match(/<h1/g)).toHaveLength(1);
     expect(markup).toMatch(
       new RegExp(
-        `<h1[^>]*>Connect <span[^>]*>Claude</span> to ${BRAND_NAME}\\?</h1>`,
+        String.raw`<h1[^>]*>Connect <span[^>]*>Claude</span> to ${BRAND_NAME}\?</h1>`,
       ),
     );
   });

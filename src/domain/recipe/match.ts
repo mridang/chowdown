@@ -80,11 +80,14 @@ export function matchFile(
 ): DriveFile | undefined {
   const match = resolveFile(files, reference);
   switch (match.kind) {
-    case 'one':
+    case 'one': {
       return match.file;
-    case 'many':
+    }
+    case 'many': {
       return match.files[0];
-    case 'none':
+    }
+    case 'none': {
       return undefined;
+    }
   }
 }

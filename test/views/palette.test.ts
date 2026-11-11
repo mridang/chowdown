@@ -10,7 +10,7 @@ import {
 /** Relative luminance of a `#rrggbb` colour, as WCAG defines it. */
 function luminance(hex: string): number {
   const [r = 0, g = 0, b = 0] = [1, 3, 5].map((start) => {
-    const channel = parseInt(hex.slice(start, start + 2), 16) / 255;
+    const channel = Number.parseInt(hex.slice(start, start + 2), 16) / 255;
     return channel <= 0.03928
       ? channel / 12.92
       : ((channel + 0.055) / 1.055) ** 2.4;

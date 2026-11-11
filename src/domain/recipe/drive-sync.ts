@@ -92,9 +92,8 @@ const liveDeps: DriveSyncDeps = {
  * The id of the user's recipes folder in Drive: the one we remembered, or, for
  * someone syncing for the first time, a freshly created one that we remember
  * from now on.
- *
- * @param deps How to create the folder and remember it; the real Drive and
- *   database unless a test says otherwise.
+ * @param deps - How to create the folder and remember it; the real Drive and
+ * database unless a test says otherwise.
  */
 export async function recipesFolderOf(
   db: Database,
@@ -119,9 +118,8 @@ export async function recipesFolderOf(
  * Throws {@link DriveNotConnectedError} if Drive isn't connected or Google no
  * longer accepts the stored login (which is cleared, so the person is offered
  * "reconnect"); other failures are left for the caller to ignore or report.
- *
- * @param user The signed-in user whose folder is synced.
- * @param deps Collaborators; leave out to use the real database and Drive.
+ * @param user - The signed-in user whose folder is synced.
+ * @param deps - Collaborators; leave out to use the real database and Drive.
  */
 export async function syncFromDrive(
   user: Readonly<User>,

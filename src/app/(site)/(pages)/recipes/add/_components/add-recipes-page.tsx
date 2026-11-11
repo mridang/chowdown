@@ -68,8 +68,8 @@ function ManualEditor({
       router.push(`/recipe/${id}`);
       // ...and the list the router remembers should include it too.
       router.refresh();
-    } catch (caught) {
-      setError(problemText(caught, 'Could not save the recipe.'));
+    } catch (error_) {
+      setError(problemText(error_, 'Could not save the recipe.'));
       setBusy(false);
     }
   }, [name, content, router]);

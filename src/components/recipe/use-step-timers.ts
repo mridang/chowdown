@@ -76,8 +76,7 @@ function browserAudioContext(): AudioContextConstructor | undefined {
  * looked at. This hook adds what a browser needs around that: a clock that
  * refreshes while something is running, a beep, a buzz, an announcement and the
  * tab title when a timer finishes.
- *
- * @param recipeTitle The recipe, so the tab title still says what it is.
+ * @param recipeTitle - The recipe, so the tab title still says what it is.
  */
 export function useStepTimers(recipeTitle: string): StepTimers {
   const [timers, dispatch] = useReducer(timerReducer, []);

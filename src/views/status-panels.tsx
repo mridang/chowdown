@@ -1,4 +1,5 @@
 /* eslint-disable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts, not in a CSS file. */
+
 /**
  * @packageDocumentation
  *

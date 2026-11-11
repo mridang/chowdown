@@ -2,7 +2,7 @@
  * The recipe collection.
  *
  *   GET  /api/recipes   list recipes (filter, sort, paginate)
- *   POST /api/recipes   create a recipe from Cooklang text
+ *   POST /api/recipes   create a recipe from Cooklang text.
  *
  * Listing is served from the D1 cache, so it never waits on Drive. Creating
  * writes the file to the user's Drive and indexes it. The recipe's source URL

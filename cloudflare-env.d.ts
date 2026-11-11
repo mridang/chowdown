@@ -13,8 +13,9 @@ interface CloudflareEnv extends Cloudflare.Env {
   TOKEN_ENCRYPTION_KEY: string;
   /** Secret that signs the session cookie. */
   SESSION_SECRET: string;
+
   /**
-   * Public origin, e.g. https://chowdown.apps.mrida.ng. Optional; derived
+   * Public origin, e.g. Https://chowdown.apps.mrida.ng. Optional; derived
    * from the request when unset (local dev).
    */
   APP_URL?: string;

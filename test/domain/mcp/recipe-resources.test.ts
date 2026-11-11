@@ -138,7 +138,7 @@ describe('readRecipeResource', () => {
   });
 
   it('does not guess between two recipes whose ids differ only in case', async () => {
-    expect((await refusal('recipe:///SAME1')).code).toBe(-32602);
+    expect((await refusal('recipe:///SAME1')).code).toBe(-32_602);
     expect(
       await readRecipeResource(someone, 'recipe:///sAME1', driveWith()),
     ).toMatchObject({
@@ -153,7 +153,7 @@ describe('readRecipeResource', () => {
 
   it('refuses an id the user has no recipe for, with the address in the detail', async () => {
     const error = await refusal('recipe://zzz');
-    expect(error.code).toBe(-32602);
+    expect(error.code).toBe(-32_602);
     expect(error.data).toEqual({ uri: 'recipe://zzz' });
   });
 
@@ -171,7 +171,7 @@ describe('readRecipeResource', () => {
     'refuses %s as not a recipe address, without opening Drive',
     async (uri) => {
       const open = jest.fn(driveWith());
-      expect((await refusal(uri, open)).code).toBe(-32602);
+      expect((await refusal(uri, open)).code).toBe(-32_602);
       expect(open).not.toHaveBeenCalled();
     },
   );
@@ -180,7 +180,7 @@ describe('readRecipeResource', () => {
     const error = await refusal('recipe:///abc123', async () => {
       throw new DriveNotConnectedError();
     });
-    expect(error.code).toBe(-32603);
+    expect(error.code).toBe(-32_603);
     expect(error.message).toMatch(/Google Drive isn't connected/);
   });
 

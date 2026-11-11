@@ -157,8 +157,7 @@ export function closedBy(dismissable: boolean): {
  * Whether this browser closes a dialog on a click outside it by itself, that
  * is, understands `closedby` (Chrome 134, Firefox 141, Safari 26). Where it does
  * not, the dialog has to watch for that click, with {@link backdropClickHandler}.
- *
- * @param dialog Any dialog element; the feature is looked for on its prototype.
+ * @param dialog - Any dialog element; the feature is looked for on its prototype.
  */
 export function supportsLightDismiss(dialog: object): boolean {
   return 'closedBy' in dialog;
@@ -211,8 +210,7 @@ export const LEAVE_MS = 250;
  * Whether a dialog's content should still be on the page: while it is open, and
  * for {@link LEAVE_MS} after it closes. Without the second part the content
  * would vanish the instant the dialog is closed and an empty panel would fade.
- *
- * @param open Whether the dialog is open now.
+ * @param open - Whether the dialog is open now.
  */
 function useMounted(open: boolean): boolean {
   const [leaving, setLeaving] = useState(false);

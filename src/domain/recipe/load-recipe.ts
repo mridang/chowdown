@@ -112,7 +112,7 @@ export type DriveLookup =
 /**
  * Read one recipe the cache has never seen from Drive, index it so the next
  * view is fast, and re-read the page rows. (The redirects stay with the
- * caller: a redirect thrown inside a `try` would be swallowed.)
+ * caller: a redirect thrown inside a `try` would be swallowed.).
  */
 async function lookUpInDrive(
   db: Database,
@@ -163,6 +163,7 @@ export interface RecipeLoadDeps {
   ) => Promise<RecipePageRows>;
   /** The full signed-in user, for the Drive fallback. */
   readonly currentUser: () => Promise<User | null>;
+
   /**
    * Take the turn to read Drive for the person; false when a Drive listing
    * started within the last minute, so an id the cache lacks really is
@@ -201,8 +202,7 @@ const liveDeps: RecipeLoadDeps = {
  * person's last Drive sync started over a minute ago: otherwise the cache is as
  * fresh as Drive would be, the id is simply unknown, and a stranger's
  * made-up ids cannot be used to make us list the folder over and over.
- *
- * @param deps Collaborators; leave out to use the real ones.
+ * @param deps - Collaborators; leave out to use the real ones.
  */
 export async function loadRecipePageRows(
   id: string,

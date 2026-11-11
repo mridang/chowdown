@@ -42,6 +42,7 @@ export interface FavouriteDeps {
     userId: number,
     fileId: string,
   ) => Promise<boolean>;
+
   /**
    * Run a job after any earlier job for the same key, never alongside it
    * (see {@link createKeyedQueue}).
@@ -136,8 +137,7 @@ async function writeFavouriteTag(
 /**
  * Heart or un-heart a recipe. Returns as soon as the table is updated; the file
  * marker follows in the background, one update per recipe at a time. Idempotent.
- *
- * @param deps Collaborators; leave out to use the real ones.
+ * @param deps - Collaborators; leave out to use the real ones.
  */
 export async function setFavouriteAndTag(
   userId: number,

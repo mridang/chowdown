@@ -38,6 +38,7 @@ export interface FolderHooks {
     reads: number,
     change: (text: string) => void,
   ) => void;
+
   /**
    * Called after each write of a file, with the file's name, how many times it has
    * been written so far, and a way to change its text: a stand-in for another save
@@ -134,7 +135,7 @@ export function row(name: string, source: string): Recipe {
  * is a mock so a test can see what it was asked.
  */
 export function fakeServices(overrides: Partial<ToolServices> = {}) {
-  const services = {
+  return {
     searchIndex: jest.fn<ToolServices['searchIndex']>(async (_user, files) => ({
       rows: files.map((f, index) => ({
         user_id: USER.id,
@@ -176,7 +177,6 @@ export function fakeServices(overrides: Partial<ToolServices> = {}) {
     })),
     ...overrides,
   } satisfies ToolServices;
-  return services;
 }
 
 /** Call a tool against a fake folder and fake services. */

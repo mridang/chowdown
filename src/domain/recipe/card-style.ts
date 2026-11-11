@@ -33,7 +33,7 @@ export function toneFor(text: string): Tone {
  * before the first separator.
  */
 export function cleanTitle(title: string): string {
-  return (title.split(/\s+[|–—]\s+/)[0] ?? title).trim() || title;
+  return (title.split(/\s+[|–—]\s+/, 1)[0] ?? title).trim() || title;
 }
 
 /** The difficulty a tag value names, or nothing if it isn't one of the three. */

@@ -6,16 +6,16 @@ import { fetchPage, PageFetchError } from '@/domain/recipe/fetch-page';
 /** The User-Agent `fetchPage` builds from the site's identity at the call site. */
 const USER_AGENT = `${SITE_NAME.toLowerCase()}/1.0 (+${SITE_URL})`;
 
-const realFetch = global.fetch;
+const realFetch = globalThis.fetch;
 
 afterEach(() => {
-  global.fetch = realFetch;
+  globalThis.fetch = realFetch;
 });
 
 /** Make the next fetches answer with `responses`, in turn, and remember the calls. */
 function serving(...responses: readonly Response[]) {
   const calls: { url: string; init: RequestInit }[] = [];
-  global.fetch = (async (url: string, init: RequestInit) => {
+  globalThis.fetch = (async (url: string, init: RequestInit) => {
     calls.push({ url, init });
     const next = responses[calls.length - 1];
     if (!next) {
@@ -28,7 +28,9 @@ function serving(...responses: readonly Response[]) {
 
 /** Why fetching `url` failed, in the words import shows. */
 async function failure(url: string, timeoutMs?: number): Promise<string> {
-  const error = await fetchPage(url, timeoutMs).catch((e: unknown) => e);
+  const error = await fetchPage(url, timeoutMs).catch(
+    (error_: unknown) => error_,
+  );
   expect(error).toBeInstanceOf(PageFetchError);
   return (error as PageFetchError).failure;
 }
@@ -155,7 +157,7 @@ describe('fetchPage', () => {
   });
 
   it('says timed out when the site is too slow', async () => {
-    global.fetch = ((_url: string, init: RequestInit) =>
+    globalThis.fetch = ((_url: string, init: RequestInit) =>
       new Promise((_resolve, reject) =>
         init.signal?.addEventListener('abort', () =>
           reject(init.signal?.reason),
@@ -168,7 +170,7 @@ describe('fetchPage', () => {
     const spy = jest.fn(async () => {
       throw new TypeError('fetch failed');
     });
-    global.fetch = spy as unknown as typeof fetch;
+    globalThis.fetch = spy as unknown as typeof fetch;
     expect(await failure('https://a.com/x')).toBe('unreachable');
   });
 });

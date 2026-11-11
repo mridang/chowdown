@@ -149,19 +149,22 @@ export function AddRecipes({
     inflight.current = null;
     setBusy(false);
     switch (outcome.kind) {
-      case 'cancelled':
+      case 'cancelled': {
         setAnnouncement(ANNOUNCEMENTS.cancelled);
         return;
-      case 'failed':
+      }
+      case 'failed': {
         setAnnouncement('');
         setPrepareError(outcome.message);
         return;
-      case 'prepared':
+      }
+      case 'prepared': {
         setAnnouncement('');
         importId.current = outcome.prepared.id;
         setDrafts(outcome.prepared.drafts);
         setPhase('review');
         seek(outcome.prepared.drafts, 0);
+      }
     }
   }, [input, seek]);
 
@@ -198,10 +201,10 @@ export function AddRecipes({
           ? ANNOUNCEMENTS.savedNext(index + 2, drafts.length)
           : '',
       );
-    } catch (err) {
+    } catch (error) {
       setAnnouncement('');
       setSaveError(
-        err instanceof Error ? err.message : 'Could not save that recipe.',
+        error instanceof Error ? error.message : 'Could not save that recipe.',
       );
     } finally {
       setBusy(false);
@@ -343,9 +346,9 @@ export function AddRecipes({
             >
               {busy
                 ? 'Saving…'
-                : index + 1 < drafts.length
+                : (index + 1 < drafts.length
                   ? 'Save & next'
-                  : 'Save & finish'}
+                  : 'Save & finish')}
             </Button>
             <Button
               variant="outline"

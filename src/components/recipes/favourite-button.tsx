@@ -26,7 +26,7 @@ export type FavouriteVariant = 'overlay' | 'labelled';
  *
  * It saves for real, through the favourites API, and is optimistic: the heart
  * flips the moment it is pressed, then rolls back if the save fails. State is
- * `override ?? initial`, where the override comes from a small shared store, so
+ * `override ?? Initial`, where the override comes from a small shared store, so
  * the same recipe's heart agrees everywhere in the tab (grid card, a
  * prefetched recipe page) without refetching anything.
  *

@@ -91,7 +91,7 @@ export function fromApp(
   }> = {},
 ): Request {
   const body =
-    options.json !== undefined ? JSON.stringify(options.json) : options.body;
+    options.json === undefined ? options.body : JSON.stringify(options.json);
   // The browser sends its cookies with every request; the API resolves identity
   // from them, so carry whatever signIn put in the jar.
   const cookie = [...jar].map(([name, value]) => `${name}=${value}`).join('; ');
@@ -100,12 +100,12 @@ export function fromApp(
     headers: {
       'sec-fetch-site': 'same-origin',
       ...(cookie ? { cookie } : {}),
-      ...(body !== undefined
-        ? { 'content-type': options.type ?? 'application/json' }
-        : {}),
+      ...(body === undefined
+        ? {}
+        : { 'content-type': options.type ?? 'application/json' }),
       ...options.headers,
     },
-    ...(body !== undefined ? { body } : {}),
+    ...(body === undefined ? {} : { body }),
   });
 }
 
@@ -148,9 +148,7 @@ export function fakeGoogle(
     const method = init?.method ?? 'GET';
     requests.push(`${method} ${url}`);
     if (url.startsWith('https://oauth2.googleapis.com/token')) {
-      return new Response(
-        JSON.stringify({ access_token: 'access-token', expires_in: 3599 }),
-      );
+      return Response.json({ access_token: 'access-token', expires_in: 3599 });
     }
     if (url.startsWith('https://oauth2.googleapis.com/revoke')) {
       return new Response('{}');
@@ -163,15 +161,13 @@ export function fakeGoogle(
         : new Response('not found', { status: 404 });
     }
     if (method === 'GET' && url.includes('/drive/v3/files?')) {
-      return new Response(
-        JSON.stringify({
-          files: [...files].map(([fileId, f]) => ({
-            id: fileId,
-            name: f.name,
-            modifiedTime: '2026-01-01T00:00:00.000Z',
-          })),
-        }),
-      );
+      return Response.json({
+        files: [...files].map(([fileId, f]) => ({
+          id: fileId,
+          name: f.name,
+          modifiedTime: '2026-01-01T00:00:00.000Z',
+        })),
+      });
     }
     if (method === 'POST' && url.includes('uploadType=multipart')) {
       counter.created += 1;
@@ -179,17 +175,15 @@ export function fakeGoogle(
       const name = /"name":"([^"]+)"/.exec(text)?.[1] ?? 'new.cook';
       const content =
         text
-          .split('Content-Type: text/plain; charset=UTF-8\r\n\r\n')[1]
-          ?.split('\r\n--chowdown-')[0] ?? '';
+          .split('Content-Type: text/plain; charset=UTF-8\r\n\r\n', 2)[1]
+          ?.split('\r\n--chowdown-', 1)[0] ?? '';
       const created = `created-${counter.created}`;
       files.set(created, { name, content });
-      return new Response(
-        JSON.stringify({
-          id: created,
-          name,
-          modifiedTime: '2026-01-02T00:00:00.000Z',
-        }),
-      );
+      return Response.json({
+        id: created,
+        name,
+        modifiedTime: '2026-01-02T00:00:00.000Z',
+      });
     }
     if (method === 'PATCH' && url.includes('uploadType=media') && id) {
       const file = files.get(id);

@@ -11,7 +11,7 @@ import { createRoot } from 'react-dom/client';
 
 import { RecipeListApp } from '@/views/recipe-list-view';
 
-const root = document.getElementById('root');
+const root = document.querySelector('#root');
 if (root) {
   createRoot(root).render(<RecipeListApp />);
 }

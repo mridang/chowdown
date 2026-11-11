@@ -76,12 +76,12 @@ async function prepareUnit(
       cooklang,
       ...(sourceUrl ? { source_url: sourceUrl } : {}),
     };
-  } catch (err) {
+  } catch (error) {
     const where = sourceUrl ?? 'pasted text';
     return {
       title: sourceUrl ?? 'Pasted recipe',
       status: 'FAILED',
-      problem: `Couldn't import ${where}: ${failureReason(err)}. Paste the recipe text directly instead.`,
+      problem: `Couldn't import ${where}: ${failureReason(error)}. Paste the recipe text directly instead.`,
       ...(sourceUrl ? { source_url: sourceUrl } : {}),
     };
   }

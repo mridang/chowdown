@@ -140,12 +140,12 @@ function registered(): readonly string[] {
       .filter(Boolean)
       .map((segment) => `/${segment}`)
       .join('')
-      .replace(/\[([a-z_]+)\]/g, '{$1}')}`;
+      .replaceAll(/\[([a-z_]+)\]/g, '{$1}')}`;
     const text = readFileSync(file, 'utf8');
     return METHODS.map((method) => method.toUpperCase())
       .filter((method) =>
         new RegExp(
-          `export (async function ${method}\\b|const \\{[^}]*\\b${method}\\b[^}]*\\} =)`,
+          String.raw`export (async function ${method}\b|const \{[^}]*\b${method}\b[^}]*\} =)`,
         ).test(text),
       )
       .map((method) => `${method} ${url}`);
@@ -169,7 +169,7 @@ function misfit(schema: Described, value: unknown): string {
 /** The media type of a response, without its parameters. */
 function mediaType(response: Response): string {
   return (response.headers.get('content-type') ?? '')
-    .split(';')[0]!
+    .split(';', 1)[0]!
     .trim()
     .toLowerCase();
 }
@@ -328,7 +328,7 @@ const ROUTES: Readonly<Record<string, () => Promise<object>>> = {
 
 /** The concrete path of an operation with its parameters filled in. */
 function fill(url: string, params: Readonly<Record<string, string>>): string {
-  return url.replace(/\{([a-z_]+)\}/g, (_, name: string) =>
+  return url.replaceAll(/\{([a-z_]+)\}/g, (_, name: string) =>
     encodeURIComponent(params[name] ?? 'x'),
   );
 }
@@ -439,7 +439,9 @@ describe.each(operations)('%s', (key, operation) => {
   const good = GOOD[operation.operationId] ?? { status: 0 };
   const open = (operation.security ?? []).length === 0;
   const parameters = (operation.parameters ?? []).map(deref);
-  const inQuery = parameters.filter((p) => p.in === 'query').map((p) => p.name);
+  const inQuery = new Set(
+    parameters.filter((p) => p.in === 'query').map((p) => p.name),
+  );
   const inPath = parameters.filter((p) => p.in === 'path').map((p) => p.name);
 
   it('is tagged and summarised, declares its security, and documents a success and a 429', () => {
@@ -565,7 +567,7 @@ describe.each(operations)('%s', (key, operation) => {
     );
   }
 
-  if (inQuery.includes('limit') && inQuery.includes('cursor')) {
+  if (inQuery.has('limit') && inQuery.has('cursor')) {
     it.each(['limit=0', 'limit=101', 'limit=x', 'cursor=not-a-cursor'])(
       'refuses the query %s with 400',
       async (query) => {
@@ -577,7 +579,7 @@ describe.each(operations)('%s', (key, operation) => {
     );
   }
 
-  if (inQuery.includes('sort')) {
+  if (inQuery.has('sort')) {
     it('refuses a sort it does not know with 400', async () => {
       await arrange();
       const response = await call(key, good, { query: 'sort=colour' });

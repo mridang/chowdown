@@ -138,12 +138,14 @@ export interface ResolveDeps {
   readonly rateLimits?: RateLimitStore;
   /** The current time in milliseconds. */
   readonly now?: number;
+
   /**
    * This server's own origin. A `client_id` on it is never fetched: the
    * "document" would be one of our own pages, and every lookup would cost a
    * request to ourselves.
    */
   readonly origin?: string;
+
   /**
    * Who is asking (see `clientAddress`). Fetches are counted per asking
    * address before the overall allowance, so one caller naming many hosts
@@ -424,6 +426,7 @@ export interface ConnectedApp {
   readonly grantId: string;
   /** The app's name, cleaned for showing (it may have been saved before the current rules). */
   readonly name: string;
+
   /**
    * The most the app may do through any of its installs: the union of the
    * scopes of all its live grants, so an older edit-capable install is not

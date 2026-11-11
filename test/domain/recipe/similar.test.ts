@@ -80,8 +80,8 @@ const withStored = (r: EmbeddingRow, list: readonly SimilarRecipe[]) => ({
 function sequence(seed: number): () => number {
   const state = { value: seed };
   return () => {
-    state.value = (state.value * 1664525 + 1013904223) % 4294967296;
-    return state.value / 4294967296;
+    state.value = (state.value * 1_664_525 + 1_013_904_223) % 4_294_967_296;
+    return state.value / 4_294_967_296;
   };
 }
 

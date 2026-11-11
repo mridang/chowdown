@@ -61,6 +61,7 @@ export interface CollectionDeps {
   readonly database: () => Database;
   /** The user, cached recipes and favourites in one read. */
   readonly pageRows: (db: Database, userId: number) => Promise<AppPageRows>;
+
   /**
    * Take the turn to start a Drive sync for the person; false when one started
    * within the last minute and this view should leave it alone.
@@ -68,6 +69,7 @@ export interface CollectionDeps {
   readonly claimSync: (db: Database, userId: number) => Promise<boolean>;
   /** Bring the cache in line with Drive. */
   readonly sync: (user: Readonly<User>) => Promise<unknown>;
+
   /**
    * Take the lease on the embeddings top-up; false when another request holds
    * it and is already doing the job.
@@ -163,9 +165,8 @@ async function backfillIfFree(
  * Someone signed in without a Drive connection (never made, or Google rejected
  * it) gets whatever is cached and a `drive` status the page turns into an offer
  * to connect; nothing is synced for them.
- *
- * @param returnTo Where to come back to if the session needs reissuing.
- * @param deps Collaborators; leave out to use the real ones.
+ * @param returnTo - Where to come back to if the session needs reissuing.
+ * @param deps - Collaborators; leave out to use the real ones.
  */
 export async function loadCollection(
   returnTo: string = '/app',

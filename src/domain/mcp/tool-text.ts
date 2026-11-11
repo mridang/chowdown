@@ -50,9 +50,9 @@ const INVISIBLE =
  */
 export function plainTitle(title: string): string {
   const flat = title
-    .replace(INVISIBLE, '')
-    .replace(/[\p{Cc}\u2028\u2029]/gu, ' ')
-    .replace(/\s+/g, ' ')
+    .replaceAll(INVISIBLE, '')
+    .replaceAll(/[\p{Cc}\u2028\u2029]/gu, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
   return flat.length > TITLE_TEXT_LIMIT
     ? `${flat.slice(0, TITLE_TEXT_LIMIT - 1).trimEnd()}…`
@@ -117,18 +117,22 @@ function stepText(step: readonly StepToken[]): string {
   return step
     .map((token) => {
       switch (token.kind) {
-        case 'text':
+        case 'text': {
           return token.text;
-        case 'ingredient':
+        }
+        case 'ingredient': {
           return `${token.quantity} ${token.name}`.trim();
-        case 'cookware':
+        }
+        case 'cookware': {
           return token.name;
-        case 'timer':
+        }
+        case 'timer': {
           return token.label;
+        }
       }
     })
     .join('')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 

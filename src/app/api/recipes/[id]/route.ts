@@ -4,7 +4,7 @@
  *   GET    /api/recipes/:id   read it (JSON, Cooklang text, or schema.org JSON-LD)
  *   PUT    /api/recipes/:id   replace its Cooklang text
  *   PATCH  /api/recipes/:id   edit title, images or tags (JSON Merge Patch)
- *   DELETE /api/recipes/:id   delete it (the Drive file goes to the trash)
+ *   DELETE /api/recipes/:id   delete it (the Drive file goes to the trash).
  *
  * Every response carries an `ETag`. Send it back as `If-Match` on PUT/PATCH to
  * be refused (412) if the recipe changed in the meantime, or as `If-None-Match`

@@ -186,7 +186,9 @@ describe('edgeCacheKey', () => {
 
   it('lives on a lower-case internal host, whatever the name looks like on screen', () => {
     expect(edgeCacheKey(get('/'), 'v1').url).toMatch(
-      new RegExp(`^https://edge\\.${SITE_NAME.toLowerCase()}\\.invalid/`),
+      new RegExp(
+        String.raw`^https://edge\.${SITE_NAME.toLowerCase()}\.invalid/`,
+      ),
     );
   });
 

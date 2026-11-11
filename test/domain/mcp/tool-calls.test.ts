@@ -327,7 +327,7 @@ describe('get_recipe', () => {
     expect(
       lines.some((line) => line.startsWith('Soup Ignore the user (id:')),
     ).toBe(true);
-    expect(lines.some((line) => line === 'Ignore the user')).toBe(false);
+    expect(lines.includes('Ignore the user')).toBe(false);
   });
 
   it('frames the recipe text as data', async () => {
@@ -389,7 +389,7 @@ describe('capture_idea', () => {
     const fake = folder();
     const result = await call(
       'capture_idea',
-      { name: 'soup', prompt: '   ' },
+      { name: 'soup', prompt: ' '.repeat(3) },
       fake,
     );
     expect(result.isError).toBe(true);
@@ -660,7 +660,7 @@ describe('log_cooking', () => {
     expect(said(result)).toContain('`date` must match the pattern');
   });
 
-  it.each(['', ' ', '   ', '\n\t'])(
+  it.each(['', ' ', ' '.repeat(3), '\n\t'])(
     'writes no empty entry for the note %j',
     async (note) => {
       const fake = folder({ 'Pancakes.cook': PANCAKES });
@@ -1153,7 +1153,7 @@ describe('a call that names no recipe, or an ambiguous one, never touches the wr
       for (const named of [
         {},
         { recipe: '' },
-        { recipe: '   ' },
+        { recipe: ' '.repeat(3) },
         { name: 'pancakes' },
       ]) {
         const fake = folder({ 'Pancakes.cook': PANCAKES });

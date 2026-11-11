@@ -64,9 +64,8 @@ function beepAt(context: BeepContext, at: number): void {
  * Make the beeper. Call it from the tap that starts a timer: browsers only
  * allow sound that began with a user gesture, and an audio context made then
  * (and resumed) stays allowed for the minutes the timer runs.
- *
- * @param Context The browser's audio context constructor; `undefined` where
- *   there is none, which gives no alarm and so no sound.
+ * @param Context - The browser's audio context constructor; `undefined` where
+ * there is none, which gives no alarm and so no sound.
  */
 export function createAlarm(
   Context: AudioContextConstructor | undefined,
@@ -101,8 +100,7 @@ export const VIBRATION_PATTERN: readonly number[] = [200, 100, 200];
 /**
  * Buzz the phone, where it can. Chrome on Android does; Safari has no
  * vibration, so there `navigator.vibrate` is missing and this does nothing.
- *
- * @param nav The browser's `navigator`, or anything with a `vibrate` method.
+ * @param nav - The browser's `navigator`, or anything with a `vibrate` method.
  */
 export function vibrateOnFinish(
   nav: Readonly<{ vibrate?: (pattern: number[]) => boolean }>,
@@ -125,9 +123,8 @@ export function finishedAnnouncement(
 /**
  * The tab title while a finished timer waits and the tab is hidden, so the
  * name in the tab or the taskbar says the timer is done; `null` when none is.
- *
- * @param finished The timers that have rung and not yet been dismissed.
- * @param recipeTitle The recipe, so the tab still says what it is.
+ * @param finished - The timers that have rung and not yet been dismissed.
+ * @param recipeTitle - The recipe, so the tab still says what it is.
  */
 export function titleForFinished(
   finished: readonly Pick<StepTimer, 'step'>[],

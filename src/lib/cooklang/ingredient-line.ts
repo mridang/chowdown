@@ -164,7 +164,7 @@ const QUANTITY = new RegExp(
 
 /** Spell vulgar fractions out, joined to a whole number with a space (`1½` becomes `1 1/2`). */
 function withAsciiFractions(text: string): string {
-  return text.replace(/(\d)?([½¼¾⅓⅔⅛⅜⅝⅞⅕⅖⅗⅘])/g, (_, whole, fraction) => {
+  return text.replaceAll(/(\d)?([½¼¾⅓⅔⅛⅜⅝⅞⅕⅖⅗⅘])/g, (_, whole, fraction) => {
     const ascii = VULGAR[fraction as string] ?? '';
     return whole ? `${whole as string} ${ascii}` : ascii;
   });
@@ -186,12 +186,12 @@ function tidied(raw: string): string {
   return withAsciiFractions(
     raw
       .slice(0, MAX_LINE)
-      .replace(
+      .replaceAll(
         /&(?:amp|apos|quot|nbsp|lt|gt|#39);/g,
         (entity) => ENTITIES[entity] ?? entity,
       )
-      .replace(/[–—−]/g, '-')
-      .replace(/\s+/g, ' ')
+      .replaceAll(/[–—−]/g, '-')
+      .replaceAll(/\s+/g, ' ')
       .trim(),
   )
     .replace(/^[-•*·\s]+/, '')
@@ -241,9 +241,9 @@ function withoutParentheses(line: string): {
   const notes =
     walked.depth > 0 ? [...walked.notes, walked.buffer] : walked.notes;
   return {
-    text: walked.text.replace(/\s+/g, ' ').trim(),
+    text: walked.text.replaceAll(/\s+/g, ' ').trim(),
     notes: notes
-      .map((note) => note.replace(/^[\s,;:]+|[\s,;:]+$/g, '').trim())
+      .map((note) => note.replaceAll(/^[\s,;:]+|[\s,;:]+$/g, '').trim())
       .filter((note) => note !== ''),
   };
 }
@@ -283,7 +283,7 @@ function leadingQuantity(text: string): LeadingQuantity | undefined {
   }
   const quantity = (match[1] ?? '')
     .replace(/\s+to\s+/i, '-')
-    .replace(/\s*-\s*/g, '-')
+    .replaceAll(/\s*-\s*/g, '-')
     .trim();
   const afterQuantity = text.slice(match[0].length);
   const described = MEASURE_ADJECTIVES.exec(afterQuantity);
@@ -298,9 +298,9 @@ function leadingQuantity(text: string): LeadingQuantity | undefined {
   const [unit, consumed] =
     attachedUnit && UNITS.has(unitKey(attachedUnit))
       ? [attachedUnit, attached?.[0].length ?? 0]
-      : spacedUnit && UNITS.has(unitKey(spacedUnit))
+      : (spacedUnit && UNITS.has(unitKey(spacedUnit))
         ? [spacedUnit, spaced?.[0].length ?? 0]
-        : [undefined, 0];
+        : [undefined, 0]);
   const rest = afterNumber.slice(consumed);
   // "7up" and "2x4" are names with a digit in them, not an amount and a word.
   if (!unit && /^[A-Za-z]/.test(afterNumber)) {
@@ -351,8 +351,8 @@ function amountPhrase(phrase: string): LeadingQuantity | undefined {
 function cleanedName(text: string): string {
   return text
     .replace(/^(?:of|x)\s+/i, '')
-    .replace(/^[\s,;:./-]+|[\s,;:./-]+$/g, '')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/^[\s,;:./-]+|[\s,;:./-]+$/g, '')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 
@@ -500,8 +500,8 @@ function withNote(note: string | undefined): { readonly note?: string } {
 export function toCookIngredient(ing: Readonly<ParsedIngredientLine>): string {
   const safe = (text: string): string =>
     text
-      .replace(/[{}@#~()%]/g, ' ')
-      .replace(/\s+/g, ' ')
+      .replaceAll(/[{}@#~()%]/g, ' ')
+      .replaceAll(/\s+/g, ' ')
       .trim();
   const amount =
     ing.quantity && ing.unit

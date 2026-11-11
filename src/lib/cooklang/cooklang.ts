@@ -80,21 +80,25 @@ export function formatQuantity(item: Readonly<RawQuantity>): string {
 /** Turn a single parser step item into a render token. */
 function toToken(item: Readonly<RawStepItem>): StepToken {
   switch (item.type) {
-    case 'text':
+    case 'text': {
       return { kind: 'text', text: item.value };
-    case 'ingredient':
+    }
+    case 'ingredient': {
       return {
         kind: 'ingredient',
         name: item.name ?? '',
         quantity: formatQuantity(item),
       };
-    case 'cookware':
+    }
+    case 'cookware': {
       return { kind: 'cookware', name: item.name ?? '' };
-    case 'timer':
+    }
+    case 'timer': {
       return {
         kind: 'timer',
         label: formatQuantity(item) || (item.name ?? ''),
       };
+    }
   }
 }
 
@@ -176,7 +180,7 @@ function splitDeclaration(source: string): Declaration {
   const firstBody = lines.findIndex(
     (line) => line.trim() !== '' && !line.startsWith('>>'),
   );
-  if (firstBody < 0) {
+  if (firstBody === -1) {
     return { declared: [], rest: source };
   }
   const afterBlock = lines.findIndex(
@@ -186,11 +190,11 @@ function splitDeclaration(source: string): Declaration {
       !INGREDIENT_LINE.test(line.trim()),
   );
   const block = lines
-    .slice(firstBody, afterBlock < 0 ? lines.length : afterBlock)
+    .slice(firstBody, afterBlock === -1 ? lines.length : afterBlock)
     .map((line) => INGREDIENT_LINE.exec(line.trim()))
     .flatMap((match) => (match ? [match] : []));
   // Needs a method to be separate from, and more than one line to be a block.
-  if (afterBlock < 0 || block.length < 2) {
+  if (afterBlock === -1 || block.length < 2) {
     return { declared: [], rest: source };
   }
   return {
@@ -212,7 +216,6 @@ function splitDeclaration(source: string): Declaration {
  * the ingredients panel and is left out of `steps`, so the method starts with
  * the first thing to do and the ingredients are not listed twice. Ingredients that were stored badly are
  * repaired as they are read (see {@link repaired}).
- *
  * @param source - The raw `.cook` file contents.
  * @param filename - Used as the title when the recipe has no `>> title:`.
  */

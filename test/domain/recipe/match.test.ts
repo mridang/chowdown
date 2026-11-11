@@ -69,7 +69,7 @@ describe('matchFile with a blank reference', () => {
 
   it('points at nothing, so a missing recipe argument never picks the first recipe', () => {
     expect(matchFile(files, '')).toBeUndefined();
-    expect(matchFile(files, '   ')).toBeUndefined();
+    expect(matchFile(files, ' '.repeat(3))).toBeUndefined();
   });
 });
 

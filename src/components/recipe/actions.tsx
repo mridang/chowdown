@@ -30,9 +30,8 @@ type ShareEnvironment = Readonly<{
  * Resolves to what happened: `shared` (the sheet was used, or was dismissed,
  * which needs no reply), `copied` (the caller should say so), or `failed` (the
  * clipboard refused: an insecure page, a denied prompt).
- *
- * @param environment The browser's `navigator`, or a stand-in.
- * @param link The title and address to share.
+ * @param environment - The browser's `navigator`, or a stand-in.
+ * @param link - The title and address to share.
  */
 export async function shareLink(
   environment: ShareEnvironment,
@@ -65,7 +64,7 @@ export function ShareButton({
   const share = async () => {
     const outcome = await shareLink(navigator, {
       title,
-      url: window.location.href,
+      url: globalThis.location.href,
     });
     if (outcome === 'copied') {
       setCopied(true);
@@ -103,7 +102,7 @@ export function focusMoreActionsButton(
   }> | null,
 ): void {
   container
-    ?.querySelector(`button[aria-label="${MORE_ACTIONS_LABEL}"]`)
+    ?.querySelector(`button[aria-label="${CSS.escape(MORE_ACTIONS_LABEL)}"]`)
     ?.focus();
 }
 
@@ -145,7 +144,7 @@ export function MoreMenu({
           <button
             type="button"
             // Let the menu finish closing so it isn't in the printed page.
-            onClick={() => setTimeout(() => window.print(), 150)}
+            onClick={() => setTimeout(() => globalThis.print(), 150)}
             className={POPOVER_ITEM}
           >
             <PrinterIcon size="menu" className="text-subtle" />

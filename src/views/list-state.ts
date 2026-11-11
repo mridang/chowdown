@@ -42,6 +42,7 @@ export interface ListState {
   readonly notice: string | undefined;
   /** What the person typed in the expanded list's filter box. */
   readonly filter: string;
+
   /**
    * True right after the person came back from a recipe shown in place, so the
    * list can put keyboard focus back (the button they used has gone away).
@@ -102,8 +103,8 @@ export type ListAction =
  */
 export function shortTitle(title: string): string {
   const flat = title
-    .replace(/[\p{Cc}\p{Cf}]/gu, ' ')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/[\p{Cc}\p{Cf}]/gu, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
   return flat.length > NOTICE_TITLE_LIMIT
     ? `${flat.slice(0, NOTICE_TITLE_LIMIT - 1)}…`
@@ -112,7 +113,7 @@ export function shortTitle(title: string): string {
 
 /** Lower-case text without accents, for matching what the person typed. */
 function plain(text: string): string {
-  return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+  return text.normalize('NFD').replaceAll(/\p{M}/gu, '').toLowerCase();
 }
 
 /** What the list draws: the tiles to show and how many there are in all. */
@@ -155,25 +156,28 @@ export function reduceListState(
   action: ListAction,
 ): ListState {
   switch (action.type) {
-    case 'tapped':
+    case 'tapped': {
       return {
         ...state,
         pendingId: action.id,
         notice: undefined,
         refocus: false,
       };
-    case 'asked-assistant':
+    }
+    case 'asked-assistant': {
       return {
         ...state,
         pendingId: undefined,
         notice: `Asked the assistant to open “${shortTitle(action.title)}”.`,
       };
-    case 'fetching':
+    }
+    case 'fetching': {
       return {
         ...state,
         detail: { status: 'loading', title: shortTitle(action.title) },
       };
-    case 'fetched':
+    }
+    case 'fetched': {
       return {
         ...state,
         pendingId: undefined,
@@ -186,15 +190,19 @@ export function reduceListState(
                 message: action.outcome.text,
               },
       };
-    case 'unavailable':
+    }
+    case 'unavailable': {
       return {
         ...state,
         pendingId: undefined,
         notice: `This app cannot open recipes by itself here. Ask the assistant to open “${shortTitle(action.title)}”.`,
       };
-    case 'closed-detail':
+    }
+    case 'closed-detail': {
       return { ...state, detail: { status: 'closed' }, refocus: true };
-    case 'filter-changed':
+    }
+    case 'filter-changed': {
       return { ...state, filter: action.value };
+    }
   }
 }

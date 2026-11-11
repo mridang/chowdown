@@ -166,7 +166,6 @@ export const PROMPT_DEFINITIONS: readonly PromptDefinition[] = PROMPTS.map(
 
 /**
  * Build a prompt's opening message.
- *
  * @param name - Which prompt.
  * @param rawArguments - The arguments the caller gave, if any.
  * @throws {RpcError} `-32602` if the prompt does not exist, if the arguments

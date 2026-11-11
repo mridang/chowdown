@@ -58,9 +58,9 @@ describe('isAcceptableRedirectUri', () => {
 
   it.each([
     ['a look-alike letter in the host', 'https://cl\u0430ude.ai/cb'],
-    ['a right-to-left override in the path', 'https://claude.ai/\u202efoo'],
-    ['a zero-width space', 'https://claude.ai/c\u200bb'],
-    ['an accented letter in the path', 'https://claude.ai/caf\u00e9'],
+    ['a right-to-left override in the path', 'https://claude.ai/\u202Efoo'],
+    ['a zero-width space', 'https://claude.ai/c\u200Bb'],
+    ['an accented letter in the path', 'https://claude.ai/caf\u00E9'],
     ['a space', 'https://claude.ai/a b'],
     ['a line break', 'https://claude.ai/a\nb'],
   ])('rejects %s, so what is shown is what is stored', (_name, uri) => {

@@ -2,7 +2,7 @@
  * The token endpoint. Redeems an authorization code (with its PKCE verifier)
  * for an access + refresh token, or exchanges a refresh token for a new pair.
  *
- *   POST /oauth/token  (application/x-www-form-urlencoded)
+ *   POST /oauth/token  (application/x-www-form-urlencoded).
  */
 
 import { D1OAuthStore, oauthSweeps } from '@/domain/db/oauth';

@@ -101,7 +101,6 @@ function fileFor<T extends { readonly id: string }>(
 
 /**
  * Read one recipe.
- *
  * @param user - Whose Drive to read.
  * @param uri - A `recipe:///<id>` address (or the earlier `recipe://<id>`).
  * @param openContext - How Drive is opened; leave out for the real one.
@@ -171,8 +170,7 @@ export type RecipeLister = (
  * recipe's full text), in an order that does not change between pages. An empty
  * cache (the web app never opened, nothing synced) lists nothing; the tools fill
  * it when they are used.
- *
- * @param database Where the cache is; a function so it is looked up per call.
+ * @param database - Where the cache is; a function so it is looked up per call.
  */
 export function cachedRecipeLister(database: () => Database): RecipeLister {
   return (user, offset, limit) =>

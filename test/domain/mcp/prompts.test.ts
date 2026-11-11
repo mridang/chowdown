@@ -58,7 +58,7 @@ describe('getPrompt', () => {
   });
 
   it('ignores a blank optional argument', () => {
-    expect(textOf('plan-the-week', { preferences: '   ' })).toBe(
+    expect(textOf('plan-the-week', { preferences: ' '.repeat(3) })).toBe(
       textOf('plan-the-week'),
     );
   });
@@ -127,7 +127,7 @@ describe('getPrompt', () => {
     try {
       getPrompt(name, args);
     } catch (error) {
-      expect((error as RpcError).code).toBe(-32602);
+      expect((error as RpcError).code).toBe(-32_602);
     }
   });
 });

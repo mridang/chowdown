@@ -500,7 +500,7 @@ export type Registration =
     };
 
 /** Registration bodies are tiny; anything bigger is refused unread. */
-export const MAX_REGISTRATION_BYTES = 8_000;
+export const MAX_REGISTRATION_BYTES = 8000;
 
 /** Read the text of an RFC 7591 registration request: size, then JSON, then the rules of {@link parseRegistration}. */
 export function parseRegistrationText(text: string): Registration {

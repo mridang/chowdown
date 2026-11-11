@@ -114,6 +114,8 @@ describe('what assistants are told', () => {
   });
 
   it('puts the Cooklang spec under Optional, where outside links belong', () => {
-    expect(llms.split('\n## Optional')[1]).toContain('https://cooklang.org/');
+    expect(llms.split('\n## Optional', 2)[1]).toContain(
+      'https://cooklang.org/',
+    );
   });
 });

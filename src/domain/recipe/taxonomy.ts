@@ -22,6 +22,7 @@ export interface Facet {
   values: readonly string[] | null;
   /** Whether a recipe can carry several values for this facet. */
   readonly multi: boolean;
+
   /**
    * Worked out from the recipe itself (see diet-type.ts) rather than written in
    * its file or chosen by the tagger, so it can't be set or patched by hand.
@@ -196,7 +197,6 @@ function acceptedValues(f: Facet, raw: unknown): readonly string[] {
  * in a closed facet's vocabulary. Returns one `[key, value]` pair per accepted
  * value (multi-valued facets expand to several pairs), ready to write as
  * `>> key: value` metadata.
- *
  * @param proposed - `{ facetKey: value | value[] }` as returned by the tagger.
  */
 export function validateTags(

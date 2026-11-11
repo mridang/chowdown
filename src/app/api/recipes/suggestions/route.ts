@@ -3,7 +3,7 @@
  * The recipes are ranked by how close their meaning is to the text (Workers AI
  * embeddings against the cached recipe embeddings), best first.
  *
- *   GET /api/recipes/suggestions?q=something light with chicken&limit=8
+ *   GET /api/recipes/suggestions?q=something light with chicken&limit=8.
  *
  * No page of the app calls this endpoint today: it is part of the documented
  * API for other clients. It is also the most expensive read there is (it can

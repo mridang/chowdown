@@ -47,16 +47,19 @@ export function stepText(tokens: readonly StepToken[]): string {
   return tokens
     .map((t) => {
       switch (t.kind) {
-        case 'text':
+        case 'text': {
           return t.text;
-        case 'timer':
+        }
+        case 'timer': {
           return t.label;
-        default:
+        }
+        default: {
           return t.name;
+        }
       }
     })
     .join('')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 

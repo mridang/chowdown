@@ -2,7 +2,7 @@
  * The notes on a recipe.
  *
  *   GET  /api/recipes/:id/notes   list them
- *   POST /api/recipes/:id/notes   add one → 201 with the note
+ *   POST /api/recipes/:id/notes   add one → 201 with the note.
  *
  * Notes are Cooklang comments appended to the recipe, so the method itself is
  * never touched.

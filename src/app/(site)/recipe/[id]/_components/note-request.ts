@@ -16,10 +16,9 @@ export type NoteResult =
  * trimmed; `ingredient` attaches it to one ingredient, and an empty one means
  * the whole recipe. Never throws: a refusal carries the server's own words,
  * anything else a fixed sentence.
- *
- * @param recipeId The recipe the note belongs to.
- * @param text What the person wrote.
- * @param ingredient The ingredient it is about, or `''` for the whole recipe.
+ * @param recipeId - The recipe the note belongs to.
+ * @param text - What the person wrote.
+ * @param ingredient - The ingredient it is about, or `''` for the whole recipe.
  */
 export async function postNote(
   recipeId: string,

@@ -89,8 +89,7 @@ async function embedAndStore(
 
 /**
  * Embed a just-written recipe and update the similar lists it affects.
- *
- * @param deps Collaborators; leave out to use the real ones.
+ * @param deps - Collaborators; leave out to use the real ones.
  */
 export async function embedRecipe(
   db: Database,
@@ -119,8 +118,7 @@ export async function embedRecipe(
  * Embed up to `limit` cached recipes that have no embedding yet, then refresh
  * the similar lists. Bounded so one request stays within the Worker's limits;
  * call it again to continue. Returns how many were embedded.
- *
- * @param deps Collaborators; leave out to use the real ones.
+ * @param deps - Collaborators; leave out to use the real ones.
  */
 export async function backfillEmbeddings(
   db: Database,

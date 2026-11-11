@@ -138,7 +138,6 @@ function cursorAt(offset: number): string {
 /**
  * How many recipes a `resources/list` cursor has already passed. No cursor is
  * the start.
- *
  * @throws {RpcError} `-32602` for a cursor this server did not issue.
  */
 function offsetOfCursor(cursor: unknown): number {
@@ -331,7 +330,7 @@ async function callTool(params: Params, ctx: McpContext): Promise<object> {
   }
 }
 
-/** chowdown's MCP server: the engine with the recipe methods registered. */
+/** Chowdown's MCP server: the engine with the recipe methods registered. */
 const server = new McpServer<McpContext>({
   serverInfo: SERVER_INFO,
   serverInfoMetaKey: SERVER_INFO_META_KEY,

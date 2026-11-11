@@ -75,15 +75,12 @@ const row = (overrides: Record<string, unknown> = {}) => ({
 });
 
 /** A fetch that serves a valid metadata document for `CIMD`. */
-const serving = jest.fn(
-  async () =>
-    new Response(
-      JSON.stringify({
-        client_id: CIMD,
-        client_name: 'Fresh',
-        redirect_uris: ['https://app.example/cb'],
-      }),
-    ),
+const serving = jest.fn(async () =>
+  Response.json({
+    client_id: CIMD,
+    client_name: 'Fresh',
+    redirect_uris: ['https://app.example/cb'],
+  }),
 ) as unknown as typeof fetch;
 
 describe('resolveClient', () => {
@@ -859,7 +856,7 @@ describe('against a real SQLite database', () => {
       seedClient(raw, CIMD, 'cimd', '2026-01-01T00:00:00.000Z');
       raw
         .prepare('UPDATE oauth_clients SET client_name = ?')
-        .run('Cl\u202eaude\n  Desktop');
+        .run('Cl\u202Eaude\n  Desktop');
       seedGrant(raw, 'g1', 7, CIMD, '2026-03-01T00:00:00.000Z');
       expect(await listConnectedApps(db, 7)).toEqual([
         expect.objectContaining({
@@ -1045,7 +1042,7 @@ describe('against a real SQLite database', () => {
       expect(fetchImpl).not.toHaveBeenCalled();
       await resolveClient(db, CIMD, fetchImpl, {
         ...unlimited,
-        now: NOW + 3600_000,
+        now: NOW + 3_600_000,
       });
       expect(fetchImpl).toHaveBeenCalledTimes(1);
     });
@@ -1064,7 +1061,7 @@ describe('against a real SQLite database', () => {
       const span =
         Date.parse(String(row?.['expires_at'])) -
         Date.parse(String(row?.['fetched_at']));
-      expect(span).toBe(1800_000);
+      expect(span).toBe(1_800_000);
     });
 
     it('limits fetches per host and overall, counting them under their own names', async () => {

@@ -42,7 +42,6 @@ export function followUpChannels(
 
 /**
  * Try each route in turn with `attempt` until one reports success.
- *
  * @param channels - Routes to try, best first.
  * @param attempt - Runs one route; resolves true when it worked, and may throw.
  * @returns The route that worked, or undefined when none did.

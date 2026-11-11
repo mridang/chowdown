@@ -9,8 +9,6 @@
 
 import { READ_ONLY_TOOLS, SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 
-export { SCOPE_READ, SCOPE_WRITE };
-
 /**
  * The OpenID Connect scope that asks for a refresh token. Every grant here gets
  * one anyway, so the scope changes nothing; it is advertised in the
@@ -37,7 +35,7 @@ export function isSupportedScope(scope: string): scope is Scope {
  * asked for means everything we support; asking only for scopes we don't know
  * yields an empty list, which the caller reports as `invalid_scope`. Unknown
  * scopes mixed with known ones are dropped rather than failing the request.
- * {@link SCOPE_OFFLINE_ACCESS} is ignored, so asking for it alone is the same as
+ * {@link SCOPE_OFFLINE_ACCESS} Is ignored, so asking for it alone is the same as
  * asking for nothing.
  */
 export function normaliseScope(
@@ -87,3 +85,5 @@ export function scopeForMessage(message: ScopedMessage): Scope {
   }
   return SCOPE_READ;
 }
+
+export { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';

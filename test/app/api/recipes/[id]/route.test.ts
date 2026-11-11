@@ -215,9 +215,7 @@ describe('PUT /api/recipes/:id', () => {
       .spyOn(globalThis, 'fetch')
       .mockImplementation(async (input) =>
         String(input).includes('oauth2')
-          ? new Response(
-              JSON.stringify({ access_token: 't', expires_in: 3599 }),
-            )
+          ? Response.json({ access_token: 't', expires_in: 3599 })
           : new Response('boom', { status: 500 }),
       );
     expect((await replace({ cooklang: 'x' })).status).toBe(502);

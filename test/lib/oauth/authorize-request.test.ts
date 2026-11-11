@@ -326,7 +326,7 @@ describe('error_description is printable ASCII without quotes or backslashes (RF
     const result = await check(overrides);
     expect(result.ok).toBe(false);
     expect(!result.ok && result.description).toMatch(
-      /^[\x20\x21\x23-\x5b\x5d-\x7e]+$/,
+      /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/,
     );
   });
 });

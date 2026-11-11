@@ -32,9 +32,8 @@ import { useWakeLock } from '@/components/recipe/use-wake-lock';
 /**
  * The step to show after a move: `index` clamped to the steps there are, so
  * "next" on the last step and "back" on the first stay where they are.
- *
- * @param index The step asked for (zero-based), possibly out of range.
- * @param stepCount How many steps the recipe has.
+ * @param index - The step asked for (zero-based), possibly out of range.
+ * @param stepCount - How many steps the recipe has.
  */
 export function clampStep(index: number, stepCount: number): number {
   return Math.max(0, Math.min(stepCount - 1, index));
@@ -46,12 +45,15 @@ export function clampStep(index: number, stepCount: number): number {
  */
 export function stepOffsetForKey(key: string): -1 | 0 | 1 {
   switch (key) {
-    case 'ArrowRight':
+    case 'ArrowRight': {
       return 1;
-    case 'ArrowLeft':
+    }
+    case 'ArrowLeft': {
       return -1;
-    default:
+    }
+    default: {
       return 0;
+    }
   }
 }
 
@@ -133,8 +135,8 @@ export function CookMode({
         setIndex((i) => clampStep(i + offset, steps.length));
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    globalThis.addEventListener('keydown', onKey);
+    return () => globalThis.removeEventListener('keydown', onKey);
   }, [open, steps.length]);
 
   const last = steps.length - 1;

@@ -147,7 +147,7 @@ describe('OPTIONS /mcp', () => {
     const res = await OPTIONS(request('OPTIONS', { origin: OTHER }));
     expect(res.status).toBe(403);
     expect(((await res.json()) as { error: { code: number } }).error.code).toBe(
-      -32600,
+      -32_600,
     );
   });
 });
@@ -166,7 +166,7 @@ describe('without a token', () => {
     expect(res.headers.get('www-authenticate')).not.toContain('invalid_token');
     expect(await res.json()).toMatchObject({
       id: null,
-      error: { code: -32600 },
+      error: { code: -32_600 },
     });
   });
 
@@ -330,7 +330,7 @@ describe('when the database cannot be reached', () => {
     const text = await res.text();
     expect(JSON.parse(text)).toMatchObject({
       id: null,
-      error: { code: -32603 },
+      error: { code: -32_603 },
     });
     expect(text).not.toContain('secret detail');
     expect(spy).toHaveBeenCalled();

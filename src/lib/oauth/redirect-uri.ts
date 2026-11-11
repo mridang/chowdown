@@ -157,7 +157,7 @@ export function isAcceptableRedirectUri(uri: string): boolean {
   // Printable ASCII only. RFC 3986 requires anything else to be percent-encoded,
   // and a raw look-alike letter or direction-changing character would make the
   // address we show differ from the one a person reads.
-  if (!/^[\x21-\x7e]+$/.test(uri)) {
+  if (!/^[\u0021-\u007E]+$/.test(uri)) {
     return false;
   }
   const url = parseUrl(uri);

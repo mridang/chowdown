@@ -14,10 +14,9 @@ import { imageSrc, imageSrcSet, isProxyableUrl } from '@/lib/cloudflare/images';
  * allowed on a lazy image that states its width and height (without them the
  * browser has no layout to measure before the file arrives), and the eager
  * hero photo is chosen before layout exists, so those keep the plain list.
- *
- * @param fallback The media-condition list that describes the layout.
- * @param lazy Whether the image loads lazily.
- * @param sized Whether the image states its width and height.
+ * @param fallback - The media-condition list that describes the layout.
+ * @param lazy - Whether the image loads lazily.
+ * @param sized - Whether the image states its width and height.
  */
 export function sizesFor(
   fallback: string,
@@ -62,6 +61,7 @@ export function CoverImage({
   height?: number;
   /** The widths to offer the browser, in pixels. */
   widths?: readonly number[];
+
   /**
    * How wide the image is laid out, so the browser can pick one. Lazy images
    * with a stated size get `auto` in front of it (see {@link sizesFor}), so this

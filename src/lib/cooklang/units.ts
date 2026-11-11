@@ -167,7 +167,7 @@ export function convertQuantity(quantity: string, system: UnitSystem): string {
   const unit = (match[2] ?? '')
     .trim()
     .toLowerCase()
-    .replace(/\./g, '')
+    .replaceAll('.', '')
     .replace('fl oz', 'floz');
   if (value === null || !unit) {
     return quantity;
@@ -244,7 +244,7 @@ function formatAmount(value: number): string {
 /** One number as written in a quantity: "2", "1.5", "1/2" or "1 1/2". */
 const AMOUNT = String.raw`\d+(?:[.,]\d+)?(?:\s+\d+\s*\/\s*\d+|\s*\/\s*\d+)?`;
 const SCALABLE = new RegExp(
-  `^(${AMOUNT})(?:\\s*[-–]\\s*(${AMOUNT}))?\\s*(.*)$`,
+  String.raw`^(${AMOUNT})(?:\s*[-–]\s*(${AMOUNT}))?\s*(.*)$`,
 );
 
 /** Vulgar-fraction characters and what they are worth. */
@@ -264,7 +264,7 @@ const FRACTION_GLYPHS: Readonly<Record<string, number>> = {
 function amountValue(text: string): number | undefined {
   // "1,000" is a thousand; "2,5" is two and a half.
   if (/^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/.test(text)) {
-    return Number(text.replace(/,/g, ''));
+    return Number(text.replaceAll(',', ''));
   }
   const glyph = /^(\d+)?\s*([½⅓⅔¼¾⅛⅜⅝⅞])$/.exec(text);
   if (glyph) {
@@ -337,7 +337,7 @@ export function toBaseAmount(quantity: string): BaseAmount | undefined {
   const unit = (match[2] ?? '')
     .trim()
     .toLowerCase()
-    .replace(/\./g, '')
+    .replaceAll('.', '')
     .replace('fl oz', 'floz');
   const gramsPerUnit = own(MASS_TO_G, unit);
   if (gramsPerUnit !== undefined) {

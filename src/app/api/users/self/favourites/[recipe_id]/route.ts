@@ -4,7 +4,7 @@
  *
  *   GET    /api/users/self/favourites/:recipe_id   the recipe, if favourited
  *   PUT    /api/users/self/favourites/:recipe_id   favourite it → 204
- *   DELETE /api/users/self/favourites/:recipe_id   un-favourite it → 204
+ *   DELETE /api/users/self/favourites/:recipe_id   un-favourite it → 204.
  */
 
 import { NextResponse } from 'next/server';

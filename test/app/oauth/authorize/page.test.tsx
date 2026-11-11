@@ -152,7 +152,7 @@ describe('the authorize page', () => {
     const to = (result as { redirectedTo: string }).redirectedTo;
     expect(to).toMatch(/^\/auth\/login\?returnTo=/);
     const back = new URL(
-      decodeURIComponent(to.split('returnTo=')[1] ?? ''),
+      decodeURIComponent(to.split('returnTo=', 2)[1] ?? ''),
       'https://app.test',
     );
     expect(back.pathname).toBe('/oauth/authorize');

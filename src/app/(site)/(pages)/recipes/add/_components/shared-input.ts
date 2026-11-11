@@ -33,7 +33,7 @@ export const MAX_SHARED_CHARACTERS = 10_000;
  * return to travels in a cookie (4 KB in all, and the address is escaped twice
  * on the way), so a long share is not carried; the person shares it again.
  */
-export const MAX_PRESERVED_CHARACTERS = 1_000;
+export const MAX_PRESERVED_CHARACTERS = 1000;
 
 /**
  * The line shown with the importer's box when it was filled in by a share, so
@@ -59,11 +59,11 @@ const NOT_TEXT: readonly (readonly [number, number])[] = [
   [0x0b, 0x0c],
   [0x0e, 0x1f],
   [0x7f, 0x9f],
-  [0x200b, 0x200f],
-  [0x202a, 0x202e],
-  [0x2060, 0x2060],
-  [0x2066, 0x2069],
-  [0xfeff, 0xfeff],
+  [0x20_0B, 0x20_0F],
+  [0x20_2A, 0x20_2E],
+  [0x20_60, 0x20_60],
+  [0x20_66, 0x20_69],
+  [0xFE_FF, 0xFE_FF],
 ];
 
 /** Whether a character is text, as opposed to one of {@link NOT_TEXT}. */
@@ -78,7 +78,9 @@ function first(value: string | readonly string[] | undefined): string {
 }
 
 /** The code points that end a line other than `\n`: carriage return, line and paragraph separators. */
-const OTHER_LINE_BREAKS: ReadonlySet<number> = new Set([0x0d, 0x2028, 0x2029]);
+const OTHER_LINE_BREAKS: ReadonlySet<number> = new Set([
+  0x0d, 0x20_28, 0x20_29,
+]);
 
 /**
  * Plain text from a shared value: every kind of line ending made `\n`,

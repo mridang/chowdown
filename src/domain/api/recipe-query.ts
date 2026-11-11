@@ -54,13 +54,13 @@ export function toFilterParams(query: URLSearchParams): SearchParams {
         return [['fav', value === 'true' ? '1' : '0']];
       }
       // Facets (protein, cuisine, …) pass through under their own names.
-      return PAGING_KEYS.includes(key) ? [] : [[key, value]];
+      return PAGING_KEYS.has(key) ? [] : [[key, value]];
     }),
   );
 }
 
 /** Query parameters that steer the page, not the filter. */
-const PAGING_KEYS: readonly string[] = ['sort', 'cursor', 'limit'];
+const PAGING_KEYS: ReadonlySet<string> = new Set(['sort', 'cursor', 'limit']);
 
 /** Keep the recipes that match the query's filters. */
 export function filterRecipes<T extends QueryableRecipe>(
@@ -105,7 +105,7 @@ export function comparePositions(
       : (x: string, y: string) => (x < y ? -1 : x > y ? 1 : 0);
   return (a, b) => {
     const byKey = compareKeys(a.key, b.key);
-    const base = byKey !== 0 ? byKey : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    const base = byKey === 0 ? (a.id < b.id ? -1 : a.id > b.id ? 1 : 0) : byKey;
     return order.descending ? -base : base;
   };
 }

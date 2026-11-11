@@ -35,7 +35,7 @@ export function recentlyAdded(
 ): readonly CardRecipe[] {
   const since = now - NEW_DAYS * DAY_MS;
   const added = (r: CardRecipe): number =>
-    r.added === undefined ? NaN : Date.parse(r.added);
+    r.added === undefined ? Number.NaN : Date.parse(r.added);
   return recipes
     .filter((r) => added(r) >= since && added(r) <= now)
     .toSorted((a, b) => added(b) - added(a));

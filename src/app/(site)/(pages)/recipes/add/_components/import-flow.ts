@@ -33,9 +33,8 @@ const UNREADABLE_MESSAGE = 'Could not prepare those recipes.';
  * Aborting `signal` is the person pressing Cancel, so it ends as `cancelled`
  * rather than as an error: nothing went wrong, and nothing should be shown as if
  * it had.
- *
- * @param input The links and text the person pasted.
- * @param signal Aborted when the person cancels.
+ * @param input - The links and text the person pasted.
+ * @param signal - Aborted when the person cancels.
  */
 export async function prepareImport(
   input: string,
@@ -78,12 +77,12 @@ export const ANNOUNCEMENTS = {
   cancelled: 'Cancelled. Nothing was prepared.',
   /** A save is under way. */
   saving: 'Saving this recipe.',
+
   /**
    * A recipe was saved and the next draft is on screen. Focus stays on the Save
    * button, so without this nothing says the form below it has changed.
-   *
-   * @param next Which draft is showing now (1-based).
-   * @param total How many drafts there are.
+   * @param next - Which draft is showing now (1-based).
+   * @param total - How many drafts there are.
    */
   savedNext: (next: number, total: number): string =>
     `Saved. Now showing recipe ${next} of ${total}.`,

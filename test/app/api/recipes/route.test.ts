@@ -144,9 +144,7 @@ describe('POST /api/recipes', () => {
       .spyOn(globalThis, 'fetch')
       .mockImplementation(async (input) =>
         String(input).includes('oauth2')
-          ? new Response(
-              JSON.stringify({ access_token: 't', expires_in: 3599 }),
-            )
+          ? Response.json({ access_token: 't', expires_in: 3599 })
           : new Response('boom', { status: 500 }),
       );
     const res = await create();
@@ -162,7 +160,7 @@ describe('POST /api/recipes', () => {
     await signIn(world, { drive: true });
     fakeGoogle();
     // 5,000 lines of 19 emoji: just under 200,000 UTF-16 units, about 385 KB as JSON.
-    const long = `${'\u{1F373}'.repeat(19)}\n`.repeat(4_999);
+    const long = `${'\u{1F373}'.repeat(19)}\n`.repeat(4999);
     const res = await create({ name: 'Long', cooklang: long });
     expect(res.status).toBe(201);
   });

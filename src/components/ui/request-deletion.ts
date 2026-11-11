@@ -17,10 +17,9 @@ export type DeletionResult =
  * refusal carries the server's own words, and a request that could not be made
  * at all carries `unreachable`, since the browser's "Failed to fetch" helps
  * nobody.
- *
- * @param url The API address of the thing to delete.
- * @param unreachable What to say when the server could not be reached; it
- *   should make clear that nothing was deleted.
+ * @param url - The API address of the thing to delete.
+ * @param unreachable - What to say when the server could not be reached; it
+ * should make clear that nothing was deleted.
  */
 export async function requestDeletion(
   url: string,

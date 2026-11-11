@@ -34,7 +34,7 @@ describe('authorOf', () => {
   it('skips an empty author for a later one, and is undefined without any', () => {
     expect(
       authorOf([
-        ['author', '   '],
+        ['author', ' '.repeat(3)],
         ['by', 'Nigella'],
       ]),
     ).toBe('Nigella');

@@ -166,7 +166,7 @@ export function authorEvidence(html: string): AuthorEvidence {
       ...meta('article:author', 'property'),
     ].filter((name) => name !== '' && !name.startsWith('http')),
     siteName: meta('og:site_name', 'property')[0] ?? websiteName ?? '',
-    title: decodeEntities(title).replace(/\s+/g, ' ').trim(),
+    title: decodeEntities(title).replaceAll(/\s+/g, ' ').trim(),
     description: (meta('description', 'name')[0] ?? '').slice(0, 220),
     bylines,
     openingText: text.slice(0, 700),
@@ -201,12 +201,12 @@ export function cleanAuthorName(raw: string): string | undefined {
     return undefined;
   }
   const stripped = decodeEntities(raw)
-    .replace(/\s+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim()
     .replace(NAME_PREFIX, '')
     // "Jane Cook | Some Blog" and "Jane Cook - Some Blog" are the name and a site.
     .replace(/\s+[|–—-]\s+.*$/, '')
-    .replace(/^[\s,;:]+|[\s,;:.]+$/g, '');
+    .replaceAll(/^[\s,;:]+|[\s,;:.]+$/g, '');
   const words = stripped.split(' ').filter(Boolean);
   const wellFormed =
     stripped.length >= 2 &&
@@ -216,7 +216,7 @@ export function cleanAuthorName(raw: string): string | undefined {
     !NOT_A_NAME.test(stripped) &&
     words.some((word) => /\p{L}{2,}/u.test(word)) &&
     // An initial or two is no name ("H. I").
-    words.filter((word) => /\p{L}{3,}/u.test(word)).length >= 1;
+    words.some((word) => /\p{L}{3,}/u.test(word));
   return wellFormed ? withCapitals(stripped) : undefined;
 }
 
@@ -226,7 +226,7 @@ function withCapitals(name: string): string {
   return name === name.toLowerCase() || shouted
     ? name
         .toLowerCase()
-        .replace(
+        .replaceAll(
           /(^|[\s'’-])(\p{L})/gu,
           (_, before: string, letter: string) => {
             return `${before}${letter.toUpperCase()}`;
@@ -277,9 +277,9 @@ export function declaredAuthor(
 function plain(text: string): string {
   return text
     .normalize('NFKD')
-    .replace(/\p{M}/gu, '')
+    .replaceAll(/\p{M}/gu, '')
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '');
+    .replaceAll(/[^a-z0-9]+/g, '');
 }
 
 /** The model that reads the page's summary. */

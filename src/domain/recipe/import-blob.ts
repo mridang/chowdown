@@ -28,7 +28,7 @@ export type ImportUnit =
 const URL_IN_TEXT = /https?:\/\/[^\s<>"'`)]+/gi;
 
 /** Characters that commonly trail a URL in prose and aren't part of it. */
-const TRAILING: ReadonlySet<string> = new Set([...'.,;:!?)]}>\'"']);
+const TRAILING: ReadonlySet<string> = new Set('.,;:!?)]}>\'"');
 
 /**
  * `raw` without the punctuation prose attaches to the end of a link. Looks for
@@ -60,7 +60,7 @@ export function extractUrls(input: string): readonly string[] {
  * re-scan the whole text per link.
  */
 function stripUrls(input: string, urls: ReadonlySet<string>): string {
-  return input.replace(URL_IN_TEXT, (match) => {
+  return input.replaceAll(URL_IN_TEXT, (match) => {
     const url = trimTrailing(match);
     return urls.has(url) ? ` ${match.slice(url.length)}` : match;
   });

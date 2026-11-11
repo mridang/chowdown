@@ -29,6 +29,7 @@ export interface RecipePageRows {
   readonly similarFavouriteIds: readonly string[];
   /** The user's saved measurement system, or null when they haven't chosen. */
   readonly units: string | null;
+
   /**
    * The epoch the user's sessions must carry, or undefined when the account is
    * gone. Read in the same round trip so the page can confirm the session is

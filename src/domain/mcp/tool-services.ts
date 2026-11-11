@@ -233,6 +233,7 @@ export interface ToolServices {
   ) => Promise<void>;
   /** Remember a user's measurement system. */
   readonly setUnits: (userId: number, system: UnitSystem) => Promise<void>;
+
   /**
    * Spend one unit of the person's daily allowance for tools that call a model
    * on an assistant's behalf. The seconds until it renews if it is used up,

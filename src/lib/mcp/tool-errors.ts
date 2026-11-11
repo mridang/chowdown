@@ -13,7 +13,7 @@
 export class UnknownTool extends Error {
   override readonly name = 'UnknownTool';
 
-  /** @param tool The name the caller used. */
+  /** @param tool - The name the caller used. */
   constructor(readonly tool: string) {
     super(`Unknown tool: ${tool}`);
   }
@@ -23,7 +23,7 @@ export class UnknownTool extends Error {
 export class InvalidToolArguments extends Error {
   override readonly name = 'InvalidToolArguments';
 
-  /** @param problems What is wrong, one problem per entry, written for the caller. */
+  /** @param problems - What is wrong, one problem per entry, written for the caller. */
   constructor(readonly problems: readonly string[]) {
     super(`Invalid arguments: ${problems.join(' ')}`);
   }
@@ -41,9 +41,9 @@ export class BackendFailure extends Error {
   override readonly name = 'BackendFailure';
 
   /**
-   * @param service Which dependency failed, in words that fit a sentence
-   *   ("Google Drive").
-   * @param cause What the dependency threw.
+   * @param service - Which dependency failed, in words that fit a sentence
+   * ("Google Drive").
+   * @param cause - What the dependency threw.
    */
   constructor(
     readonly service: string,

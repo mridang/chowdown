@@ -4,7 +4,7 @@
  * Run it in the page with a "run JavaScript in the page" browser tool. It only
  * reads the page — it changes nothing — and returns:
  *
- *   { title, best, candidates }
+ *   { title, best, candidates }.
  *
  * `best` is the address to save as the recipe's cover (or null if none was
  * found) and `candidates` lists everything it considered, best first.
@@ -24,7 +24,7 @@
     }
     try {
       const url = new URL(value.trim(), base);
-      const last = url.pathname.split('/').filter(Boolean).pop() || '';
+      const last = url.pathname.split('/').findLast(Boolean) || '';
       // A scraper that found no image often produces ".../undefined" or "null".
       if (
         !/^https?:$/.test(url.protocol) ||
@@ -83,7 +83,7 @@
     }
   };
   nodes
-    .filter((node) => [].concat(node['@type'] || []).includes('Recipe'))
+    .filter((node) => [node['@type'] || []].flat().includes('Recipe'))
     .forEach((recipe) => fromImageField(recipe.image));
 
   // 2. Share images.

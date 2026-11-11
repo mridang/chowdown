@@ -28,10 +28,9 @@ const PRECONDITION_FAILED = 412;
  * refusal carries the server's own words (the title is empty, Drive is not
  * connected), a stale `etag` a fixed sentence about reloading, anything else a
  * plain one.
- *
- * @param recipeId The recipe to rename.
- * @param title The new title; the server trims it and collapses spaces.
- * @param etag The recipe's entity tag as the page loaded it.
+ * @param recipeId - The recipe to rename.
+ * @param title - The new title; the server trims it and collapses spaces.
+ * @param etag - The recipe's entity tag as the page loaded it.
  */
 export async function patchTitle(
   recipeId: string,

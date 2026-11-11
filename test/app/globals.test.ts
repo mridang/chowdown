@@ -10,18 +10,20 @@ const css = readFileSync(
 
 /** The `#rrggbb` value declared for a custom property, as red, green, blue (0-255). */
 function colourOf(name: string): readonly [number, number, number] {
-  const hex = new RegExp(`${name}:\\s*#([0-9a-f]{6})`, 'i').exec(css)?.[1];
+  const hex = new RegExp(String.raw`${name}:\s*#([0-9a-f]{6})`, 'i').exec(
+    css,
+  )?.[1];
   if (!hex) {
     throw new Error(`${name} is not declared as a hex colour`);
   }
-  const channel = (at: number) => parseInt(hex.slice(at, at + 2), 16);
+  const channel = (at: number) => Number.parseInt(hex.slice(at, at + 2), 16);
   return [channel(0), channel(2), channel(4)];
 }
 
 /** The strength (0 to 1) a token mixes the ink colour in at. */
 function inkStrength(name: string): number {
   const percent = new RegExp(
-    `${name}:\\s*color-mix\\(in srgb, var\\(--color-ink\\) (\\d+)%`,
+    String.raw`${name}:\s*color-mix\(in srgb, var\(--color-ink\) (\d+)%`,
   ).exec(css)?.[1];
   if (!percent) {
     throw new Error(`${name} is not ink at a fixed strength`);
@@ -128,7 +130,7 @@ describe('the handwriting font tokens', () => {
 /** The body of the first rule or at-rule whose prelude is exactly `prelude`. */
 function blockOf(prelude: string): string {
   const start = css.indexOf(`${prelude} {`);
-  if (start < 0) {
+  if (start === -1) {
     throw new Error(`no rule for ${prelude}`);
   }
   const open = css.indexOf('{', start);

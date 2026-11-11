@@ -2,7 +2,7 @@
  * The Global Privacy Control support resource (W3C GPC, section on the
  * well-known resource).
  *
- *   GET /.well-known/gpc.json
+ *   GET /.well-known/gpc.json.
  */
 
 import { GPC_LAST_UPDATE } from '@/utils/site';

@@ -3,7 +3,7 @@
  *
  *   GET    /api/users/self   their account
  *   PATCH  /api/users/self   change a preference, where the app has any
- *   DELETE /api/users/self   delete the account and everything kept about it
+ *   DELETE /api/users/self   delete the account and everything kept about it.
  *
  * GET and PATCH live in this app's `userSelf` controller, which decides which
  * of them it answers; one it does not register is undefined here, and Next

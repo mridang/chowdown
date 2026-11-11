@@ -99,9 +99,9 @@ export default async function AppPage({
           {query.favourites ? (
             <input type="hidden" name="fav" value="1" />
           ) : null}
-          {query.sort !== 'title' ? (
+          {query.sort === 'title' ? null : (
             <input type="hidden" name="sort" value={query.sort} />
-          ) : null}
+          )}
           {Object.entries(query.selected).map(([key, values]) =>
             values?.length ? (
               <input
@@ -125,11 +125,11 @@ export default async function AppPage({
         <Container className="py-10">
           {drive.unreachable ? (
             <DriveUnreachable />
-          ) : drive.connected ? (
+          ) : (drive.connected ? (
             <EmptyCollection />
           ) : (
             <DriveConnectPanel reconnect={drive.reconnect} attempt={attempt} />
-          )}
+          ))}
         </Container>
       ) : (
         <>

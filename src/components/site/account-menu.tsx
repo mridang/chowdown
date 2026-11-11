@@ -66,7 +66,7 @@ async function signOut(): Promise<void> {
   try {
     await fetch('/api/sessions/self', { method: 'DELETE' });
   } finally {
-    window.location.assign('/');
+    globalThis.location.assign('/');
   }
 }
 

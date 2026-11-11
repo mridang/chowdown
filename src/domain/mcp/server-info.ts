@@ -14,7 +14,7 @@ import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/utils/site';
  * The version of this server. It follows `package.json`, and a test fails if the
  * two drift apart, so bump them together. (The file is not read at run time: a
  * Worker has no file system, and importing the whole manifest would ship it in
- * the bundle.)
+ * the bundle.).
  */
 export const SERVER_VERSION = '0.1.0';
 

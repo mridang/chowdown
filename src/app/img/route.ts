@@ -2,7 +2,7 @@
  * Pictures from other websites, served from our own address (see
  * `lib/cloudflare/images/address.ts` for why).
  *
- *   GET /img?url=<picture address>&w=<width>
+ *   GET /img?url=<picture address>&w=<width>.
  *
  * Who may ask, and for what, is each app's own rule (`domain/images/access.ts`),
  * so it can't become a free image proxy for the web. Answers come from the

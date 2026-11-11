@@ -241,8 +241,7 @@ type Intent = 'read' | 'write';
  * to change one (`write`: it must not guess which file to edit), listing the
  * candidates with their ids; a tool that only reads (`read`) shows the best
  * match and is told the other candidates, so it can say so.
- *
- * @param key The argument the reference came from, for the message.
+ * @param key - The argument the reference came from, for the message.
  */
 async function withRecipeIn(
   files: readonly DriveFile[],
@@ -257,10 +256,12 @@ async function withRecipeIn(
   const reference = textArg(asked);
   const match = resolveFile(files, reference);
   switch (match.kind) {
-    case 'none':
+    case 'none': {
       return notFound(files, reference);
-    case 'one':
+    }
+    case 'one': {
       return then(match.file, []);
+    }
     case 'many': {
       const [best, ...others] = match.files;
       return intent === 'read'
@@ -358,11 +359,10 @@ function editSurvived(
  * outcome is not certain. This narrows the window for losing an edit to the
  * moments between a check and the write that follows it, and does not close it;
  * Drive offers nothing that could.
- *
- * @param edit Works out the new text from the current text, or refuses (an
- *   answer to return as it is, with nothing written). It may be run more than
- *   once, so it must not have effects of its own.
- * @param message The sentence that goes with the card.
+ * @param edit - Works out the new text from the current text, or refuses (an
+ * answer to return as it is, with nothing written). It may be run more than
+ * once, so it must not have effects of its own.
+ * @param message - The sentence that goes with the card.
  */
 async function editRecipe(
   ctx: ToolContext,
@@ -590,12 +590,11 @@ function namesakes(
  * body matches is returned as it is; a recipe of the same name with a different
  * body is a different recipe (people do keep two), so it is saved and the
  * result says another one exists.
- *
- * @param name The dish name, as given.
- * @param filename The name the new file is saved under.
- * @param content What the file would hold, before tagging.
- * @param prepare Works out what is written (tagging may add metadata).
- * @param said What to say after saving a new file.
+ * @param name - The dish name, as given.
+ * @param filename - The name the new file is saved under.
+ * @param content - What the file would hold, before tagging.
+ * @param prepare - Works out what is written (tagging may add metadata).
+ * @param said - What to say after saving a new file.
  */
 async function saveUnlessThere(
   ctx: ToolContext,
@@ -670,8 +669,7 @@ const DAY_MS = 86_400_000;
  * date as a UTC day. Undefined for a date that does not exist (the 30th of
  * February) or lies in the future. Tomorrow's date, in UTC, is allowed, because
  * for someone ahead of UTC it is already today.
- *
- * @param now The present moment; a test passes its own.
+ * @param now - The present moment; a test passes its own.
  */
 function cookedOn(date: string | undefined, now: Date): Date | undefined {
   if (date === undefined) {
@@ -801,9 +799,9 @@ export function noteTarget(args: Args): NoteTarget {
       where: ` on ${plainTitle(ingredient)}`,
     };
   }
-  return step != null
-    ? { scope: 'step', key: String(step), where: ` on step ${String(step)}` }
-    : { scope: 'general', key: '', where: '' };
+  return step == null
+    ? { scope: 'general', key: '', where: '' }
+    : { scope: 'step', key: String(step), where: ` on step ${String(step)}` };
 }
 
 /** How many of a recipe's ingredients an error lists when the one asked for is not among them. */
@@ -954,7 +952,7 @@ type ToolSchema = Readonly<{ name: string; inputSchema: JsonSchema }>;
 
 /** The arguments a tool takes, as one line the assistant can follow: "recipe (required), note (required), step". */
 function usage(schema: JsonSchema): string {
-  const required = new Set(schema.required ?? []);
+  const required = new Set(schema.required);
   const names = Object.keys(schema.properties ?? {}).map((key) =>
     required.has(key) ? `${key} (required)` : key,
   );
@@ -974,7 +972,6 @@ type Checked = { readonly args: Args } | { readonly refusal: ToolResult };
  * the assistant can correct, so they come back as an `isError` result naming
  * each problem and the arguments the tool takes (the spec lists input validation
  * among tool execution errors, which a host always shows the model).
- *
  * @throws {InvalidToolArguments} If `arguments` is not an object at all: that is
  *   a malformed request, not a mistaken call.
  */
@@ -997,12 +994,11 @@ function checkedArguments(tool: ToolSchema, rawArgs: unknown): Checked {
 
 /**
  * Execute a `tools/call` for `user`.
- *
- * @param openContext How Drive is opened; tests pass a fake.
- * @param services The database, AI and page fetching; tests pass fakes.
+ * @param openContext - How Drive is opened; tests pass a fake.
+ * @param services - The database, AI and page fetching; tests pass fakes.
  * @returns The tool's result; for arguments that do not fit the tool's schema,
- *   an `isError` result saying what to change. Nothing is opened or run for
- *   those.
+ * an `isError` result saying what to change. Nothing is opened or run for
+ * those.
  * @throws {UnknownTool} If no such tool exists.
  * @throws {InvalidToolArguments} If the request has no tool name, or its
  *   `arguments` is not an object (both are malformed requests).
@@ -1067,9 +1063,8 @@ export async function callTool(
  * assistant can pass on, as a tool error, instead of a protocol error. An
  * unknown tool or a malformed request is still thrown for the router to answer
  * as a protocol error.
- *
- * @param openContext How Drive is opened; leave out for the real one.
- * @param services The database, AI and page fetching; leave out for the real ones.
+ * @param openContext - How Drive is opened; leave out for the real one.
+ * @param services - The database, AI and page fetching; leave out for the real ones.
  */
 export async function callToolOrExplain(
   user: Readonly<User>,

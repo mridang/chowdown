@@ -303,7 +303,9 @@ describe('error_description is printable ASCII without quotes or backslashes (RF
     const result = refusal(
       await handleTokenRequest(form(fields), store, ORIGIN, NOW),
     );
-    expect(result.description).toMatch(/^[\x20\x21\x23-\x5b\x5d-\x7e]+$/);
+    expect(result.description).toMatch(
+      /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/,
+    );
   });
 });
 

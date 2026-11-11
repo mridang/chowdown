@@ -44,6 +44,7 @@ export const users = sqliteTable('users', {
   recipes_folder_id: text('recipes_folder_id'),
   /** Preferred measurement system: 'metric' | 'us' | 'imperial' | null. */
   units: text('units'),
+
   /**
    * Which generation of sessions is valid. A session cookie carries the epoch
    * it was issued under and is honoured only while it equals this value, so
@@ -83,11 +84,13 @@ export const recipes = sqliteTable(
     parse_error: text('parse_error'),
     /** Curated taxonomy tags as JSON: `{ facet: string[] }` (see taxonomy.ts). */
     tags: text('tags'),
+
     /**
      * The normalised `>> source:` address, for finding a recipe already
      * imported from a link. Null: not worked out yet; empty: it has none.
      */
     source_url: text('source_url'),
+
     /**
      * When the recipe's embedding was stored; null when it has none. Kept in
      * step with the embeddings table in the same batch (migration 0020).

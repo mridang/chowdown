@@ -103,7 +103,7 @@ describe('POST /oauth/register', () => {
     const stream = new ReadableStream<Uint8Array>({
       pull(controller) {
         pulled.chunks += 1;
-        controller.enqueue(new Uint8Array(4_000));
+        controller.enqueue(new Uint8Array(4000));
       },
     });
     const res = await POST(
@@ -133,7 +133,7 @@ describe('POST /oauth/register', () => {
     const res = await POST(
       new Request('https://app.test/oauth/register', {
         method: 'POST',
-        body: new Uint8Array([0xff, 0xfe, 0x7b]),
+        body: new Uint8Array([0xFF, 0xFE, 0x7B]),
         headers: { 'cf-connecting-ip': '203.0.113.7' },
       }),
     );

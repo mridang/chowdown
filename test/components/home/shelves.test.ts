@@ -77,7 +77,7 @@ describe('fromTheShelf', () => {
     const ids = (seed: number) =>
       fromTheShelf(list, seed)
         .map((r) => r.id)
-        .join();
+        .join(',');
     expect(ids(5)).toBe(ids(5));
     expect(ids(5)).not.toBe(ids(6));
   });

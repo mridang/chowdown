@@ -343,7 +343,7 @@ describe('registrationResponse', () => {
 describe('client names', () => {
   it('are cleaned of invisible and direction-changing characters', () => {
     const result = parseClientMetadataDocument(
-      { ...goodDoc, client_name: '\u202eClaude\u200b  Desktop\n' },
+      { ...goodDoc, client_name: '\u202EClaude\u200B  Desktop\n' },
       URL_ID,
     ) as { client: { name: string } };
     expect(result.client.name).toBe('Claude Desktop');
@@ -351,7 +351,7 @@ describe('client names', () => {
 
   it('fall back to the host when only invisible characters were given', () => {
     const result = parseClientMetadataDocument(
-      { ...goodDoc, client_name: '\u200b\u200b' },
+      { ...goodDoc, client_name: '\u200B\u200B' },
       URL_ID,
     ) as { client: { name: string } };
     expect(result.client.name).toBe('chatgpt.com');
@@ -359,12 +359,12 @@ describe('client names', () => {
 
   it('are cleaned for a registered client too, with a neutral fallback', () => {
     const named = parseRegistration({
-      client_name: '\u202eEvil\u202c',
+      client_name: '\u202EEvil\u202C',
       redirect_uris: ['https://a.com/cb'],
     }) as { client: { name: string } };
     expect(named.client.name).toBe('Evil');
     const unnamed = parseRegistration({
-      client_name: '\u200b',
+      client_name: '\u200B',
       redirect_uris: ['https://a.com/cb'],
     }) as { client: { name: string } };
     expect(unnamed.client.name).toBe('Unnamed client');
@@ -419,7 +419,7 @@ describe('fetchClientMetadata details', () => {
       RequestInit | undefined;
     expect(init?.headers).toMatchObject({ 'User-Agent': FETCH_USER_AGENT });
     expect(FETCH_USER_AGENT).toMatch(
-      new RegExp(`^${SITE_NAME.toLowerCase()}-oauth/1 \\(\\+https://`),
+      new RegExp(String.raw`^${SITE_NAME.toLowerCase()}-oauth/1 \(\+https://`),
     );
   });
 
@@ -774,7 +774,7 @@ describe('parseRegistration token_endpoint_auth_method (RFC 7591)', () => {
 });
 
 describe('error_description is printable ASCII without quotes or backslashes (RFC 6749 5.2, RFC 7591 3.2.2)', () => {
-  const allowed = /^[\x20\x21\x23-\x5b\x5d-\x7e]+$/;
+  const allowed = /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/;
   const base = { redirect_uris: ['https://a.com/cb'] };
 
   it.each([

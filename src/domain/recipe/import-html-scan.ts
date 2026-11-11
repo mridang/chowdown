@@ -124,7 +124,7 @@ function step(html: string, walk: Walk, tag: RegExpMatchArray): Walk {
  * replaces; anything that does not look like a tag is skipped.
  */
 export function scanHtml(html: string): HtmlScan {
-  const { metas, jsonLd } = Array.from(html.matchAll(TAG)).reduce(
+  const { metas, jsonLd } = [...html.matchAll(TAG)].reduce(
     (walk, tag) => step(html, walk, tag),
     START,
   );

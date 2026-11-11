@@ -1,4 +1,5 @@
 import { countOf } from '@/lib/intl';
+
 /**
  * @packageDocumentation
  *
@@ -59,7 +60,7 @@ export interface JsonSchema {
  * or reference is exactly the input that must be refused early, so schemas use
  * this and the checker words the failure as "must not be blank".
  */
-export const NOT_BLANK = '\\S';
+export const NOT_BLANK = String.raw`\S`;
 
 /** Every keyword the checker acts on. */
 export const CHECKED_KEYWORDS: ReadonlySet<string> = new Set([
@@ -98,40 +99,54 @@ export function isJsonObject(
 /** Whether `value` is of the JSON type `type`. */
 function hasType(type: JsonType, value: unknown): boolean {
   switch (type) {
-    case 'string':
+    case 'string': {
       return typeof value === 'string';
-    case 'number':
+    }
+    case 'number': {
       return typeof value === 'number' && Number.isFinite(value);
-    case 'integer':
+    }
+    case 'integer': {
       return typeof value === 'number' && Number.isInteger(value);
-    case 'boolean':
+    }
+    case 'boolean': {
       return typeof value === 'boolean';
-    case 'array':
+    }
+    case 'array': {
       return Array.isArray(value);
-    case 'object':
+    }
+    case 'object': {
       return isJsonObject(value);
-    case 'null':
+    }
+    case 'null': {
       return value === null;
+    }
   }
 }
 
 /** A type as it reads in a sentence: "a whole number", "text". */
 function typeWords(type: JsonType): string {
   switch (type) {
-    case 'string':
+    case 'string': {
       return 'text';
-    case 'number':
+    }
+    case 'number': {
       return 'a number';
-    case 'integer':
+    }
+    case 'integer': {
       return 'a whole number';
-    case 'boolean':
+    }
+    case 'boolean': {
       return 'true or false';
-    case 'array':
+    }
+    case 'array': {
       return 'a list';
-    case 'object':
+    }
+    case 'object': {
       return 'an object';
-    case 'null':
+    }
+    case 'null': {
       return 'null';
+    }
   }
 }
 
@@ -144,17 +159,22 @@ function actualWords(value: unknown): string {
     return 'a list';
   }
   switch (typeof value) {
-    case 'string':
+    case 'string': {
       return 'text';
-    case 'number':
+    }
+    case 'number': {
       // `JSON.parse('1e400')` is Infinity: a number that is not one a schema can mean.
       return Number.isFinite(value) ? 'a number' : 'an out-of-range number';
-    case 'boolean':
+    }
+    case 'boolean': {
       return 'true or false';
-    case 'object':
+    }
+    case 'object': {
       return 'an object';
-    default:
+    }
+    default: {
       return typeof value;
+    }
   }
 }
 
@@ -180,9 +200,9 @@ function nameOf(path: Path, root: string): string {
     (soFar, part) =>
       typeof part === 'number'
         ? `${soFar}[${part}]`
-        : soFar
+        : (soFar
           ? `${soFar}.${quotedKey(part)}`
-          : quotedKey(part),
+          : quotedKey(part)),
     '',
   );
   return `\`${text}\``;
@@ -354,9 +374,9 @@ function problemsAt(
   const types =
     schema.type === undefined
       ? []
-      : Array.isArray(schema.type)
+      : (Array.isArray(schema.type)
         ? schema.type
-        : [schema.type];
+        : [schema.type]);
   if (types.length > 0 && !types.some((type) => hasType(type, value))) {
     return [
       `${subject} must be ${types.map(typeWords).join(' or ')}, not ${actualWords(value)}.`,
@@ -386,14 +406,13 @@ export const PROBLEMS_SHOWN = 10;
 
 /**
  * Check `value` against `schema` and say what is wrong with it.
- *
- * @param schema The schema, in the supported subset (see the file comment).
- * @param value The parsed JSON to check.
- * @param root How to refer to the value itself in a message; the arguments of a
- *   tool call are "The arguments".
+ * @param schema - The schema, in the supported subset (see the file comment).
+ * @param value - The parsed JSON to check.
+ * @param root - How to refer to the value itself in a message; the arguments of a
+ * tool call are "The arguments".
  * @returns One sentence per problem, empty when the value is valid. At most
- *   {@link PROBLEMS_SHOWN} are spelled out, then a last sentence says how many
- *   more there were, so a hostile request cannot make a reply of any size.
+ * {@link PROBLEMS_SHOWN} are spelled out, then a last sentence says how many
+ * more there were, so a hostile request cannot make a reply of any size.
  */
 export function validateJson(
   schema: JsonSchema,
@@ -413,8 +432,7 @@ export function validateJson(
  * Every keyword used anywhere in a schema that the checker neither acts on nor
  * treats as an annotation. A schema that returns anything here is partly
  * unchecked, so a test requires this to be empty for every tool.
- *
- * @param schema A schema (anything that is not an object has no keywords).
+ * @param schema - A schema (anything that is not an object has no keywords).
  */
 export function unsupportedKeywords(schema: unknown): readonly string[] {
   if (!isJsonObject(schema)) {

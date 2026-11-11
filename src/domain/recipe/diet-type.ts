@@ -107,19 +107,19 @@ const DAIRY_OR_EGG =
 function prepare(name: string): string {
   const plain = name
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[\u2018\u2019]/g, "'")
+    .replaceAll(/[\u0300-\u036F]/g, '')
+    .replaceAll(/[\u2018\u2019]/g, "'")
     .toLowerCase();
   // The "chicken or vegetable" escape hatch only makes sense for stock-style
   // ingredients; "chicken or vegetable pie" really does contain chicken.
   const withoutChoices = /\b(?:stock|broth|bouillon|cubes?)\b/.test(plain)
-    ? plain.replace(OPTIONAL_MEAT_STOCK, ' ')
+    ? plain.replaceAll(OPTIONAL_MEAT_STOCK, ' ')
     : plain;
   const withoutLookAlikes = withoutChoices
-    .replace(FREE_FROM, ' ')
-    .replace(PLANT_MEAT, ' ')
-    .replace(PLANT_DAIRY, ' ')
-    .replace(LOOK_ALIKES, ' ');
+    .replaceAll(FREE_FROM, ' ')
+    .replaceAll(PLANT_MEAT, ' ')
+    .replaceAll(PLANT_DAIRY, ' ')
+    .replaceAll(LOOK_ALIKES, ' ');
   return REWRITES.reduce(
     (text, [pattern, replacement]) => text.replace(pattern, replacement),
     withoutLookAlikes,
@@ -165,13 +165,17 @@ export function classifyDietType(
  */
 export function suitableFor(style: DietType): readonly DietType[] {
   switch (style) {
-    case 'Vegan':
+    case 'Vegan': {
       return ['Vegan'];
-    case 'Vegetarian':
+    }
+    case 'Vegetarian': {
       return ['Vegan', 'Vegetarian'];
-    case 'Pescatarian':
+    }
+    case 'Pescatarian': {
       return ['Vegan', 'Vegetarian', 'Pescatarian'];
-    default:
+    }
+    default: {
       return ['Non-vegetarian'];
+    }
   }
 }

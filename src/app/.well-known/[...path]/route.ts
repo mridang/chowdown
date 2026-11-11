@@ -14,7 +14,7 @@ import { CORS_HEADERS, preflight } from '@/lib/oauth';
 /**
  * `GET /.well-known/<anything else>`: no such document. A small JSON 404 that a
  * browser may read, cacheable for ten minutes so repeat probes stay cheap.
- * (`HEAD` is answered from this too.)
+ * (`HEAD` is answered from this too.).
  */
 export function GET(): Response {
   return Response.json(

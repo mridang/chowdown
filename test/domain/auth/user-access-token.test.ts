@@ -54,9 +54,7 @@ describe('getUserAccessToken', () => {
   }
 
   const token = (value: string, expiresIn = 3599) =>
-    new Response(
-      JSON.stringify({ access_token: value, expires_in: expiresIn }),
-    );
+    Response.json({ access_token: value, expires_in: expiresIn });
 
   /** A user row with a refresh token sealed under the test key. */
   async function connectedUser(id: number) {

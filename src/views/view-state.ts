@@ -111,13 +111,15 @@ export function reduceViewState<T>(
   action: ViewAction<T>,
 ): ViewState<T> {
   switch (action.type) {
-    case 'connected':
+    case 'connected': {
       return state.phase === 'connecting' ? { phase: 'waiting' } : state;
-    case 'input':
+    }
+    case 'input': {
       return isPending(state)
         ? { phase: 'waiting', request: describeRequest(action.args) }
         : state;
-    case 'result':
+    }
+    case 'result': {
       if (action.outcome.kind === 'data') {
         return { phase: 'ready', data: action.outcome.data };
       }
@@ -132,7 +134,8 @@ export function reduceViewState<T>(
         reason: action.outcome.isError ? 'error' : 'notice',
         message: action.outcome.text,
       };
-    case 'cancelled':
+    }
+    case 'cancelled': {
       return isPending(state)
         ? {
             phase: 'failed',
@@ -140,13 +143,16 @@ export function reduceViewState<T>(
             message: cancelledMessage(action.reason),
           }
         : state;
-    case 'connection-error':
+    }
+    case 'connection-error': {
       return state.phase === 'ready'
         ? state
         : { phase: 'failed', reason: 'connection', message: action.message };
-    case 'timeout':
+    }
+    case 'timeout': {
       return isPending(state)
         ? { phase: 'failed', reason: 'timeout', message: TIMEOUT_MESSAGE }
         : state;
+    }
   }
 }

@@ -38,10 +38,14 @@ describe('STYLES', () => {
 /** The value of one rule's declaration, such as the padding of `.wrap`. */
 function declaration(selector: string, property: string): string {
   const rule = STYLES.match(
-    new RegExp(`(?:^|\\n)${selector.replace('.', '\\.')} \\{([^}]*)\\}`),
+    new RegExp(
+      String.raw`(?:^|\n)${selector.replace('.', String.raw`\.`)} \{([^}]*)\}`,
+    ),
   );
-  const value = rule?.[1]?.match(new RegExp(`${property}:\\s*([^;]*);`));
-  return value?.[1]?.replace(/\s+/g, ' ').trim() ?? '';
+  const value = rule?.[1]?.match(
+    new RegExp(String.raw`${property}:\s*([^;]*);`),
+  );
+  return value?.[1]?.replaceAll(/\s+/g, ' ').trim() ?? '';
 }
 
 describe('keyboard focus', () => {

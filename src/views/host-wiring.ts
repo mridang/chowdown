@@ -195,11 +195,11 @@ export async function runServerTool<U>(
   }
   return app.callServerTool({ name, arguments: { ...args } }).then(
     (result) => readOutcome(result, guard),
-    (failure: unknown): ToolOutcome<U> => ({
+    (error: unknown): ToolOutcome<U> => ({
       kind: 'message',
       text:
-        failure instanceof Error
-          ? failure.message
+        error instanceof Error
+          ? error.message
           : 'The request did not go through.',
       isError: true,
     }),

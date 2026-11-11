@@ -39,11 +39,11 @@ export async function upsertUser(
   const update: Partial<typeof users.$inferInsert> = {
     email: input.email,
     updated_at: timestamp,
-    ...(input.name !== undefined ? { name: input.name } : {}),
-    ...(input.picture !== undefined ? { picture: input.picture } : {}),
-    ...(input.refresh_token_enc !== undefined
-      ? { refresh_token_enc: input.refresh_token_enc }
-      : {}),
+    ...(input.name === undefined ? {} : { name: input.name }),
+    ...(input.picture === undefined ? {} : { picture: input.picture }),
+    ...(input.refresh_token_enc === undefined
+      ? {}
+      : { refresh_token_enc: input.refresh_token_enc }),
   };
 
   const [row] = await db

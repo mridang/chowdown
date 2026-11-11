@@ -99,9 +99,12 @@ function normalisedName(name: string): string {
 function hashOf(text: string): number {
   const fnv = Array.from({ length: text.length }, (_, index) =>
     text.charCodeAt(index),
-  ).reduce((hash, unit) => Math.imul(hash ^ unit, 0x01000193), 0x811c9dc5);
-  const half = Math.imul(fnv ^ (fnv >>> 16), 0x85ebca6b);
-  const whole = Math.imul(half ^ (half >>> 13), 0xc2b2ae35);
+  ).reduce(
+    (hash, unit) => Math.imul(hash ^ unit, 0x01_00_01_93),
+    0x81_1c_9d_c5,
+  );
+  const half = Math.imul(fnv ^ (fnv >>> 16), 0x85_eb_ca_6b);
+  const whole = Math.imul(half ^ (half >>> 13), 0xc2_b2_ae_35);
   return (whole ^ (whole >>> 16)) >>> 0;
 }
 
@@ -112,8 +115,7 @@ function hashOf(text: string): number {
  * author looks the same on every recipe and every visit, and different authors
  * spread across all seven faces. Anything is safe to pass: an empty or
  * whitespace-only string simply gets a face too (the same one every time).
- *
- * @param name The person's name, as the recipe's file gives it (untrusted).
+ * @param name - The person's name, as the recipe's file gives it (untrusted).
  */
 export function handwritingFor(name: string): HandwritingFace {
   return FACE_INDEXES[hashOf(normalisedName(name)) % FACE_INDEXES.length] ?? 0;

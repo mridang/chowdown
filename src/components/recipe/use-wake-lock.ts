@@ -41,8 +41,7 @@ export function shouldRequestLock(
  * released for any other reason while it is. It never reports a failure: a
  * browser without wake locks, a refusal, or a low battery just means the
  * screen may sleep, which is what it would have done anyway.
- *
- * @param environment The wake lock and page visibility to use.
+ * @param environment - The wake lock and page visibility to use.
  * @returns The function that lets the screen sleep again and stops watching.
  */
 export function keepScreenAwake(environment: WakeLockEnvironment): () => void {
@@ -111,8 +110,7 @@ function browserEnvironment(): WakeLockEnvironment {
 /**
  * Keep the screen awake while `active`, however often the page is hidden and
  * shown again, and let it sleep when `active` ends or the component goes away.
- *
- * @param active Whether the screen should be kept awake (cook mode is open).
+ * @param active - Whether the screen should be kept awake (cook mode is open).
  */
 export function useWakeLock(active: boolean): void {
   useEffect(() => {

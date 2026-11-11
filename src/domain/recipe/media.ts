@@ -78,7 +78,7 @@ export function normalizeImageUrl(raw: string): string | undefined {
     return undefined;
   }
   const url = new URL(trimmed);
-  const last = url.pathname.split('/').filter(Boolean).at(-1) ?? '';
+  const last = url.pathname.split('/').findLast(Boolean) ?? '';
   if (/^(undefined|null|nan|false)$/i.test(last)) {
     return undefined;
   }

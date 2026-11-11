@@ -3,27 +3,27 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "next dev --port 3737",
-    "pretypecheck": "npm run build:views",
-    "typecheck": "tsc --noEmit",
-    "build:views": "node scripts/build-views.mjs",
     "build": "npm run build:views && next build",
-    "start": "next start",
-    "migrate": "wrangler d1 migrations apply DB --local",
+    "build:views": "node scripts/build-views.mjs",
     "cf-typegen": "wrangler types && prettier --write worker-configuration.d.ts",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run --browser chrome",
     "deploy": "wrangler d1 migrations apply DB --remote && opennextjs-cloudflare build && wrangler deploy",
-    "pretest": "npm run build:views",
-    "test": "jest --verbose --config=jest.config.mjs",
-    "test:watch": "npm run test -- --watch",
-    "test:debug": "jest --verbose --config=jest.config.mjs --detectOpenHandles",
+    "dev": "next dev --port 3737",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prelint": "npm run build:views",
     "lint": "npx eslint .",
     "prelint:fix": "npm run build:views",
     "lint:fix": "npx eslint . --fix",
-    "cypress:open": "cypress open",
-    "cypress:run": "cypress run --browser chrome"
+    "migrate": "wrangler d1 migrations apply DB --local",
+    "start": "next start",
+    "pretest": "npm run build:views",
+    "test": "jest --verbose --config=jest.config.mjs",
+    "test:debug": "jest --verbose --config=jest.config.mjs --detectOpenHandles",
+    "test:watch": "npm run test -- --watch",
+    "pretypecheck": "npm run build:views",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "cloudflare-workers",
@@ -93,9 +93,9 @@
     "wrangler": "^4.151.1"
   },
   "overrides": {
+    "@eslint/core": "1.2.1",
     "@node-minify/core": {
       "glob": "^10.5.0"
-    },
-    "@eslint/core": "1.2.1"
+    }
   }
 }

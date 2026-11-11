@@ -11,7 +11,6 @@ import type {
   RecipeImportListing,
 } from '@/domain/db/recipe-imports';
 import type { CursorPosition } from '@/lib/core/api';
-import { compareNewestFirst } from '@/domain/api/newest-first';
 
 /** Largest pasted blob accepted, in characters. */
 export const MAX_INPUT = 100_000;
@@ -70,4 +69,5 @@ export function importPosition(
 }
 
 /** Order two import positions newest first, ties by id: "after" then means older. */
-export const compareImportPositions = compareNewestFirst;
+
+export { compareNewestFirst as compareImportPositions } from '@/domain/api/newest-first';

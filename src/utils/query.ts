@@ -15,7 +15,7 @@ function setEntry(
   value: string,
 ): readonly Entry[] {
   const first = entries.findIndex(([name]) => name === key);
-  return first < 0
+  return first === -1
     ? [...entries, [key, value]]
     : entries.flatMap((entry, at): readonly Entry[] => {
         if (entry[0] !== key) {

@@ -13,7 +13,7 @@ export function minutesOf(value: string | undefined): number | undefined {
     return undefined;
   }
   // Cooklang writes quantity and unit as "15%minutes"; read that as "15 minutes".
-  const iso = toIsoDuration(value.replace(/%/g, ' '));
+  const iso = toIsoDuration(value.replaceAll('%', ' '));
   if (!iso) {
     return undefined;
   }

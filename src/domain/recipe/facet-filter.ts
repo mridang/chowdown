@@ -107,8 +107,8 @@ export function matchesFilters(
     return false;
   }
   for (const [key, wanted] of Object.entries(state.selected)) {
-    const have = (recipe.tags[key] ?? []).map((v) => v.toLowerCase());
-    if (!wanted.some((w) => have.includes(w.toLowerCase()))) {
+    const have = new Set((recipe.tags[key] ?? []).map((v) => v.toLowerCase()));
+    if (!wanted.some((w) => have.has(w.toLowerCase()))) {
       return false;
     }
   }

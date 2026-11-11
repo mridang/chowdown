@@ -115,7 +115,7 @@ export class DriveClient {
         ? Reflect.get(created, 'id')
         : undefined;
     if (typeof id !== 'string') {
-      throw new Error('Create folder failed: no folder id in the answer');
+      throw new TypeError('Create folder failed: no folder id in the answer');
     }
     return id;
   }

@@ -10,6 +10,7 @@ export function Skeleton({
 }: Readonly<{
   /** `bar` for text and controls, `block` for a card or photo (a lighter grey). */
   tone?: 'bar' | 'block';
+
   /**
    * The corners: `rounded` is the usual softened rectangle, `square` has none
    * (a photo), `circle` is round (an avatar, a step number).

@@ -41,7 +41,7 @@ export interface RecipeJsonLd {
 
 /** Normalise a metadata key: lowercase, strip spaces/underscores/hyphens. */
 function normKey(key: string): string {
-  return key.toLowerCase().replace(/[\s_-]+/g, '');
+  return key.toLowerCase().replaceAll(/[\s_-]+/g, '');
 }
 
 /** Looks up the first of several metadata keys that has a value. */
@@ -103,7 +103,6 @@ function durationOf(
 
 /**
  * Project a parsed recipe onto schema.org/Recipe JSON-LD.
- *
  * @param recipe - The parsed Cooklang recipe.
  * @param url - The canonical URL of this recipe's page (for `url`).
  */

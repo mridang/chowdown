@@ -44,24 +44,24 @@ export const SUPPORTED_VERSIONS: readonly string[] = [
 ];
 
 /** JSON-RPC error code: the body is not JSON. */
-export const ERROR_PARSE = -32700;
+export const ERROR_PARSE = -32_700;
 /** JSON-RPC error code: the body is JSON but not a valid request. */
-export const ERROR_INVALID_REQUEST = -32600;
+export const ERROR_INVALID_REQUEST = -32_600;
 /** JSON-RPC error code: no such method. */
-export const ERROR_METHOD_NOT_FOUND = -32601;
+export const ERROR_METHOD_NOT_FOUND = -32_601;
 /** JSON-RPC error code: the method exists but its parameters are wrong. */
-export const ERROR_INVALID_PARAMS = -32602;
+export const ERROR_INVALID_PARAMS = -32_602;
 /** JSON-RPC error code: the server failed in a way the caller cannot fix. */
-export const ERROR_INTERNAL = -32603;
+export const ERROR_INTERNAL = -32_603;
 /** MCP error code: a request header disagrees with the request body. */
-export const ERROR_HEADER_MISMATCH = -32020;
+export const ERROR_HEADER_MISMATCH = -32_020;
 /** MCP error code: the protocol version asked for is not one we speak. */
-export const ERROR_UNSUPPORTED_VERSION = -32022;
+export const ERROR_UNSUPPORTED_VERSION = -32_022;
 
 /**
  * The version to answer an `initialize` with: the one the client asked for if we
  * speak it, otherwise the newest older revision. (Only handshake-based versions
- * are offered here; a client that wants the newest revision does not handshake.)
+ * are offered here; a client that wants the newest revision does not handshake.).
  */
 export function negotiateLegacyVersion(requested: unknown): string {
   return typeof requested === 'string' &&
@@ -110,9 +110,9 @@ export class RpcError extends Error {
   override readonly name = 'RpcError';
 
   /**
-   * @param code The JSON-RPC error code.
-   * @param message What went wrong, written for the caller.
-   * @param data Extra detail for the caller, when there is any.
+   * @param code - The JSON-RPC error code.
+   * @param message - What went wrong, written for the caller.
+   * @param data - Extra detail for the caller, when there is any.
    */
   constructor(
     readonly code: number,
@@ -465,12 +465,15 @@ function nameOf(message: ProtocolMessage): string | undefined {
   const params = message.params ?? {};
   switch (message.method) {
     case 'tools/call':
-    case 'prompts/get':
+    case 'prompts/get': {
       return typeof params['name'] === 'string' ? params['name'] : undefined;
-    case 'resources/read':
+    }
+    case 'resources/read': {
       return typeof params['uri'] === 'string' ? params['uri'] : undefined;
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 

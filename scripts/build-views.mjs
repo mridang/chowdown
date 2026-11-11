@@ -30,9 +30,8 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const root = resolve(import.meta.dirname, '..');
 const outDir = resolve(root, 'dist/views');
 
 /** The app's name, as `src/utils/site.ts` gives it, for the page titles. */

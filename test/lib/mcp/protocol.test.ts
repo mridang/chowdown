@@ -75,7 +75,10 @@ describe('declaredVersion / isModernRequest', () => {
   });
 
   it('ignores a version that is not text', () => {
-    const message = { method: 'ping', params: { _meta: { [META]: 20260728 } } };
+    const message = {
+      method: 'ping',
+      params: { _meta: { [META]: 20_260_728 } },
+    };
     expect(declaredVersion(message)).toBeUndefined();
     expect(isModernRequest(message)).toBe(false);
   });
@@ -96,7 +99,7 @@ describe('replyIdOf', () => {
     [true],
     [{ a: 1 }],
     [[1]],
-    [NaN],
+    [Number.NaN],
     [1e300],
   ])('has no id to echo for %p', (value) => {
     expect(replyIdOf(value)).toBeNull();
@@ -120,11 +123,11 @@ describe('isPlainObject / isNotification', () => {
 
 describe('RpcError', () => {
   it('carries a code and the detail for the caller', () => {
-    const error = new RpcError(-32602, 'bad', { uri: 'x' });
+    const error = new RpcError(-32_602, 'bad', { uri: 'x' });
     expect(error).toBeInstanceOf(Error);
     expect(error).toMatchObject({
       name: 'RpcError',
-      code: -32602,
+      code: -32_602,
       message: 'bad',
       data: { uri: 'x' },
     });
@@ -134,19 +137,19 @@ describe('RpcError', () => {
 describe('refusals', () => {
   it('build an HTTP status with a JSON-RPC body that has no id unless one is given', () => {
     expect(
-      protocolRefusal({ status: 400, code: -32600, message: 'no' }),
+      protocolRefusal({ status: 400, code: -32_600, message: 'no' }),
     ).toEqual({
       status: 400,
       body: {
         jsonrpc: '2.0',
         id: null,
-        error: { code: -32600, message: 'no' },
+        error: { code: -32_600, message: 'no' },
       },
     });
     expect(
       protocolRefusal({
         status: 429,
-        code: -32603,
+        code: -32_603,
         message: 'slow',
         id: 5,
         data: { retryAfterSeconds: 3 },
@@ -159,7 +162,7 @@ describe('refusals', () => {
         jsonrpc: '2.0',
         id: 5,
         error: {
-          code: -32603,
+          code: -32_603,
           message: 'slow',
           data: { retryAfterSeconds: 3 },
         },
@@ -170,7 +173,7 @@ describe('refusals', () => {
   it('can drop the id, as a reply to a whole batch must', () => {
     const refusal = protocolRefusal({
       status: 400,
-      code: -32020,
+      code: -32_020,
       message: 'm',
       id: 9,
     });
@@ -179,10 +182,10 @@ describe('refusals', () => {
   });
 
   it('make an error body on their own', () => {
-    expect(errorBody(-32601, 'Method not found', 2)).toEqual({
+    expect(errorBody(-32_601, 'Method not found', 2)).toEqual({
       jsonrpc: '2.0',
       id: 2,
-      error: { code: -32601, message: 'Method not found' },
+      error: { code: -32_601, message: 'Method not found' },
     });
   });
 });
@@ -515,12 +518,12 @@ describe('checkRequestHeaders — per-request metadata', () => {
   it('calls a header that names another version than the body a mismatch, even when the body names one we do not speak', () => {
     const refusal = checkRequestHeaders(headers(good), unspeakable);
     expect(refusal?.status).toBe(400);
-    expect(refusal?.body.error.code).toBe(-32020);
+    expect(refusal?.body.error.code).toBe(-32_020);
   });
 
   it('still calls a version we do not speak unsupported when there is no header to disagree with', () => {
     const refusal = checkRequestHeaders(headers({}), unspeakable);
-    expect(refusal?.body.error.code).toBe(-32022);
+    expect(refusal?.body.error.code).toBe(-32_022);
   });
 
   it('calls a version we do not speak unsupported when the header says the same', () => {
@@ -528,7 +531,7 @@ describe('checkRequestHeaders — per-request metadata', () => {
       headers({ 'mcp-protocol-version': 'v999.0.0' }),
       unspeakable,
     );
-    expect(refusal?.body.error.code).toBe(-32022);
+    expect(refusal?.body.error.code).toBe(-32_022);
   });
 
   const withMeta = (meta: Record<string, unknown>, id = 1) => ({
@@ -563,7 +566,7 @@ describe('checkRequestHeaders — per-request metadata', () => {
   it('refuses a version that is not text', () => {
     const refusal = checkRequestHeaders(
       modernHeaders,
-      withMeta({ [META]: 20260728, [CAPS]: {} }),
+      withMeta({ [META]: 20_260_728, [CAPS]: {} }),
     );
     expect(refusal?.status).toBe(400);
     expect(refusal?.body.error.code).toBe(ERROR_INVALID_PARAMS);

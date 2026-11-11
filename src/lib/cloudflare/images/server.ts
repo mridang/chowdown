@@ -20,12 +20,9 @@ import {
 } from '@/lib/cloudflare/images/proxy';
 import {
   serveImage,
-  type ImageAccess,
   type ImageCache,
   type ImageServiceDeps,
 } from '@/lib/cloudflare/images/service';
-
-export type { ImageAccess };
 
 /** The Images binding, where the deployment has one. */
 export function imagesBinding(): ImagesLike | undefined {
@@ -63,8 +60,8 @@ export function imageCache(): ImageCache | undefined {
  * into an error. Outside a Workers request the promise simply runs on its own.
  */
 export function runInBackground(work: Promise<unknown>): void {
-  const guarded = work.catch((err: unknown) => {
-    console.error('image background task failed', err);
+  const guarded = work.catch((error: unknown) => {
+    console.error('image background task failed', error);
   });
   try {
     getCloudflareContext().ctx.waitUntil(guarded);
@@ -89,3 +86,5 @@ export class ImageService {
     return serveImage(request, this.#deps);
   }
 }
+
+export { type ImageAccess } from '@/lib/cloudflare/images/service';

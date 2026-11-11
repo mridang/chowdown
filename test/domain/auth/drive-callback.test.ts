@@ -40,8 +40,7 @@ afterEach(() => world.close());
 
 const DRIVE_URL = 'https://www.googleapis.com/drive/v3/files';
 
-const json = (value: unknown, status = 200) =>
-  new Response(JSON.stringify(value), { status });
+const json = (value: unknown, status = 200) => Response.json(value, { status });
 
 /** Everything the flow set on the response, by cookie name. */
 const cookiesOf = (res: NextResponse) =>
