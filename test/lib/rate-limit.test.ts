@@ -1,4 +1,3 @@
-// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
 import { DatabaseSync } from 'node:sqlite';
 
 import { beforeEach, describe, expect, it } from '@jest/globals';

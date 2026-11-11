@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { NextRequest } from 'next/server';
-// eslint-disable-next-line n/no-unsupported-features/node-builtins -- experimental API used on purpose
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import { encryptSecret } from '@/lib/crypto';
