@@ -101,9 +101,7 @@ export function focusMoreActionsButton(
     querySelector(selector: string): { focus(): void } | null;
   }> | null,
 ): void {
-  container
-    ?.querySelector(`button[aria-label="${CSS.escape(MORE_ACTIONS_LABEL)}"]`)
-    ?.focus();
+  container?.querySelector('button[aria-label="More actions"]')?.focus();
 }
 
 /**
