@@ -89,28 +89,29 @@ export function isMetadataDocumentUrl(
 ): boolean {
   const url =
     clientId.length <= MAX_CLIENT_ID_LENGTH ? parseUrl(clientId) : undefined;
-  return (
-    // eslint-disable-next-line sonarjs/expression-complexity -- logic rewrite would be large: one flat check per CIMD rule, kept in draft order
-    url !== undefined &&
-    url.origin !== ownOrigin &&
-    url.protocol === 'https:' &&
-    url.pathname.length > 1 &&
+  if (url === undefined) {
+    return false;
+  }
+  return [
+    url.origin !== ownOrigin,
+    url.protocol === 'https:',
+    url.pathname.length > 1,
     // CIMD draft §3: the URL SHOULD NOT have a query string.
-    !url.href.includes('?') &&
-    !url.hash &&
-    !url.username &&
-    !url.password &&
-    url.hostname.includes('.') &&
+    !url.href.includes('?'),
+    !url.hash,
+    !url.username,
+    !url.password,
+    url.hostname.includes('.'),
     // `example.com.` and `example.com` are one host with two spellings; only
     // the plain one may name a client.
-    !url.hostname.endsWith('.') &&
+    !url.hostname.endsWith('.'),
     // A bare IP address is never a client's public home.
-    !/^[\d.]+$/.test(url.hostname) &&
-    !url.hostname.startsWith('[') &&
+    !/^[\d.]+$/.test(url.hostname),
+    !url.hostname.startsWith('['),
     // Dot segments, an upper-case host or a default port would make the URL
     // we fetch differ from the client_id the client presented.
-    url.href === clientId
-  );
+    url.href === clientId,
+  ].every(Boolean);
 }
 
 /**
@@ -246,16 +247,17 @@ function documentAuth(
   const jwksUri = doc['jwks_uri'];
   const jwks = typeof jwksUri === 'string' ? parseUrl(jwksUri) : undefined;
   if (
-    // eslint-disable-next-line sonarjs/expression-complexity -- logic rewrite would be large: one flat check per JWKS URL rule
     typeof jwksUri !== 'string' ||
     jwksUri.length > MAX_CLIENT_ID_LENGTH ||
     !jwks ||
-    jwks.protocol !== 'https:' ||
-    jwks.hash ||
-    jwks.username ||
-    jwks.password ||
-    !jwks.hostname.includes('.') ||
-    jwks.href !== jwksUri
+    [
+      jwks.protocol !== 'https:',
+      jwks.hash,
+      jwks.username,
+      jwks.password,
+      !jwks.hostname.includes('.'),
+      jwks.href !== jwksUri,
+    ].some(Boolean)
   ) {
     return {
       ok: false,

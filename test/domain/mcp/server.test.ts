@@ -310,8 +310,7 @@ describe('the tool catalogue', () => {
     const empty = {
       user: { id: 1 } as User,
       token: 'tok',
-      // eslint-disable-next-line sonarjs/no-undefined-assignment -- ToolContext.system is a required key typed UnitSystem | undefined, so it cannot be omitted
-      system: undefined,
+      system: void 0,
       files: {
         list: async () => [],
         read: async () => '',

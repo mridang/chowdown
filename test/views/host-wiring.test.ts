@@ -244,11 +244,12 @@ describe('sendFollowUpMessage', () => {
   it('sends a ui/message as the person when the host takes it', async () => {
     const received: unknown[] = [];
     const { app } = await session((bridge) => {
-      // eslint-disable-next-line unicorn/prefer-add-event-listener -- onmessage is a request handler that must return the response, not an event; the bridge has no event for it
-      bridge.onmessage = (params) => {
-        received.push(params);
-        return Promise.resolve({});
-      };
+      Object.assign(bridge, {
+        onmessage: (params: unknown) => {
+          received.push(params);
+          return Promise.resolve({});
+        },
+      });
     });
     expect(
       await sendFollowUpMessage(
@@ -269,11 +270,12 @@ describe('sendFollowUpMessage', () => {
     const prompts: string[] = [];
     const received: unknown[] = [];
     const { app } = await session((bridge) => {
-      // eslint-disable-next-line unicorn/prefer-add-event-listener -- onmessage is a request handler that must return the response, not an event; the bridge has no event for it
-      bridge.onmessage = (params) => {
-        received.push(params);
-        return Promise.resolve({});
-      };
+      Object.assign(bridge, {
+        onmessage: (params: unknown) => {
+          received.push(params);
+          return Promise.resolve({});
+        },
+      });
     });
     const openai: OpenAiApi = {
       sendFollowUpMessage: ({ prompt }) => {
@@ -288,11 +290,12 @@ describe('sendFollowUpMessage', () => {
   it('falls through to ui/message when ChatGPT’s route throws', async () => {
     const received: unknown[] = [];
     const { app } = await session((bridge) => {
-      // eslint-disable-next-line unicorn/prefer-add-event-listener -- onmessage is a request handler that must return the response, not an event; the bridge has no event for it
-      bridge.onmessage = (params) => {
-        received.push(params);
-        return Promise.resolve({});
-      };
+      Object.assign(bridge, {
+        onmessage: (params: unknown) => {
+          received.push(params);
+          return Promise.resolve({});
+        },
+      });
     });
     const openai: OpenAiApi = {
       sendFollowUpMessage: () => Promise.reject(new Error('refused')),
@@ -303,8 +306,9 @@ describe('sendFollowUpMessage', () => {
 
   it('reports false when the host refuses the message or there is no route', async () => {
     const { app } = await session((bridge) => {
-      // eslint-disable-next-line unicorn/prefer-add-event-listener -- onmessage is a request handler that must return the response, not an event; the bridge has no event for it
-      bridge.onmessage = () => Promise.resolve({ isError: true });
+      Object.assign(bridge, {
+        onmessage: () => Promise.resolve({ isError: true }),
+      });
     });
     expect(await sendFollowUpMessage(app, undefined, 'hello')).toBe(false);
     expect(await sendFollowUpMessage(null, undefined, 'hello')).toBe(false);

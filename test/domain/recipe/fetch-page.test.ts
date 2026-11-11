@@ -29,10 +29,9 @@ function serving(...responses: readonly Response[]) {
 
 /** Why fetching `url` failed, in the words import shows. */
 async function failure(url: string, timeoutMs?: number): Promise<string> {
-  const error = await fetchPage(url, timeoutMs).catch(
-    // eslint-disable-next-line sonarjs/variable-name -- unicorn/catch-error-name requires the error_ name, which this rule rejects
-    (error_: unknown) => error_,
-  );
+  const [settled] = await Promise.allSettled([fetchPage(url, timeoutMs)]);
+  const error: unknown =
+    settled.status === 'rejected' ? settled.reason : settled.value;
   expect(error).toBeInstanceOf(PageFetchError);
   return (error as PageFetchError).failure;
 }

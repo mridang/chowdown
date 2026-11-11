@@ -54,7 +54,7 @@ export function decodeCursor(cursor: string): CursorPosition | undefined {
 }
 
 /** The validated `limit` query parameter, or the 400 to send for a bad one. */
-// eslint-disable-next-line sonarjs/function-return-type -- the 400 Response is the documented second outcome; callers branch on it, so the union stays
+// eslint-disable-next-line sonarjs/function-return-type -- number | Response is the public contract (callers branch on the 400); overloads or a result wrapper would change the signature
 export function parseLimit(
   raw: string | null,
   fallback: number = DEFAULT_LIMIT,

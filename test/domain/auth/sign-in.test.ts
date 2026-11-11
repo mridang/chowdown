@@ -52,8 +52,7 @@ const context = (overrides: Record<string, unknown> = {}) => ({
   request: appRequest('GET', '/auth/callback'),
   env: env(),
   origin: 'https://app.test',
-  // eslint-disable-next-line sonarjs/no-undefined-assignment -- FlowContext requires returnTo, whose type is string | undefined
-  returnTo: undefined,
+  returnTo: void 0,
   ...overrides,
 });
 

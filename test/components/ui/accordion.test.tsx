@@ -1,4 +1,3 @@
-/* eslint-disable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */
 import { describe, expect, it } from '@jest/globals';
 
 import {
@@ -10,7 +9,7 @@ import {
 import { html } from '../render';
 
 const sample = (
-  <Accordion className="faq">
+  <Accordion className="mt-2">
     <AccordionItem name="questions">
       <AccordionTrigger>Is it free?</AccordionTrigger>
       <AccordionContent>Yes.</AccordionContent>
@@ -47,8 +46,6 @@ describe('Accordion', () => {
   });
 
   it('takes its wrapper’s class from the caller', () => {
-    expect(out.startsWith('<div class="faq">')).toBe(true);
+    expect(out.startsWith('<div class="mt-2">')).toBe(true);
   });
 });
-
-/* eslint-enable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */

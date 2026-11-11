@@ -1,4 +1,3 @@
-/* eslint-disable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */
 import { describe, expect, it } from '@jest/globals';
 
 import { CoverImage, sizesFor } from '@/components/cover-image';
@@ -11,7 +10,7 @@ describe('CoverImage', () => {
     const out = html(
       <CoverImage
         src="https://cdn.example.com/a.jpg"
-        className="cover"
+        className="mt-2"
         fallback={FALLBACK}
         alt="Tacos"
       />,
@@ -19,14 +18,14 @@ describe('CoverImage', () => {
     expect(out).toMatch(/<img[^>]*src="\/img\?/);
     expect(out).toMatch(/srcSet="[^"]*320w[^"]*480w[^"]*640w/);
     expect(out).toContain('alt="Tacos"');
-    expect(out).toContain('class="cover"');
+    expect(out).toContain('class="mt-2"');
   });
 
   it('keeps the person’s cookies and referrer away from the recipe’s site', () => {
     const out = html(
       <CoverImage
         src="https://cdn.example.com/a.jpg"
-        className="c"
+        className="mt-2"
         fallback={FALLBACK}
       />,
     );
@@ -37,7 +36,7 @@ describe('CoverImage', () => {
     const lazy = html(
       <CoverImage
         src="https://cdn.example.com/a.jpg"
-        className="c"
+        className="mt-2"
         fallback={FALLBACK}
       />,
     );
@@ -45,7 +44,7 @@ describe('CoverImage', () => {
     const eager = html(
       <CoverImage
         src="https://cdn.example.com/a.jpg"
-        className="c"
+        className="mt-2"
         fallback={FALLBACK}
         priority
       />,
@@ -56,7 +55,11 @@ describe('CoverImage', () => {
 
   it('shows an image that is not ours to proxy as it is', () => {
     const out = html(
-      <CoverImage src="/local/photo.jpg" className="c" fallback={FALLBACK} />,
+      <CoverImage
+        src="/local/photo.jpg"
+        className="mt-2"
+        fallback={FALLBACK}
+      />,
     );
     expect(out).toContain('src="/local/photo.jpg"');
     expect(out).not.toContain('srcSet');
@@ -64,7 +67,11 @@ describe('CoverImage', () => {
 
   it('describes a decorative photo with empty alt text', () => {
     const out = html(
-      <CoverImage src="/local/photo.jpg" className="c" fallback={FALLBACK} />,
+      <CoverImage
+        src="/local/photo.jpg"
+        className="mt-2"
+        fallback={FALLBACK}
+      />,
     );
     expect(out).toContain('alt=""');
   });
@@ -73,7 +80,7 @@ describe('CoverImage', () => {
     const out = html(
       <CoverImage
         src="/local/photo.jpg"
-        className="c"
+        className="mt-2"
         fallback={FALLBACK}
         width={640}
         height={480}
@@ -103,7 +110,7 @@ describe('sizesFor', () => {
 describe('CoverImage sizes', () => {
   const props = {
     src: 'https://cdn.example.com/a.jpg',
-    className: 'c',
+    className: 'mt-2',
     fallback: FALLBACK,
     sizes: '50vw',
   } as const;
@@ -125,5 +132,3 @@ describe('CoverImage sizes', () => {
     expect(html(<CoverImage {...props} />)).toContain('sizes="50vw"');
   });
 });
-
-/* eslint-enable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */

@@ -83,7 +83,7 @@ function loadWorker(options: {
       return new Response('from the network');
     },
   });
-  // eslint-disable-next-line sonarjs/code-eval -- test runs the repository's own public/sw.js in a sandbox
+  // eslint-disable-next-line sonarjs/code-eval -- the test runs the repository's own public/sw.js in a vm sandbox; vm.runInContext and new vm.Script are both flagged, and a service worker has no module form to import
   vm.runInContext(WORKER_SOURCE, context);
   return { listeners, calls, windows };
 }

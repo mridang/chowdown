@@ -1,4 +1,3 @@
-/* eslint-disable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */
 import { describe, expect, it } from '@jest/globals';
 
 import { Card } from '@/components/ui/card';
@@ -30,13 +29,13 @@ describe('Card', () => {
 
   it('can be another element, and passes attributes through', () => {
     const out = html(
-      <Card as="section" aria-label="Steps" className="extra">
+      <Card as="section" aria-label="Steps" className="mt-2">
         x
       </Card>,
     );
     expect(out.startsWith('<section')).toBe(true);
     expect(out).toContain('aria-label="Steps"');
-    expect(classOf(out, 'section')).toContain('extra');
+    expect(classOf(out, 'section')).toContain('mt-2');
   });
 
   it('can be a button and then takes the button’s props', () => {
@@ -49,5 +48,3 @@ describe('Card', () => {
     expect(out).toContain('type="button"');
   });
 });
-
-/* eslint-enable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */

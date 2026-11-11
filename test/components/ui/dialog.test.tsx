@@ -1,4 +1,3 @@
-/* eslint-disable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */
 import { describe, expect, it, jest } from '@jest/globals';
 
 import {
@@ -21,7 +20,7 @@ import { html } from '../render';
 const sample = (open: boolean, props: { showClose?: boolean } = {}) =>
   html(
     <Dialog open={open}>
-      <DialogTrigger className="opener">Open</DialogTrigger>
+      <DialogTrigger className="mt-2">Open</DialogTrigger>
       <DialogContent closeLabel="Close filters" {...props}>
         <DialogTitle>Filters</DialogTitle>
         <DialogDescription>Narrow the list.</DialogDescription>
@@ -32,7 +31,7 @@ const sample = (open: boolean, props: { showClose?: boolean } = {}) =>
 describe('Dialog', () => {
   it('has a button that opens it, and no content while it is closed', () => {
     const out = sample(false);
-    expect(out).toMatch(/<button type="button" class="opener">Open<\/button>/);
+    expect(out).toMatch(/<button type="button" class="mt-2">Open<\/button>/);
     expect(out).toMatch(/<dialog[^>]*><\/dialog>/);
     expect(out).not.toContain('Filters');
   });
@@ -244,5 +243,3 @@ describe('DialogContent markup', () => {
     expect(dialog(false)).toContain('closedby="none"');
   });
 });
-
-/* eslint-enable tailwindcss/no-custom-classname -- fixture class names that are not Tailwind classes. */

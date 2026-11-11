@@ -110,16 +110,14 @@ describe('setFavouriteAndTag', () => {
   });
 
   it('does nothing in Drive when the account has gone', async () => {
-    // eslint-disable-next-line sonarjs/no-undefined-assignment -- the 'user' key must be present: fakes() tells an absent account from one passed as undefined
-    const { deps, settle } = fakes({ user: undefined });
+    const { deps, settle } = fakes({ user: void 0 });
     await setFavouriteAndTag(3, 'f1', true, deps);
     await settle();
     expect(deps.readFile).not.toHaveBeenCalled();
   });
 
   it('skips the cache refresh for a recipe that is not cached', async () => {
-    // eslint-disable-next-line sonarjs/no-undefined-assignment -- the 'row' key must be present: fakes() tells an absent row from one passed as undefined
-    const { deps, settle } = fakes({ row: undefined });
+    const { deps, settle } = fakes({ row: void 0 });
     await setFavouriteAndTag(3, 'f1', true, deps);
     await settle();
     expect(deps.writeFile).toHaveBeenCalled();

@@ -42,7 +42,7 @@ export function ViewToggle({
       options={OPTIONS}
       onValueChange={(next) => {
         setChosen(next);
-        // eslint-disable-next-line unicorn/no-document-cookie -- CookieStore is not in every browser this app runs in, so document.cookie is the portable write
+        // eslint-disable-next-line unicorn/no-document-cookie -- tried cookieStore.set: it is async and missing from Firefox and older Safari, and the cookie must be written before router.refresh() reads it
         document.cookie = viewCookie(next, location.protocol === 'https:');
         startTransition(() => router.refresh());
       }}

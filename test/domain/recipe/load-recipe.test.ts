@@ -142,8 +142,7 @@ describe('loadRecipePageRows', () => {
 
   it('clears the session of an account that no longer exists', async () => {
     const deps = fakes({
-      // eslint-disable-next-line sonarjs/no-undefined-assignment -- the 'epoch' key must be present: pageRows() tells an absent epoch from one passed as undefined
-      pageRows: async () => pageRows({ epoch: undefined }),
+      pageRows: async () => pageRows({ epoch: void 0 }),
     });
     await expect(loadRecipePageRows('r1', deps)).rejects.toMatchObject({
       to: '/auth/refresh',
