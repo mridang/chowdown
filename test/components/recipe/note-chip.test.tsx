@@ -6,7 +6,7 @@ import { html } from '../render';
 describe('NoteChip', () => {
   it('says whose note it is, then the note', () => {
     const out = html(<NoteChip text="use less salt" />);
-    expect(out.replace(/<[^>]*>/g, '')).toBe('Your note: use less salt');
+    expect(out.replaceAll(/<[^<>]*>/g, '')).toBe('Your note: use less salt');
   });
 
   it('draws the note icon so it is not told apart by colour alone', () => {

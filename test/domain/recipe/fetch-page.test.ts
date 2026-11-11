@@ -2,20 +2,21 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import { SITE_NAME, SITE_URL } from '@/utils/site';
 import { fetchPage, PageFetchError } from '@/domain/recipe/fetch-page';
+import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
 /** The User-Agent `fetchPage` builds from the site's identity at the call site. */
 const USER_AGENT = `${SITE_NAME.toLowerCase()}/1.0 (+${SITE_URL})`;
 
-const realFetch = global.fetch;
+const realFetch = globalThis.fetch;
 
 afterEach(() => {
-  global.fetch = realFetch;
+  globalThis.fetch = realFetch;
 });
 
 /** Make the next fetches answer with `responses`, in turn, and remember the calls. */
 function serving(...responses: readonly Response[]) {
   const calls: { url: string; init: RequestInit }[] = [];
-  global.fetch = (async (url: string, init: RequestInit) => {
+  globalThis.fetch = (async (url: string, init: RequestInit) => {
     calls.push({ url, init });
     const next = responses[calls.length - 1];
     if (!next) {
@@ -28,7 +29,9 @@ function serving(...responses: readonly Response[]) {
 
 /** Why fetching `url` failed, in the words import shows. */
 async function failure(url: string, timeoutMs?: number): Promise<string> {
-  const error = await fetchPage(url, timeoutMs).catch((e: unknown) => e);
+  const [settled] = await Promise.allSettled([fetchPage(url, timeoutMs)]);
+  const error: unknown =
+    settled.status === 'rejected' ? settled.reason : settled.value;
   expect(error).toBeInstanceOf(PageFetchError);
   return (error as PageFetchError).failure;
 }
@@ -56,7 +59,8 @@ describe('fetchPage', () => {
 
   it('keeps at most 200,000 characters of a very large page', async () => {
     serving(new Response('x'.repeat(300_000)));
-    expect((await fetchPage('https://a.com/x')).length).toBe(200_000);
+    const page = await fetchPage('https://a.com/x');
+    expect(page).toHaveLength(200_000);
   });
 
   it('keeps the JSON-LD that sits behind a lot of inline script and CSS', async () => {
@@ -81,7 +85,8 @@ describe('fetchPage', () => {
         }),
       ),
     );
-    expect((await fetchPage('https://a.com/x')).length).toBe(200_000);
+    const page = await fetchPage('https://a.com/x');
+    expect(page).toHaveLength(200_000);
     // 800,000 bytes is the limit: a handful of pulls, not the whole internet.
     expect(pulls.count).toBeLessThan(20);
   });
@@ -138,7 +143,7 @@ describe('fetchPage', () => {
   it.each([
     'http://localhost/x',
     'http://127.0.0.1/x',
-    'http://10.1.2.3/x',
+    urls.private10Page,
     'https://a.com:8443/x',
     'https://user:pw@a.com/x',
     'file:///etc/passwd',
@@ -155,20 +160,21 @@ describe('fetchPage', () => {
   });
 
   it('says timed out when the site is too slow', async () => {
-    global.fetch = ((_url: string, init: RequestInit) =>
-      new Promise((_resolve, reject) =>
-        init.signal?.addEventListener('abort', () =>
-          reject(init.signal?.reason),
+    globalThis.fetch = jest.fn<typeof fetch>(
+      (_url, init) =>
+        new Promise<Response>((_resolve, reject) =>
+          init?.signal?.addEventListener('abort', () =>
+            reject(init.signal?.reason),
+          ),
         ),
-      )) as unknown as typeof fetch;
+    );
     expect(await failure('https://a.com/x', 20)).toBe('timed out');
   });
 
   it('says unreachable when the request fails outright', async () => {
-    const spy = jest.fn(async () => {
+    globalThis.fetch = jest.fn<typeof fetch>(async () => {
       throw new TypeError('fetch failed');
     });
-    global.fetch = spy as unknown as typeof fetch;
     expect(await failure('https://a.com/x')).toBe('unreachable');
   });
 });

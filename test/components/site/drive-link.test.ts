@@ -15,7 +15,7 @@ describe('driveOpenHref', () => {
   });
 
   it('opens Drive’s home page when the folder is not known', () => {
-    expect(driveOpenHref(undefined)).toBe(DRIVE_HOME_HREF);
+    expect(driveOpenHref()).toBe(DRIVE_HOME_HREF);
     expect(driveOpenHref('')).toBe(DRIVE_HOME_HREF);
   });
 

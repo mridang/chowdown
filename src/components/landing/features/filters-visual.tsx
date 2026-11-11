@@ -63,7 +63,7 @@ export function FiltersVisual({
   recipes,
 }: Readonly<{ recipes: readonly SampleRecipe[] }>): ReactElement {
   const count = (test: (recipe: SampleRecipe) => boolean) =>
-    recipes.filter(test).length;
+    recipes.filter((recipe) => test(recipe)).length;
   // The two ticked options (Easy, 16-30 min) decide which recipes are shown.
   const results = recipes.filter(
     (recipe) => recipe.difficulty === 'Easy' && recipe.minutes <= 30,

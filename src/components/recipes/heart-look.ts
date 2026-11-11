@@ -24,8 +24,7 @@ export const HEART_BUTTON_BASE = 'disabled:opacity-60 focus-ring';
  *
  * It sets no position: the caller places it (for example `absolute top-3
  * right-3`), because where it sits depends on the card around it.
- *
- * @param on Whether the recipe is a favourite.
+ * @param on - Whether the recipe is a favourite.
  */
 export function heartOverlayClass(on: boolean): string {
   return cn(
@@ -40,8 +39,7 @@ export function heartOverlayClass(on: boolean): string {
  * The outlined "Favourite" button on the recipe page, as classes. A favourite
  * gets a flame border and ember text; otherwise it is a plain field-coloured
  * outline that darkens on hover.
- *
- * @param on Whether the recipe is a favourite.
+ * @param on - Whether the recipe is a favourite.
  */
 export function heartLabelledClass(on: boolean): string {
   return cn(

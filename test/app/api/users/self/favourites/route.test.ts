@@ -30,9 +30,8 @@ afterEach(() => world.close());
 
 describe('GET /api/users/self/favourites', () => {
   it('answers 401 when nobody is signed in', async () => {
-    expect(
-      (await GET(fromApp('GET', '/api/users/self/favourites'))).status,
-    ).toBe(401);
+    const res = await GET(fromApp('GET', '/api/users/self/favourites'));
+    expect(res.status).toBe(401);
   });
 
   it('lists only the recipes the person has hearted', async () => {
@@ -64,8 +63,7 @@ describe('GET /api/users/self/favourites', () => {
   it('answers 401 once the session was ended', async () => {
     await signIn(world);
     world.raw.prepare('UPDATE users SET session_epoch = 2').run();
-    expect(
-      (await GET(fromApp('GET', '/api/users/self/favourites'))).status,
-    ).toBe(401);
+    const res = await GET(fromApp('GET', '/api/users/self/favourites'));
+    expect(res.status).toBe(401);
   });
 });

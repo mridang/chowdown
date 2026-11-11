@@ -27,13 +27,18 @@ export const fakeCookies = async () => ({
  * the function that puts things back.
  */
 export function installEnv(
-  env: Readonly<Record<string, unknown>> = {
+  env: Readonly<Record<string, unknown>> = signInEnv(),
+): () => void {
+  return installCloudflareContext({} as D1Database, env);
+}
+
+/** The bindings the sign-in tests run with, unless a test passes its own. */
+function signInEnv(): Record<string, unknown> {
+  return {
     SESSION_SECRET,
     GOOGLE_OAUTH_CLIENT_ID: 'client-id',
     GOOGLE_OAUTH_CLIENT_SECRET: 'client-secret',
-  },
-): () => void {
-  return installCloudflareContext({} as D1Database, env);
+  };
 }
 
 /** A signed session token for a person, optionally under a given epoch or expiry. */

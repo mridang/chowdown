@@ -6,6 +6,7 @@ import {
   safeHttpUrl,
   sourceHost,
 } from '@/views/follow-up';
+import urls from '../fixtures/insecure-urls.json' with { type: 'json' };
 
 describe('followUpChannels', () => {
   it('uses ChatGPT’s bridge first inside ChatGPT, then the standard message', () => {
@@ -65,7 +66,7 @@ describe('sourceHost', () => {
     expect(sourceHost('https://www.example.com/a/b?c=1')).toBe(
       'www.example.com',
     );
-    expect(sourceHost(' http://example.org ')).toBe('example.org');
+    expect(sourceHost(urls.exampleOrgSpaced)).toBe('example.org');
   });
 
   it('shows an internationalised name in its punycode form', () => {
@@ -83,7 +84,7 @@ describe('safeHttpUrl', () => {
     expect(safeHttpUrl(' https://example.com/a b ')).toBe(
       'https://example.com/a%20b',
     );
-    expect(safeHttpUrl('http://example.com')).toBe('http://example.com/');
+    expect(safeHttpUrl(urls.exampleBare)).toBe(urls.exampleBareSlash);
   });
 
   it('refuses everything that is not http or https', () => {

@@ -3,7 +3,7 @@
  * use Client ID Metadata Documents. Only public clients are accepted: they
  * authenticate with PKCE, not a secret.
  *
- *   POST /oauth/register { client_name, redirect_uris, … } → 201 { client_id, … }
+ *   POST /oauth/register { client_name, redirect_uris, … } → 201 { client_id, … }.
  */
 
 import { oauthSweeps, saveClient } from '@/domain/db/oauth';

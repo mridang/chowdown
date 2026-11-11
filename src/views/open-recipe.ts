@@ -64,7 +64,6 @@ export interface OpenRecipeHost {
  * Open one recipe: ask the assistant to (a fixed phrase and the id), and if the
  * host has no way to message the chat but can run tools, fetch the recipe by id
  * and show it in place; failing both, say so.
- *
  * @param recipe - The tile that was tapped.
  * @param host - What the host connection allows.
  * @param dispatch - Receives what happened, for the list's state.

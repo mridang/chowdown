@@ -59,11 +59,13 @@ export interface WidgetBridge<T> {
   readonly expand: () => Promise<void>;
   /** Leave the expanded layout, asking the host to leave fullscreen too. */
   readonly collapse: () => Promise<void>;
+
   /**
    * True when the host would not leave fullscreen on request, so the View
    * should point at the host's own close control.
    */
   readonly closeHint: boolean;
+
   /**
    * Ask the assistant to do something in the conversation, as if the person had
    * typed it. Resolves true when a route accepted it, false when none did.
@@ -85,10 +87,9 @@ export interface WidgetBridge<T> {
  * Connect the View to its host and return the tool's `structuredContent`
  * (checked by `guard` and typed as `T`) inside a state that always resolves:
  * data, a message from the server, a cancellation, or a timeout.
- *
  * @param appName - Name the View reports to the host in `ui/initialize`.
  * @param guard - Tells whether `structuredContent` has the shape the View draws.
- *   Must be a stable (module-level) function.
+ * Must be a stable (module-level) function.
  */
 export function useWidgetData<T>(
   appName: string,
@@ -143,13 +144,9 @@ export function useWidgetData<T>(
   // Never leave the View on a loading placeholder for good.
   const pending = isPending(state);
   useEffect(() => {
-    if (!pending) {
-      return;
-    }
-    const timer = setTimeout(
-      () => dispatch({ type: 'timeout' }),
-      LOADING_TIMEOUT_MS,
-    );
+    const timer = pending
+      ? setTimeout(() => dispatch({ type: 'timeout' }), LOADING_TIMEOUT_MS)
+      : undefined;
     return () => clearTimeout(timer);
   }, [pending]);
 
@@ -173,8 +170,9 @@ export function useWidgetData<T>(
     };
     apply(getOpenAi());
     const onGlobals = (event: Event) => apply(globalsFromEvent(event));
-    window.addEventListener('openai:set_globals', onGlobals);
-    return () => window.removeEventListener('openai:set_globals', onGlobals);
+    globalThis.addEventListener('openai:set_globals', onGlobals);
+    return () =>
+      globalThis.removeEventListener('openai:set_globals', onGlobals);
   }, [guard]);
 
   const hostMode = layout.hostMode;

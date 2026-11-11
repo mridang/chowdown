@@ -34,7 +34,7 @@ describe('getEnvSafe', () => {
   });
 
   it('answers undefined, not an error, where there is no environment at all', () => {
-    holder[key] = undefined;
+    delete holder[key];
     expect(getEnvSafe(ALLOWED_ORIGINS_SETTING)).toBeUndefined();
   });
 });

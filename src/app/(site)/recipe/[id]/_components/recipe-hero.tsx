@@ -44,8 +44,8 @@ export function heroEyebrow(
   cuisine: string | undefined,
   course: string | undefined,
 ): string | undefined {
-  const words = [cuisine, course].filter((word): word is string =>
-    Boolean(word),
+  const words = [cuisine, course].filter(
+    (word): word is string => word !== undefined && word !== '',
   );
   return words.length > 0
     ? words.map((word) => sentenceCase(word)).join(' · ')

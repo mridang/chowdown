@@ -149,19 +149,22 @@ export function AddRecipes({
     inflight.current = null;
     setBusy(false);
     switch (outcome.kind) {
-      case 'cancelled':
+      case 'cancelled': {
         setAnnouncement(ANNOUNCEMENTS.cancelled);
         return;
-      case 'failed':
+      }
+      case 'failed': {
         setAnnouncement('');
         setPrepareError(outcome.message);
         return;
-      case 'prepared':
+      }
+      case 'prepared': {
         setAnnouncement('');
         importId.current = outcome.prepared.id;
         setDrafts(outcome.prepared.drafts);
         setPhase('review');
         seek(outcome.prepared.drafts, 0);
+      }
     }
   }, [input, seek]);
 
@@ -198,10 +201,10 @@ export function AddRecipes({
           ? ANNOUNCEMENTS.savedNext(index + 2, drafts.length)
           : '',
       );
-    } catch (err) {
+    } catch (error) {
       setAnnouncement('');
       setSaveError(
-        err instanceof Error ? err.message : 'Could not save that recipe.',
+        error instanceof Error ? error.message : 'Could not save that recipe.',
       );
     } finally {
       setBusy(false);
@@ -217,6 +220,7 @@ export function AddRecipes({
   // Empty fields only count as errors once Save has been pressed, and stop
   // counting as soon as they are filled in.
   const fieldErrors = attempted ? missingFieldErrors(name, cook) : {};
+  const saveLabel = index + 1 < drafts.length ? 'Save & next' : 'Save & finish';
 
   return (
     <Card as="section" aria-labelledby="add-recipes-heading">
@@ -341,11 +345,7 @@ export function AddRecipes({
               aria-busy={busy}
               className="disabled:opacity-50"
             >
-              {busy
-                ? 'Saving…'
-                : index + 1 < drafts.length
-                  ? 'Save & next'
-                  : 'Save & finish'}
+              {busy ? 'Saving…' : saveLabel}
             </Button>
             <Button
               variant="outline"

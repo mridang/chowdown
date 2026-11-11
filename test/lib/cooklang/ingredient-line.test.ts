@@ -1,7 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { parseIngredientLine, toCookIngredient } from '@/lib/cooklang';
+import { PREPARATION } from '@/lib/cooklang/ingredient-line';
 
+import { expectSamePattern, fuzzInputs } from '../../regex-equivalence';
 /** The Cooklang token a line becomes: what ends up in the file and so what the page shows. */
 const token = (line: string) => toCookIngredient(parseIngredientLine(line));
 
@@ -207,5 +209,102 @@ describe('toCookIngredient', () => {
         note: 'a) b ( c',
       }),
     ).toBe('@sugar evil pan 5{1}(a b c)');
+  });
+});
+
+const FAST_MS = 1000;
+
+describe('ingredient line scanning (linear-time rewrites)', () => {
+  it.each([
+    ['1 to 2 cups flour', { quantity: '1-2', unit: 'cups', name: 'flour' }],
+    ['1 - 2 cups', { quantity: '1-2', unit: 'cups', name: '1 - 2 cups' }],
+    ['8-12 tortillas', { quantity: '8-12', name: 'tortillas' }],
+    ['x 1 TO 3 eggs', { name: '1 TO 3 eggs' }],
+    [
+      '2 cups of  , flour ;',
+      { quantity: '2', unit: 'cups', name: 'of', note: ', flour ;' },
+    ],
+    ['flour (sifted), chopped;', { name: 'flour', note: 'sifted; , chopped;' }],
+  ])('parses %j', (input, expected) => {
+    expect(parseIngredientLine(input as string)).toEqual(expected);
+  });
+  it('scans on a long adversarial input', () => {
+    const started = performance.now();
+    parseIngredientLine(`1${' '.repeat(100_000)}x`);
+    parseIngredientLine(`1${' - '.repeat(50_000)}x`);
+    parseIngredientLine(`flour (${' ,;'.repeat(50_000)})`);
+    expect(performance.now() - started).toBeLessThan(FAST_MS);
+  });
+});
+
+describe('PREPARATION, rewritten', () => {
+  const original = new RegExp(
+    [
+      '^(?:(?:very |finely |roughly |thinly |coarsely |freshly |lightly |well',
+      ' )?(?:chopped|diced|minced|sliced|grated|crushed|peeled|halved|quarter',
+      'ed|cubed|melted|softened|divided|cooked|drained|rinsed|beaten|trimmed|',
+      'seeded|deseeded|stemmed|torn|packed|sifted|toasted|shredded|julienned|',
+      'mashed|thawed|cut|ground)|optional|plus |to taste|for |at room|room te',
+      'mp|or |about |such as|preferably|if )',
+    ].join(''),
+    'i',
+  );
+  const pieces = [
+    'very ',
+    'finely ',
+    'well ',
+    'lightly ',
+    'chopped',
+    'diced',
+    'cut',
+    'ground',
+    'optional',
+    'plus ',
+    'to taste',
+    'for ',
+    'at room',
+    'room temp',
+    'or ',
+    'about ',
+    'such as',
+    'preferably',
+    'if ',
+    ' ',
+    'x',
+    'Chopped',
+    'deseeded',
+    'seeded',
+  ];
+  const table = [
+    'finely chopped',
+    'very finely chopped',
+    'chopped',
+    'optional',
+    'plus 1 tbsp',
+    'to taste',
+    'for serving',
+    'at room temperature',
+    'or more',
+    'about 2',
+    'such as',
+    'preferably fresh',
+    'if needed',
+    '',
+    'cutlery',
+    'well ground',
+    'Finely Diced',
+  ];
+
+  it('is the original pattern, rewritten', () => {
+    expectSamePattern(original, PREPARATION, table);
+  });
+
+  it('finds the same things in random text', () => {
+    expectSamePattern(original, PREPARATION, fuzzInputs(8000, 3000, pieces));
+  });
+
+  it('finds the same things in a very long input', () => {
+    const long = fuzzInputs(8001, 1, pieces).join('').repeat(5000);
+    expectSamePattern(original, PREPARATION, [long, 'x'.repeat(200_000)]);
   });
 });

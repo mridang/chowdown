@@ -22,7 +22,7 @@ import {
   type ToolRunner,
 } from '@/domain/mcp/server';
 import { callTool } from '@/domain/mcp/tool-calls';
-import { InvalidToolArguments, UnknownTool } from '@/lib/mcp';
+import { InvalidToolArgumentsError, UnknownToolError } from '@/lib/mcp';
 import {
   CAPABILITIES,
   INSTRUCTIONS,
@@ -57,7 +57,7 @@ describe('MCP tool scopes', () => {
     const readTools = TOOLS.filter(
       (t) => scopeForTool(t.name) === SCOPE_READ,
     ).map((t) => t.name);
-    expect(readTools.sort()).toEqual([
+    expect(readTools.toSorted((a, b) => a.localeCompare(b))).toEqual([
       'browse_recipes',
       'find_recipes',
       'find_similar',
@@ -177,7 +177,7 @@ describe('handleMcpMessage routing', () => {
     async (method) => {
       expect(await send({ method })).toMatchObject({ result: {} });
       expect(await send({ method, params: MODERN_META })).toMatchObject({
-        error: { code: -32601 },
+        error: { code: -32_601 },
       });
     },
   );
@@ -255,24 +255,24 @@ describe('handleMcpMessage routing', () => {
   it('refuses an unknown prompt and a missing required argument as bad parameters', async () => {
     expect(
       await send({ method: 'prompts/get', params: { name: 'nope' } }),
-    ).toMatchObject({ error: { code: -32602 } });
+    ).toMatchObject({ error: { code: -32_602 } });
     expect(
       await send({
         method: 'prompts/get',
         params: { name: 'use-up-ingredients' },
       }),
-    ).toMatchObject({ error: { code: -32602 } });
+    ).toMatchObject({ error: { code: -32_602 } });
   });
 
   it('refuses an unknown view', async () => {
     expect(
       await send({ method: 'resources/read', params: { uri: 'ui://nope' } }),
-    ).toMatchObject({ error: { code: -32602 } });
+    ).toMatchObject({ error: { code: -32_602 } });
   });
 
   it('refuses an unknown method', async () => {
     expect(await send({ method: 'wibble' })).toMatchObject({
-      error: { code: -32601, message: 'Method not found' },
+      error: { code: -32_601, message: 'Method not found' },
     });
   });
 
@@ -294,7 +294,7 @@ describe('handleMcpMessage routing', () => {
     expect(reply).toEqual({
       jsonrpc: '2.0',
       id: 1,
-      error: { code: -32603, message: 'Something went wrong on the server.' },
+      error: { code: -32_603, message: 'Something went wrong on the server.' },
     });
     spy.mockRestore();
   });
@@ -310,7 +310,7 @@ describe('the tool catalogue', () => {
     const empty = {
       user: { id: 1 } as User,
       token: 'tok',
-      system: undefined,
+      system: void 0,
       files: {
         list: async () => [],
         read: async () => '',
@@ -331,15 +331,14 @@ describe('the tool catalogue', () => {
         );
         return result.content[0]?.text.startsWith('Unknown tool') ?? false;
       } catch (error) {
-        return error instanceof UnknownTool;
+        return error instanceof UnknownToolError;
       }
     };
     const candidates = TOOLS.filter((t) => !needsDatabase.includes(t.name));
-    const unknown = (
-      await Promise.all(
-        candidates.map(async (t) => ((await isUnknown(t.name)) ? t.name : '')),
-      )
-    ).filter(Boolean);
+    const results = await Promise.all(
+      candidates.map(async (t) => ((await isUnknown(t.name)) ? t.name : '')),
+    );
+    const unknown = results.filter(Boolean);
     expect(unknown).toEqual([]);
   });
 
@@ -603,22 +602,23 @@ describe('handleMcpMessage — what the server says about itself', () => {
   });
 });
 
-describe('handleMcpMessage — refusals', () => {
-  const someone = { id: 1, refresh_token_enc: null } as User;
-  const neverRun: ToolRunner = async () => {
-    throw new Error('the tool must not run');
-  };
-  const send = (
-    message: Record<string, unknown>,
-    runTool: ToolRunner = neverRun,
-  ) =>
-    handleMcpMessage(
-      someone,
-      { jsonrpc: '2.0', id: 'q1', ...message },
-      runTool,
-      noRecipes,
-    );
+/** The setup the refusal tests share. */
+const someone = { id: 1, refresh_token_enc: null } as User;
+const neverRun: ToolRunner = async () => {
+  throw new Error('the tool must not run');
+};
+const send = (
+  message: Record<string, unknown>,
+  runTool: ToolRunner = neverRun,
+) =>
+  handleMcpMessage(
+    someone,
+    { jsonrpc: '2.0', id: 'q1', ...message },
+    runTool,
+    noRecipes,
+  );
 
+describe('handleMcpMessage — refusals', () => {
   it('echoes the request id on every error', async () => {
     for (const message of [
       { method: 'nope' },
@@ -634,7 +634,7 @@ describe('handleMcpMessage — refusals', () => {
       method: 'tools/call',
       params: { name: 'wibble', arguments: {} },
     });
-    expect(reply).toMatchObject({ error: { code: -32602 } });
+    expect(reply).toMatchObject({ error: { code: -32_602 } });
     const message = (reply as { error: { message: string } }).error.message;
     expect(message).toContain('Unknown tool: wibble');
     expect(message).toContain('list_recipes');
@@ -643,7 +643,7 @@ describe('handleMcpMessage — refusals', () => {
   it('answers a missing or non-text tool name the same way', async () => {
     for (const params of [{}, { name: 7 }, { name: null }, undefined]) {
       expect(await send({ method: 'tools/call', params })).toMatchObject({
-        error: { code: -32602 },
+        error: { code: -32_602 },
       });
     }
   });
@@ -654,7 +654,7 @@ describe('handleMcpMessage — refusals', () => {
         method: 'tools/call',
         params: { name: 'list_recipes', arguments: args },
       });
-      expect(reply).toMatchObject({ error: { code: -32602 } });
+      expect(reply).toMatchObject({ error: { code: -32_602 } });
     }
   });
 
@@ -678,12 +678,12 @@ describe('handleMcpMessage — refusals', () => {
     const reply = await send(
       { method: 'tools/call', params: { name: 'list_recipes' } },
       async () => {
-        throw new UnknownTool('ghost');
+        throw new UnknownToolError('ghost');
       },
     );
     expect(reply).toMatchObject({
       id: 'q1',
-      error: { code: -32602, message: expect.stringContaining('ghost') },
+      error: { code: -32_602, message: expect.stringContaining('ghost') },
     });
   });
 
@@ -691,7 +691,7 @@ describe('handleMcpMessage — refusals', () => {
     const reply = await send(
       { method: 'tools/call', params: { name: 'get_recipe' } },
       async () => {
-        throw new InvalidToolArguments([
+        throw new InvalidToolArgumentsError([
           'Missing "name".',
           '"limit" must be a number.',
         ]);
@@ -701,7 +701,7 @@ describe('handleMcpMessage — refusals', () => {
       jsonrpc: '2.0',
       id: 'q1',
       error: {
-        code: -32602,
+        code: -32_602,
         message:
           'Invalid arguments for tool get_recipe: Missing "name". "limit" must be a number.',
         data: {
@@ -711,7 +711,9 @@ describe('handleMcpMessage — refusals', () => {
       },
     });
   });
+});
 
+describe('handleMcpMessage — tool errors and other faults', () => {
   it('answers arguments that do not fit the tool as an error result the model can read, not as a protocol error', async () => {
     const reply = await handleMcpMessage(
       someone,
@@ -795,7 +797,7 @@ describe('handleMcpMessage — refusals', () => {
     expect(reply).toEqual({
       jsonrpc: '2.0',
       id: 'q1',
-      error: { code: -32603, message: 'Something went wrong on the server.' },
+      error: { code: -32_603, message: 'Something went wrong on the server.' },
     });
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
@@ -808,14 +810,14 @@ describe('handleMcpMessage — refusals', () => {
       jsonrpc: '2.0',
       id: 'q1',
       error: {
-        code: -32602,
+        code: -32_602,
         message: 'Resource not found',
         data: { uri: 'ui://nope' },
       },
     });
     for (const params of [{}, { uri: 5 }, { uri: null }, undefined]) {
       expect(await send({ method: 'resources/read', params })).toMatchObject({
-        error: { code: -32602, message: expect.stringContaining('`uri`') },
+        error: { code: -32_602, message: expect.stringContaining('`uri`') },
       });
     }
   });
@@ -828,7 +830,7 @@ describe('handleMcpMessage — refusals', () => {
       'hasOwnProperty',
     ]) {
       expect(await send({ method })).toMatchObject({
-        error: { code: -32601 },
+        error: { code: -32_601 },
       });
     }
   });
@@ -916,7 +918,7 @@ describe('lists with more than one page, and lists with only one', () => {
     ['a position that is not a number', btoa('recipes:abc')],
     ['not text', 5],
   ])('refuses a resources cursor that is %s', async (_why, cursor) => {
-    expect(await list({ cursor })).toMatchObject({ error: { code: -32602 } });
+    expect(await list({ cursor })).toMatchObject({ error: { code: -32_602 } });
   });
 
   it.each(['tools/list', 'prompts/list', 'resources/templates/list'])(
@@ -924,7 +926,7 @@ describe('lists with more than one page, and lists with only one', () => {
     async (method) => {
       for (const cursor of ['abc', 5, {}]) {
         expect(await list({ cursor }, method)).toMatchObject({
-          error: { code: -32602, message: 'Invalid cursor' },
+          error: { code: -32_602, message: 'Invalid cursor' },
         });
       }
     },

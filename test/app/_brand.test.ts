@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { existsSync, readFileSync } from 'node:fs';
+import { access, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
@@ -12,6 +12,15 @@ import {
 } from '@/app/_brand';
 import { PRIVACY_LAST_UPDATED, TERMS_LAST_UPDATED } from '@/utils/site';
 import { pngSize } from '../png';
+
+async function exists(file: string): Promise<boolean> {
+  try {
+    await access(file);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 describe('the brand', () => {
   it('is named and placed as the site says', () => {
@@ -61,7 +70,7 @@ describe('what crawlers may read', () => {
 describe('what the installed app offers', () => {
   const root = process.cwd();
 
-  it('shows Chrome its richer install dialog: screenshots for both form factors, each a real PNG', () => {
+  it('shows Chrome its richer install dialog: screenshots for both form factors, each a real PNG', async () => {
     const shots = MANIFEST_EXTRAS.screenshots ?? [];
     expect(shots.filter((s) => s.form_factor === 'wide')).toHaveLength(2);
     expect(shots.filter((s) => s.form_factor === 'narrow')).toHaveLength(3);
@@ -70,8 +79,10 @@ describe('what the installed app offers', () => {
       expect(shot.type).toBe('image/png');
       expect(shot.label).toBeTruthy();
       expect(shot.src.startsWith('/screenshots/')).toBe(true);
-      expect(existsSync(path.join(root, 'public', shot.src))).toBe(true);
-      const { width, height } = pngSize(path.join(root, 'public', shot.src));
+      expect(await exists(path.join(root, 'public', shot.src))).toBe(true);
+      const { width, height } = await pngSize(
+        path.join(root, 'public', shot.src),
+      );
       expect(shot.sizes).toBe(`${width}x${height}`);
     }
   });
@@ -85,9 +96,9 @@ describe('what the installed app offers', () => {
     });
   });
 
-  it('shares to a page that exists', () => {
+  it('shares to a page that exists', async () => {
     expect(
-      existsSync(
+      await exists(
         path.join(root, 'src/app/(site)/(pages)/recipes/add/page.tsx'),
       ),
     ).toBe(true);
@@ -103,17 +114,19 @@ describe('what the installed app offers', () => {
 });
 
 describe('what assistants are told', () => {
-  const llms = readFileSync(
-    path.join(process.cwd(), 'public/llms.txt'),
-    'utf8',
-  );
+  const readLlms = () =>
+    readFile(path.join(process.cwd(), 'public/llms.txt'), 'utf8');
 
-  it('names the MCP address and does not hand-list tools that may change', () => {
+  it('names the MCP address and does not hand-list tools that may change', async () => {
+    const llms = await readLlms();
     expect(llms).toContain(`${BRAND_URL}/mcp`);
     expect(llms).not.toMatch(/\b[a-z]+(_[a-z]+)+\b/);
   });
 
-  it('puts the Cooklang spec under Optional, where outside links belong', () => {
-    expect(llms.split('\n## Optional')[1]).toContain('https://cooklang.org/');
+  it('puts the Cooklang spec under Optional, where outside links belong', async () => {
+    const llms = await readLlms();
+    expect(llms.split('\n## Optional', 2)[1]).toContain(
+      'https://cooklang.org/',
+    );
   });
 });

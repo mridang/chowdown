@@ -59,7 +59,7 @@ export interface Favourite {
  * The state and action behind a favourite (heart) button, shared by the heart
  * on a recipe card and the one on the recipe page.
  *
- * `on` is `override ?? initial`: the override comes from a small shared store,
+ * `on` is `override ?? Initial`: the override comes from a small shared store,
  * so the same recipe's heart agrees everywhere in the tab (grid card, list row,
  * a prefetched recipe page) without refetching anything. `busy` is true while a
  * save is in flight, so the button can be disabled against double presses.

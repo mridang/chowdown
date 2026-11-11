@@ -71,7 +71,10 @@ export async function encryptSecret(
       bufferSource(new TextEncoder().encode(plaintext)),
     ),
   );
-  return bytesToBase64(new Uint8Array([...iv, ...ciphertext]));
+  const packed = new Uint8Array(iv.length + ciphertext.length);
+  packed.set(iv);
+  packed.set(ciphertext, iv.length);
+  return bytesToBase64(packed);
 }
 
 /**

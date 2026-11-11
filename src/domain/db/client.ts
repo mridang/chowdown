@@ -13,7 +13,34 @@ import {
   type Database as GenericDatabase,
 } from '@/lib/core/db/client';
 import { getDB } from '@/lib/core/runtime';
-import * as schema from '@/domain/db/schema';
+import {
+  embeddings,
+  favourites,
+  oauthAssertions,
+  oauthClients,
+  oauthCodes,
+  oauthGrants,
+  oauthTokens,
+  recipeImages,
+  recipeImports,
+  recipes,
+  users,
+} from '@/domain/db/schema';
+
+/** Every table of chowdown's schema, keyed as Drizzle expects. */
+const schema = {
+  embeddings,
+  favourites,
+  oauthAssertions,
+  oauthClients,
+  oauthCodes,
+  oauthGrants,
+  oauthTokens,
+  recipeImages,
+  recipeImports,
+  recipes,
+  users,
+};
 
 /** A Drizzle client typed against chowdown's schema. */
 export type Database = GenericDatabase<typeof schema>;

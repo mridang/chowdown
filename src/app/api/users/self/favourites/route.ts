@@ -3,7 +3,7 @@
  * the same query parameters as `/api/recipes` (search, facets, sort,
  * pagination); `favourite=true` is implied.
  *
- *   GET /api/users/self/favourites
+ *   GET /api/users/self/favourites.
  *
  * The behaviour lives in the `favouritesCollection` controller; this file only
  * mounts it.

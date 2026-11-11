@@ -68,8 +68,7 @@ const isDriveNotFound = (error: unknown) =>
 
 /**
  * Change a recipe for a user, using their Drive and the D1 cache.
- *
- * @param deps Collaborators; leave out to use the real ones.
+ * @param deps - Collaborators; leave out to use the real ones.
  */
 export async function mutateRecipeForUser<T>(
   user: Readonly<User>,

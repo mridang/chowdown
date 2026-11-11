@@ -89,27 +89,29 @@ export function isMetadataDocumentUrl(
 ): boolean {
   const url =
     clientId.length <= MAX_CLIENT_ID_LENGTH ? parseUrl(clientId) : undefined;
-  return (
-    url !== undefined &&
-    url.origin !== ownOrigin &&
-    url.protocol === 'https:' &&
-    url.pathname.length > 1 &&
+  if (url === undefined) {
+    return false;
+  }
+  return [
+    url.origin !== ownOrigin,
+    url.protocol === 'https:',
+    url.pathname.length > 1,
     // CIMD draft §3: the URL SHOULD NOT have a query string.
-    !url.href.includes('?') &&
-    !url.hash &&
-    !url.username &&
-    !url.password &&
-    url.hostname.includes('.') &&
+    !url.href.includes('?'),
+    !url.hash,
+    !url.username,
+    !url.password,
+    url.hostname.includes('.'),
     // `example.com.` and `example.com` are one host with two spellings; only
     // the plain one may name a client.
-    !url.hostname.endsWith('.') &&
+    !url.hostname.endsWith('.'),
     // A bare IP address is never a client's public home.
-    !/^[\d.]+$/.test(url.hostname) &&
-    !url.hostname.startsWith('[') &&
+    !/^[\d.]+$/.test(url.hostname),
+    !url.hostname.startsWith('['),
     // Dot segments, an upper-case host or a default port would make the URL
     // we fetch differ from the client_id the client presented.
-    url.href === clientId
-  );
+    url.href === clientId,
+  ].every(Boolean);
 }
 
 /**
@@ -131,14 +133,13 @@ function logoOf(value: unknown): string | undefined {
     typeof value === 'string' && value.length <= MAX_CLIENT_ID_LENGTH
       ? parseUrl(value)
       : undefined;
-  return url?.protocol === 'https:' &&
-    !url.hash &&
-    !url.username &&
-    !url.password &&
-    isPublicWebUrl(url.href) &&
-    url.href === value
-    ? url.href
-    : undefined;
+  if (url === undefined || url.href !== value || !isPublicWebUrl(url.href)) {
+    return undefined;
+  }
+  if (url.protocol !== 'https:' || url.hash || url.username || url.password) {
+    return undefined;
+  }
+  return url.href;
 }
 
 /** Whether a value is a JSON object (or array) whose members can be looked up by name. */
@@ -249,12 +250,14 @@ function documentAuth(
     typeof jwksUri !== 'string' ||
     jwksUri.length > MAX_CLIENT_ID_LENGTH ||
     !jwks ||
-    jwks.protocol !== 'https:' ||
-    jwks.hash ||
-    jwks.username ||
-    jwks.password ||
-    !jwks.hostname.includes('.') ||
-    jwks.href !== jwksUri
+    [
+      jwks.protocol !== 'https:',
+      jwks.hash,
+      jwks.username,
+      jwks.password,
+      !jwks.hostname.includes('.'),
+      jwks.href !== jwksUri,
+    ].some(Boolean)
   ) {
     return {
       ok: false,
@@ -289,6 +292,13 @@ export type ClientParse =
       readonly description: string;
     };
 
+/** The refusal every failed metadata check returns: `invalid_client` with the reason. */
+function invalidClient(
+  description: string,
+): Extract<ClientParse, { readonly ok: false }> {
+  return { ok: false, error: 'invalid_client', description };
+}
+
 /**
  * Validate a fetched Client ID Metadata Document. The `client_id` inside must
  * equal the URL it was fetched from, or anyone could claim to be anyone.
@@ -297,11 +307,7 @@ export function parseClientMetadataDocument(
   document: unknown,
   url: string,
 ): ClientParse {
-  const bad = (description: string): ClientParse => ({
-    ok: false,
-    error: 'invalid_client',
-    description,
-  });
+  const bad = invalidClient;
   if (!isRecord(document)) {
     return bad('The client metadata document is not a JSON object.');
   }
@@ -435,11 +441,7 @@ export async function fetchClientMetadata(
   fetchImpl: typeof fetch = fetch,
   ownOrigin?: string,
 ): Promise<ClientFetch> {
-  const bad = (description: string): ClientFetch => ({
-    ok: false,
-    error: 'invalid_client',
-    description,
-  });
+  const bad = invalidClient;
   if (!isMetadataDocumentUrl(url, ownOrigin)) {
     return bad('The client_id is not a usable metadata document URL.');
   }
@@ -500,7 +502,7 @@ export type Registration =
     };
 
 /** Registration bodies are tiny; anything bigger is refused unread. */
-export const MAX_REGISTRATION_BYTES = 8_000;
+export const MAX_REGISTRATION_BYTES = 8000;
 
 /** Read the text of an RFC 7591 registration request: size, then JSON, then the rules of {@link parseRegistration}. */
 export function parseRegistrationText(text: string): Registration {

@@ -90,11 +90,11 @@ export function RecipeRow({
               </p>
             ) : null}
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-              {recipe.minutes !== undefined ? (
+              {recipe.minutes === undefined ? null : (
                 <CardFact icon={<ClockIcon size="sm" />}>
                   {duration(recipe.minutes)}
                 </CardFact>
-              ) : null}
+              )}
               {recipe.difficulty ? (
                 <CardFact icon={<FlameIcon size="sm" />}>
                   {recipe.difficulty}

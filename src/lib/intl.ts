@@ -32,15 +32,38 @@ export function compareText(a: string, b: string): number {
   return collator.compare(a, b);
 }
 
+/** The UTF-16 code unit at `index`: a surrogate pair gives its high unit, as `charCodeAt` would. */
+function unitAt(text: string, index: number): number {
+  const point = text.codePointAt(index) ?? 0;
+  return point > 0xff_ff
+    ? 0xd8_00 + Math.floor((point - 0x1_00_00) / 0x4_00)
+    : point;
+}
+
+/**
+ * Three-way order of two strings by UTF-16 code unit, exactly as `<` and `>`
+ * give it: no locale, no folding. For keys that must sort as the database does.
+ */
+export function compareCodeUnits(x: string, y: string): number {
+  const shared = Math.min(x.length, y.length);
+  for (let i = 0; i < shared; i += 1) {
+    const diff = unitAt(x, i) - unitAt(y, i);
+    if (diff !== 0) {
+      return Math.sign(diff);
+    }
+  }
+  return Math.sign(x.length - y.length);
+}
+
 /**
  * Fold text for searching: lower case with accents removed, so "creme" finds
  * "Crème brûlée". (`Intl` can compare whole strings but has no substring
- * search, so matching uses this folded form with `includes`.)
+ * search, so matching uses this folded form with `includes`.).
  */
 export function foldText(text: string): string {
   return text
     .normalize('NFD')
-    .replace(/\p{M}+/gu, '')
+    .replaceAll(/\p{M}+/gu, '')
     .toLowerCase();
 }
 

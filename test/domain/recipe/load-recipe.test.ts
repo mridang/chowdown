@@ -56,7 +56,7 @@ describe('similarCards', () => {
     const ids = ['a', 'b', 'c', 'd', 'e', 'f'];
     const rows = {
       similarJson: list(...ids),
-      similarRecipes: ids.map(row),
+      similarRecipes: ids.map((id) => row(id)),
       similarFavouriteIds: [],
     };
     expect(similarCards(rows)).toHaveLength(ALSO_LIKE_COUNT);
@@ -73,15 +73,16 @@ describe('similarCards', () => {
 const db = {} as Database;
 
 /** Thrown by the fake redirect so a test can see where it went. */
-class Redirected extends Error {
+class RedirectedError extends Error {
   constructor(readonly to: string) {
     super(`redirect ${to}`);
+    this.name = 'RedirectedError';
   }
 }
 
 /** Page rows, with or without the recipe, for an account at the given epoch. */
 const pageRows = (
-  options: { recipe?: boolean; epoch?: number | undefined } = {},
+  options: { recipe?: boolean; epoch?: number } = {},
 ): RecipePageRows => ({
   recipe: options.recipe === false ? undefined : (row('r1') as never),
   favourite: false,
@@ -105,7 +106,7 @@ function fakes(overrides: Partial<RecipeLoadDeps> = {}) {
       status: 'missing',
     })),
     redirect: (to) => {
-      throw new Redirected(to);
+      throw new RedirectedError(to);
     },
     ...overrides,
   };
@@ -141,7 +142,7 @@ describe('loadRecipePageRows', () => {
 
   it('clears the session of an account that no longer exists', async () => {
     const deps = fakes({
-      pageRows: async () => pageRows({ epoch: undefined }),
+      pageRows: async () => pageRows({ epoch: void 0 }),
     });
     await expect(loadRecipePageRows('r1', deps)).rejects.toMatchObject({
       to: '/auth/refresh',

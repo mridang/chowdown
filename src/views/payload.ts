@@ -56,7 +56,7 @@ export function everyEntry(
   value: unknown,
   check: (entry: unknown) => boolean,
 ): value is readonly unknown[] {
-  return Array.isArray(value) && value.every(check);
+  return Array.isArray(value) && value.every((entry) => check(entry));
 }
 
 /** Whether the value is a string. */
@@ -73,7 +73,6 @@ export const NO_DATA_MESSAGE =
  * without data the View recognises becomes a message built from the result's
  * text, so the person sees what the server said ("Nothing found…") rather
  * than a placeholder that never resolves.
- *
  * @param result - The `CallToolResult` (or a lookalike) the host delivered.
  * @param guard - Tells whether `structuredContent` has the shape the View draws.
  */

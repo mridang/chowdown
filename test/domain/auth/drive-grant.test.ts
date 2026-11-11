@@ -35,7 +35,7 @@ describe('checkDriveGrant', () => {
     expect(
       checkDriveGrant({
         ...granted,
-        tokens: { refresh_token: 'rt', scope: undefined },
+        tokens: { refresh_token: 'rt' },
       }),
     ).toEqual({ ok: false, result: 'denied' });
   });
@@ -44,7 +44,7 @@ describe('checkDriveGrant', () => {
     expect(
       checkDriveGrant({
         ...granted,
-        tokens: { scope: granted.tokens.scope, refresh_token: undefined },
+        tokens: { scope: granted.tokens.scope },
       }),
     ).toEqual({
       ok: false,
@@ -58,7 +58,7 @@ describe('checkDriveGrant', () => {
       checkDriveGrant({
         approvedBy: 'a',
         signedInAs: 'b',
-        tokens: { scope: 'openid', refresh_token: undefined },
+        tokens: { scope: 'openid' },
       }),
     ).toMatchObject({ result: 'error' });
   });

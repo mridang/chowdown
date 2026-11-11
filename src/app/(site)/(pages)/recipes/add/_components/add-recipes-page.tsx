@@ -46,7 +46,7 @@ function ManualEditor({
   const [name, setName] = useState('');
   const [content, setContent] = useState(STARTER);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   // Opened by pressing a card that has just gone, so focus starts on the heading.
   const heading = useFocusOnChange<HTMLHeadingElement>('write', null);
 
@@ -55,7 +55,7 @@ function ManualEditor({
       return;
     }
     setBusy(true);
-    setError(null);
+    setFormError(null);
     try {
       const res = await postRecipe(name, content);
       if (!res.ok) {
@@ -68,8 +68,8 @@ function ManualEditor({
       router.push(`/recipe/${id}`);
       // ...and the list the router remembers should include it too.
       router.refresh();
-    } catch (caught) {
-      setError(problemText(caught, 'Could not save the recipe.'));
+    } catch (error) {
+      setFormError(problemText(error, 'Could not save the recipe.'));
       setBusy(false);
     }
   }, [name, content, router]);
@@ -108,7 +108,7 @@ function ManualEditor({
           />
         </FormField>
       </div>
-      {error ? <FormMessage tone="error">{error}</FormMessage> : null}
+      {formError ? <FormMessage tone="error">{formError}</FormMessage> : null}
       <div className="mt-5 flex flex-wrap gap-3">
         <Button
           size="lg"

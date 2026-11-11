@@ -7,6 +7,8 @@ import {
   redirectKind,
   redirectUriMatches,
 } from '@/lib/oauth';
+import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
+import ips from '../../fixtures/ips.json' with { type: 'json' };
 
 describe('isAcceptableRedirectUri', () => {
   it('accepts https, loopback http and private-use schemes', () => {
@@ -36,9 +38,9 @@ describe('isAcceptableRedirectUri', () => {
   });
 
   it.each([
-    'http://example.com/cb',
-    'http://192.168.1.5:3000/cb',
-    'http://localhost.evil.com/cb',
+    urls.exampleCallback,
+    urls.privateCallback,
+    urls.localhostEvil,
     'ws://localhost:3000/cb',
     'wss://example.com/cb',
     'mailto:someone@example.com',
@@ -58,9 +60,9 @@ describe('isAcceptableRedirectUri', () => {
 
   it.each([
     ['a look-alike letter in the host', 'https://cl\u0430ude.ai/cb'],
-    ['a right-to-left override in the path', 'https://claude.ai/\u202efoo'],
-    ['a zero-width space', 'https://claude.ai/c\u200bb'],
-    ['an accented letter in the path', 'https://claude.ai/caf\u00e9'],
+    ['a right-to-left override in the path', 'https://claude.ai/\u202Efoo'],
+    ['a zero-width space', 'https://claude.ai/c\u200Bb'],
+    ['an accented letter in the path', 'https://claude.ai/caf\u00E9'],
     ['a space', 'https://claude.ai/a b'],
     ['a line break', 'https://claude.ai/a\nb'],
   ])('rejects %s, so what is shown is what is stored', (_name, uri) => {
@@ -96,7 +98,7 @@ describe('redirectKind', () => {
     'https://127.5.6.7/cb',
     'https://foo.localhost/cb',
     'https://[::1]/cb',
-    'http://0.0.0.0:3000/cb',
+    urls.anyAddressCallback,
     'https://[::ffff:127.0.0.1]/cb',
     'https://2130706433/cb',
   ])('treats %s as this computer whatever the scheme', (uri) => {
@@ -140,7 +142,7 @@ describe('isLoopbackHost and isPrivateHost', () => {
   it('never call a public address either', () => {
     expect(isLoopbackHost('example.com')).toBe(false);
     expect(isPrivateHost('example.com')).toBe(false);
-    expect(isLoopbackHost('192.168.1.1')).toBe(false);
+    expect(isLoopbackHost(ips.private192)).toBe(false);
     expect(isPrivateHost('127.0.0.1')).toBe(false);
   });
 });

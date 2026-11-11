@@ -57,7 +57,7 @@ export function ReadAloudButton({
   // button being pressed again), also silences the voice.
   useEffect(() => {
     if (!speaking) {
-      return;
+      return undefined;
     }
     return () => {
       const speech = browserSpeech();

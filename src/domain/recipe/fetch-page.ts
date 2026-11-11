@@ -57,7 +57,7 @@ export type PageFailure =
 export class PageFetchError extends Error {
   override readonly name = 'PageFetchError';
 
-  /** @param failure Which way it failed, in words that are safe to show. */
+  /** @param failure - Which way it failed, in words that are safe to show. */
   constructor(readonly failure: PageFailure) {
     super(failure);
   }
@@ -67,17 +67,22 @@ export class PageFetchError extends Error {
 function describe(failure: FetchFailure): PageFailure {
   switch (failure.reason) {
     case 'blocked':
-    case 'redirects':
+    case 'redirects': {
       return 'blocked';
-    case 'timeout':
+    }
+    case 'timeout': {
       return 'timed out';
-    case 'type':
+    }
+    case 'type': {
       return 'not a web page';
-    case 'status':
+    }
+    case 'status': {
       return `fetch failed (${failure.status})`;
+    }
     case 'unreachable':
-    case 'too-large':
+    case 'too-large': {
       return 'unreachable';
+    }
   }
 }
 
@@ -85,7 +90,6 @@ function describe(failure: FetchFailure): PageFailure {
  * Fetch a page's HTML, bounded in address, size and time, without its inline
  * scripts and styles (its JSON-LD stays). A page still longer than the limit is
  * cut off rather than refused: the recipe is usually near the top.
- *
  * @param url - The page to fetch (a public http/https address).
  * @param timeoutMs - Abort after this long (default 8s).
  * @throws {PageFetchError} When the address is not allowed, the site does not

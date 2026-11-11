@@ -48,7 +48,8 @@ describe('SiteHeader for someone signed in', () => {
   });
 
   it('keeps Drive and the assistant out of the header, in the account menu only', () => {
-    const header = htmlAt(<SiteHeader user={ADA} />).split('Hi Ada')[0] ?? '';
+    const header =
+      htmlAt(<SiteHeader user={ADA} />).split('Hi Ada', 1)[0] ?? '';
     expect(header).not.toContain('Open Drive');
     expect(header).not.toContain('Cook with AI');
     expect(header).not.toContain('href="/connect"');

@@ -28,6 +28,7 @@ export interface ShellUser {
   readonly picture?: string;
   /** Whether they have connected Google Drive (a hint; pages check for real). */
   readonly driveConnected: boolean;
+
   /**
    * The Drive id of their Recipes folder, when the session knows it (not yet
    * checked: the header validates it before using it in a link).
@@ -40,8 +41,8 @@ export function firstNameOf(
   name: string | null | undefined,
   email: string,
 ): string {
-  const first = (name ?? '').trim().split(/\s+/)[0];
-  return first || email.split('@')[0] || email;
+  const first = (name ?? '').trim().split(/\s+/, 1)[0];
+  return first || email.split('@', 1)[0] || email;
 }
 
 /** What the session token says about the person's profile, any of which may be missing. */
@@ -82,7 +83,8 @@ async function completeProfile(
 
 /** The signed-in person for the header, or null when signed out. */
 export const getShellUser = cache(async (): Promise<ShellUser | null> => {
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  const jar = await cookies();
+  const token = jar.get(SESSION_COOKIE)?.value;
   if (!token) {
     return null;
   }

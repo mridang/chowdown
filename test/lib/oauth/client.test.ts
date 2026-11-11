@@ -21,6 +21,7 @@ import {
   registrationResponse,
 } from '@/lib/oauth';
 import { SITE_NAME } from '@/utils/site';
+import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
 const URL_ID = 'https://chatgpt.com/oauth/client.json';
 const goodDoc = {
@@ -52,7 +53,7 @@ describe('isMetadataDocumentUrl', () => {
 
   it('rejects plain ids, http, bare hosts, IPs, localhost and dot segments', () => {
     expect(isMetadataDocumentUrl('dcr_abc123')).toBe(false);
-    expect(isMetadataDocumentUrl('http://chatgpt.com/client.json')).toBe(false);
+    expect(isMetadataDocumentUrl(urls.chatgptClient)).toBe(false);
     expect(isMetadataDocumentUrl('https://chatgpt.com')).toBe(false);
     expect(isMetadataDocumentUrl('https://chatgpt.com/')).toBe(false);
     expect(isMetadataDocumentUrl('https://10.0.0.1/client.json')).toBe(false);
@@ -123,15 +124,15 @@ describe('parseClientMetadataDocument', () => {
   });
 
   it.each([
-    ['an http address', 'http://example.com/logo.png'],
+    ['an http address', urls.exampleLogo],
     ['an address with a login', 'https://user:pw@example.com/logo.png'],
     ['an address on a private network', 'https://192.168.0.1/logo.png'],
     ['an address that is not normalised', 'https://EXAMPLE.com/a/../logo.png'],
     ['text that is not an address', 'not a url'],
     ['something that is not text', 42],
-  ])('leaves the logo out for %s', (_label, logo_uri) => {
+  ])('leaves the logo out for %s', (_label, logoUri) => {
     const result = parseClientMetadataDocument(
-      { ...goodDoc, logo_uri },
+      { ...goodDoc, logo_uri: logoUri },
       URL_ID,
     );
     expect(result.ok && result.client).not.toHaveProperty('logoUri');
@@ -144,8 +145,7 @@ describe('parseClientMetadataDocument', () => {
   });
 
   it.each([
-    ['no jwks_uri', { jwks_uri: undefined }],
-    ['an http jwks_uri', { jwks_uri: 'http://chatgpt.com/oauth/jwks.json' }],
+    ['an http jwks_uri', { jwks_uri: urls.chatgptJwks }],
     ['a jwks_uri with credentials', { jwks_uri: 'https://u:p@chatgpt.com/k' }],
     ['a jwks_uri that is not a URL', { jwks_uri: 'keys' }],
     ['a jwks_uri that is not text', { jwks_uri: 7 }],
@@ -162,23 +162,28 @@ describe('parseClientMetadataDocument', () => {
     expect(result.ok).toBe(false);
   });
 
+  it('rejects a private_key_jwt client that sends no jwks_uri', () => {
+    const document = withoutKey(CHATGPT_DOCUMENT, 'jwks_uri');
+    expect(parseClientMetadataDocument(document, URL_ID).ok).toBe(false);
+  });
+
   it('accepts a private_key_jwt client that names no algorithm', () => {
-    const document = {
-      ...CHATGPT_DOCUMENT,
-      token_endpoint_auth_signing_alg: undefined,
-    };
+    const document = withoutKey(
+      CHATGPT_DOCUMENT,
+      'token_endpoint_auth_signing_alg',
+    );
     expect(parseClientMetadataDocument(document, URL_ID).ok).toBe(true);
   });
 
   it('treats a document that names no method as a public client', () => {
-    const document = { ...goodDoc, token_endpoint_auth_method: undefined };
+    const document = withoutKey(goodDoc, 'token_endpoint_auth_method');
     const result = parseClientMetadataDocument(document, URL_ID);
     expect(result.ok && result.client.auth).toBeUndefined();
   });
 
   it('falls back to the host as the name and caps its length', () => {
     const { client } = parseClientMetadataDocument(
-      { ...goodDoc, client_name: undefined },
+      withoutKey(goodDoc, 'client_name'),
       URL_ID,
     ) as { client: { name: string } };
     expect(client.name).toBe('chatgpt.com');
@@ -195,12 +200,18 @@ describe('parseClientMetadataDocument', () => {
   });
 });
 
-describe('fetchClientMetadata', () => {
-  const respond = (body: string, status = 200) =>
-    jest.fn(
-      async () => new Response(body, { status }),
-    ) as unknown as typeof fetch;
+/** A fetch stub that answers every request with `body` and `status`. */
+const respond = (body: string, status = 200) =>
+  jest.fn<typeof fetch>(async () => new Response(body, { status }));
 
+/** A copy of a document with one key left out, as if the client never sent it. */
+function withoutKey(document: Record<string, unknown>, key: string) {
+  return Object.fromEntries(
+    Object.entries(document).filter(([name]) => name !== key),
+  );
+}
+
+describe('fetchClientMetadata', () => {
   it('fetches without following redirects and validates the document', async () => {
     const fetchImpl = respond(JSON.stringify(goodDoc));
     const result = await fetchClientMetadata(URL_ID, fetchImpl);
@@ -211,26 +222,26 @@ describe('fetchClientMetadata', () => {
   });
 
   it('fails on an HTTP error, bad JSON, an oversized body or a network error', async () => {
-    expect((await fetchClientMetadata(URL_ID, respond('', 404))).ok).toBe(
-      false,
+    const notFound = await fetchClientMetadata(URL_ID, respond('', 404));
+    expect(notFound.ok).toBe(false);
+    const badJson = await fetchClientMetadata(URL_ID, respond('not json'));
+    expect(badJson.ok).toBe(false);
+    const oversized = await fetchClientMetadata(
+      URL_ID,
+      respond(' '.repeat(20_000)),
     );
-    expect((await fetchClientMetadata(URL_ID, respond('not json'))).ok).toBe(
-      false,
-    );
-    expect(
-      (await fetchClientMetadata(URL_ID, respond(' '.repeat(20_000)))).ok,
-    ).toBe(false);
+    expect(oversized.ok).toBe(false);
     const throwing = jest.fn(async () => {
       throw new Error('down');
     }) as unknown as typeof fetch;
-    expect((await fetchClientMetadata(URL_ID, throwing)).ok).toBe(false);
+    const failed = await fetchClientMetadata(URL_ID, throwing);
+    expect(failed.ok).toBe(false);
   });
 
   it('never fetches a client_id that is not a usable URL', async () => {
     const fetchImpl = respond('{}');
-    expect(
-      (await fetchClientMetadata('http://localhost/x', fetchImpl)).ok,
-    ).toBe(false);
+    const result = await fetchClientMetadata('http://localhost/x', fetchImpl);
+    expect(result.ok).toBe(false);
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 });
@@ -251,13 +262,13 @@ describe('parseRegistration', () => {
   });
 
   it('rejects missing, unsafe or too many redirect URIs', () => {
-    for (const redirect_uris of [
+    for (const redirectUris of [
       undefined,
       [],
-      ['http://example.com/cb'],
+      [urls.exampleCallback],
       Array.from({ length: 21 }, (_, i) => `https://a.com/${i}`),
     ]) {
-      expect(parseRegistration({ redirect_uris })).toMatchObject({
+      expect(parseRegistration({ redirect_uris: redirectUris })).toMatchObject({
         ok: false,
         error: 'invalid_redirect_uri',
       });
@@ -343,7 +354,7 @@ describe('registrationResponse', () => {
 describe('client names', () => {
   it('are cleaned of invisible and direction-changing characters', () => {
     const result = parseClientMetadataDocument(
-      { ...goodDoc, client_name: '\u202eClaude\u200b  Desktop\n' },
+      { ...goodDoc, client_name: '\u202EClaude\u200B  Desktop\n' },
       URL_ID,
     ) as { client: { name: string } };
     expect(result.client.name).toBe('Claude Desktop');
@@ -351,7 +362,7 @@ describe('client names', () => {
 
   it('fall back to the host when only invisible characters were given', () => {
     const result = parseClientMetadataDocument(
-      { ...goodDoc, client_name: '\u200b\u200b' },
+      { ...goodDoc, client_name: '\u200B\u200B' },
       URL_ID,
     ) as { client: { name: string } };
     expect(result.client.name).toBe('chatgpt.com');
@@ -359,12 +370,12 @@ describe('client names', () => {
 
   it('are cleaned for a registered client too, with a neutral fallback', () => {
     const named = parseRegistration({
-      client_name: '\u202eEvil\u202c',
+      client_name: '\u202EEvil\u202C',
       redirect_uris: ['https://a.com/cb'],
     }) as { client: { name: string } };
     expect(named.client.name).toBe('Evil');
     const unnamed = parseRegistration({
-      client_name: '\u200b',
+      client_name: '\u200B',
       redirect_uris: ['https://a.com/cb'],
     }) as { client: { name: string } };
     expect(unnamed.client.name).toBe('Unnamed client');
@@ -407,11 +418,6 @@ describe('isMetadataDocumentUrl, own site, trailing dot and length', () => {
 });
 
 describe('fetchClientMetadata details', () => {
-  const respond = (body: string, status = 200) =>
-    jest.fn(
-      async () => new Response(body, { status }),
-    ) as unknown as typeof fetch;
-
   it('introduces itself with a User-Agent that says whom to ask', async () => {
     const fetchImpl = respond(JSON.stringify(goodDoc));
     await fetchClientMetadata(URL_ID, fetchImpl);
@@ -419,7 +425,7 @@ describe('fetchClientMetadata details', () => {
       RequestInit | undefined;
     expect(init?.headers).toMatchObject({ 'User-Agent': FETCH_USER_AGENT });
     expect(FETCH_USER_AGENT).toMatch(
-      new RegExp(`^${SITE_NAME.toLowerCase()}-oauth/1 \\(\\+https://`),
+      new RegExp(String.raw`^${SITE_NAME.toLowerCase()}-oauth/1 \(\+https://`),
     );
   });
 
@@ -464,7 +470,7 @@ describe('fetchClientMetadata details', () => {
 
 describe('redirect rules in client metadata', () => {
   it('rejects a document whose redirect URIs include a disallowed scheme', () => {
-    for (const uri of ['http://example.com/cb', 'mailto:a@b.c', 'myapp://cb']) {
+    for (const uri of [urls.exampleCallback, 'mailto:a@b.c', 'myapp://cb']) {
       expect(
         parseClientMetadataDocument(
           { ...goodDoc, redirect_uris: ['https://chatgpt.com/cb', uri] },
@@ -606,7 +612,8 @@ describe('fetchClientMetadata streaming and caching', () => {
       ...goodDoc,
       client_name: 'x'.repeat(MAX_DOCUMENT_BYTES),
     });
-    expect((await fetchClientMetadata(URL_ID, serve({}, big))).ok).toBe(false);
+    const result = await fetchClientMetadata(URL_ID, serve({}, big));
+    expect(result.ok).toBe(false);
   });
 
   it('refuses a document whose Content-Length is over the cap', async () => {
@@ -628,7 +635,8 @@ describe('fetchClientMetadata streaming and caching', () => {
           }),
         ),
     ) as unknown as typeof fetch;
-    expect((await fetchClientMetadata(URL_ID, broken)).ok).toBe(false);
+    const failed = await fetchClientMetadata(URL_ID, broken);
+    expect(failed.ok).toBe(false);
   });
 });
 
@@ -774,13 +782,16 @@ describe('parseRegistration token_endpoint_auth_method (RFC 7591)', () => {
 });
 
 describe('error_description is printable ASCII without quotes or backslashes (RFC 6749 5.2, RFC 7591 3.2.2)', () => {
-  const allowed = /^[\x20\x21\x23-\x5b\x5d-\x7e]+$/;
+  const allowed = /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/;
   const base = { redirect_uris: ['https://a.com/cb'] };
 
   it.each([
     ['a body that is not an object', 'x'],
     ['no redirect_uris', {}],
-    ['redirect_uris that are not acceptable', { redirect_uris: ['ftp://a/b'] }],
+    [
+      'redirect_uris that are not acceptable',
+      { redirect_uris: [urls.ftpRedirect] },
+    ],
     ['a non-text auth method', { ...base, token_endpoint_auth_method: 7 }],
     ['grant types without authorization_code', { ...base, grant_types: ['x'] }],
     ['response types without code', { ...base, response_types: ['token'] }],

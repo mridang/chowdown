@@ -26,9 +26,6 @@ import { upsertMetadata } from '@/lib/cooklang';
 import { decodeEntities, visibleText } from '@/domain/recipe/html-text';
 import { scanHtml } from '@/domain/recipe/import-html-scan';
 
-/** A loose JSON value: structured data arrives without a fixed shape. */
-type Json = unknown;
-
 /** What a page says about who made its recipe, gathered but not yet judged. */
 export interface AuthorEvidence {
   /** Names in the `author` of the page's Recipe, best first. */
@@ -54,26 +51,31 @@ const MAX_DEPTH = 24;
 const MAX_NODES = 2000;
 
 /** A JSON value that has members. */
-function isContainer(value: Json): value is Readonly<Record<string, Json>> {
+function isContainer(
+  value: unknown,
+): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null;
 }
 
 /** Every object inside `value`, however deep (to a limit), in document order. */
-function nodesOf(value: Json, depth = 0): readonly Record<string, Json>[] {
+function nodesOf(
+  value: unknown,
+  depth = 0,
+): readonly Record<string, unknown>[] {
   if (depth > MAX_DEPTH || !isContainer(value)) {
     return [];
   }
   const members = Array.isArray(value)
-    ? (value as readonly Json[])
+    ? (value as readonly unknown[])
     : Object.values(value);
   return [
-    ...(Array.isArray(value) ? [] : [value as Record<string, Json>]),
+    ...(Array.isArray(value) ? [] : [value as Record<string, unknown>]),
     ...members.flatMap((member) => nodesOf(member, depth + 1)),
   ];
 }
 
 /** The `@type` of a node as a list. */
-function typesOf(node: Readonly<Record<string, Json>>): readonly string[] {
+function typesOf(node: Readonly<Record<string, unknown>>): readonly string[] {
   const type = node['@type'];
   return (Array.isArray(type) ? type : [type]).filter(
     (t): t is string => typeof t === 'string',
@@ -82,8 +84,8 @@ function typesOf(node: Readonly<Record<string, Json>>): readonly string[] {
 
 /** The names in an `author` value: a string, an object with a `name`, an `@id` reference, or a list of them. */
 function namesIn(
-  value: Json,
-  byId: ReadonlyMap<string, Readonly<Record<string, Json>>>,
+  value: unknown,
+  byId: ReadonlyMap<string, Readonly<Record<string, unknown>>>,
   depth = 0,
 ): readonly string[] {
   if (depth > 4) {
@@ -109,7 +111,7 @@ function namesIn(
 
 /** Whether a node's type is any of `types`. */
 function isOneOf(
-  node: Readonly<Record<string, Json>>,
+  node: Readonly<Record<string, unknown>>,
   types: readonly string[],
 ): boolean {
   return typesOf(node).some((type) => types.includes(type));
@@ -119,7 +121,7 @@ function isOneOf(
 export function authorEvidence(html: string): AuthorEvidence {
   const scan = scanHtml(html);
   const nodes = scan.jsonLd
-    .flatMap((text): readonly Json[] => {
+    .flatMap((text): readonly unknown[] => {
       try {
         return [JSON.parse(text.trim())];
       } catch {
@@ -129,7 +131,7 @@ export function authorEvidence(html: string): AuthorEvidence {
     .flatMap((block) => nodesOf(block))
     .slice(0, MAX_NODES);
   const byId = new Map(
-    nodes.flatMap((node): [string, Record<string, Json>][] =>
+    nodes.flatMap((node): [string, Record<string, unknown>][] =>
       typeof node['@id'] === 'string' ? [[node['@id'], node]] : [],
     ),
   );
@@ -166,28 +168,56 @@ export function authorEvidence(html: string): AuthorEvidence {
       ...meta('article:author', 'property'),
     ].filter((name) => name !== '' && !name.startsWith('http')),
     siteName: meta('og:site_name', 'property')[0] ?? websiteName ?? '',
-    title: decodeEntities(title).replace(/\s+/g, ' ').trim(),
+    title: decodeEntities(title).replaceAll(/\s+/g, ' ').trim(),
     description: (meta('description', 'name')[0] ?? '').slice(0, 220),
     bylines,
     openingText: text.slice(0, 700),
   };
 }
 
+/** A word that starts with a capital letter, the way a name part is written. */
+const CAPITALISED_WORD = String.raw`\p{Lu}[\p{L}'’.-]*`;
+
 /**
  * "by Jane Cook", "Recipe by Jane Cook", "Written by Jane Cook and Bob Roe": a
  * capitalised name of up to five words after a byline word. Bounded, with no
  * nested repetition, so it is linear.
  */
-const BYLINE =
-  /\b(?:[Bb]y|Recipe by|Recipes by|Written by|Author:?|Posted by)\s+(\p{Lu}[\p{L}'’.-]*(?:\s+(?:and|&|\p{Lu}[\p{L}'’.-]*)){0,5})/gu;
+export const BYLINE = new RegExp(
+  [
+    String.raw`\b(?:[Bb]y|Recipe by|Recipes by|Written by|Author:?|Posted by)\s+`,
+    String.raw`(${CAPITALISED_WORD}(?:\s+(?:and|&|${CAPITALISED_WORD})){0,5})`,
+  ].join(''),
+  'gu',
+);
 
 /** What stands in front of a name in a byline and is not part of it. */
 const NAME_PREFIX =
   /^(?:view all posts by|all posts by|posts by|recipe by|recipes by|written by|created by|submitted by|posted by|by|author:?)\s+/i;
 
 /** Words that mean a candidate is page furniture or a role, not a person. */
-const NOT_A_NAME =
-  /\b(?:comments?|minutes?|mins?|read|reviews?|ratings?|share|print|jump|skip|posts?|admin|administrator|editorial|editors?|staff|team|photos?|contributors?|subscribe|newsletter|cookies?|privacy|login|sign|unknown|anonymous|guest|author|undefined|null)\b/i;
+export const NOT_A_NAME = new RegExp(
+  String.raw`\b(?:${[
+    'comments?|minutes?|mins?|read|reviews?|ratings?|share|print|jump|skip',
+    'posts?|admin|administrator|editorial|editors?|staff|team|photos?',
+    'contributors?|subscribe|newsletter|cookies?|privacy|login|sign|unknown',
+    'anonymous|guest|author|undefined|null',
+  ].join('|')})\b`,
+  'i',
+);
+
+/** `text` without the leading characters `leading` accepts and the trailing ones `trailing` accepts. */
+function trimEdges(text: string, leading: RegExp, trailing: RegExp): string {
+  let start = 0;
+  let end = text.length;
+  while (start < end && leading.test(text.charAt(start))) {
+    start += 1;
+  }
+  while (end > start && trailing.test(text.charAt(end - 1))) {
+    end -= 1;
+  }
+  return text.slice(start, end);
+}
 
 /**
  * Tidy a name found on a page and say whether it can be one: `undefined` for
@@ -200,23 +230,27 @@ export function cleanAuthorName(raw: string): string | undefined {
   if (raw.includes('@')) {
     return undefined;
   }
-  const stripped = decodeEntities(raw)
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(NAME_PREFIX, '')
-    // "Jane Cook | Some Blog" and "Jane Cook - Some Blog" are the name and a site.
-    .replace(/\s+[|–—-]\s+.*$/, '')
-    .replace(/^[\s,;:]+|[\s,;:.]+$/g, '');
+  const stripped = trimEdges(
+    decodeEntities(raw)
+      .replaceAll(/\s+/g, ' ')
+      .trim()
+      .replace(NAME_PREFIX, '')
+      // "Jane Cook | Some Blog" and "Jane Cook - Some Blog" are the name and a site.
+      .replace(/\s[|–—-]\s.*$/, ''),
+    /[\s,;:]/,
+    /[\s,;:.]/,
+  );
   const words = stripped.split(' ').filter(Boolean);
-  const wellFormed =
-    stripped.length >= 2 &&
-    stripped.length <= 60 &&
-    words.length <= 5 &&
+  const lengthOk =
+    stripped.length >= 2 && stripped.length <= 60 && words.length <= 5;
+  const noJunk =
     !/[\d<>@/\\{}[\]=]|https?:|www\./i.test(stripped) &&
-    !NOT_A_NAME.test(stripped) &&
+    !NOT_A_NAME.test(stripped);
+  // An initial or two is no name ("H. I").
+  const hasName =
     words.some((word) => /\p{L}{2,}/u.test(word)) &&
-    // An initial or two is no name ("H. I").
-    words.filter((word) => /\p{L}{3,}/u.test(word)).length >= 1;
+    words.some((word) => /\p{L}{3,}/u.test(word));
+  const wellFormed = lengthOk && noJunk && hasName;
   return wellFormed ? withCapitals(stripped) : undefined;
 }
 
@@ -226,7 +260,7 @@ function withCapitals(name: string): string {
   return name === name.toLowerCase() || shouted
     ? name
         .toLowerCase()
-        .replace(
+        .replaceAll(
           /(^|[\s'’-])(\p{L})/gu,
           (_, before: string, letter: string) => {
             return `${before}${letter.toUpperCase()}`;
@@ -277,9 +311,9 @@ export function declaredAuthor(
 function plain(text: string): string {
   return text
     .normalize('NFKD')
-    .replace(/\p{M}/gu, '')
+    .replaceAll(/\p{M}/gu, '')
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '');
+    .replaceAll(/[^a-z0-9]+/g, '');
 }
 
 /** The model that reads the page's summary. */
@@ -310,23 +344,28 @@ function shownText(evidence: Readonly<AuthorEvidence>): string {
   return plain(summaryOf(evidence));
 }
 
+/** The text from a reply's first `{` to its last `}`, or nothing when there is no such span. */
+function jsonSpanOf(text: string): string {
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  return start !== -1 && end > start ? text.slice(start, end + 1) : '';
+}
+
 /** The `author` of the model's reply, which may arrive as text or as already-parsed JSON. */
 function answerOf(reply: unknown): string | undefined {
   const response =
     typeof reply === 'object' && reply !== null && 'response' in reply
       ? reply.response
       : undefined;
-  const parsed: Json =
-    typeof response === 'string'
-      ? safeParse(/\{[\s\S]*\}/.exec(response)?.[0] ?? '')
-      : response;
+  const parsed: unknown =
+    typeof response === 'string' ? safeParse(jsonSpanOf(response)) : response;
   const author = isContainer(parsed) ? parsed['author'] : undefined;
   return typeof author === 'string' ? author : undefined;
 }
 
 /** `JSON.parse` that gives undefined instead of throwing. */
-function safeParse(text: string): Json {
-  const parsed = safeJsonParse<Json>(text);
+function safeParse(text: string): unknown {
+  const parsed = safeJsonParse<unknown>(text);
   return parsed.ok ? parsed.value : undefined;
 }
 
@@ -376,7 +415,11 @@ export async function findAuthor(
 
 /** The author a recipe's Cooklang source names (`>> author:` or `>> by:`), if it names one. */
 export function authorFromSource(cook: string): string | undefined {
-  return /^>>\s*(?:author|by):[ \t]*(\S[^\r\n]*?)[ \t]*$/im.exec(cook)?.[1];
+  const name = /^>>\s*(?:author|by):[ \t]*(\S[^\n\r\u2028\u2029]*)/im.exec(
+    cook,
+  )?.[1];
+  // The name stops before any trailing spaces and tabs.
+  return name === undefined ? undefined : trimEdges(name, /(?!)/, /[ \t]/);
 }
 
 /** Whether Cooklang source already names an author. */

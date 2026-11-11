@@ -1,4 +1,5 @@
 /* eslint-disable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts, not in a CSS file. */
+
 /**
  * @packageDocumentation
  *
@@ -50,9 +51,10 @@ export function MetaRow({
 /** One piece of a method step. */
 function Token({ token }: Readonly<{ token: StepToken }>): ReactElement {
   switch (token.kind) {
-    case 'text':
+    case 'text': {
       return <span>{token.text}</span>;
-    case 'ingredient':
+    }
+    case 'ingredient': {
       return (
         <span className="tok-ing">
           {token.name}
@@ -61,10 +63,13 @@ function Token({ token }: Readonly<{ token: StepToken }>): ReactElement {
           ) : null}
         </span>
       );
-    case 'cookware':
+    }
+    case 'cookware': {
       return <span className="tok-cook">{token.name}</span>;
-    case 'timer':
+    }
+    case 'timer': {
       return <span className="tok-timer">{token.label}</span>;
+    }
   }
 }
 
@@ -211,3 +216,5 @@ export function FullRecipe({
     </section>
   );
 }
+
+/* eslint-enable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts, not in a CSS file. */

@@ -40,15 +40,16 @@ describe('savedCard', () => {
   });
 
   it('leaves missing facts empty instead of inventing them', () => {
-    expect(savedCard({ id: 'a', title: 'Toast' })).toMatchObject({
+    const card = savedCard({ id: 'a', title: 'Toast' });
+    expect(card).toMatchObject({
       site: '',
       cuisine: '',
       protein: '',
       diet: [],
-      minutes: undefined,
-      difficulty: undefined,
-      cover: undefined,
     });
+    expect(card).toHaveProperty('minutes', undefined);
+    expect(card).toHaveProperty('difficulty', undefined);
+    expect(card).toHaveProperty('cover', undefined);
   });
 
   it('marks an idea', () => {

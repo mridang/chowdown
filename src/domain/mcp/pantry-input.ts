@@ -64,12 +64,13 @@ function scanStep(text: string, scan: Scan, index: number): Scan {
     return { ...scan, skip: scan.skip - 1 };
   }
   const ch = text.charAt(index);
-  const depth =
-    ch === '('
-      ? scan.depth + 1
-      : ch === ')'
-        ? Math.max(0, scan.depth - 1)
-        : scan.depth;
+  let depth = scan.depth;
+  if (ch === '(') {
+    depth += 1;
+  }
+  if (ch === ')') {
+    depth = Math.max(0, depth - 1);
+  }
   const rest = text.slice(index);
   if (depth === 0 && SEPARATOR.test(rest)) {
     return {
@@ -124,7 +125,7 @@ function splitItems(text: string): readonly string[] {
 function itemsFromText(entry: string): readonly PantryItem[] {
   const text = entry
     .slice(0, MAX_ITEM_LENGTH * 4)
-    .replace(ONE_THING, (m) => m.replace(/\s+and\s+/i, JOINED));
+    .replaceAll(ONE_THING, (m) => m.replace(/\sand\s/i, JOINED));
   return splitItems(text).map((part) =>
     parsePantryItem(part.replaceAll(JOINED, ' and ').slice(0, MAX_ITEM_LENGTH)),
   );
@@ -150,9 +151,8 @@ function itemFromObject(entry: object): readonly PantryItem[] {
 
 /** The pantry items asked for: strings like "3 tomatoes", or {name, quantity}. */
 export function pantryOf(value: unknown): readonly PantryItem[] {
-  const list = (
-    Array.isArray(value) ? value : value === undefined ? [] : [value]
-  ).slice(0, MAX_PANTRY_ITEMS);
+  const asList: readonly unknown[] = Array.isArray(value) ? value : [value];
+  const list = (value === undefined ? [] : asList).slice(0, MAX_PANTRY_ITEMS);
   return list
     .flatMap((entry: unknown): readonly PantryItem[] => {
       if (typeof entry === 'string') {

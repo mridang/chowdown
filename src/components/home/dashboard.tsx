@@ -170,11 +170,13 @@ export async function Dashboard({
           <div className="mt-14">
             <DriveConnectPanel reconnect={drive.reconnect} returnTo="/" />
           </div>
-        ) : recipes.length === 0 ? (
+        ) : null}
+        {!needsDrive && recipes.length === 0 ? (
           <div className="mt-14">
             {drive.unreachable ? <DriveUnreachable /> : <EmptyCollection />}
           </div>
-        ) : (
+        ) : null}
+        {recipes.length > 0 ? (
           <>
             {drive.connected ? null : (
               <div className="mt-10">
@@ -206,7 +208,7 @@ export async function Dashboard({
               items={shelf}
             />
           </>
-        )}
+        ) : null}
       </Container>
 
       <div className="mt-16 sm:mt-20">

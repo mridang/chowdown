@@ -20,11 +20,11 @@ import { errorMessage, logError } from '@/utils/logging';
 import type { User } from '@/domain/db/users';
 import {
   ERROR_INVALID_PARAMS,
-  InvalidToolArguments,
+  InvalidToolArgumentsError,
   McpServer,
   RpcError,
   SUPPORTED_VERSIONS,
-  UnknownTool,
+  UnknownToolError,
   isPlainObject,
   negotiateLegacyVersion,
   type CacheHint,
@@ -138,11 +138,11 @@ function cursorAt(offset: number): string {
 /**
  * How many recipes a `resources/list` cursor has already passed. No cursor is
  * the start.
- *
  * @throws {RpcError} `-32602` for a cursor this server did not issue.
  */
 function offsetOfCursor(cursor: unknown): number {
-  if (cursor === undefined || cursor === null || cursor === '') {
+  const absent: readonly unknown[] = [undefined, null, ''];
+  if (absent.includes(cursor)) {
     return 0;
   }
   const text = typeof cursor === 'string' ? decodedCursor(cursor) : undefined;
@@ -196,7 +196,7 @@ async function resourceListResult(
   );
   const page = found.slice(0, RESOURCE_PAGE_SIZE);
   return {
-    resources: [...views, ...page.map(recipeResource)],
+    resources: [...views, ...page.map((recipe) => recipeResource(recipe))],
     ...(found.length > page.length
       ? { nextCursor: cursorAt(offset + page.length) }
       : {}),
@@ -317,10 +317,10 @@ async function callTool(params: Params, ctx: McpContext): Promise<object> {
   try {
     return await ctx.runTool(ctx.user, params);
   } catch (error) {
-    if (error instanceof UnknownTool) {
+    if (error instanceof UnknownToolError) {
       throw unknownToolError(error.tool);
     }
-    if (error instanceof InvalidToolArguments) {
+    if (error instanceof InvalidToolArgumentsError) {
       throw new RpcError(
         ERROR_INVALID_PARAMS,
         `Invalid arguments for tool ${name}: ${error.problems.join(' ')}`,
@@ -331,7 +331,7 @@ async function callTool(params: Params, ctx: McpContext): Promise<object> {
   }
 }
 
-/** chowdown's MCP server: the engine with the recipe methods registered. */
+/** Chowdown's MCP server: the engine with the recipe methods registered. */
 const server = new McpServer<McpContext>({
   serverInfo: SERVER_INFO,
   serverInfoMetaKey: SERVER_INFO_META_KEY,

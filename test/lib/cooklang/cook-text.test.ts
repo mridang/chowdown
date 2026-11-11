@@ -20,6 +20,7 @@ import {
   uncuratedFilename,
   upsertMetadata,
 } from '@/lib/cooklang';
+import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
 describe('uncurated filenames', () => {
   it('builds a marked filename', () => {
@@ -120,7 +121,7 @@ describe('normalizeSourceUrl', () => {
   it('ignores www, scheme, query, fragment and trailing slash', () => {
     const a = normalizeSourceUrl('https://www.Example.com/post/pasta/?utm=1#x');
     expect(a).toBe('example.com/post/pasta');
-    expect(normalizeSourceUrl('http://example.com/post/pasta')).toBe(a);
+    expect(normalizeSourceUrl(urls.examplePost)).toBe(a);
   });
 
   it('keeps parameters that identify the page, so two videos differ', () => {
@@ -414,5 +415,71 @@ describe('replaceNote and removeNote with out-of-range positions', () => {
         replaceNote(source, index, { scope: 'general', key: '', text: 'x' }),
       ).toBeUndefined();
     }
+  });
+});
+
+const FAST_MS = 1000;
+
+describe('metadata and note scanning (linear-time rewrites)', () => {
+  it.each([
+    ['>> k: a\n>> author: x\n>> k: b\nbody', '>> k: z\n>> author: x\nbody\n'],
+    ['>> k:\n>> k: unknown\n>> k: v\r\nz', '>> k: z\nz\n'],
+    ['>>: x\n>> k', '>>: x\n>> k\n>> k: z\n'],
+  ])('upserts %j', (input, expected) => {
+    expect(upsertMetadata(input as string, [['k', 'z']])).toEqual(expected);
+  });
+  it.each([
+    ['>> k: a\n>> author: x\n>> k: b\nbody', '>> author: x\nbody'],
+    ['>> k:\n>> k: unknown\n>> k: v\r\nz', 'z'],
+    ['>>: x\n>> k', '>>: x\n>> k'],
+  ])('removes %j', (input, expected) => {
+    expect(removeMetadata(input as string, 'k')).toEqual(expected);
+  });
+  it.each([
+    [
+      '>> k: a\n>> author: x\n>> k: b\nbody',
+      '>> k: a\n>> author: x\n>> k: b\nbody',
+    ],
+    ['>> k:\n>> k: unknown\n>> k: v\r\nz', '>> k: v\nz'],
+    ['>>: x\n>> k', '>>: x\n>> k'],
+  ])('drops empty %j', (input, expected) => {
+    expect(removeEmptyMetadata(input as string)).toEqual(expected);
+  });
+  it.each([
+    ['-- [note] hello', [{ scope: 'general', key: '', text: 'hello' }]],
+    [
+      '-- [note ingredient:salt]   less',
+      [{ scope: 'ingredient', key: 'salt', text: 'less' }],
+    ],
+    ['-- [note step:2] x\r', []],
+    ['-- [note]  a\u2028b', []],
+    ['x\n-- [note]', [{ scope: 'general', key: '', text: '' }]],
+  ])('extracts notes %j', (input, expected) => {
+    expect(extractNotes(input as string)).toEqual(expected);
+  });
+  it.each([
+    ['a \n b', '\n-- [cook 1970-01-01] a b\n'],
+    ['a  b', '\n-- [cook 1970-01-01] a  b\n'],
+    ['a\r\n\r\nb', '\n-- [cook 1970-01-01] a b\n'],
+    [' x \n', '\n-- [cook 1970-01-01] x\n'],
+  ])('flattens a log %j', (input, expected) => {
+    expect(appendCookingLog('', input as string, new Date(0))).toEqual(
+      expected,
+    );
+  });
+  it.each([
+    ['https://www.Ex.com/a//?utm_source=x&b=1', 'ex.com/a?b=1'],
+    ['https://ex.com///', 'ex.com'],
+    ['https://ex.com', 'ex.com'],
+  ])('normalises %j', (input, expected) => {
+    expect(normalizeSourceUrl(input as string)).toEqual(expected);
+  });
+  it('scans on a long adversarial input', () => {
+    const started = performance.now();
+    upsertMetadata(`>>${' '.repeat(100_000)}`, [['k', 'z']]);
+    extractNotes(`-- [note]${' '.repeat(100_000)}\r`);
+    appendCookingLog('', ' \r'.repeat(50_000));
+    normalizeSourceUrl(`https://ex.com/${'/'.repeat(100_000)}`);
+    expect(performance.now() - started).toBeLessThan(FAST_MS);
   });
 });

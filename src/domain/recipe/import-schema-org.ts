@@ -31,11 +31,8 @@ import {
 import { scanHtml, type Attributes } from '@/domain/recipe/import-html-scan';
 import { validImageUrls } from '@/domain/recipe/media';
 
-/** A loose JSON value — JSON-LD arrives without a fixed shape. */
-type Json = unknown;
-
 /** A JSON object whose members are not yet known to be anything in particular. */
-type JsonObject = Readonly<Record<string, Json>>;
+type JsonObject = Readonly<Record<string, unknown>>;
 
 /** Convert an ISO-8601 duration (`PT1H30M`) into a human string (`1 hr 30 min`). */
 export function humaniseDuration(iso: string): string | undefined {
@@ -57,12 +54,12 @@ export function humaniseDuration(iso: string): string | undefined {
 const MAX_DEPTH = 24;
 
 /** Whether a parsed JSON value is a container (arrays count: they hold members too). */
-function isJsonContainer(value: Json): value is JsonObject {
+function isJsonContainer(value: unknown): value is JsonObject {
   return typeof value === 'object' && value !== null;
 }
 
 /** True if a JSON-LD node's `@type` is (or includes) `Recipe`. */
-function isRecipeNode(node: Json): node is JsonObject {
+function isRecipeNode(node: unknown): node is JsonObject {
   if (!isJsonContainer(node)) {
     return false;
   }
@@ -71,7 +68,7 @@ function isRecipeNode(node: Json): node is JsonObject {
 }
 
 /** {@link findRecipeNode}, `depth` levels down. */
-function findRecipeNodeAt(input: Json, depth: number): JsonObject | null {
+function findRecipeNodeAt(input: unknown, depth: number): JsonObject | null {
   if (depth > MAX_DEPTH) {
     return null;
   }
@@ -101,12 +98,12 @@ function findRecipeNodeAt(input: Json, depth: number): JsonObject | null {
  * bare object, an array of nodes, or a `@graph` wrapper (all three occur in
  * the wild). Gives up on structure nested deeper than any real page's.
  */
-export function findRecipeNode(input: Json): JsonObject | null {
+export function findRecipeNode(input: unknown): JsonObject | null {
   return findRecipeNodeAt(input, 0);
 }
 
 /** Coerce schema.org's many instruction shapes into a flat list of step texts. */
-function normaliseInstructions(value: Json): readonly string[] {
+function normaliseInstructions(value: unknown): readonly string[] {
   if (typeof value === 'string') {
     return value
       .split(/\r?\n+/)
@@ -140,18 +137,16 @@ function normaliseInstructions(value: Json): readonly string[] {
  * metadata lines, and a line break inside one (from a hostile page) would start
  * a line of its own.
  */
-function firstString(value: Json): string | undefined {
-  const text =
-    typeof value === 'string'
-      ? value
-      : Array.isArray(value) && typeof value[0] === 'string'
-        ? value[0]
-        : undefined;
-  return text?.replace(/\s+/g, ' ').trim();
+function firstString(value: unknown): string | undefined {
+  const head: unknown = Array.isArray(value) ? value[0] : undefined;
+  const text = [value, head].find(
+    (item): item is string => typeof item === 'string',
+  );
+  return text?.replaceAll(/\s+/g, ' ').trim();
 }
 
 /** Author display name from schema.org `author` (string, object, or array). */
-function authorName(value: Json): string | undefined {
+function authorName(value: unknown): string | undefined {
   const node = Array.isArray(value) ? value[0] : value;
   if (typeof node === 'string') {
     return node.trim();
@@ -166,7 +161,7 @@ function authorName(value: Json): string | undefined {
 }
 
 /** Image URLs from schema.org `image` (string, ImageObject, or arrays thereof). */
-export function imageUrls(value: Json): readonly string[] {
+export function imageUrls(value: unknown): readonly string[] {
   return validImageUrls(
     listOf(value).flatMap((item) => {
       if (typeof item === 'string') {
@@ -181,12 +176,15 @@ export function imageUrls(value: Json): readonly string[] {
 }
 
 /** A value as a list: itself if it is one, nothing if it is missing, else just it. */
-function listOf(value: Json): readonly Json[] {
-  return Array.isArray(value) ? value : value === undefined ? [] : [value];
+function listOf(value: unknown): readonly unknown[] {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  return value === undefined ? [] : [value];
 }
 
 /** Video URL from schema.org `video` (VideoObject contentUrl/embedUrl/url). */
-function videoUrl(value: Json): string | undefined {
+function videoUrl(value: unknown): string | undefined {
   const node = Array.isArray(value) ? value[0] : value;
   if (typeof node === 'string') {
     return node.trim();
@@ -201,7 +199,7 @@ function videoUrl(value: Json): string | undefined {
 }
 
 /** Join `suitableForDiet` values, stripping the schema.org URL/`Diet` decorations. */
-export function dietNames(value: Json): string | undefined {
+export function dietNames(value: unknown): string | undefined {
   const names = listOf(value)
     .filter((i): i is string => typeof i === 'string')
     .map((s) =>
@@ -211,7 +209,7 @@ export function dietNames(value: Json): string | undefined {
         .trim(),
     )
     .filter(Boolean);
-  return names.length ? names.join(', ') : undefined;
+  return names.length > 0 ? names.join(', ') : undefined;
 }
 
 /**
@@ -263,7 +261,6 @@ function metadataLines(
  * emitted as a leading block of `@name{qty%unit}` tokens (so the parser and
  * the ingredients panel pick them up), followed by one step per instruction.
  * Known metadata (servings, time, source, tags) is written as `>>` lines.
- *
  * @param recipe - A node already confirmed to be a `Recipe`.
  * @param sourceUrl - The page it came from, recorded as `>> source:`.
  */
@@ -287,7 +284,7 @@ export function schemaOrgToCook(
     meta.join('\n'),
     // One paragraph of ingredient tokens → a single "gather" step the parser
     // reads for the ingredients panel. The user curates it into the method.
-    ...(ingredientLines.length ? [ingredientLines.join('\n')] : []),
+    ...(ingredientLines.length > 0 ? [ingredientLines.join('\n')] : []),
     ...steps,
   ];
   return `${blocks.join('\n\n')}\n`;
@@ -304,7 +301,7 @@ function ogImageOf(meta: Attributes): string | undefined {
   const marksImage = [meta.get('property'), meta.get('name')].some(
     (key) => key !== undefined && OG_IMAGE_KEYS.has(key.trim().toLowerCase()),
   );
-  const content = meta.get('content')?.replace(/&amp;/g, '&').trim();
+  const content = meta.get('content')?.replaceAll('&amp;', '&').trim();
   return marksImage && content ? content : undefined;
 }
 
@@ -319,7 +316,9 @@ export function extractOgImage(
   html: string,
   baseUrl?: string,
 ): string | undefined {
-  const raw = scanHtml(html).metas.map(ogImageOf).find(Boolean);
+  const raw = scanHtml(html)
+    .metas.map((meta) => ogImageOf(meta))
+    .find(Boolean);
   if (!raw) {
     return undefined;
   }
@@ -335,7 +334,7 @@ export function extractOgImage(
 
 /** {@link collectById}, `depth` levels down. */
 function collectByIdAt(
-  root: Json,
+  root: unknown,
   depth: number,
 ): readonly (readonly [string, JsonObject])[] {
   if (depth > MAX_DEPTH) {
@@ -364,7 +363,9 @@ function collectByIdAt(
  * Every object that carries an `@id` (and something besides it), anywhere in
  * the parsed JSON-LD, as `[id, object]` pairs in document order.
  */
-function collectById(root: Json): readonly (readonly [string, JsonObject])[] {
+function collectById(
+  root: unknown,
+): readonly (readonly [string, JsonObject])[] {
   return collectByIdAt(root, 0);
 }
 
@@ -379,7 +380,7 @@ export function resolveImageRefs(
   node: JsonObject,
   byId: ReadonlyMap<string, JsonObject>,
 ): JsonObject {
-  const resolve = (value: Json, depth: number): Json => {
+  const resolve = (value: unknown, depth: number): unknown => {
     if (depth > MAX_DEPTH) {
       return value;
     }
@@ -409,7 +410,7 @@ export function extractRecipeFromHtml(
   html: string,
   sourceUrl?: string,
 ): string | null {
-  const blocks = scanHtml(html).jsonLd.flatMap((text): readonly Json[] => {
+  const blocks = scanHtml(html).jsonLd.flatMap((text): readonly unknown[] => {
     try {
       return [JSON.parse(text.trim())];
     } catch {
@@ -418,8 +419,12 @@ export function extractRecipeFromHtml(
   });
   // The first block to define an id wins, so the entries are reversed on the
   // way into the Map (a later entry overwrites an earlier one).
-  const byId = new Map(blocks.flatMap(collectById).toReversed());
-  const node = blocks.map(findRecipeNode).find((found) => found !== null);
+  const byId = new Map(
+    blocks.flatMap((block) => collectById(block)).toReversed(),
+  );
+  const node = blocks
+    .map((block) => findRecipeNode(block))
+    .find((found) => found !== null);
   if (!node) {
     return null;
   }

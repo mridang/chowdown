@@ -51,13 +51,11 @@ function short(value: unknown, limit: number): string {
     return '';
   }
   // Control characters (a line break in a log line could pass for another line) become spaces.
-  const printable = [...value.slice(0, limit * 2)]
-    .map((char) => {
-      const code = char.codePointAt(0) ?? 0;
-      return code < 32 || code === 127 ? ' ' : char;
-    })
-    .join('');
-  return printable.replace(/\s+/g, ' ').trim().slice(0, limit);
+  const printable = Array.from(value.slice(0, limit * 2), (char) => {
+    const code = char.codePointAt(0) ?? 0;
+    return code < 32 || code === 127 ? ' ' : char;
+  }).join('');
+  return printable.replaceAll(/\s+/g, ' ').trim().slice(0, limit);
 }
 
 /** The first of `keys` in `body` that holds text. */
@@ -107,6 +105,16 @@ function fromExtension(body: Readonly<Record<string, unknown>>): boolean {
   ].some((address) => EXTENSION_SCHEME.test(address));
 }
 
+/** The one CSP report in a legacy `csp-report` body, if the body holds one. */
+function legacyCspEntries(
+  body: unknown,
+): readonly (readonly [string, Readonly<Record<string, unknown>>])[] {
+  if (isRecord(body) && isRecord(body['csp-report'])) {
+    return [['csp-violation', body['csp-report']]];
+  }
+  return [];
+}
+
 /** Boil one report body down to a summary. */
 function summarise(
   type: string,
@@ -154,9 +162,7 @@ export function summariseReports(body: unknown): readonly ReportSummary[] {
           ? [[short(entry['type'], 40), entry['body']]]
           : [],
       )
-    : isRecord(body) && isRecord(body['csp-report'])
-      ? [['csp-violation', body['csp-report']]]
-      : [];
+    : legacyCspEntries(body);
   return entries
     .slice(0, MAX_REPORTS_PER_REQUEST)
     .filter(([, report]) => !fromExtension(report))

@@ -41,7 +41,7 @@ export interface RecipeJsonLd {
 
 /** Normalise a metadata key: lowercase, strip spaces/underscores/hyphens. */
 function normKey(key: string): string {
-  return key.toLowerCase().replace(/[\s_-]+/g, '');
+  return key.toLowerCase().replaceAll(/[\s_-]+/g, '');
 }
 
 /** Looks up the first of several metadata keys that has a value. */
@@ -59,13 +59,34 @@ function metaLookup(recipe: Readonly<ParsedRecipe>): MetaLookup {
 }
 
 /**
+ * The first match of `unit` (a sticky pattern) that starts at a run of digits
+ * in `value`: a number followed by its unit.
+ */
+function numberBefore(value: string, unit: RegExp): RegExpExecArray | null {
+  for (const digits of value.matchAll(/\d+/g)) {
+    unit.lastIndex = digits.index;
+    const found = unit.exec(value);
+    if (found) {
+      return found;
+    }
+  }
+  return null;
+}
+
+/**
  * Turn a human duration ("30 minutes", "1 hr 15 min", "2 hours") into an
  * ISO-8601 duration (`PT30M`, `PT1H15M`, `PT2H`). Returns `undefined` when the
  * string carries no recognisable hours/minutes.
  */
 export function toIsoDuration(value: string): string | undefined {
-  const hours = /(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b/i.exec(value);
-  const mins = /(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)\b/i.exec(value);
+  const hours = numberBefore(
+    value,
+    /(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b/iy,
+  );
+  const mins = numberBefore(
+    value,
+    /(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)\b/iy,
+  );
   // A bare number with no unit is read as minutes ("prep: 20").
   const bare = hours || mins ? null : /^\s*(\d+(?:\.\d+)?)\s*$/.exec(value);
   if (!hours && !mins && !bare) {
@@ -81,7 +102,9 @@ export function toIsoDuration(value: string): string | undefined {
   if (h === 0 && m === 0) {
     return undefined;
   }
-  return `PT${h > 0 ? `${h}H` : ''}${m > 0 ? `${Math.round(m)}M` : ''}`;
+  const hoursPart = h > 0 ? `${h}H` : '';
+  const minutesPart = m > 0 ? `${Math.round(m)}M` : '';
+  return `PT${hoursPart}${minutesPart}`;
 }
 
 /** Split a comma/semicolon-separated metadata value into trimmed parts. */
@@ -103,7 +126,6 @@ function durationOf(
 
 /**
  * Project a parsed recipe onto schema.org/Recipe JSON-LD.
- *
  * @param recipe - The parsed Cooklang recipe.
  * @param url - The canonical URL of this recipe's page (for `url`).
  */

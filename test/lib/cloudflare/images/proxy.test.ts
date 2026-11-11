@@ -64,11 +64,11 @@ describe('fetchImage', () => {
       // The caller (the image service) snaps the width; the proxy uses it as given.
       const result = await fetchImage('https://a.com/x.jpg', 700, {
         fetcher: returning(big()),
-        images: images(new Uint8Array(9_000).buffer, seen),
+        images: images(new Uint8Array(9000).buffer, seen),
       });
       expect(seen.width).toBe(700);
       expect(result).toMatchObject({ ok: true, type: 'image/webp' });
-      expect(result.ok && result.bytes.byteLength).toBe(9_000);
+      expect(result.ok && result.bytes.byteLength).toBe(9000);
     });
 
     it('sends the original when scaling fails', async () => {
@@ -153,7 +153,9 @@ describe('fetchImage', () => {
     });
     expect(result).toMatchObject({ ok: false, status: 502 });
   });
+});
 
+describe('fetchImage with the shared safe fetch', () => {
   describe('the shared safe fetch', () => {
     /** A fetcher that answers each call from `responses` and remembers the calls. */
     function serving(...responses: readonly Response[]) {
@@ -249,9 +251,8 @@ describe('fetchImage', () => {
           headers: { 'content-type': 'image/jpeg' },
         }),
       );
-      expect(
-        (await fetchImage('https://a.com/x.jpg', 640, { fetcher })).ok,
-      ).toBe(true);
+      const result = await fetchImage('https://a.com/x.jpg', 640, { fetcher });
+      expect(result.ok).toBe(true);
     });
 
     it('says the image is gone for a 410 as well', async () => {

@@ -120,7 +120,7 @@ describe('RecipeHero', () => {
   it('sets only the author in the handwriting face', () => {
     const out = markup({ sourceUrl: SOURCE, author: 'Ethan Chlebowski' });
     expect(out.match(/font-hand-/g)).toHaveLength(1);
-    expect(out).toMatch(/font-hand-\w+[^"]*"[^>]*>Ethan Chlebowski</);
+    expect(out).toMatch(/font-hand-\w[^"]*"[^>]*>Ethan Chlebowski</);
   });
 
   it('keeps the source line under the title when there is no author', () => {

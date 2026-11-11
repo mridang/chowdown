@@ -1,4 +1,5 @@
 import { compareText } from '@/lib/intl';
+
 /**
  * @packageDocumentation
  *
@@ -44,8 +45,8 @@ function isoDate(when: Date = new Date()): string {
  */
 export function sanitiseName(name: string): string {
   return name
-    .replace(/[/\\]+/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/[/\\]+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .replace(/^\.+/, '')
     .trim();
 }
@@ -70,7 +71,7 @@ export function recipeDisplayName(filename: string): string {
   return filename
     .replace(/\.cook$/i, '')
     .replace(new RegExp(`\\s*\\${UNCURATED_MARKER}\\s*`, 'i'), ' ')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 
@@ -85,7 +86,7 @@ function asComment(text: string): string {
 /**
  * Build the body of an uncurated stub. The original prompt is preserved
  * verbatim as a comment so nothing the user said is lost, and a `draft` (e.g.
- * a recipe the calling assistant generated) is included as the method when
+ * A recipe the calling assistant generated) is included as the method when
  * provided; otherwise a gentle placeholder stands in until the user curates it.
  */
 export function buildStubSource(
@@ -112,6 +113,45 @@ export function buildStubSource(
   return `${lines.join('\n')}\n`;
 }
 
+/** What ends a line for `.` in a regular expression. */
+const LINE_BREAK = /[\n\r\u2028\u2029]/;
+
+/**
+ * Read a `>> key: value` line: the text between `>>` and the first colon, and
+ * the value after it (undefined when the value holds a line break, which the
+ * old `(.*)$` read refused). Undefined when the line is not a metadata line.
+ */
+function metadataParts(
+  line: string,
+): { readonly key: string; readonly value: string | undefined } | undefined {
+  if (!line.startsWith('>>')) {
+    return undefined;
+  }
+  const colon = line.indexOf(':', 2);
+  if (colon <= 2) {
+    return undefined;
+  }
+  const value = line.slice(colon + 1).trimStart();
+  return {
+    key: line.slice(2, colon),
+    value: LINE_BREAK.test(value) ? undefined : value,
+  };
+}
+
+/** `path` without any run of `/` at its end. */
+function withoutTrailingSlashes(path: string): string {
+  let end = path.length;
+  while (end > 0 && path.charAt(end - 1) === '/') {
+    end -= 1;
+  }
+  return path.slice(0, end);
+}
+
+/** Every run of whitespace that holds a line break becomes one space. */
+function flattenLineBreaks(text: string): string {
+  return text.replaceAll(/\s+/g, (run) => (run.includes('\n') ? ' ' : run));
+}
+
 /**
  * Insert or update `>> key: value` metadata lines, non-destructively. An
  * existing line for a key (case-insensitive) is rewritten in place; new keys
@@ -119,7 +159,6 @@ export function buildStubSource(
  * metadata block stays together and the method below is untouched. Like the
  * rest of this module, it's text surgery — it never round-trips through the
  * parser, so comments, ordering and the cooking log all survive.
- *
  * @param source - The `.cook` source.
  * @param pairs - `[key, value]` metadata to set (one line each).
  */
@@ -135,7 +174,9 @@ export function upsertMetadata(
   // For each line, the lower-cased key it sets if it is a metadata line for
   // one of the keys we were given.
   const keyOfLine = lines.map((line) => {
-    const key = /^>>\s*([^:]+):\s*(.*)$/.exec(line)?.[1]?.trim().toLowerCase();
+    const parts = metadataParts(line);
+    const key =
+      parts?.value === undefined ? undefined : parts.key.trim().toLowerCase();
     return key !== undefined && byLowerKey.has(key) ? key : undefined;
   });
   // The first line for a key is the one rewritten; later repeats are dropped,
@@ -176,10 +217,10 @@ export function upsertMetadata(
  */
 function lastMetadataLine(lines: readonly string[]): number {
   const blockEnd = lines.findIndex(
-    (line) => !/^>>/.test(line) && line.trim() !== '',
+    (line) => !line.startsWith('>>') && line.trim() !== '',
   );
   const block = blockEnd === -1 ? lines : lines.slice(0, blockEnd);
-  return block.findLastIndex((line) => /^>>/.test(line));
+  return block.findLastIndex((line) => line.startsWith('>>'));
 }
 
 /**
@@ -191,7 +232,7 @@ export function removeMetadata(source: string, key: string): string {
   return source
     .split(/\r?\n/)
     .filter((line) => {
-      const key = /^>>\s*([^:]+):/.exec(line)?.[1];
+      const key = metadataParts(line)?.key;
       return key === undefined || key.trim().toLowerCase() !== target;
     })
     .join('\n');
@@ -211,7 +252,7 @@ export function removeEmptyMetadata(source: string): string {
   return source
     .split(/\r?\n/)
     .filter((line) => {
-      const value = /^>>\s*[^:]+:\s*(.*)$/.exec(line)?.[1];
+      const value = metadataParts(line)?.value;
       return value === undefined || !EMPTY_VALUE.test(value.trim());
     })
     .join('\n');
@@ -266,10 +307,9 @@ export function normalizeSourceUrl(url: string): string {
     const kept = [...u.searchParams.entries()]
       .filter(([key]) => !TRACKING_PARAM.test(key))
       .toSorted(([a], [b]) => compareText(a, b));
-    const query = kept.length
-      ? `?${kept.map(([k, v]) => `${k}=${v}`).join('&')}`
-      : '';
-    return `${host}${u.pathname.replace(/\/+$/, '')}${query}`;
+    const pairs = kept.map(([k, v]) => `${k}=${v}`).join('&');
+    const query = kept.length > 0 ? `?${pairs}` : '';
+    return `${host}${withoutTrailingSlashes(u.pathname)}${query}`;
   } catch {
     return url.trim();
   }
@@ -294,7 +334,7 @@ export interface Note {
 }
 
 /** Matches a note comment: `-- [note]`, `-- [note ingredient:x]`, `-- [note step:2]`. */
-const NOTE_LINE = /^-- \[note(?:\s+(ingredient|step):([^\]]+))?\]\s*(.*)$/;
+const NOTE_LINE = /^-- \[note(?:\s+(ingredient|step):([^\]]+))?\]([\s\S]*)$/;
 
 /**
  * Append a personal note to a recipe's source, non-destructively. The text is
@@ -310,11 +350,13 @@ export function appendNote(source: string, note: Readonly<Note>): string {
 export function extractNotes(source: string): readonly Note[] {
   return source.split(/\r?\n/).flatMap((line): readonly Note[] => {
     const m = NOTE_LINE.exec(line);
-    if (!m) {
+    const text = (m?.[3] ?? '').trimStart();
+    // The text after the marker is one line: a stray line break ends the match.
+    if (!m || LINE_BREAK.test(text)) {
       return [];
     }
     const scope = m[1] === 'ingredient' || m[1] === 'step' ? m[1] : 'general';
-    return [{ scope, key: (m[2] ?? '').trim(), text: (m[3] ?? '').trim() }];
+    return [{ scope, key: (m[2] ?? '').trim(), text: text.trim() }];
   });
 }
 
@@ -324,12 +366,12 @@ export function extractNotes(source: string): readonly Note[] {
  * be written at all.
  */
 export function flatNoteKey(key: string): string {
-  return key.replace(/[\]\s]+/g, ' ').trim();
+  return key.replaceAll(/[\]\s]+/g, ' ').trim();
 }
 
 /** The text of one note as a comment line (the format {@link appendNote} writes). */
 function noteLine(note: Readonly<Note>): string {
-  const flat = note.text.replace(/\s*\r?\n\s*/g, ' ').trim();
+  const flat = flattenLineBreaks(note.text).trim();
   // A line break or a `]` in the key would end the marker early or start a
   // line of its own.
   const key = flatNoteKey(note.key);
@@ -397,7 +439,7 @@ export function appendCookingLog(
   note: string,
   when: Date = new Date(),
 ): string {
-  const flat = note.replace(/\s*\r?\n\s*/g, ' ').trim();
+  const flat = flattenLineBreaks(note).trim();
   const base = source.endsWith('\n') ? source : `${source}\n`;
   return `${base}-- [cook ${isoDate(when)}] ${flat}\n`;
 }

@@ -7,7 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 import Ajv2020 from 'ajv/dist/2020.js';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { createRecipeImport } from '@/domain/db/recipe-imports';
@@ -72,8 +72,11 @@ interface Spec {
 }
 
 const ROOT = process.cwd();
+
+/** A value that is deliberately missing, as opposed to a key that is left out. */
+let absent: undefined;
 const spec = JSON.parse(
-  readFileSync(path.join(ROOT, 'openapi.json'), 'utf8'),
+  await readFile(path.join(ROOT, 'openapi.json'), 'utf8'),
 ) as Spec;
 
 const METHODS = ['get', 'put', 'post', 'patch', 'delete'] as const;
@@ -106,7 +109,7 @@ function deref(node: Described): Described {
 /** The `$ref`s anywhere inside a node. */
 function refsIn(node: unknown): readonly string[] {
   if (Array.isArray(node)) {
-    return node.flatMap(refsIn);
+    return node.flatMap((child) => refsIn(child));
   }
   if (node && typeof node === 'object') {
     return Object.entries(node).flatMap(([key, value]) =>
@@ -116,36 +119,45 @@ function refsIn(node: unknown): readonly string[] {
   return [];
 }
 
+/** A copy of strings in the locale's sort order, leaving the original as it is. */
+const sorted = (values: readonly string[]) =>
+  values.toSorted((a, b) => a.localeCompare(b));
+
 // ---------------------------------------------------------------- the routes
 
 const API_DIR = path.join(ROOT, 'src', 'app', 'api');
 
 /** Every `route.ts` below `dir`. */
-function routeFiles(dir: string): readonly string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
-    entry.isDirectory()
-      ? routeFiles(path.join(dir, entry.name))
-      : entry.name === 'route.ts'
-        ? [path.join(dir, entry.name)]
-        : [],
+async function routeFiles(dir: string): Promise<readonly string[]> {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const found = await Promise.all(
+    entries.map(async (entry) => {
+      if (entry.isDirectory()) {
+        return routeFiles(path.join(dir, entry.name));
+      }
+      return entry.name === 'route.ts' ? [path.join(dir, entry.name)] : [];
+    }),
   );
+  return found.flat();
 }
 
 /** Every `METHOD /path` the route files export, with `[x]` written `{x}`. */
-function registered(): readonly string[] {
-  return routeFiles(API_DIR).flatMap((file) => {
+async function registered(): Promise<readonly string[]> {
+  const files = await routeFiles(API_DIR);
+  const texts = await Promise.all(files.map((file) => readFile(file, 'utf8')));
+  return files.flatMap((file, index) => {
     const url = `/api${path
       .relative(API_DIR, path.dirname(file))
       .split(path.sep)
       .filter(Boolean)
       .map((segment) => `/${segment}`)
       .join('')
-      .replace(/\[([a-z_]+)\]/g, '{$1}')}`;
-    const text = readFileSync(file, 'utf8');
+      .replaceAll(/\[([a-z_]+)\]/g, '{$1}')}`;
+    const text = texts[index] ?? '';
     return METHODS.map((method) => method.toUpperCase())
       .filter((method) =>
         new RegExp(
-          `export (async function ${method}\\b|const \\{[^}]*\\b${method}\\b[^}]*\\} =)`,
+          String.raw`export (async function ${method}\b|const \{[^}]*\b${method}\b[^}]*\} =)`,
         ).test(text),
       )
       .map((method) => `${method} ${url}`);
@@ -169,7 +181,7 @@ function misfit(schema: Described, value: unknown): string {
 /** The media type of a response, without its parameters. */
 function mediaType(response: Response): string {
   return (response.headers.get('content-type') ?? '')
-    .split(';')[0]!
+    .split(';', 1)[0]!
     .trim()
     .toLowerCase();
 }
@@ -328,7 +340,7 @@ const ROUTES: Readonly<Record<string, () => Promise<object>>> = {
 
 /** The concrete path of an operation with its parameters filled in. */
 function fill(url: string, params: Readonly<Record<string, string>>): string {
-  return url.replace(/\{([a-z_]+)\}/g, (_, name: string) =>
+  return url.replaceAll(/\{([a-z_]+)\}/g, (_, name: string) =>
     encodeURIComponent(params[name] ?? 'x'),
   );
 }
@@ -347,7 +359,8 @@ async function call(
       value === 'IMPORT' ? importId() : value,
     ]),
   );
-  const target = `${fill(url, params)}${merged.query === undefined ? '' : `?${merged.query}`}`;
+  const query = merged.query === undefined ? '' : `?${merged.query}`;
+  const target = `${fill(url, params)}${query}`;
   const load = ROUTES[url];
   if (!load) {
     throw new Error(`${key} has no route module in ROUTES`);
@@ -395,15 +408,15 @@ describe('openapi.json', () => {
     }
   });
 
-  it('describes exactly the methods the routes under src/app/api export', () => {
-    const real = registered();
+  it('describes exactly the methods the routes under src/app/api export', async () => {
+    const real = await registered();
     expect(real.length).toBeGreaterThan(0);
-    expect(operations.map(([key]) => key).toSorted()).toEqual(real.toSorted());
+    expect(sorted(operations.map(([key]) => key))).toEqual(sorted(real));
   });
 
   it('has a route module to call for every path it describes', () => {
-    expect(Object.keys(ROUTES).toSorted()).toEqual(
-      Object.keys(spec.paths).toSorted(),
+    expect(sorted(Object.keys(ROUTES))).toEqual(
+      sorted(Object.keys(spec.paths)),
     );
   });
 
@@ -423,7 +436,7 @@ describe('openapi.json', () => {
     const ids = operations.map(([, operation]) => operation.operationId);
     expect(ids.every(Boolean)).toBe(true);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids.toSorted()).toEqual(Object.keys(GOOD).toSorted());
+    expect(sorted(ids)).toEqual(sorted(Object.keys(GOOD)));
   });
 
   it('uses lowercase, hyphen-free path segments', () => {
@@ -438,8 +451,12 @@ describe('openapi.json', () => {
 describe.each(operations)('%s', (key, operation) => {
   const good = GOOD[operation.operationId] ?? { status: 0 };
   const open = (operation.security ?? []).length === 0;
-  const parameters = (operation.parameters ?? []).map(deref);
-  const inQuery = parameters.filter((p) => p.in === 'query').map((p) => p.name);
+  const parameters = (operation.parameters ?? []).map((parameter) =>
+    deref(parameter),
+  );
+  const inQuery = new Set(
+    parameters.filter((p) => p.in === 'query').map((p) => p.name),
+  );
   const inPath = parameters.filter((p) => p.in === 'path').map((p) => p.name);
 
   it('is tagged and summarised, declares its security, and documents a success and a 429', () => {
@@ -507,7 +524,7 @@ describe.each(operations)('%s', (key, operation) => {
     it('refuses a body in another media type with 415', async () => {
       await arrange();
       const response = await call(key, good, {
-        json: undefined,
+        json: absent,
         body: 'text',
         type: 'text/plain',
       });
@@ -524,7 +541,7 @@ describe.each(operations)('%s', (key, operation) => {
     ])('refuses a body %s with 400', async (_what, override) => {
       await arrange();
       const response = await call(key, good, {
-        json: undefined,
+        json: absent,
         ...override,
         type,
       });
@@ -565,7 +582,7 @@ describe.each(operations)('%s', (key, operation) => {
     );
   }
 
-  if (inQuery.includes('limit') && inQuery.includes('cursor')) {
+  if (inQuery.has('limit') && inQuery.has('cursor')) {
     it.each(['limit=0', 'limit=101', 'limit=x', 'cursor=not-a-cursor'])(
       'refuses the query %s with 400',
       async (query) => {
@@ -577,7 +594,7 @@ describe.each(operations)('%s', (key, operation) => {
     );
   }
 
-  if (inQuery.includes('sort')) {
+  if (inQuery.has('sort')) {
     it('refuses a sort it does not know with 400', async () => {
       await arrange();
       const response = await call(key, good, { query: 'sort=colour' });

@@ -14,19 +14,29 @@ function isArray(value: unknown): value is readonly unknown[] {
   return Array.isArray(value);
 }
 
-/** Whether the value has the shape of the recipe card's `structuredContent`. */
-export function isRecipeCardData(value: unknown): value is RecipeCardData {
+/** Whether the card's identifying fields and its log are the right shape. */
+function hasCardText(value: Readonly<Record<string, unknown>>): boolean {
   return (
-    isRecord(value) &&
     isString(value['id']) &&
     isString(value['title']) &&
     typeof value['uncurated'] === 'boolean' &&
+    everyEntry(value['logs'], isRecord)
+  );
+}
+
+/** Whether the card's ingredient, cookware and step lists are the right shape. */
+function hasCardParts(value: Readonly<Record<string, unknown>>): boolean {
+  return (
     everyEntry(value['metadata'], isArray) &&
     everyEntry(value['ingredients'], isRecord) &&
     everyEntry(value['cookware'], isString) &&
-    everyEntry(value['steps'], isArray) &&
-    everyEntry(value['logs'], isRecord)
+    everyEntry(value['steps'], isArray)
   );
+}
+
+/** Whether the value has the shape of the recipe card's `structuredContent`. */
+export function isRecipeCardData(value: unknown): value is RecipeCardData {
+  return isRecord(value) && hasCardText(value) && hasCardParts(value);
 }
 
 /** Whether the value has the shape of the recipe list's `structuredContent`. */

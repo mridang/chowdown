@@ -38,6 +38,7 @@ export interface FolderHooks {
     reads: number,
     change: (text: string) => void,
   ) => void;
+
   /**
    * Called after each write of a file, with the file's name, how many times it has
    * been written so far, and a way to change its text: a stand-in for another save
@@ -65,10 +66,11 @@ export function folder(
   const updates: [string, string][] = [];
   const indexed: [string, string, string][] = [];
   const nameOf = (id: string) => id.replace(/^id-/, '');
+  let unsetSystem: ToolContext['system'];
   const ctx: ToolContext = {
     user: USER,
     token: 'tok',
-    system: undefined,
+    system: unsetSystem,
     files: {
       list: async () =>
         [...contents.keys()].map((name) => ({ id: `id-${name}`, name })),
@@ -134,7 +136,7 @@ export function row(name: string, source: string): Recipe {
  * is a mock so a test can see what it was asked.
  */
 export function fakeServices(overrides: Partial<ToolServices> = {}) {
-  const services = {
+  return {
     searchIndex: jest.fn<ToolServices['searchIndex']>(async (_user, files) => ({
       rows: files.map((f, index) => ({
         user_id: USER.id,
@@ -176,7 +178,6 @@ export function fakeServices(overrides: Partial<ToolServices> = {}) {
     })),
     ...overrides,
   } satisfies ToolServices;
-  return services;
 }
 
 /** Call a tool against a fake folder and fake services. */

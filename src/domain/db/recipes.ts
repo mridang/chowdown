@@ -11,6 +11,7 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 
 import { normalizeSourceUrl, sourceUrlOf } from '@/lib/cooklang';
+import { compareCodeUnits } from '@/lib/intl';
 import { chunked } from '@/domain/db/chunk';
 import type { Database } from '@/domain/db/client';
 import { replaceRecipeImages } from '@/domain/db/recipe-images';
@@ -33,7 +34,7 @@ function now(): string {
  * What goes in `recipes.source_url` for a recipe's source text: the normalised
  * address of its `>> source:` line, or the empty string when it has none. (Null
  * is reserved for "not worked out yet", which is how rows cached before the
- * column existed look.)
+ * column existed look.).
  */
 function indexedSourceUrl(source: string): string {
   const url = sourceUrlOf(source);
@@ -63,6 +64,7 @@ export async function upsertRecipe(
     parse_error?: string | null;
     /** Curated taxonomy tags as a JSON string (`{ facet: string[] }`). */
     tags?: string | null;
+
     /**
      * When the recipe was added, for a recipe first seen in the cache now: the
      * Drive file's creation time, so a file that has been in Drive for years
@@ -139,7 +141,7 @@ export type SyncRecipeRow = Pick<
  * (what is gone), where each used to read the user's recipes on its own. The
  * recipe text is left out. Served by `idx_recipes_user_name`.
  */
-export async function listRecipesForSync(
+export async function listSyncRecipes(
   db: Database,
   userId: number,
 ): Promise<readonly SyncRecipeRow[]> {
@@ -290,7 +292,9 @@ export function staleRecipeIds(
   since: string,
 ): readonly string[] {
   return cached
-    .filter((row) => !keep.has(row.id) && row.seenAt < since)
+    .filter(
+      (row) => !keep.has(row.id) && compareCodeUnits(row.seenAt, since) < 0,
+    )
     .map((row) => row.id);
 }
 
@@ -300,9 +304,8 @@ export function staleRecipeIds(
  * out what to drop here and deletes it a few ids at a time (D1 limits the
  * parameters in a statement), and leaves anything newer than `since` alone (see
  * {@link staleRecipeIds}).
- *
- * @param cached The user's recipes if the caller has just read them (see
- *   {@link listRecipesForSync}); read here when left out.
+ * @param cached - The user's recipes if the caller has just read them (see
+ * {@link listSyncRecipes}); read here when left out.
  */
 export async function deleteRecipesNotIn(
   db: Database,
@@ -311,7 +314,7 @@ export async function deleteRecipesNotIn(
   since: string,
   cached?: readonly SyncRecipeRow[],
 ): Promise<void> {
-  const known = cached ?? (await listRecipesForSync(db, userId));
+  const known = cached ?? (await listSyncRecipes(db, userId));
   const stale = staleRecipeIds(
     known.map((row) => ({ id: row.drive_file_id, seenAt: row.last_opened_at })),
     new Set(keepFileIds),

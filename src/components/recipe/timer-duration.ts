@@ -36,7 +36,7 @@ const LONGEST_MS = 24 * HOUR;
  * ignored (a range counts from its lower bound), and the unit if it has one.
  */
 const TERM = new RegExp(
-  `(?<amount>${AMOUNT_PATTERN})(?:\\s*(?:[-–—]|to)\\s*(?:${AMOUNT_PATTERN}))?\\s*(?<unit>[a-z]+)?`,
+  String.raw`(?<amount>${AMOUNT_PATTERN})(?:\s*(?:[-–—]|to)\s*(?:${AMOUNT_PATTERN}))?\s*(?<unit>[a-z]+)?`,
   'gi',
 );
 
@@ -56,7 +56,7 @@ interface Term {
 }
 
 /** What may sit between two terms that belong together: "1 hour and 30 minutes", "1 hr, 30 min". */
-const CONNECTOR = /^\s*(?:,|and|&|\+)?\s*$/i;
+const CONNECTOR = /^\s*(?:(?:,|and|&|\+)\s*)?$/i;
 
 /**
  * The terms at the start of the label that run on from one another. A label
@@ -96,23 +96,20 @@ function termsOf(label: string): readonly Term[] {
 function totalOf(terms: readonly Term[]): number | null {
   const summed = terms.reduce<{
     readonly total: number;
-    readonly previous: number | undefined;
+    readonly previous: number | null;
   }>(
     ({ total, previous }, term) => {
       const unitMs =
         term.unitMs ??
-        (previous === undefined ? undefined : IMPLIED_UNIT_MS[previous]);
+        (previous === null ? undefined : IMPLIED_UNIT_MS[previous]);
       return {
         total: total + term.amount * (unitMs ?? Number.NaN),
-        previous: unitMs,
+        previous: unitMs ?? null,
       };
     },
-    { total: 0, previous: undefined },
+    { total: 0, previous: null },
   );
-  return terms.length > 0 &&
-    Number.isFinite(summed.total) &&
-    summed.total > 0 &&
-    summed.total <= LONGEST_MS
+  return terms.length > 0 && summed.total > 0 && summed.total <= LONGEST_MS
     ? Math.round(summed.total)
     : null;
 }
@@ -126,8 +123,7 @@ function totalOf(terms: readonly Term[]): number | null {
  * "1h30", "1 hour and 30 minutes". A range such as "1-2 hours" or "5 to 10
  * minutes" counts from its lower bound, because the cook can always add time
  * and cannot take it back.
- *
- * @param label The timer's label as the recipe wrote it.
+ * @param label - The timer's label as the recipe wrote it.
  */
 export function parseDurationMs(label: string): number | null {
   // "1 hour - 1 hour 30 min" is a range between two durations; take the first.

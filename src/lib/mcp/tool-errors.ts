@@ -3,27 +3,27 @@
  *
  * The two ways a `tools/call` can be refused as a *protocol* error (a JSON-RPC
  * `-32602`), as opposed to a tool that ran and reports a problem in its result,
- * plus {@link BackendFailure} for a dependency that broke mid-call (which is
+ * plus {@link BackendFailureError} for a dependency that broke mid-call (which is
  * reported in the result, not as a protocol error). The tool code throws these;
  * the request router turns them into the response, so neither side needs to
  * know about the other's internals.
  */
 
 /** The caller named a tool this server does not have. */
-export class UnknownTool extends Error {
-  override readonly name = 'UnknownTool';
+export class UnknownToolError extends Error {
+  override readonly name = 'UnknownToolError';
 
-  /** @param tool The name the caller used. */
+  /** @param tool - The name the caller used. */
   constructor(readonly tool: string) {
     super(`Unknown tool: ${tool}`);
   }
 }
 
 /** The caller's arguments do not fit the tool's input schema. */
-export class InvalidToolArguments extends Error {
-  override readonly name = 'InvalidToolArguments';
+export class InvalidToolArgumentsError extends Error {
+  override readonly name = 'InvalidToolArgumentsError';
 
-  /** @param problems What is wrong, one problem per entry, written for the caller. */
+  /** @param problems - What is wrong, one problem per entry, written for the caller. */
   constructor(readonly problems: readonly string[]) {
     super(`Invalid arguments: ${problems.join(' ')}`);
   }
@@ -37,13 +37,13 @@ export class InvalidToolArguments extends Error {
  * actually went wrong travels in `cause` for the logs and never reaches the
  * assistant.
  */
-export class BackendFailure extends Error {
-  override readonly name = 'BackendFailure';
+export class BackendFailureError extends Error {
+  override readonly name = 'BackendFailureError';
 
   /**
-   * @param service Which dependency failed, in words that fit a sentence
-   *   ("Google Drive").
-   * @param cause What the dependency threw.
+   * @param service - Which dependency failed, in words that fit a sentence
+   * ("Google Drive").
+   * @param cause - What the dependency threw.
    */
   constructor(
     readonly service: string,

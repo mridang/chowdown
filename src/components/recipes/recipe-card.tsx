@@ -153,11 +153,11 @@ export function RecipeCard({
               {recipe.title}
             </Heading>
             <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-3.5">
-              {recipe.minutes !== undefined ? (
+              {recipe.minutes === undefined ? null : (
                 <CardFact icon={<ClockIcon size="sm" />}>
                   {duration(recipe.minutes)}
                 </CardFact>
-              ) : null}
+              )}
               {recipe.difficulty ? (
                 <CardFact icon={<FlameIcon size="sm" />}>
                   {recipe.difficulty}

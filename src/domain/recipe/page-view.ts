@@ -184,16 +184,19 @@ export function stepText(tokens: readonly StepToken[]): string {
   return tokens
     .map((token) => {
       switch (token.kind) {
-        case 'text':
+        case 'text': {
           return token.text;
-        case 'timer':
+        }
+        case 'timer': {
           return token.label;
-        default:
+        }
+        default: {
           return token.name;
+        }
       }
     })
     .join('')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 

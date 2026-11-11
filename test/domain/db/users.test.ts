@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   bumpSessionEpoch,
   claimBackfillLease,
-  claimDriveSync,
+  claimDriveLease,
   clearRefreshToken,
   getSessionEpoch,
   getUserById,
@@ -61,7 +61,7 @@ describe('upsertUser', () => {
     const { db, calls } = fakeDb({ insert: [[saved]] });
     await upsertUser(db, { google_sub: 's', email: 'a@b.com', name: 'Ann' });
     const set = updateOf(calls);
-    expect(Object.keys(set).toSorted()).toEqual([
+    expect(Object.keys(set).toSorted((a, b) => a.localeCompare(b))).toEqual([
       'email',
       'name',
       'updated_at',
@@ -153,41 +153,41 @@ describe('session epoch', () => {
   });
 });
 
-describe('claimDriveSync', () => {
+describe('claimDriveLease', () => {
   const at = new Date('2026-03-01T12:00:00.000Z');
   const later = (seconds: number) => new Date(at.getTime() + seconds * 1000);
 
   it('gives the turn to the first caller and refuses the next within a minute', async () => {
     const { db } = seeded();
-    expect(await claimDriveSync(db, 1, at)).toBe(true);
-    expect(await claimDriveSync(db, 1, later(30))).toBe(false);
+    expect(await claimDriveLease(db, 1, at)).toBe(true);
+    expect(await claimDriveLease(db, 1, later(30))).toBe(false);
   });
 
   it('gives it again once a minute has passed', async () => {
     const { db } = seeded();
-    await claimDriveSync(db, 1, at);
-    expect(await claimDriveSync(db, 1, later(61))).toBe(true);
+    await claimDriveLease(db, 1, at);
+    expect(await claimDriveLease(db, 1, later(61))).toBe(true);
   });
 
   it('keeps a turn per person', async () => {
     const { db } = seeded();
-    await claimDriveSync(db, 1, at);
-    expect(await claimDriveSync(db, 2, at)).toBe(true);
+    await claimDriveLease(db, 1, at);
+    expect(await claimDriveLease(db, 2, at)).toBe(true);
   });
 
   it('lets exactly one of several simultaneous callers win', async () => {
     const { db } = seeded();
     const wins = await Promise.all([
-      claimDriveSync(db, 1, at),
-      claimDriveSync(db, 1, at),
-      claimDriveSync(db, 1, at),
+      claimDriveLease(db, 1, at),
+      claimDriveLease(db, 1, at),
+      claimDriveLease(db, 1, at),
     ]);
     expect(wins.filter(Boolean)).toHaveLength(1);
   });
 
   it('refuses for an account that does not exist', async () => {
     const { db } = seeded();
-    expect(await claimDriveSync(db, 99, at)).toBe(false);
+    expect(await claimDriveLease(db, 99, at)).toBe(false);
   });
 });
 
@@ -209,7 +209,7 @@ describe('claimBackfillLease', () => {
 
   it('is independent of the sync turn', async () => {
     const { db } = seeded();
-    await claimDriveSync(db, 1, at);
+    await claimDriveLease(db, 1, at);
     expect(await claimBackfillLease(db, 1, at)).toBe(true);
   });
 });

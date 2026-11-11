@@ -2,7 +2,7 @@
  * The token endpoint. Redeems an authorization code (with its PKCE verifier)
  * for an access + refresh token, or exchanges a refresh token for a new pair.
  *
- *   POST /oauth/token  (application/x-www-form-urlencoded)
+ *   POST /oauth/token  (application/x-www-form-urlencoded).
  */
 
 import { D1OAuthStore, oauthSweeps } from '@/domain/db/oauth';
@@ -63,16 +63,17 @@ export async function POST(request: Request) {
     },
   );
   sweepSometimes(oauthSweeps(db), runInBackground);
-  return result.ok
-    ? noStoreJson(result.tokens)
-    : oauthError(
-        result.error,
-        result.description,
-        result.status,
-        result.wwwAuthenticate
-          ? { 'WWW-Authenticate': result.wwwAuthenticate }
-          : {},
-      );
+  if (result.ok) {
+    return noStoreJson(result.tokens);
+  }
+  return oauthError(
+    result.error,
+    result.description,
+    result.status,
+    result.wwwAuthenticate
+      ? { 'WWW-Authenticate': result.wwwAuthenticate }
+      : {},
+  );
 }
 
 /** `OPTIONS /oauth/token`: the CORS preflight for browser-based assistants. Answers 204. */

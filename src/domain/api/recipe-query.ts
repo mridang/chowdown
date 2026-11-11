@@ -13,7 +13,7 @@ import {
   type FilterableRecipe,
   type SearchParams,
 } from '@/domain/recipe/facet-filter';
-import { compareText } from '@/lib/intl';
+import { compareCodeUnits, compareText } from '@/lib/intl';
 import type { CursorPosition } from '@/lib/core/api';
 
 /** A recipe as the query needs it. */
@@ -54,13 +54,13 @@ export function toFilterParams(query: URLSearchParams): SearchParams {
         return [['fav', value === 'true' ? '1' : '0']];
       }
       // Facets (protein, cuisine, …) pass through under their own names.
-      return PAGING_KEYS.includes(key) ? [] : [[key, value]];
+      return PAGING_KEYS.has(key) ? [] : [[key, value]];
     }),
   );
 }
 
 /** Query parameters that steer the page, not the filter. */
-const PAGING_KEYS: readonly string[] = ['sort', 'cursor', 'limit'];
+const PAGING_KEYS: ReadonlySet<string> = new Set(['sort', 'cursor', 'limit']);
 
 /** Keep the recipes that match the query's filters. */
 export function filterRecipes<T extends QueryableRecipe>(
@@ -99,13 +99,10 @@ export function comparePositions(
   // Titles order the way a person would alphabetise them (accents and case
   // ignored, numbers by value); timestamps are ISO strings, which already
   // order correctly as plain text. Ties fall to the id so order stays stable.
-  const compareKeys =
-    order.field === 'title'
-      ? compareText
-      : (x: string, y: string) => (x < y ? -1 : x > y ? 1 : 0);
+  const compareKeys = order.field === 'title' ? compareText : compareCodeUnits;
   return (a, b) => {
     const byKey = compareKeys(a.key, b.key);
-    const base = byKey !== 0 ? byKey : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    const base = byKey === 0 ? compareCodeUnits(a.id, b.id) : byKey;
     return order.descending ? -base : base;
   };
 }

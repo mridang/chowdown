@@ -23,7 +23,7 @@ import type { Database } from '@/domain/db/client';
 import { getAppPageRows, type AppPageRows } from '@/domain/db/recipe-page';
 import {
   claimBackfillLease,
-  claimDriveSync,
+  claimDriveLease,
   type User,
 } from '@/domain/db/users';
 import { getEnv, runInBackground } from '@/lib/core/runtime';
@@ -61,13 +61,15 @@ export interface CollectionDeps {
   readonly database: () => Database;
   /** The user, cached recipes and favourites in one read. */
   readonly pageRows: (db: Database, userId: number) => Promise<AppPageRows>;
+
   /**
    * Take the turn to start a Drive sync for the person; false when one started
    * within the last minute and this view should leave it alone.
    */
-  readonly claimSync: (db: Database, userId: number) => Promise<boolean>;
+  readonly claimLease: (db: Database, userId: number) => Promise<boolean>;
   /** Bring the cache in line with Drive. */
   readonly sync: (user: Readonly<User>) => Promise<unknown>;
+
   /**
    * Take the lease on the embeddings top-up; false when another request holds
    * it and is already doing the job.
@@ -90,7 +92,7 @@ const liveDeps: CollectionDeps = {
   session: getSession,
   database: getDatabase,
   pageRows: getAppPageRows,
-  claimSync: claimDriveSync,
+  claimLease: claimDriveLease,
   sync: syncFromDrive,
   claimBackfill: claimBackfillLease,
   backfill: (db, userId, limit) =>
@@ -115,7 +117,7 @@ async function syncFirstVisit(
   user: Readonly<User>,
 ): Promise<{ readonly connected: boolean; readonly unreachable: boolean }> {
   try {
-    if (!(await deps.claimSync(db, user.id))) {
+    if (!(await deps.claimLease(db, user.id))) {
       return { connected: true, unreachable: false };
     }
     await deps.sync(user);
@@ -136,7 +138,7 @@ async function syncIfDue(
   db: Database,
   user: Readonly<User>,
 ): Promise<void> {
-  if (await deps.claimSync(db, user.id)) {
+  if (await deps.claimLease(db, user.id)) {
     await deps.sync(user);
   }
 }
@@ -163,9 +165,8 @@ async function backfillIfFree(
  * Someone signed in without a Drive connection (never made, or Google rejected
  * it) gets whatever is cached and a `drive` status the page turns into an offer
  * to connect; nothing is synced for them.
- *
- * @param returnTo Where to come back to if the session needs reissuing.
- * @param deps Collaborators; leave out to use the real ones.
+ * @param returnTo - Where to come back to if the session needs reissuing.
+ * @param deps - Collaborators; leave out to use the real ones.
  */
 export async function loadCollection(
   returnTo: string = '/app',

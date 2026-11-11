@@ -63,7 +63,9 @@ describe('readJsonBody', () => {
   it.each([
     ['text that is not JSON', encode('{nope')],
     ['an empty body', encode('')],
+
     ['bytes that are not UTF-8', Uint8Array.of(0x7b, 0x22, 0xff, 0x22, 0x7d)],
+
     ['a character cut off at the end', Uint8Array.of(0x22, 0xe2, 0x82)],
   ])('calls %s unparseable', async (_name, bytes) => {
     expect(await readJsonBody(streamed([bytes]))).toEqual({
@@ -171,7 +173,7 @@ describe('checkRateLimits', () => {
       headers: { 'Retry-After': '60' },
       body: {
         error: {
-          code: -32603,
+          code: -32_603,
           data: { retryAfterSeconds: 60, limit: 120, windowSeconds: 60 },
         },
       },
@@ -203,10 +205,9 @@ describe('checkRateLimits', () => {
       ),
     );
     expect(await checkRateLimits(someone, [list], deps(store))).toBeNull();
-    expect([...counters.keys()].toSorted()).toEqual([
-      'mcp-request:7',
-      'mcp-tool-call:7',
-    ]);
+    expect([...counters.keys()].toSorted((a, b) => a.localeCompare(b))).toEqual(
+      ['mcp-request:7', 'mcp-tool-call:7'],
+    );
   });
 
   it('counts each user on their own', async () => {
@@ -298,7 +299,7 @@ describe('chargeRefusedBody', () => {
     expect(outcomes.at(-1)).toMatchObject({
       status: 429,
       headers: { 'Retry-After': '60' },
-      body: { id: null, error: { code: -32603 } },
+      body: { id: null, error: { code: -32_603 } },
     });
   });
 

@@ -34,7 +34,7 @@ export function representationTag(
 
 /** Strip any representation suffix off every tag in a header, leaving base tags. */
 function toBaseTags(header: string): string {
-  return header.replace(/-(cooklang|ld)"/g, '"');
+  return header.replaceAll(/-(cooklang|ld)"/g, '"');
 }
 
 /**

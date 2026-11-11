@@ -44,24 +44,24 @@ export const SUPPORTED_VERSIONS: readonly string[] = [
 ];
 
 /** JSON-RPC error code: the body is not JSON. */
-export const ERROR_PARSE = -32700;
+export const ERROR_PARSE = -32_700;
 /** JSON-RPC error code: the body is JSON but not a valid request. */
-export const ERROR_INVALID_REQUEST = -32600;
+export const ERROR_INVALID_REQUEST = -32_600;
 /** JSON-RPC error code: no such method. */
-export const ERROR_METHOD_NOT_FOUND = -32601;
+export const ERROR_METHOD_NOT_FOUND = -32_601;
 /** JSON-RPC error code: the method exists but its parameters are wrong. */
-export const ERROR_INVALID_PARAMS = -32602;
+export const ERROR_INVALID_PARAMS = -32_602;
 /** JSON-RPC error code: the server failed in a way the caller cannot fix. */
-export const ERROR_INTERNAL = -32603;
+export const ERROR_INTERNAL = -32_603;
 /** MCP error code: a request header disagrees with the request body. */
-export const ERROR_HEADER_MISMATCH = -32020;
+export const ERROR_HEADER_MISMATCH = -32_020;
 /** MCP error code: the protocol version asked for is not one we speak. */
-export const ERROR_UNSUPPORTED_VERSION = -32022;
+export const ERROR_UNSUPPORTED_VERSION = -32_022;
 
 /**
  * The version to answer an `initialize` with: the one the client asked for if we
  * speak it, otherwise the newest older revision. (Only handshake-based versions
- * are offered here; a client that wants the newest revision does not handshake.)
+ * are offered here; a client that wants the newest revision does not handshake.).
  */
 export function negotiateLegacyVersion(requested: unknown): string {
   return typeof requested === 'string' &&
@@ -92,13 +92,15 @@ export function isPlainObject(
  * The id to echo for a request: its own when it is a string or an integer (the
  * only ids JSON-RPC in MCP allows), otherwise null.
  */
+function isReplyId(value: unknown): value is string | number {
+  return (
+    typeof value === 'string' ||
+    (typeof value === 'number' && Number.isSafeInteger(value))
+  );
+}
+
 export function replyIdOf(value: unknown): ReplyId {
-  if (typeof value === 'string') {
-    return value;
-  }
-  return typeof value === 'number' && Number.isSafeInteger(value)
-    ? value
-    : null;
+  return isReplyId(value) ? value : null;
 }
 
 /**
@@ -110,9 +112,9 @@ export class RpcError extends Error {
   override readonly name = 'RpcError';
 
   /**
-   * @param code The JSON-RPC error code.
-   * @param message What went wrong, written for the caller.
-   * @param data Extra detail for the caller, when there is any.
+   * @param code - The JSON-RPC error code.
+   * @param message - What went wrong, written for the caller.
+   * @param data - Extra detail for the caller, when there is any.
    */
   constructor(
     readonly code: number,
@@ -158,8 +160,10 @@ export function isModernRequest(message: ProtocolMessage): boolean {
 }
 
 /** What to send when a request is refused: an HTTP status plus a JSON-RPC error body. */
+type RefusalStatus = 400 | 403 | 404 | 413 | 429;
+
 export interface ProtocolRefusal {
-  readonly status: 400 | 403 | 404 | 413 | 429;
+  readonly status: RefusalStatus;
   /** Extra response headers (`Retry-After`, `WWW-Authenticate`). */
   readonly headers?: Readonly<Record<string, string>>;
   readonly body: {
@@ -348,7 +352,7 @@ export function parseMessage(raw: unknown): ParsedMessage {
 /** The protocol version a request's `MCP-Protocol-Version` header names, if it sends one. */
 export function headerVersion(headers: Headers): string | undefined {
   const value = headers.get('mcp-protocol-version')?.trim();
-  return value ? value : undefined;
+  return value || undefined;
 }
 
 /**
@@ -362,7 +366,7 @@ export function checkBatch(
   messages: readonly ProtocolMessage[],
 ): ProtocolRefusal | null {
   return headerVersion(headers) === MODERN_VERSION ||
-    messages.some(isModernRequest)
+    messages.some((message) => isModernRequest(message))
     ? protocolRefusal({
         status: 400,
         code: ERROR_INVALID_REQUEST,
@@ -432,8 +436,9 @@ export function checkRequestHeaders(
     );
   }
   if (fromHeader !== fromBody) {
+    const shownHeader = fromHeader ? `"${fromHeader}"` : 'missing';
     return mismatch(
-      `Header mismatch: MCP-Protocol-Version is ${fromHeader ? `"${fromHeader}"` : 'missing'} but the body says "${fromBody}".`,
+      `Header mismatch: MCP-Protocol-Version is ${shownHeader} but the body says "${fromBody}".`,
       id,
     );
   }
@@ -465,12 +470,15 @@ function nameOf(message: ProtocolMessage): string | undefined {
   const params = message.params ?? {};
   switch (message.method) {
     case 'tools/call':
-    case 'prompts/get':
+    case 'prompts/get': {
       return typeof params['name'] === 'string' ? params['name'] : undefined;
-    case 'resources/read':
+    }
+    case 'resources/read': {
       return typeof params['uri'] === 'string' ? params['uri'] : undefined;
-    default:
+    }
+    default: {
       return undefined;
+    }
   }
 }
 
@@ -553,7 +561,7 @@ export function isAllowedOrigin(
   if (url.origin !== origin) {
     return false; // an origin has no path
   }
-  if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') {
+  if (['localhost', '127.0.0.1', '[::1]'].includes(host)) {
     return true;
   }
   return (

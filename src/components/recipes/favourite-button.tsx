@@ -26,7 +26,7 @@ export type FavouriteVariant = 'overlay' | 'labelled';
  *
  * It saves for real, through the favourites API, and is optimistic: the heart
  * flips the moment it is pressed, then rolls back if the save fails. State is
- * `override ?? initial`, where the override comes from a small shared store, so
+ * `override ?? Initial`, where the override comes from a small shared store, so
  * the same recipe's heart agrees everywhere in the tab (grid card, a
  * prefetched recipe page) without refetching anything.
  *
@@ -51,6 +51,7 @@ export function FavouriteButton({
 }>): ReactElement {
   const { on, busy, toggle } = useFavourite(recipeId, initial);
   const label = on ? 'Remove from favourites' : 'Add to favourites';
+  const labelledText = on ? 'Favourited' : 'Favourite';
 
   return (
     <button
@@ -59,9 +60,8 @@ export function FavouriteButton({
       disabled={busy}
       aria-pressed={on}
       // The labelled button's visible text is its name; the overlay has only an
-      // icon, so it needs an explicit one. Both explain the action on hover.
+      // icon, so it needs an explicit one.
       aria-label={variant === 'overlay' ? label : undefined}
-      title={label}
       className={cn(
         HEART_BUTTON_BASE,
         variant === 'overlay'
@@ -71,7 +71,7 @@ export function FavouriteButton({
       )}
     >
       <HeartIcon size="menu" filled={on} />
-      {variant === 'labelled' ? (on ? 'Favourited' : 'Favourite') : null}
+      {variant === 'labelled' ? labelledText : null}
     </button>
   );
 }

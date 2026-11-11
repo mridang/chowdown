@@ -26,7 +26,7 @@ const ENTITIES: Readonly<Record<string, string>> = {
 
 /** Replace the character references in `text` that are worth reading, leaving any other as it is. */
 export function decodeEntities(text: string): string {
-  return text.replace(
+  return text.replaceAll(
     /&(?:#x?[0-9a-fA-F]{1,6}|[a-zA-Z]{2,8});/g,
     (entity) => ENTITIES[entity] ?? entity,
   );
@@ -93,9 +93,12 @@ const MAX_PAGE = 400_000;
  */
 export function visibleText(html: string, limit: number): string {
   return decodeEntities(
-    withoutScriptsAndStyles(html.slice(0, MAX_PAGE)).replace(/<[^<>]*>/g, ' '),
+    withoutScriptsAndStyles(html.slice(0, MAX_PAGE)).replaceAll(
+      /<[^<>]*>/g,
+      ' ',
+    ),
   )
-    .replace(/\s+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim()
     .slice(0, limit);
 }

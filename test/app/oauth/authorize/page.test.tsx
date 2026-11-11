@@ -6,6 +6,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+
 import type { DatabaseSync } from 'node:sqlite';
 import type { ReactElement } from 'react';
 
@@ -19,7 +20,9 @@ import { htmlAt } from '../../../components/render';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
-class Redirected extends Error {
+class RedirectedError extends Error {
+  override name = 'RedirectedError';
+
   constructor(readonly to: string) {
     super(`redirected to ${to}`);
   }
@@ -39,7 +42,7 @@ const state: {
 
 jest.unstable_mockModule('next/navigation', () => ({
   redirect: (to: string) => {
-    throw new Redirected(to);
+    throw new RedirectedError(to);
   },
 }));
 jest.unstable_mockModule('next/headers', () => ({
@@ -126,7 +129,7 @@ async function visit(
     const element: ReactElement = await AuthorizePage({ searchParams });
     return { markup: htmlAt(element) };
   } catch (error) {
-    if (error instanceof Redirected) {
+    if (error instanceof RedirectedError) {
       return { redirectedTo: error.to };
     }
     throw error;
@@ -152,7 +155,7 @@ describe('the authorize page', () => {
     const to = (result as { redirectedTo: string }).redirectedTo;
     expect(to).toMatch(/^\/auth\/login\?returnTo=/);
     const back = new URL(
-      decodeURIComponent(to.split('returnTo=')[1] ?? ''),
+      decodeURIComponent(to.split('returnTo=', 2)[1] ?? ''),
       'https://app.test',
     );
     expect(back.pathname).toBe('/oauth/authorize');

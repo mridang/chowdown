@@ -86,11 +86,15 @@ describe('rateLimit', () => {
     await Promise.all(
       [1, 2, 3, 4].map((t) => rateLimit(store, TOOLS, 'ann', 1000 + t)),
     );
-    expect((await rateLimit(store, TOOLS, 'bob', 1010)).allowed).toBe(true);
-    expect(
-      (await rateLimit(store, { ...TOOLS, name: 'register' }, 'ann', 1010))
-        .allowed,
-    ).toBe(true);
+    const bob = await rateLimit(store, TOOLS, 'bob', 1010);
+    expect(bob.allowed).toBe(true);
+    const register = await rateLimit(
+      store,
+      { ...TOOLS, name: 'register' },
+      'ann',
+      1010,
+    );
+    expect(register.allowed).toBe(true);
   });
 
   it('never tells a client to retry in less than a second', async () => {

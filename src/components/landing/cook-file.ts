@@ -16,8 +16,8 @@ const HIDDEN_KEYS = ['>> images', '>> keywords', '>> favourite'] as const;
 export function fileSlug(title: string, max = 30): string {
   return title
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
+    .replaceAll(/[^a-z0-9]+/g, '-')
+    .replaceAll(/^-|-$/g, '')
     .slice(0, max)
     .replace(/-$/, '');
 }

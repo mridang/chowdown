@@ -36,16 +36,20 @@ export function settleMutation<T>(
   wording: MutationWording,
 ): SettledMutation<T> {
   switch (outcome.kind) {
-    case 'done':
+    case 'done': {
       return { ok: true, done: outcome };
-    case 'not-found':
+    }
+    case 'not-found': {
       return { ok: false, response: problems.notFound(wording.missing) };
-    case 'precondition-failed':
+    }
+    case 'precondition-failed': {
       return { ok: false, response: problems.preconditionFailed() };
-    case 'invalid':
+    }
+    case 'invalid': {
       return {
         ok: false,
         response: problems.badRequest(wording.invalid, outcome.errors),
       };
+    }
   }
 }

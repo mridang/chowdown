@@ -26,11 +26,11 @@ describe('sanitiseDisplayName', () => {
 
   it('strips zero-width characters, the BOM and tag characters', () => {
     expect(sanitiseDisplayName('Cl​aude‍﻿', 'x')).toBe('Claude');
-    expect(sanitiseDisplayName('Claude\u{e0041}\u{e0042}', 'x')).toBe('Claude');
+    expect(sanitiseDisplayName('Claude\u{E0041}\u{E0042}', 'x')).toBe('Claude');
   });
 
   it('strips control characters', () => {
-    expect(sanitiseDisplayName('Cla\u0000ude\u0007\u007f', 'x')).toBe('Claude');
+    expect(sanitiseDisplayName('Cla\u0000ude\u0007\u007F', 'x')).toBe('Claude');
   });
 
   it('collapses whitespace, line breaks included', () => {
@@ -47,14 +47,14 @@ describe('sanitiseDisplayName', () => {
   it('caps the length without cutting a character in half', () => {
     const long = sanitiseDisplayName('x'.repeat(500), 'x');
     expect(long).toHaveLength(MAX_DISPLAY_NAME_LENGTH);
-    const emoji = sanitiseDisplayName('\u{1f372}'.repeat(150), 'x');
+    const emoji = sanitiseDisplayName('\u{1F372}'.repeat(150), 'x');
     expect([...emoji]).toHaveLength(MAX_DISPLAY_NAME_LENGTH);
     expect(emoji.includes('�')).toBe(false);
   });
 
   it('falls back when nothing readable is left or the input is not text', () => {
     expect(sanitiseDisplayName('', 'fallback')).toBe('fallback');
-    expect(sanitiseDisplayName('   ', 'fallback')).toBe('fallback');
+    expect(sanitiseDisplayName(' '.repeat(3), 'fallback')).toBe('fallback');
     expect(sanitiseDisplayName('​‮', 'fallback')).toBe('fallback');
     expect(sanitiseDisplayName(undefined, 'fallback')).toBe('fallback');
     expect(sanitiseDisplayName(42, 'fallback')).toBe('fallback');
@@ -109,8 +109,6 @@ describe('describeRedirect', () => {
       address: 'https://claude.ai/mcp/auth_callback',
       kind: 'web',
       short: 'claude.ai',
-      warning: undefined,
-      note: undefined,
     });
   });
 
@@ -162,13 +160,13 @@ describe('describeRedirect', () => {
 
   it('never lets a direction-changing or invisible character reach the screen', () => {
     const address = describeRedirect(
-      'https://claude.ai/\u202efoo\u200b',
+      'https://claude.ai/\u202Efoo\u200B',
     ).address;
-    expect(address).not.toMatch(/[^\x21-\x7e]/);
+    expect(address).not.toMatch(/[^\u0021-\u007E]/);
     expect(address).toBe('https://claude.ai/%E2%80%AEfoo%E2%80%8B');
-    const unreadable = describeRedirect('not a url \u202e');
-    expect(unreadable.address).not.toMatch(/[^\x21-\x7e]/);
-    expect(unreadable.address).toContain('\\u{202e}');
+    const unreadable = describeRedirect('not a url \u202E');
+    expect(unreadable.address).not.toMatch(/[^\u0021-\u007E]/);
+    expect(unreadable.address).toContain(String.raw`\u{202e}`);
   });
 
   it.each([

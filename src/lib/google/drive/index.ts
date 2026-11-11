@@ -6,4 +6,9 @@
  */
 
 export { DriveClient, isDriveFileId } from './client';
-export * from './models';
+export {
+  DriveFileSchema,
+  type DriveFile,
+  DriveFileListResponseSchema,
+  type DriveFileListResponse,
+} from './models';

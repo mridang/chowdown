@@ -45,7 +45,8 @@ const hearts = () =>
 
 describe('GET /api/users/self/favourites/:recipe_id', () => {
   it('answers 401 when nobody is signed in', async () => {
-    expect((await GET(fromApp('GET', '/x'), ctx('a'))).status).toBe(401);
+    const res = await GET(fromApp('GET', '/x'), ctx('a'));
+    expect(res.status).toBe(401);
   });
 
   it('answers the recipe summary when it is hearted', async () => {
@@ -64,8 +65,10 @@ describe('GET /api/users/self/favourites/:recipe_id', () => {
   it('answers 404 for a recipe that is not hearted, and for one that does not exist', async () => {
     const uid = await signIn(world);
     addRecipe(world, uid, 'a', '>> title: A\n');
-    expect((await GET(fromApp('GET', '/x'), ctx('a'))).status).toBe(404);
-    expect((await GET(fromApp('GET', '/x'), ctx('none'))).status).toBe(404);
+    const res = await GET(fromApp('GET', '/x'), ctx('a'));
+    expect(res.status).toBe(404);
+    const missing = await GET(fromApp('GET', '/x'), ctx('none'));
+    expect(missing.status).toBe(404);
   });
 });
 
@@ -74,23 +77,25 @@ describe('PUT /api/users/self/favourites/:recipe_id', () => {
     PUT(fromApp('PUT', '/x', { headers }), ctx(id));
 
   it('answers 401 when nobody is signed in', async () => {
-    expect((await heart('a')).status).toBe(401);
+    const res = await heart('a');
+    expect(res.status).toBe(401);
   });
 
   it('answers 403 for a request from another site, and hearts nothing', async () => {
     const uid = await signIn(world);
     addRecipe(world, uid, 'a', '>> title: A\n');
-    expect((await heart('a', { 'sec-fetch-site': 'cross-site' })).status).toBe(
-      403,
-    );
+    const res = await heart('a', { 'sec-fetch-site': 'cross-site' });
+    expect(res.status).toBe(403);
     expect(hearts()).toEqual([]);
   });
 
   it('hearts the recipe and answers 204, and hearting twice is fine', async () => {
     const uid = await signIn(world);
     addRecipe(world, uid, 'a', '>> title: A\n');
-    expect((await heart('a')).status).toBe(204);
-    expect((await heart('a')).status).toBe(204);
+    const first = await heart('a');
+    expect(first.status).toBe(204);
+    const second = await heart('a');
+    expect(second.status).toBe(204);
     expect(hearts()).toEqual([{ u: uid, f: 'a' }]);
   });
 
@@ -98,14 +103,17 @@ describe('PUT /api/users/self/favourites/:recipe_id', () => {
     await signIn(world);
     insertUser(world.raw, { id: 9, email: 'o@example.com' });
     addRecipe(world, 9, 'theirs', '>> title: T\n');
-    expect((await heart('theirs')).status).toBe(404);
-    expect((await heart('missing')).status).toBe(404);
+    const theirs = await heart('theirs');
+    expect(theirs.status).toBe(404);
+    const missing = await heart('missing');
+    expect(missing.status).toBe(404);
     expect(hearts()).toEqual([]);
   });
 
   it('answers 404 for an id that is not a Drive file id, without querying for it', async () => {
     await signIn(world);
-    expect((await heart('../etc/passwd')).status).toBe(404);
+    const res = await heart('../etc/passwd');
+    expect(res.status).toBe(404);
   });
 
   it('writes the favourite marker into the Drive file in the background', async () => {
@@ -122,7 +130,8 @@ describe('PUT /api/users/self/favourites/:recipe_id', () => {
   it('answers 401 once the session was ended', async () => {
     await signIn(world);
     world.raw.prepare('UPDATE users SET session_epoch = 1').run();
-    expect((await heart('a')).status).toBe(401);
+    const res = await heart('a');
+    expect(res.status).toBe(401);
   });
 });
 
@@ -130,15 +139,18 @@ describe('DELETE /api/users/self/favourites/:recipe_id', () => {
   const unheart = (id: string) => DELETE(fromApp('DELETE', '/x'), ctx(id));
 
   it('answers 401 when nobody is signed in', async () => {
-    expect((await unheart('a')).status).toBe(401);
+    const res = await unheart('a');
+    expect(res.status).toBe(401);
   });
 
   it('removes the heart and answers 204, and removing it again is fine', async () => {
     const uid = await signIn(world);
     addRecipe(world, uid, 'a', '>> title: A\n');
     await PUT(fromApp('PUT', '/x'), ctx('a'));
-    expect((await unheart('a')).status).toBe(204);
-    expect((await unheart('a')).status).toBe(204);
+    const first = await unheart('a');
+    expect(first.status).toBe(204);
+    const second = await unheart('a');
+    expect(second.status).toBe(204);
     expect(hearts()).toEqual([]);
   });
 
@@ -150,7 +162,8 @@ describe('DELETE /api/users/self/favourites/:recipe_id', () => {
       )
       .run(uid);
     const google = fakeGoogle();
-    expect((await unheart('gone')).status).toBe(204);
+    const res = await unheart('gone');
+    expect(res.status).toBe(204);
     expect(hearts()).toEqual([]);
     await settleBackground();
     expect(google.requests).toEqual([]);

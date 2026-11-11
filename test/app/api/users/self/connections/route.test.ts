@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import { makeConnectionsCollection } from '@/domain/api/connections';
@@ -90,7 +91,8 @@ describe('GET /api/users/self/connections', () => {
         `INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g1-edit', 7, 'c1', '${SCOPE_WRITE}', 'r', '2026-01-15T00:00:00.000Z')`,
       )
       .run();
-    const body = (await (await GET(new Request(URL))).json()) as {
+    const res = await GET(new Request(URL));
+    const body = (await res.json()) as {
       items: { id: string; scopes: string[]; installs: number }[];
     };
     expect(body.items[0]).toMatchObject({
@@ -111,7 +113,8 @@ describe('GET /api/users/self/connections', () => {
         `INSERT INTO oauth_grants (id, user_id, client_id, scope, resource, created_at) VALUES ('g4', 7, 'https://claude.ai/meta.json', '${SCOPE_READ}', 'r', '2026-04-01T00:00:00.000Z')`,
       )
       .run();
-    const body = (await (await GET(new Request(URL))).json()) as {
+    const res = await GET(new Request(URL));
+    const body = (await res.json()) as {
       items: { id: string; domain?: string }[];
     };
     expect(body.items.find((a) => a.id === 'g4')?.domain).toBe('claude.ai');
@@ -119,15 +122,18 @@ describe('GET /api/users/self/connections', () => {
   });
 
   it('pages the list: a short page links to the next, and the cursor continues after it', async () => {
-    const first = (await (await GET(new Request(`${URL}?limit=1`))).json()) as {
+    const firstRes = await GET(new Request(`${URL}?limit=1`));
+    const first = (await firstRes.json()) as {
       next?: string;
       items: { id: string }[];
     };
     expect(first.items.map((a) => a.id)).toEqual(['g1']);
     expect(first.next).toContain('cursor=');
-    const second = (await (
-      await GET(new Request(first.next ?? ''))
-    ).json()) as { next?: string; items: { id: string }[] };
+    const secondRes = await GET(new Request(first.next ?? ''));
+    const second = (await secondRes.json()) as {
+      next?: string;
+      items: { id: string }[];
+    };
     expect(second.items.map((a) => a.id)).toEqual(['g2']);
     expect(second.next).toBeUndefined();
   });
@@ -142,11 +148,13 @@ describe('GET /api/users/self/connections', () => {
 
   it('answers 401 for a session that was ended everywhere', async () => {
     session.ended = true;
-    expect((await GET(new Request(URL))).status).toBe(401);
+    const res = await GET(new Request(URL));
+    expect(res.status).toBe(401);
   });
 
   it('answers 401 when nobody is signed in', async () => {
     session.uid = null;
-    expect((await GET(new Request(URL))).status).toBe(401);
+    const res = await GET(new Request(URL));
+    expect(res.status).toBe(401);
   });
 });

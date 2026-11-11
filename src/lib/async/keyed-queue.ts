@@ -41,10 +41,7 @@ export function createKeyedQueue(): KeyedQueue {
         waiting.delete(key);
         return job();
       });
-      const settled = next.then(
-        () => undefined,
-        () => undefined,
-      );
+      const settled = next.then(() => undefined).catch(() => undefined);
       waiting.set(key, next);
       tails.set(key, settled);
       // Forget a key once nothing newer has been queued behind this job.
@@ -53,6 +50,7 @@ export function createKeyedQueue(): KeyedQueue {
           if (tails.get(key) === settled) {
             tails.delete(key);
           }
+          return undefined;
         })
         .catch(() => undefined);
       return next;

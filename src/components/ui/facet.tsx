@@ -28,9 +28,10 @@ function OptionLabel({
   option: FacetOptionData;
 }>): ReactElement {
   switch (facetKey) {
-    case 'difficulty':
+    case 'difficulty': {
       return <Difficulty level={option.value} />;
-    case 'protein':
+    }
+    case 'protein': {
       return (
         <>
           <ProteinIcon
@@ -41,8 +42,10 @@ function OptionLabel({
           {option.label}
         </>
       );
-    default:
+    }
+    default: {
       return <>{option.label}</>;
+    }
   }
 }
 

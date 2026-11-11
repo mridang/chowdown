@@ -44,8 +44,8 @@ function fakePage(
   const environment: WakeLockEnvironment = {
     wakeLock: { request } as never,
     isVisible: () => state.visible,
-    onVisibilityChange: (callback) => {
-      watchers.push(callback);
+    onVisibilityChange: (watcher) => {
+      watchers.push(watcher);
       return () => undefined;
     },
   };
@@ -67,7 +67,7 @@ function fakePage(
   };
 }
 
-const settled = () => new Promise((done) => setTimeout(done, 0));
+const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('shouldRequestLock', () => {
   it('asks only when idle and visible', () => {
@@ -180,8 +180,9 @@ describe('keepScreenAwake', () => {
   });
 
   it('does nothing, and stops without error, in a browser with no wake lock', () => {
+    let wakeLock: WakeLockEnvironment['wakeLock'];
     const stop = keepScreenAwake({
-      wakeLock: undefined,
+      wakeLock,
       isVisible: () => true,
       onVisibilityChange: () => () => undefined,
     });

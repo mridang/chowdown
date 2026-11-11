@@ -132,13 +132,13 @@ describe('serve — no report-only policy', () => {
     );
     const a = await serve(new Request('https://app.test/app'), {}, context, {
       app: htmlApp,
-      cache: undefined,
     });
     expect(a.headers.has('content-security-policy')).toBe(true);
     expect(a.headers.has('content-security-policy-report-only')).toBe(false);
   });
 });
 
+// eslint-disable-next-line sonarjs/max-lines-per-function -- splitting this describe block is a larger restructure than this change
 describe('serve', () => {
   it('refuses a caller over a rate limit before the app is asked', async () => {
     const app = appAnswering(() => new Response('ok'));
@@ -147,7 +147,7 @@ describe('serve', () => {
       new Request('https://app.test/app'),
       { RL_SITE: { limit: async () => ({ success: false }) } },
       context,
-      { app, cache: undefined },
+      { app },
     );
     expect(response.status).toBe(429);
     expect(app.seen).toEqual([]);
@@ -168,7 +168,6 @@ describe('serve', () => {
       context,
       {
         app,
-        cache: undefined,
       },
     );
     const csp = response.headers.get('content-security-policy') ?? '';
@@ -192,7 +191,7 @@ describe('serve', () => {
       }),
       {},
       context,
-      { app, cache: undefined },
+      { app },
     );
     expect(app.seen[0]?.headers.get('x-nonce')).not.toBe('attacker');
     expect(app.seen[0]?.headers.get('content-security-policy')).not.toContain(
@@ -214,12 +213,10 @@ describe('serve', () => {
     const { context } = ctx();
     const a = await serve(new Request('https://app.test/app'), {}, context, {
       app: own,
-      cache: undefined,
     });
     expect(a.headers.get('content-security-policy')).toBe('default-src none');
     const b = await serve(new Request('https://app.test/api/x'), {}, context, {
       app: json,
-      cache: undefined,
     });
     expect(b.headers.get('content-security-policy')).toContain(
       'frame-ancestors',
@@ -236,7 +233,7 @@ describe('serve', () => {
       new Request('https://app.test/oauth/authorize?x=1'),
       {},
       context,
-      { app, cache: undefined },
+      { app },
     );
     const csp = response.headers.get('content-security-policy') ?? '';
     expect(csp).toContain("frame-ancestors 'none'");
@@ -372,7 +369,6 @@ describe('serve', () => {
       ctx().context,
       {
         app,
-        cache: undefined,
       },
     );
     expect(response.status).toBe(200);

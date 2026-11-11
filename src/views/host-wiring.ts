@@ -142,13 +142,15 @@ export async function requestMode(
       ? undefined
       : await app
           .requestDisplayMode({ mode })
-          .then(modeFromResult, () => undefined);
+          .then(modeFromResult)
+          .catch(() => undefined);
   if (viaApp !== undefined || openai?.requestDisplayMode === undefined) {
     return viaApp;
   }
   return openai
     .requestDisplayMode({ mode })
-    .then(modeFromResult, () => undefined);
+    .then(modeFromResult)
+    .catch(() => undefined);
 }
 
 /**
@@ -193,15 +195,17 @@ export async function runServerTool<U>(
   if (app === null) {
     return { kind: 'message', text: 'Not connected yet.', isError: true };
   }
-  return app.callServerTool({ name, arguments: { ...args } }).then(
-    (result) => readOutcome(result, guard),
-    (failure: unknown): ToolOutcome<U> => ({
+  try {
+    const result = await app.callServerTool({ name, arguments: { ...args } });
+    return readOutcome(result, guard);
+  } catch (error: unknown) {
+    return {
       kind: 'message',
       text:
-        failure instanceof Error
-          ? failure.message
+        error instanceof Error
+          ? error.message
           : 'The request did not go through.',
       isError: true,
-    }),
-  );
+    };
+  }
 }

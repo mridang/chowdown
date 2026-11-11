@@ -25,18 +25,23 @@ export function CopyField({
   return (
     <div className="flex h-12 items-center gap-2 rounded-control border border-field bg-surface pr-1 pl-4">
       <code
+        role="group"
         aria-label={label}
         className="min-w-0 flex-1 truncate font-mono text-sm"
       >
         {value}
       </code>
       <Button
-        onClick={() => {
+        onClick={async () => {
           // `clipboard` is missing on insecure pages; then there is nothing to confirm.
-          void navigator.clipboard?.writeText(value).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), CONFIRMATION_MS);
-          });
+
+          if (!navigator.clipboard) {
+            return;
+          }
+
+          await navigator.clipboard.writeText(value);
+          setCopied(true);
+          setTimeout(() => setCopied(false), CONFIRMATION_MS);
         }}
       >
         {copied ? <CheckIcon size="sm" /> : <CopyIcon size="sm" />}

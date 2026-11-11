@@ -5,6 +5,7 @@ import {
   appOriginFromHeaders,
   originOfSetting,
 } from '@/lib/core/origin';
+import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
 describe('without a Cloudflare context (tests, scripts)', () => {
   it("uses the request's own origin as the app origin", () => {
@@ -23,7 +24,7 @@ describe('appOriginFromHeaders', () => {
       appOriginFromHeaders(
         new Headers({ host: 'app.test', 'x-forwarded-proto': 'http' }),
       ),
-    ).toBe('http://app.test');
+    ).toBe(urls.appOrigin);
   });
 
   it('is http on localhost, where there is no TLS', () => {

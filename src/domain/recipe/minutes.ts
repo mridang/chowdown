@@ -13,11 +13,11 @@ export function minutesOf(value: string | undefined): number | undefined {
     return undefined;
   }
   // Cooklang writes quantity and unit as "15%minutes"; read that as "15 minutes".
-  const iso = toIsoDuration(value.replace(/%/g, ' '));
+  const iso = toIsoDuration(value.replaceAll('%', ' '));
   if (!iso) {
     return undefined;
   }
-  const h = /(\d+)H/.exec(iso);
-  const m = /(\d+)M/.exec(iso);
-  return (h ? Number(h[1]) * 60 : 0) + (m ? Number(m[1]) : 0);
+  // iso is always PT[n]H[n]M, as toIsoDuration builds it.
+  const parts = /^PT(?:(\d+)H)?(?:(\d+)M)?$/.exec(iso);
+  return Number(parts?.[1] ?? 0) * 60 + Number(parts?.[2] ?? 0);
 }

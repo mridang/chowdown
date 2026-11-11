@@ -57,9 +57,8 @@ describe('GET /api/recipes/:id', () => {
     await signIn(world);
     insertUser(world.raw, { id: 99, email: 'x@y.z' });
     addRecipe(world, 99, 'theirs', SOURCE);
-    expect(
-      (await GET(fromApp('GET', '/api/recipes/theirs'), ctx('theirs'))).status,
-    ).toBe(404);
+    const res = await GET(fromApp('GET', '/api/recipes/theirs'), ctx('theirs'));
+    expect(res.status).toBe(404);
   });
 
   it('answers the recipe as JSON with an ETag', async () => {
@@ -114,7 +113,8 @@ describe('PUT /api/recipes/:id', () => {
     PUT(fromApp('PUT', '/api/recipes/f1', { json, headers }), ctx('f1'));
 
   it('answers 401 when nobody is signed in', async () => {
-    expect((await replace({ cooklang: 'x' })).status).toBe(401);
+    const res = await replace({ cooklang: 'x' });
+    expect(res.status).toBe(401);
   });
 
   it('answers 403 for a request from another site', async () => {
@@ -159,7 +159,8 @@ describe('PUT /api/recipes/:id', () => {
 
   it('answers 400 without a cooklang field', async () => {
     await withRecipe();
-    expect((await replace({})).status).toBe(400);
+    const res = await replace({});
+    expect(res.status).toBe(400);
   });
 
   it('writes the new text to Drive and answers 200 with the recipe', async () => {
@@ -206,7 +207,8 @@ describe('PUT /api/recipes/:id', () => {
 
   it('answers 409 when Google Drive is not connected', async () => {
     await signIn(world, { drive: false });
-    expect((await replace({ cooklang: 'x' })).status).toBe(409);
+    const res = await replace({ cooklang: 'x' });
+    expect(res.status).toBe(409);
   });
 
   it('answers 502 when Drive fails', async () => {
@@ -215,12 +217,11 @@ describe('PUT /api/recipes/:id', () => {
       .spyOn(globalThis, 'fetch')
       .mockImplementation(async (input) =>
         String(input).includes('oauth2')
-          ? new Response(
-              JSON.stringify({ access_token: 't', expires_in: 3599 }),
-            )
+          ? Response.json({ access_token: 't', expires_in: 3599 })
           : new Response('boom', { status: 500 }),
       );
-    expect((await replace({ cooklang: 'x' })).status).toBe(502);
+    const res = await replace({ cooklang: 'x' });
+    expect(res.status).toBe(502);
   });
 });
 
@@ -229,7 +230,8 @@ describe('PATCH /api/recipes/:id', () => {
     PATCH(fromApp('PATCH', '/api/recipes/f1', { json, type }), ctx('f1'));
 
   it('answers 401 when nobody is signed in', async () => {
-    expect((await patch({ title: 'x' })).status).toBe(401);
+    const res = await patch({ title: 'x' });
+    expect(res.status).toBe(401);
   });
 
   it('accepts the merge-patch media type and edits the title', async () => {
@@ -241,29 +243,32 @@ describe('PATCH /api/recipes/:id', () => {
 
   it('accepts plain JSON too', async () => {
     await withRecipe();
-    expect((await patch({ title: 'Plain' }, 'application/json')).status).toBe(
-      200,
-    );
+    const res = await patch({ title: 'Plain' }, 'application/json');
+    expect(res.status).toBe(200);
   });
 
   it('answers 415 for another media type', async () => {
     await withRecipe();
-    expect((await patch({ title: 'x' }, 'text/plain')).status).toBe(415);
+    const res = await patch({ title: 'x' }, 'text/plain');
+    expect(res.status).toBe(415);
   });
 
   it('answers 400 for a patch that is not an object', async () => {
     await withRecipe();
-    expect((await patch([1])).status).toBe(400);
+    const res = await patch([1]);
+    expect(res.status).toBe(400);
   });
 
   it('answers 400 for a patch that is not valid', async () => {
     await withRecipe();
-    expect((await patch({ id: 'cannot-change' })).status).toBe(400);
+    const res = await patch({ id: 'cannot-change' });
+    expect(res.status).toBe(400);
   });
 
   it('answers 413 for a patch over 256 KiB', async () => {
     await withRecipe();
-    expect((await patch({ title: 'y'.repeat(300_000) })).status).toBe(413);
+    const res = await patch({ title: 'y'.repeat(300_000) });
+    expect(res.status).toBe(413);
   });
 
   it('answers 404 for a recipe the person does not have', async () => {
@@ -285,7 +290,8 @@ describe('DELETE /api/recipes/:id', () => {
     DELETE(fromApp('DELETE', `/api/recipes/${id}`), ctx(id));
 
   it('answers 401 when nobody is signed in', async () => {
-    expect((await remove()).status).toBe(401);
+    const res = await remove();
+    expect(res.status).toBe(401);
   });
 
   it('trashes the Drive file, forgets the cache and answers 204', async () => {
@@ -303,12 +309,14 @@ describe('DELETE /api/recipes/:id', () => {
   it('answers 404 for a recipe the person does not have, without touching Drive', async () => {
     await signIn(world, { drive: true });
     const google = fakeGoogle({ theirs: { name: 'T.cook', content: 'x' } });
-    expect((await remove('theirs')).status).toBe(404);
+    const res = await remove('theirs');
+    expect(res.status).toBe(404);
     expect(google.files.has('theirs')).toBe(true);
   });
 
   it('answers 409 when Google Drive is not connected', async () => {
     await signIn(world, { drive: false });
-    expect((await remove()).status).toBe(409);
+    const res = await remove();
+    expect(res.status).toBe(409);
   });
 });

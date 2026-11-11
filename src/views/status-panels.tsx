@@ -1,4 +1,5 @@
 /* eslint-disable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts, not in a CSS file. */
+
 /**
  * @packageDocumentation
  *
@@ -88,3 +89,5 @@ export function Announcer({
     </div>
   );
 }
+
+/* eslint-enable tailwindcss/no-custom-classname -- the widget's classes are defined in src/views/styles.ts, not in a CSS file. */

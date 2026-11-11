@@ -89,8 +89,7 @@ const liveDeps: DeleteLiveDeps = {
 
 /**
  * Delete a recipe for a signed-in user using the real Drive and D1.
- *
- * @param deps Collaborators; leave out to use the real ones.
+ * @param deps - Collaborators; leave out to use the real ones.
  */
 export async function deleteRecipeForUser(
   user: Readonly<User>,

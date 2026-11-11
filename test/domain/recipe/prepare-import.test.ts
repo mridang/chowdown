@@ -108,7 +108,7 @@ describe('prepareImport', () => {
   it('adds the author the fetched page names to a recipe the model converted', async () => {
     const html =
       '<html><head><meta name="author" content="Liz Marino"></head><body>A recipe for soup with no structured data at all.</body></html>';
-    global.fetch = (async () =>
+    globalThis.fetch = (async () =>
       new Response(html, {
         headers: { 'content-type': 'text/html' },
       })) as unknown as typeof fetch;

@@ -72,11 +72,10 @@ function TimerToken({
  * the amount for the servings and units chosen, so the number is right there at
  * the stove; timers get a clock, and in cook mode they are buttons that start
  * a countdown.
- *
- * @param tokens The step.
- * @param stepIndex The zero-based step number, which a working timer needs to
- *   be told apart from the same timer in another step; leave out to show timers
- *   as plain labels.
+ * @param tokens - The step.
+ * @param stepIndex - The zero-based step number, which a working timer needs to
+ * be told apart from the same timer in another step; leave out to show timers
+ * as plain labels.
  */
 export function StepBody({
   tokens,
@@ -90,9 +89,10 @@ export function StepBody({
     <>
       {tokens.map((token, index) => {
         switch (token.kind) {
-          case 'text':
+          case 'text': {
             return <span key={index}>{token.text}</span>;
-          case 'ingredient':
+          }
+          case 'ingredient': {
             return (
               <span key={index}>
                 <span className="underline decoration-marigold decoration-4 underline-offset-4">
@@ -106,13 +106,15 @@ export function StepBody({
                 ) : null}
               </span>
             );
-          case 'cookware':
+          }
+          case 'cookware': {
             return (
               <span key={index} className="text-forest">
                 {token.name}
               </span>
             );
-          case 'timer':
+          }
+          case 'timer': {
             return (
               <TimerToken
                 key={index}
@@ -121,6 +123,7 @@ export function StepBody({
                 tokenIndex={index}
               />
             );
+          }
         }
       })}
     </>

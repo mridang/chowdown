@@ -15,7 +15,7 @@ const AUTHOR_KEYS: readonly string[] = ['author', 'by'];
 
 /** A metadata key with case, spaces, underscores and hyphens ignored ("Author", "AUTHOR"). */
 function normalisedKey(key: string): string {
-  return key.toLowerCase().replace(/[\s_-]+/g, '');
+  return key.toLowerCase().replaceAll(/[\s_-]+/g, '');
 }
 
 /** Whether a metadata key is one that names the author (and so is shown in the byline). */

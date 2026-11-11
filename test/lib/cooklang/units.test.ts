@@ -6,7 +6,9 @@ import {
   scaleQuantity,
   toBaseAmount,
 } from '@/lib/cooklang';
+import { LEADING_NUMBER } from '@/lib/cooklang/units';
 
+import { expectSamePattern, fuzzInputs } from '../../regex-equivalence';
 describe('isUnitSystem', () => {
   it('accepts the three systems and rejects others', () => {
     expect(isUnitSystem('metric')).toBe(true);
@@ -136,5 +138,96 @@ describe('units named like JavaScript built-ins', () => {
     for (const unit of ['constructor', 'toString', '__proto__']) {
       expect(convertQuantity(`2 ${unit}`, 'metric')).toBe(`2 ${unit}`);
     }
+  });
+});
+
+const FAST_MS = 1000;
+
+describe('quantity scanning (linear-time rewrites)', () => {
+  it.each([
+    ['200 g', ['7.1 oz', { dimension: 'mass', amount: 200 }]],
+    ['1/2 cup', ['8 tbsp', { dimension: 'volume', amount: 118.294 }]],
+    ['2\ncup', ['2 cups', { dimension: 'volume', amount: 473.176 }]],
+    [' 1.5 ml ', ['0.5 tsp', { dimension: 'volume', amount: 1.5 }]],
+    ['cup', ['cup', null]],
+    ['1,000 g', ['0 oz', { dimension: 'mass', amount: 1000 }]],
+    [
+      '1 \u00BD cup',
+      ['1 \u00BD cup', { dimension: 'volume', amount: 354.882 }],
+    ],
+    ['1 1/2 cups', ['1 1/2 cups', { dimension: 'volume', amount: 354.882 }]],
+    ['\u00BD tsp', ['\u00BD tsp', { dimension: 'volume', amount: 2.46446 }]],
+    ['1 /2 cup', ['1 /2 cup', { dimension: 'volume', amount: 118.294 }]],
+  ])('converts and measures %j', (input, expected) => {
+    expect([
+      convertQuantity(input as string, 'us'),
+      toBaseAmount(input as string) ?? null,
+    ]).toEqual(expected);
+  });
+  it('scans on a long adversarial input', () => {
+    const started = performance.now();
+    convertQuantity(`1${' '.repeat(100_000)}\n`, 'us');
+    toBaseAmount(`1${' '.repeat(100_000)}\n`);
+    expect(performance.now() - started).toBeLessThan(FAST_MS);
+  });
+});
+
+describe('LEADING_NUMBER, rewritten', () => {
+  const original = new RegExp(
+    [
+      String.raw`^(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d*\s*[½⅓⅔¼¾⅛⅜⅝⅞]|\d+(?:[.,]\d+)?(?:\s+`,
+      String.raw`\d+\s*\/\s*\d+|\s*\/\s*\d+)?)`,
+    ].join(''),
+    '',
+  );
+  const pieces = [
+    '1',
+    '2',
+    '0',
+    '9',
+    ',',
+    '.',
+    '000',
+    ' ',
+    '/',
+    '½',
+    '¼',
+    '⅞',
+    '1,200',
+    'x',
+    'g',
+    '-',
+  ];
+  const table = [
+    '400 g',
+    '1,200.5 g',
+    '1 1/2 cups',
+    '1/2',
+    '½ cup',
+    '1½',
+    '1 ½',
+    '2.5',
+    '2,5',
+    '1,2',
+    '12,345,678',
+    '1 / 2',
+    '3',
+    '',
+    'abc',
+    '.5',
+    '1,23',
+  ];
+
+  it('is the original pattern, rewritten', () => {
+    expectSamePattern(original, LEADING_NUMBER, table);
+  });
+
+  it('finds the same things in random text', () => {
+    expectSamePattern(original, LEADING_NUMBER, fuzzInputs(9000, 3000, pieces));
+  });
+
+  it('finds the same things in a very long input', () => {
+    const long = fuzzInputs(9001, 1, pieces).join('').repeat(5000);
+    expectSamePattern(original, LEADING_NUMBER, [long, 'x'.repeat(200_000)]);
   });
 });

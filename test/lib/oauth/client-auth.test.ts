@@ -33,17 +33,19 @@ let jwks: { keys: JWK[] };
 beforeAll(async () => {
   const pair = await generateKeyPair('RS256', { extractable: true });
   privateKey = pair.privateKey;
-  otherKey = (await generateKeyPair('RS256')).privateKey;
+  const other = await generateKeyPair('RS256');
+  otherKey = other.privateKey;
   jwks = {
     keys: [{ ...(await exportJWK(pair.publicKey)), kid: 'k1', alg: 'RS256' }],
   };
 });
 
-/** Sign an assertion with the client's key; every claim can be overridden or (as undefined) dropped. */
+/** Sign an assertion with the client's key; every claim can be overridden or listed in `drop` to be left out. */
 function sign(
   claims: Record<string, unknown> = {},
   key: CryptoKey = privateKey,
   alg = 'RS256',
+  drop: string[] = [],
 ) {
   const all: Record<string, unknown> = {
     iss: CLIENT,
@@ -55,7 +57,11 @@ function sign(
     ...claims,
   };
   const jwt = new SignJWT(
-    Object.fromEntries(Object.entries(all).filter(([, v]) => v !== undefined)),
+    Object.fromEntries(
+      Object.entries(all).filter(
+        ([k, v]) => v !== undefined && !drop.includes(k),
+      ),
+    ),
   ).setProtectedHeader({ alg, kid: 'k1' });
   return jwt.sign(key);
 }
@@ -143,8 +149,8 @@ describe('verifyClientAssertion', () => {
     ['for another audience', () => sign({ aud: 'https://evil.example/token' })],
     ['expired', () => sign({ exp: NOW - 120 })],
     ['not yet valid', () => sign({ nbf: NOW + 600 })],
-    ['without an expiry', () => sign({ exp: undefined })],
-    ['without a jti', () => sign({ jti: undefined })],
+    ['without an expiry', () => sign({}, privateKey, 'RS256', ['exp'])],
+    ['without a jti', () => sign({}, privateKey, 'RS256', ['jti'])],
     ['with an empty jti', () => sign({ jti: '' })],
     ['with a jti that is too long', () => sign({ jti: 'j'.repeat(300) })],
     [
@@ -193,7 +199,8 @@ describe('verifyClientAssertion', () => {
     const d = deps();
     const assertion = await sign();
     expect(await verify(assertion, d)).toBeUndefined();
-    expect((await verify(assertion, d))?.description).toMatch(/already used/);
+    const replay = await verify(assertion, d);
+    expect(replay?.description).toMatch(/already used/);
     expect(await verify(await sign({ jti: 'jti-2' }), d)).toBeUndefined();
   });
 

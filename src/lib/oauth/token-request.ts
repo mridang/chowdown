@@ -97,7 +97,8 @@ export async function handleTokenRequest(
   }
   // A client that declared `private_key_jwt` must sign every request, whatever
   // else it supports: the declared method is never downgraded.
-  const auth = (await store.findClient(clientId))?.auth;
+  const client = await store.findClient(clientId);
+  const auth = client?.auth;
   const unauthenticated = auth
     ? await verifyClientAssertion(
         auth,

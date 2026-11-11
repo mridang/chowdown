@@ -1,7 +1,14 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { classifyDietType } from '@/domain/recipe/diet-type';
+import {
+  classifyDietType,
+  DAIRY_OR_EGG,
+  FISH,
+  MEAT,
+  PLANT_DAIRY,
+} from '@/domain/recipe/diet-type';
 
+import { expectSamePattern, fuzzInputs } from '../../regex-equivalence';
 describe('classifyDietType', () => {
   it('calls anything with meat or poultry non-vegetarian', () => {
     expect(classifyDietType(['chicken thighs', 'rice'])).toBe('Non-vegetarian');
@@ -193,5 +200,286 @@ describe('classifyDietType — look-alikes and hidden animal products', () => {
     const started = Date.now();
     classifyDietType(['vegan ' + 'cream '.repeat(50_000)]);
     expect(Date.now() - started).toBeLessThan(500);
+  });
+});
+
+describe('MEAT, rewritten', () => {
+  const original = new RegExp(
+    [
+      String.raw`\b(chicken|beef|pork|lamb|mutton|goat|veal|turkey|duck|duckling|goose|`,
+      'bacon|ham|hams|sausages?|chorizo|salami|pepperoni|prosciutto|pancetta|',
+      'guanciale|mortadella|venison|rabbit|oxtail|brisket|steak|ribs?|meatbal',
+      'ls?|meat|gelatin|gelatine|lard|tallow|suet|bone broth|liver|nduja|kiel',
+      'basa|andouille|bresaola|pastrami|bologna|baloney|jamon|serrano ham|spe',
+      'ck|lardons?|spam|schmaltz|dripping|drippings|crackling|foie gras|pate|',
+      'sirloin|tenderloin|ribeye|rib-eye|chuck|shanks?|wings|hot dogs?|wiener',
+      's?|frankfurters?|hotdogs?|hot-dogs?|hamburgers?|tripe|trotters|offal|q',
+      'uail|pigeon|squab|pheasant|partridge|bison|boar|kangaroo|ostrich|snail',
+      's?|escargots?|gosht|murgh|murg|keema|kheema|qeema|marrow bones?|bone m',
+      'arrow|gammon|poultry|hen|capon|poussin|jerky|biltong|meatloaf|doner|gy',
+      'ros?|gizzards?|kidneys|sweetbreads|tongue|demi-glace|collagen|frog leg',
+      String.raw`s|guinea fowl|elk|moose|grouse|animal rennet)\b|^\s*(?:lean |extra lea`,
+      String.raw`n )?mince\b`,
+    ].join(''),
+    '',
+  );
+  const pieces = [
+    'chicken',
+    'beef',
+    'mince',
+    'lean mince',
+    ' ',
+    'extra lean ',
+    'bacon',
+    'ham',
+    'hams',
+    'hot dog',
+    'hot-dog',
+    'hotdogs',
+    'bone broth',
+    'bone',
+    'serrano ham',
+    'x',
+    '-',
+    's',
+    'foie gras',
+    'pate',
+    'tongue',
+    'animal rennet',
+    'elk',
+    'moose',
+    '\n',
+    'Chicken',
+  ];
+  const table = [
+    'chicken thighs',
+    'beef stock',
+    'lean mince',
+    '  extra lean mince',
+    'minced onion',
+    'Chicken',
+    'hot-dogs',
+    'serrano ham',
+    'bone broth',
+    'shank',
+    '',
+    'tofu',
+    'chuck steak',
+  ];
+
+  it('is the original pattern, rewritten', () => {
+    expectSamePattern(original, MEAT, table);
+  });
+
+  it('finds the same things in random text', () => {
+    expectSamePattern(original, MEAT, fuzzInputs(3000, 3000, pieces));
+  });
+
+  it('finds the same things in a very long input', () => {
+    const long = fuzzInputs(3001, 1, pieces).join('').repeat(5000);
+    expectSamePattern(original, MEAT, [long, 'x'.repeat(200_000)]);
+  });
+});
+
+describe('FISH, rewritten', () => {
+  const original = new RegExp(
+    [
+      String.raw`\b(fish|salmon|tuna|cod|codfish|haddock|trout|mackerel|sardines?|ancho`,
+      'v(?:y|ies)|shrimps?|prawns?|crabs?|crabmeat|lobsters?|squid|calamari|o',
+      'ctopus|clams?|mussels?|oysters?|scallops?|seafood|shellfish|bonito|kat',
+      'suobushi|dashi|caviar|roe|surimi|eels?|tilapia|halibut|snapper|sea bas',
+      's|crawfish|crayfish|swordfish|monkfish|catfish|whitefish|pollock|polla',
+      'ck|herring|kippers?|whitebait|bream|grouper|mahi mahi|barramundi|bass|',
+      'plaice|sprats?|pilchards?|langoustines?|cockles?|whelks?|abalone|belac',
+      'an|worcestershire|worcester sauce|nam pla|oyster sauce|shrimp paste|ik',
+      'ura|tobiko|unagi|hamachi|hake|turbot|lox|sashimi|cuttlefish|krill|perc',
+      'h|carp|mullet|pike|sea urchin|uni|clamato|taramasalata|bottarga|bagoon',
+      String.raw`g|kamaboko|machli|jhinga|kimchi|caesar|dover sole|lemon sole)\b`,
+    ].join(''),
+    '',
+  );
+  const pieces = [
+    'fish',
+    'salmon',
+    'anchovy',
+    'anchovies',
+    'anchov',
+    'sea bass',
+    'sea urchin',
+    'uni',
+    'oyster sauce',
+    'worcestershire',
+    'kimchi',
+    'caesar',
+    'dover sole',
+    'lemon sole',
+    'crabs',
+    'crab',
+    'shrimp paste',
+    ' ',
+    '-',
+    'x',
+    's',
+    'bass',
+    'mahi mahi',
+  ];
+  const table = [
+    'salmon fillet',
+    'anchovies',
+    'anchovy paste',
+    'sea bass',
+    'sea urchin',
+    'oyster sauce',
+    'worcestershire',
+    '',
+    'bassoon',
+    'lemon sole',
+    'tuna',
+  ];
+
+  it('is the original pattern, rewritten', () => {
+    expectSamePattern(original, FISH, table);
+  });
+
+  it('finds the same things in random text', () => {
+    expectSamePattern(original, FISH, fuzzInputs(4000, 3000, pieces));
+  });
+
+  it('finds the same things in a very long input', () => {
+    const long = fuzzInputs(4001, 1, pieces).join('').repeat(5000);
+    expectSamePattern(original, FISH, [long, 'x'.repeat(200_000)]);
+  });
+});
+
+describe('DAIRY_OR_EGG, rewritten', () => {
+  const original = new RegExp(
+    [
+      String.raw`\b(milk|butter|ghee|cheeses?|cream|creamed|creamer|yogh?urt|curd|dahi|`,
+      'lassi|eggs?|eggnog|meringue|honey|paneer|mayonnaise|mayo|aioli|whey|cu',
+      'stard|buttermilk|parmesan|parmigiano|mozzarella|cheddar|feta|ricotta|m',
+      'ascarpone|halloumi|gruyere|brie|camembert|gouda|khoya|khoa|mawa|makhan',
+      '|malai|doodh|chhena|anda|condensed milk|ice cream|casein|kefir|skyr|qu',
+      'ark|gelato|creme fraiche|sour cream|cottage cheese|labneh|burrata|peco',
+      'rino|manchego|gorgonzola|stilton|emmental|edam|provolone|fontina|taleg',
+      'gio|half and half|half-and-half|alfredo|tzatziki|bechamel|hollandaise|',
+      'ranch|dulce de leche|queso|monterey jack|pepper jack|grana padano|asia',
+      String.raw`go|cotija)\b`,
+    ].join(''),
+    '',
+  );
+  const pieces = [
+    'milk',
+    'butter',
+    'ghee',
+    'cheese',
+    'cheeses',
+    'yogurt',
+    'yoghurt',
+    'yogurt',
+    'half and half',
+    'half-and-half',
+    'monterey jack',
+    'grana padano',
+    'ice cream',
+    'eggs',
+    'egg',
+    'anda',
+    'dahi',
+    ' ',
+    '-',
+    'x',
+    's',
+    'cotija',
+    'cream',
+    'creamed',
+  ];
+  const table = [
+    'milk',
+    'butter',
+    'yoghurt',
+    'yogurt',
+    'half-and-half',
+    'pepper jack',
+    'ice cream',
+    'eggs',
+    '',
+    'anda',
+    'honey',
+    'tofu',
+  ];
+
+  it('is the original pattern, rewritten', () => {
+    expectSamePattern(original, DAIRY_OR_EGG, table);
+  });
+
+  it('finds the same things in random text', () => {
+    expectSamePattern(original, DAIRY_OR_EGG, fuzzInputs(5000, 3000, pieces));
+  });
+
+  it('finds the same things in a very long input', () => {
+    const long = fuzzInputs(5001, 1, pieces).join('').repeat(5000);
+    expectSamePattern(original, DAIRY_OR_EGG, [long, 'x'.repeat(200_000)]);
+  });
+});
+
+describe('PLANT_DAIRY, rewritten', () => {
+  const original = new RegExp(
+    [
+      String.raw`\b(?:coconut|almond|soy|soya|oat|rice|cashew|hemp|nut|peanut|cocoa|cac`,
+      String.raw`ao|shea|apple|hazelnut|macadamia|pea|walnut|pistachio|sunflower(?:\s+s`,
+      String.raw`eed)?|sesame)[\s-]+(?:(?:milk|cream|butter|cheese|yoghurt|yogurt|mayo|`,
+      String.raw`mayonnaise|egg)\b[\s-]*)+|\bcream of (?:coconut|wheat|rice|tartar)\b|`,
+      String.raw`\bcreamed corn\b|\bcoconut cream\b`,
+    ].join(''),
+    'g',
+  );
+  const pieces = [
+    'almond ',
+    'oat ',
+    'coconut ',
+    'sunflower seed ',
+    'sunflower ',
+    'seed ',
+    'milk',
+    'cream',
+    'butter',
+    'egg',
+    'mayo',
+    ' ',
+    '-',
+    'cream of ',
+    'wheat',
+    'tartar',
+    'creamed corn',
+    'coconut cream',
+    'x',
+    'rice',
+    'cheese ',
+  ];
+  const table = [
+    'almond milk',
+    'oat cream butter',
+    'sunflower seed milk',
+    'cream of tartar',
+    'creamed corn',
+    'coconut cream',
+    'soy milk cheese',
+    'sunflower  seed - milk',
+    'nut egg',
+    '',
+    'milk',
+  ];
+
+  it('is the original pattern, rewritten', () => {
+    expectSamePattern(original, PLANT_DAIRY, table);
+  });
+
+  it('finds the same things in random text', () => {
+    expectSamePattern(original, PLANT_DAIRY, fuzzInputs(6000, 3000, pieces));
+  });
+
+  it('finds the same things in a very long input', () => {
+    const long = fuzzInputs(6001, 1, pieces).join('').repeat(5000);
+    expectSamePattern(original, PLANT_DAIRY, [long, 'x'.repeat(200_000)]);
   });
 });

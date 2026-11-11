@@ -1,11 +1,8 @@
-import { readdirSync } from 'node:fs';
-import path from 'node:path';
-
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import type { User } from '@/domain/db/users';
-import { BackendFailure, RpcError } from '@/lib/mcp';
+import { BackendFailureError, RpcError } from '@/lib/mcp';
 import {
   RECIPE_TEMPLATE,
   cachedRecipeLister,
@@ -15,6 +12,7 @@ import {
   recipeUri,
 } from '@/domain/mcp/recipe-resources';
 import type { ToolContext } from '@/domain/mcp/tool-calls';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 const someone = { id: 1 } as User;
@@ -28,7 +26,6 @@ function driveWith(): (user: Readonly<User>) => Promise<ToolContext> {
     ({
       user: someone,
       token: 't',
-      system: undefined,
       files: {
         list: async () => [
           { id: 'abc123', name: 'Omelette.cook' },
@@ -69,9 +66,8 @@ describe('RECIPE_TEMPLATE', () => {
     const expanded = RECIPE_TEMPLATE.uriTemplate.replace('{id}', 'AbC_789');
     expect(expanded).toBe(recipeUri('AbC_789'));
     expect(new URL(expanded).pathname).toBe('/AbC_789');
-    expect(
-      (await readRecipeResource(someone, expanded, driveWith())).contents,
-    ).toHaveLength(1);
+    const read = await readRecipeResource(someone, expanded, driveWith());
+    expect(read.contents).toHaveLength(1);
   });
 });
 
@@ -138,7 +134,8 @@ describe('readRecipeResource', () => {
   });
 
   it('does not guess between two recipes whose ids differ only in case', async () => {
-    expect((await refusal('recipe:///SAME1')).code).toBe(-32602);
+    const refused = await refusal('recipe:///SAME1');
+    expect(refused.code).toBe(-32_602);
     expect(
       await readRecipeResource(someone, 'recipe:///sAME1', driveWith()),
     ).toMatchObject({
@@ -148,12 +145,12 @@ describe('readRecipeResource', () => {
 
   it('repeats only the start of an absurdly long address in the refusal', async () => {
     const error = await refusal(`recipe:///${'a'.repeat(5000)}!`);
-    expect(String((error.data as { uri: string }).uri).length).toBe(200);
+    expect(String((error.data as { uri: string }).uri)).toHaveLength(200);
   });
 
   it('refuses an id the user has no recipe for, with the address in the detail', async () => {
     const error = await refusal('recipe://zzz');
-    expect(error.code).toBe(-32602);
+    expect(error.code).toBe(-32_602);
     expect(error.data).toEqual({ uri: 'recipe://zzz' });
   });
 
@@ -171,7 +168,8 @@ describe('readRecipeResource', () => {
     'refuses %s as not a recipe address, without opening Drive',
     async (uri) => {
       const open = jest.fn(driveWith());
-      expect((await refusal(uri, open)).code).toBe(-32602);
+      const refused = await refusal(uri, open);
+      expect(refused.code).toBe(-32_602);
       expect(open).not.toHaveBeenCalled();
     },
   );
@@ -180,7 +178,7 @@ describe('readRecipeResource', () => {
     const error = await refusal('recipe:///abc123', async () => {
       throw new DriveNotConnectedError();
     });
-    expect(error.code).toBe(-32603);
+    expect(error.code).toBe(-32_603);
     expect(error.message).toMatch(/Google Drive isn't connected/);
   });
 
@@ -197,10 +195,7 @@ describe('readRecipeResource', () => {
 describe('cachedRecipeLister', () => {
   /** A real database with every migration applied and a few cached recipes. */
   function seeded() {
-    const migrations = readdirSync(path.join(process.cwd(), 'migrations'))
-      .filter((file) => file.endsWith('.sql'))
-      .toSorted();
-    const database = sqliteDatabase(...migrations);
+    const database = sqliteDatabase(...APP_MIGRATIONS);
     const now = '2026-01-01T00:00:00.000Z';
     database.raw.exec(
       `INSERT INTO users (id, google_sub, email, created_at, updated_at) VALUES
@@ -254,13 +249,17 @@ describe('cachedRecipeLister', () => {
   it('reads only the id and the name, never a recipe’s text', async () => {
     const list = cachedRecipeLister(() => seeded().db);
     const [first] = await list(someone, 0, 1);
-    expect(Object.keys(first ?? {}).toSorted()).toEqual(['id', 'name']);
+    expect(
+      Object.keys(first ?? {}).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(['id', 'name']);
   });
 
   it('turns a database failure into a named backend failure', async () => {
     const list = cachedRecipeLister(() => {
       throw new Error('D1 is down');
     });
-    await expect(list(someone, 0, 1)).rejects.toBeInstanceOf(BackendFailure);
+    await expect(list(someone, 0, 1)).rejects.toBeInstanceOf(
+      BackendFailureError,
+    );
   });
 });

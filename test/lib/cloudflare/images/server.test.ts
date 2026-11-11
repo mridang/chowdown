@@ -76,6 +76,7 @@ describe('runInBackground', () => {
     runInBackground(
       Promise.resolve().then(() => {
         done = true;
+        return done;
       }),
     );
     await Promise.resolve();

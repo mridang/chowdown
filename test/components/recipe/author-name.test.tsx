@@ -89,7 +89,7 @@ describe('handwritingFor', () => {
   it('copes with an empty, blank or odd input, and always with the same face', () => {
     const odd = [
       '',
-      '   ',
+      ' '.repeat(3),
       '\n',
       '🙂',
       'A'.repeat(10_000),
@@ -101,7 +101,7 @@ describe('handwritingFor', () => {
         [0, 1, 2, 3, 4, 5, 6].includes(handwritingFor(value)),
       ),
     ).toBe(true);
-    expect(handwritingFor('')).toBe(handwritingFor('   '));
+    expect(handwritingFor('')).toBe(handwritingFor(' '.repeat(3)));
   });
 });
 

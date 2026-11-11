@@ -14,7 +14,7 @@
 import type { Database } from '@/domain/db/client';
 import type { User } from '@/domain/db/users';
 import {
-  listRecipesForSync,
+  listSyncRecipes,
   upsertRecipe,
   type Recipe,
 } from '@/domain/db/recipes';
@@ -186,7 +186,7 @@ type RecipeRow = Parameters<typeof upsertRecipe>[1];
 /** The real database and Drive. */
 const liveSyncDeps: TagSyncDeps = {
   database: getDatabase,
-  listCached: listRecipesForSync,
+  listCached: listSyncRecipes,
   readFile: getFileContent,
   save: upsertRecipe,
 };
@@ -195,10 +195,9 @@ const liveSyncDeps: TagSyncDeps = {
  * Ensure every file has a current cached tag set and return a map of Drive
  * file id → tags. Reads (and re-parses) only files that are new, changed, or
  * not yet indexed; everything else is served from the D1 cache.
- *
- * @param deps Where to read and write; leave out for the real thing.
- * @param cached The user's cached recipes if the caller has just read them, so
- *   the sync does not read them again; read through `deps` when left out.
+ * @param deps - Where to read and write; leave out for the real thing.
+ * @param cached - The user's cached recipes if the caller has just read them, so
+ * the sync does not read them again; read through `deps` when left out.
  */
 export async function syncRecipeTags(
   user: Readonly<User>,

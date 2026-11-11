@@ -50,9 +50,9 @@ const INVISIBLE =
  */
 export function plainTitle(title: string): string {
   const flat = title
-    .replace(INVISIBLE, '')
-    .replace(/[\p{Cc}\u2028\u2029]/gu, ' ')
-    .replace(/\s+/g, ' ')
+    .replaceAll(INVISIBLE, '')
+    .replaceAll(/[\p{Cc}\u2028\u2029]/gu, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
   return flat.length > TITLE_TEXT_LIMIT
     ? `${flat.slice(0, TITLE_TEXT_LIMIT - 1).trimEnd()}…`
@@ -102,7 +102,7 @@ function itemLine(item: Readonly<RecipeListItem>): string {
  * the list is empty.
  */
 export function listText(items: readonly RecipeListItem[]): string {
-  const shown = items.slice(0, LIST_TEXT_LIMIT).map(itemLine);
+  const shown = items.slice(0, LIST_TEXT_LIMIT).map((item) => itemLine(item));
   const left = items.length - shown.length;
   return left > 0
     ? [
@@ -117,18 +117,22 @@ function stepText(step: readonly StepToken[]): string {
   return step
     .map((token) => {
       switch (token.kind) {
-        case 'text':
+        case 'text': {
           return token.text;
-        case 'ingredient':
+        }
+        case 'ingredient': {
           return `${token.quantity} ${token.name}`.trim();
-        case 'cookware':
+        }
+        case 'cookware': {
           return token.name;
-        case 'timer':
+        }
+        case 'timer': {
           return token.label;
+        }
       }
     })
     .join('')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 
@@ -136,7 +140,8 @@ function stepText(step: readonly StepToken[]): string {
 function ingredientLine(
   ingredient: RecipeCardData['ingredients'][number],
 ): string {
-  return `- ${`${ingredient.quantity} ${ingredient.name}`.trim()}`;
+  const text = `${ingredient.quantity} ${ingredient.name}`.trim();
+  return `- ${text}`;
 }
 
 /** A titled block of lines, or nothing when there are none. */
@@ -175,7 +180,7 @@ function defused(line: string): string {
 export function cardText(card: Readonly<RecipeCardData>): string {
   const details = card.metadata.map(([key, value]) => `${key}: ${value}`);
   const steps = card.steps
-    .map(stepText)
+    .map((step) => stepText(step))
     .filter(Boolean)
     .map((text, index) => `${index + 1}. ${text}`);
   const logs = card.logs
@@ -185,7 +190,10 @@ export function cardText(card: Readonly<RecipeCardData>): string {
     `${plainTitle(card.title)} (${card.uncurated ? 'idea, not yet a full recipe, ' : ''}id: ${card.id})`,
     ...(details.length > 0 ? [details.join('; ')] : []),
     ...(card.source ? [`Source: ${card.source}`] : []),
-    ...section('Ingredients', card.ingredients.map(ingredientLine)),
+    ...section(
+      'Ingredients',
+      card.ingredients.map((ingredient) => ingredientLine(ingredient)),
+    ),
     ...section('Method', steps),
     ...section(
       'Cookware',
@@ -199,7 +207,7 @@ export function cardText(card: Readonly<RecipeCardData>): string {
       : text;
   return [
     RECIPE_TEXT_OPEN,
-    ...body.split('\n').map(defused),
+    ...body.split('\n').map((line) => defused(line)),
     RECIPE_TEXT_CLOSE,
   ].join('\n');
 }

@@ -39,11 +39,11 @@ export async function upsertUser(
   const update: Partial<typeof users.$inferInsert> = {
     email: input.email,
     updated_at: timestamp,
-    ...(input.name !== undefined ? { name: input.name } : {}),
-    ...(input.picture !== undefined ? { picture: input.picture } : {}),
-    ...(input.refresh_token_enc !== undefined
-      ? { refresh_token_enc: input.refresh_token_enc }
-      : {}),
+    ...(input.name === undefined ? {} : { name: input.name }),
+    ...(input.picture === undefined ? {} : { picture: input.picture }),
+    ...(input.refresh_token_enc === undefined
+      ? {}
+      : { refresh_token_enc: input.refresh_token_enc }),
   };
 
   const [row] = await db
@@ -175,7 +175,7 @@ export const BACKFILL_LEASE_MS = 120_000;
  * caller should skip. It is a single conditional UPDATE, so of several views
  * arriving together exactly one wins.
  */
-export async function claimDriveSync(
+export async function claimDriveLease(
   db: Database,
   userId: number,
   at: Date = new Date(),
@@ -198,7 +198,7 @@ export async function claimDriveSync(
  * Try to take the lease on the embeddings backfill for {@link BACKFILL_LEASE_MS}.
  * True means no one else holds a live lease and this caller now does; false
  * means another request is already doing the job. Same single-UPDATE guarantee
- * as {@link claimDriveSync}. A lease that is never released simply runs out.
+ * as {@link claimDriveLease}. A lease that is never released simply runs out.
  */
 export async function claimBackfillLease(
   db: Database,

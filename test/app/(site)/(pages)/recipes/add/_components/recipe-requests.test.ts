@@ -109,12 +109,10 @@ describe('readImport', () => {
           title: 'Pasta',
           cook: '@pasta{}',
           source: 'https://example.com/pasta',
-          error: undefined,
         },
         {
           title: 'Mystery',
           cook: '',
-          source: undefined,
           error: 'Could not read that page.',
         },
       ],
@@ -126,7 +124,7 @@ describe('readImport', () => {
       readImport({ id: 'i', items: [null, 'x', { title: 'Ok' }] }),
     ).toEqual({
       id: 'i',
-      drafts: [{ title: 'Ok', cook: '', source: undefined, error: undefined }],
+      drafts: [{ title: 'Ok', cook: '' }],
     });
   });
 

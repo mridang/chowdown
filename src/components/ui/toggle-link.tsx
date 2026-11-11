@@ -32,6 +32,7 @@ export function ToggleLink({
   href: string;
   /** Whether the filter is switched on right now. */
   active: boolean;
+
   /**
    * What to add for screen readers while it is on ("selected", "on"). Without
    * it a selected option would read "link, current", which does not say that

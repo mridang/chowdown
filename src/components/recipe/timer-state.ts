@@ -84,12 +84,15 @@ function changeTimer(
 /** How much time is left on a timer at `now`, never below zero. */
 export function remainingMs(timer: StepTimer, now: number): number {
   switch (timer.phase.status) {
-    case 'running':
+    case 'running': {
       return Math.max(0, timer.phase.endsAt - now);
-    case 'paused':
+    }
+    case 'paused': {
       return timer.phase.remainingMs;
-    case 'done':
+    }
+    case 'done': {
       return 0;
+    }
   }
 }
 
@@ -104,7 +107,7 @@ export function settle(
 ): readonly StepTimer[] {
   const due = (timer: StepTimer): boolean =>
     timer.phase.status === 'running' && timer.phase.endsAt <= now;
-  return timers.some(due)
+  return timers.some((timer) => due(timer))
     ? timers.map((timer) =>
         due(timer) ? withPhase(timer, { status: 'done' }) : timer,
       )
@@ -161,18 +164,21 @@ function restartTimer(timer: StepTimer, now: number): StepTimer {
  */
 function addTime(timer: StepTimer, ms: number, now: number): StepTimer {
   switch (timer.phase.status) {
-    case 'running':
+    case 'running': {
       return withPhase(timer, {
         status: 'running',
         endsAt: timer.phase.endsAt + ms,
       });
-    case 'paused':
+    }
+    case 'paused': {
       return withPhase(timer, {
         status: 'paused',
         remainingMs: timer.phase.remainingMs + ms,
       });
-    case 'done':
+    }
+    case 'done': {
       return withPhase(timer, { status: 'running', endsAt: now + ms });
+    }
   }
 }
 
@@ -187,12 +193,15 @@ function toggleTimer(
 ): readonly StepTimer[] {
   const current = timers.find((timer) => timer.id === spec.id);
   switch (current?.phase.status) {
-    case 'running':
+    case 'running': {
       return changeTimer(timers, spec.id, (timer) => pauseTimer(timer, now));
-    case 'paused':
+    }
+    case 'paused': {
       return changeTimer(timers, spec.id, (timer) => resumeTimer(timer, now));
-    default:
+    }
+    default: {
       return startTimer(timers, spec, now);
+    }
   }
 }
 
@@ -213,22 +222,28 @@ export function timerReducer(
   }
   const current = settle(timers, action.now);
   switch (action.type) {
-    case 'settle':
+    case 'settle': {
       return current;
-    case 'toggle':
+    }
+    case 'toggle': {
       return toggleTimer(current, action.spec, action.now);
-    case 'pause':
+    }
+    case 'pause': {
       return changeTimer(current, action.id, (t) => pauseTimer(t, action.now));
-    case 'resume':
+    }
+    case 'resume': {
       return changeTimer(current, action.id, (t) => resumeTimer(t, action.now));
-    case 'restart':
+    }
+    case 'restart': {
       return changeTimer(current, action.id, (t) =>
         restartTimer(t, action.now),
       );
-    case 'add':
+    }
+    case 'add': {
       return changeTimer(current, action.id, (t) =>
         addTime(t, action.ms, action.now),
       );
+    }
   }
 }
 
@@ -270,12 +285,15 @@ export function formatRemaining(ms: number): string {
     : `${minutes}:${two(seconds)}`;
 }
 
+/** The words a timer's main button can say for what pressing it does. */
+type TimerButtonAction = 'Start' | 'Pause' | 'Resume' | 'Restart';
+
 /** How a timer button or tray entry should look and what pressing it does. */
 export interface TimerView {
   /** The phase, for styling. `idle` is a timer that has not been started. */
   readonly state: 'idle' | TimerPhase['status'];
   /** What pressing the main button does: the words for assistive technology. */
-  readonly action: 'Start' | 'Pause' | 'Resume' | 'Restart';
+  readonly action: TimerButtonAction;
   /** The time to show: the recipe's label until started, then the countdown. */
   readonly time: string;
 }
@@ -283,10 +301,9 @@ export interface TimerView {
 /**
  * What to show for a timer token: the recipe's own label before it is started,
  * then the countdown, then "Done".
- *
- * @param timer The running timer for this token, if one has been started.
- * @param label The recipe's label for it, such as "5 minutes".
- * @param now The clock.
+ * @param timer - The running timer for this token, if one has been started.
+ * @param label - The recipe's label for it, such as "5 minutes".
+ * @param now - The clock.
  */
 export function describeTimer(
   timer: StepTimer | undefined,
@@ -294,21 +311,25 @@ export function describeTimer(
   now: number,
 ): TimerView {
   switch (timer?.phase.status) {
-    case 'running':
+    case 'running': {
       return {
         state: 'running',
         action: 'Pause',
         time: formatRemaining(remainingMs(timer, now)),
       };
-    case 'paused':
+    }
+    case 'paused': {
       return {
         state: 'paused',
         action: 'Resume',
         time: formatRemaining(remainingMs(timer, now)),
       };
-    case 'done':
+    }
+    case 'done': {
       return { state: 'done', action: 'Restart', time: 'Done' };
-    default:
+    }
+    default: {
       return { state: 'idle', action: 'Start', time: label };
+    }
   }
 }

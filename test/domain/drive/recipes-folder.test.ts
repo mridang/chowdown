@@ -6,6 +6,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import { recipesFolderFor } from '@/domain/drive/recipes-folder';
@@ -38,8 +39,8 @@ function drive(existing: readonly { id: string; name: string }[]) {
     .spyOn(globalThis, 'fetch')
     .mockImplementation(async (_url, init) =>
       init?.method === 'POST'
-        ? new Response(JSON.stringify({ id: 'created-folder' }))
-        : new Response(JSON.stringify({ files: existing })),
+        ? Response.json({ id: 'created-folder' })
+        : Response.json({ files: existing }),
     );
 }
 

@@ -4,7 +4,7 @@
  *   GET    /api/recipes/:id   read it (JSON, Cooklang text, or schema.org JSON-LD)
  *   PUT    /api/recipes/:id   replace its Cooklang text
  *   PATCH  /api/recipes/:id   edit title, images or tags (JSON Merge Patch)
- *   DELETE /api/recipes/:id   delete it (the Drive file goes to the trash)
+ *   DELETE /api/recipes/:id   delete it (the Drive file goes to the trash).
  *
  * Every response carries an `ETag`. Send it back as `If-Match` on PUT/PATCH to
  * be refused (412) if the recipe changed in the meantime, or as `If-None-Match`
@@ -60,7 +60,8 @@ export async function GET(
   if (!auth.ok) {
     return auth.response;
   }
-  return sendRecipe(request, auth.value, (await params).id);
+  const { id } = await params;
+  return sendRecipe(request, auth.value, id);
 }
 
 /**
@@ -162,7 +163,8 @@ export async function DELETE(
     return auth.response;
   }
   try {
-    const outcome = await deleteRecipeForUser(auth.value, (await params).id);
+    const { id } = await params;
+    const outcome = await deleteRecipeForUser(auth.value, id);
     return outcome === 'deleted'
       ? new NextResponse(null, { status: 204 })
       : problems.notFound('recipe');

@@ -26,9 +26,6 @@ import {
   type Tone,
 } from '@/domain/recipe/card-style';
 
-export { cleanTitle, toneFor };
-export type { DifficultyLevel, Tone };
-
 /** One recipe as the pages show it. Missing facts are empty, never invented. */
 export interface CardRecipe {
   readonly id: string;
@@ -101,3 +98,10 @@ export function toCardRecipe(
     ...(options.withSource ? { cooklang: row.source } : {}),
   };
 }
+
+export {
+  cleanTitle,
+  toneFor,
+  type DifficultyLevel,
+  type Tone,
+} from '@/domain/recipe/card-style';

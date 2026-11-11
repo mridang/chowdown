@@ -93,7 +93,7 @@ function dietsFor(wanted: readonly string[]): readonly string[] {
 /** Where an eating style comes in the usual order; anything else goes last. */
 function dietPosition(style: string): number {
   const index = (DIET_TYPES as readonly string[]).indexOf(style);
-  return index < 0 ? DIET_TYPES.length : index;
+  return index === -1 ? DIET_TYPES.length : index;
 }
 
 /** The position of a recipe's eating style in the usual order, for sorting. */
@@ -201,8 +201,8 @@ function hasAny(
   if (wanted.length === 0) {
     return true;
   }
-  const have = (recipe.tags[key] ?? []).map(foldText);
-  return wanted.some((w) => have.includes(foldText(w)));
+  const have = new Set((recipe.tags[key] ?? []).map((tag) => foldText(tag)));
+  return wanted.some((w) => have.has(foldText(w)));
 }
 
 /**
@@ -275,13 +275,13 @@ export function browseRecipes(
     ({ facet: key }) => wanted.get(key) ?? [],
   );
   const also = [
-    maxMinutes !== undefined ? `at most ${maxMinutes} minutes` : '',
+    maxMinutes === undefined ? '' : `at most ${maxMinutes} minutes`,
     favouritesOnly ? 'favourites only' : '',
-    words.length ? `named like "${query}"` : '',
+    words.length > 0 ? `named like "${query}"` : '',
   ].filter(Boolean);
   const subject =
-    (asked.length ? ` for ${asked.join(', ')}` : '') +
-    (also.length ? ` (${also.join(', ')})` : '');
+    (asked.length > 0 ? ` for ${asked.join(', ')}` : '') +
+    (also.length > 0 ? ` (${also.join(', ')})` : '');
 
   // Recipes that don't say how long they take can't be matched to a time limit.
   const note = untimedNote(
@@ -311,9 +311,13 @@ export function browseRecipes(
     };
   }
   const next = offset + shown.length;
+  const nextPage =
+    next < hits.length
+      ? `; call again with offset=${next} for the next page`
+      : '';
   const more =
     offset > 0 || hits.length > shown.length
-      ? ` (showing ${shownOf(hits.length, offset, shown.length)}, a mix of eating styles${next < hits.length ? `; call again with offset=${next} for the next page` : ''})`
+      ? ` (showing ${shownOf(hits.length, offset, shown.length)}, a mix of eating styles${nextPage})`
       : '';
   return {
     message: `${countOf(hits.length, 'recipe')}${subject}${more}:\n\n${groupedByDiet(shown)}${note}`,
@@ -345,12 +349,11 @@ function brief(name: string): string {
 
 /** What stands between the person and cooking this, in a few words. */
 function gapText(match: PantryMatch, listUpTo = Infinity): string {
-  const shown = match.missing.slice(0, listUpTo).map(brief);
+  const shown = match.missing.slice(0, listUpTo).map((item) => brief(item));
   const rest = match.missing.length - shown.length;
+  const andMore = rest > 0 ? ` and ${rest} more` : '';
   const missing =
-    match.missing.length > 0
-      ? [`missing ${listAnd(shown)}${rest > 0 ? ` and ${rest} more` : ''}`]
-      : [];
+    match.missing.length > 0 ? [`missing ${listAnd(shown)}${andMore}`] : [];
   const short = match.short.map(
     (s) => `need more ${brief(s.name)} (have ${s.have}, need ${s.need})`,
   );
@@ -458,7 +461,7 @@ export function recipesFromIngredients(
 
   const sections = [
     `With ${have}:`,
-    ...(canMake.length
+    ...(canMake.length > 0
       ? [
           `\nYou can make now (${countText(canMake.length, ranked.canMake.length, offset)}):\n` +
             canMake
@@ -469,7 +472,7 @@ export function recipesFromIngredients(
               .join('\n'),
         ]
       : []),
-    ...(almost.length
+    ...(almost.length > 0
       ? [
           `\nAlmost there (${countText(almost.length, ranked.almost.length, offset)}):\n` +
             almost
@@ -530,9 +533,8 @@ export function filterOverview(
         ? dietPosition(a) - dietPosition(b)
         : y - x || compareText(a, b),
     );
-    return [
-      `\n${f.label} (${f.key}): ${entries.map(([v, n]) => `${v} ${n}`).join(', ')}`,
-    ];
+    const listed = entries.map(([v, n]) => `${v} ${n}`).join(', ');
+    return [`\n${f.label} (${f.key}): ${listed}`];
   });
   return {
     message: [`${countOf(recipes.length, 'recipe')} saved.`, ...sections].join(
@@ -609,11 +611,14 @@ export async function runScenarioTool(
     toScenarioRecipe(r, hearted.has(r.drive_file_id)),
   );
   switch (name) {
-    case 'browse_recipes':
+    case 'browse_recipes': {
       return { ...browseRecipes(recipes, args), plain: false };
-    case 'recipes_from_ingredients':
+    }
+    case 'recipes_from_ingredients': {
       return { ...recipesFromIngredients(recipes, args), plain: false };
-    default:
+    }
+    default: {
       return { ...filterOverview(recipes), plain: true };
+    }
   }
 }

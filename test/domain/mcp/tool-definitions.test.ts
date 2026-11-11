@@ -74,9 +74,9 @@ describe('the tool catalogue', () => {
   });
 
   it('has a set of good arguments for every tool, and for no other', () => {
-    expect(Object.keys(GOOD_ARGUMENTS).toSorted()).toEqual(
-      TOOLS.map((t) => t.name).toSorted(),
-    );
+    expect(
+      Object.keys(GOOD_ARGUMENTS).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(TOOLS.map((t) => t.name).toSorted((a, b) => a.localeCompare(b)));
   });
 
   it('finds a tool by name', () => {
@@ -149,8 +149,10 @@ describe('how the tools name what they take', () => {
     const withName = TOOLS.filter((t) =>
       Object.keys(propertiesOf(t.name)).includes('name'),
     ).map((t) => t.name);
-    expect(withName.toSorted()).toEqual(
-      ['add_recipe', 'capture_idea', 'import_recipe'].toSorted(),
+    expect(withName.toSorted((a, b) => a.localeCompare(b))).toEqual(
+      ['add_recipe', 'capture_idea', 'import_recipe'].toSorted((a, b) =>
+        a.localeCompare(b),
+      ),
     );
   });
 
@@ -219,7 +221,7 @@ describe('what the tools accept as text', () => {
       const good = GOOD_ARGUMENTS[name] ?? {};
       const problems = validateJson(
         tool?.inputSchema ?? {},
-        { ...good, [key]: '   ' },
+        { ...good, [key]: ' '.repeat(3) },
         'The arguments',
       );
       expect(problems).not.toEqual([]);
@@ -287,19 +289,21 @@ describe('what the model has to read', () => {
 describe('the _meta of a tool', () => {
   const LABEL = '[A-Za-z](?:[A-Za-z0-9-]*[A-Za-z0-9])?';
   const NAME = '[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?';
-  const GRAMMAR = new RegExp(`^(?:${LABEL}(?:\\.${LABEL})*/)?${NAME}$`);
+  const GRAMMAR = new RegExp(
+    String.raw`^(?:${LABEL}(?:\.${LABEL})*/)?${NAME}$`,
+  );
 
   /** The keys ChatGPT documents, which have a second `/` and so break the spec's grammar. */
-  const OPENAI_STATUS_KEYS = [
+  const OPENAI_STATUS_KEYS = new Set([
     'openai/toolInvocation/invoking',
     'openai/toolInvocation/invoked',
-  ];
+  ]);
 
   it('uses keys the MCP spec allows, apart from the two ChatGPT status keys', () => {
     const keys = [...new Set(TOOLS.flatMap((t) => Object.keys(t._meta)))];
     expect(keys.length).toBeGreaterThan(4);
     const offenders = keys.filter(
-      (key) => !GRAMMAR.test(key) && !OPENAI_STATUS_KEYS.includes(key),
+      (key) => !GRAMMAR.test(key) && !OPENAI_STATUS_KEYS.has(key),
     );
     expect(offenders).toEqual([]);
     // The exception is exactly these two: if the grammar ever accepts them,
@@ -435,13 +439,20 @@ describe('the input schemas', () => {
         Record<string, unknown>
       > = 'properties' in tool.inputSchema ? tool.inputSchema.properties : {};
       for (const [key, schema] of Object.entries(properties)) {
-        const bounded =
-          schema['type'] === 'boolean' ||
-          schema['enum'] !== undefined ||
-          (schema['type'] === 'string' && schema['maxLength'] !== undefined) ||
-          (schema['type'] === 'array' && schema['maxItems'] !== undefined) ||
-          (['integer', 'number'].includes(String(schema['type'])) &&
-            schema['minimum'] !== undefined);
+        const isBoundedText =
+          schema['type'] === 'string' && schema['maxLength'] !== undefined;
+        const isBoundedList =
+          schema['type'] === 'array' && schema['maxItems'] !== undefined;
+        const isBoundedNumber =
+          ['integer', 'number'].includes(String(schema['type'])) &&
+          schema['minimum'] !== undefined;
+        const bounded = [
+          schema['type'] === 'boolean',
+          schema['enum'] !== undefined,
+          isBoundedText,
+          isBoundedList,
+          isBoundedNumber,
+        ].some(Boolean);
         expect({ tool: tool.name, key, bounded }).toEqual({
           tool: tool.name,
           key,
@@ -476,7 +487,7 @@ describe('the input checker agrees with ajv', () => {
     51,
     1001,
     '',
-    '   ',
+    ' '.repeat(3),
     'x',
     'Easy',
     'easy',
@@ -538,7 +549,9 @@ describe('every result conforms to the tool that returned it', () => {
   const OUTPUT_TOOLS = TOOLS.filter((t) => 'outputSchema' in t);
 
   it('has an output schema for the tools that draw a card or a list', () => {
-    expect(OUTPUT_TOOLS.map((t) => t.name).toSorted()).toEqual([
+    expect(
+      OUTPUT_TOOLS.map((t) => t.name).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual([
       'add_recipe',
       'annotate_recipe',
       'browse_recipes',
@@ -592,7 +605,7 @@ describe('every result conforms to the tool that returned it', () => {
       ],
       ['set_recipe_images', { recipe: 'pancakes', images: ['nope'] }],
       ['annotate_recipe', { recipe: 'pizza', note: 'x' }],
-      ['annotate_recipe', { recipe: 'pancakes', note: '   ' }],
+      ['annotate_recipe', { recipe: 'pancakes', note: ' '.repeat(3) }],
       ['favourite_recipe', { recipe: 'pizza' }],
       ['browse_recipes', { cuisine: 'Martian' }],
       ['recipes_from_ingredients', { ingredients: ['  '] }],

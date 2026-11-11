@@ -16,8 +16,6 @@ import {
 } from '@/domain/db/users';
 import { getDatabase } from '@/domain/db/client';
 
-export type { User };
-
 /** What Google tells us about a person who has just signed in. */
 export interface GoogleProfile {
   /** Google's stable id for the account. */
@@ -53,3 +51,5 @@ export function getSessionEpoch(id: number): Promise<number | undefined> {
 export function bumpSessionEpoch(id: number): Promise<void> {
   return bumpEpoch(getDatabase(), id);
 }
+
+export { type User } from '@/domain/db/users';

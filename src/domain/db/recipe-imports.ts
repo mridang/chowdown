@@ -137,7 +137,7 @@ export async function listRecipeImports(
     .from(recipeImports)
     .where(eq(recipeImports.user_id, userId))
     .orderBy(desc(recipeImports.created_at));
-  return rows.map(toImport);
+  return rows.map((row) => toImport(row));
 }
 
 /** An import as a list shows it: no drafts, just how many there are. */

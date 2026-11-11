@@ -37,10 +37,9 @@ export function isStoppedOnPurpose(error: string | undefined): boolean {
 
 /**
  * Start reading `text` aloud, after stopping anything already being read.
- *
- * @param environment The browser's synthesiser and utterance constructor.
- * @param text What to say.
- * @param listeners Told when the reading ends by itself.
+ * @param environment - The browser's synthesiser and utterance constructor.
+ * @param text - What to say.
+ * @param listeners - Told when the reading ends by itself.
  */
 export function speak(
   environment: SpeechEnvironment,
@@ -67,9 +66,9 @@ export function stopSpeaking(
 
 /** The browser's speech environment, or `undefined` where there is no speech synthesis. */
 export function browserSpeech(): SpeechEnvironment | undefined {
-  return typeof window !== 'undefined' && 'speechSynthesis' in window
+  return globalThis.window != undefined && 'speechSynthesis' in globalThis
     ? {
-        synthesiser: window.speechSynthesis,
+        synthesiser: globalThis.speechSynthesis,
         createUtterance: (text) => new SpeechSynthesisUtterance(text),
       }
     : undefined;

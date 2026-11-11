@@ -127,7 +127,7 @@ export function FormField({
 export function describedByIds(
   ids: readonly (string | undefined)[],
 ): string | undefined {
-  const present = ids.filter((id): id is string => Boolean(id));
+  const present = ids.filter(Boolean);
   return present.length > 0 ? present.join(' ') : undefined;
 }
 

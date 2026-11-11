@@ -97,11 +97,20 @@ function normalisedName(name: string): string {
  * surname) unevenly across the low bits that the final `% 7` keeps.
  */
 function hashOf(text: string): number {
-  const fnv = Array.from({ length: text.length }, (_, index) =>
-    text.charCodeAt(index),
-  ).reduce((hash, unit) => Math.imul(hash ^ unit, 0x01000193), 0x811c9dc5);
-  const half = Math.imul(fnv ^ (fnv >>> 16), 0x85ebca6b);
-  const whole = Math.imul(half ^ (half >>> 13), 0xc2b2ae35);
+  // Each UTF-16 code unit on its own (not code points), as the hash has always used.
+  const units = Array.from(
+    { length: text.length },
+    (_, index) => text.charAt(index).codePointAt(0) ?? 0,
+  );
+  const fnv = units.reduce(
+    (hash, unit) => Math.imul(hash ^ unit, 0x01_00_01_93),
+
+    0x81_1c_9d_c5,
+  );
+
+  const half = Math.imul(fnv ^ (fnv >>> 16), 0x85_eb_ca_6b);
+
+  const whole = Math.imul(half ^ (half >>> 13), 0xc2_b2_ae_35);
   return (whole ^ (whole >>> 16)) >>> 0;
 }
 
@@ -112,8 +121,7 @@ function hashOf(text: string): number {
  * author looks the same on every recipe and every visit, and different authors
  * spread across all seven faces. Anything is safe to pass: an empty or
  * whitespace-only string simply gets a face too (the same one every time).
- *
- * @param name The person's name, as the recipe's file gives it (untrusted).
+ * @param name - The person's name, as the recipe's file gives it (untrusted).
  */
 export function handwritingFor(name: string): HandwritingFace {
   return FACE_INDEXES[hashOf(normalisedName(name)) % FACE_INDEXES.length] ?? 0;

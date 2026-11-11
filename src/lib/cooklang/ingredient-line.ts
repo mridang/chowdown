@@ -146,12 +146,30 @@ const MEASURE_ADJECTIVES =
 const FREE_QUANTITY =
   /^(?:to taste|as needed|as required|a pinch|pinch|a dash|dash|a handful|handful|a few|few|some|a little|for serving|for garnish|optional)$/i;
 
+/** How a preparation word may be softened: "finely chopped". */
+const PREPARATION_ADVERBS =
+  '(?:very |finely |roughly |thinly |coarsely |freshly |lightly |well )';
+
+/** What is done to an ingredient: "chopped", "peeled". */
+const PREPARATION_VERBS = [
+  'chopped|diced|minced|sliced|grated|crushed|peeled|halved|quartered|cubed',
+  'melted|softened|divided|cooked|drained|rinsed|beaten|trimmed|seeded',
+  'deseeded|stemmed|torn|packed|sifted|toasted|shredded|julienned|mashed',
+  'thawed|cut|ground',
+].join('|');
+
+/** Other phrases that open a note: "optional", "plus 1 tbsp", "to taste". */
+const PREPARATION_LEADS =
+  'optional|plus |to taste|for |at room|room temp|or |about |such as|preferably|if ';
+
 /**
  * What starts a preparation note after a comma ("onion, finely chopped"), as
  * opposed to a comma inside a name ("boneless, skinless chicken breasts").
  */
-const PREPARATION =
-  /^(?:(?:very |finely |roughly |thinly |coarsely |freshly |lightly |well )?(?:chopped|diced|minced|sliced|grated|crushed|peeled|halved|quartered|cubed|melted|softened|divided|cooked|drained|rinsed|beaten|trimmed|seeded|deseeded|stemmed|torn|packed|sifted|toasted|shredded|julienned|mashed|thawed|cut|ground)|optional|plus |to taste|for |at room|room temp|or |about |such as|preferably|if )/i;
+export const PREPARATION = new RegExp(
+  `^(?:${PREPARATION_ADVERBS}?(?:${PREPARATION_VERBS})|${PREPARATION_LEADS})`,
+  'i',
+);
 
 /** A number: `3`, `2.5`, `1/2`, or a mixed number `1 1/2`. */
 const NUMBER = String.raw`\d+/\d+|\d+(?:[.,]\d+)?(?:\s\d+/\d+)?`;
@@ -164,7 +182,7 @@ const QUANTITY = new RegExp(
 
 /** Spell vulgar fractions out, joined to a whole number with a space (`1½` becomes `1 1/2`). */
 function withAsciiFractions(text: string): string {
-  return text.replace(/(\d)?([½¼¾⅓⅔⅛⅜⅝⅞⅕⅖⅗⅘])/g, (_, whole, fraction) => {
+  return text.replaceAll(/(\d)?([½¼¾⅓⅔⅛⅜⅝⅞⅕⅖⅗⅘])/g, (_, whole, fraction) => {
     const ascii = VULGAR[fraction as string] ?? '';
     return whole ? `${whole as string} ${ascii}` : ascii;
   });
@@ -186,12 +204,12 @@ function tidied(raw: string): string {
   return withAsciiFractions(
     raw
       .slice(0, MAX_LINE)
-      .replace(
+      .replaceAll(
         /&(?:amp|apos|quot|nbsp|lt|gt|#39);/g,
         (entity) => ENTITIES[entity] ?? entity,
       )
-      .replace(/[–—−]/g, '-')
-      .replace(/\s+/g, ' ')
+      .replaceAll(/[–—−]/g, '-')
+      .replaceAll(/\s+/g, ' ')
       .trim(),
   )
     .replace(/^[-•*·\s]+/, '')
@@ -241,9 +259,9 @@ function withoutParentheses(line: string): {
   const notes =
     walked.depth > 0 ? [...walked.notes, walked.buffer] : walked.notes;
   return {
-    text: walked.text.replace(/\s+/g, ' ').trim(),
+    text: walked.text.replaceAll(/\s+/g, ' ').trim(),
     notes: notes
-      .map((note) => note.replace(/^[\s,;:]+|[\s,;:]+$/g, '').trim())
+      .map((note) => trimEdges(note, /[\s,;:]/, /[\s,;:]/).trim())
       .filter((note) => note !== ''),
   };
 }
@@ -281,10 +299,7 @@ function leadingQuantity(text: string): LeadingQuantity | undefined {
   if (!match || /^0\d/.test(match[1] ?? '')) {
     return undefined;
   }
-  const quantity = (match[1] ?? '')
-    .replace(/\s+to\s+/i, '-')
-    .replace(/\s*-\s*/g, '-')
-    .trim();
+  const quantity = tightHyphens(withHyphenForTo(match[1] ?? '')).trim();
   const afterQuantity = text.slice(match[0].length);
   const described = MEASURE_ADJECTIVES.exec(afterQuantity);
   const afterNumber = described
@@ -295,12 +310,17 @@ function leadingQuantity(text: string): LeadingQuantity | undefined {
   const attachedUnit = attached?.[1];
   const spaced = /^\s+([A-Za-z]+)\.?(?=$|[\s,/])/.exec(afterNumber);
   const spacedUnit = spaced?.[1];
-  const [unit, consumed] =
-    attachedUnit && UNITS.has(unitKey(attachedUnit))
-      ? [attachedUnit, attached?.[0].length ?? 0]
-      : spacedUnit && UNITS.has(unitKey(spacedUnit))
-        ? [spacedUnit, spaced?.[0].length ?? 0]
-        : [undefined, 0];
+  let unit: string | undefined;
+  let consumed = 0;
+  if (attachedUnit && UNITS.has(unitKey(attachedUnit))) {
+    unit = attachedUnit;
+    consumed = attached?.[0].length ?? 0;
+  } else if (spacedUnit && UNITS.has(unitKey(spacedUnit))) {
+    unit = spacedUnit;
+    consumed = spaced?.[0].length ?? 0;
+  } else {
+    // No unit follows the number, so nothing is consumed.
+  }
   const rest = afterNumber.slice(consumed);
   // "7up" and "2x4" are names with a digit in them, not an amount and a word.
   if (!unit && /^[A-Za-z]/.test(afterNumber)) {
@@ -347,12 +367,58 @@ function amountPhrase(phrase: string): LeadingQuantity | undefined {
     : undefined;
 }
 
+/** `text` without the leading characters `leading` accepts and the trailing ones `trailing` accepts. */
+function trimEdges(text: string, leading: RegExp, trailing: RegExp): string {
+  let start = 0;
+  let end = text.length;
+  while (start < end && leading.test(text.charAt(start))) {
+    start += 1;
+  }
+  while (end > start && trailing.test(text.charAt(end - 1))) {
+    end -= 1;
+  }
+  return text.slice(start, end);
+}
+
+/** `text` with its first whitespace-padded `to` ("1 to 2") turned into a hyphen. */
+function withHyphenForTo(text: string): string {
+  for (const found of text.matchAll(/to/gi)) {
+    let from = found.index;
+    let end = from + 2;
+    if (!/\s/.test(text.charAt(from - 1)) || !/\s/.test(text.charAt(end))) {
+      continue;
+    }
+    while (from > 0 && /\s/.test(text.charAt(from - 1))) {
+      from -= 1;
+    }
+    while (end < text.length && /\s/.test(text.charAt(end))) {
+      end += 1;
+    }
+    return `${text.slice(0, from)}-${text.slice(end)}`;
+  }
+  return text;
+}
+
+/** `text` with the whitespace around every hyphen removed. */
+function tightHyphens(text: string): string {
+  const parts = text.split('-');
+  const last = parts.length - 1;
+  return parts
+    .map((part, i) => {
+      const left = i > 0 ? part.trimStart() : part;
+      return i < last ? left.trimEnd() : left;
+    })
+    .join('-');
+}
+
 /** Strip punctuation that is left dangling after parts of the line were taken out. */
 function cleanedName(text: string): string {
-  return text
-    .replace(/^(?:of|x)\s+/i, '')
-    .replace(/^[\s,;:./-]+|[\s,;:./-]+$/g, '')
-    .replace(/\s+/g, ' ')
+  return trimEdges(
+    text.replace(/^(?:of|x)\s+/i, ''),
+    /[\s,;:./-]/,
+    /[\s,;:./-]/,
+  )
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 
@@ -477,7 +543,7 @@ export function leadingUnit(
   text: string,
 ): { readonly unit: string; readonly rest: string } | undefined {
   const match =
-    /^(?:(?:heaping|heaped|level|rounded|scant|generous)\s+)?([A-Za-z]+)\.?(?:\s+of)?(?:\s+|$)/i.exec(
+    /^(?:(?:heaping|heaped|level|rounded|scant|generous)\s+)?([a-z]+)\.?(?:\s+of)?(?:\s+|$)/i.exec(
       text.trim(),
     );
   const word = match?.[1];
@@ -500,13 +566,14 @@ function withNote(note: string | undefined): { readonly note?: string } {
 export function toCookIngredient(ing: Readonly<ParsedIngredientLine>): string {
   const safe = (text: string): string =>
     text
-      .replace(/[{}@#~()%]/g, ' ')
-      .replace(/\s+/g, ' ')
+      .replaceAll(/[{}@#~()%]/g, ' ')
+      .replaceAll(/\s+/g, ' ')
       .trim();
   const amount =
     ing.quantity && ing.unit
       ? `${safe(ing.quantity)}%${safe(ing.unit)}`
       : safe(ing.quantity ?? '');
   const note = ing.note ? safe(ing.note) : '';
-  return `@${safe(ing.name)}{${amount}}${note ? `(${note})` : ''}`;
+  const notePart = note ? `(${note})` : '';
+  return `@${safe(ing.name)}{${amount}}${notePart}`;
 }

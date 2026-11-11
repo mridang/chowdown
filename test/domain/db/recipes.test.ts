@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
@@ -10,7 +10,7 @@ import {
   findRecipeBySourceUrl,
   getRecipeByFileId,
   listRecipesByUser,
-  listRecipesForSync,
+  listSyncRecipes,
   listUnembeddedRecipes,
   staleRecipeIds,
   upsertRecipe,
@@ -18,6 +18,7 @@ import {
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { indexedPlan, planOf } from '../../lib/core/db/plan';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
 /** A database with every migration applied and two people in it. */
 function seeded() {
@@ -126,11 +127,7 @@ describe('findRecipeBySourceUrl', () => {
       'a',
       '>> title: A\n>> source: https://www.site.com/post/a/?utm=1\n',
     );
-    const hit = await findRecipeBySourceUrl(
-      made.db,
-      1,
-      'http://site.com/post/a',
-    );
+    const hit = await findRecipeBySourceUrl(made.db, 1, urls.sitePost);
     expect(hit?.drive_file_id).toBe('a');
   });
 
@@ -187,9 +184,8 @@ describe('findRecipeBySourceUrl', () => {
     await save(made, 1, 'b', '', 'b.cook');
     await save(made, 1, 'a', '', 'a.cook');
     await save(made, 2, 'c', '', 'c.cook');
-    expect(
-      (await listRecipesByUser(made.db, 1)).map((r) => r.drive_file_id),
-    ).toEqual(['a', 'b']);
+    const listed = await listRecipesByUser(made.db, 1);
+    expect(listed.map((r) => r.drive_file_id)).toEqual(['a', 'b']);
   });
 
   it('finds a recipe cached before the address was indexed, and fills the rest in', async () => {
@@ -217,10 +213,8 @@ describe('findRecipeBySourceUrl', () => {
     const made = seeded();
     await save(made, 1, 'b', '>> source: https://site.com/x\n', 'Bravo.cook');
     await save(made, 1, 'a', '>> source: https://site.com/x\n', 'Alpha.cook');
-    expect(
-      (await findRecipeBySourceUrl(made.db, 1, 'https://site.com/x'))
-        ?.drive_file_id,
-    ).toBe('a');
+    const hit = await findRecipeBySourceUrl(made.db, 1, 'https://site.com/x');
+    expect(hit?.drive_file_id).toBe('a');
   });
 });
 
@@ -336,21 +330,18 @@ describe('recipe_images', () => {
   });
 });
 
-describe('listRecipesForSync and deleteRecipesNotIn', () => {
+describe('listSyncRecipes and deleteRecipesNotIn', () => {
   const FUTURE = '2999-01-01T00:00:00.000Z';
 
   it("lists the user's recipes without their text, from the name index", async () => {
     const made = seeded();
     await save(made, 1, 'a', 'secret text');
     await save(made, 2, 'b', '');
-    const rows = await listRecipesForSync(made.db, 1);
+    const rows = await listSyncRecipes(made.db, 1);
     expect(rows.map((r) => r.drive_file_id)).toEqual(['a']);
-    expect(Object.keys(rows[0] ?? {}).toSorted()).toEqual([
-      'drive_file_id',
-      'last_opened_at',
-      'modified_time',
-      'tags',
-    ]);
+    expect(
+      Object.keys(rows[0] ?? {}).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(['drive_file_id', 'last_opened_at', 'modified_time', 'tags']);
     const plan = planOf(
       made.raw,
       'SELECT drive_file_id, modified_time, tags, last_opened_at FROM recipes WHERE user_id = ?',
@@ -363,7 +354,7 @@ describe('listRecipesForSync and deleteRecipesNotIn', () => {
     const made = seeded();
     await save(made, 1, 'keep', '');
     await save(made, 1, 'gone', '');
-    const cached = await listRecipesForSync(made.db, 1);
+    const cached = await listSyncRecipes(made.db, 1);
     const sent: string[] = [];
     const prepare = made.raw.prepare.bind(made.raw);
     made.raw.prepare = (sql: string) => {
@@ -389,15 +380,17 @@ describe('listRecipesForSync and deleteRecipesNotIn', () => {
 });
 
 describe('migration 0021', () => {
-  it('leaves every existing recipe unindexed, to be indexed lazily', () => {
-    const before = APP_MIGRATIONS.filter((file) => file < '0021');
+  it('leaves every existing recipe unindexed, to be indexed lazily', async () => {
+    const before = APP_MIGRATIONS.filter(
+      (file) => Number.parseInt(file, 10) < 21,
+    );
     const made = sqliteDatabase(...before);
     made.raw.exec(`
       INSERT INTO users (id, google_sub, email, created_at, updated_at) VALUES (1, 's', 'a@b.c', 't', 't');
       INSERT INTO recipes (user_id, drive_file_id, name, source, first_opened_at, last_opened_at) VALUES (1, 'a', 'a.cook', '>> images: https://x.test/a.jpg', 't', 't');
     `);
     made.raw.exec(
-      readFileSync(
+      await readFile(
         path.join(process.cwd(), 'migrations', '0021_recipe_images.sql'),
         'utf8',
       ),
@@ -423,12 +416,9 @@ describe('listUnembeddedRecipes', () => {
     );
     const rows = await listUnembeddedRecipes(made.db, 1, 2);
     expect(rows.map((r) => r.drive_file_id)).toEqual(['a', 'b']);
-    expect(Object.keys(rows[0] ?? {}).toSorted()).toEqual([
-      'drive_file_id',
-      'modified_time',
-      'name',
-      'source',
-    ]);
+    expect(
+      Object.keys(rows[0] ?? {}).toSorted((a, b) => a.localeCompare(b)),
+    ).toEqual(['drive_file_id', 'modified_time', 'name', 'source']);
   });
 
   it('reads only the partial index, with no scan and no sort', () => {
@@ -447,8 +437,10 @@ describe('listUnembeddedRecipes', () => {
 });
 
 describe('migration 0020', () => {
-  it('stamps the recipes that already have an embedding and no others', () => {
-    const before = APP_MIGRATIONS.filter((file) => file < '0020');
+  it('stamps the recipes that already have an embedding and no others', async () => {
+    const before = APP_MIGRATIONS.filter(
+      (file) => Number.parseInt(file, 10) < 20,
+    );
     const made = sqliteDatabase(...before);
     made.raw.exec(`
       INSERT INTO users (id, google_sub, email, created_at, updated_at) VALUES (1, 's', 'a@b.c', 't', 't'), (2, 'u', 'c@d.e', 't', 't');
@@ -459,7 +451,7 @@ describe('migration 0020', () => {
       INSERT INTO embeddings (user_id, drive_file_id, title, vector) VALUES (1, 'has', 't', '[1]'), (1, 'orphan', 't', '[1]'), (1, 'theirs', 't', '[1]');
     `);
     made.raw.exec(
-      readFileSync(
+      await readFile(
         path.join(process.cwd(), 'migrations', '0020_recipes_embedded_at.sql'),
         'utf8',
       ),

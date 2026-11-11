@@ -47,8 +47,12 @@ async function session(
   const joined = await joinedHost(
     (app) =>
       attachHostListeners(app, {
-        dispatch: (action) => void actions.push(action),
-        dispatchLayout: (action) => void layouts.push(action),
+        dispatch: (action) => {
+          actions.push(action);
+        },
+        dispatchLayout: (action) => {
+          layouts.push(action);
+        },
         root,
         guard: isData,
       }),
@@ -180,10 +184,18 @@ describe('applyDocumentContext and applyHostContext', () => {
   it('does nothing without a context, and only reports modes it knows', () => {
     const layouts: LayoutAction[] = [];
     const root = recordingRoot();
-    applyHostContext(undefined, (action) => void layouts.push(action), root);
+    applyHostContext(
+      undefined,
+      (action) => {
+        layouts.push(action);
+      },
+      root,
+    );
     applyHostContext(
       Object.fromEntries([['displayMode', 'window']]),
-      (action) => void layouts.push(action),
+      (action) => {
+        layouts.push(action);
+      },
       root,
     );
     expect(layouts).toEqual([]);
@@ -232,10 +244,12 @@ describe('sendFollowUpMessage', () => {
   it('sends a ui/message as the person when the host takes it', async () => {
     const received: unknown[] = [];
     const { app } = await session((bridge) => {
-      bridge.onmessage = (params) => {
-        received.push(params);
-        return Promise.resolve({});
-      };
+      Object.assign(bridge, {
+        onmessage: (params: unknown) => {
+          received.push(params);
+          return Promise.resolve({});
+        },
+      });
     });
     expect(
       await sendFollowUpMessage(
@@ -256,13 +270,17 @@ describe('sendFollowUpMessage', () => {
     const prompts: string[] = [];
     const received: unknown[] = [];
     const { app } = await session((bridge) => {
-      bridge.onmessage = (params) => {
-        received.push(params);
-        return Promise.resolve({});
-      };
+      Object.assign(bridge, {
+        onmessage: (params: unknown) => {
+          received.push(params);
+          return Promise.resolve({});
+        },
+      });
     });
     const openai: OpenAiApi = {
-      sendFollowUpMessage: ({ prompt }) => void prompts.push(prompt),
+      sendFollowUpMessage: ({ prompt }) => {
+        prompts.push(prompt);
+      },
     };
     expect(await sendFollowUpMessage(app, openai, 'hello')).toBe(true);
     expect(prompts).toEqual(['hello']);
@@ -272,10 +290,12 @@ describe('sendFollowUpMessage', () => {
   it('falls through to ui/message when ChatGPT’s route throws', async () => {
     const received: unknown[] = [];
     const { app } = await session((bridge) => {
-      bridge.onmessage = (params) => {
-        received.push(params);
-        return Promise.resolve({});
-      };
+      Object.assign(bridge, {
+        onmessage: (params: unknown) => {
+          received.push(params);
+          return Promise.resolve({});
+        },
+      });
     });
     const openai: OpenAiApi = {
       sendFollowUpMessage: () => Promise.reject(new Error('refused')),
@@ -286,7 +306,9 @@ describe('sendFollowUpMessage', () => {
 
   it('reports false when the host refuses the message or there is no route', async () => {
     const { app } = await session((bridge) => {
-      bridge.onmessage = () => Promise.resolve({ isError: true });
+      Object.assign(bridge, {
+        onmessage: () => Promise.resolve({ isError: true }),
+      });
     });
     expect(await sendFollowUpMessage(app, undefined, 'hello')).toBe(false);
     expect(await sendFollowUpMessage(null, undefined, 'hello')).toBe(false);

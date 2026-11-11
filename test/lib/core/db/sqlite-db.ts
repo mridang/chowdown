@@ -1,11 +1,24 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 
 import type { Database } from '@/domain/db/client';
-import * as schema from '@/domain/db/schema';
+import {
+  users,
+  recipes,
+  recipeImages,
+  embeddings,
+  favourites,
+  oauthClients,
+  oauthAssertions,
+  oauthGrants,
+  oauthCodes,
+  oauthTokens,
+  recipeImports,
+} from '@/domain/db/schema';
 
 /** The method Drizzle asks the driver to run a statement with. */
 type Method = 'run' | 'all' | 'values' | 'get';
@@ -25,6 +38,20 @@ export interface SqliteDatabase {
  * one transaction that rolls back if any statement fails, as D1's does. That is
  * enough to test repositories against the real SQL rather than a stub.
  */
+const schema = {
+  users,
+  recipes,
+  recipeImages,
+  embeddings,
+  favourites,
+  oauthClients,
+  oauthAssertions,
+  oauthGrants,
+  oauthCodes,
+  oauthTokens,
+  recipeImports,
+};
+
 export function sqliteDatabase(
   ...migrations: readonly string[]
 ): SqliteDatabase {

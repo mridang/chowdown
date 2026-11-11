@@ -397,3 +397,24 @@ describe('ingredientWords with names that are also JavaScript built-ins', () => 
     expect(ingredientWords('toString')).toEqual(['tostring']);
   });
 });
+
+const FAST_MS = 1000;
+
+describe('parenthesised notes (linear-time rewrite)', () => {
+  it.each([
+    ['salt (fine) and (coarse) oil', [['salt', 'oil'], true]],
+    ['butter (unsalted', [['butter'], false]],
+    ['a (b (c) d) e', [['d', 'e'], false]],
+  ])('reads %j', (input, expected) => {
+    expect([
+      ingredientWords(input as string),
+      isStaple(input as string),
+    ]).toEqual(expected);
+  });
+  it('scans on a long adversarial input', () => {
+    const started = performance.now();
+    ingredientWords('('.repeat(100_000));
+    isStaple('('.repeat(100_000));
+    expect(performance.now() - started).toBeLessThan(FAST_MS);
+  });
+});

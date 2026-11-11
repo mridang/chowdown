@@ -5,4 +5,9 @@
  * type per file, the nested file entry co-located with the listing it composes.
  */
 
-export * from './drive-file-list-response';
+export {
+  DriveFileSchema,
+  type DriveFile,
+  DriveFileListResponseSchema,
+  type DriveFileListResponse,
+} from './drive-file-list-response';

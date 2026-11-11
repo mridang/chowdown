@@ -337,12 +337,14 @@ export function updateSimilarLists(
     stored: parseSimilar(r.similar),
   }));
   const known = new Set(prepared.map((p) => p.id));
-  const changed = new Set([
-    ...changedIds.filter((id) => known.has(id)),
-    ...prepared
-      .filter((p) => hasShortList(p, prepared.length, n))
-      .map((p) => p.id),
-  ]);
+  const changed = new Set(
+    [
+      changedIds.filter((id) => known.has(id)),
+      prepared
+        .filter((p) => hasShortList(p, prepared.length, n))
+        .map((p) => p.id),
+    ].flat(),
+  );
   const changedRows = prepared.filter((p) => changed.has(p.id));
   const byId = new Map(prepared.map((p) => [p.id, p]));
   return new Map(
@@ -368,9 +370,10 @@ export function serializeSimilar(list: readonly SimilarRecipe[]): string {
 
 /** Whether a parsed JSON value looks like a {@link SimilarRecipe}. */
 function isSimilarRecipe(value: unknown): value is SimilarRecipe {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
   return (
-    typeof value === 'object' &&
-    value !== null &&
     'id' in value &&
     typeof value.id === 'string' &&
     'title' in value &&

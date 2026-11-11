@@ -11,9 +11,8 @@
  * Run `step` on each of `items` in order, starting each only after the one
  * before has finished, and return the results in the same order. If a step
  * throws, the later items are never started and the returned promise rejects.
- *
- * @param items The things to work through.
- * @param step The async work for one item.
+ * @param items - The things to work through.
+ * @param step - The async work for one item.
  */
 export async function mapSequentially<T, R>(
   items: readonly T[],

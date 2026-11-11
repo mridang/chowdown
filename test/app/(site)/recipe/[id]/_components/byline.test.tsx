@@ -34,7 +34,7 @@ describe('authorOf', () => {
   it('skips an empty author for a later one, and is undefined without any', () => {
     expect(
       authorOf([
-        ['author', '   '],
+        ['author', ' '.repeat(3)],
         ['by', 'Nigella'],
       ]),
     ).toBe('Nigella');
@@ -64,7 +64,7 @@ describe('AuthorLine', () => {
   it('sets the name in a handwriting face, and nothing else', () => {
     expect(out.match(/font-hand-/g)).toHaveLength(1);
     expect(out).toMatch(
-      /class="[^"]*font-hand-\w+[^"]*"[^>]*>Ethan Chlebowski</,
+      /class="[^"]*font-hand-\w[^"]*"[^>]*>Ethan Chlebowski</,
     );
   });
 

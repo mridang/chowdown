@@ -147,9 +147,8 @@ describe('listRecipeImportSummaries', () => {
   it('counts the drafts of an import saved before the count was stored', async () => {
     const made = real();
     insertRow(made, 'legacy', 1, '2026-01-01T00:00:00.000Z', null);
-    expect((await listRecipeImportSummaries(made.db, 1))[0]?.item_count).toBe(
-      2,
-    );
+    const summaries = await listRecipeImportSummaries(made.db, 1);
+    expect(summaries[0]?.item_count).toBe(2);
   });
 
   it('counts damaged stored drafts as none rather than failing', async () => {
@@ -159,9 +158,8 @@ describe('listRecipeImportSummaries', () => {
         "INSERT INTO recipe_imports (id, user_id, status, items, created_at) VALUES ('bad', 1, 'COMPLETED', '{not json', '2026-01-01T00:00:00.000Z')",
       )
       .run();
-    expect((await listRecipeImportSummaries(made.db, 1))[0]?.item_count).toBe(
-      0,
-    );
+    const summaries = await listRecipeImportSummaries(made.db, 1);
+    expect(summaries[0]?.item_count).toBe(0);
   });
 });
 
@@ -177,7 +175,7 @@ describe('getRecipeImport', () => {
   });
 
   it('is undefined for an import the user does not have', async () => {
-    const { db } = fakeDb({ findFirst: { recipeImports: undefined } });
+    const { db } = fakeDb({ findFirst: {} });
     expect(await getRecipeImport(db, 1, 'nope')).toBeUndefined();
   });
 
@@ -185,7 +183,8 @@ describe('getRecipeImport', () => {
     const { db } = fakeDb({
       findFirst: { recipeImports: { ...row, items: '{"not":"a list"}' } },
     });
-    expect((await getRecipeImport(db, 1, 'i1'))?.items).toEqual([]);
+    const imported = await getRecipeImport(db, 1, 'i1');
+    expect(imported?.items).toEqual([]);
   });
 });
 

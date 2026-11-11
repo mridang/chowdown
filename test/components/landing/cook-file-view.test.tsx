@@ -10,7 +10,7 @@ describe('CookFile', () => {
   it('is a window titled with the recipe file name', () => {
     const out = html(<CookFile recipe={recipe} />);
     expect(out).toContain('aria-label="A recipe as a plain text file"');
-    expect(out).toMatch(/[a-z0-9-]+\.cook/);
+    expect(out).toMatch(/[a-z0-9-]\.cook/);
   });
 
   it('highlights ingredients in the file', () => {

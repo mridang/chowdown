@@ -132,11 +132,12 @@ export function syncModal(
   dialog: Pick<HTMLDialogElement, 'open' | 'showModal' | 'close'>,
   open: boolean,
 ): void {
-  if (open && !dialog.open) {
-    dialog.showModal();
-  } else if (!open && dialog.open) {
-    dialog.close();
+  if (dialog.open === open) {
+    // Already in step with `open`: nothing to do.
+    return;
   }
+  const change = open ? () => dialog.showModal() : () => dialog.close();
+  change();
 }
 
 /**
@@ -157,8 +158,7 @@ export function closedBy(dismissable: boolean): {
  * Whether this browser closes a dialog on a click outside it by itself, that
  * is, understands `closedby` (Chrome 134, Firefox 141, Safari 26). Where it does
  * not, the dialog has to watch for that click, with {@link backdropClickHandler}.
- *
- * @param dialog Any dialog element; the feature is looked for on its prototype.
+ * @param dialog - Any dialog element; the feature is looked for on its prototype.
  */
 export function supportsLightDismiss(dialog: object): boolean {
   return 'closedBy' in dialog;
@@ -211,8 +211,7 @@ export const LEAVE_MS = 250;
  * Whether a dialog's content should still be on the page: while it is open, and
  * for {@link LEAVE_MS} after it closes. Without the second part the content
  * would vanish the instant the dialog is closed and an empty panel would fade.
- *
- * @param open Whether the dialog is open now.
+ * @param open - Whether the dialog is open now.
  */
 function useMounted(open: boolean): boolean {
   const [leaving, setLeaving] = useState(false);
@@ -224,11 +223,11 @@ function useMounted(open: boolean): boolean {
     setLeaving(!open);
   }
   useEffect(() => {
-    if (!leaving) {
-      return;
+    if (leaving) {
+      const timer = setTimeout(() => setLeaving(false), LEAVE_MS);
+      return () => clearTimeout(timer);
     }
-    const timer = setTimeout(() => setLeaving(false), LEAVE_MS);
-    return () => clearTimeout(timer);
+    return undefined;
   }, [leaving]);
   return open || leaving;
 }
@@ -304,12 +303,12 @@ export function DialogContent({
   // itself under `closedby="any"`; this is only for the ones that cannot.
   useEffect(() => {
     const dialog = ref.current;
-    if (!dialog || !dismissable || supportsLightDismiss(dialog)) {
-      return;
+    if (dialog && dismissable && !supportsLightDismiss(dialog)) {
+      const onClick = backdropClickHandler(dialog, () => setOpen(false));
+      dialog.addEventListener('click', onClick);
+      return () => dialog.removeEventListener('click', onClick);
     }
-    const onClick = backdropClickHandler(dialog, () => setOpen(false));
-    dialog.addEventListener('click', onClick);
-    return () => dialog.removeEventListener('click', onClick);
+    return undefined;
   }, [dismissable, setOpen]);
 
   return (

@@ -2,7 +2,7 @@
  * Recipe imports — turning pasted links and text into recipe drafts.
  *
  *   POST /api/recipes/imports   { input }  → 201 with the import and its drafts
- *   GET  /api/recipes/imports               list the user's imports, newest first
+ *   GET  /api/recipes/imports               list the user's imports, newest first.
  *
  * Each link is fetched server-side and converted to Cooklang by our own
  * converter. Nothing becomes a recipe until the client posts a draft to
@@ -140,9 +140,13 @@ const importsCollection = new ApiController<UidContext>({
         after,
         limit,
       );
-      return page(slice.items.map(importSummary), slice.next, {
-        'Cache-Control': 'private, no-cache',
-      });
+      return page(
+        slice.items.map((item) => importSummary(item)),
+        slice.next,
+        {
+          'Cache-Control': 'private, no-cache',
+        },
+      );
     },
     encode: (result) => result,
   });

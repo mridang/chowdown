@@ -181,7 +181,7 @@ const QUERY = {
 const WEB_URL = {
   type: 'string',
   maxLength: 2048,
-  pattern: '^https?://\\S+$',
+  pattern: String.raw`^https?://\S+$`,
 } as const;
 
 /**
@@ -530,7 +530,7 @@ const TOOL_DEFINITIONS = [
         date: {
           type: 'string',
           maxLength: 10,
-          pattern: '^\\d{4}-\\d{2}-\\d{2}$',
+          pattern: String.raw`^\d{4}-\d{2}-\d{2}$`,
           description:
             'The day it was cooked, as YYYY-MM-DD, for a cook that was not today (default: today). Not in the future.',
         },

@@ -6,12 +6,13 @@ import {
   planImport,
   splitTextBlocks,
 } from '@/domain/recipe/import-blob';
+import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
 describe('extractUrls', () => {
   it('pulls out http(s) URLs in order', () => {
     expect(
-      extractUrls('see https://a.com/x and http://b.com/y please'),
-    ).toEqual(['https://a.com/x', 'http://b.com/y']);
+      extractUrls(`see https://a.com/x and ${urls.hostBComLink} please`),
+    ).toEqual(['https://a.com/x', urls.hostBComLink]);
   });
   it('trims trailing punctuation', () => {
     expect(extractUrls('recipe at https://a.com/pasta.')).toEqual([
@@ -76,18 +77,19 @@ function milliseconds(work: () => unknown): number {
 
 describe('hostile text', () => {
   it('trims a long run of trailing punctuation in linear time', () => {
-    const text = `see http://a.com/${'.'.repeat(90_000)}x and http://b.com/${'.'.repeat(5000)}`;
+    const text = `see ${urls.hostAComBase}${'.'.repeat(90_000)}x and ${urls.hostBComBase}${'.'.repeat(5000)}`;
     expect(milliseconds(() => extractUrls(text))).toBeLessThan(100);
     expect(extractUrls(text)).toEqual([
-      `http://a.com/${'.'.repeat(90_000)}x`,
-      'http://b.com/',
+      `${urls.hostAComBase}${'.'.repeat(90_000)}x`,
+      urls.hostBComBase,
     ]);
   });
 
   it('plans thousands of links in linear time', () => {
-    const text = Array.from({ length: 5000 }, (_, i) => `http://a.b/${i}`).join(
-      ' ',
-    );
+    const text = Array.from(
+      { length: 5000 },
+      (_, i) => `${urls.hostABBase}${i}`,
+    ).join(' ');
     expect(milliseconds(() => planImport(text))).toBeLessThan(200);
     expect(planImport(text)).toHaveLength(5000);
   });
@@ -117,5 +119,52 @@ describe('planImport leftovers', () => {
         text: '. Boil water and add the pasta to it, then drain.',
       },
     ]);
+  });
+});
+
+const FAST_MS = 1000;
+
+describe('splitTextBlocks separators (linear-time rewrite)', () => {
+  it.each([
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    ],
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n---\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    ],
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n\n---\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    ],
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n\n\n---\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '---\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    ],
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n  \n \naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    ],
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n ----  \naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    ],
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    ],
+    [
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n---',
+      ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n---'],
+    ],
+  ])('splits %j', (input, expected) => {
+    expect(splitTextBlocks(input as string)).toEqual(expected);
+  });
+  it('scans on a long adversarial input', () => {
+    const started = performance.now();
+    splitTextBlocks(`${'a'.repeat(30)}${'\n '.repeat(50_000)}x`);
+    splitTextBlocks(`${'\n --- '.repeat(20_000)}`);
+    expect(performance.now() - started).toBeLessThan(FAST_MS);
   });
 });

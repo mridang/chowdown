@@ -8,10 +8,10 @@ import {
   hasRecipeBody,
 } from '@/domain/recipe/to-cooklang';
 
-const realFetch = global.fetch;
+const realFetch = globalThis.fetch;
 
 afterEach(() => {
-  global.fetch = realFetch;
+  globalThis.fetch = realFetch;
 });
 
 /** A fake Workers AI binding that returns the given Cooklang. */
@@ -33,7 +33,7 @@ const jsonLdPage = `<html><head><script type="application/ld+json">${JSON.string
 
 describe('convertImport', () => {
   it('prefers structured data fetched from the source page', async () => {
-    global.fetch = (async () =>
+    globalThis.fetch = (async () =>
       new Response(jsonLdPage)) as unknown as typeof fetch;
     const cook = await convertImport(
       'plain article text',
@@ -47,7 +47,7 @@ describe('convertImport', () => {
   });
 
   it('falls back to the model and adds the og:image as the cover', async () => {
-    global.fetch = (async () =>
+    globalThis.fetch = (async () =>
       new Response(
         '<meta property="og:image" content="https://a.com/og.jpg">',
       )) as unknown as typeof fetch;
@@ -61,7 +61,7 @@ describe('convertImport', () => {
   });
 
   it('still converts when the source page cannot be fetched', async () => {
-    global.fetch = (async () =>
+    globalThis.fetch = (async () =>
       new Response('blocked', { status: 403 })) as unknown as typeof fetch;
     const cook = await convertImport(
       'article text',
@@ -73,15 +73,15 @@ describe('convertImport', () => {
   });
 
   it('does not fetch when no source url is given', async () => {
-    const spy = jest.fn();
-    global.fetch = spy as unknown as typeof fetch;
+    const spy = jest.fn<typeof fetch>();
+    globalThis.fetch = spy;
     await convertImport('article', envWith('>> title: T\n\nMix.\n'));
     expect(spy).not.toHaveBeenCalled();
   });
 
   it('uses structured data already present in the content without fetching', async () => {
-    const spy = jest.fn();
-    global.fetch = spy as unknown as typeof fetch;
+    const spy = jest.fn<typeof fetch>();
+    globalThis.fetch = spy;
     const cook = await convertImport(jsonLdPage, envWith('x'), {
       sourceUrl: 'https://a.com/x',
     });
@@ -102,7 +102,7 @@ const metadataOnlyPage = `<html><head><script type="application/ld+json">${JSON.
 
 describe('structured data with no recipe in it', () => {
   it('converts the passed content instead and keeps the page image', async () => {
-    global.fetch = (async () =>
+    globalThis.fetch = (async () =>
       new Response(metadataOnlyPage)) as unknown as typeof fetch;
     const cook = await convertImport(
       'Ingredients: 1 egg. Method: boil it.',
@@ -172,15 +172,17 @@ describe('what the model is shown', () => {
 describe('when the model cannot convert', () => {
   /** Why converting `content` with `env` failed, in the words import shows. */
   async function failure(env: CloudflareEnv): Promise<string> {
-    const error = await convertToCooklang('Boil an egg.', env).catch(
-      (e: unknown) => e,
-    );
+    const [settled] = await Promise.allSettled([
+      convertToCooklang('Boil an egg.', env),
+    ]);
+    const error: unknown =
+      settled.status === 'rejected' ? settled.reason : settled.value;
     expect(error).toBeInstanceOf(ConversionError);
     return (error as ConversionError).failure;
   }
 
   it('says not a recipe when it answers with nothing', async () => {
-    expect(await failure(envWith('   '))).toBe('not a recipe');
+    expect(await failure(envWith(' '.repeat(3)))).toBe('not a recipe');
     expect(await failure(envWith('```\n```'))).toBe('not a recipe');
   });
 
@@ -217,7 +219,7 @@ describe('hostile pages', () => {
   const hostile = '<meta content="a" '.repeat(2000) + '<script '.repeat(25_000);
 
   it('are read in well under a second by every path that reads a page', async () => {
-    global.fetch = (async () =>
+    globalThis.fetch = (async () =>
       new Response(hostile)) as unknown as typeof fetch;
     const started = performance.now();
     await convertImport(
@@ -235,8 +237,8 @@ describe('hostile pages', () => {
 
 describe('addMissingCover', () => {
   it('leaves a recipe that already has images alone', async () => {
-    const spy = jest.fn();
-    global.fetch = spy as unknown as typeof fetch;
+    const spy = jest.fn<typeof fetch>();
+    globalThis.fetch = spy;
     const src =
       '>> title: T\n>> source: https://a.com/x\n>> images: https://a.com/i.jpg\n';
     expect(await addMissingCover(src)).toBe(src);
@@ -244,15 +246,15 @@ describe('addMissingCover', () => {
   });
 
   it('leaves a recipe with no source alone', async () => {
-    const spy = jest.fn();
-    global.fetch = spy as unknown as typeof fetch;
+    const spy = jest.fn<typeof fetch>();
+    globalThis.fetch = spy;
     const src = '>> title: T\n\nCook.\n';
     expect(await addMissingCover(src)).toBe(src);
     expect(spy).not.toHaveBeenCalled();
   });
 
   it('adds the page og:image as the cover', async () => {
-    global.fetch = (async () =>
+    globalThis.fetch = (async () =>
       new Response(
         '<meta property="og:image" content="https://a.com/og.jpg">',
       )) as unknown as typeof fetch;
@@ -263,7 +265,7 @@ describe('addMissingCover', () => {
   });
 
   it('prefers the Recipe JSON-LD image over og:image', async () => {
-    global.fetch = (async () =>
+    globalThis.fetch = (async () =>
       new Response(
         `${jsonLdPage}<meta property="og:image" content="https://a.com/og.jpg">`,
       )) as unknown as typeof fetch;
@@ -274,7 +276,7 @@ describe('addMissingCover', () => {
   });
 
   it('returns the source unchanged when the page cannot be fetched', async () => {
-    global.fetch = (async () =>
+    globalThis.fetch = (async () =>
       new Response('blocked', { status: 403 })) as unknown as typeof fetch;
     const src = '>> title: T\n>> source: https://a.com/x\n\nCook.\n';
     expect(await addMissingCover(src)).toBe(src);

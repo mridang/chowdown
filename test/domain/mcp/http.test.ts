@@ -69,7 +69,7 @@ function fakeRate(over: Partial<RateLimitDeps> = {}): {
   };
   return {
     deps: { store: () => store, now: () => 5000, random: () => 0.5, ...over },
-    keys: () => [...counters.keys()].toSorted(),
+    keys: () => [...counters.keys()].toSorted((a, b) => a.localeCompare(b)),
     purged,
   };
 }
@@ -120,7 +120,7 @@ describe('originRefusal / corsFor', () => {
     expect(await res?.json()).toEqual({
       jsonrpc: '2.0',
       id: null,
-      error: { code: -32600, message: 'Origin not allowed' },
+      error: { code: -32_600, message: 'Origin not allowed' },
     });
   });
 
@@ -274,7 +274,7 @@ describe('handleMcpPost — scopes', () => {
     expect(json).toEqual({
       jsonrpc: '2.0',
       id: 'w1',
-      error: { code: -32600, message: 'Requires the recipes:write scope' },
+      error: { code: -32_600, message: 'Requires the recipes:write scope' },
     });
   });
 
@@ -289,7 +289,8 @@ describe('handleMcpPost — scopes', () => {
   });
 
   it('treats a token with no scopes as able to do nothing', async () => {
-    expect((await send(write, {}, [])).status).toBe(403);
+    const res = await send(write, {}, []);
+    expect(res.status).toBe(403);
   });
 
   it('tells a read-only token that a tool does not exist, rather than that it lacks a scope for it', async () => {
@@ -304,7 +305,7 @@ describe('handleMcpPost — scopes', () => {
       ['recipes:read'],
     );
     expect(status).toBe(200);
-    expect(json).toMatchObject({ id: 3, error: { code: -32602 } });
+    expect(json).toMatchObject({ id: 3, error: { code: -32_602 } });
   });
 });
 
@@ -318,7 +319,7 @@ describe('handleMcpPost — malformed bodies', () => {
     for (const body of [[null], 7, 'ping', [[]], null, false, 0, '', true]) {
       expect(await invalid(body)).toEqual({
         status: 400,
-        code: -32600,
+        code: -32_600,
         id: null,
       });
     }
@@ -334,18 +335,18 @@ describe('handleMcpPost — malformed bodies', () => {
         fakeRate().deps,
       );
       expect(res.status).toBe(400);
-      expect(((await res.json()) as Reply).error?.code).toBe(-32700);
+      expect(((await res.json()) as Reply).error?.code).toBe(-32_700);
     }
   });
 
   it('refuses an empty batch and an oversized one', async () => {
-    expect(await invalid([])).toMatchObject({ status: 400, code: -32600 });
+    expect(await invalid([])).toMatchObject({ status: 400, code: -32_600 });
     const many = Array.from({ length: 21 }, () => ({
       jsonrpc: '2.0',
       id: 1,
       method: 'ping',
     }));
-    expect(await invalid(many)).toMatchObject({ status: 400, code: -32600 });
+    expect(await invalid(many)).toMatchObject({ status: 400, code: -32_600 });
   });
 
   it('still answers a batch within the limit', async () => {
@@ -380,7 +381,7 @@ describe('handleMcpPost — malformed bodies', () => {
   ])(
     'refuses a message with %s as an invalid request',
     async (_name, body, id) => {
-      expect(await invalid(body)).toEqual({ status: 400, code: -32600, id });
+      expect(await invalid(body)).toEqual({ status: 400, code: -32_600, id });
     },
   );
 
@@ -392,7 +393,7 @@ describe('handleMcpPost — malformed bodies', () => {
       params: [1],
     });
     expect(status).toBe(400);
-    expect(json).toMatchObject({ id: 5, error: { code: -32602 } });
+    expect(json).toMatchObject({ id: 5, error: { code: -32_602 } });
   });
 
   it('accepts string and integer ids, including zero and the empty string', async () => {
@@ -416,7 +417,7 @@ describe('handleMcpPost — malformed bodies', () => {
       rate.deps,
     );
     expect(status).toBe(400);
-    expect(json?.error?.code).toBe(-32600);
+    expect(json?.error?.code).toBe(-32_600);
     expect(json?.result).toBeUndefined();
     // Refused unread, so only the general allowance is charged, once.
     expect(rate.keys()).toEqual(['mcp-request:1']);
@@ -446,7 +447,7 @@ describe('handleMcpPost — malformed bodies', () => {
       { 'mcp-protocol-version': '2026-07-28' },
     );
     expect(status).toBe(400);
-    expect(json?.error?.code).toBe(-32600);
+    expect(json?.error?.code).toBe(-32_600);
   });
 
   it('answers the requests in a batch that also holds replies, and skips the replies', async () => {
@@ -480,7 +481,7 @@ describe('handleMcpPost — request size', () => {
       fakeRate().deps,
     );
     expect(res.status).toBe(413);
-    expect(((await res.json()) as Reply).error?.code).toBe(-32600);
+    expect(((await res.json()) as Reply).error?.code).toBe(-32_600);
   });
 
   it('refuses a body with no announced length that turns out to be over the limit', async () => {
@@ -544,7 +545,7 @@ describe('handleMcpPost — protocol checks', () => {
       modernHeaders('ping'),
     );
     expect(status).toBe(400);
-    expect(json).toMatchObject({ id: 1, error: { code: -32020 } });
+    expect(json).toMatchObject({ id: 1, error: { code: -32_020 } });
   });
 
   it('refuses a version we do not speak with the versions we do, naming the request', async () => {
@@ -554,7 +555,7 @@ describe('handleMcpPost — protocol checks', () => {
     );
     expect(status).toBe(400);
     expect(json?.id).toBe('v1');
-    expect(json?.error?.code).toBe(-32022);
+    expect(json?.error?.code).toBe(-32_022);
     expect(json?.error?.data?.['supported']).toContain('2026-07-28');
     expect(json?.error?.data?.['requested']).toBe('1999-01-01');
   });
@@ -565,7 +566,7 @@ describe('handleMcpPost — protocol checks', () => {
       modernHeaders('tools/call', 'other'),
     );
     expect(status).toBe(400);
-    expect(json).toMatchObject({ id: 1, error: { code: -32020 } });
+    expect(json).toMatchObject({ id: 1, error: { code: -32_020 } });
   });
 
   it('refuses a newest-era request that has no client capabilities, with 400 and invalid params', async () => {
@@ -579,7 +580,7 @@ describe('handleMcpPost — protocol checks', () => {
       modernHeaders('tools/list'),
     );
     expect(status).toBe(400);
-    expect(json).toMatchObject({ id: 6, error: { code: -32602 } });
+    expect(json).toMatchObject({ id: 6, error: { code: -32_602 } });
   });
 
   it('refuses a version that is not text', async () => {
@@ -588,12 +589,12 @@ describe('handleMcpPost — protocol checks', () => {
         jsonrpc: '2.0',
         id: 6,
         method: 'tools/list',
-        params: { _meta: { [META]: 20260728, [CAPS]: {} } },
+        params: { _meta: { [META]: 20_260_728, [CAPS]: {} } },
       },
       modernHeaders('tools/list'),
     );
     expect(status).toBe(400);
-    expect(json?.error?.code).toBe(-32602);
+    expect(json?.error?.code).toBe(-32_602);
   });
 
   it('refuses the newest-era header on a request that has no metadata to match it', async () => {
@@ -602,7 +603,7 @@ describe('handleMcpPost — protocol checks', () => {
       modernHeaders('tools/list'),
     );
     expect(status).toBe(400);
-    expect(json).toMatchObject({ id: 7, error: { code: -32602 } });
+    expect(json).toMatchObject({ id: 7, error: { code: -32_602 } });
   });
 
   it('does not take an older version named in the metadata for the newest era', async () => {
@@ -616,7 +617,7 @@ describe('handleMcpPost — protocol checks', () => {
       { 'mcp-protocol-version': '2025-11-25' },
     );
     expect(status).toBe(400);
-    expect(json).toMatchObject({ id: 8, error: { code: -32022 } });
+    expect(json).toMatchObject({ id: 8, error: { code: -32_022 } });
   });
 
   it('serves an older client that sends no protocol headers at all', async () => {
@@ -633,10 +634,10 @@ describe('handleMcpPost — protocol checks', () => {
   it('answers an unknown method with 404 to a newest-era client, 200 to an older one', async () => {
     const newest = await send(modern('nope/nope'), modernHeaders('nope/nope'));
     expect(newest.status).toBe(404);
-    expect(newest.json).toMatchObject({ id: 1, error: { code: -32601 } });
+    expect(newest.json).toMatchObject({ id: 1, error: { code: -32_601 } });
     const older = await send({ jsonrpc: '2.0', id: 1, method: 'nope/nope' });
     expect(older.status).toBe(200);
-    expect(older.json?.error?.code).toBe(-32601);
+    expect(older.json?.error?.code).toBe(-32_601);
   });
 
   it('negotiates an older client’s version in the initialize handshake', async () => {
@@ -691,7 +692,7 @@ describe('handleMcpPost — protocol checks', () => {
     expect(status).toBe(200);
     expect(json).toMatchObject({
       id: 1,
-      error: { code: -32602, message: expect.stringContaining('ghost') },
+      error: { code: -32_602, message: expect.stringContaining('ghost') },
     });
   });
 
@@ -701,7 +702,7 @@ describe('handleMcpPost — protocol checks', () => {
       modernHeaders('resources/read', 'ui://nope'),
     );
     expect(json?.error).toEqual({
-      code: -32602,
+      code: -32_602,
       message: 'Resource not found',
       data: { uri: 'ui://nope' },
     });
@@ -712,7 +713,7 @@ describe('handleMcpPost — protocol checks', () => {
       modern('resources/read', { uri: 7 }),
       modernHeaders('resources/read'),
     );
-    expect(json?.error?.code).toBe(-32602);
+    expect(json?.error?.code).toBe(-32_602);
   });
 
   it('answers an internal fault with -32603 and nothing about the cause', async () => {
@@ -726,7 +727,7 @@ describe('handleMcpPost — protocol checks', () => {
     });
     spy.mockRestore();
     if (json?.error) {
-      expect(json.error.code).toBe(-32603);
+      expect(json.error.code).toBe(-32_603);
       expect(json.error.message).toBe('Something went wrong on the server.');
     } else {
       // A tool that reports its own failure as a result is also acceptable.
@@ -754,13 +755,13 @@ describe('handleMcpPost — batches', () => {
       'mcp-protocol-version': '2026-07-28',
     });
     expect(status).toBe(400);
-    expect(json).toMatchObject({ id: null, error: { code: -32600 } });
+    expect(json).toMatchObject({ id: null, error: { code: -32_600 } });
   });
 
   it('refuses a batch holding a newest-era message', async () => {
     const { status, json } = await send([legacy(1), modern('ping')]);
     expect(status).toBe(400);
-    expect(json).toMatchObject({ id: null, error: { code: -32600 } });
+    expect(json).toMatchObject({ id: null, error: { code: -32_600 } });
   });
 
   it('names no request in the refusal of a batch', async () => {
@@ -780,7 +781,8 @@ describe('handleMcpPost — rate limiting', () => {
   it('answers a user over their tool-call allowance with 429, Retry-After and a JSON-RPC error', async () => {
     const rate = fakeRate();
     for (let i = 0; i < 120; i++) {
-      expect((await send(call(i), {}, ALL_SCOPES, rate.deps)).status).toBe(200);
+      const res = await send(call(i), {}, ALL_SCOPES, rate.deps);
+      expect(res.status).toBe(200);
     }
     const { status, headers, json } = await send(
       call(121),
@@ -793,7 +795,7 @@ describe('handleMcpPost — rate limiting', () => {
     expect(json).toMatchObject({
       id: 121,
       error: {
-        code: -32603,
+        code: -32_603,
         data: { retryAfterSeconds: 60 },
       },
     });
@@ -900,7 +902,8 @@ describe('handleMcpPost — rate limiting', () => {
         throw new Error('no database');
       },
     });
-    expect((await send(call(1), {}, ALL_SCOPES, broken.deps)).status).toBe(200);
+    const res = await send(call(1), {}, ALL_SCOPES, broken.deps);
+    expect(res.status).toBe(200);
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
   });
@@ -918,7 +921,7 @@ describe('unauthorizedResponse', () => {
     expect(await res.json()).toEqual({
       jsonrpc: '2.0',
       id: null,
-      error: { code: -32600, message: 'Authorization required' },
+      error: { code: -32_600, message: 'Authorization required' },
     });
   });
 
@@ -947,10 +950,11 @@ describe('handleMcpPost — junk bodies and the rate limit', () => {
     const rate = fakeRate();
     const statuses = await Array.from({ length: 601 }).reduce<
       Promise<readonly number[]>
-    >(
-      async (done) => [...(await done), (await junk(rate.deps)).status],
-      Promise.resolve([]),
-    );
+    >(async (done) => {
+      const earlier = await done;
+      const response = await junk(rate.deps);
+      return [...earlier, response.status];
+    }, Promise.resolve([]));
     expect(statuses.slice(0, 600).every((status) => status === 400)).toBe(true);
     expect(statuses[600]).toBe(429);
     expect(rate.keys()).toEqual(['mcp-request:1']);
@@ -965,7 +969,7 @@ describe('handleMcpPost — junk bodies and the rate limit', () => {
     const res = await junk(rate.deps);
     expect(res.status).toBe(429);
     expect(res.headers.get('retry-after')).toBe('60');
-    expect(((await res.json()) as Reply).error?.code).toBe(-32603);
+    expect(((await res.json()) as Reply).error?.code).toBe(-32_603);
   });
 
   it.each([
@@ -1109,13 +1113,12 @@ describe('respondToMcp', () => {
 
   /** An authenticate that answers `auth` and remembers it was asked. */
   function authenticating(auth: McpAuth | Error) {
-    const asked = jest.fn<Authenticate>(async () => {
+    return jest.fn<Authenticate>(async () => {
       if (auth instanceof Error) {
         throw auth;
       }
       return auth;
     });
-    return asked;
   }
 
   const ask = (
@@ -1197,7 +1200,10 @@ describe('respondToMcp', () => {
       expect(JSON.parse(text)).toEqual({
         jsonrpc: '2.0',
         id: null,
-        error: { code: -32603, message: 'Something went wrong on the server.' },
+        error: {
+          code: -32_603,
+          message: 'Something went wrong on the server.',
+        },
       });
       expect(text).not.toContain('secret detail');
       expect(spy).toHaveBeenCalled();

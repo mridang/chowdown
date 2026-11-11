@@ -30,7 +30,8 @@ const REMEMBER_SECONDS = 365 * 24 * 60 * 60;
 
 /** Whether `value` is one of the layouts. */
 function isListView(value: string | undefined): value is ListView {
-  return LIST_VIEWS.some((view) => view === value);
+  const views: readonly string[] = LIST_VIEWS;
+  return value !== undefined && views.includes(value);
 }
 
 /**

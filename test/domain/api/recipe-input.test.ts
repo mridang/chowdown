@@ -70,7 +70,7 @@ describe('line limit', () => {
 
   it('refuses a text of nothing but line breaks that is within the character limit', () => {
     const blank = `x${'\n'.repeat(MAX_COOKLANG_BYTES - 1)}`;
-    expect(blank.length).toBe(MAX_COOKLANG_BYTES);
+    expect(blank).toHaveLength(MAX_COOKLANG_BYTES);
     expect(parseNewRecipe({ name: 'a', cooklang: blank }).ok).toBe(false);
     expect(parseReplacementCooklang({ cooklang: blank }).ok).toBe(false);
   });

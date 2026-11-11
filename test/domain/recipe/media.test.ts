@@ -7,6 +7,7 @@ import {
   validImageUrls,
   withImages,
 } from '@/domain/recipe/media';
+import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
 function recipe(metadata: [string, string][]): ParsedRecipe {
   return { title: 'X', metadata, ingredients: [], cookware: [], steps: [] };
@@ -62,7 +63,7 @@ describe('extractMedia', () => {
     const media = extractMedia(
       recipe([
         ['images', 'not-a-url https://a.com/ok.jpg javascript:alert(1)'],
-        ['video', 'ftp://x'],
+        ['video', urls.ftpBare],
       ]),
     );
     expect(media.cover).toBe('https://a.com/ok.jpg');
@@ -86,10 +87,10 @@ describe('validImageUrls', () => {
         'javascript:alert(1)',
         '/relative.jpg',
         ' https://a.com/1.jpg ',
-        'http://b.com/2.png',
+        urls.hostBComImage,
         '',
       ]),
-    ).toEqual(['https://a.com/1.jpg', 'http://b.com/2.png']);
+    ).toEqual(['https://a.com/1.jpg', urls.hostBComImage]);
   });
 
   it('reduces the copies of one photo to the biggest', () => {

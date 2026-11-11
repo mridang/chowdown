@@ -74,14 +74,16 @@ export function makeConnectionsCollection(
       }
       return { limit, after };
     },
-    handle: async ({ limit, after }, { uid }) =>
-      sliceAfter(
-        (await listConnectedApps(getDatabase(), uid)).map(connectedAppResource),
+    handle: async ({ limit, after }, { uid }) => {
+      const apps = await listConnectedApps(getDatabase(), uid);
+      return sliceAfter(
+        apps.map((app) => connectedAppResource(app)),
         appPosition,
         compareNewestFirst,
         after,
         limit,
-      ),
+      );
+    },
     encode: (slice) =>
       page(slice.items, slice.next, { 'Cache-Control': 'private, no-cache' }),
   });
@@ -105,10 +107,11 @@ export function makeConnectionItem(
   resolver: CurrentUserResolver = requestCookieResolver,
 ): ApiController<GrantContext> {
   return new ApiController<GrantContext>({
-    context: async (request, route) => ({
-      uid: await liveUid(request, resolver),
-      grantId: (await route.params)?.['grant_id'] ?? '',
-    }),
+    context: async (request, route) => {
+      const uid = await liveUid(request, resolver);
+      const params = await route.params;
+      return { uid, grantId: params?.['grant_id'] ?? '' };
+    },
   }).on({
     method: 'DELETE',
     handle: async (_input, { uid, grantId }) => {

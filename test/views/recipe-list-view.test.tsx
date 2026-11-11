@@ -185,13 +185,13 @@ describe('RecipeListScreen at scale', () => {
     expect(out).toContain('No recipes matched.');
   });
 
-  it('shows the whole title on the tile, so a cut-off name can still be read', () => {
+  it('keeps the whole title as the tile text, so a cut-off name can still be read', () => {
     const title = `${'Very long '.repeat(10)}name`;
     const out = screen({
       phase: 'ready',
       data: { recipes: [{ id: 'a', title, uncurated: false }] },
     });
-    expect(out).toContain(`title="${title}"`);
+    expect(out).toContain(`<span class="name">${title}</span>`);
   });
 
   it('escapes a hostile title instead of interpreting it', () => {

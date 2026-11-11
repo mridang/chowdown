@@ -26,7 +26,8 @@ export type UnitSystem = 'metric' | 'us' | 'imperial';
 
 /** Narrow an arbitrary string to a {@link UnitSystem}. */
 export function isUnitSystem(value: string): value is UnitSystem {
-  return value === 'metric' || value === 'us' || value === 'imperial';
+  const systems: readonly string[] = ['metric', 'us', 'imperial'];
+  return systems.includes(value);
 }
 
 /** Mass units → grams. */
@@ -137,14 +138,20 @@ function formatMass(grams: number, system: UnitSystem): string {
   return oz >= 16 ? `${roundTo(oz / 16, 0.05)} lb` : `${roundTo(oz, 0.1)} oz`;
 }
 
+/** The rounding step for each volume unit; any other unit rounds to halves. */
+const ROUNDING_STEP: Readonly<Record<string, number>> = {
+  ml: 1,
+  l: 0.01,
+  cup: 0.25,
+};
+
 /** Format a volume given in millilitres for the target system. */
 function formatVolume(ml: number, system: UnitSystem): string {
   const targets = VOL_TARGETS[system];
   const fitting = targets.find(([, size]) => ml >= size);
   if (fitting) {
     const [unit, size] = fitting;
-    const step =
-      unit === 'ml' ? 1 : unit === 'l' ? 0.01 : unit === 'cup' ? 0.25 : 0.5;
+    const step = own(ROUNDING_STEP, unit) ?? 0.5;
     const amount = roundTo(ml / size, step);
     return `${amount} ${unit === 'cup' && Number(amount) > 1 ? 'cups' : unit}`;
   }
@@ -153,21 +160,27 @@ function formatVolume(ml: number, system: UnitSystem): string {
   return `${roundTo(ml / smallestSize, 0.5)} ${smallestUnit}`;
 }
 
+/** What ends a line for `.` in a regular expression. */
+const LINE_BREAK = /[\n\r\u2028\u2029]/;
+
 /**
  * Convert a single quantity string (e.g. "200 g", "2 cups", "180 C") to the
  * target system. Returns the input unchanged when there is no number, no unit,
  * or the unit is not recognised (counts like "2" stay "2").
  */
 export function convertQuantity(quantity: string, system: UnitSystem): string {
-  const match = /^([\d.,/]+)\s*(.*)$/.exec(quantity.trim());
-  if (!match) {
+  const text = quantity.trim();
+  const number = /^[\d.,/]+/.exec(text)?.[0];
+  const tail = text.slice(number?.length ?? 0);
+  // The unit is the rest of one line: a line break in it is not a quantity.
+  if (number === undefined || LINE_BREAK.test(tail.trimStart())) {
     return quantity;
   }
-  const value = parseNumber((match[1] ?? '').trim());
-  const unit = (match[2] ?? '')
+  const value = parseNumber(number.trim());
+  const unit = tail
     .trim()
     .toLowerCase()
-    .replace(/\./g, '')
+    .replaceAll('.', '')
     .replace('fl oz', 'floz');
   if (value === null || !unit) {
     return quantity;
@@ -180,12 +193,12 @@ export function convertQuantity(quantity: string, system: UnitSystem): string {
   if (mlPerUnit !== undefined) {
     return formatVolume(value * mlPerUnit, system);
   }
-  if (unit === 'c' || unit === '°c' || unit === 'celsius') {
+  if (['c', '°c', 'celsius'].includes(unit)) {
     return system === 'metric'
       ? `${Math.round(value)} °C`
       : `${Math.round((value * 9) / 5 + 32)} °F`;
   }
-  if (unit === 'f' || unit === '°f' || unit === 'fahrenheit') {
+  if (['f', '°f', 'fahrenheit'].includes(unit)) {
     return system === 'metric'
       ? `${Math.round(((value - 32) * 5) / 9)} °C`
       : `${Math.round(value)} °F`;
@@ -244,7 +257,7 @@ function formatAmount(value: number): string {
 /** One number as written in a quantity: "2", "1.5", "1/2" or "1 1/2". */
 const AMOUNT = String.raw`\d+(?:[.,]\d+)?(?:\s+\d+\s*\/\s*\d+|\s*\/\s*\d+)?`;
 const SCALABLE = new RegExp(
-  `^(${AMOUNT})(?:\\s*[-–]\\s*(${AMOUNT}))?\\s*(.*)$`,
+  String.raw`^(${AMOUNT})(?:\s*[-–]\s*(${AMOUNT}))?\s*(.*)$`,
 );
 
 /** Vulgar-fraction characters and what they are worth. */
@@ -264,7 +277,7 @@ const FRACTION_GLYPHS: Readonly<Record<string, number>> = {
 function amountValue(text: string): number | undefined {
   // "1,000" is a thousand; "2,5" is two and a half.
   if (/^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/.test(text)) {
-    return Number(text.replace(/,/g, ''));
+    return Number(text.replaceAll(',', ''));
   }
   const glyph = /^(\d+)?\s*([½⅓⅔¼¾⅛⅜⅝⅞])$/.exec(text);
   if (glyph) {
@@ -308,6 +321,20 @@ export function scaleQuantity(quantity: string, factor: number): string {
   return unit ? `${amount} ${unit}` : amount;
 }
 
+/** A number with thousands separators: `1,200` or `1,200.5`. */
+const THOUSANDS_NUMBER = String.raw`\d{1,3}(?:,\d{3})+(?:\.\d+)?`;
+
+/** An optional whole number and a vulgar fraction: `½`, `1½`, `1 ½`. */
+const VULGAR_NUMBER = String.raw`\d*\s*[½⅓⅔¼¾⅛⅜⅝⅞]`;
+
+/** A plain number, a decimal, or a mixed or simple fraction: `3`, `2.5`, `1 1/2`, `1/2`. */
+const PLAIN_NUMBER = String.raw`\d+(?:[.,]\d+)?(?:\s+\d+\s*\/\s*\d+|\s*\/\s*\d+)?`;
+
+/** The number a quantity starts with, in whichever of the three notations it is written. */
+export const LEADING_NUMBER = new RegExp(
+  `^(${[THOUSANDS_NUMBER, VULGAR_NUMBER, PLAIN_NUMBER].join('|')})`,
+);
+
 /** How much of something, in a base unit, so two quantities can be compared. */
 export interface BaseAmount {
   readonly dimension: 'mass' | 'volume' | 'count';
@@ -323,21 +350,19 @@ export interface BaseAmount {
  * compare "400 g" with "1 lb" or "2 cups" with "500 ml".
  */
 export function toBaseAmount(quantity: string): BaseAmount | undefined {
-  const match =
-    /^(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d*\s*[½⅓⅔¼¾⅛⅜⅝⅞]|\d+(?:[.,]\d+)?(?:\s+\d+\s*\/\s*\d+|\s*\/\s*\d+)?)\s*(.*)$/.exec(
-      quantity.trim(),
-    );
-  if (!match) {
+  const match = LEADING_NUMBER.exec(quantity.trim());
+  const tail = quantity.trim().slice(match?.[0].length ?? 0);
+  if (!match || LINE_BREAK.test(tail.trimStart())) {
     return undefined;
   }
   const value = amountValue((match[1] ?? '').trim());
   if (value === undefined) {
     return undefined;
   }
-  const unit = (match[2] ?? '')
+  const unit = tail
     .trim()
     .toLowerCase()
-    .replace(/\./g, '')
+    .replaceAll('.', '')
     .replace('fl oz', 'floz');
   const gramsPerUnit = own(MASS_TO_G, unit);
   if (gramsPerUnit !== undefined) {

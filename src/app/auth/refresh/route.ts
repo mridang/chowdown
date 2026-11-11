@@ -32,12 +32,13 @@ export async function GET(request: NextRequest): Promise<Response> {
   }
   const returnTo = safeReturnPath(request.nextUrl.searchParams.get('returnTo'));
   const response = NextResponse.redirect(`${origin}${returnTo ?? '/app'}`);
+  const session = await getSession();
   await setSessionCookie(response, user, {
     secret: getEnv().SESSION_SECRET,
     secure: origin.startsWith('https'),
     // Correcting the hint must not lengthen the session: a copied cookie
     // could otherwise be kept alive for ever by calling this route.
-    exp: (await getSession())?.exp,
+    exp: session?.exp,
   });
   return response;
 }

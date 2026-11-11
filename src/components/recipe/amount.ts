@@ -24,7 +24,7 @@ export const AMOUNT_PATTERN =
   String.raw`|\d+\s+\d+/\d+` +
   String.raw`|\d+/\d+` +
   String.raw`|\d+(?:[.,]\d+)?` +
-  String.raw`|[¼½¾⅓⅔]`;
+  '|[¼½¾⅓⅔]';
 
 /** The shapes an amount can take, each with the groups it needs. */
 const SHAPES: readonly {
@@ -63,8 +63,7 @@ const SHAPES: readonly {
 /**
  * The number an amount stands for, or `null` when the text is not an amount
  * (or divides by zero).
- *
- * @param text One amount such as `1 1/2`, `½` or `2,5`, without a unit.
+ * @param text - One amount such as `1 1/2`, `½` or `2,5`, without a unit.
  */
 export function parseAmount(text: string): number | null {
   const trimmed = text.trim();

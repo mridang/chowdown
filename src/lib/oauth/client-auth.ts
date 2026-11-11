@@ -31,13 +31,13 @@ export const CLIENT_ASSERTION_TYPE =
   'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
 
 /** The longest assertion read, in characters; a signed set of six claims is well under a kilobyte. */
-export const MAX_ASSERTION_LENGTH = 8_000;
+export const MAX_ASSERTION_LENGTH = 8000;
 
 /** The largest key set read from a client's `jwks_uri`, in bytes. */
 export const MAX_JWKS_BYTES = 32_000;
 
 /** How long to wait for a client's key set. */
-const JWKS_TIMEOUT_MS = 5_000;
+const JWKS_TIMEOUT_MS = 5000;
 
 /** How far a client's clock may differ from ours, in seconds. */
 export const CLOCK_TOLERANCE_SECONDS = 30;
@@ -154,12 +154,12 @@ export async function verifyClientAssertion(
     return invalid('The client_assertion is not valid.');
   }
   const { exp, jti } = verified.payload;
+  const badJti =
+    typeof jti !== 'string' || jti === '' || jti.length > MAX_JTI_LENGTH;
   if (
     exp === undefined ||
     exp > now + MAX_ASSERTION_LIFETIME_SECONDS ||
-    typeof jti !== 'string' ||
-    jti === '' ||
-    jti.length > MAX_JTI_LENGTH
+    badJti
   ) {
     return invalid('The client_assertion is not valid.');
   }

@@ -6,6 +6,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import { DAILY_BUDGETS } from '@/domain/daily-budget';
@@ -62,11 +63,11 @@ afterEach(() => restore());
 
 const URL = 'https://chowdown.test/api/recipes/imports';
 
+const jsonHeaders = { 'content-type': 'application/json' };
+
 /** A POST with the given body text. */
-const post = (
-  body: string,
-  headers: Record<string, string> = { 'content-type': 'application/json' },
-) => POST(new Request(URL, { method: 'POST', headers, body }));
+const post = (body: string, headers: Record<string, string> = jsonHeaders) =>
+  POST(new Request(URL, { method: 'POST', headers, body }));
 
 /** A POST of `{ input }`. */
 const postInput = (input: string) => post(JSON.stringify({ input }));
@@ -84,13 +85,15 @@ const stored = (uid: number) =>
 describe('POST /api/recipes/imports', () => {
   it('answers 401 when nobody is signed in, without doing any work', async () => {
     session.uid = null;
-    expect((await postInput('https://a.example.com/r')).status).toBe(401);
+    const res = await postInput('https://a.example.com/r');
+    expect(res.status).toBe(401);
     expect(prepareImport).not.toHaveBeenCalled();
   });
 
   it("answers 429 with Retry-After once the day's import allowance is used, without doing the work", async () => {
     for (let i = 0; i < DAILY_BUDGETS.import.limit; i += 1) {
-      expect((await postInput('https://a.example.com/r')).status).toBe(201);
+      const accepted = await postInput('https://a.example.com/r');
+      expect(accepted.status).toBe(201);
     }
     prepareImport.mockClear();
     const res = await postInput('https://a.example.com/r');
@@ -104,7 +107,8 @@ describe('POST /api/recipes/imports', () => {
       await postInput('https://a.example.com/r');
     }
     session.uid = 8;
-    expect((await postInput('https://a.example.com/r')).status).toBe(201);
+    const res = await postInput('https://a.example.com/r');
+    expect(res.status).toBe(201);
   });
 
   it('answers 415 to a body that is not JSON', async () => {
@@ -126,7 +130,8 @@ describe('POST /api/recipes/imports', () => {
     ['an input that is not text', '{"input":5}'],
     ['a blank input', '{"input":"   "}'],
   ])('answers 400 to %s', async (_name, body) => {
-    expect((await post(body)).status).toBe(400);
+    const res = await post(body);
+    expect(res.status).toBe(400);
     expect(prepareImport).not.toHaveBeenCalled();
   });
 
@@ -164,7 +169,7 @@ describe('POST /api/recipes/imports', () => {
 
   it('turns away thousands of tiny links in one request just the same', async () => {
     const res = await postInput(
-      Array.from({ length: 5000 }, (_, i) => `http://a.b/${i}`).join(' '),
+      Array.from({ length: 5000 }, (_, i) => `https://a.b/${i}`).join(' '),
     );
     expect(res.status).toBe(400);
     expect(prepareImport).not.toHaveBeenCalled();
@@ -229,7 +234,8 @@ describe('GET /api/recipes/imports', () => {
 
   it('answers 401 when nobody is signed in', async () => {
     session.uid = null;
-    expect((await list()).status).toBe(401);
+    const res = await list();
+    expect(res.status).toBe(401);
   });
 
   it("lists the person's imports, newest first, as summaries without drafts", async () => {
@@ -248,7 +254,8 @@ describe('GET /api/recipes/imports', () => {
 
   it('pages with a cursor', async () => {
     seed();
-    const first = (await (await list('?limit=2')).json()) as {
+    const firstRes = await list('?limit=2');
+    const first = (await firstRes.json()) as {
       items: { id: string }[];
       next?: string;
     };
@@ -257,7 +264,8 @@ describe('GET /api/recipes/imports', () => {
     const cursor = new globalThis.URL(first.next ?? '').searchParams.get(
       'cursor',
     );
-    const second = (await (await list(`?limit=2&cursor=${cursor}`)).json()) as {
+    const secondRes = await list(`?limit=2&cursor=${cursor}`);
+    const second = (await secondRes.json()) as {
       items: { id: string }[];
       next?: string;
     };
@@ -268,7 +276,8 @@ describe('GET /api/recipes/imports', () => {
   it.each(['?limit=0', '?limit=101', '?limit=x', '?cursor=%25%25'])(
     'answers 400 to %s',
     async (query) => {
-      expect((await list(query)).status).toBe(400);
+      const res = await list(query);
+      expect(res.status).toBe(400);
     },
   );
 });

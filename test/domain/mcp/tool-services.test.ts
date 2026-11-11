@@ -4,7 +4,7 @@ import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import type { EmbeddingRow } from '@/domain/db/embeddings';
 import type { DriveFile } from '@/lib/google/drive';
 import type { FileOps } from '@/domain/mcp/tool-calls';
-import { BackendFailure } from '@/lib/mcp';
+import { BackendFailureError } from '@/lib/mcp';
 import {
   EMBEDDINGS_PER_CALL,
   guardFileOps,
@@ -22,7 +22,7 @@ describe('guarded', () => {
     const failure = await guarded('Google Drive', async () => {
       throw cause;
     }).catch((error: unknown) => error);
-    expect(failure).toBeInstanceOf(BackendFailure);
+    expect(failure).toBeInstanceOf(BackendFailureError);
     expect(failure).toMatchObject({ service: 'Google Drive', cause });
   });
 
@@ -31,7 +31,7 @@ describe('guarded', () => {
       guarded('Google Drive', async () => {
         throw new TypeError('fetch failed');
       }),
-    ).rejects.toBeInstanceOf(BackendFailure);
+    ).rejects.toBeInstanceOf(BackendFailureError);
   });
 
   it('lets a Drive that is not connected through, to be explained in its own words', async () => {
@@ -45,7 +45,7 @@ describe('guarded', () => {
   it('does not rename a failure that is already named', async () => {
     await expect(
       guarded('the recipe database', async () => {
-        throw new BackendFailure('Google Drive', new Error('x'));
+        throw new BackendFailureError('Google Drive', new Error('x'));
       }),
     ).rejects.toMatchObject({ service: 'Google Drive' });
   });
@@ -115,11 +115,11 @@ describe('planBackfill', () => {
     name: `R${n}.cook`,
     modifiedTime,
   });
-  const row = (n: number, modified_time: string | null): EmbeddingRow => ({
+  const row = (n: number, modifiedTime: string | null): EmbeddingRow => ({
     user_id: 1,
     drive_file_id: `f${n}`,
     title: `R${n}`,
-    modified_time,
+    modified_time: modifiedTime,
     vector: '[1]',
     similar: null,
   });

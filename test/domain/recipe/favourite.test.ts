@@ -18,9 +18,9 @@ const user = (token: string | null) =>
 /** Fake collaborators; `background` work is collected to await in the test. */
 function fakes(
   options: {
-    user?: User | undefined;
+    user?: User;
     file?: string;
-    row?: { name: string } | undefined;
+    row?: { name: string };
   } = {},
 ) {
   const background: Promise<unknown>[] = [];
@@ -110,14 +110,14 @@ describe('setFavouriteAndTag', () => {
   });
 
   it('does nothing in Drive when the account has gone', async () => {
-    const { deps, settle } = fakes({ user: undefined });
+    const { deps, settle } = fakes({ user: void 0 });
     await setFavouriteAndTag(3, 'f1', true, deps);
     await settle();
     expect(deps.readFile).not.toHaveBeenCalled();
   });
 
   it('skips the cache refresh for a recipe that is not cached', async () => {
-    const { deps, settle } = fakes({ row: undefined });
+    const { deps, settle } = fakes({ row: void 0 });
     await setFavouriteAndTag(3, 'f1', true, deps);
     await settle();
     expect(deps.writeFile).toHaveBeenCalled();

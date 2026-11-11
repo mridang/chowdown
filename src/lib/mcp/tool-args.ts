@@ -27,9 +27,7 @@ export function stringArg(value: unknown): string {
 export function stringListArg(value: unknown): readonly string[] {
   const list = Array.isArray(value)
     ? value
-    : value === undefined
-      ? []
-      : [value];
+    : [value].filter((item) => item !== undefined);
   return list
     .filter((v) => typeof v === 'string' || typeof v === 'number')
     .flatMap((v) => String(v).split(','))

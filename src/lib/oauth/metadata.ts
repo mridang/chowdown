@@ -35,8 +35,13 @@ export function issuerOf(origin: string): string {
 }
 
 /** A path without its trailing slashes. */
-const withoutTrailingSlashes = (path: string): string =>
-  path.replace(/\/+$/, '');
+const withoutTrailingSlashes = (path: string): string => {
+  let end = path.length;
+  while (end > 0 && path[end - 1] === '/') {
+    end -= 1;
+  }
+  return path.slice(0, end);
+};
 
 /**
  * Whether a client-supplied `resource` names this MCP server. The value is read
@@ -48,9 +53,10 @@ const withoutTrailingSlashes = (path: string): string =>
 export function isOurResource(value: string, origin: string): boolean {
   const given = parseUrl(value);
   const ours = parseUrl(resourceUri(origin));
+  if (given === undefined || ours === undefined) {
+    return false;
+  }
   return (
-    given !== undefined &&
-    ours !== undefined &&
     !given.search &&
     !given.hash &&
     given.origin === ours.origin &&

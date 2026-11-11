@@ -90,9 +90,15 @@ function renditionOf(url: string): Rendition {
  * order of different photos is kept and only the choice among copies changes.
  */
 export function bestRenditions(urls: readonly string[]): readonly string[] {
-  const photos = Map.groupBy(urls.map(renditionOf), (r) => r.photo);
+  const photos = Map.groupBy(
+    urls.map((url) => renditionOf(url)),
+    (r) => r.photo,
+  );
   return [...photos.values()].flatMap((copies) => {
-    const best = copies.reduce((a, b) => (b.pixels > a.pixels ? b : a));
-    return [best.url];
+    const best = copies.reduce<Rendition | undefined>(
+      (a, b) => (a === undefined || b.pixels > a.pixels ? b : a),
+      copies[0],
+    );
+    return best ? [best.url] : [];
   });
 }

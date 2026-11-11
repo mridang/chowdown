@@ -27,7 +27,7 @@ export function FilterChip({
   );
 }
 
-/** A small count badge, e.g. the number of active filters. */
+/** A small count badge, e.g. The number of active filters. */
 export function CountBadge({
   children,
   className,
@@ -47,7 +47,7 @@ export function CountBadge({
   );
 }
 
-/** A plain tag, e.g. a keyword on a recipe. */
+/** A plain tag, e.g. A keyword on a recipe. */
 export function Tag({
   href,
   children,

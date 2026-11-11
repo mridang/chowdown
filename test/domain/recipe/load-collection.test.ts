@@ -13,9 +13,10 @@ import {
 const db = {} as Database;
 
 /** Thrown by the fake redirect so a test can see where it went. */
-class Redirected extends Error {
+class RedirectedError extends Error {
   constructor(readonly to: string) {
     super(`redirect ${to}`);
+    this.name = 'RedirectedError';
   }
 }
 
@@ -34,22 +35,29 @@ function rows(
     epoch?: number;
   } = {},
 ): AppPageRows {
-  const { token = 'sealed', folder = 'folder', recipes = 2 } = options;
+  const {
+    token = 'sealed',
+    folder = 'folder',
+    recipes = 2,
+    user,
+    epoch,
+    embedded,
+  } = options;
   return {
     user:
-      options.user === false
+      user === false
         ? undefined
         : ({
             id: 1,
             refresh_token_enc: token,
             recipes_folder_id: folder,
-            session_epoch: options.epoch ?? 0,
+            session_epoch: epoch ?? 0,
           } as AppPageRows['user']),
     // The first `embedded` recipes carry an embedding stamp, the rest do not.
     recipes: Array.from({ length: recipes }, (_, i) => ({
       drive_file_id: `r${i}`,
       parse_error: null,
-      embedded_at: i < (options.embedded ?? recipes) ? 'stamp' : null,
+      embedded_at: i < (embedded ?? recipes) ? 'stamp' : null,
     })) as unknown as AppPageRows['recipes'],
     favouriteIds: ['r0'],
   };
@@ -67,7 +75,7 @@ function fakes(
     session: async () => session(),
     database: () => db,
     pageRows,
-    claimSync: jest.fn<CollectionDeps['claimSync']>(async () => true),
+    claimLease: jest.fn<CollectionDeps['claimLease']>(async () => true),
     sync: jest.fn(async () => undefined),
     claimBackfill: jest.fn<CollectionDeps['claimBackfill']>(async () => true),
     backfill: jest.fn(async () => undefined),
@@ -75,7 +83,7 @@ function fakes(
       background.push(work);
     },
     redirect: (to) => {
-      throw new Redirected(to);
+      throw new RedirectedError(to);
     },
     ...overrides,
   };
@@ -131,7 +139,7 @@ describe('loadCollection', () => {
 
   it('does not start another sync while one started within the last minute', async () => {
     const { deps, background } = fakes([rows()], {
-      claimSync: async () => false,
+      claimLease: async () => false,
     });
     await loadCollection('/app', deps);
     await Promise.all(background);
@@ -140,10 +148,10 @@ describe('loadCollection', () => {
 
   it('starts only one sync when several views arrive together', async () => {
     const turns = [true, false, false];
-    const claimSync = jest.fn<CollectionDeps['claimSync']>(
+    const claimLease = jest.fn<CollectionDeps['claimLease']>(
       async () => turns.shift() ?? false,
     );
-    const views = [0, 1, 2].map(() => fakes([rows()], { claimSync }));
+    const views = [0, 1, 2].map(() => fakes([rows()], { claimLease }));
     await Promise.all(
       views.map(async ({ deps, background }) => {
         await loadCollection('/app', deps);
@@ -202,12 +210,12 @@ describe('loadCollection', () => {
     // Waited for inline, so the sync is not also queued for later.
     expect(background).toHaveLength(0);
     // And recorded, so the next view does not start another straight away.
-    expect(deps.claimSync).toHaveBeenCalledTimes(1);
+    expect(deps.claimLease).toHaveBeenCalledTimes(1);
   });
 
   it('shows what is cached on a first visit when a sync has just started elsewhere', async () => {
     const { deps } = fakes([rows({ recipes: 0 }), rows({ recipes: 0 })], {
-      claimSync: async () => false,
+      claimLease: async () => false,
     });
     const collection = await loadCollection('/app', deps);
     expect(deps.sync).not.toHaveBeenCalled();
@@ -253,7 +261,7 @@ describe('loadCollection', () => {
     });
     const collection = await loadCollection('/app', deps);
     expect(deps.sync).not.toHaveBeenCalled();
-    expect(deps.claimSync).not.toHaveBeenCalled();
+    expect(deps.claimLease).not.toHaveBeenCalled();
     expect(collection.drive).toEqual({
       connected: false,
       reconnect: false,

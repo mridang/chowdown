@@ -1,13 +1,17 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
+import { expectSamePattern, fuzzInputs } from '../../regex-equivalence';
 import {
   askForAuthor,
+  BYLINE,
   authorEvidence,
+  authorFromSource,
   cleanAuthorName,
   declaredAuthor,
   findAuthor,
   hasAuthor,
   looksLikeAPerson,
+  NOT_A_NAME,
   withAuthor,
 } from '@/domain/recipe/author';
 
@@ -350,5 +354,154 @@ describe('hasAuthor and withAuthor', () => {
     const { env } = envReplying('{"author": null}');
     const cook = '>> title: Soup\n\nBoil.\n';
     expect(await withAuthor(cook, page('<title>Soup</title>'), env)).toBe(cook);
+  });
+});
+
+const FAST_MS = 1000;
+
+describe('author text scanning (linear-time rewrites)', () => {
+  it.each([
+    ['  , Jane Cook ;: ', 'Jane Cook'],
+    ['Jane Cook.', 'Jane Cook'],
+    ['Jane Cook | Some Blog', 'Jane Cook'],
+    [',;: ', null],
+    ['Jane Cook...  ', 'Jane Cook'],
+  ])('cleans %j', (input, expected) => {
+    expect(cleanAuthorName(input as string) ?? null).toEqual(expected);
+  });
+  it.each([
+    ['>> author: Jane Doe  \t\nx', 'Jane Doe'],
+    ['>> by:\tBob\r\nx', 'Bob'],
+    ['>>author:   \n', null],
+    ['>> title: x\n>> author:A B', 'A B'],
+    ['x>> author: q', null],
+  ])('reads the source byline %j', (input, expected) => {
+    expect(authorFromSource(input as string) ?? null).toEqual(expected);
+  });
+  it('scans on a long adversarial input', () => {
+    const started = performance.now();
+    cleanAuthorName(`${' ,;:'.repeat(50_000)}a${' ,;:.'.repeat(50_000)}`);
+    authorFromSource(`>> author:${' \t'.repeat(50_000)}x`);
+    expect(performance.now() - started).toBeLessThan(FAST_MS);
+  });
+});
+
+describe('BYLINE, rewritten', () => {
+  const original = new RegExp(
+    [
+      String.raw`\b(?:[Bb]y|Recipe by|Recipes by|Written by|Author:?|Posted by)\s+(\p{L`,
+      String.raw`u}[\p{L}'’.-]*(?:\s+(?:and|&|\p{Lu}[\p{L}'’.-]*)){0,5})`,
+    ].join(''),
+    'gu',
+  );
+  const pieces = [
+    'by ',
+    'By ',
+    'Recipe by ',
+    'Written by ',
+    'Author: ',
+    'Author ',
+    'Posted by ',
+    'Jane',
+    'Bob Roe',
+    ' and ',
+    ' & ',
+    'é',
+    'Ünal',
+    '.',
+    "'",
+    '’',
+    '-',
+    'x',
+    ' ',
+    '\n',
+    'Recipes by ',
+  ];
+  const table = [
+    'by Jane Cook',
+    'Recipe by Jane Cook',
+    'Written by Jane Cook and Bob Roe',
+    'Author: A B C D E F G',
+    'posted by Jane',
+    'By Ünal Çelik',
+    'by jane',
+    'by Jane O’Neil-Smith Jr.',
+    'Recipes by Mary & Joe',
+    '',
+  ];
+
+  it('is the original pattern, rewritten', () => {
+    expectSamePattern(original, BYLINE, table);
+  });
+
+  it('finds the same things in random text', () => {
+    expectSamePattern(original, BYLINE, fuzzInputs(1000, 3000, pieces));
+  });
+
+  it('finds the same things in a very long input', () => {
+    const long = fuzzInputs(1001, 1, pieces).join('').repeat(5000);
+    expectSamePattern(original, BYLINE, [long, 'x'.repeat(200_000)]);
+  });
+});
+
+describe('NOT_A_NAME, rewritten', () => {
+  const original = new RegExp(
+    [
+      String.raw`\b(?:comments?|minutes?|mins?|read|reviews?|ratings?|share|print|jump|`,
+      'skip|posts?|admin|administrator|editorial|editors?|staff|team|photos?|',
+      'contributors?|subscribe|newsletter|cookies?|privacy|login|sign|unknown',
+      String.raw`|anonymous|guest|author|undefined|null)\b`,
+    ].join(''),
+    'i',
+  );
+  const pieces = [
+    'comment',
+    'comments',
+    '2 ',
+    'min',
+    'mins',
+    'minutes',
+    'read',
+    'Admin',
+    'administrator',
+    'editor',
+    'Staff',
+    'team',
+    'photo',
+    'sign',
+    'null',
+    'undefined',
+    'guest',
+    'author',
+    'Jane',
+    ' ',
+    '-',
+    'x',
+    'posts',
+  ];
+  const table = [
+    '2 COMMENTS',
+    'admin',
+    'Jane Cook',
+    'Editorial Team',
+    'signature',
+    'sign in',
+    'Null',
+    'unknown',
+    '',
+    'Posted by anonymous',
+  ];
+
+  it('is the original pattern, rewritten', () => {
+    expectSamePattern(original, NOT_A_NAME, table);
+  });
+
+  it('finds the same things in random text', () => {
+    expectSamePattern(original, NOT_A_NAME, fuzzInputs(2000, 3000, pieces));
+  });
+
+  it('finds the same things in a very long input', () => {
+    const long = fuzzInputs(2001, 1, pieces).join('').repeat(5000);
+    expectSamePattern(original, NOT_A_NAME, [long, 'x'.repeat(200_000)]);
   });
 });

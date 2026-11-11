@@ -9,6 +9,7 @@ import {
   snapWidth,
 } from '@/lib/cloudflare/images/address';
 import { ALLOWED_HOSTS, ALLOWED_WIDTHS } from '@/lib/cloudflare/images/site';
+import urls from '../../../fixtures/insecure-urls.json' with { type: 'json' };
 
 /** A host the app takes pictures from. */
 const HOST = ALLOWED_HOSTS?.[0] ?? 'photos.example.org';
@@ -41,8 +42,9 @@ describe('snapWidth', () => {
 
 describe('imageSrc', () => {
   it('builds our own address for a picture, at a snapped width', () => {
-    expect(imageSrc(`https://${HOST}/x y.jpg?v=1&w=2`, 1)).toBe(
-      `${IMAGE_PATH}?url=${encodeURIComponent(`https://${HOST}/x y.jpg?v=1&w=2`)}&w=${SMALLEST}`,
+    const source = `https://${HOST}/x y.jpg?v=1&w=2`;
+    expect(imageSrc(source, 1)).toBe(
+      `${IMAGE_PATH}?url=${encodeURIComponent(source)}&w=${SMALLEST}`,
     );
   });
 
@@ -67,10 +69,9 @@ describe('imageSrcSet', () => {
   });
 
   it('builds one for just the widths asked for', () => {
-    const set = imageSrcSet(`https://${HOST}/x.jpg`, [LARGEST], 'sig');
-    expect(set).toBe(
-      `${imageSrc(`https://${HOST}/x.jpg`, LARGEST, 'sig')} ${LARGEST}w`,
-    );
+    const source = `https://${HOST}/x.jpg`;
+    const set = imageSrcSet(source, [LARGEST], 'sig');
+    expect(set).toBe(`${imageSrc(source, LARGEST, 'sig')} ${LARGEST}w`);
   });
 });
 
@@ -102,13 +103,13 @@ describe('isProxyableUrl', () => {
 
   it.each([
     'file:///etc/passwd',
-    'ftp://a.com/x.jpg',
+    urls.ftpImage,
     'javascript:alert(1)',
     'https://localhost/x.jpg',
     'http://127.0.0.1/x.jpg',
-    'http://10.0.0.5/x.jpg',
-    'http://192.168.1.1/x.jpg',
-    'http://172.20.0.1/x.jpg',
+    urls.private10Image,
+    urls.private192Image,
+    urls.private172Image,
     'http://169.254.169.254/latest/meta-data',
     'http://[::1]/x.jpg',
     'http://2130706433/x.jpg',

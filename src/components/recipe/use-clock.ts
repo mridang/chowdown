@@ -15,12 +15,15 @@ export interface ClockEnvironment {
 
 /** The real browser's scheduling and visibility. */
 const BROWSER: ClockEnvironment = {
-  setInterval: (callback, ms) => window.setInterval(callback, ms),
-  clearInterval: (handle) => window.clearInterval(handle),
-  onVisible: (callback) => {
+  // The browser hands back a number; Number() also gives one under the Node typing.
+  setInterval: (callback, ms) => Number(globalThis.setInterval(callback, ms)),
+  clearInterval: (handle) => {
+    globalThis.clearInterval(handle);
+  },
+  onVisible: (notify) => {
     const onChange = () => {
       if (document.visibilityState === 'visible') {
-        callback();
+        notify();
       }
     };
     document.addEventListener('visibilitychange', onChange);

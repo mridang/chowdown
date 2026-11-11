@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createServer, type Server } from 'node:http';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import path from 'node:path';
 import { Readable } from 'node:stream';
 import { promisify } from 'node:util';
 
@@ -14,10 +14,10 @@ import { respondToMcp } from '@/domain/mcp/http';
 import { SCOPE_READ, SCOPE_WRITE } from '@/lib/oauth';
 
 const run = promisify(execFile);
-const require = createRequire(join(process.cwd(), 'package.json'));
+const require = createRequire(path.join(process.cwd(), 'package.json'));
 
 /** The conformance suite's command-line program, which ships inside its package. */
-const SUITE = join(
+const SUITE = path.join(
   require.resolve('@modelcontextprotocol/conformance/package.json'),
   '../dist/index.js',
 );
@@ -133,7 +133,7 @@ const SUITE_USER = { id: 1, refresh_token_enc: null } as Readonly<User>;
 
 /** The MCP endpoint on a loopback port, answering as `/mcp` does. */
 async function listen(): Promise<{ server: Server; url: string }> {
-  const server = createServer((incoming, outgoing) => {
+  const server = createServer(async (incoming, outgoing) => {
     // The server's own address, not the request's `Host` header, so a request
     // that names another host (DNS rebinding) is refused rather than echoed.
     const address = server.address();
@@ -150,52 +150,48 @@ async function listen(): Promise<{ server: Server; url: string }> {
         ? { body: Readable.toWeb(incoming) as ReadableStream, duplex: 'half' }
         : {}),
     });
-    respondToMcp(
-      request,
-      origin,
-      async () => ({
-        kind: 'ok',
-        user: SUITE_USER,
-        scope: [SCOPE_READ, SCOPE_WRITE],
-      }),
-      {
-        // Counters in memory, with the same fixed windows as the database ones.
-        store: () => {
-          const windows = new Map<
-            string,
-            { count: number; windowStart: number }
-          >();
-          return {
-            hit: async (key, now, windowSeconds) => {
-              const current = windows.get(key);
-              const next =
-                current && current.windowStart > now - windowSeconds
-                  ? {
-                      count: current.count + 1,
-                      windowStart: current.windowStart,
-                    }
-                  : { count: 1, windowStart: now };
-              windows.set(key, next);
-              return next;
-            },
-            purge: async () => {},
-          };
+    try {
+      const response = await respondToMcp(
+        request,
+        origin,
+        async () => ({
+          kind: 'ok',
+          user: SUITE_USER,
+          scope: [SCOPE_READ, SCOPE_WRITE],
+        }),
+        {
+          // Counters in memory, with the same fixed windows as the database ones.
+          store: () => {
+            const windows = new Map<
+              string,
+              { count: number; windowStart: number }
+            >();
+            return {
+              hit: async (key, now, windowSeconds) => {
+                const current = windows.get(key);
+                const next =
+                  current && current.windowStart > now - windowSeconds
+                    ? {
+                        count: current.count + 1,
+                        windowStart: current.windowStart,
+                      }
+                    : { count: 1, windowStart: now };
+                windows.set(key, next);
+                return next;
+              },
+              purge: async () => {},
+            };
+          },
+          now: () => Math.floor(Date.now() / 1000),
+          random: () => 1,
         },
-        now: () => Math.floor(Date.now() / 1000),
-        random: () => 1,
-      },
-    )
-      .then(async (response) => {
-        outgoing.writeHead(
-          response.status,
-          Object.fromEntries(response.headers),
-        );
-        outgoing.end(Buffer.from(await response.arrayBuffer()));
-      })
-      .catch((error: unknown) => {
-        console.error(error);
-        outgoing.writeHead(500).end();
-      });
+      );
+      outgoing.writeHead(response.status, Object.fromEntries(response.headers));
+      outgoing.end(Buffer.from(await response.arrayBuffer()));
+    } catch (error: unknown) {
+      console.error(error);
+      outgoing.writeHead(500).end();
+    }
   });
   const port = await new Promise<number>((resolve) => {
     server.listen(0, '127.0.0.1', () => {
@@ -212,7 +208,7 @@ describe('the MCP server against the official conformance suite', () => {
 
   beforeAll(async () => {
     listening = await listen();
-    work = await mkdtemp(join(tmpdir(), 'chowdown-conformance-'));
+    work = await mkdtemp(path.join(tmpdir(), 'chowdown-conformance-'));
   });
 
   afterAll(async () => {
@@ -225,11 +221,9 @@ describe('the MCP server against the official conformance suite', () => {
   it.each(Object.entries(REVISIONS))(
     'meets spec revision %s, but for its known gaps',
     async (revision, gaps) => {
-      const baseline = join(work, `expected-failures-${revision}.yml`);
-      await writeFile(
-        baseline,
-        `server:\n${gaps.map((gap) => `  - ${gap}\n`).join('')}`,
-      );
+      const baseline = path.join(work, `expected-failures-${revision}.yml`);
+      const listed = gaps.map((gap) => `  - ${gap}\n`).join('');
+      await writeFile(baseline, `server:\n${listed}`);
       await expect(
         run(
           process.execPath,

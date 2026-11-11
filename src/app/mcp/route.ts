@@ -4,7 +4,7 @@
  * call it with `Authorization: Bearer <access token>`. Without a valid token it
  * answers 401 with a `WWW-Authenticate` challenge pointing at those documents.
  *
- *   POST /mcp  — JSON-RPC 2.0 (one message, or a batch for older clients)
+ *   POST /mcp  — JSON-RPC 2.0 (one message, or a batch for older clients).
  *
  * The routing lives in `respondToMcp` (`src/lib/mcp/http.ts`), which the
  * conformance harness runs too; this file only supplies the real token check

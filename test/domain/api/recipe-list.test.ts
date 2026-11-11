@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import { listRecipes } from '@/domain/api/recipe-list';
@@ -18,7 +19,7 @@ function pageOf(result: ApiResponse<unknown> | Response): {
   readonly cacheControl: string | undefined;
 } {
   if (result instanceof Response) {
-    throw new Error(`expected a page, got a ${result.status} response`);
+    throw new TypeError(`expected a page, got a ${result.status} response`);
   }
   const page = result.page;
   if (!page) {

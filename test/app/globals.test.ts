@@ -1,27 +1,29 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
 
-const css = readFileSync(
-  join(process.cwd(), 'src', 'app', 'globals.css'),
+const css = await readFile(
+  path.join(process.cwd(), 'src', 'app', 'globals.css'),
   'utf8',
 );
 
 /** The `#rrggbb` value declared for a custom property, as red, green, blue (0-255). */
 function colourOf(name: string): readonly [number, number, number] {
-  const hex = new RegExp(`${name}:\\s*#([0-9a-f]{6})`, 'i').exec(css)?.[1];
+  const hex = new RegExp(String.raw`${name}:\s*#([0-9a-f]{6})`, 'i').exec(
+    css,
+  )?.[1];
   if (!hex) {
     throw new Error(`${name} is not declared as a hex colour`);
   }
-  const channel = (at: number) => parseInt(hex.slice(at, at + 2), 16);
+  const channel = (at: number) => Number.parseInt(hex.slice(at, at + 2), 16);
   return [channel(0), channel(2), channel(4)];
 }
 
 /** The strength (0 to 1) a token mixes the ink colour in at. */
 function inkStrength(name: string): number {
   const percent = new RegExp(
-    `${name}:\\s*color-mix\\(in srgb, var\\(--color-ink\\) (\\d+)%`,
+    String.raw`${name}:\s*color-mix\(in srgb, var\(--color-ink\) (\d+)%`,
   ).exec(css)?.[1];
   if (!percent) {
     throw new Error(`${name} is not ink at a fixed strength`);
@@ -43,7 +45,9 @@ function contrast(
   a: readonly [number, number, number],
   b: readonly [number, number, number],
 ): number {
-  const [light, dark] = [luminance(a), luminance(b)].toSorted().toReversed();
+  const [light, dark] = [luminance(a), luminance(b)]
+    .toSorted((x, y) => x - y)
+    .toReversed();
   return ((light ?? 0) + 0.05) / ((dark ?? 0) + 0.05);
 }
 
@@ -82,7 +86,7 @@ describe('the control border token', () => {
 
 describe('reduced motion', () => {
   const block =
-    /@media \(prefers-reduced-motion: reduce\) \{([^}]*\{[^}]*\})/.exec(
+    /@media \(prefers-reduced-motion: reduce\) \{([^{}]*\{[^}]*\})/.exec(
       css,
     )?.[1];
 
@@ -128,11 +132,12 @@ describe('the handwriting font tokens', () => {
 /** The body of the first rule or at-rule whose prelude is exactly `prelude`. */
 function blockOf(prelude: string): string {
   const start = css.indexOf(`${prelude} {`);
-  if (start < 0) {
+  if (start === -1) {
     throw new Error(`no rule for ${prelude}`);
   }
   const open = css.indexOf('{', start);
-  const body = [...css.slice(open + 1)].reduce<{
+  const rest = css.slice(open + 1);
+  const body = [...rest].reduce<{
     readonly depth: number;
     readonly text: string;
     readonly done: boolean;

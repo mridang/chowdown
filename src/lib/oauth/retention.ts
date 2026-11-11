@@ -85,6 +85,12 @@ export function purgeCutoffs(now: number): PurgeCutoffs {
  * Whether this request should also sweep. `random` is a number in [0, 1), a
  * parameter so tests need no luck.
  */
-export function shouldPurge(random: number = Math.random()): boolean {
+export function shouldPurge(random: number = unitRandom()): boolean {
   return random < PURGE_PROBABILITY;
+}
+
+/** A number in [0, 1) from the platform's cryptographic random source. */
+export function unitRandom(): number {
+  const [word = 0] = crypto.getRandomValues(new Uint32Array(1));
+  return word / 2 ** 32;
 }

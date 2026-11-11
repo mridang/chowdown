@@ -8,6 +8,17 @@ import {
 } from '@/components/landing/cook-file';
 import { WindowFrame } from '@/components/landing/window-frame';
 
+/** The highlight classes for one part of a line, or none for plain text. */
+function markClass(part: string): string | undefined {
+  if (part.startsWith('@')) {
+    return 'rounded bg-marigold/40 px-0.5 font-medium';
+  }
+  if (part.startsWith('#') || part.startsWith('~')) {
+    return 'rounded bg-forest/15 px-0.5 font-medium text-forest';
+  }
+  return undefined;
+}
+
 /**
  * One line of a Cooklang file, with its parts coloured: a `>> key: value`
  * metadata line has a coloured key, and in any other line the `@ingredient{}`,
@@ -30,22 +41,11 @@ function CookLine({ line }: Readonly<{ line: string }>): ReactElement {
   );
   return (
     <>
-      {parts.map((part, i) =>
-        part.startsWith('@') ? (
-          <span key={i} className="rounded bg-marigold/40 px-0.5 font-medium">
-            {part}
-          </span>
-        ) : part.startsWith('#') || part.startsWith('~') ? (
-          <span
-            key={i}
-            className="rounded bg-forest/15 px-0.5 font-medium text-forest"
-          >
-            {part}
-          </span>
-        ) : (
-          <span key={i}>{part}</span>
-        ),
-      )}
+      {parts.map((part, i) => (
+        <span key={i} className={markClass(part)}>
+          {part}
+        </span>
+      ))}
     </>
   );
 }

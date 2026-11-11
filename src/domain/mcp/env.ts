@@ -6,7 +6,7 @@
  *
  * The one setting the MCP endpoint reads is `MCP_ALLOWED_ORIGINS`, a
  * comma-separated list of extra browser origins that may call it, written as the
- * browser sends them (`https://tool.example`, `http://tool.example:8080`,
+ * browser sends them (`https://tool.example`, `https://tool.example:8080`,
  * `chrome-extension://abcdef`, `vscode-webview://abc`, `tauri://localhost`).
  * Origins that web clients use (our own, the assistants', localhost) are
  * already allowed; this is for a browser extension, an Electron or webview app

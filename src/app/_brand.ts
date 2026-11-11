@@ -14,12 +14,7 @@ import type { MetadataRoute } from 'next';
 
 import {
   PRIVACY_LAST_UPDATED,
-  SECURITY_CONTACT as SITE_SECURITY_CONTACT,
-  SECURITY_POLICY_URL as SITE_SECURITY_POLICY_URL,
-  SITE_DESCRIPTION,
   SITE_NAME,
-  SITE_TITLE,
-  SITE_URL,
   TERMS_LAST_UPDATED,
 } from '@/utils/site';
 
@@ -27,25 +22,19 @@ import {
 export const BRAND_NAME = SITE_NAME;
 
 /** The name where space is short: under the home-screen icon, and as the installed app's short name. */
-export const BRAND_SHORT_NAME = SITE_NAME;
 
 /** The small descriptor under the wordmark and on the social card. */
 export const BRAND_TAGLINE = 'Recipe keeper';
 
 /** The title of the home page, and of any page that does not set its own. */
-export const BRAND_TITLE = SITE_TITLE;
 
 /** What search results and social cards say about the app. */
-export const BRAND_DESCRIPTION = SITE_DESCRIPTION;
 
 /** The public address of the app, with no trailing slash. */
-export const BRAND_URL = SITE_URL;
 
 /** Where to report a security problem: published in `security.txt` and the security policy. */
-export const SECURITY_CONTACT = SITE_SECURITY_CONTACT;
 
 /** The disclosure policy that `security.txt` points researchers to (`public/security-policy.txt`). */
-export const SECURITY_POLICY_URL = SITE_SECURITY_POLICY_URL;
 
 /** The marigold of the header strip: the browser's own bar and the installed app's title bar. */
 export const THEME_COLOR = '#ffb100';
@@ -63,7 +52,7 @@ export const COLOR_SCHEME = 'only light';
 /**
  * Whether pages may be indexed unless they say otherwise. Almost every page is
  * someone's own recipes, so crawlers are told to keep out; the public pages
- * opt back in with `pageMetadata({ index: true })`. robots.txt and an
+ * opt back in with `pageMetadata({ index: true })`. Robots.txt and an
  * `X-Robots-Tag` header (see `lib/core/http/headers.ts`) say the same thing.
  */
 export const INDEX_BY_DEFAULT = false;
@@ -232,3 +221,12 @@ export const NOT_FOUND_LINK: Readonly<{ href: string; label: string }> | null =
 /** The reassurance on the error pages, after "Something went wrong". */
 export const ERROR_REASSURANCE =
   'Try again in a moment, and your recipes will still be in your Drive either way.';
+
+export {
+  SECURITY_CONTACT,
+  SITE_DESCRIPTION as BRAND_DESCRIPTION,
+  SECURITY_POLICY_URL,
+  SITE_TITLE as BRAND_TITLE,
+  SITE_NAME as BRAND_SHORT_NAME,
+  SITE_URL as BRAND_URL,
+} from '@/utils/site';

@@ -7,11 +7,12 @@ import {
   type SafeFetcher,
   type SafeRequestInit,
 } from '@/lib/safe-fetch';
+import urls from '../fixtures/insecure-urls.json' with { type: 'json' };
 
 describe('isPublicWebUrl', () => {
   it.each([
     'https://thewoksoflife.com/wp-content/uploads/a.jpg',
-    'http://www.site.co.uk/a.png',
+    urls.siteUkImage,
     'https://cdn.example-food.com:443/a.webp',
     'https://a.com:80/x',
     'https://a.com/x?y=1#z',
@@ -21,18 +22,18 @@ describe('isPublicWebUrl', () => {
 
   it.each([
     'file:///etc/passwd',
-    'ftp://a.com/x.jpg',
+    urls.ftpImage,
     'javascript:alert(1)',
     'data:text/html,<p>x</p>',
     'https://localhost/x.jpg',
     'https://localhost./x.jpg',
     'http://127.0.0.1/x.jpg',
-    'http://10.0.0.5/x.jpg',
-    'http://192.168.1.1/x.jpg',
-    'http://172.20.0.1/x.jpg',
+    urls.private10Image,
+    urls.private192Image,
+    urls.private172Image,
     'http://169.254.169.254/latest/meta-data',
     'http://[::1]/x.jpg',
-    'http://[fe80::1]/x.jpg',
+    urls.linkLocalV6Image,
     'http://2130706433/x.jpg',
     'http://0x7f.1/x.jpg',
     'http://017700000001/x.jpg',
@@ -114,6 +115,7 @@ const redirect = (location: string | null, status = 302): Response =>
     headers: location === null ? {} : { Location: location },
   });
 
+// eslint-disable-next-line sonarjs/max-lines-per-function -- one suite covers the whole cap; splitting it is a large restructure
 describe('fetchCapped', () => {
   it('returns the body, its type and the address it came from', async () => {
     const { fetcher } = serving(
@@ -227,7 +229,10 @@ describe('fetchCapped', () => {
     });
 
     it('refuses a redirect that points nowhere', async () => {
-      const { fetcher } = serving(redirect(null), redirect('http://['));
+      const { fetcher } = serving(
+        redirect(null),
+        redirect(urls.brokenRedirect),
+      );
       expect(
         await fetchCapped('https://a.com/0', { ...OPTIONS, fetcher }),
       ).toEqual({ ok: false, reason: 'redirects' });

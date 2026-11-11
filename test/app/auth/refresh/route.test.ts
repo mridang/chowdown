@@ -60,7 +60,8 @@ describe('GET /auth/refresh', () => {
     await signIn(world, { drive: true });
     const res = await GET(nextRequest('/auth/refresh?returnTo=%2Frecipe%2Fx'));
     expect(locationOf(res)?.pathname).toBe('/recipe/x');
-    expect((await reissued(res))?.['drive']).toBe(true);
+    const session = await reissued(res);
+    expect(session?.['drive']).toBe(true);
   });
 
   it('goes to /app when there is no returnTo, or an unsafe one', async () => {
@@ -80,12 +81,14 @@ describe('GET /auth/refresh', () => {
     const soon = Math.floor(Date.now() / 1000) + 3600;
     jar.set(SESSION_COOKIE, await sessionTokenFor({ id: 1 }, { exp: soon }));
     const res = await GET(nextRequest('/auth/refresh'));
-    expect((await reissued(res))?.exp).toBe(soon);
+    const session = await reissued(res);
+    expect(session?.exp).toBe(soon);
   });
 
   it("carries the account's current epoch into the new cookie", async () => {
     await signIn(world, { epoch: 3 });
     const res = await GET(nextRequest('/auth/refresh'));
-    expect((await reissued(res))?.ep).toBe(3);
+    const session = await reissued(res);
+    expect(session?.ep).toBe(3);
   });
 });

@@ -2,7 +2,7 @@
  * The notes on a recipe.
  *
  *   GET  /api/recipes/:id/notes   list them
- *   POST /api/recipes/:id/notes   add one → 201 with the note
+ *   POST /api/recipes/:id/notes   add one → 201 with the note.
  *
  * Notes are Cooklang comments appended to the recipe, so the method itself is
  * never touched.
@@ -49,10 +49,10 @@ interface NotesContext {
  * not connected or fails.
  */
 const notesCollection = new ApiController<NotesContext>({
-  context: async (request, route) => ({
-    request,
-    id: (await route.params)?.['id'] ?? '',
-  }),
+  context: async (request, route) => {
+    const params = await route.params;
+    return { request, id: params?.['id'] ?? '' };
+  },
 })
   .on({
     method: 'GET',
@@ -65,9 +65,15 @@ const notesCollection = new ApiController<NotesContext>({
       if (!row) {
         return problems.notFound('recipe');
       }
-      return page(extractNotes(row.source).map(noteResource), undefined, {
-        'Cache-Control': 'private, no-cache',
-      });
+      return page(
+        extractNotes(row.source).map((note, index) =>
+          noteResource(note, index),
+        ),
+        undefined,
+        {
+          'Cache-Control': 'private, no-cache',
+        },
+      );
     },
     encode: (result) => result,
   })

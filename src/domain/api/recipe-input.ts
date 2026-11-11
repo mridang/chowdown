@@ -14,7 +14,7 @@ export const MAX_COOKLANG_BYTES = 200_000;
  * lines cost it over a second), so a text of nothing but line breaks, which fits
  * the character limit, could otherwise tie the server up for minutes.
  */
-export const MAX_COOKLANG_LINES = 5_000;
+export const MAX_COOKLANG_LINES = 5000;
 
 /**
  * Largest request body a recipe route reads, in bytes. The Cooklang limit above

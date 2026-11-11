@@ -1,4 +1,3 @@
-import { readdirSync } from 'node:fs';
 import {
   afterEach,
   beforeEach,
@@ -7,6 +6,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
+
 import type { DatabaseSync } from 'node:sqlite';
 
 import { DELETE, GET, OPTIONS, POST } from '@/app/mcp/route';
@@ -18,6 +18,7 @@ import {
   s256,
   type TokenResponse,
 } from '@/lib/oauth';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
   installCloudflareContext,
   sqliteD1,
@@ -36,9 +37,7 @@ const WRITE_TOOL =
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 
 /** Every migration, in order: the route reads users, grants and rate-limit counters. */
-const MIGRATIONS = readdirSync('migrations')
-  .filter((file) => file.endsWith('.sql'))
-  .toSorted();
+const MIGRATIONS = APP_MIGRATIONS;
 
 let raw: DatabaseSync;
 let restore: () => void;
@@ -147,7 +146,7 @@ describe('OPTIONS /mcp', () => {
     const res = await OPTIONS(request('OPTIONS', { origin: OTHER }));
     expect(res.status).toBe(403);
     expect(((await res.json()) as { error: { code: number } }).error.code).toBe(
-      -32600,
+      -32_600,
     );
   });
 });
@@ -166,7 +165,7 @@ describe('without a token', () => {
     expect(res.headers.get('www-authenticate')).not.toContain('invalid_token');
     expect(await res.json()).toMatchObject({
       id: null,
-      error: { code: -32600 },
+      error: { code: -32_600 },
     });
   });
 
@@ -330,7 +329,7 @@ describe('when the database cannot be reached', () => {
     const text = await res.text();
     expect(JSON.parse(text)).toMatchObject({
       id: null,
-      error: { code: -32603 },
+      error: { code: -32_603 },
     });
     expect(text).not.toContain('secret detail');
     expect(spy).toHaveBeenCalled();

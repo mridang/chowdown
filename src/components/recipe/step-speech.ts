@@ -71,10 +71,9 @@ interface Phrase {
  * One amount in words. Whole numbers and decimals are left as digits for the
  * synthesiser to read; halves, thirds and quarters become words; anything else
  * is left as written.
- *
- * @param text The amount as written, such as `1 1/2` or `½`.
- * @param withUnit Whether a unit follows, which makes "half" read "half a" and
- *   the unit singular.
+ * @param text - The amount as written, such as `1 1/2` or `½`.
+ * @param withUnit - Whether a unit follows, which makes "half" read "half a" and
+ * the unit singular.
  */
 function amountPhrase(text: string, withUnit: boolean): Phrase {
   const value = parseAmount(text);
@@ -105,12 +104,15 @@ function amountPhrase(text: string, withUnit: boolean): Phrase {
 /** A unit as it is said: singular or plural as asked; unknown words pass through. */
 function unitWords(unit: string, singular: boolean): string {
   const words = UNIT_WORDS[unit.toLowerCase().replace(/\.$/, '')];
-  return words ? words[singular ? 0 : 1] : unit;
+  if (!words) {
+    return unit;
+  }
+  return words[singular ? 0 : 1];
 }
 
 /** `5 min`, `1/2 tsp`, `1-2 hours`: an amount, an optional range end, then the rest. */
 const QUANTITY = new RegExp(
-  `^(?<from>${AMOUNT_PATTERN})(?:\\s*(?:[-–—]|to)\\s*(?<to>${AMOUNT_PATTERN}))?\\s*(?<rest>.*)$`,
+  String.raw`^(?<from>${AMOUNT_PATTERN})(?:\s*(?:[-–—]|to)\s*(?<to>${AMOUNT_PATTERN}))?\s*(?<rest>.*)$`,
   'i',
 );
 
@@ -119,8 +121,7 @@ const QUANTITY = new RegExp(
  * grams", "1/2 tsp" becomes "half a teaspoon", "1-2 hours" becomes "1 to 2
  * hours". Text that does not start with an amount ("to taste") is returned as
  * it is.
- *
- * @param label The quantity as the page shows it.
+ * @param label - The quantity as the page shows it.
  */
 export function spokenQuantity(label: string): string {
   const groups = QUANTITY.exec(label.trim())?.groups;
@@ -150,18 +151,18 @@ export function spokenQuantity(label: string): string {
 /** Temperatures read better with their words: "180°C" is "180 degrees Celsius". */
 function speakDegrees(text: string): string {
   return text
-    .replace(/(\d)\s?°\s?C\b/g, '$1 degrees Celsius')
-    .replace(/(\d)\s?°\s?F\b/g, '$1 degrees Fahrenheit')
-    .replace(/(\d)\s?°/g, '$1 degrees');
+    .replaceAll(/(\d)\s?°\s?C\b/g, '$1 degrees Celsius')
+    .replaceAll(/(\d)\s?°\s?F\b/g, '$1 degrees Fahrenheit')
+    .replaceAll(/(\d)\s?°/g, '$1 degrees');
 }
 
 /** Tidy the joined words: single spaces, no space before punctuation, no doubled commas. */
 function tidy(text: string): string {
   return text
-    .replace(/\s+/g, ' ')
-    .replace(/\s+([,.;:!?])/g, '$1')
-    .replace(/,(\s*,)+/g, ',')
-    .replace(/,\s*([.;:!?])/g, '$1')
+    .replaceAll(/\s+/g, ' ')
+    .replaceAll(/ ([,.;:!?])/g, '$1')
+    .replaceAll(/,(\s*,)+/g, ',')
+    .replaceAll(/,\s*([.;:!?])/g, '$1')
     .trim();
 }
 
@@ -171,16 +172,20 @@ function spokenToken(
   scale: (quantity: string) => string,
 ): string {
   switch (token.kind) {
-    case 'text':
+    case 'text': {
       return token.text;
-    case 'cookware':
+    }
+    case 'cookware': {
       return token.name;
-    case 'timer':
+    }
+    case 'timer': {
       return spokenQuantity(token.label);
-    case 'ingredient':
+    }
+    case 'ingredient': {
       return token.quantity
         ? `${token.name}, ${spokenQuantity(scale(token.quantity))},`
         : token.name;
+    }
   }
 }
 
@@ -188,10 +193,9 @@ function spokenToken(
  * The words to read a step aloud: its text, with each ingredient followed by
  * its amount for the servings and units chosen, timers spelled out, and
  * optionally the step number first.
- *
- * @param tokens The step.
- * @param options `quantity` turns an amount into what the page currently shows
- *   (scaled, converted); `number` is the step's number to say first.
+ * @param tokens - The step.
+ * @param options - `quantity` turns an amount into what the page currently shows
+ * (scaled, converted); `number` is the step's number to say first.
  */
 export function spokenStep(
   tokens: readonly StepToken[],

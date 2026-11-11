@@ -11,7 +11,7 @@ import { problems } from '@/lib/core/api';
 
 /**
  * The 429 problem for a person who has used up `budget`, or null if the call may
- * go ahead. `what` finishes the sentence "You have used today's … allowance."
+ * go ahead. `what` finishes the sentence "You have used today's … allowance.".
  */
 export async function budgetRefusal(
   budget: RateLimit,

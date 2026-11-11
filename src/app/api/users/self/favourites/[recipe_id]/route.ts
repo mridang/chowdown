@@ -4,7 +4,7 @@
  *
  *   GET    /api/users/self/favourites/:recipe_id   the recipe, if favourited
  *   PUT    /api/users/self/favourites/:recipe_id   favourite it → 204
- *   DELETE /api/users/self/favourites/:recipe_id   un-favourite it → 204
+ *   DELETE /api/users/self/favourites/:recipe_id   un-favourite it → 204.
  */
 
 import { NextResponse } from 'next/server';
@@ -45,11 +45,8 @@ export async function GET(
   if (!auth.ok) {
     return auth.response;
   }
-  const rows = await getRecipePageRows(
-    getDatabase(),
-    auth.value,
-    (await params).recipe_id,
-  );
+  const { recipe_id: id } = await params;
+  const rows = await getRecipePageRows(getDatabase(), auth.value, id);
   if (!rows.recipe || !rows.favourite) {
     return problems.notFound('favourite recipe');
   }
@@ -71,7 +68,7 @@ export async function PUT(
   if (!auth.ok) {
     return auth.response;
   }
-  const id = (await params).recipe_id;
+  const { recipe_id: id } = await params;
   // Only the user's own recipes can be favourited.
   if (!(await ownsRecipe(auth.value, id))) {
     return problems.notFound('recipe');
@@ -93,13 +90,12 @@ export async function DELETE(
   if (!auth.ok) {
     return auth.response;
   }
-  const id = (await params).recipe_id;
-  if (await ownsRecipe(auth.value, id)) {
-    await setFavouriteAndTag(auth.value, id, false);
-  } else {
-    // A heart can outlive its recipe (deleted in Drive). Removing it is always
-    // fine and touches no file, so it still succeeds.
-    await setFavourite(getDatabase(), auth.value, id, false);
-  }
+  const { recipe_id: id } = await params;
+  const owned = await ownsRecipe(auth.value, id);
+  // A heart can outlive its recipe (deleted in Drive). Removing it is always
+  // fine and touches no file, so it still succeeds.
+  await (owned
+    ? setFavouriteAndTag(auth.value, id, false)
+    : setFavourite(getDatabase(), auth.value, id, false));
   return new NextResponse(null, { status: 204 });
 }

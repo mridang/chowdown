@@ -28,7 +28,7 @@ export interface RecipeLogEntry {
  * and any cooking log.
  */
 export interface RecipeCardData extends ParsedRecipe {
-  /** Drive file id — lets the View call tools (e.g. log_cooking) for this recipe. */
+  /** Drive file id — lets the View call tools (e.g. Log_cooking) for this recipe. */
   readonly id: string;
   /** True when this is an uncurated idea stub (shows an "idea" badge). */
   readonly uncurated: boolean;

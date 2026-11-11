@@ -50,8 +50,17 @@ const TAG = /<(meta|script)(?=[\s/>])([^<>]*)>|<\/script\s*>/gi;
  * or bare value. The name and value classes exclude each other's delimiters, so
  * no two parts of the pattern can claim the same characters.
  */
-const ATTRIBUTE =
-  /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+export const ATTRIBUTE = new RegExp(
+  [
+    String.raw`([^\s"'<>/=]+)`,
+    String.raw`(?:\s*=\s*(?:`,
+    '"([^"]*)"',
+    "|'([^']*)'",
+    String.raw`|([^\s"'=<>${'`'}]+)`,
+    '))?',
+  ].join(''),
+  'g',
+);
 
 /** The attributes in the text between a tag's name and its `>`. */
 function parseAttributes(text: string): Attributes {
@@ -124,7 +133,7 @@ function step(html: string, walk: Walk, tag: RegExpMatchArray): Walk {
  * replaces; anything that does not look like a tag is skipped.
  */
 export function scanHtml(html: string): HtmlScan {
-  const { metas, jsonLd } = Array.from(html.matchAll(TAG)).reduce(
+  const { metas, jsonLd } = [...html.matchAll(TAG)].reduce(
     (walk, tag) => step(html, walk, tag),
     START,
   );

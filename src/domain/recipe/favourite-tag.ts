@@ -15,7 +15,9 @@ export const FAVOURITE_KEY = 'favourite';
 
 /** Whether a recipe's source carries the favourite marker. */
 export function hasFavouriteTag(source: string): boolean {
-  const m = new RegExp(`^>>\\s*${FAVOURITE_KEY}:\\s*(.*)$`, 'im').exec(source);
+  const m = new RegExp(String.raw`^>>\s*${FAVOURITE_KEY}:\s*(.*)$`, 'im').exec(
+    source,
+  );
   return m !== null && /^(true|yes|1)$/i.test((m[1] ?? '').trim());
 }
 
@@ -25,7 +27,8 @@ export function hasFavouriteTag(source: string): boolean {
  * left exactly as they were.
  */
 export function withFavouriteTag(source: string, on: boolean): string {
-  return on
-    ? upsertMetadata(source, [[FAVOURITE_KEY, 'true']])
-    : removeMetadata(source, FAVOURITE_KEY);
+  const change = on
+    ? () => upsertMetadata(source, [[FAVOURITE_KEY, 'true']])
+    : () => removeMetadata(source, FAVOURITE_KEY);
+  return change();
 }

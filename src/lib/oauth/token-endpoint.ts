@@ -72,6 +72,7 @@ export interface CodeRecord {
   readonly clientId: string;
   readonly userId: number;
   readonly redirectUri: string;
+
   /**
    * Whether the authorization request carried a `redirect_uri` (rather than the
    * client's only registered address being assumed). OAuth 2.1 §4.1.3 asks for
@@ -119,6 +120,7 @@ export interface OAuthStore {
   findCode(hash: string): Promise<CodeRecord | undefined>;
   /** Atomically claim a code; false if it was already claimed. */
   claimCode(hash: string, grantId: string): Promise<boolean>;
+
   /**
    * Record a user's approval of a client together with the first token pair,
    * as one step. Other grants of the same user and client are left alone (each
@@ -133,6 +135,7 @@ export interface OAuthStore {
   /** Store tokens under an existing grant. */
   saveTokens(tokens: readonly TokenRow[]): Promise<void>;
   findToken(hash: string): Promise<TokenRecord | undefined>;
+
   /**
    * Rotate a refresh token: mark it used and store its replacement tokens as
    * one atomic step. False (and nothing stored) if it had already been used,
@@ -144,6 +147,7 @@ export interface OAuthStore {
     tokens: readonly TokenRow[],
   ): Promise<boolean>;
   touchGrant(grantId: string, now: number): Promise<void>;
+
   /**
    * Remember that a client assertion (by its `jti`) has been used, until
    * `expiresAt`. False if that client already used that `jti`, which is how a
@@ -326,7 +330,7 @@ export interface RefreshExchange {
   /** The scope asked for, which may not exceed the grant (and does not narrow it). */
   readonly scope: string | undefined;
   /** The `resource` in the request, if sent (RFC 8707 allows it on a refresh too). */
-  readonly resource?: string | undefined;
+  readonly resource?: string;
 }
 
 /** Whether a refresh token used at `usedAt` may still be presented again (see {@link REFRESH_GRACE_SECONDS}). */
@@ -356,7 +360,7 @@ async function usedWithinGrace(
  * stays alive. That covers a client that lost the response and tries again, and
  * a parallel refresh that lost the race to rotate. (The pair issued earlier
  * stays valid until it expires; it cannot be handed back because only hashes of
- * tokens are kept.)
+ * tokens are kept.).
  */
 export async function exchangeRefreshToken(
   store: OAuthStore,
@@ -369,7 +373,7 @@ export async function exchangeRefreshToken(
   if (!token || token.kind !== 'refresh') {
     return fail('invalid_grant', 'The refresh token is not valid.');
   }
-  const { grant } = token;
+  const { grant, usedAt, expiresAt } = token;
   if (grant.revoked) {
     return fail('invalid_grant', 'Access for this application was revoked.');
   }
@@ -379,14 +383,14 @@ export async function exchangeRefreshToken(
       'The refresh token belongs to a different client.',
     );
   }
-  const spent = token.usedAt !== null;
-  if (spent && !withinRefreshGrace(token.usedAt, now)) {
+  const spent = usedAt !== null;
+  if (spent && !withinRefreshGrace(usedAt, now)) {
     // An already-rotated token came back late: assume theft and end the grant.
     await store.revokeGrant(grant.id);
-    logReuse(grant, token.usedAt, now);
+    logReuse(grant, usedAt, now);
     return fail('invalid_grant', 'The refresh token was already used.');
   }
-  if (token.expiresAt <= now) {
+  if (expiresAt <= now) {
     return fail('invalid_grant', 'The refresh token has expired.');
   }
 

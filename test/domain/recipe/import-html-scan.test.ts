@@ -1,7 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { scanHtml } from '@/domain/recipe/import-html-scan';
+import { ATTRIBUTE, scanHtml } from '@/domain/recipe/import-html-scan';
 
+import { expectSamePattern, fuzzInputs } from '../../regex-equivalence';
 /** How long `work` takes, in milliseconds. */
 function milliseconds(work: () => unknown): number {
   const started = performance.now();
@@ -108,4 +109,64 @@ describe('scanHtml', () => {
       expect(milliseconds(() => scanHtml(page))).toBeLessThan(100);
     },
   );
+});
+
+describe('ATTRIBUTE, rewritten', () => {
+  const original = new RegExp(
+    [
+      String.raw`([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`,
+      '`',
+      ']+)))?',
+    ].join(''),
+    'g',
+  );
+  const pieces = [
+    'a',
+    'type',
+    '=',
+    '"',
+    "'",
+    '`',
+    ' ',
+    '\t',
+    'x y',
+    'application/ld+json',
+    '<',
+    '>',
+    '/',
+    'data-x',
+    '"v"',
+    "'v'",
+    'v',
+    ';',
+    '\n',
+  ];
+  const table = [
+    'type="application/ld+json"',
+    "name='x y'",
+    'a=b',
+    'a = "b"',
+    'a',
+    'a="unterminated',
+    "a='",
+    'a=`x`',
+    'content="a\'b"',
+    '  ',
+    '',
+    'a=b=c',
+    'data-x = \'1\' y="2" z=3',
+  ];
+
+  it('is the original pattern, rewritten', () => {
+    expectSamePattern(original, ATTRIBUTE, table);
+  });
+
+  it('finds the same things in random text', () => {
+    expectSamePattern(original, ATTRIBUTE, fuzzInputs(7000, 3000, pieces));
+  });
+
+  it('finds the same things in a very long input', () => {
+    const long = fuzzInputs(7001, 1, pieces).join('').repeat(5000);
+    expectSamePattern(original, ATTRIBUTE, [long, 'x'.repeat(200_000)]);
+  });
 });

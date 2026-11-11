@@ -6,9 +6,9 @@ import {
   useId,
   useRef,
   useState,
-  type FormEvent,
   type KeyboardEvent,
   type ReactElement,
+  type SubmitEvent,
 } from 'react';
 
 import { PencilIcon } from '@/components/icons';
@@ -71,6 +71,8 @@ export function EditableTitle({
       field.current?.select();
     } else if (wasEditing.current) {
       pen.current?.focus();
+    } else {
+      // Nothing to hand back: the box was never open.
     }
     wasEditing.current = editing;
   }, [editing]);
@@ -86,7 +88,7 @@ export function EditableTitle({
     setEditing(false);
   };
 
-  const save = async (event: FormEvent) => {
+  const save = async (event: SubmitEvent) => {
     event.preventDefault();
     const next = draft.trim();
     if (next === shown) {

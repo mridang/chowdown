@@ -297,7 +297,7 @@ export async function handleMcpPost(
   if (items.length === 0 || items.length > MAX_BATCH) {
     return unreadable(invalidRequest('Invalid Request'));
   }
-  const parsed = items.map(parseMessage);
+  const parsed = items.map((item) => parseMessage(item));
   const invalid = parsed.find((p) => p.kind === 'invalid');
   if (invalid) {
     return unreadable(isBatch ? withoutId(invalid.refusal) : invalid.refusal);
@@ -315,8 +315,9 @@ export async function handleMcpPost(
       : accepted(cors);
   }
 
+  const batchRefusal = isBatch ? checkBatch(request.headers, messages) : null;
   const refusal =
-    (isBatch ? checkBatch(request.headers, messages) : null) ??
+    batchRefusal ??
     messages
       .map((message) => checkRequestHeaders(request.headers, message))
       .find((found) => found !== null) ??

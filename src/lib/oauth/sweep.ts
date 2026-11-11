@@ -6,7 +6,7 @@
  * answered; this keeps the tables from growing without a cron trigger.
  */
 
-import { shouldPurge } from '@/lib/oauth/retention';
+import { shouldPurge, unitRandom } from '@/lib/oauth/retention';
 
 /** The two sweeps a clean-up runs: stale OAuth rows, and idle rate-limit counters. */
 export interface Sweeps {
@@ -23,7 +23,7 @@ export interface Sweeps {
 export function sweepSometimes(
   sweeps: Readonly<Sweeps>,
   runInBackground: (work: Promise<unknown>) => void,
-  random: number = Math.random(),
+  random: number = unitRandom(),
 ): boolean {
   if (!shouldPurge(random)) {
     return false;

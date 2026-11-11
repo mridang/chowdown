@@ -3,9 +3,35 @@ import { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { describe, expect, it } from '@jest/globals';
 
 import { createDatabase } from '@/lib/core/db/client';
-import * as schema from '@/domain/db/schema';
+import {
+  users,
+  recipes,
+  recipeImages,
+  embeddings,
+  favourites,
+  oauthClients,
+  oauthAssertions,
+  oauthGrants,
+  oauthCodes,
+  oauthTokens,
+  recipeImports,
+} from '@/domain/db/schema';
 import { APP_MIGRATIONS } from './migrations';
 import { sqliteD1 } from './sqlite-d1';
+
+const schema = {
+  users,
+  recipes,
+  recipeImages,
+  embeddings,
+  favourites,
+  oauthClients,
+  oauthAssertions,
+  oauthGrants,
+  oauthCodes,
+  oauthTokens,
+  recipeImports,
+};
 
 describe('createDatabase', () => {
   it('wraps a D1 binding in a client that keeps the binding as $client', () => {

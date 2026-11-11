@@ -37,17 +37,19 @@ function recipe(over: Partial<CardRecipe> & { id: string }): CardRecipe {
 }
 
 /** A saved page that says nothing about time, difficulty, protein or cuisine. */
-const BARE: CardRecipe = recipe({
+const BARE: CardRecipe = {
   id: 'bare',
   title: 'Bare',
-  minutes: undefined,
-  servings: undefined,
-  difficulty: undefined,
+  site: '',
   cuisine: '',
   protein: '',
   category: '',
-  dietType: undefined,
-});
+  diet: [],
+  method: [],
+  keywords: [],
+  favourite: false,
+  tone: 'sand',
+};
 
 const query = (params: Record<string, string> = {}) => parseQuery(params);
 
@@ -94,14 +96,9 @@ describe('parseQuery', () => {
 
 describe('timeBucket', () => {
   it('puts minutes into the buckets the Time filter offers', () => {
-    expect([15, 16, 30, 31, 60, 61].map(timeBucket)).toEqual([
-      '15',
-      '30',
-      '30',
-      '60',
-      '60',
-      'long',
-    ]);
+    expect(
+      [15, 16, 30, 31, 60, 61].map((minutes) => timeBucket(minutes)),
+    ).toEqual(['15', '30', '30', '60', '60', 'long']);
   });
 });
 
@@ -248,7 +245,7 @@ describe('hrefFor and friends', () => {
   it('round-trips a query through its link', () => {
     const q = query({ protein: 'beef,lamb', diet_type: 'Pescatarian' });
     const params = Object.fromEntries(
-      new URL(hrefFor(q), 'http://x').searchParams,
+      new URL(hrefFor(q), 'https://x').searchParams,
     );
     expect(parseQuery(params)).toEqual(q);
   });

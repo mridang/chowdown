@@ -25,18 +25,100 @@ export interface PantryItem {
 
 /** Words that name a unit or a container rather than the thing itself. */
 const UNIT_WORDS = new Set([
-  ...['g', 'gr', 'gm', 'gms', 'gram', 'grams', 'mg', 'kg', 'kgs', 'kilo'],
-  ...['kilos', 'kilogram', 'kilograms', 'oz', 'ounce', 'ounces', 'lb', 'lbs'],
-  ...['pound', 'pounds', 'ml', 'millilitre', 'millilitres', 'milliliter'],
-  ...['milliliters', 'l', 'litre', 'litres', 'liter', 'liters', 'dl', 'cl'],
-  ...['cup', 'cups', 'tbsp', 'tbsps', 'tbs', 'tablespoon', 'tablespoons'],
-  ...['tsp', 'tsps', 'teaspoon', 'teaspoons', 'pint', 'pints', 'pt', 'quart'],
-  ...['quarts', 'qt', 'can', 'cans', 'tin', 'tins', 'clove', 'cloves'],
-  ...['bunch', 'bunches', 'packet', 'packets', 'pack', 'packs', 'bag', 'bags'],
-  ...['jar', 'jars', 'slice', 'slices', 'piece', 'pieces', 'pc', 'pcs'],
-  ...['stick', 'sticks', 'head', 'heads', 'bulb', 'bulbs', 'bottle', 'bottles'],
-  ...['loaf', 'loaves', 'carton', 'cartons', 'dozen', 'pinch', 'handful'],
-  ...['sprig', 'sprigs', 'stalk', 'stalks', 'knob', 'dash', 'box', 'boxes'],
+  'g',
+  'gr',
+  'gm',
+  'gms',
+  'gram',
+  'grams',
+  'mg',
+  'kg',
+  'kgs',
+  'kilo',
+  'kilos',
+  'kilogram',
+  'kilograms',
+  'oz',
+  'ounce',
+  'ounces',
+  'lb',
+  'lbs',
+  'pound',
+  'pounds',
+  'ml',
+  'millilitre',
+  'millilitres',
+  'milliliter',
+  'milliliters',
+  'l',
+  'litre',
+  'litres',
+  'liter',
+  'liters',
+  'dl',
+  'cl',
+  'cup',
+  'cups',
+  'tbsp',
+  'tbsps',
+  'tbs',
+  'tablespoon',
+  'tablespoons',
+  'tsp',
+  'tsps',
+  'teaspoon',
+  'teaspoons',
+  'pint',
+  'pints',
+  'pt',
+  'quart',
+  'quarts',
+  'qt',
+  'can',
+  'cans',
+  'tin',
+  'tins',
+  'clove',
+  'cloves',
+  'bunch',
+  'bunches',
+  'packet',
+  'packets',
+  'pack',
+  'packs',
+  'bag',
+  'bags',
+  'jar',
+  'jars',
+  'slice',
+  'slices',
+  'piece',
+  'pieces',
+  'pc',
+  'pcs',
+  'stick',
+  'sticks',
+  'head',
+  'heads',
+  'bulb',
+  'bulbs',
+  'bottle',
+  'bottles',
+  'loaf',
+  'loaves',
+  'carton',
+  'cartons',
+  'dozen',
+  'pinch',
+  'handful',
+  'sprig',
+  'sprigs',
+  'stalk',
+  'stalks',
+  'knob',
+  'dash',
+  'box',
+  'boxes',
 ]);
 
 /** Whether a word is a unit or container ("g", "cups", "tin"). */
@@ -46,9 +128,24 @@ export function isUnitWord(word: string): boolean {
 
 /** Containers: "2 x 400g tins of tomatoes" is 800 g of tomatoes. */
 const CONTAINERS = new Set([
-  ...['can', 'cans', 'tin', 'tins', 'packet', 'packets', 'pack', 'packs'],
-  ...['bag', 'bags', 'jar', 'jars', 'bottle', 'bottles', 'carton', 'cartons'],
-  ...['box', 'boxes'],
+  'can',
+  'cans',
+  'tin',
+  'tins',
+  'packet',
+  'packets',
+  'pack',
+  'packs',
+  'bag',
+  'bags',
+  'jar',
+  'jars',
+  'bottle',
+  'bottles',
+  'carton',
+  'cartons',
+  'box',
+  'boxes',
 ]);
 
 /** The number words people type for small counts. */
@@ -100,7 +197,7 @@ function leadingAmount(
 ): { quantity: string; name: string } | undefined {
   // "2 x 400g tins of tomatoes": a count of sized packs.
   const packs = new RegExp(
-    `^(\\d+)\\s*[x×]\\s*(${NUM})\\s*([a-zA-Z]+\\.?)?\\s*(.*)$`,
+    String.raw`^(\d+)\s*[x×]\s*(${NUM})\s*([a-zA-Z]+\.?)?\s*(.*)$`,
   ).exec(text);
   if (packs) {
     const size = (packs[2] ?? '').trim();
@@ -113,7 +210,7 @@ function leadingAmount(
       };
     }
   }
-  const lead = new RegExp(`^(${NUM})\\s*(.*)$`).exec(text);
+  const lead = new RegExp(String.raw`^(${NUM})\s*(.*)$`).exec(text);
   if (!lead || !lead[2]) {
     return undefined;
   }
@@ -157,7 +254,7 @@ export function parsePantryItem(text: string): PantryItem {
   }
   // "tomatoes (3)" and "Tomatoes, 3": the amount after the name.
   const after = new RegExp(
-    `^(.+?)\\s*(?:\\(\\s*(${NUM})\\s*\\)|,\\s*(${NUM}))$`,
+    String.raw`^(.+?)\s*(?:\(\s*(${NUM})\s*\)|,\s*(${NUM}))$`,
   ).exec(trimmed);
   if (after) {
     return {
@@ -170,11 +267,44 @@ export function parsePantryItem(text: string): PantryItem {
 
 /** Words that describe an ingredient without changing what it is. */
 const DESCRIPTORS = new Set([
-  ...['fresh', 'chopped', 'diced', 'sliced', 'minced', 'grated', 'large'],
-  ...['small', 'medium', 'ripe', 'whole', 'dried', 'dry', 'finely', 'roughly'],
-  ...['boneless', 'skinless', 'canned', 'tinned', 'frozen', 'raw', 'cooked'],
-  ...['peeled', 'crushed', 'of', 'a', 'the', 'and', 'or', 'to', 'taste'],
-  ...['optional', 'extra', 'good', 'quality', 'plain', 'unsalted', 'salted'],
+  'fresh',
+  'chopped',
+  'diced',
+  'sliced',
+  'minced',
+  'grated',
+  'large',
+  'small',
+  'medium',
+  'ripe',
+  'whole',
+  'dried',
+  'dry',
+  'finely',
+  'roughly',
+  'boneless',
+  'skinless',
+  'canned',
+  'tinned',
+  'frozen',
+  'raw',
+  'cooked',
+  'peeled',
+  'crushed',
+  'of',
+  'a',
+  'the',
+  'and',
+  'or',
+  'to',
+  'taste',
+  'optional',
+  'extra',
+  'good',
+  'quality',
+  'plain',
+  'unsalted',
+  'salted',
 ]);
 
 /** Words that mean the same thing, mapped to one. */
@@ -230,41 +360,59 @@ const IMPLIES: Readonly<Record<string, string>> = {
  * only the ones that change what you would buy.
  */
 const DIFFERENT_THING = new Set([
-  ...[
-    'paste',
-    'sauce',
-    'puree',
-    'stock',
-    'broth',
-    'powder',
-    'juice',
-    'extract',
-  ],
-  ...[
-    'vinegar',
-    'seasoning',
-    'ketchup',
-    'soup',
-    'syrup',
-    'zest',
-    'oil',
-    'cube',
-  ],
-  ...['dressing', 'mix', 'wine', 'paper', 'chip', 'leaf', 'chestnut', 'tartar'],
-  ...['chocolate', 'bean', 'green', 'krispie', 'noodle', 'sprout', 'flake'],
-  ...['coconut', 'almond', 'soy', 'oat', 'cashew', 'peanut', 'hazelnut'],
-  ...['macadamia', 'sweet', 'sun', 'cauliflower', 'condensed', 'evaporated'],
-  ...[
-    'smoked',
-    'pickled',
-    'tortilla',
-    'pepper',
-    'jack',
-    'cod',
-    'butter',
-    'milk',
-    'cream',
-  ],
+  'paste',
+  'sauce',
+  'puree',
+  'stock',
+  'broth',
+  'powder',
+  'juice',
+  'extract',
+  'vinegar',
+  'seasoning',
+  'ketchup',
+  'soup',
+  'syrup',
+  'zest',
+  'oil',
+  'cube',
+  'dressing',
+  'mix',
+  'wine',
+  'paper',
+  'chip',
+  'leaf',
+  'chestnut',
+  'tartar',
+  'chocolate',
+  'bean',
+  'green',
+  'krispie',
+  'noodle',
+  'sprout',
+  'flake',
+  'coconut',
+  'almond',
+  'soy',
+  'oat',
+  'cashew',
+  'peanut',
+  'hazelnut',
+  'macadamia',
+  'sweet',
+  'sun',
+  'cauliflower',
+  'condensed',
+  'evaporated',
+  'smoked',
+  'pickled',
+  'tortilla',
+  'pepper',
+  'jack',
+  'cod',
+  'butter',
+  'milk',
+  'cream',
 ]);
 
 /** Plurals that don't follow the rules. */
@@ -353,9 +501,24 @@ function withImplied(words: readonly string[]): readonly string[] {
   ];
 }
 
+/** `name` with every `(…)` group, up to the first `)` after its `(`, replaced by a space. */
+function withoutParentheses(name: string): string {
+  let out = '';
+  let from = 0;
+  for (;;) {
+    const open = name.indexOf('(', from);
+    const close = open === -1 ? -1 : name.indexOf(')', open + 1);
+    if (close === -1) {
+      return out + name.slice(from);
+    }
+    out += `${name.slice(from, open)} `;
+    from = close + 1;
+  }
+}
+
 /** The meaningful words of an ingredient name: singular, synonyms folded. */
 export function ingredientWords(name: string): readonly string[] {
-  const words = foldText(name.replace(/\([^)]*\)/g, ' '))
+  const words = foldText(withoutParentheses(name))
     .split(/[^a-z]+/)
     .filter((w) => w && !DESCRIPTORS.has(w))
     .map((w) => stem(w))
@@ -394,20 +557,45 @@ export function sameIngredient(have: string, need: string): boolean {
 
 /** Words an ingredient may be made of and still be a kitchen staple. */
 const STAPLE_WORDS = new Set([
-  ...['salt', 'pepper', 'water', 'oil', 'ice', 'and', 'or', 'a', 'to', 'for'],
-  ...['kosher', 'sea', 'table', 'fine', 'coarse', 'ground', 'black', 'white'],
-  ...['freshly', 'extra', 'virgin', 'light', 'neutral', 'cooking', 'olive'],
-  ...[
-    'vegetable',
-    'cold',
-    'hot',
-    'warm',
-    'boiling',
-    'filtered',
-    'tap',
-    'taste',
-  ],
-  ...['seasoning', 'frying', 'pinch', 'of', 'some', 'the', 'ground'],
+  'salt',
+  'pepper',
+  'water',
+  'oil',
+  'ice',
+  'and',
+  'or',
+  'a',
+  'to',
+  'for',
+  'kosher',
+  'sea',
+  'table',
+  'fine',
+  'coarse',
+  'ground',
+  'black',
+  'white',
+  'freshly',
+  'extra',
+  'virgin',
+  'light',
+  'neutral',
+  'cooking',
+  'olive',
+  'vegetable',
+  'cold',
+  'hot',
+  'warm',
+  'boiling',
+  'filtered',
+  'tap',
+  'taste',
+  'seasoning',
+  'frying',
+  'pinch',
+  'of',
+  'some',
+  'the',
 ]);
 
 /**
@@ -416,7 +604,7 @@ const STAPLE_WORDS = new Set([
  * coconut water are not, and neither are pepper flakes or garlic powder.
  */
 export function isStaple(name: string): boolean {
-  const words = foldText(name.replace(/\([^)]*\)/g, ' '))
+  const words = foldText(withoutParentheses(name))
     .split(/[^a-z]+/)
     .filter(Boolean);
   return (
@@ -464,15 +652,16 @@ function comparable(a: BaseAmount, b: BaseAmount): boolean {
   return stem(a.unit ?? '') === stem(b.unit ?? '');
 }
 
+/** The unit a dimension is always shown in; counts keep their own unit. */
+const FIXED_UNITS: Readonly<Record<string, string>> = {
+  mass: 'g',
+  volume: 'ml',
+};
+
 /** An amount as text, for messages: "800 g", "3 cloves". */
 function describeAmount(amount: BaseAmount): string {
   const n = Math.round(amount.amount * 100) / 100;
-  const unit =
-    amount.dimension === 'mass'
-      ? 'g'
-      : amount.dimension === 'volume'
-        ? 'ml'
-        : amount.unit;
+  const unit = own(FIXED_UNITS, amount.dimension) ?? amount.unit;
   return unit ? `${n} ${unit}` : String(n);
 }
 
@@ -490,7 +679,7 @@ function similarity(a: string, b: string): number {
   const x = ingredientWords(a);
   const y = ingredientWords(b);
   const shared = x.filter((w) => y.includes(w)).length;
-  return shared / new Set([...x, ...y]).size;
+  return shared / new Set([x, y].flat()).size;
 }
 
 /** What matching one (possibly repeated) recipe ingredient came to. */
@@ -595,7 +784,9 @@ export function matchRecipe(
   const groups = Map.groupBy(
     ingredients,
     (ingredient) =>
-      ingredientWords(ingredient.name).toSorted().join(' ') || ingredient.name,
+      ingredientWords(ingredient.name)
+        .toSorted((a, b) => a.localeCompare(b))
+        .join(' ') || ingredient.name,
   );
   const outcomes = [...groups.values()].map((lines) =>
     matchIngredient(lines, pantry, assumeStaples),

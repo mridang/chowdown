@@ -93,3 +93,25 @@ describe('recipeToJsonLd', () => {
     expect(bare.recipeIngredient).toBeUndefined();
   });
 });
+
+const FAST_MS = 1000;
+
+describe('toIsoDuration (linear-time rewrite)', () => {
+  it.each([
+    ['1.5 hours', 'PT1H30M'],
+    ['1 hr 15 min', 'PT1H15M'],
+    ['20', 'PT20M'],
+    ['2h30m', 'PT30M'],
+    ['x 3.5.2h', 'PT5H12M'],
+    ['45 minutes', 'PT45M'],
+    ['about 10 mins', 'PT10M'],
+    ['1 month', null],
+  ])('reads %j', (input, expected) => {
+    expect(toIsoDuration(input as string) ?? null).toEqual(expected);
+  });
+  it('scans on a long adversarial input', () => {
+    const started = performance.now();
+    toIsoDuration(`${'1'.repeat(100_000)} `);
+    expect(performance.now() - started).toBeLessThan(FAST_MS);
+  });
+});

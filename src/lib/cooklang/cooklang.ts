@@ -66,10 +66,7 @@ export interface ParsedRecipe {
 export function formatQuantity(item: Readonly<RawQuantity>): string {
   const { quantity, units } = item;
   const hasQuantity =
-    quantity !== undefined &&
-    quantity !== null &&
-    quantity !== '' &&
-    quantity !== 'some';
+    quantity != null && quantity !== '' && quantity !== 'some';
   const q = hasQuantity ? String(quantity) : '';
   if (q && units) {
     return `${q} ${units}`;
@@ -80,21 +77,25 @@ export function formatQuantity(item: Readonly<RawQuantity>): string {
 /** Turn a single parser step item into a render token. */
 function toToken(item: Readonly<RawStepItem>): StepToken {
   switch (item.type) {
-    case 'text':
+    case 'text': {
       return { kind: 'text', text: item.value };
-    case 'ingredient':
+    }
+    case 'ingredient': {
       return {
         kind: 'ingredient',
         name: item.name ?? '',
         quantity: formatQuantity(item),
       };
-    case 'cookware':
+    }
+    case 'cookware': {
       return { kind: 'cookware', name: item.name ?? '' };
-    case 'timer':
+    }
+    case 'timer': {
       return {
         kind: 'timer',
         label: formatQuantity(item) || (item.name ?? ''),
       };
+    }
   }
 }
 
@@ -148,7 +149,43 @@ function repaired(item: Readonly<Shown>): Shown {
  * would take for something else (`~` starts a timer, `#` cookware), which is
  * exactly why these lines are read here rather than by the parser.
  */
-const INGREDIENT_LINE = /^@([^{}]+?)\s*(?:\{([^{}]*)\}(?:\([^()]*\))?)?\s*$/;
+/**
+ * Read an ingredient line, `@name`, `@name{amount}` or `@name{amount}(note)`:
+ * the name (without the whitespace before any `{`) and the raw amount, which
+ * is empty when there is no `{amount}`. Undefined for anything else.
+ */
+function ingredientLine(
+  line: string,
+): { readonly name: string; readonly amount: string } | undefined {
+  if (!line.startsWith('@')) {
+    return undefined;
+  }
+  const rest = line.slice(1);
+  const brace = rest.search(/[{}]/);
+  if (brace === -1) {
+    return rest === ''
+      ? undefined
+      : { name: rest.trimEnd() || rest.charAt(0), amount: '' };
+  }
+  if (brace === 0 || rest.charAt(brace) === '}') {
+    return undefined;
+  }
+  const close = rest.indexOf('}', brace + 1);
+  const amount = close === -1 ? '' : rest.slice(brace + 1, close);
+  if (close === -1 || amount.includes('{')) {
+    return undefined;
+  }
+  let after = rest.slice(close + 1);
+  if (after.startsWith('(')) {
+    const end = after.indexOf(')');
+    if (end !== -1 && !after.slice(1, end).includes('(')) {
+      after = after.slice(end + 1);
+    }
+  }
+  return after.trim() === ''
+    ? { name: rest.slice(0, brace).trimEnd() || rest.charAt(0), amount }
+    : undefined;
+}
 
 /** What an ingredient line's `{amount}` says: `200%g` is 200 g, `to taste` is itself, empty is nothing. */
 function amountLabel(amount: string): string {
@@ -176,28 +213,26 @@ function splitDeclaration(source: string): Declaration {
   const firstBody = lines.findIndex(
     (line) => line.trim() !== '' && !line.startsWith('>>'),
   );
-  if (firstBody < 0) {
+  if (firstBody === -1) {
     return { declared: [], rest: source };
   }
   const afterBlock = lines.findIndex(
     (line, index) =>
-      index >= firstBody &&
-      line.trim() !== '' &&
-      !INGREDIENT_LINE.test(line.trim()),
+      index >= firstBody && line.trim() !== '' && !ingredientLine(line.trim()),
   );
   const block = lines
-    .slice(firstBody, afterBlock < 0 ? lines.length : afterBlock)
-    .map((line) => INGREDIENT_LINE.exec(line.trim()))
+    .slice(firstBody, afterBlock === -1 ? lines.length : afterBlock)
+    .map((line) => ingredientLine(line.trim()))
     .flatMap((match) => (match ? [match] : []));
   // Needs a method to be separate from, and more than one line to be a block.
-  if (afterBlock < 0 || block.length < 2) {
+  if (afterBlock === -1 || block.length < 2) {
     return { declared: [], rest: source };
   }
   return {
     declared: block.map((match) =>
       repaired({
-        name: (match[1] ?? '').trim(),
-        quantity: amountLabel(match[2] ?? ''),
+        name: match.name.trim(),
+        quantity: amountLabel(match.amount),
       }),
     ),
     rest: [...lines.slice(0, firstBody), ...lines.slice(afterBlock)].join('\n'),
@@ -212,7 +247,6 @@ function splitDeclaration(source: string): Declaration {
  * the ingredients panel and is left out of `steps`, so the method starts with
  * the first thing to do and the ingredients are not listed twice. Ingredients that were stored badly are
  * repaired as they are read (see {@link repaired}).
- *
  * @param source - The raw `.cook` file contents.
  * @param filename - Used as the title when the recipe has no `>> title:`.
  */
@@ -238,7 +272,7 @@ export function parseRecipe(source: string, filename: string): ParsedRecipe {
     cookware: (raw.cookwares ?? []).map((c) => c.name ?? ''),
     steps: (raw.steps ?? []).map((step) =>
       step
-        .map(toToken)
+        .map((item) => toToken(item))
         .map((token) =>
           token.kind === 'ingredient'
             ? { ...token, ...repaired(token) }

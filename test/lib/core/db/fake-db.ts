@@ -53,6 +53,8 @@ function nth(results: readonly unknown[] | undefined, n: number): unknown {
   return results?.[Math.min(n, results.length - 1)];
 }
 
+type StatementKind = 'select' | 'insert' | 'update' | 'delete';
+
 /** A fake database that records every statement and answers from `results`. */
 export function fakeDb(results: FakeResults = {}): {
   readonly db: Database;
@@ -62,7 +64,7 @@ export function fakeDb(results: FakeResults = {}): {
   const calls: Call[] = [];
   const batches: unknown[][] = [];
   const counts: Record<string, number> = {};
-  const start = (kind: 'select' | 'insert' | 'update' | 'delete') => () => {
+  const start = (kind: StatementKind) => () => {
     const n = counts[kind] ?? 0;
     counts[kind] = n + 1;
     calls.push({ statement: kind, method: kind, args: [] });

@@ -8,14 +8,9 @@
  * shows beside the finished recipe it produces.
  */
 
-import type {
-  CardRecipe,
-  DifficultyLevel,
-  Tone,
-} from '@/domain/recipe/card-data';
+import type { CardRecipe, DifficultyLevel } from '@/domain/recipe/card-data';
 
 /** The soft colours a recipe tile can wear, re-exported for the landing page's mock-ups. */
-export type { Tone };
 
 /** A demo recipe is shaped like a saved one, but always has its facts. */
 export type SampleRecipe = CardRecipe &
@@ -177,4 +172,9 @@ export const HERO_RECIPE: SampleRecipe = {
 };
 
 /** The sample recipes the landing page draws, the featured one first. */
-export const RECIPES: SampleRecipes = [HERO_RECIPE, ...REST.map(toSample)];
+export const RECIPES: SampleRecipes = [
+  HERO_RECIPE,
+  ...REST.map((base) => toSample(base)),
+];
+
+export { type Tone } from '@/domain/recipe/card-data';

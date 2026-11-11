@@ -79,4 +79,13 @@ export default [
       '@next/next/no-img-element': 'off',
     },
   },
+  {
+    // Large data or adapter file kept as one module.
+    files: [
+      'test/domain/db/oauth.test.ts',
+      'test/domain/mcp/http.test.ts',
+      'test/domain/mcp/tool-calls.test.ts',
+    ],
+    rules: { 'sonarjs/max-lines': 'off' },
+  },
 ];

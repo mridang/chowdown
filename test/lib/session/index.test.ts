@@ -11,6 +11,9 @@ import {
 
 const SECRET = 'test-session-secret-value';
 
+/** A value that is deliberately missing, as opposed to a key that is left out. */
+let absent: undefined;
+
 // Thin adapters over the SessionTokens handle, so each case reads as a
 // one-line sign/verify.
 const createSessionToken = (payload: NewSession, secret: string = SECRET) =>
@@ -39,7 +42,7 @@ describe('session tokens', () => {
           hint: true,
           off: false,
           tag: 'x',
-          gone: undefined,
+          gone: absent,
         },
         SECRET,
       ),
@@ -56,9 +59,9 @@ describe('session tokens', () => {
     );
     const [, sig] = token.split('.');
     const forged = `${btoa('{"uid":999,"email":"evil@z.com","exp":9999999999}')
-      .replace(/=+$/, '')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')}.${sig}`;
+      .replaceAll('=', '')
+      .replaceAll('+', '-')
+      .replaceAll('/', '_')}.${sig}`;
     expect(await verifySessionToken(forged, SECRET)).toBeNull();
   });
 
@@ -126,7 +129,8 @@ describe('session profile', () => {
       { uid: 7, email: 'old@y.com' },
       SECRET,
     );
-    expect((await verifySessionToken(token, SECRET))?.name).toBeUndefined();
+    const payload = await verifySessionToken(token, SECRET);
+    expect(payload?.name).toBeUndefined();
   });
 });
 
@@ -198,7 +202,12 @@ describe('session epoch', () => {
   it('rejects a signed token whose epoch is not a number', async () => {
     const body = bytesToBase64Url(
       new TextEncoder().encode(
-        JSON.stringify({ uid: 1, email: 'a@b.com', ep: '3', exp: 9999999999 }),
+        JSON.stringify({
+          uid: 1,
+          email: 'a@b.com',
+          ep: '3',
+          exp: 9_999_999_999,
+        }),
       ),
     );
     const key = await crypto.subtle.importKey(

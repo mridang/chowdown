@@ -37,11 +37,14 @@ describe('STYLES', () => {
 
 /** The value of one rule's declaration, such as the padding of `.wrap`. */
 function declaration(selector: string, property: string): string {
-  const rule = STYLES.match(
-    new RegExp(`(?:^|\\n)${selector.replace('.', '\\.')} \\{([^}]*)\\}`),
+  const escapedSelector = selector.replace('.', String.raw`\.`);
+  const rule = new RegExp(
+    String.raw`(?:^|\n)${escapedSelector} \{([^}]*)\}`,
+  ).exec(STYLES);
+  const value = rule?.[1]?.match(
+    new RegExp(String.raw`${property}:\s*([^;]*);`),
   );
-  const value = rule?.[1]?.match(new RegExp(`${property}:\\s*([^;]*);`));
-  return value?.[1]?.replace(/\s+/g, ' ').trim() ?? '';
+  return value?.[1]?.replaceAll(/\s+/g, ' ').trim() ?? '';
 }
 
 describe('keyboard focus', () => {

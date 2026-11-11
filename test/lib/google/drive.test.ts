@@ -49,8 +49,8 @@ describe('listRecipeFiles', () => {
   function pages(...bodies: object[]) {
     const fetchMock = jest.fn();
     for (const body of bodies) {
-      fetchMock.mockImplementationOnce(
-        async () => new Response(JSON.stringify(body), { status: 200 }),
+      fetchMock.mockImplementationOnce(async () =>
+        Response.json(body, { status: 200 }),
       );
     }
     globalThis.fetch = fetchMock as unknown as typeof fetch;
@@ -77,18 +77,18 @@ describe('listRecipeFiles', () => {
         { id: '3', name: 'B.COOK' },
       ],
     });
-    expect((await listRecipeFiles('folder', 'tok')).map((f) => f.id)).toEqual([
-      '1',
-      '3',
-    ]);
+    const files = await listRecipeFiles('folder', 'tok');
+    expect(files.map((f) => f.id)).toEqual(['1', '3']);
   });
 
   it('gives up after a sane number of pages rather than looping forever', async () => {
-    const fetchMock = jest.fn(
-      async () =>
-        new Response(JSON.stringify({ files: [], nextPageToken: 'again' }), {
+    const fetchMock = jest.fn(async () =>
+      Response.json(
+        { files: [], nextPageToken: 'again' },
+        {
           status: 200,
-        }),
+        },
+      ),
     );
     globalThis.fetch = fetchMock as unknown as typeof fetch;
     await listRecipeFiles('folder', 'tok');

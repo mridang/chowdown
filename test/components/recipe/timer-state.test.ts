@@ -26,7 +26,10 @@ const spec = (id: string, durationMs = 5 * MIN, step = 0): TimerSpec => ({
 
 /** Apply actions in order from no timers. */
 const run = (...actions: readonly TimerAction[]): readonly StepTimer[] =>
-  actions.reduce<readonly StepTimer[]>(timerReducer, []);
+  actions.reduce<readonly StepTimer[]>(
+    (timers, action) => timerReducer(timers, action),
+    [],
+  );
 
 const toggle = (s: TimerSpec, now: number): TimerAction => ({
   type: 'toggle',
@@ -289,7 +292,7 @@ describe('formatRemaining', () => {
     [4 * MIN + 100, '4:00'],
     [59_000, '0:59'],
     [60_000, '1:00'],
-    [4 * MIN + 7_000, '4:07'],
+    [4 * MIN + 7000, '4:07'],
     [59 * MIN + 59_000, '59:59'],
     [60 * MIN, '1:00:00'],
     [3_723_000, '1:02:03'],
