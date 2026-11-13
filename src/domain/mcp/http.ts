@@ -57,7 +57,7 @@ import {
 } from '@/domain/mcp/server';
 
 /**
- * Replies carry a person's recipes and are never meant to be stored by a shared
+ * Replies carry a person's own data and are never meant to be stored by a shared
  * cache; the MCP-level `cacheScope` hints tell a client what it may keep.
  */
 const NO_STORE: Readonly<Record<string, string>> = {

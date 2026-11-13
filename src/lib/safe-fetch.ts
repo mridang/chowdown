@@ -1,10 +1,10 @@
 /**
  * @packageDocumentation
  *
- * Fetching things from other people's websites, safely. Recipe import fetches
- * the pages people paste links to, and the cover proxy fetches the photos those
- * recipes point at. The address always comes from outside, so both go through
- * this one module, which makes three promises:
+ * Fetching things from other people's websites, safely. An address that came
+ * from outside — a link someone pasted, an image a page points at, an address a
+ * client registered — always goes through this one module, which makes three
+ * promises:
  *
  *   - it only talks to public web addresses ({@link isPublicWebUrl}), and
  *     checks again at every redirect, so a public site cannot bounce us to a
