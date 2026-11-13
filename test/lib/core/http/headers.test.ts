@@ -253,9 +253,11 @@ describe('SECURITY_HEADERS', () => {
     expect(SECURITY_HEADERS['Origin-Agent-Cluster']).toBe('?1');
   });
 
-  it('switches off every powerful feature except clipboard-write', () => {
-    const parts = (SECURITY_HEADERS['Permissions-Policy'] ?? '').split(', ');
+  it("switches off every feature of OWASP's list, leaving only the clipboard for this origin", () => {
+    const policy = SECURITY_HEADERS['Permissions-Policy'] ?? '';
+    const parts = policy.split(', ');
     expect(parts).toHaveLength(29);
+    expect(parts).toContain('clipboard-write=(self)');
     expect(parts).toContain('interest-cohort=()');
     expect(parts).toContain('sync-xhr=()');
     expect(parts.filter((part) => !part.endsWith('=()'))).toEqual([
