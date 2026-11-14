@@ -172,7 +172,7 @@ export const QUERY = z.string().min(1).max(500).regex(new RegExp(NOT_BLANK));
 export const WEB_URL = z
   .string()
   .max(2048)
-  .regex(/^https?:\/\/\S+$/);
+  .regex(new RegExp(String.raw`^https?://\S+$`));
 
 /**
  * The largest block of page text or Cooklang a tool takes, in characters. The
