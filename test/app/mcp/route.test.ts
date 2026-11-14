@@ -23,17 +23,19 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
-import { READ_ONLY_TOOLS, SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
-import { TOOLS } from '@/domain/mcp/tool-definitions';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import { TOOL_REGISTRY } from '@/domain/mcp/tools';
 
 const ORIGIN = 'https://app.test';
 const URL = `${ORIGIN}/mcp`;
 const OTHER = 'https://evil.example';
 /** A tool that only reads, and one that changes something. */
-const [READ_TOOL = ''] = READ_ONLY_TOOLS;
+const READ_TOOL =
+  TOOL_REGISTRY.all.find((tool) => tool.annotations.readOnlyHint === true)
+    ?.name ?? '';
 const WRITE_TOOL =
-  TOOLS.map((tool) => tool.name).find((name) => !READ_ONLY_TOOLS.has(name)) ??
-  '';
+  TOOL_REGISTRY.all.find((tool) => tool.annotations.readOnlyHint !== true)
+    ?.name ?? '';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 
 /** Every migration, in order: the route reads users, grants and rate-limit counters. */

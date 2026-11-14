@@ -33,21 +33,6 @@ export const SCOPE_TEXT: Readonly<Record<string, string>> = {
  */
 export const READ_ONLY_TEXT = 'see and search recipes';
 
-/**
- * Tools that only read. Anything not listed here is treated as a write, so a
- * newly added tool is protected by default until someone classifies it.
- */
-export const READ_ONLY_TOOLS: ReadonlySet<string> = new Set([
-  'list_recipes',
-  'search_recipes',
-  'find_recipes',
-  'find_similar',
-  'get_recipe',
-  'browse_recipes',
-  'recipes_from_ingredients',
-  'list_filters',
-]);
-
 /** The name of the protected resource, in its RFC 9728 metadata. */
 export const RESOURCE_NAME = 'Chowdown recipes';
 
