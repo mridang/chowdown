@@ -151,6 +151,19 @@ export abstract class McpTool<
   readonly spellings?: ArgumentSpellings;
 
   /**
+   * The one outside service this tool's work depends on, named as an assistant
+   * should hear it ("the database"). When it is set, anything {@link handle}
+   * throws that is not already a failure of a named service becomes a
+   * {@link BackendFailureError} for that one, so a tool whose every step talks
+   * to the same place need not wrap each of them.
+   *
+   * Leave it unset for a tool that reaches more than one service, or that
+   * should let a mistake in its own code escape loudly; such a tool names the
+   * service at the call it is guarding instead.
+   */
+  readonly backend?: string;
+
+  /**
    * A limit on the call itself, checked once the arguments fit and before
    * anything is opened, so that a refusal costs nothing but the check.
    *

@@ -197,3 +197,54 @@ describe('ToolInvoker.invokeOrExplain', () => {
     ).rejects.toBeInstanceOf(UnknownToolError);
   });
 });
+
+describe('ToolInvoker and a tool that names its backing service', () => {
+  /** A tool whose work fails the way an unreachable service does. */
+  class FlakyTool extends CountTool {
+    override readonly backend = 'the archive';
+
+    override async handle(): Promise<never> {
+      throw new Error('connection reset');
+    }
+  }
+
+  /** A tool that names a service but fails at a differently named one. */
+  class MisattributedTool extends CountTool {
+    override readonly backend = 'the archive';
+
+    override async handle(): Promise<never> {
+      throw new BackendFailureError('the mail service', new Error('timeout'));
+    }
+  }
+
+  it('turns whatever the tool threw into a failure of the service it named', async () => {
+    const log = new RecordingLog();
+    const result = await invokerFor(
+      [new FlakyTool()],
+      new NoExplanations(),
+      log,
+    ).invokeOrExplain({ name: 'count' }, fixtureContext());
+    expect(textOf(result)).toContain('Something went wrong with the archive');
+    expect(textOf(result)).not.toContain('connection reset');
+    expect(log.entries[0]?.service).toBe('the archive');
+  });
+
+  it('leaves a failure that already names a service as it is', async () => {
+    const log = new RecordingLog();
+    await invokerFor(
+      [new MisattributedTool()],
+      new NoExplanations(),
+      log,
+    ).invokeOrExplain({ name: 'count' }, fixtureContext());
+    expect(log.entries[0]?.service).toBe('the mail service');
+  });
+
+  it('lets a tool that named no service fail loudly, so a bug is not hidden', async () => {
+    await expect(
+      invokerFor([new BuggyTool()]).invokeOrExplain(
+        { name: 'fetch', arguments: { url: 'x' } },
+        fixtureContext(),
+      ),
+    ).rejects.toThrow('a bug');
+  });
+});

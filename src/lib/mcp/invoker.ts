@@ -5,7 +5,8 @@
  *
  * An invoker finds the tool a call names, checks the call against that tool's
  * own schema, gives the tool a chance to refuse the call outright, and then
- * runs it. It knows nothing about any individual tool, so it is the same code
+ * runs it. A tool that named one backing service has whatever it throws turned
+ * into a failure of that service, so it need not wrap its own work. It knows nothing about any individual tool, so it is the same code
  * whatever the tool set is: a tool that needs something slow opens it through
  * the context when it asks, which is why there is no list of tools to treat
  * differently here.
@@ -100,7 +101,19 @@ export class ToolInvoker<
       return checked.refusal;
     }
     const refusal = await tool.precheck(context);
-    return refusal ?? tool.handle(checked.args, context);
+    if (refusal) {
+      return refusal;
+    }
+    if (tool.backend === undefined) {
+      return tool.handle(checked.args, context);
+    }
+    try {
+      return await tool.handle(checked.args, context);
+    } catch (error) {
+      throw error instanceof BackendFailureError
+        ? error
+        : new BackendFailureError(tool.backend, error);
+    }
   }
 
   /**
