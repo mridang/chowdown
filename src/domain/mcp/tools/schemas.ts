@@ -15,7 +15,7 @@ import {
   CARD_RESOURCE_URI,
   LIST_RESOURCE_URI,
 } from '@/domain/mcp/ui-resources';
-import { NOT_BLANK, writes } from '@/lib/mcp';
+import { NOT_BLANK } from '@/lib/mcp';
 import { z } from 'zod';
 
 /** JSON Schema for the recipe-card `structuredContent` (a parsed recipe + extras). */

@@ -20,7 +20,6 @@ import {
   type ArgumentSpellings,
   type JsonSchema,
   type ToolAnnotations,
-  type ToolArgs,
   type ToolResult,
 } from '@/lib/mcp';
 
