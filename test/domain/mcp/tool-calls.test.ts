@@ -132,7 +132,7 @@ describe('the arguments are checked before anything runs', () => {
     [
       'import_recipe',
       { content: 'x', url: 'ftp://example.com' },
-      '`url` must match the pattern ^https?://\\S+$.',
+      '`url` must match the pattern ^https?:\\/\\/\\S+$.',
     ],
     [
       'import_recipe',
