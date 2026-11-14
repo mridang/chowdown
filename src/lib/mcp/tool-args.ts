@@ -7,8 +7,6 @@
  * and answers with a plain, safe value instead of throwing.
  */
 
-import { ARGUMENT_ALIASES, LISTS_OF_TEXT } from '@/domain/mcp/app';
-
 /** The most results a tool returns unless asked for fewer. */
 const DEFAULT_LIMIT = 12;
 
@@ -57,21 +55,29 @@ export function offsetArg(value: unknown): number {
   return n === undefined ? 0 : Math.max(Math.floor(n), 0);
 }
 
+/** The looser spellings one tool forgives, as the tool itself declares them. */
+export interface ArgumentSpellings {
+  /** Looser names, and the canonical name each one stands for. */
+  readonly aliases?: Readonly<Record<string, string>>;
+  /** Arguments declared as a list of text that a model may send as one string. */
+  readonly listsOfText?: readonly string[];
+}
+
 /**
- * The arguments of a call to `tool`, with the harmless slips of
- * {@link ARGUMENT_ALIASES} and {@link LISTS_OF_TEXT} put right. Nothing else is
- * guessed: a number sent as text, a wrong type or an unknown name is still left
- * for the schema check to refuse, so the assistant is told and can say it right.
- * When both an alias and its canonical name are present the arguments are left
- * as they are, and the check refuses the alias.
+ * The arguments of a call, with the harmless slips the tool forgives put right.
+ * Nothing else is guessed: a number sent as text, a wrong type or an unknown
+ * name is still left for the schema check to refuse, so the assistant is told
+ * and can say it right. When both an alias and its canonical name are present
+ * the arguments are left as they are, and the check refuses the alias.
+ *
+ * The spellings come from the tool rather than from a table keyed by tool name,
+ * so this library needs to know nothing about any app's tools.
  */
 export function canonicalArguments(
-  tool: string,
   args: Readonly<Record<string, unknown>>,
+  spellings: ArgumentSpellings = {},
 ): Readonly<Record<string, unknown>> {
-  const aliases = Object.hasOwn(ARGUMENT_ALIASES, tool)
-    ? Object.entries(ARGUMENT_ALIASES[tool] ?? {})
-    : [];
+  const aliases = Object.entries(spellings.aliases ?? {});
   const renamed = Object.fromEntries(
     Object.entries(args).map(([key, value]) => {
       const alias = aliases.find(([from]) => from === key);
@@ -80,9 +86,7 @@ export function canonicalArguments(
         : [key, value];
     }),
   );
-  const lists = Object.hasOwn(LISTS_OF_TEXT, tool)
-    ? (LISTS_OF_TEXT[tool] ?? [])
-    : [];
+  const lists = spellings.listsOfText ?? [];
   return Object.fromEntries(
     Object.entries(renamed).map(([key, value]) => [
       key,

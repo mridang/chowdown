@@ -3,12 +3,8 @@ import Ajv2020 from 'ajv/dist/2020.js';
 
 import { validateJson, unsupportedKeywords } from '@/lib/mcp';
 import { MAX_BODY_BYTES } from '@/domain/mcp/request-limits';
-import {
-  CONTENT_MAX,
-  PAGE_DEFAULT,
-  TOOLS,
-  toolNamed,
-} from '@/domain/mcp/tool-definitions';
+import { TOOLS, toolNamed } from '@/domain/mcp/tool-definitions';
+import { CONTENT_MAX, PAGE_DEFAULT } from '@/domain/mcp/tools/schemas';
 import { APP_RESOURCES } from '@/domain/mcp/ui-resources';
 import { SCOPE_READ, scopeForTool } from '@/lib/oauth';
 import { PANCAKES, call, fakeServices, folder } from '../../lib/mcp/tool-fakes';
@@ -131,7 +127,7 @@ describe('how the tools name what they take', () => {
   /** The properties of a tool's input schema. */
   const propertiesOf = (name: string): Record<string, unknown> => {
     const schema = toolNamed(name)?.inputSchema;
-    return schema && 'properties' in schema ? schema.properties : {};
+    return schema?.properties ?? {};
   };
 
   it.each(EXISTING)(
@@ -182,8 +178,7 @@ describe('long results', () => {
       'recipes_from_ingredients',
     ]) {
       const schema = toolNamed(name)?.inputSchema;
-      const properties =
-        schema && 'properties' in schema ? schema.properties : {};
+      const properties = schema?.properties ?? {};
       expect(Object.keys(properties)).toContain('offset');
     }
   });
@@ -199,14 +194,15 @@ describe('what the tools accept as text', () => {
   /** Every required text property of every tool, with the good arguments around it. */
   const REQUIRED_TEXT = TOOLS.flatMap((tool) => {
     const schema = tool.inputSchema;
-    const properties: Record<string, Record<string, unknown>> = 'properties' in
-    schema
-      ? schema.properties
-      : {};
-    const required: readonly string[] =
-      'required' in schema ? schema.required : [];
+    const properties: Readonly<Record<string, unknown>> =
+      schema.properties ?? {};
+    const required: readonly string[] = schema.required ?? [];
     return required
-      .filter((key) => properties[key]?.['type'] === 'string')
+      .filter(
+        (key) =>
+          (properties[key] as { type?: unknown } | undefined)?.type ===
+          'string',
+      )
       .map((key) => [tool.name, key] as const);
   });
 
@@ -241,10 +237,10 @@ describe('what the tools accept as text', () => {
   it('keeps the largest block of text a tool takes within what one request can carry, even if every character needs six bytes of JSON', () => {
     expect(CONTENT_MAX * 6).toBeLessThan(MAX_BODY_BYTES);
     for (const tool of TOOLS) {
-      const properties: Record<
-        string,
-        Record<string, unknown>
-      > = 'properties' in tool.inputSchema ? tool.inputSchema.properties : {};
+      const properties: Readonly<Record<string, Record<string, unknown>>> =
+        (tool.inputSchema.properties ?? {}) as Readonly<
+          Record<string, Record<string, unknown>>
+        >;
       for (const [key, schema] of Object.entries(properties)) {
         const longest = Number(schema['maxLength'] ?? 0);
         expect({ tool: tool.name, key, fits: longest <= CONTENT_MAX }).toEqual({
@@ -334,7 +330,7 @@ describe('what each tool says about signing in', () => {
     (name, tool) => {
       const expected = [{ type: 'oauth2', scopes: [scopeForTool(name)] }];
       expect(tool.securitySchemes).toEqual(expected);
-      expect(tool._meta.securitySchemes).toEqual(expected);
+      expect(tool._meta['securitySchemes']).toEqual(expected);
     },
   );
 });
@@ -409,11 +405,8 @@ describe('the input schemas', () => {
       expect(newAjv().validateSchema(tool.inputSchema)).toBe(true);
       expect(tool.inputSchema.type).toBe('object');
       expect(tool.inputSchema.additionalProperties).toBe(false);
-      const properties = Object.keys(
-        'properties' in tool.inputSchema ? tool.inputSchema.properties : {},
-      );
-      const required =
-        'required' in tool.inputSchema ? tool.inputSchema.required : [];
+      const properties = Object.keys(tool.inputSchema.properties ?? {});
+      const required = tool.inputSchema.required ?? [];
       for (const key of required) {
         expect(properties).toContain(key);
       }
@@ -434,10 +427,10 @@ describe('the input schemas', () => {
 
   it('bounds every string, list and number an assistant can send', () => {
     for (const tool of TOOLS) {
-      const properties: Record<
-        string,
-        Record<string, unknown>
-      > = 'properties' in tool.inputSchema ? tool.inputSchema.properties : {};
+      const properties: Readonly<Record<string, Record<string, unknown>>> =
+        (tool.inputSchema.properties ?? {}) as Readonly<
+          Record<string, Record<string, unknown>>
+        >;
       for (const [key, schema] of Object.entries(properties)) {
         const isBoundedText =
           schema['type'] === 'string' && schema['maxLength'] !== undefined;
@@ -467,7 +460,7 @@ describe('the output schemas', () => {
   it('are valid JSON Schema 2020-12', () => {
     for (const tool of TOOLS) {
       if ('outputSchema' in tool) {
-        expect(newAjv().validateSchema(tool.outputSchema)).toBe(true);
+        expect(newAjv().validateSchema(tool.outputSchema ?? {})).toBe(true);
       }
     }
   });
@@ -508,10 +501,7 @@ describe('the input checker agrees with ajv', () => {
     (_name, tool) => {
       const ajvValid = newAjv().compile(tool.inputSchema);
       const good = GOOD_ARGUMENTS[tool.name] ?? {};
-      const properties =
-        'properties' in tool.inputSchema
-          ? Object.keys(tool.inputSchema.properties)
-          : [];
+      const properties = Object.keys(tool.inputSchema.properties ?? {});
       const variants: readonly unknown[] = [
         good,
         undefined,
@@ -581,7 +571,7 @@ describe('every result conforms to the tool that returned it', () => {
       expect(result.isError).toBeUndefined();
       expect(result.content[0]?.text.length).toBeGreaterThan(10);
       if ('outputSchema' in tool) {
-        const accepts = newAjv().compile(tool.outputSchema);
+        const accepts = newAjv().compile(tool.outputSchema ?? {});
         expect({
           tool: tool.name,
           errors: accepts(result.structuredContent) ? [] : accepts.errors,
@@ -623,9 +613,7 @@ describe('every result conforms to the tool that returned it', () => {
 
   it('answers a search with nothing found as an empty list that the schema accepts', async () => {
     const tool = toolNamed('search_recipes');
-    const accepts = newAjv().compile(
-      tool && 'outputSchema' in tool ? tool.outputSchema : {},
-    );
+    const accepts = newAjv().compile(tool?.outputSchema ?? {});
     const result = await call('search_recipes', { query: 'zzz' }, kitchen());
     expect(result.isError).toBeUndefined();
     expect(accepts(result.structuredContent)).toBe(true);

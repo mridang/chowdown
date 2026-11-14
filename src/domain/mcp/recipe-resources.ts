@@ -27,7 +27,7 @@ import type { User } from '@/domain/db/users';
 import { recipeDisplayName } from '@/lib/cooklang';
 import { getDatabase } from '@/domain/db/client';
 import { ERROR_INTERNAL, ERROR_INVALID_PARAMS, RpcError } from '@/lib/mcp';
-import { createToolContext, type ToolContext } from '@/domain/mcp/tool-calls';
+import { openUserDrive, type DriveContext } from '@/domain/mcp/tool-services';
 import { guarded } from '@/domain/mcp/tool-services';
 import { plainTitle } from '@/domain/mcp/tool-text';
 
@@ -111,9 +111,7 @@ function fileFor<T extends { readonly id: string }>(
 export async function readRecipeResource(
   user: Readonly<User>,
   uri: string,
-  openContext: (
-    user: Readonly<User>,
-  ) => Promise<ToolContext> = createToolContext,
+  openContext: (user: Readonly<User>) => Promise<DriveContext> = openUserDrive,
 ): Promise<{ readonly contents: readonly object[] }> {
   const id = recipeIdOf(uri);
   if (!id) {

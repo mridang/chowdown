@@ -1,0 +1,93 @@
+/**
+ * @packageDocumentation
+ *
+ * `recipes_from_ingredients`. Everything the tool is lives here: what the catalogue says about
+ * it, the arguments it accepts, and what it does when called.
+ */
+
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import { runScenario } from '@/domain/mcp/tools/recipe-support';
+import {
+  FACET_TEXT,
+  LIMIT_MAX,
+  listMeta,
+  OFFSET,
+  RECIPE_LIST_OUTPUT_SCHEMA,
+} from '@/domain/mcp/tools/schemas';
+import {
+  type ArgumentSpellings,
+  type JsonSchema,
+  McpTool,
+  READS,
+  type ToolAnnotations,
+  type ToolArgs,
+  type ToolResult,
+} from '@/lib/mcp';
+import { z } from 'zod';
+
+export class RecipesFromIngredientsTool extends McpTool<
+  'recipes_from_ingredients',
+  ToolContext,
+  ToolContent
+> {
+  readonly name = 'recipes_from_ingredients';
+
+  readonly title = 'Find recipes from ingredients';
+
+  readonly description =
+    "Matches the user's saved recipes against ingredients they have, with amounts when known (for example '3 tomatoes', '400 g pasta'). Returns recipes that can be made now and recipes that are only a few ingredients short, saying exactly what is missing or needs more of. Salt, pepper, water and cooking oil are assumed to be on hand unless assume_staples is false.";
+
+  readonly input = z
+    .object({
+      ingredients: z
+        .array(z.string().min(1).max(300))
+        .min(1)
+        .max(100)
+        .describe(
+          "What they have, with amounts when known, e.g. ['3 tomatoes', '400 g pasta', 'garlic'].",
+        ),
+      allow_missing: z
+        .int()
+        .min(0)
+        .max(20)
+        .describe(
+          'How many ingredients a recipe may lack to still be listed as almost there (default 2; 0 for only what can be made now).',
+        )
+        .optional(),
+      assume_staples: z
+        .boolean()
+        .describe('Assume salt, pepper, water and oil (default true).')
+        .optional(),
+      diet_type: FACET_TEXT.describe(
+        "Only recipes that suit this eating style, e.g. 'Vegetarian' (which also allows vegan dishes). Comma-separate several.",
+      ).optional(),
+      limit: z
+        .int()
+        .min(1)
+        .max(LIMIT_MAX)
+        .describe('Most results per list (default 12, at most 50).')
+        .optional(),
+      offset: OFFSET,
+    })
+    .strict();
+
+  override readonly outputSchema: JsonSchema = RECIPE_LIST_OUTPUT_SCHEMA;
+
+  override readonly meta = listMeta(
+    'Matching your ingredients…',
+    'Here is what fits',
+  );
+
+  readonly annotations: ToolAnnotations = READS;
+
+  override readonly spellings: ArgumentSpellings = {
+    listsOfText: ['ingredients'],
+  };
+
+  override async handle(
+    args: ToolArgs,
+    { user, services }: ToolContext,
+  ): Promise<ToolResult<ToolContent>> {
+    return runScenario(user, 'recipes_from_ingredients', args, services);
+  }
+}

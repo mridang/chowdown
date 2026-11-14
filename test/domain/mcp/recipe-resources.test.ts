@@ -11,14 +11,14 @@ import {
   recipeResource,
   recipeUri,
 } from '@/domain/mcp/recipe-resources';
-import type { ToolContext } from '@/domain/mcp/tool-calls';
+import type { DriveContext } from '@/domain/mcp/tool-services';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 const someone = { id: 1 } as User;
 
 /** A Drive holding two recipes, as the tools see it. */
-function driveWith(): (user: Readonly<User>) => Promise<ToolContext> {
+function driveWith(): (user: Readonly<User>) => Promise<DriveContext> {
   const read = jest.fn(
     async (id: string) => `>> source: ${id}\nBoil @eggs{2}.`,
   );
@@ -36,7 +36,7 @@ function driveWith(): (user: Readonly<User>) => Promise<ToolContext> {
         ],
         read,
       },
-    }) as unknown as ToolContext;
+    }) as unknown as DriveContext;
 }
 
 /** The error `readRecipeResource` was refused with. */

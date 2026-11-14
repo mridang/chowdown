@@ -14,6 +14,16 @@
  * a loud failure rather than being reported as an outage.
  */
 
+import { getUserAccessToken } from '@/domain/auth/user-access-token';
+import {
+  createRecipeFile,
+  getFileContent,
+  listRecipeFiles,
+  updateRecipeFile,
+} from '@/domain/drive/recipe-files';
+import { ensureRecipesFolder } from '@/domain/drive/recipes-folder';
+import { indexRecipeWrite } from '@/domain/recipe/tag-index';
+import { isUnitSystem } from '@/lib/cooklang';
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import { listEmbeddings, type EmbeddingRow } from '@/domain/db/embeddings';
 import { listFavouriteIds } from '@/domain/db/favourites';
@@ -40,7 +50,6 @@ import { getEnv, runInBackground } from '@/lib/core/runtime';
 import { getDatabase } from '@/domain/db/client';
 import { errorMessage, logError } from '@/utils/logging';
 import type { ScenarioDeps } from '@/domain/mcp/scenarios';
-import type { FileOps } from '@/domain/mcp/tool-calls';
 import { BackendFailureError } from '@/lib/mcp';
 
 /**
@@ -242,6 +251,68 @@ export interface ToolServices {
   readonly spendModelBudget: (userId: number) => Promise<number | undefined>;
   /** Where the browse, pantry and filter tools read the user's cached recipes. */
   readonly scenario: (user: Readonly<User>) => ScenarioDeps;
+  /**
+   * Open the user's Drive, as {@link openUserDrive} does. A tool asks for
+   * this only when it needs recipe files, so a call that never touches them
+   * never pays for the token refresh or the folder lookup.
+   */
+  readonly openDrive: (user: Readonly<User>) => Promise<DriveContext>;
+}
+
+/** The four things the tools do with recipe files, plus the cache refresh that follows a write. */
+export interface FileOps {
+  /** Every recipe file in the user's Recipes folder. */
+  readonly list: () => Promise<readonly DriveFile[]>;
+  /** A file's text. */
+  readonly read: (fileId: string) => Promise<string>;
+  /** Save a new recipe file. */
+  readonly create: (name: string, content: string) => Promise<DriveFile>;
+  /** Replace a file's text. */
+  readonly update: (fileId: string, content: string) => Promise<void>;
+  /** Refresh the cached copy of a recipe that was just written. */
+  readonly index: (
+    fileId: string,
+    name: string,
+    source: string,
+  ) => Promise<void>;
+}
+
+/** Everything a Drive-backed tool needs. */
+export interface DriveContext {
+  readonly user: Readonly<User>;
+  /** A fresh Drive access token for the user. */
+  readonly token: string;
+  /** The user's preferred measurement system, applied to every recipe card. */
+  readonly system: UnitSystem | undefined;
+  readonly files: FileOps;
+}
+
+/**
+ * Open the user's Drive: a fresh access token and the Recipes folder (made on
+ * first use), wrapped in the file operations the tools use.
+ */
+export async function openUserDrive(
+  user: Readonly<User>,
+): Promise<DriveContext> {
+  const token = await guarded('Google Drive', () => getUserAccessToken(user));
+  const folderId =
+    user.recipes_folder_id ??
+    (await guarded('Google Drive', () => ensureRecipesFolder(token)));
+  const units = user.units ?? '';
+  return {
+    user,
+    token,
+    system: isUnitSystem(units) ? units : undefined,
+    files: guardFileOps({
+      list: () => listRecipeFiles(folderId, token),
+      read: (fileId) => getFileContent(fileId, token),
+      create: (name, content) =>
+        createRecipeFile(folderId, name, content, token),
+      update: (fileId, content) => updateRecipeFile(fileId, content, token),
+      index: (fileId, name, source) =>
+        indexRecipeWrite(getDatabase(), user.id, fileId, name, source),
+    }),
+  };
 }
 
 /** The real database, AI models and page fetcher, each guarded. */
@@ -288,6 +359,7 @@ export const liveToolServices: ToolServices = {
     ),
   spendModelBudget: (userId) =>
     spendBudget(DAILY_BUDGETS.assistantModel, userId),
+  openDrive: openUserDrive,
   scenario: (user) => ({
     rows: () =>
       guarded('the recipe database', () =>

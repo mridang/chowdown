@@ -327,7 +327,10 @@ describe('the tool catalogue', () => {
         const result = await callTool(
           empty.user,
           { name, arguments: {} },
-          async () => empty,
+          {
+            ...fakeServices(),
+            openDrive: async () => empty,
+          },
         );
         return result.content[0]?.text.startsWith('Unknown tool') ?? false;
       } catch (error) {

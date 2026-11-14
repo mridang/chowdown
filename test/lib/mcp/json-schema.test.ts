@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  describeArguments,
   NOT_BLANK,
   PROBLEMS_SHOWN,
   isJsonObject,
@@ -164,9 +165,10 @@ describe('objects', () => {
   });
 
   it('names a missing required property, also when it is undefined', () => {
-    let unset: unknown;
+    // A property the object leaves out: its key stays present, with no value.
+    let notProvided: undefined;
     expect(problems(schema, {})).toEqual(['`a` is required.']);
-    expect(problems(schema, { a: unset })).toEqual(['`a` is required.']);
+    expect(problems(schema, { a: notProvided })).toEqual(['`a` is required.']);
   });
 
   it('names an unknown property and lists the known ones', () => {
@@ -323,5 +325,38 @@ describe('unsupportedKeywords', () => {
   it('has nothing to say about a value that is not a schema', () => {
     expect(unsupportedKeywords(5)).toEqual([]);
     expect(unsupportedKeywords(undefined)).toEqual([]);
+  });
+});
+
+describe('describeArguments', () => {
+  it('names the arguments a tool takes, in the order the schema lists them', () => {
+    expect(
+      describeArguments({
+        type: 'object',
+        properties: { limit: { type: 'integer' }, cursor: { type: 'string' } },
+      }),
+    ).toBe('The arguments are: limit, cursor.');
+  });
+
+  it('marks the ones a call must send', () => {
+    expect(
+      describeArguments({
+        type: 'object',
+        properties: { recipe: { type: 'string' }, note: { type: 'string' } },
+        required: ['recipe'],
+      }),
+    ).toBe('The arguments are: recipe (required), note.');
+  });
+
+  it('says so plainly when a tool takes none', () => {
+    expect(describeArguments({ type: 'object', properties: {} })).toBe(
+      'This tool takes no arguments.',
+    );
+  });
+
+  it('says so plainly when a schema declares no properties at all', () => {
+    expect(describeArguments({ type: 'object' })).toBe(
+      'This tool takes no arguments.',
+    );
   });
 });
