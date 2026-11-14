@@ -5,9 +5,8 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { type User } from '@/domain/db/users';
-import { recipeListResult, type ToolResult } from '@/domain/mcp/tool-results';
-import { type ToolServices } from '@/domain/mcp/tool-services';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import { recipeListResult } from '@/domain/mcp/tool-results';
 import {
   pageWindow,
   searchingMessage,
@@ -20,17 +19,23 @@ import {
   QUERY,
   RECIPE_LIST_OUTPUT_SCHEMA,
 } from '@/domain/mcp/tools/schemas';
-import {
-  McpTool,
-  READS,
-  type ToolAnnotations,
-  type ToolArgs,
-} from '@/domain/mcp/tools/tool';
 import { recipeDisplayName } from '@/lib/cooklang';
 import { foldText } from '@/lib/intl';
-import { type JsonSchema, textArg } from '@/lib/mcp';
+import {
+  type JsonSchema,
+  McpTool,
+  READS,
+  textArg,
+  type ToolAnnotations,
+  type ToolArgs,
+  type ToolResult,
+} from '@/lib/mcp';
 
-export class SearchRecipesTool extends McpTool<'search_recipes'> {
+export class SearchRecipesTool extends McpTool<
+  'search_recipes',
+  ToolContext,
+  ToolContent
+> {
   readonly name = 'search_recipes';
 
   readonly title = 'Search recipes by name';
@@ -62,9 +67,8 @@ export class SearchRecipesTool extends McpTool<'search_recipes'> {
 
   override async handle(
     args: ToolArgs,
-    user: Readonly<User>,
-    services: ToolServices,
-  ): Promise<ToolResult> {
+    { user, services }: ToolContext,
+  ): Promise<ToolResult<ToolContent>> {
     const ctx = await services.openDrive(user);
     const queryRaw = textArg(args['query']);
     const query = foldText(queryRaw);

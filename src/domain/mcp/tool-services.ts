@@ -252,11 +252,11 @@ export interface ToolServices {
   /** Where the browse, pantry and filter tools read the user's cached recipes. */
   readonly scenario: (user: Readonly<User>) => ScenarioDeps;
   /**
-   * Open the user's Drive, as {@link createToolContext} does. A tool asks for
+   * Open the user's Drive, as {@link openUserDrive} does. A tool asks for
    * this only when it needs recipe files, so a call that never touches them
    * never pays for the token refresh or the folder lookup.
    */
-  readonly openDrive: (user: Readonly<User>) => Promise<ToolContext>;
+  readonly openDrive: (user: Readonly<User>) => Promise<DriveContext>;
 }
 
 /** The four things the tools do with recipe files, plus the cache refresh that follows a write. */
@@ -278,7 +278,7 @@ export interface FileOps {
 }
 
 /** Everything a Drive-backed tool needs. */
-export interface ToolContext {
+export interface DriveContext {
   readonly user: Readonly<User>;
   /** A fresh Drive access token for the user. */
   readonly token: string;
@@ -291,9 +291,9 @@ export interface ToolContext {
  * Open the user's Drive: a fresh access token and the Recipes folder (made on
  * first use), wrapped in the file operations the tools use.
  */
-export async function createToolContext(
+export async function openUserDrive(
   user: Readonly<User>,
-): Promise<ToolContext> {
+): Promise<DriveContext> {
   const token = await guarded('Google Drive', () => getUserAccessToken(user));
   const folderId =
     user.recipes_folder_id ??
@@ -359,7 +359,7 @@ export const liveToolServices: ToolServices = {
     ),
   spendModelBudget: (userId) =>
     spendBudget(DAILY_BUDGETS.assistantModel, userId),
-  openDrive: createToolContext,
+  openDrive: openUserDrive,
   scenario: (user) => ({
     rows: () =>
       guarded('the recipe database', () =>

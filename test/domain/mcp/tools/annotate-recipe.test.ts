@@ -129,8 +129,10 @@ describe('AnnotateRecipeTool.handle', () => {
     const fake = folder({ 'Pancakes.cook': PANCAKES });
     const result = await new AnnotateRecipeTool().handle(
       { recipe: 'pancakes', note: ' '.repeat(3) },
-      USER,
-      { ...fakeServices(), openDrive: async () => fake.ctx },
+      {
+        user: USER,
+        services: { ...fakeServices(), openDrive: async () => fake.ctx },
+      },
     );
     expect(result.isError).toBe(true);
     expect(said(result)).toBe('What note should I add?');

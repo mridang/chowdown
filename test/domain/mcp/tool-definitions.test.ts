@@ -330,7 +330,7 @@ describe('what each tool says about signing in', () => {
     (name, tool) => {
       const expected = [{ type: 'oauth2', scopes: [scopeForTool(name)] }];
       expect(tool.securitySchemes).toEqual(expected);
-      expect(tool._meta.securitySchemes).toEqual(expected);
+      expect(tool._meta['securitySchemes']).toEqual(expected);
     },
   );
 });

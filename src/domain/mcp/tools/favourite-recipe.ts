@@ -5,20 +5,24 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { type User } from '@/domain/db/users';
-import { textResult, type ToolResult } from '@/domain/mcp/tool-results';
-import { type ToolServices } from '@/domain/mcp/tool-services';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
 import { label, withRecipe } from '@/domain/mcp/tools/recipe-support';
 import { RECIPE_REFERENCE } from '@/domain/mcp/tools/schemas';
 import {
+  type JsonSchema,
   McpTool,
+  textResult,
   type ToolAnnotations,
   type ToolArgs,
+  type ToolResult,
   writes,
-} from '@/domain/mcp/tools/tool';
-import { type JsonSchema } from '@/lib/mcp';
+} from '@/lib/mcp';
 
-export class FavouriteRecipeTool extends McpTool<'favourite_recipe'> {
+export class FavouriteRecipeTool extends McpTool<
+  'favourite_recipe',
+  ToolContext,
+  ToolContent
+> {
   readonly name = 'favourite_recipe';
 
   readonly title = 'Favourite a recipe';
@@ -47,9 +51,8 @@ export class FavouriteRecipeTool extends McpTool<'favourite_recipe'> {
 
   override async handle(
     args: ToolArgs,
-    user: Readonly<User>,
-    services: ToolServices,
-  ): Promise<ToolResult> {
+    { user, services }: ToolContext,
+  ): Promise<ToolResult<ToolContent>> {
     const ctx = await services.openDrive(user);
     return withRecipe(ctx, args['recipe'], 'recipe', 'write', async (file) => {
       const on = args['favourite'] !== false;

@@ -1,8 +1,47 @@
 /**
  * @packageDocumentation
  *
- * Public surface of the lib/mcp package.
+ * Public surface of the lib/mcp package: a reusable MCP server library.
+ *
+ * An app brings its tools, each a class extending {@link McpTool}, and says
+ * which scopes it offers and which of its own failures are worth explaining.
+ * Everything else — the protocol, the catalogue, the argument checking and the
+ * call path — is here and is the same in every app that uses it.
  */
+export {
+  type AnyMcpTool,
+  type ArgumentSpellings,
+  McpTool,
+  READS,
+  READS_THE_WEB,
+  type ToolAnnotations,
+  type ToolArgs,
+  type WriteEffects,
+  writes,
+} from './tool';
+export { type NameOf, ToolRegistry } from './registry';
+export {
+  type AdvertisedAnnotations,
+  type AdvertisedTool,
+  type SecurityScheme,
+  ToolCatalogue,
+} from './catalogue';
+export { ReadWriteScopes, type ScopePolicy } from './scopes';
+export { ArgumentChecker, type CheckedArguments } from './arguments';
+export { type FailureExplainer, NoExplanations } from './failures';
+export {
+  type FailureLog,
+  ToolInvoker,
+  type ToolInvokerOptions,
+} from './invoker';
+export {
+  dataResult,
+  errorResult,
+  type JsonContent,
+  type TextContent,
+  textResult,
+  type ToolResult,
+} from './results';
 export {
   ANNOTATION_KEYWORDS,
   CHECKED_KEYWORDS,

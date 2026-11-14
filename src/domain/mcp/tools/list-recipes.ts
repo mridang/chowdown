@@ -5,9 +5,8 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { type User } from '@/domain/db/users';
-import { recipeListResult, type ToolResult } from '@/domain/mcp/tool-results';
-import { type ToolServices } from '@/domain/mcp/tool-services';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import { recipeListResult } from '@/domain/mcp/tool-results';
 import { listingMessage, pageWindow } from '@/domain/mcp/tools/recipe-support';
 import {
   listMeta,
@@ -18,14 +17,19 @@ import {
   WIDGET_CALLABLE,
 } from '@/domain/mcp/tools/schemas';
 import {
+  type JsonSchema,
   McpTool,
   READS,
   type ToolAnnotations,
   type ToolArgs,
-} from '@/domain/mcp/tools/tool';
-import { type JsonSchema } from '@/lib/mcp';
+  type ToolResult,
+} from '@/lib/mcp';
 
-export class ListRecipesTool extends McpTool<'list_recipes'> {
+export class ListRecipesTool extends McpTool<
+  'list_recipes',
+  ToolContext,
+  ToolContent
+> {
   readonly name = 'list_recipes';
 
   readonly title = 'List my recipes';
@@ -58,9 +62,8 @@ export class ListRecipesTool extends McpTool<'list_recipes'> {
 
   override async handle(
     args: ToolArgs,
-    user: Readonly<User>,
-    services: ToolServices,
-  ): Promise<ToolResult> {
+    { user, services }: ToolContext,
+  ): Promise<ToolResult<ToolContent>> {
     const ctx = await services.openDrive(user);
     const files = await ctx.files.list();
     const { offset, limit } = pageWindow(args, PAGE_DEFAULT, PAGE_MAX);

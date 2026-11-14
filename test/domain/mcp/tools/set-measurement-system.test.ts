@@ -28,8 +28,7 @@ describe('SetMeasurementSystemTool.handle', () => {
     const services = fakeServices();
     const result = await new SetMeasurementSystemTool().handle(
       { system: 'cubits' },
-      USER,
-      services,
+      { user: USER, services },
     );
     expect(result.isError).toBe(true);
     expect(said(result)).toBe('Please choose metric, us, or imperial.');

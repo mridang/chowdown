@@ -5,19 +5,22 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { type User } from '@/domain/db/users';
-import { type ToolResult } from '@/domain/mcp/tool-results';
-import { type ToolServices } from '@/domain/mcp/tool-services';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
 import { runScenario } from '@/domain/mcp/tools/recipe-support';
 import {
+  type JsonSchema,
   McpTool,
   READS,
   type ToolAnnotations,
   type ToolArgs,
-} from '@/domain/mcp/tools/tool';
-import { type JsonSchema } from '@/lib/mcp';
+  type ToolResult,
+} from '@/lib/mcp';
 
-export class ListFiltersTool extends McpTool<'list_filters'> {
+export class ListFiltersTool extends McpTool<
+  'list_filters',
+  ToolContext,
+  ToolContent
+> {
   readonly name = 'list_filters';
 
   readonly title = 'List recipe filters';
@@ -34,9 +37,8 @@ export class ListFiltersTool extends McpTool<'list_filters'> {
 
   override async handle(
     args: ToolArgs,
-    user: Readonly<User>,
-    services: ToolServices,
-  ): Promise<ToolResult> {
+    { user, services }: ToolContext,
+  ): Promise<ToolResult<ToolContent>> {
     return runScenario(user, 'list_filters', args, services);
   }
 }

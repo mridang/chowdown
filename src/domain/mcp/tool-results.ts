@@ -25,33 +25,16 @@ import {
 } from '@/domain/mcp/ui-resources';
 import type { RecipeCardData, RecipeListData } from '@/domain/mcp/ui-types';
 
-/** One piece of text in a tool result. */
-export interface TextContent {
-  readonly type: 'text';
-  readonly text: string;
-}
+import { textResult, type ToolResult } from '@/lib/mcp';
+import type { ToolContent } from '@/domain/mcp/tool-context';
 
-/** The result of a `tools/call`, as the protocol wants it. */
-export interface ToolResult {
-  /** What the model reads. */
-  readonly content: readonly TextContent[];
-  /** What the card or list view draws, for the tools that have one. */
-  readonly structuredContent?: RecipeCardData | RecipeListData;
-  /** Tells ChatGPT-style hosts which view template to draw it with. */
-  readonly _meta?: Readonly<Record<string, string>>;
-  /** True when the call failed in a way the assistant should relay. */
-  readonly isError?: boolean;
-}
-
-/** A plain-text tool result. */
-export function textResult(body: string): ToolResult {
-  return { content: [{ type: 'text', text: body }] };
-}
-
-/** A plain-text tool result that tells the assistant the call did not work. */
-export function errorResult(body: string): ToolResult {
-  return { ...textResult(body), isError: true };
-}
+export {
+  dataResult,
+  errorResult,
+  type TextContent,
+  textResult,
+  type ToolResult,
+} from '@/lib/mcp';
 
 /** Metadata keys worth showing in the card's meta row (the rest stay in the file). */
 const CARD_META_KEYS: ReadonlySet<string> = new Set([
@@ -66,12 +49,6 @@ const CARD_META_KEYS: ReadonlySet<string> = new Set([
   'method',
 ]);
 
-/**
- * Build the card `structuredContent` for a recipe file, converting quantities
- * to the user's preferred measurement system when one is set. The visible meta
- * row is filtered to the useful facets; provenance/media/keywords stay in the
- * file but aren't dumped into the card.
- */
 export function buildRecipeCardData(
   id: string,
   filename: string,
@@ -121,7 +98,7 @@ export function recipeCardResult(
   source: string,
   message: string,
   system?: UnitSystem,
-): ToolResult {
+): ToolResult<ToolContent> {
   const card = buildRecipeCardData(id, filename, source, system);
   return {
     ...textResult(withBody(message, cardText(card))),
@@ -139,7 +116,7 @@ export function recipeListResult(
   files: readonly DriveFile[],
   message: string,
   query?: string,
-): ToolResult {
+): ToolResult<ToolContent> {
   const data = buildRecipeListData(files, query);
   return {
     ...textResult(withBody(message, listText(data.recipes))),
@@ -156,7 +133,7 @@ export function recipeListResult(
 export function recipeListSummaryResult(
   files: readonly DriveFile[],
   message: string,
-): ToolResult {
+): ToolResult<ToolContent> {
   return {
     ...textResult(message),
     structuredContent: buildRecipeListData(files),

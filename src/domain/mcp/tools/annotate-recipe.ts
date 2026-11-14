@@ -5,9 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { type User } from '@/domain/db/users';
-import { errorResult, type ToolResult } from '@/domain/mcp/tool-results';
-import { type ToolServices } from '@/domain/mcp/tool-services';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
 import {
   editRecipe,
   label,
@@ -20,16 +18,24 @@ import {
   RECIPE_CARD_OUTPUT_SCHEMA,
   RECIPE_REFERENCE,
 } from '@/domain/mcp/tools/schemas';
+import { appendNote, parseRecipe } from '@/lib/cooklang';
 import {
+  errorResult,
+  type JsonSchema,
   McpTool,
+  NOT_BLANK,
+  textArg,
   type ToolAnnotations,
   type ToolArgs,
+  type ToolResult,
   writes,
-} from '@/domain/mcp/tools/tool';
-import { appendNote, parseRecipe } from '@/lib/cooklang';
-import { type JsonSchema, NOT_BLANK, textArg } from '@/lib/mcp';
+} from '@/lib/mcp';
 
-export class AnnotateRecipeTool extends McpTool<'annotate_recipe'> {
+export class AnnotateRecipeTool extends McpTool<
+  'annotate_recipe',
+  ToolContext,
+  ToolContent
+> {
   readonly name = 'annotate_recipe';
 
   readonly title = 'Add a note to a recipe';
@@ -78,9 +84,8 @@ export class AnnotateRecipeTool extends McpTool<'annotate_recipe'> {
 
   override async handle(
     args: ToolArgs,
-    user: Readonly<User>,
-    services: ToolServices,
-  ): Promise<ToolResult> {
+    { user, services }: ToolContext,
+  ): Promise<ToolResult<ToolContent>> {
     const ctx = await services.openDrive(user);
     return withRecipe(ctx, args['recipe'], 'recipe', 'write', async (file) => {
       const noteText = textArg(args['note']).trim();

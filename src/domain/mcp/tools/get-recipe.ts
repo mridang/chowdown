@@ -5,9 +5,8 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { type User } from '@/domain/db/users';
-import { recipeCardResult, type ToolResult } from '@/domain/mcp/tool-results';
-import { type ToolServices } from '@/domain/mcp/tool-services';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import { recipeCardResult } from '@/domain/mcp/tool-results';
 import {
   alsoMatchingNote,
   label,
@@ -20,14 +19,20 @@ import {
   WIDGET_CALLABLE,
 } from '@/domain/mcp/tools/schemas';
 import {
+  type ArgumentSpellings,
+  type JsonSchema,
   McpTool,
   READS,
   type ToolAnnotations,
   type ToolArgs,
-} from '@/domain/mcp/tools/tool';
-import { type JsonSchema } from '@/lib/mcp';
+  type ToolResult,
+} from '@/lib/mcp';
 
-export class GetRecipeTool extends McpTool<'get_recipe'> {
+export class GetRecipeTool extends McpTool<
+  'get_recipe',
+  ToolContext,
+  ToolContent
+> {
   readonly name = 'get_recipe';
 
   readonly title = 'Open a recipe';
@@ -57,13 +62,14 @@ export class GetRecipeTool extends McpTool<'get_recipe'> {
 
   readonly annotations: ToolAnnotations = READS;
 
-  override readonly aliases = { name: 'recipe' };
+  override readonly spellings: ArgumentSpellings = {
+    aliases: { name: 'recipe' },
+  };
 
   override async handle(
     args: ToolArgs,
-    user: Readonly<User>,
-    services: ToolServices,
-  ): Promise<ToolResult> {
+    { user, services }: ToolContext,
+  ): Promise<ToolResult<ToolContent>> {
     const ctx = await services.openDrive(user);
     return withRecipe(
       ctx,

@@ -1,15 +1,12 @@
 /**
  * @packageDocumentation
  *
- * Every tool this app offers, and the only place that knows the whole set.
- * Adding a tool means writing its class beside this file and adding it to
- * {@link TOOL_REGISTRY}; nothing else has a list to keep in step.
- *
- * The registry holds instances rather than classes so that a lookup hands back
- * something ready to call, and it is declared `as const` so {@link ToolName}
- * stays the union of the real names instead of widening to `string`.
+ * Every tool this app offers. Adding one means writing its class beside this
+ * file and naming it here; nothing else holds a list to keep in step.
  */
 
+import { ToolRegistry, type NameOf } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 import { ListRecipesTool } from '@/domain/mcp/tools/list-recipes';
 import { BrowseRecipesTool } from '@/domain/mcp/tools/browse-recipes';
 import { RecipesFromIngredientsTool } from '@/domain/mcp/tools/recipes-from-ingredients';
@@ -27,16 +24,7 @@ import { FavouriteRecipeTool } from '@/domain/mcp/tools/favourite-recipe';
 import { TagRecipeTool } from '@/domain/mcp/tools/tag-recipe';
 import { SetRecipeImagesTool } from '@/domain/mcp/tools/set-recipe-images';
 import { AnnotateRecipeTool } from '@/domain/mcp/tools/annotate-recipe';
-import { McpTool } from '@/domain/mcp/tools/tool';
 
-export {
-  McpTool,
-  READS,
-  READS_THE_WEB,
-  writes,
-  type ToolAnnotations,
-  type ToolArgs,
-} from '@/domain/mcp/tools/tool';
 export { ListRecipesTool } from '@/domain/mcp/tools/list-recipes';
 export { BrowseRecipesTool } from '@/domain/mcp/tools/browse-recipes';
 export { RecipesFromIngredientsTool } from '@/domain/mcp/tools/recipes-from-ingredients';
@@ -56,13 +44,10 @@ export { SetRecipeImagesTool } from '@/domain/mcp/tools/set-recipe-images';
 export { AnnotateRecipeTool } from '@/domain/mcp/tools/annotate-recipe';
 
 /**
- * Every tool, in the order the catalogue lists them.
- *
- * Declared `as const` so that {@link ToolName} can be read off it, then handed
- * out as a list of plain {@link McpTool}s: callers treat tools uniformly, and
- * the parts a tool may leave out (an output schema) stay optional to them.
+ * Every tool, in the order the catalogue lists them. Declared `as const` so
+ * that {@link ToolName} is the union of the real names rather than `string`.
  */
-const REGISTERED = [
+const TOOLS = [
   new ListRecipesTool(),
   new BrowseRecipesTool(),
   new RecipesFromIngredientsTool(),
@@ -82,13 +67,12 @@ const REGISTERED = [
   new AnnotateRecipeTool(),
 ] as const;
 
-/** The name of one of the tools. */
-export type ToolName = (typeof REGISTERED)[number]['name'];
+/** The name of one of this app's tools. */
+export type ToolName = NameOf<typeof TOOLS>;
 
-/** Every tool, in the order the catalogue lists them. */
-export const TOOL_REGISTRY: readonly McpTool<ToolName>[] = REGISTERED;
-
-/** The tool with this name, if there is one. */
-export function toolByName(name: string): McpTool<ToolName> | undefined {
-  return TOOL_REGISTRY.find((tool) => tool.name === name);
-}
+/** Every tool this app offers, looked up by name. */
+export const TOOL_REGISTRY = new ToolRegistry<
+  ToolName,
+  ToolContext,
+  ToolContent
+>(TOOLS);

@@ -5,9 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { type User } from '@/domain/db/users';
-import { type ToolResult } from '@/domain/mcp/tool-results';
-import { type ToolServices } from '@/domain/mcp/tool-services';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
 import { plainTitle } from '@/domain/mcp/tool-text';
 import { saveUnlessThere } from '@/domain/mcp/tools/recipe-support';
 import {
@@ -16,16 +14,23 @@ import {
   NAME_MAX,
   RECIPE_CARD_OUTPUT_SCHEMA,
 } from '@/domain/mcp/tools/schemas';
+import { buildStubSource, uncuratedFilename } from '@/lib/cooklang';
 import {
+  type JsonSchema,
   McpTool,
+  NOT_BLANK,
+  textArg,
   type ToolAnnotations,
   type ToolArgs,
+  type ToolResult,
   writes,
-} from '@/domain/mcp/tools/tool';
-import { buildStubSource, uncuratedFilename } from '@/lib/cooklang';
-import { type JsonSchema, NOT_BLANK, textArg } from '@/lib/mcp';
+} from '@/lib/mcp';
 
-export class CaptureIdeaTool extends McpTool<'capture_idea'> {
+export class CaptureIdeaTool extends McpTool<
+  'capture_idea',
+  ToolContext,
+  ToolContent
+> {
   readonly name = 'capture_idea';
 
   readonly title = 'Capture a recipe idea';
@@ -68,9 +73,8 @@ export class CaptureIdeaTool extends McpTool<'capture_idea'> {
 
   override async handle(
     args: ToolArgs,
-    user: Readonly<User>,
-    services: ToolServices,
-  ): Promise<ToolResult> {
+    { user, services }: ToolContext,
+  ): Promise<ToolResult<ToolContent>> {
     const ctx = await services.openDrive(user);
     const dish = textArg(args['name']);
     const body = buildStubSource({

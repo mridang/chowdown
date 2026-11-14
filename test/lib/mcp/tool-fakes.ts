@@ -10,7 +10,7 @@ import type { Recipe } from '@/domain/db/recipes';
 import type { User } from '@/domain/db/users';
 import type { DriveFile } from '@/lib/google/drive';
 import { callTool } from '@/domain/mcp/tool-calls';
-import type { ToolContext, ToolServices } from '@/domain/mcp/tool-services';
+import type { DriveContext, ToolServices } from '@/domain/mcp/tool-services';
 
 /** The signed-in user the tests act as. */
 export const USER = { id: 7, units: null, recipes_folder_id: 'folder' } as User;
@@ -66,8 +66,8 @@ export function folder(
   const updates: [string, string][] = [];
   const indexed: [string, string, string][] = [];
   const nameOf = (id: string) => id.replace(/^id-/, '');
-  let unsetSystem: ToolContext['system'];
-  const ctx: ToolContext = {
+  let unsetSystem: DriveContext['system'];
+  const ctx: DriveContext = {
     user: USER,
     token: 'tok',
     system: unsetSystem,

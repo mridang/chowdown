@@ -11,33 +11,38 @@
  * message that says a result was cut short has to read the same in every list.
  */
 
-import type { User } from '@/domain/db/users';
-
-import { type DriveFile } from '@/lib/google/drive';
-import { countOf, foldText } from '@/lib/intl';
-import { parseRecipe, recipeDisplayName } from '@/lib/cooklang';
-import { resolveFile } from '@/domain/recipe/match';
-import { numberArg, offsetArg, textArg } from '@/lib/mcp';
+import { type User } from '@/domain/db/users';
 import { runScenarioTool, type ScenarioToolName } from '@/domain/mcp/scenarios';
+import { type ToolContent } from '@/domain/mcp/tool-context';
 import {
-  errorResult,
   recipeCardResult,
   recipeListSummaryResult,
-  textResult,
-  type ToolResult,
 } from '@/domain/mcp/tool-results';
+import {
+  DriveContext,
+  EMBEDDINGS_PER_CALL,
+  type ToolServices,
+} from '@/domain/mcp/tool-services';
 import {
   nextPageHint,
   pastTheEnd,
   plainTitle,
   rangeText,
 } from '@/domain/mcp/tool-text';
+import { resolveFile } from '@/domain/recipe/match';
+import { parseRecipe, recipeDisplayName } from '@/lib/cooklang';
+import { type DriveFile } from '@/lib/google/drive';
+import { countOf, foldText } from '@/lib/intl';
 import {
-  EMBEDDINGS_PER_CALL,
-  type ToolContext,
-  type ToolServices,
-} from '@/domain/mcp/tool-services';
-import type { ToolArgs } from '@/domain/mcp/tools/tool';
+  errorResult,
+  McpTool,
+  numberArg,
+  offsetArg,
+  textArg,
+  textResult,
+  type ToolArgs,
+  type ToolResult,
+} from '@/lib/mcp';
 
 /** How many close names to offer when a recipe is not found. */
 export const SUGGESTION_COUNT = 5;
@@ -80,7 +85,7 @@ export function closeNames(
 export function notFound(
   files: readonly DriveFile[],
   asked: string,
-): ToolResult {
+): ToolResult<ToolContent> {
   const near = closeNames(files, asked);
   return errorResult(
     `No recipe found matching "${asked.trim()}". ` +
@@ -95,7 +100,7 @@ export function ambiguous(
   asked: string,
   key: string,
   matches: readonly DriveFile[],
-): ToolResult {
+): ToolResult<ToolContent> {
   const shown = matches.slice(0, SUGGESTION_COUNT);
   const more = matches.length - shown.length;
   const andMore = more > 0 ? `; and ${more} more` : '';
@@ -125,8 +130,8 @@ export async function withRecipeIn(
   then: (
     file: DriveFile,
     alsoMatching: readonly DriveFile[],
-  ) => Promise<ToolResult>,
-): Promise<ToolResult> {
+  ) => Promise<ToolResult<ToolContent>>,
+): Promise<ToolResult<ToolContent>> {
   const reference = textArg(asked);
   const match = resolveFile(files, reference);
   switch (match.kind) {
@@ -147,15 +152,15 @@ export async function withRecipeIn(
 
 /** {@link withRecipeIn} on the files in the user's Recipes folder. */
 export async function withRecipe(
-  ctx: ToolContext,
+  ctx: DriveContext,
   asked: unknown,
   key: string,
   intent: Intent,
   then: (
     file: DriveFile,
     alsoMatching: readonly DriveFile[],
-  ) => Promise<ToolResult>,
-): Promise<ToolResult> {
+  ) => Promise<ToolResult<ToolContent>>,
+): Promise<ToolResult<ToolContent>> {
   return withRecipeIn(await ctx.files.list(), asked, key, intent, then);
 }
 
@@ -182,7 +187,7 @@ export function indexingNote(waiting: number): string {
 /** How many times an edit is worked out afresh when the file changes under it. */
 /** What an edit to a recipe's text decides: the new text, or an answer to give instead of saving. */
 export type Edited =
-  { readonly text: string } | { readonly refusal: ToolResult };
+  { readonly text: string } | { readonly refusal: ToolResult<ToolContent> };
 
 export const EDIT_ATTEMPTS = 5;
 
@@ -243,12 +248,12 @@ export function editSurvived(
  * @param message - The sentence that goes with the card.
  */
 export async function editRecipe(
-  ctx: ToolContext,
+  ctx: DriveContext,
   file: DriveFile,
   edit: (current: string) => Promise<Edited> | Edited,
   message: string,
-): Promise<ToolResult> {
-  const attempt = async (left: number): Promise<ToolResult> => {
+): Promise<ToolResult<ToolContent>> {
+  const attempt = async (left: number): Promise<ToolResult<ToolContent>> => {
     if (left === 0) {
       return errorResult(
         `"${label(file)}" was being changed somewhere else while this edit was made, so it is not certain it was saved. Look at the recipe, and make the change again if it is missing.`,
@@ -275,11 +280,11 @@ export async function editRecipe(
 
 /** Make a new recipe file, cache it, and show it as a card. */
 export async function createAndShow(
-  ctx: ToolContext,
+  ctx: DriveContext,
   name: string,
   content: string,
   messageFor: (file: DriveFile) => string,
-): Promise<ToolResult> {
+): Promise<ToolResult<ToolContent>> {
   const file = await ctx.files.create(name, content);
   await ctx.files.index(file.id, file.name, content);
   return recipeCardResult(
@@ -387,13 +392,13 @@ export function namesakes(
  * @param said - What to say after saving a new file.
  */
 export async function saveUnlessThere(
-  ctx: ToolContext,
+  ctx: DriveContext,
   name: string,
   filename: string,
   content: string,
   prepare: () => Promise<string>,
   said: (file: DriveFile) => string,
-): Promise<ToolResult> {
+): Promise<ToolResult<ToolContent>> {
   const same = namesakes(await ctx.files.list(), name);
   const copies = await Promise.all(
     same.slice(0, NAMESAKES_COMPARED).map(async (file) => ({
@@ -537,7 +542,7 @@ export function noteTargetProblem(
 export async function modelBudgetRefusal(
   user: Readonly<User>,
   services: ToolServices,
-): Promise<ToolResult | undefined> {
+): Promise<ToolResult<ToolContent> | undefined> {
   const wait = await services.spendModelBudget(user.id);
   return wait === undefined
     ? undefined
@@ -555,7 +560,7 @@ export async function runScenario(
   tool: ScenarioToolName,
   args: ToolArgs,
   services: ToolServices,
-): Promise<ToolResult> {
+): Promise<ToolResult<ToolContent>> {
   const result = await runScenarioTool(tool, args, services.scenario(user));
   if (result.isError) {
     return errorResult(result.message);

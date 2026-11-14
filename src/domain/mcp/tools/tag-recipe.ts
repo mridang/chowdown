@@ -5,9 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { type User } from '@/domain/db/users';
-import { errorResult, type ToolResult } from '@/domain/mcp/tool-results';
-import { type ToolServices } from '@/domain/mcp/tool-services';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
 import {
   editRecipe,
   label,
@@ -20,14 +18,20 @@ import {
   RECIPE_REFERENCE,
 } from '@/domain/mcp/tools/schemas';
 import {
+  errorResult,
+  type JsonSchema,
   McpTool,
   type ToolAnnotations,
   type ToolArgs,
+  type ToolResult,
   writes,
-} from '@/domain/mcp/tools/tool';
-import { type JsonSchema } from '@/lib/mcp';
+} from '@/lib/mcp';
 
-export class TagRecipeTool extends McpTool<'tag_recipe'> {
+export class TagRecipeTool extends McpTool<
+  'tag_recipe',
+  ToolContext,
+  ToolContent
+> {
   readonly name = 'tag_recipe';
 
   readonly title = 'Tag a recipe';
@@ -57,18 +61,17 @@ export class TagRecipeTool extends McpTool<'tag_recipe'> {
     openWorld: true,
   });
 
-  override async precheck(
-    user: Readonly<User>,
-    services: ToolServices,
-  ): Promise<ToolResult | undefined> {
+  override async precheck({
+    user,
+    services,
+  }: ToolContext): Promise<ToolResult<ToolContent> | undefined> {
     return modelBudgetRefusal(user, services);
   }
 
   override async handle(
     args: ToolArgs,
-    user: Readonly<User>,
-    services: ToolServices,
-  ): Promise<ToolResult> {
+    { user, services }: ToolContext,
+  ): Promise<ToolResult<ToolContent>> {
     const ctx = await services.openDrive(user);
     return withRecipe(ctx, args['recipe'], 'recipe', 'write', async (file) =>
       editRecipe(

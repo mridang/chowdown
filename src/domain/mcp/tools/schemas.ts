@@ -11,11 +11,11 @@
  * `recipe` means from one tool should not meet a different rule in the next.
  */
 
-import { NOT_BLANK } from '@/lib/mcp';
 import {
   CARD_RESOURCE_URI,
   LIST_RESOURCE_URI,
 } from '@/domain/mcp/ui-resources';
+import { NOT_BLANK } from '@/lib/mcp';
 
 /** JSON Schema for the recipe-card `structuredContent` (a parsed recipe + extras). */
 export const RECIPE_CARD_OUTPUT_SCHEMA = {

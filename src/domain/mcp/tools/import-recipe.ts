@@ -5,13 +5,8 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { type User } from '@/domain/db/users';
-import {
-  errorResult,
-  recipeCardResult,
-  type ToolResult,
-} from '@/domain/mcp/tool-results';
-import { type ToolServices } from '@/domain/mcp/tool-services';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import { recipeCardResult } from '@/domain/mcp/tool-results';
 import { plainTitle } from '@/domain/mcp/tool-text';
 import { modelBudgetRefusal } from '@/domain/mcp/tools/recipe-support';
 import {
@@ -22,17 +17,25 @@ import {
   RECIPE_CARD_OUTPUT_SCHEMA,
   WEB_URL,
 } from '@/domain/mcp/tools/schemas';
-import {
-  McpTool,
-  type ToolAnnotations,
-  type ToolArgs,
-  writes,
-} from '@/domain/mcp/tools/tool';
 import { importRecipe } from '@/domain/recipe/import-recipe';
 import { recipeDisplayName } from '@/lib/cooklang';
-import { type JsonSchema, NOT_BLANK, textArg } from '@/lib/mcp';
+import {
+  errorResult,
+  type JsonSchema,
+  McpTool,
+  NOT_BLANK,
+  textArg,
+  type ToolAnnotations,
+  type ToolArgs,
+  type ToolResult,
+  writes,
+} from '@/lib/mcp';
 
-export class ImportRecipeTool extends McpTool<'import_recipe'> {
+export class ImportRecipeTool extends McpTool<
+  'import_recipe',
+  ToolContext,
+  ToolContent
+> {
   readonly name = 'import_recipe';
 
   readonly title = 'Import a recipe from a web page';
@@ -79,18 +82,17 @@ export class ImportRecipeTool extends McpTool<'import_recipe'> {
 
   readonly annotations: ToolAnnotations = writes({ openWorld: true });
 
-  override async precheck(
-    user: Readonly<User>,
-    services: ToolServices,
-  ): Promise<ToolResult | undefined> {
+  override async precheck({
+    user,
+    services,
+  }: ToolContext): Promise<ToolResult<ToolContent> | undefined> {
     return modelBudgetRefusal(user, services);
   }
 
   override async handle(
     args: ToolArgs,
-    user: Readonly<User>,
-    services: ToolServices,
-  ): Promise<ToolResult> {
+    { user, services }: ToolContext,
+  ): Promise<ToolResult<ToolContent>> {
     const ctx = await services.openDrive(user);
     const content = textArg(args['content']);
     const outcome = await importRecipe(

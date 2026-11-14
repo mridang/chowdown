@@ -7,12 +7,9 @@
  * names, and which tools only read, are this app's own (`domain/mcp/app.ts`).
  */
 
-import {
-  READ_ONLY_TOOLS,
-  SCOPE_READ,
-  SCOPE_WRITE,
-  SUPPORTED_SCOPES,
-} from '@/domain/mcp/app';
+import { SCOPE_READ, SCOPE_WRITE, SUPPORTED_SCOPES } from '@/domain/mcp/app';
+import { TOOL_SCOPES } from '@/domain/mcp/tool-context';
+import { TOOL_REGISTRY } from '@/domain/mcp/tools';
 
 /**
  * The OpenID Connect scope that asks for a refresh token. Every grant here gets
@@ -60,9 +57,17 @@ export function hasScope(granted: readonly string[], needed: string): boolean {
   return needed === SCOPE_READ && granted.includes(SCOPE_WRITE);
 }
 
-/** The scope one MCP tool needs. */
+/**
+ * The scope one MCP tool needs, taken from what the tool says about its own
+ * effects. A name no tool has needs the write scope, so an unknown call is
+ * refused rather than let through on a read-only grant.
+ * @param name - The name an assistant called, which is untrusted.
+ */
 export function scopeForTool(name: string): Scope {
-  return READ_ONLY_TOOLS.has(name) ? SCOPE_READ : SCOPE_WRITE;
+  const tool = TOOL_REGISTRY.named(name);
+  return tool === undefined
+    ? SCOPE_WRITE
+    : (TOOL_SCOPES.scopeFor(tool) as Scope);
 }
 
 /** A JSON-RPC message as far as scope checking cares. */

@@ -5,13 +5,8 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { type User } from '@/domain/db/users';
-import {
-  errorResult,
-  recipeListResult,
-  type ToolResult,
-} from '@/domain/mcp/tool-results';
-import { type ToolServices } from '@/domain/mcp/tool-services';
+import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import { recipeListResult } from '@/domain/mcp/tool-results';
 import {
   indexingNote,
   label,
@@ -22,16 +17,23 @@ import {
   RECIPE_LIST_OUTPUT_SCHEMA,
   RECIPE_REFERENCE,
 } from '@/domain/mcp/tools/schemas';
+import { parseVector, topSimilar } from '@/domain/recipe/similar';
 import {
+  type ArgumentSpellings,
+  errorResult,
+  type JsonSchema,
   McpTool,
   READS,
   type ToolAnnotations,
   type ToolArgs,
-} from '@/domain/mcp/tools/tool';
-import { parseVector, topSimilar } from '@/domain/recipe/similar';
-import { type JsonSchema } from '@/lib/mcp';
+  type ToolResult,
+} from '@/lib/mcp';
 
-export class FindSimilarTool extends McpTool<'find_similar'> {
+export class FindSimilarTool extends McpTool<
+  'find_similar',
+  ToolContext,
+  ToolContent
+> {
   readonly name = 'find_similar';
 
   readonly title = 'Find similar recipes';
@@ -61,13 +63,14 @@ export class FindSimilarTool extends McpTool<'find_similar'> {
 
   readonly annotations: ToolAnnotations = READS;
 
-  override readonly aliases = { name: 'recipe' };
+  override readonly spellings: ArgumentSpellings = {
+    aliases: { name: 'recipe' },
+  };
 
   override async handle(
     args: ToolArgs,
-    user: Readonly<User>,
-    services: ToolServices,
-  ): Promise<ToolResult> {
+    { user, services }: ToolContext,
+  ): Promise<ToolResult<ToolContent>> {
     const ctx = await services.openDrive(user);
     const files = await ctx.files.list();
     return withRecipeIn(
