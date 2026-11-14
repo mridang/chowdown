@@ -120,6 +120,10 @@ export class ToolInvoker<
    * Run a call, explaining the failures an assistant can act on instead of
    * throwing them. An unknown tool or a malformed request is still thrown, for
    * the router to answer as a protocol error.
+   *
+   * A failure of a named service is always recorded, and the app may word what
+   * the assistant is told about it; everything else is explained only if the
+   * app recognises it, and is otherwise thrown on.
    * @param params - The `params` of the `tools/call` request, untrusted.
    * @param context - What the app hands its tools.
    */
@@ -130,17 +134,18 @@ export class ToolInvoker<
     try {
       return await this.invoke(params, context);
     } catch (error) {
-      const explained = this.#failures.explain(error);
-      if (explained !== undefined) {
-        return errorResult(explained);
-      }
       if (error instanceof BackendFailureError) {
         this.#log.record(error.service, error.cause);
         return errorResult(
-          `Something went wrong with ${error.service}, so that did not work. Try again in a minute; if it keeps failing, tell the user.`,
+          this.#failures.explain(error) ??
+            `Something went wrong with ${error.service}, so that did not work. Try again in a minute; if it keeps failing, tell the user.`,
         );
       }
-      throw error;
+      const explained = this.#failures.explain(error);
+      if (explained === undefined) {
+        throw error;
+      }
+      return errorResult(explained);
     }
   }
 }
