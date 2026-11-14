@@ -7,7 +7,12 @@
  * names, and which tools only read, are this app's own (`domain/mcp/app.ts`).
  */
 
-import { READ_ONLY_TOOLS, SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import {
+  READ_ONLY_TOOLS,
+  SCOPE_READ,
+  SCOPE_WRITE,
+  SUPPORTED_SCOPES,
+} from '@/domain/mcp/app';
 
 /**
  * The OpenID Connect scope that asks for a refresh token. Every grant here gets
@@ -19,13 +24,10 @@ import { READ_ONLY_TOOLS, SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
  */
 export const SCOPE_OFFLINE_ACCESS = 'offline_access';
 
-/** Every scope the server understands. */
-export const SUPPORTED_SCOPES = [SCOPE_READ, SCOPE_WRITE] as const;
+/** One of the two scopes, whether or not this app offers it. */
+export type Scope = typeof SCOPE_READ | typeof SCOPE_WRITE;
 
-/** One of {@link SUPPORTED_SCOPES}. */
-export type Scope = (typeof SUPPORTED_SCOPES)[number];
-
-/** Whether a string names one of the scopes the server understands. */
+/** Whether a string names a scope this app offers. */
 export function isSupportedScope(scope: string): scope is Scope {
   return (SUPPORTED_SCOPES as readonly string[]).includes(scope);
 }
@@ -86,4 +88,4 @@ export function scopeForMessage(message: ScopedMessage): Scope {
   return SCOPE_READ;
 }
 
-export { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+export { SCOPE_READ, SCOPE_WRITE, SUPPORTED_SCOPES } from '@/domain/mcp/app';

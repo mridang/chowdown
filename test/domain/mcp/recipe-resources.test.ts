@@ -11,7 +11,7 @@ import {
   recipeResource,
   recipeUri,
 } from '@/domain/mcp/recipe-resources';
-import type { ToolContext } from '@/domain/mcp/tool-calls';
+import type { ToolContext } from '@/domain/mcp/tool-services';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 

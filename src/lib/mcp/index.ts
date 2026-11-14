@@ -6,6 +6,7 @@
 export {
   ANNOTATION_KEYWORDS,
   CHECKED_KEYWORDS,
+  describeArguments,
   type JsonSchema,
   type JsonType,
   isJsonObject,

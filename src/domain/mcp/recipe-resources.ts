@@ -27,7 +27,10 @@ import type { User } from '@/domain/db/users';
 import { recipeDisplayName } from '@/lib/cooklang';
 import { getDatabase } from '@/domain/db/client';
 import { ERROR_INTERNAL, ERROR_INVALID_PARAMS, RpcError } from '@/lib/mcp';
-import { createToolContext, type ToolContext } from '@/domain/mcp/tool-calls';
+import {
+  createToolContext,
+  type ToolContext,
+} from '@/domain/mcp/tool-services';
 import { guarded } from '@/domain/mcp/tool-services';
 import { plainTitle } from '@/domain/mcp/tool-text';
 

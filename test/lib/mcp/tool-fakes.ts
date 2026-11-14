@@ -9,8 +9,8 @@ import { jest } from '@jest/globals';
 import type { Recipe } from '@/domain/db/recipes';
 import type { User } from '@/domain/db/users';
 import type { DriveFile } from '@/lib/google/drive';
-import { callTool, type ToolContext } from '@/domain/mcp/tool-calls';
-import type { ToolServices } from '@/domain/mcp/tool-services';
+import { callTool } from '@/domain/mcp/tool-calls';
+import type { ToolContext, ToolServices } from '@/domain/mcp/tool-services';
 
 /** The signed-in user the tests act as. */
 export const USER = { id: 7, units: null, recipes_folder_id: 'folder' } as User;
@@ -176,6 +176,9 @@ export function fakeServices(overrides: Partial<ToolServices> = {}) {
       sync: async () => 0,
       inBackground: () => undefined,
     })),
+    openDrive: jest.fn<ToolServices['openDrive']>(async () => {
+      throw new Error('This fake has no Drive; pass one through `call`.');
+    }),
     ...overrides,
   } satisfies ToolServices;
 }
@@ -190,8 +193,10 @@ export function call(
   return callTool(
     USER,
     { name, arguments: args },
-    async () => fake.ctx,
-    services,
+    {
+      ...services,
+      openDrive: async () => fake.ctx,
+    },
   );
 }
 

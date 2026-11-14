@@ -3,7 +3,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import type { EmbeddingRow } from '@/domain/db/embeddings';
 import type { DriveFile } from '@/lib/google/drive';
-import type { FileOps } from '@/domain/mcp/tool-calls';
+import type { FileOps } from '@/domain/mcp/tool-services';
 import { BackendFailureError } from '@/lib/mcp';
 import {
   EMBEDDINGS_PER_CALL,

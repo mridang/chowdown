@@ -449,3 +449,18 @@ export function unsupportedKeywords(schema: unknown): readonly string[] {
     return unknown;
   });
 }
+
+/**
+ * The arguments a schema accepts, as one line an assistant can follow:
+ * "The arguments are: limit, cursor." Required ones are marked, so a refusal
+ * can say both what was wrong and what the tool takes.
+ */
+export function describeArguments(schema: JsonSchema): string {
+  const required = new Set(schema.required);
+  const names = Object.keys(schema.properties ?? {}).map((key) =>
+    required.has(key) ? `${key} (required)` : key,
+  );
+  return names.length > 0
+    ? `The arguments are: ${names.join(', ')}.`
+    : 'This tool takes no arguments.';
+}
