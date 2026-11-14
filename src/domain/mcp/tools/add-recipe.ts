@@ -27,6 +27,7 @@ import {
   type ToolResult,
   writes,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class AddRecipeTool extends McpTool<
   'add_recipe',
@@ -40,27 +41,22 @@ export class AddRecipeTool extends McpTool<
   readonly description =
     'Saves a recipe the caller has already written in Cooklang as a new file in the Recipes folder, adding tags (cuisine, diet and so on) to the metadata. Saving the same name and recipe again changes nothing. The server does not fetch URLs: `content` must be the recipe text. Cooklang syntax: metadata as `>> key: value` lines at the top (e.g. `>> servings: 4`), ingredients inline as @name{quantity%unit} (e.g. @flour{200%g}, @eggs{2}), cookware as #item{} (e.g. #pan{}) and timers as ~{10%minutes}. Returns the saved recipe.';
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      name: {
-        type: 'string',
-        minLength: 1,
-        maxLength: NAME_MAX,
-        pattern: NOT_BLANK,
-        description: 'The recipe name.',
-      },
-      content: {
-        type: 'string',
-        minLength: 1,
-        maxLength: CONTENT_MAX,
-        pattern: NOT_BLANK,
-        description: 'The full recipe in Cooklang format. Not a URL.',
-      },
-    },
-    required: ['name', 'content'],
-  };
+  readonly input = z
+    .object({
+      name: z
+        .string()
+        .min(1)
+        .max(NAME_MAX)
+        .regex(new RegExp(NOT_BLANK))
+        .describe('The recipe name.'),
+      content: z
+        .string()
+        .min(1)
+        .max(CONTENT_MAX)
+        .regex(new RegExp(NOT_BLANK))
+        .describe('The full recipe in Cooklang format. Not a URL.'),
+    })
+    .strict();
 
   override readonly outputSchema: JsonSchema = RECIPE_CARD_OUTPUT_SCHEMA;
 

@@ -9,7 +9,6 @@ import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
 import { isUnitSystem } from '@/lib/cooklang';
 import {
   errorResult,
-  type JsonSchema,
   McpTool,
   textArg,
   textResult,
@@ -18,6 +17,7 @@ import {
   type ToolResult,
   writes,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class SetMeasurementSystemTool extends McpTool<
   'set_measurement_system',
@@ -31,18 +31,13 @@ export class SetMeasurementSystemTool extends McpTool<
   readonly description =
     "Stores the user's preferred measurement system (metric, us or imperial); recipes are shown in it from then on.";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      system: {
-        type: 'string',
-        enum: ['metric', 'us', 'imperial'],
-        description: 'metric, us, or imperial',
-      },
-    },
-    required: ['system'],
-  };
+  readonly input = z
+    .object({
+      system: z
+        .enum(['metric', 'us', 'imperial'])
+        .describe('metric, us, or imperial'),
+    })
+    .strict();
 
   readonly annotations: ToolAnnotations = writes({ idempotent: true });
 

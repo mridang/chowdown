@@ -27,6 +27,7 @@ import {
   type ToolArgs,
   type ToolResult,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class GetRecipeTool extends McpTool<
   'get_recipe',
@@ -40,18 +41,13 @@ export class GetRecipeTool extends McpTool<
   readonly description =
     'Returns one saved recipe, identified by name or id: its title, details, ingredients with quantities, method steps and cooking log, as text and as a recipe card.';
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      recipe: {
-        ...RECIPE_REFERENCE,
-        description:
-          'The recipe to open: its name, or its id from a list result.',
-      },
-    },
-    required: ['recipe'],
-  };
+  readonly input = z
+    .object({
+      recipe: RECIPE_REFERENCE.describe(
+        'The recipe to open: its name, or its id from a list result.',
+      ),
+    })
+    .strict();
 
   override readonly outputSchema: JsonSchema = RECIPE_CARD_OUTPUT_SCHEMA;
 

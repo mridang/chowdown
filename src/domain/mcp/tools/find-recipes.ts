@@ -23,6 +23,7 @@ import {
   type ToolArgs,
   type ToolResult,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class FindRecipesTool extends McpTool<
   'find_recipes',
@@ -36,14 +37,11 @@ export class FindRecipesTool extends McpTool<
   readonly description =
     "By meaning, not name: ranks the user's saved recipes by what they are about (for example 'something with beef that's quick', 'a vegetarian curry'). Returns the best 8 matches. Recipes that have not been indexed yet are indexed on demand, a limited number per call; the result says when some are still waiting.";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      query: { ...QUERY, description: 'What the user is looking for.' },
-    },
-    required: ['query'],
-  };
+  readonly input = z
+    .object({
+      query: QUERY.describe('What the user is looking for.'),
+    })
+    .strict();
 
   override readonly outputSchema: JsonSchema = RECIPE_LIST_OUTPUT_SCHEMA;
 

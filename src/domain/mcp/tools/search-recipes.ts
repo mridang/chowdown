@@ -30,6 +30,7 @@ import {
   type ToolArgs,
   type ToolResult,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class SearchRecipesTool extends McpTool<
   'search_recipes',
@@ -43,21 +44,20 @@ export class SearchRecipesTool extends McpTool<
   readonly description =
     'By name only: finds saved recipes whose name contains the query, ignoring case and accents, 50 at a time. The words of a dish that is not named in it (for example an ingredient) are for find_recipes.';
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      query: { ...QUERY, description: 'Text to match in recipe names.' },
-      limit: {
-        type: 'integer',
-        minimum: 1,
-        maximum: PAGE_MAX,
-        description: `Most recipes to return (default ${PAGE_DEFAULT}, at most ${PAGE_MAX}).`,
-      },
+  readonly input = z
+    .object({
+      query: QUERY.describe('Text to match in recipe names.'),
+      limit: z
+        .int()
+        .min(1)
+        .max(PAGE_MAX)
+        .describe(
+          `Most recipes to return (default ${PAGE_DEFAULT}, at most ${PAGE_MAX}).`,
+        )
+        .optional(),
       offset: OFFSET,
-    },
-    required: ['query'],
-  };
+    })
+    .strict();
 
   override readonly outputSchema: JsonSchema = RECIPE_LIST_OUTPUT_SCHEMA;
 

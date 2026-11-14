@@ -9,7 +9,6 @@ import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
 import { label, withRecipe } from '@/domain/mcp/tools/recipe-support';
 import { RECIPE_REFERENCE } from '@/domain/mcp/tools/schemas';
 import {
-  type JsonSchema,
   McpTool,
   textResult,
   type ToolAnnotations,
@@ -17,6 +16,7 @@ import {
   type ToolResult,
   writes,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class FavouriteRecipeTool extends McpTool<
   'favourite_recipe',
@@ -30,22 +30,17 @@ export class FavouriteRecipeTool extends McpTool<
   readonly description =
     'Marks a saved recipe as a favourite (a heart), or removes the mark when `favourite` is false.';
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      recipe: {
-        ...RECIPE_REFERENCE,
-        description:
-          'The recipe to heart: its name, or its id from a list result.',
-      },
-      favourite: {
-        type: 'boolean',
-        description: 'true to heart (default), false to remove the heart.',
-      },
-    },
-    required: ['recipe'],
-  };
+  readonly input = z
+    .object({
+      recipe: RECIPE_REFERENCE.describe(
+        'The recipe to heart: its name, or its id from a list result.',
+      ),
+      favourite: z
+        .boolean()
+        .describe('true to heart (default), false to remove the heart.')
+        .optional(),
+    })
+    .strict();
 
   readonly annotations: ToolAnnotations = writes({ idempotent: true });
 

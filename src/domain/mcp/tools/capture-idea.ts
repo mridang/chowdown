@@ -25,6 +25,7 @@ import {
   type ToolResult,
   writes,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class CaptureIdeaTool extends McpTool<
   'capture_idea',
@@ -38,32 +39,27 @@ export class CaptureIdeaTool extends McpTool<
   readonly description =
     "Saves a placeholder for a recipe to work out later (for example 'paneer ki sabji'): a new file marked as an uncurated idea, holding the original request verbatim and an optional draft.";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      name: {
-        type: 'string',
-        minLength: 1,
-        maxLength: NAME_MAX,
-        pattern: NOT_BLANK,
-        description: 'The dish name to use for the file.',
-      },
-      prompt: {
-        type: 'string',
-        minLength: 1,
-        maxLength: 20_000,
-        pattern: NOT_BLANK,
-        description: 'The original request, kept verbatim.',
-      },
-      draft: {
-        type: 'string',
-        maxLength: CONTENT_MAX,
-        description: 'Optional draft Cooklang recipe.',
-      },
-    },
-    required: ['name', 'prompt'],
-  };
+  readonly input = z
+    .object({
+      name: z
+        .string()
+        .min(1)
+        .max(NAME_MAX)
+        .regex(new RegExp(NOT_BLANK))
+        .describe('The dish name to use for the file.'),
+      prompt: z
+        .string()
+        .min(1)
+        .max(20_000)
+        .regex(new RegExp(NOT_BLANK))
+        .describe('The original request, kept verbatim.'),
+      draft: z
+        .string()
+        .max(CONTENT_MAX)
+        .describe('Optional draft Cooklang recipe.')
+        .optional(),
+    })
+    .strict();
 
   override readonly outputSchema: JsonSchema = RECIPE_CARD_OUTPUT_SCHEMA;
 

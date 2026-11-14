@@ -26,6 +26,7 @@ import {
   type ToolResult,
   writes,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class TagRecipeTool extends McpTool<
   'tag_recipe',
@@ -39,18 +40,13 @@ export class TagRecipeTool extends McpTool<
   readonly description =
     "Classifies a saved recipe by protein, cuisine, course, diet, difficulty, method and keywords, and writes those tags into the recipe, replacing the recipe's existing values for the same keys. If the recipe records a source page and has no image, that page is fetched once to add a cover image.";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      recipe: {
-        ...RECIPE_REFERENCE,
-        description:
-          'The recipe to tag: its name, or its id from a list result.',
-      },
-    },
-    required: ['recipe'],
-  };
+  readonly input = z
+    .object({
+      recipe: RECIPE_REFERENCE.describe(
+        'The recipe to tag: its name, or its id from a list result.',
+      ),
+    })
+    .strict();
 
   override readonly outputSchema: JsonSchema = RECIPE_CARD_OUTPUT_SCHEMA;
 

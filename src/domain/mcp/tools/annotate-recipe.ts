@@ -30,6 +30,7 @@ import {
   type ToolResult,
   writes,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class AnnotateRecipeTool extends McpTool<
   'annotate_recipe',
@@ -43,38 +44,34 @@ export class AnnotateRecipeTool extends McpTool<
   readonly description =
     "Adds a personal note to a saved recipe without changing the original text. The note can be attached to one ingredient (`ingredient`), to one step (`step` number), or to the recipe as a whole when both are left out, for example 'use 3 avocados instead of 2'. Each call adds a new note.";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      recipe: {
-        ...RECIPE_REFERENCE,
-        description:
-          'The recipe to annotate: its name, or its id from a list result.',
-      },
-      note: {
-        type: 'string',
-        minLength: 1,
-        maxLength: 5000,
-        pattern: NOT_BLANK,
-        description: 'The note text.',
-      },
-      ingredient: {
-        type: 'string',
-        maxLength: 200,
-        description:
+  readonly input = z
+    .object({
+      recipe: RECIPE_REFERENCE.describe(
+        'The recipe to annotate: its name, or its id from a list result.',
+      ),
+      note: z
+        .string()
+        .min(1)
+        .max(5000)
+        .regex(new RegExp(NOT_BLANK))
+        .describe('The note text.'),
+      ingredient: z
+        .string()
+        .max(200)
+        .describe(
           'Attach the note to this ingredient (by name, as it is in the recipe). Not together with `step`.',
-      },
-      step: {
-        type: 'integer',
-        minimum: 1,
-        maximum: 1000,
-        description:
+        )
+        .optional(),
+      step: z
+        .int()
+        .min(1)
+        .max(1000)
+        .describe(
           'Attach the note to this step (1-based number). Not together with `ingredient`.',
-      },
-    },
-    required: ['recipe', 'note'],
-  };
+        )
+        .optional(),
+    })
+    .strict();
 
   override readonly outputSchema: JsonSchema = RECIPE_CARD_OUTPUT_SCHEMA;
 

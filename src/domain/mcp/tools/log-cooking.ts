@@ -29,6 +29,7 @@ import {
   type ToolResult,
   writes,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class LogCookingTool extends McpTool<
   'log_cooking',
@@ -42,32 +43,27 @@ export class LogCookingTool extends McpTool<
   readonly description =
     'Appends a dated cooking-log entry to a saved recipe: a note about a time it was cooked, such as what was changed and how it turned out. The entry is dated today unless `date` says otherwise. Each call adds a new entry.';
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      recipe: {
-        ...RECIPE_REFERENCE,
-        description:
-          'The recipe to add the entry to: its name, or its id from a list result.',
-      },
-      note: {
-        type: 'string',
-        minLength: 1,
-        maxLength: 5000,
-        pattern: NOT_BLANK,
-        description: 'What to record about this cook.',
-      },
-      date: {
-        type: 'string',
-        maxLength: 10,
-        pattern: String.raw`^\d{4}-\d{2}-\d{2}$`,
-        description:
+  readonly input = z
+    .object({
+      recipe: RECIPE_REFERENCE.describe(
+        'The recipe to add the entry to: its name, or its id from a list result.',
+      ),
+      note: z
+        .string()
+        .min(1)
+        .max(5000)
+        .regex(new RegExp(NOT_BLANK))
+        .describe('What to record about this cook.'),
+      date: z
+        .string()
+        .max(10)
+        .regex(new RegExp(String.raw`^\d{4}-\d{2}-\d{2}$`))
+        .describe(
           'The day it was cooked, as YYYY-MM-DD, for a cook that was not today (default: today). Not in the future.',
-      },
-    },
-    required: ['recipe', 'note'],
-  };
+        )
+        .optional(),
+    })
+    .strict();
 
   override readonly outputSchema: JsonSchema = RECIPE_CARD_OUTPUT_SCHEMA;
 

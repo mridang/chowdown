@@ -28,6 +28,7 @@ import {
   type ToolArgs,
   type ToolResult,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class FindSimilarTool extends McpTool<
   'find_similar',
@@ -41,18 +42,13 @@ export class FindSimilarTool extends McpTool<
   readonly description =
     'Finds the saved recipes most similar to a given saved recipe, which is identified by name or id. Returns up to 6, with their ids. Recipes that have not been indexed yet are indexed on demand, a limited number per call.';
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      recipe: {
-        ...RECIPE_REFERENCE,
-        description:
-          'The recipe to find similar ones to: its name, or its id from a list result.',
-      },
-    },
-    required: ['recipe'],
-  };
+  readonly input = z
+    .object({
+      recipe: RECIPE_REFERENCE.describe(
+        'The recipe to find similar ones to: its name, or its id from a list result.',
+      ),
+    })
+    .strict();
 
   override readonly outputSchema: JsonSchema = RECIPE_LIST_OUTPUT_SCHEMA;
 

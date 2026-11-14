@@ -7,6 +7,8 @@
  * argument name, one that refuses a call before it runs.
  */
 
+import { z } from 'zod';
+
 import {
   McpTool,
   READS,
@@ -45,11 +47,9 @@ export class CountTool extends McpTool<'count', FixtureContext> {
 
   readonly description = 'Counts the things, up to the limit it is given.';
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: { limit: { type: 'integer', minimum: 1, maximum: 10 } },
-  };
+  readonly input = z
+    .object({ limit: z.int().min(1).max(10).default(0) })
+    .strict();
 
   override readonly outputSchema: JsonSchema = {
     type: 'object',
@@ -60,11 +60,11 @@ export class CountTool extends McpTool<'count', FixtureContext> {
   readonly annotations: ToolAnnotations = READS;
 
   override async handle(
-    args: ToolArgs,
+    args: { readonly limit: number },
     context: FixtureContext,
   ): Promise<ToolResult> {
     context.ran.push(this.name);
-    return dataResult('Counted.', { count: args['limit'] ?? 0 });
+    return dataResult('Counted.', { count: args.limit });
   }
 }
 
@@ -76,19 +76,14 @@ export class FetchTool extends McpTool<'fetch', FixtureContext> {
 
   readonly description = 'Reads a page from the open web.';
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    required: ['url'],
-    properties: { url: { type: 'string', maxLength: 200 } },
-  };
+  readonly input = z.object({ url: z.string().max(200) }).strict();
 
   readonly annotations: ToolAnnotations = READS_THE_WEB;
 
   override readonly meta = { 'x-widget': 'page' };
 
   override async handle(
-    _args: ToolArgs,
+    _args: object,
     context: FixtureContext,
   ): Promise<ToolResult> {
     context.ran.push(this.name);
@@ -104,15 +99,12 @@ export class RenameTool extends McpTool<'rename', FixtureContext> {
 
   readonly description = 'Gives a thing a new name.';
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    required: ['thing'],
-    properties: {
-      thing: { type: 'string', maxLength: 100 },
-      tags: { type: 'array', items: { type: 'string' } },
-    },
-  };
+  readonly input = z
+    .object({
+      thing: z.string().max(100),
+      tags: z.array(z.string()).optional(),
+    })
+    .strict();
 
   readonly annotations: ToolAnnotations = writes({ idempotent: true });
 
@@ -122,11 +114,11 @@ export class RenameTool extends McpTool<'rename', FixtureContext> {
   };
 
   override async handle(
-    args: ToolArgs,
+    args: { readonly thing: string },
     context: FixtureContext,
   ): Promise<ToolResult> {
     context.ran.push(this.name);
-    return textResult(`Renamed ${String(args['thing'])}.`);
+    return textResult(`Renamed ${args.thing}.`);
   }
 }
 
@@ -138,11 +130,7 @@ export class DeleteTool extends McpTool<'delete', FixtureContext> {
 
   readonly description = 'Removes a thing for good.';
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {},
-  };
+  readonly input = z.object({}).strict();
 
   readonly annotations: ToolAnnotations = writes({
     destructive: true,
@@ -158,7 +146,7 @@ export class DeleteTool extends McpTool<'delete', FixtureContext> {
   }
 
   override async handle(
-    _args: ToolArgs,
+    _args: object,
     context: FixtureContext,
   ): Promise<ToolResult> {
     context.ran.push(this.name);

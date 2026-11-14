@@ -8,13 +8,13 @@
 import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
 import { runScenario } from '@/domain/mcp/tools/recipe-support';
 import {
-  type JsonSchema,
   McpTool,
   READS,
   type ToolAnnotations,
   type ToolArgs,
   type ToolResult,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class ListFiltersTool extends McpTool<
   'list_filters',
@@ -28,10 +28,7 @@ export class ListFiltersTool extends McpTool<
   readonly description =
     "Lists the values the user's saved recipes hold for each filter (cuisine, eating style, protein, category, difficulty and so on), with counts. These are the values browse_recipes accepts.";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-  };
+  readonly input = z.object({}).strict();
 
   readonly annotations: ToolAnnotations = READS;
 

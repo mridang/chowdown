@@ -28,6 +28,7 @@ import {
   type ToolResult,
   writes,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class SetRecipeImagesTool extends McpTool<
   'set_recipe_images',
@@ -41,29 +42,24 @@ export class SetRecipeImagesTool extends McpTool<
   readonly description =
     'Sets the cover image and any extra photos of a saved recipe from http(s) image URLs, cover first, replacing the images it had; or removes all its images when `clear` is true (and no `images` are given). The URLs are stored, not downloaded.';
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      recipe: {
-        ...RECIPE_REFERENCE,
-        description:
-          'The recipe to change: its name, or its id from a list result.',
-      },
-      images: {
-        type: 'array',
-        maxItems: IMAGES_MAX,
-        items: { type: 'string', maxLength: 2048 },
-        description: 'Image URLs (http/https), cover first.',
-      },
-      clear: {
-        type: 'boolean',
-        description:
+  readonly input = z
+    .object({
+      recipe: RECIPE_REFERENCE.describe(
+        'The recipe to change: its name, or its id from a list result.',
+      ),
+      images: z
+        .array(z.string().max(2048))
+        .max(IMAGES_MAX)
+        .describe('Image URLs (http/https), cover first.')
+        .optional(),
+      clear: z
+        .boolean()
+        .describe(
           "true (with no images) to remove the recipe's images instead.",
-      },
-    },
-    required: ['recipe'],
-  };
+        )
+        .optional(),
+    })
+    .strict();
 
   override readonly outputSchema: JsonSchema = RECIPE_CARD_OUTPUT_SCHEMA;
 

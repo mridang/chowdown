@@ -15,7 +15,8 @@ import {
   CARD_RESOURCE_URI,
   LIST_RESOURCE_URI,
 } from '@/domain/mcp/ui-resources';
-import { NOT_BLANK } from '@/lib/mcp';
+import { NOT_BLANK, writes } from '@/lib/mcp';
+import { z } from 'zod';
 
 /** JSON Schema for the recipe-card `structuredContent` (a parsed recipe + extras). */
 export const RECIPE_CARD_OUTPUT_SCHEMA = {
@@ -133,12 +134,11 @@ export const RECIPE_LIST_OUTPUT_SCHEMA = {
 export const NAME_MAX = 300;
 
 /** A reference to a saved recipe: its name or its id, never blank. */
-export const RECIPE_REFERENCE = {
-  type: 'string',
-  minLength: 1,
-  maxLength: NAME_MAX,
-  pattern: NOT_BLANK,
-} as const;
+export const RECIPE_REFERENCE = z
+  .string()
+  .min(1)
+  .max(NAME_MAX)
+  .regex(new RegExp(NOT_BLANK));
 
 /** The most results a question-shaped tool (browse, pantry) may be asked for. */
 export const LIMIT_MAX = 50;
@@ -153,31 +153,26 @@ export const PAGE_MAX = 200;
 export const OFFSET_MAX = 100_000;
 
 /** `offset`: how many results to skip, to read the next page of a long result. */
-export const OFFSET = {
-  type: 'integer',
-  minimum: 0,
-  maximum: OFFSET_MAX,
-  description:
+export const OFFSET = z
+  .int()
+  .min(0)
+  .max(OFFSET_MAX)
+  .default(0)
+  .describe(
     'How many results to skip, to read the next page (default 0). A result that was cut short says which offset comes next.',
-} as const;
+  );
 
 /** A text filter such as a cuisine or a list of them. */
-export const FACET_TEXT = { type: 'string', maxLength: 200 } as const;
+export const FACET_TEXT = z.string().max(200);
 
 /** A search query: some text with something in it. */
-export const QUERY = {
-  type: 'string',
-  minLength: 1,
-  maxLength: 500,
-  pattern: NOT_BLANK,
-} as const;
+export const QUERY = z.string().min(1).max(500).regex(new RegExp(NOT_BLANK));
 
 /** A web address a tool may record or fetch: http or https. */
-export const WEB_URL = {
-  type: 'string',
-  maxLength: 2048,
-  pattern: String.raw`^https?://\S+$`,
-} as const;
+export const WEB_URL = z
+  .string()
+  .max(2048)
+  .regex(/^https?:\/\/\S+$/);
 
 /**
  * The largest block of page text or Cooklang a tool takes, in characters. The

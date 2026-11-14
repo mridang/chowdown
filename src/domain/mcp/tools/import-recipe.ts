@@ -30,6 +30,7 @@ import {
   type ToolResult,
   writes,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class ImportRecipeTool extends McpTool<
   'import_recipe',
@@ -43,38 +44,33 @@ export class ImportRecipeTool extends McpTool<
   readonly description =
     "Creates a saved recipe from the content of a web page that the caller has already fetched: pass the recipe's text as `content` (not a URL), meaning its title, ingredients and steps, or the page's JSON-LD `Recipe` block; the rest of the page is not needed. The server converts it to Cooklang, tags it and saves it in the Recipes folder. If `url` is given it is recorded as the recipe's source, a link that was already imported is not imported twice, and the page is fetched once to look for images. Returns the saved recipe.";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      content: {
-        type: 'string',
-        minLength: 1,
-        maxLength: CONTENT_MAX,
-        pattern: NOT_BLANK,
-        description:
+  readonly input = z
+    .object({
+      content: z
+        .string()
+        .min(1)
+        .max(CONTENT_MAX)
+        .regex(new RegExp(NOT_BLANK))
+        .describe(
           "The recipe's text (title, ingredients, steps) or the page's JSON-LD Recipe block; page text or HTML also works, but only the first 12,000 characters are read unless a JSON-LD Recipe is present. Never a URL.",
-      },
-      url: {
-        ...WEB_URL,
-        description: 'The source page URL (http or https), for attribution.',
-      },
-      name: {
-        type: 'string',
-        maxLength: NAME_MAX,
-        description:
-          'Optional recipe name; inferred from the content if omitted.',
-      },
-      images: {
-        type: 'array',
-        maxItems: IMAGES_MAX,
-        items: { type: 'string', maxLength: 2048 },
-        description:
+        ),
+      url: WEB_URL.describe(
+        'The source page URL (http or https), for attribution.',
+      ).optional(),
+      name: z
+        .string()
+        .max(NAME_MAX)
+        .describe('Optional recipe name; inferred from the content if omitted.')
+        .optional(),
+      images: z
+        .array(z.string().max(2048))
+        .max(IMAGES_MAX)
+        .describe(
           'Image URLs from the page (the og:image or the recipe photo), cover first. Used as the recipe images; the server cannot always fetch the page itself.',
-      },
-    },
-    required: ['content'],
-  };
+        )
+        .optional(),
+    })
+    .strict();
 
   override readonly outputSchema: JsonSchema = RECIPE_CARD_OUTPUT_SCHEMA;
 

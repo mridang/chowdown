@@ -23,6 +23,7 @@ import {
   type ToolArgs,
   type ToolResult,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class RecipesFromIngredientsTool extends McpTool<
   'recipes_from_ingredients',
@@ -36,44 +37,39 @@ export class RecipesFromIngredientsTool extends McpTool<
   readonly description =
     "Matches the user's saved recipes against ingredients they have, with amounts when known (for example '3 tomatoes', '400 g pasta'). Returns recipes that can be made now and recipes that are only a few ingredients short, saying exactly what is missing or needs more of. Salt, pepper, water and cooking oil are assumed to be on hand unless assume_staples is false.";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      ingredients: {
-        type: 'array',
-        minItems: 1,
-        maxItems: 100,
-        items: { type: 'string', minLength: 1, maxLength: 300 },
-        description:
+  readonly input = z
+    .object({
+      ingredients: z
+        .array(z.string().min(1).max(300))
+        .min(1)
+        .max(100)
+        .describe(
           "What they have, with amounts when known, e.g. ['3 tomatoes', '400 g pasta', 'garlic'].",
-      },
-      allow_missing: {
-        type: 'integer',
-        minimum: 0,
-        maximum: 20,
-        description:
+        ),
+      allow_missing: z
+        .int()
+        .min(0)
+        .max(20)
+        .describe(
           'How many ingredients a recipe may lack to still be listed as almost there (default 2; 0 for only what can be made now).',
-      },
-      assume_staples: {
-        type: 'boolean',
-        description: 'Assume salt, pepper, water and oil (default true).',
-      },
-      diet_type: {
-        ...FACET_TEXT,
-        description:
-          "Only recipes that suit this eating style, e.g. 'Vegetarian' (which also allows vegan dishes). Comma-separate several.",
-      },
-      limit: {
-        type: 'integer',
-        minimum: 1,
-        maximum: LIMIT_MAX,
-        description: 'Most results per list (default 12, at most 50).',
-      },
+        )
+        .optional(),
+      assume_staples: z
+        .boolean()
+        .describe('Assume salt, pepper, water and oil (default true).')
+        .optional(),
+      diet_type: FACET_TEXT.describe(
+        "Only recipes that suit this eating style, e.g. 'Vegetarian' (which also allows vegan dishes). Comma-separate several.",
+      ).optional(),
+      limit: z
+        .int()
+        .min(1)
+        .max(LIMIT_MAX)
+        .describe('Most results per list (default 12, at most 50).')
+        .optional(),
       offset: OFFSET,
-    },
-    required: ['ingredients'],
-  };
+    })
+    .strict();
 
   override readonly outputSchema: JsonSchema = RECIPE_LIST_OUTPUT_SCHEMA;
 

@@ -24,6 +24,7 @@ import {
   type ToolArgs,
   type ToolResult,
 } from '@/lib/mcp';
+import { z } from 'zod';
 
 export class ListRecipesTool extends McpTool<
   'list_recipes',
@@ -37,19 +38,19 @@ export class ListRecipesTool extends McpTool<
   readonly description =
     "Lists the names of the recipes saved in the user's Recipes folder, with their ids, 50 at a time (in name order). When there are more, the result says which offset to ask for next.";
 
-  readonly inputSchema: JsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-      limit: {
-        type: 'integer',
-        minimum: 1,
-        maximum: PAGE_MAX,
-        description: `Most recipes to return (default ${PAGE_DEFAULT}, at most ${PAGE_MAX}).`,
-      },
+  readonly input = z
+    .object({
+      limit: z
+        .int()
+        .min(1)
+        .max(PAGE_MAX)
+        .describe(
+          `Most recipes to return (default ${PAGE_DEFAULT}, at most ${PAGE_MAX}).`,
+        )
+        .optional(),
       offset: OFFSET,
-    },
-  };
+    })
+    .strict();
 
   override readonly outputSchema: JsonSchema = RECIPE_LIST_OUTPUT_SCHEMA;
 
