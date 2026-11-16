@@ -1,3 +1,18 @@
+const START_COLON_HEAPING_OR_HEAPED =
+  /^(?:(?:heaping|heaped|level|rounded|scant|generous)\s+)?([a-z]+)\.?(?:\s+of)?(?:\s+|$)/i;
+const COMMA_SPACE = /,\s/;
+const SPACE_COMMA = /\s,/;
+const SPACE_COMMA_SEMICOLON_COLON_ANY = /[\s,;:./-]/;
+const START_COLON_OF_OR_X = /^(?:of|x)\s+/i;
+const WHITESPACE = /\s/;
+const AN = /^an? [^,]{1,16}$/i;
+const ZA = /^[A-Za-z]/;
+const ZA_2 = /^\s+([A-Za-z]+)\.?(?=$|[\s,/])/;
+const ZA_3 = /^-?([A-Za-z]+)\.?(?=$|[\s,/])/;
+const START_N0_DIGITS = /^0\d/;
+const TRAILING_DOT = /\.$/;
+const SPACE_COMMA_SEMICOLON_COLON = /[\s,;:]/;
+const START_HYPHEN_STAR_SPACE_PLUS = /^[-•*·\s]+/;
 /**
  * @packageDocumentation
  *
@@ -212,16 +227,16 @@ function tidied(raw: string): string {
       .replaceAll(/\s+/g, ' ')
       .trim(),
   )
-    .replace(/^[-•*·\s]+/, '')
+    .replace(START_HYPHEN_STAR_SPACE_PLUS, '')
     .trim();
 }
 
 /** The state of the walk that pulls parenthesised text out of a line. */
 interface ParenthesesWalk {
-  readonly text: string;
-  readonly notes: readonly string[];
-  readonly depth: number;
-  readonly buffer: string;
+  readonly notes: string[];
+  depth: number;
+  buffer: string;
+  text: string;
 }
 
 /**
@@ -237,22 +252,25 @@ function withoutParentheses(line: string): {
     (walk, char) => {
       if (char === '(') {
         return walk.depth === 0
-          ? { ...walk, depth: 1, text: `${walk.text} ` }
-          : { ...walk, depth: walk.depth + 1, buffer: `${walk.buffer}(` };
+          ? Object.assign(walk, { depth: 1, text: `${walk.text} ` })
+          : Object.assign(walk, {
+              depth: walk.depth + 1,
+              buffer: `${walk.buffer}(`,
+            });
       }
       if (char === ')' && walk.depth > 0) {
-        return walk.depth === 1
-          ? {
-              ...walk,
-              depth: 0,
-              notes: [...walk.notes, walk.buffer],
-              buffer: '',
-            }
-          : { ...walk, depth: walk.depth - 1, buffer: `${walk.buffer})` };
+        if (walk.depth === 1) {
+          walk.notes.push(walk.buffer);
+          return Object.assign(walk, { depth: 0, buffer: '' });
+        }
+        return Object.assign(walk, {
+          depth: walk.depth - 1,
+          buffer: `${walk.buffer})`,
+        });
       }
       return walk.depth > 0
-        ? { ...walk, buffer: `${walk.buffer}${char}` }
-        : { ...walk, text: `${walk.text}${char}` };
+        ? Object.assign(walk, { buffer: `${walk.buffer}${char}` })
+        : Object.assign(walk, { text: `${walk.text}${char}` });
     },
     { text: '', notes: [], depth: 0, buffer: '' },
   );
@@ -261,7 +279,13 @@ function withoutParentheses(line: string): {
   return {
     text: walked.text.replaceAll(/\s+/g, ' ').trim(),
     notes: notes
-      .map((note) => trimEdges(note, /[\s,;:]/, /[\s,;:]/).trim())
+      .map((note) =>
+        trimEdges(
+          note,
+          SPACE_COMMA_SEMICOLON_COLON,
+          SPACE_COMMA_SEMICOLON_COLON,
+        ).trim(),
+      )
       .filter((note) => note !== ''),
   };
 }
@@ -276,7 +300,7 @@ const UNIT_SPELLINGS: Readonly<Record<string, string>> = {
 
 /** A unit word without a trailing full stop (`oz.`), lower-cased and in its usual spelling. */
 function unitKey(word: string): string {
-  const bare = word.replace(/\.$/, '').toLowerCase();
+  const bare = word.replace(TRAILING_DOT, '').toLowerCase();
   return UNIT_SPELLINGS[bare] ?? bare;
 }
 
@@ -296,7 +320,7 @@ interface LeadingQuantity {
 function leadingQuantity(text: string): LeadingQuantity | undefined {
   const match = QUANTITY.exec(text);
   // "00 flour" and "0000 flour" are grades of flour, not amounts.
-  if (!match || /^0\d/.test(match[1] ?? '')) {
+  if (!match || START_N0_DIGITS.test(match[1] ?? '')) {
     return undefined;
   }
   const quantity = tightHyphens(withHyphenForTo(match[1] ?? '')).trim();
@@ -306,9 +330,9 @@ function leadingQuantity(text: string): LeadingQuantity | undefined {
     ? afterQuantity.slice(described[0].length)
     : afterQuantity;
   // A unit may be glued to the number (`100g`) or hyphenated to it (`1-inch`).
-  const attached = /^-?([A-Za-z]+)\.?(?=$|[\s,/])/.exec(afterNumber);
+  const attached = ZA_3.exec(afterNumber);
   const attachedUnit = attached?.[1];
-  const spaced = /^\s+([A-Za-z]+)\.?(?=$|[\s,/])/.exec(afterNumber);
+  const spaced = ZA_2.exec(afterNumber);
   const spacedUnit = spaced?.[1];
   let unit: string | undefined;
   let consumed = 0;
@@ -323,7 +347,7 @@ function leadingQuantity(text: string): LeadingQuantity | undefined {
   }
   const rest = afterNumber.slice(consumed);
   // "7up" and "2x4" are names with a digit in them, not an amount and a word.
-  if (!unit && /^[A-Za-z]/.test(afterNumber)) {
+  if (!unit && ZA.test(afterNumber)) {
     return undefined;
   }
   return {
@@ -362,9 +386,7 @@ function amountPhrase(phrase: string): LeadingQuantity | undefined {
       ? { quantity: text, rest: '' }
       : undefined;
   }
-  return /^an? [^,]{1,16}$/i.test(text)
-    ? { quantity: text, rest: '' }
-    : undefined;
+  return AN.test(text) ? { quantity: text, rest: '' } : undefined;
 }
 
 /** `text` without the leading characters `leading` accepts and the trailing ones `trailing` accepts. */
@@ -385,13 +407,16 @@ function withHyphenForTo(text: string): string {
   for (const found of text.matchAll(/to/gi)) {
     let from = found.index;
     let end = from + 2;
-    if (!/\s/.test(text.charAt(from - 1)) || !/\s/.test(text.charAt(end))) {
+    if (
+      !WHITESPACE.test(text.charAt(from - 1)) ||
+      !WHITESPACE.test(text.charAt(end))
+    ) {
       continue;
     }
-    while (from > 0 && /\s/.test(text.charAt(from - 1))) {
+    while (from > 0 && WHITESPACE.test(text.charAt(from - 1))) {
       from -= 1;
     }
-    while (end < text.length && /\s/.test(text.charAt(end))) {
+    while (end < text.length && WHITESPACE.test(text.charAt(end))) {
       end += 1;
     }
     return `${text.slice(0, from)}-${text.slice(end)}`;
@@ -404,9 +429,9 @@ function tightHyphens(text: string): string {
   const parts = text.split('-');
   const last = parts.length - 1;
   return parts
-    .map((part, i) => {
-      const left = i > 0 ? part.trimStart() : part;
-      return i < last ? left.trimEnd() : left;
+    .map((part, index) => {
+      const left = index > 0 ? part.trimStart() : part;
+      return index < last ? left.trimEnd() : left;
     })
     .join('-');
 }
@@ -414,9 +439,9 @@ function tightHyphens(text: string): string {
 /** Strip punctuation that is left dangling after parts of the line were taken out. */
 function cleanedName(text: string): string {
   return trimEdges(
-    text.replace(/^(?:of|x)\s+/i, ''),
-    /[\s,;:./-]/,
-    /[\s,;:./-]/,
+    text.replace(START_COLON_OF_OR_X, ''),
+    SPACE_COMMA_SEMICOLON_COLON_ANY,
+    SPACE_COMMA_SEMICOLON_COLON_ANY,
   )
     .replaceAll(/\s+/g, ' ')
     .trim();
@@ -438,11 +463,11 @@ function splitPreparation(text: string): {
   readonly note?: string;
 } {
   // A comma with a space before it is how a note is set apart: "mozzarella , chilled".
-  const spaced = text.search(/\s,/);
+  const spaced = text.search(SPACE_COMMA);
   if (spaced > 0) {
     return { name: text.slice(0, spaced), note: text.slice(spaced + 1).trim() };
   }
-  const comma = text.search(/,\s/);
+  const comma = text.search(COMMA_SPACE);
   if (comma > 0) {
     const tail = text.slice(comma + 1).trim();
     if (PREPARATION.test(tail)) {
@@ -542,10 +567,7 @@ export function parseIngredientLine(raw: string): ParsedIngredientLine {
 export function leadingUnit(
   text: string,
 ): { readonly unit: string; readonly rest: string } | undefined {
-  const match =
-    /^(?:(?:heaping|heaped|level|rounded|scant|generous)\s+)?([a-z]+)\.?(?:\s+of)?(?:\s+|$)/i.exec(
-      text.trim(),
-    );
+  const match = START_COLON_HEAPING_OR_HEAPED.exec(text.trim());
   const word = match?.[1];
   return match && word && UNITS.has(unitKey(word))
     ? { unit: unitKey(word), rest: text.trim().slice(match[0].length).trim() }

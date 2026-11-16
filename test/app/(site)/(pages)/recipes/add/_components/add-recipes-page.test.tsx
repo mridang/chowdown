@@ -3,27 +3,32 @@ import { describe, expect, it } from '@jest/globals';
 import { AddRecipesPage } from '@/app/(site)/(pages)/recipes/add/_components/add-recipes-page';
 import { htmlAt } from '../../../../../../components/render';
 
+const BUTTON_TYPE_BUTTON = /<button[^>]*type="button"[^>]*>.*Write it myself/;
+const BUTTON_TYPE_BUTTON_2 =
+  /<button[^>]*type="button"[^>]*>.*Import links or text/;
+const HREF_APP_ALL = /<a [^>]*href="\/app"[^>]*>.*All recipes<\/a>/;
+const H1_TABINDEX_ADD = /<h1 tabindex="-1"[^>]*>Add recipes<\/h1>/;
+const H1_ADD_RECIPES = /<h1[^>]*>Add recipes<\/h1>/;
+
 describe('AddRecipesPage', () => {
   const out = htmlAt(<AddRecipesPage />, { pathname: '/recipes/add' });
 
   it('has the page’s one heading', () => {
     expect(out.match(/<h1/g)).toHaveLength(1);
-    expect(out).toMatch(/<h1[^>]*>Add recipes<\/h1>/);
+    expect(out).toMatch(H1_ADD_RECIPES);
   });
 
   it('lets focus come back to the heading when the choices are shown again', () => {
-    expect(out).toMatch(/<h1 tabindex="-1"[^>]*>Add recipes<\/h1>/);
+    expect(out).toMatch(H1_TABINDEX_ADD);
   });
 
   it('links back to all the recipes', () => {
-    expect(out).toMatch(/<a [^>]*href="\/app"[^>]*>.*All recipes<\/a>/);
+    expect(out).toMatch(HREF_APP_ALL);
   });
 
   it('first asks how to add, offering to import or to write one by hand', () => {
-    expect(out).toMatch(
-      /<button[^>]*type="button"[^>]*>.*Import links or text/,
-    );
-    expect(out).toMatch(/<button[^>]*type="button"[^>]*>.*Write it myself/);
+    expect(out).toMatch(BUTTON_TYPE_BUTTON_2);
+    expect(out).toMatch(BUTTON_TYPE_BUTTON);
   });
 
   it('describes each choice', () => {

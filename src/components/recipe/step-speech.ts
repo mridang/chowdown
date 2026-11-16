@@ -2,6 +2,9 @@ import type { StepToken } from '@/lib/cooklang';
 
 import { AMOUNT_PATTERN, parseAmount } from '@/components/recipe/amount';
 
+const WHITESPACE_RUN = /\s+/;
+const TRAILING_DOT = /\.$/;
+
 /**
  * A step turned into the words someone would say, for a speech synthesiser.
  *
@@ -103,7 +106,7 @@ function amountPhrase(text: string, withUnit: boolean): Phrase {
 
 /** A unit as it is said: singular or plural as asked; unknown words pass through. */
 function unitWords(unit: string, singular: boolean): string {
-  const words = UNIT_WORDS[unit.toLowerCase().replace(/\.$/, '')];
+  const words = UNIT_WORDS[unit.toLowerCase().replace(TRAILING_DOT, '')];
   if (!words) {
     return unit;
   }
@@ -130,7 +133,9 @@ export function spokenQuantity(label: string): string {
     return label;
   }
   const to = groups?.['to'];
-  const [unit = '', ...tail] = (groups?.['rest'] ?? '').trim().split(/\s+/);
+  const [unit = '', ...tail] = (groups?.['rest'] ?? '')
+    .trim()
+    .split(WHITESPACE_RUN);
   const hasUnit = unit !== '';
   const amount =
     to === undefined

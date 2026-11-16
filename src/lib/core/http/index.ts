@@ -44,6 +44,7 @@ export {
   CSP_REPORT_DIRECTIVES,
 } from './reporting';
 export {
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- the name is exported from its module and used by other modules
   newNonce,
   type CspSurface,
   buildCsp,

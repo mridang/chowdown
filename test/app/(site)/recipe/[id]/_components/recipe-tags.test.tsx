@@ -35,7 +35,10 @@ describe('RecipeTags', () => {
   });
 
   it('shows no more than the limit, keeping the first ones', () => {
-    const words = Array.from({ length: MAX_TAGS + 5 }, (_, i) => `word${i}`);
+    const words = Array.from(
+      { length: MAX_TAGS + 5 },
+      (_, index) => `word${index}`,
+    );
     const out = html(<RecipeTags keywords={words} />);
     expect(out.match(/<a /g)).toHaveLength(MAX_TAGS);
     expect(out).toContain('Word0');

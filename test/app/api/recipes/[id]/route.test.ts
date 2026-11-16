@@ -21,6 +21,8 @@ import {
   type World,
 } from '../../world';
 
+const START_DQUOTE = /^"/;
+
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const { DELETE, GET, PATCH, PUT } =
@@ -65,7 +67,7 @@ describe('GET /api/recipes/:id', () => {
     await withRecipe();
     const res = await GET(fromApp('GET', '/api/recipes/f1'), ctx('f1'));
     expect(res.status).toBe(200);
-    expect(res.headers.get('etag')).toMatch(/^"/);
+    expect(res.headers.get('etag')).toMatch(START_DQUOTE);
     expect(res.headers.get('vary')).toBe('Accept');
     const body = (await res.json()) as { id: string; cooklang: string };
     expect(body).toMatchObject({ id: 'f1', cooklang: SOURCE });

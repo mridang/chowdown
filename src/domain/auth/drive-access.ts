@@ -1,3 +1,4 @@
+const INVALID_GRANT = /invalid_grant/i;
 /**
  * @packageDocumentation
  *
@@ -81,7 +82,7 @@ export function driveAttemptOf(
  */
 export function isAuthFailure(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
-  return /invalid_grant/i.test(message);
+  return INVALID_GRANT.test(message);
 }
 
 /**

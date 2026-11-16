@@ -3,6 +3,9 @@ import { describe, expect, it } from '@jest/globals';
 import { CountBadge, FilterChip, Tag } from '@/components/ui/chip';
 import { html } from '../render';
 
+const SPAN = />3<\/span>$/;
+const SPAN_CLASS_SR = /<span class="sr-only">Remove filter<\/span>/;
+
 describe('FilterChip', () => {
   const out = html(<FilterChip href="/app?q=x">Easy</FilterChip>);
 
@@ -12,13 +15,13 @@ describe('FilterChip', () => {
   });
 
   it('says what following it does, to people who cannot see the cross', () => {
-    expect(out).toMatch(/<span class="sr-only">Remove filter<\/span>/);
+    expect(out).toMatch(SPAN_CLASS_SR);
   });
 });
 
 describe('CountBadge', () => {
   it('shows the count', () => {
-    expect(html(<CountBadge>3</CountBadge>)).toMatch(/>3<\/span>$/);
+    expect(html(<CountBadge>3</CountBadge>)).toMatch(SPAN);
   });
 
   it('takes extra layout classes from the caller', () => {

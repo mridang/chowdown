@@ -55,9 +55,8 @@ export function applyDocumentContext(
   root: DocumentRoot,
 ): void {
   if (context.safeAreaInsets !== undefined) {
-    safeAreaVariables(context.safeAreaInsets).forEach(([name, value]) =>
-      root.style.setProperty(name, value),
-    );
+    for (const [name, value] of safeAreaVariables(context.safeAreaInsets))
+      root.style.setProperty(name, value);
   }
   if (context.containerDimensions !== undefined) {
     root.toggleAttribute(

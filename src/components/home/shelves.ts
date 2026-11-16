@@ -88,8 +88,8 @@ export function fromTheShelf(
     from.length,
   );
   const start = ((seed % from.length) + from.length) % from.length;
-  return Array.from({ length: size }, (_, i) =>
-    from.at((start + i * stride) % from.length),
+  return Array.from({ length: size }, (_, index) =>
+    from.at((start + index * stride) % from.length),
   ).filter((recipe) => recipe !== undefined);
 }
 

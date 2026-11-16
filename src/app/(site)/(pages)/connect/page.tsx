@@ -116,9 +116,9 @@ export default async function ConnectPage(): Promise<ReactElement> {
                 {a.name}
               </Heading>
               <ol className="mt-5 flex flex-col gap-4">
-                {a.steps.map((step, i) => (
+                {a.steps.map((step, index) => (
                   <li key={step} className="flex items-start gap-4">
-                    <NumberBadge value={i + 1} />
+                    <NumberBadge value={index + 1} />
                     <p className="pt-0.5 leading-relaxed">{step}</p>
                   </li>
                 ))}

@@ -64,7 +64,7 @@ const liveDeps: MutateLiveDeps = {
 
 /** Drive answers a missing file with a 404 inside the error message. */
 const isDriveNotFound = (error: unknown) =>
-  error instanceof Error && /-> 404/.test(error.message);
+  error instanceof Error && error.message.includes('-> 404');
 
 /**
  * Change a recipe for a user, using their Drive and the D1 cache.
@@ -83,7 +83,7 @@ export async function mutateRecipeForUser<T>(
     {
       owns: async (fileId) =>
         Boolean(await deps.findRecipe(db, user.id, fileId)),
-      read: async (fileId) => {
+      read: async (fileId): Promise<string | undefined> => {
         try {
           return await deps.readFile(fileId, token);
         } catch (error) {

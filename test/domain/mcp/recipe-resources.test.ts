@@ -15,6 +15,10 @@ import type { DriveContext } from '@/domain/mcp/tool-services';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
+const collator = new Intl.Collator();
+
+const GOOGLE_DRIVE_ISN = /Google Drive isn't connected/;
+
 const someone = { id: 1 } as User;
 
 /** A Drive holding two recipes, as the tools see it. */
@@ -179,7 +183,7 @@ describe('readRecipeResource', () => {
       throw new DriveNotConnectedError();
     });
     expect(error.code).toBe(-32_603);
-    expect(error.message).toMatch(/Google Drive isn't connected/);
+    expect(error.message).toMatch(GOOGLE_DRIVE_ISN);
   });
 
   it('lets any other failure through for the server to log', async () => {
@@ -203,12 +207,11 @@ describe('cachedRecipeLister', () => {
          (2, 'b', 'b@example.com', '${now}', '${now}')`,
     );
     const names = ['Soup', 'Apple pie', 'Naan', 'Curry', 'Bread'];
-    names.forEach((name, index) =>
+    for (const [index, name] of names.entries())
       database.raw.exec(
         `INSERT INTO recipes (user_id, drive_file_id, name, source, first_opened_at, last_opened_at)
          VALUES (1, 'id${index}', '${name}.cook', 'SOURCE OF ${name}', '${now}', '${now}')`,
-      ),
-    );
+      );
     database.raw.exec(
       `INSERT INTO recipes (user_id, drive_file_id, name, source, first_opened_at, last_opened_at)
        VALUES (2, 'other', 'Someone else.cook', 'x', '${now}', '${now}')`,
@@ -250,7 +253,7 @@ describe('cachedRecipeLister', () => {
     const list = cachedRecipeLister(() => seeded().db);
     const [first] = await list(someone, 0, 1);
     expect(
-      Object.keys(first ?? {}).toSorted((a, b) => a.localeCompare(b)),
+      Object.keys(first ?? {}).toSorted((a, b) => collator.compare(a, b)),
     ).toEqual(['id', 'name']);
   });
 

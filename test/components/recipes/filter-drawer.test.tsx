@@ -3,6 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { FilterDrawer } from '@/components/recipes/filter-drawer';
 import { htmlAt } from '../render';
 
+const BUTTON_TYPE_BUTTON = /<button[^>]*type="button"[^>]*>/;
+
 describe('FilterDrawer', () => {
   it('opens from a button named "Filters"', () => {
     const out = htmlAt(
@@ -10,7 +12,7 @@ describe('FilterDrawer', () => {
         <p>panel</p>
       </FilterDrawer>,
     );
-    expect(out).toMatch(/<button[^>]*type="button"[^>]*>/);
+    expect(out).toMatch(BUTTON_TYPE_BUTTON);
     expect(out).toContain('Filters');
   });
 

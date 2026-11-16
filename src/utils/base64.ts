@@ -1,3 +1,4 @@
+const EQUALS_END = /={1,2}$/;
 /**
  * @packageDocumentation
  *
@@ -24,7 +25,7 @@ export function bytesToBase64Url(bytes: Uint8Array): string {
   return bytesToBase64(bytes)
     .replaceAll('+', '-')
     .replaceAll('/', '_')
-    .replace(/={1,2}$/, '');
+    .replace(EQUALS_END, '');
 }
 
 /** Decode URL-safe base64, with or without padding, into raw bytes. Throws on malformed input. */

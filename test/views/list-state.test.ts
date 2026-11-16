@@ -123,9 +123,9 @@ describe('shortTitle', () => {
 });
 
 describe('visibleRecipes', () => {
-  const recipes = Array.from({ length: 12 }, (_, i) => ({
-    id: `id${i}`,
-    title: i === 3 ? 'Crème brûlée' : `Recipe ${i}`,
+  const recipes = Array.from({ length: 12 }, (_, index) => ({
+    id: `id${index}`,
+    title: index === 3 ? 'Crème brûlée' : `Recipe ${index}`,
     uncurated: false,
   }));
 

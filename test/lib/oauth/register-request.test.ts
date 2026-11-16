@@ -7,6 +7,8 @@ import {
 } from '@/lib/oauth';
 import type { RateLimitStore } from '@/lib/rate-limit';
 
+const START_DCR_UNDERSCORE = /^dcr_/;
+
 const body = JSON.stringify({
   client_name: 'Assistant',
   redirect_uris: ['https://app.example/cb'],
@@ -54,7 +56,7 @@ describe('handleRegistration', () => {
       },
     });
     expect(saved).toHaveLength(1);
-    expect(saved[0]?.clientId).toMatch(/^dcr_/);
+    expect(saved[0]?.clientId).toMatch(START_DCR_UNDERSCORE);
   });
 
   it('counts the attempt against the caller address', async () => {

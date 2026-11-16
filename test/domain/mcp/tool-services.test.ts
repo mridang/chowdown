@@ -139,14 +139,18 @@ describe('planBackfill', () => {
   });
 
   it('lets at most the limit of new recipes through and counts the rest as waiting', () => {
-    const files = Array.from({ length: 10 }, (_, i) => file(i, `t${i}`));
+    const files = Array.from({ length: 10 }, (_, index) =>
+      file(index, `t${index}`),
+    );
     const plan = planBackfill(files, [], 4);
     expect(ids(plan.files)).toEqual(['f0', 'f1', 'f2', 'f3']);
     expect(plan.waiting).toBe(6);
   });
 
   it('puts the recipe asked about first in line', () => {
-    const files = Array.from({ length: 10 }, (_, i) => file(i, `t${i}`));
+    const files = Array.from({ length: 10 }, (_, index) =>
+      file(index, `t${index}`),
+    );
     const plan = planBackfill(files, [], 2, 'f7');
     expect(ids(plan.files)).toEqual(['f0', 'f7']);
   });

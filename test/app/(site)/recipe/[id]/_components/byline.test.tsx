@@ -8,6 +8,11 @@ import {
 } from '@/app/(site)/recipe/[id]/_components/byline';
 import { html } from '../../../../../components/render';
 
+const CLASS_TRUNCATE = /class="[^"]*truncate[^"]*"/;
+const FONT_HAND = /font-hand-(\w+)/;
+const CLASS_FONT_HAND = /class="[^"]*font-hand-\w[^"]*"[^>]*>Ethan Chlebowski</;
+const BY_ETHAN_CHLEBOWSKI = />by<.*Ethan Chlebowski/;
+
 const SITE = 'https://www.seriouseats.com/recipes/dal';
 
 describe('authorOf', () => {
@@ -58,14 +63,12 @@ describe('AuthorLine', () => {
   const out = html(<AuthorLine name="Ethan Chlebowski" />);
 
   it('says "by", then the name', () => {
-    expect(out).toMatch(/>by<.*Ethan Chlebowski/);
+    expect(out).toMatch(BY_ETHAN_CHLEBOWSKI);
   });
 
   it('sets the name in a handwriting face, and nothing else', () => {
     expect(out.match(/font-hand-/g)).toHaveLength(1);
-    expect(out).toMatch(
-      /class="[^"]*font-hand-\w[^"]*"[^>]*>Ethan Chlebowski</,
-    );
+    expect(out).toMatch(CLASS_FONT_HAND);
   });
 
   it('draws the name at the large size, under the title', () => {
@@ -74,14 +77,14 @@ describe('AuthorLine', () => {
 
   it('keeps the same face for the same person, however the name is written', () => {
     const face = (name: string) =>
-      /font-hand-(\w+)/.exec(html(<AuthorLine name={name} />))?.[1];
+      FONT_HAND.exec(html(<AuthorLine name={name} />))?.[1];
     expect(face('ethan  chlebowski')).toBe(face('Ethan Chlebowski'));
   });
 
   it('cuts a long name with an ellipsis instead of widening the line, and says it in full', () => {
     const long = 'A'.repeat(200);
     const longOut = html(<AuthorLine name={long} />);
-    expect(longOut).toMatch(/class="[^"]*truncate[^"]*"/);
+    expect(longOut).toMatch(CLASS_TRUNCATE);
     expect(longOut).toContain(`title="${long}"`);
     expect(longOut).toContain('min-w-0');
   });

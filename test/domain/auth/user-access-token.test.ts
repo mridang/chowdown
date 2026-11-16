@@ -43,14 +43,13 @@ describe('getUserAccessToken', () => {
     ...answers: readonly (Response | Error)[]
   ): jest.SpiedFunction<typeof fetch> {
     const spy = jest.spyOn(globalThis, 'fetch');
-    answers.forEach((answer) =>
+    for (const answer of answers)
       spy.mockImplementationOnce(async () => {
         if (answer instanceof Error) {
           throw answer;
         }
         return answer;
-      }),
-    );
+      });
     return spy;
   }
 

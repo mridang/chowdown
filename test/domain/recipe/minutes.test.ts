@@ -18,6 +18,7 @@ describe('minutesOf', () => {
   });
 
   it('is undefined for nothing usable', () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(minutesOf(undefined)).toBeUndefined();
     expect(minutesOf('')).toBeUndefined();
     expect(minutesOf('a while')).toBeUndefined();

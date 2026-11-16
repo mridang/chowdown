@@ -7,6 +7,8 @@
 
 import { toIsoDuration } from '@/domain/recipe/schema-org';
 
+const PT = /^PT(?:(\d+)H)?(?:(\d+)M)?$/;
+
 /** Minutes for a time string, or undefined if it holds no time. */
 export function minutesOf(value: string | undefined): number | undefined {
   if (!value) {
@@ -18,6 +20,6 @@ export function minutesOf(value: string | undefined): number | undefined {
     return undefined;
   }
   // iso is always PT[n]H[n]M, as toIsoDuration builds it.
-  const parts = /^PT(?:(\d+)H)?(?:(\d+)M)?$/.exec(iso);
+  const parts = PT.exec(iso);
   return Number(parts?.[1] ?? 0) * 60 + Number(parts?.[2] ?? 0);
 }

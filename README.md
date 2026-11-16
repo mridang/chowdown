@@ -215,7 +215,7 @@ A refused call answers `429` with `Retry-After`.
 
 **Checks.** `devbox run -- npm test` runs the official MCP conformance suite against the
 server's request handling for 2026-07-28 and 2025-11-25
-(`test/e2e/mcp.e2e.test.ts`, which also lists the known gaps with their
+(`test/e2e/mcp.end-to-end.test.ts`, which also lists the known gaps with their
 reasons). MCP 2024-11-05 clients work over
 streamable HTTP only (no HTTP+SSE transport is hosted).
 

@@ -25,6 +25,7 @@ export function ToggleLink({
   href,
   active,
   activeText,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   children,
 }: Readonly<{
@@ -39,6 +40,7 @@ export function ToggleLink({
    * pressing it again removes the filter.
    */
   activeText?: string;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
   children: ReactNode;
 }>): ReactElement {
@@ -47,6 +49,7 @@ export function ToggleLink({
       href={href}
       scroll={false}
       aria-current={active ? 'true' : undefined}
+      // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
       className={className}
     >
       {children}

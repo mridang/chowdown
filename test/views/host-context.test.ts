@@ -19,6 +19,7 @@ describe('safeAreaVariables', () => {
   });
 
   it('uses zero for missing, negative or non-numeric insets', () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(safeAreaVariables(undefined).map(([, v]) => v)).toEqual([
       '0px',
       '0px',
@@ -44,6 +45,7 @@ describe('hasFixedHeight', () => {
   it('is false when the height is flexible or unbounded', () => {
     expect(hasFixedHeight({ maxHeight: 600, width: 400 })).toBe(false);
     expect(hasFixedHeight({})).toBe(false);
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(hasFixedHeight(undefined)).toBe(false);
   });
 });
@@ -60,6 +62,7 @@ describe('localeToLang', () => {
   });
 
   it('ignores anything that is not a tag, because it ends up in the document', () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(localeToLang(undefined)).toBeUndefined();
     expect(localeToLang(42)).toBeUndefined();
     expect(localeToLang('')).toBeUndefined();

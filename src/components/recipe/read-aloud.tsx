@@ -55,7 +55,7 @@ export function ReadAloudButton({
 
   // Whatever ends the reading (the step changing, cook mode closing, the
   // button being pressed again), also silences the voice.
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (!speaking) {
       return undefined;
     }

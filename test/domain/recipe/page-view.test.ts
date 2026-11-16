@@ -54,6 +54,7 @@ describe('initialUnits', () => {
 
   it('shows the recipe as written when nothing valid is saved', () => {
     expect(initialUnits(null)).toBe('original');
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(initialUnits(undefined)).toBe('original');
     expect(initialUnits('furlongs')).toBe('original');
   });

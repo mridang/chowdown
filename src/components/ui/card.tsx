@@ -25,11 +25,13 @@ const PADDING = {
 export function Card<Tag extends ElementType = 'div'>({
   as,
   padding = 'md',
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   ...props
 }: Readonly<{
   as?: Tag;
   padding?: keyof typeof PADDING;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
 }> &
   Omit<

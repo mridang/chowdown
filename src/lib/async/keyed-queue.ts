@@ -45,14 +45,12 @@ export function createKeyedQueue(): KeyedQueue {
       waiting.set(key, next);
       tails.set(key, settled);
       // Forget a key once nothing newer has been queued behind this job.
-      settled
-        .then(() => {
-          if (tails.get(key) === settled) {
-            tails.delete(key);
-          }
-          return undefined;
-        })
-        .catch(() => undefined);
+      const forget = (): void => {
+        if (tails.get(key) === settled) {
+          tails.delete(key);
+        }
+      };
+      settled.then(forget).catch(() => undefined);
       return next;
     },
   };

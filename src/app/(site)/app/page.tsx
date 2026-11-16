@@ -191,26 +191,26 @@ export default async function AppPage({
 
               {shown.length > 0 && view === 'list' ? (
                 <RecipeRows>
-                  {shown.map((recipe, i) => (
+                  {shown.map((recipe, index) => (
                     <RecipeRow
                       key={recipe.id}
                       recipe={recipe}
                       live
                       headingLevel="h2"
-                      priority={i < ABOVE_THE_FOLD}
+                      priority={index < ABOVE_THE_FOLD}
                     />
                   ))}
                 </RecipeRows>
               ) : null}
               {shown.length > 0 && view !== 'list' ? (
                 <RecipeGrid>
-                  {shown.map((recipe, i) => (
+                  {shown.map((recipe, index) => (
                     <RecipeCard
                       key={recipe.id}
                       recipe={recipe}
                       live
                       headingLevel="h2"
-                      priority={i < ABOVE_THE_FOLD}
+                      priority={index < ABOVE_THE_FOLD}
                     />
                   ))}
                 </RecipeGrid>

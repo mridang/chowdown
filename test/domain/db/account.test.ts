@@ -13,7 +13,7 @@ function seeded() {
   );
   user.run(1, 'sub-1', 'a@b.com');
   user.run(2, 'sub-2', 'c@d.com');
-  [1, 2].forEach((id) => {
+  for (const id of [1, 2]) {
     raw
       .prepare(
         "INSERT INTO recipes (user_id, drive_file_id, name, source, first_opened_at, last_opened_at) VALUES (?, ?, 'r.cook', 'src', 'n', 'n')",
@@ -59,7 +59,7 @@ function seeded() {
         "INSERT INTO oauth_codes (code_hash, client_id, user_id, redirect_uri, code_challenge, scope, resource, expires_at) VALUES (?, ?, ?, 'u', 'c', 's', 'r', 1)",
       )
       .run(`code-${id}`, `client-${id}`, id);
-  });
+  }
   return made;
 }
 

@@ -3,6 +3,9 @@ import { describe, expect, it } from '@jest/globals';
 import { DeleteAccountDialog } from '@/components/site/delete-account-dialog';
 import { html } from '../render';
 
+const ARIA_LABELLEDBY = /aria-labelledby="([^"]+)"/;
+const H2_DELETE_YOUR = /<h2[^>]*>Delete your account\?<\/h2>/;
+
 const markup = (open: boolean) =>
   html(<DeleteAccountDialog open={open} onOpenChange={() => undefined} />);
 
@@ -15,8 +18,8 @@ describe('DeleteAccountDialog', () => {
 
   it('is named by its question and described by what will happen', () => {
     const out = markup(true);
-    expect(out).toMatch(/<h2[^>]*>Delete your account\?<\/h2>/);
-    const labelled = /aria-labelledby="([^"]+)"/.exec(out)?.[1];
+    expect(out).toMatch(H2_DELETE_YOUR);
+    const labelled = ARIA_LABELLEDBY.exec(out)?.[1];
     expect(out).toContain(`id="${labelled}"`);
     expect(out).toContain('aria-describedby=');
   });

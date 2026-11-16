@@ -5,6 +5,10 @@ import type { StepTimer } from '@/components/recipe/timer-state';
 import type { StepTimers } from '@/components/recipe/use-step-timers';
 import { html } from '../render';
 
+const ANIMATE_BLINK_FLASH = /animate-|blink|flash/;
+const ROLE_TIMER_ARIA =
+  /<p role="timer" aria-label="Step 1 timer"[^>]*>.*4:07/s;
+
 const MIN = 60_000;
 const NOW = 5_000_000;
 
@@ -63,9 +67,7 @@ describe('TimerTray', () => {
         ])}
       />,
     );
-    expect(out).toMatch(
-      /<p role="timer" aria-label="Step 1 timer"[^>]*>.*4:07/s,
-    );
+    expect(out).toMatch(ROLE_TIMER_ARIA);
   });
 
   it('offers pause, add a minute and cancel for a running timer, each named for its step', () => {
@@ -115,7 +117,7 @@ describe('TimerTray', () => {
     );
     const buttons = out.match(/<button[^>]*>/g) ?? [];
     expect(buttons).toHaveLength(3);
-    buttons.forEach((button) => expect(button).toContain('min-h-11'));
-    expect(out).not.toMatch(/animate-|blink|flash/);
+    for (const button of buttons) expect(button).toContain('min-h-11');
+    expect(out).not.toMatch(ANIMATE_BLINK_FLASH);
   });
 });

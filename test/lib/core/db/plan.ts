@@ -1,5 +1,8 @@
 import type { DatabaseSync } from 'node:sqlite';
 
+const SCAN_INDEX = /\bSCAN\b(?! .* USING (COVERING )?INDEX)/;
+const USING_COVERING_INDEX = /USING (COVERING )?INDEX/;
+
 /** The text of SQLite's query plan for a statement (unbound `?` is fine). */
 export function planOf(
   raw: DatabaseSync,
@@ -20,8 +23,8 @@ export function indexedPlan(plan: string): {
   readonly sorts: boolean;
 } {
   return {
-    usesIndex: /USING (COVERING )?INDEX/.test(plan),
-    scans: /\bSCAN\b(?! .* USING (COVERING )?INDEX)/.test(plan),
+    usesIndex: USING_COVERING_INDEX.test(plan),
+    scans: SCAN_INDEX.test(plan),
     sorts: plan.includes('TEMP B-TREE'),
   };
 }

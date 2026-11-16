@@ -14,6 +14,12 @@ import {
   type PantryItem,
 } from '@/domain/recipe/pantry-match';
 
+const AND = /\sand\s/i;
+const START_DIGITS_PLUS_SPACE_STAR = /^\d+\s*[x×]/;
+const ESC_OR_END = /\W|^$/;
+const START_DIGITS_ANY_COMMA_SLASH = /^[\d½¼¾⅓⅔.,/]+$/;
+const WHITESPACE_RUN = /\s+/;
+
 /** The most pantry items a request may carry. */
 const MAX_PANTRY_ITEMS = 60;
 
@@ -38,9 +44,9 @@ const AND_WORD = /^\band\b/i;
 
 /** A bare amount ("3", "400 g"): not an item, but the amount of the one before. */
 function isBareAmount(text: string): boolean {
-  const [amount, unit, ...rest] = text.trim().split(/\s+/);
+  const [amount, unit, ...rest] = text.trim().split(WHITESPACE_RUN);
   return (
-    /^[\d½¼¾⅓⅔.,/]+$/.test(amount ?? '') &&
+    START_DIGITS_ANY_COMMA_SLASH.test(amount ?? '') &&
     rest.length === 0 &&
     (unit === undefined || isUnitWord(unit))
   );
@@ -84,7 +90,7 @@ function scanStep(text: string, scan: Scan, index: number): Scan {
   if (
     depth === 0 &&
     AND_WORD.test(rest) &&
-    /\W|^$/.test(text.charAt(index - 1) || ' ')
+    ESC_OR_END.test(text.charAt(index - 1) || ' ')
   ) {
     return {
       ...scan,
@@ -104,20 +110,25 @@ function scanStep(text: string, scan: Scan, index: number): Scan {
  */
 function splitItems(text: string): readonly string[] {
   const start: Scan = { depth: 0, current: '', parts: [], skip: 0 };
-  const scanned = Array.from({ length: text.length }, (_, i) => i).reduce(
-    (scan, index) => scanStep(text, scan, index),
-    start,
-  );
+  const scanned = Array.from(
+    { length: text.length },
+    (_, index) => index,
+  ).reduce((scan, index) => scanStep(text, scan, index), start);
   return [...scanned.parts, scanned.current]
     .map((p) => p.trim())
     .filter(Boolean)
-    .reduce<readonly string[]>((items, raw) => {
+    .reduce<string[]>((items, raw) => {
       const previous = items.at(-1);
-      return previous !== undefined &&
+      if (
+        previous !== undefined &&
         isBareAmount(raw) &&
-        !/^\d+\s*[x×]/.test(raw)
-        ? [...items.slice(0, -1), `${previous}, ${raw}`]
-        : [...items, raw];
+        !START_DIGITS_PLUS_SPACE_STAR.test(raw)
+      ) {
+        items[items.length - 1] = `${previous}, ${raw}`;
+      } else {
+        items.push(raw);
+      }
+      return items;
     }, []);
 }
 
@@ -125,7 +136,7 @@ function splitItems(text: string): readonly string[] {
 function itemsFromText(entry: string): readonly PantryItem[] {
   const text = entry
     .slice(0, MAX_ITEM_LENGTH * 4)
-    .replaceAll(ONE_THING, (m) => m.replace(/\sand\s/i, JOINED));
+    .replaceAll(ONE_THING, (m) => m.replace(AND, JOINED));
   return splitItems(text).map((part) =>
     parsePantryItem(part.replaceAll(JOINED, ' and ').slice(0, MAX_ITEM_LENGTH)),
   );

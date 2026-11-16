@@ -4,6 +4,8 @@ import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import { VIEW_COOKIE } from '@/components/recipes/list-view';
 import { htmlAt } from '../../../components/render';
 
+const INPUT_VALUE_LIST = /<input[^>]*value="list"[^>]*>/;
+
 const collection = {
   recipes: [] as readonly unknown[],
   favouriteIds: [] as readonly string[],
@@ -78,7 +80,7 @@ describe('AppPage', () => {
     it('offers the toggle with the drawn layout chosen', async () => {
       saved.view = 'list';
       const out = await listing();
-      const radio = /<input[^>]*value="list"[^>]*>/.exec(out)?.[0] ?? '';
+      const radio = INPUT_VALUE_LIST.exec(out)?.[0] ?? '';
       expect(radio).toContain('checked=""');
     });
   });

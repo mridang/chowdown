@@ -20,6 +20,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { GoogleOAuthClient } from '@/lib/google/auth';
 import type { GoogleUserResponse } from '@/lib/google/auth';
+// eslint-disable-next-line unicorn/no-keyword-prefix -- the name is exported from its module and used by other modules
 import { checkState, newState, safeReturnPath } from '@/lib/web-security';
 import { finishFlow, startFlowCookies } from './flow-cookies';
 import { getCurrentUser } from './current-user';

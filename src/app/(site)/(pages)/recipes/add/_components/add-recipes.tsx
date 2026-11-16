@@ -118,8 +118,8 @@ export function AddRecipes({
   }, []);
 
   /** Load draft `i` into the editable fields, or finish when past the end. */
-  const seek = useCallback((list: readonly ImportDraft[], i: number) => {
-    const draft = list[i];
+  const seek = useCallback((list: readonly ImportDraft[], position: number) => {
+    const draft = list[position];
     if (!draft) {
       setPhase('done');
       if (importId.current) {
@@ -129,7 +129,7 @@ export function AddRecipes({
       }
       return;
     }
-    setIndex(i);
+    setIndex(position);
     setName(draft.title);
     setCook(draft.cook);
     setSaveError(null);
@@ -261,7 +261,7 @@ export function AddRecipes({
                 grow
                 className="[--autogrow-rows:8]"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(event) => setInput(event.target.value)}
                 rows={10}
                 placeholder={
                   'https://example.com/pasta\nhttps://example.com/curry\n\nor paste a recipe directly…'
@@ -313,7 +313,7 @@ export function AddRecipes({
               <TextInput
                 id="draft-name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(event) => setName(event.target.value)}
                 placeholder="Recipe name"
               />
             </FormField>
@@ -327,7 +327,7 @@ export function AddRecipes({
                 id="draft-cook"
                 mono
                 value={cook}
-                onChange={(e) => setCook(e.target.value)}
+                onChange={(event) => setCook(event.target.value)}
                 rows={14}
                 spellCheck={false}
                 placeholder="Cooklang source — paste or edit the recipe here."

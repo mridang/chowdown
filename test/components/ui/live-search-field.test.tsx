@@ -5,6 +5,13 @@ import type { ReactElement } from 'react';
 import { LiveSearchField } from '@/components/ui/live-search-field';
 import { html } from '../render';
 
+const INPUT_ARIA_BUSY = /<input[^>]*aria-busy="false"/;
+const INPUT_NAME_FIND =
+  /<input[^>]*name="find"[^>]*value="soup"|<input[^>]*value="soup"[^>]*name="find"/;
+const INPUT_NAME = /<input[^>]*name="q"/;
+const INPUT_VALUE = /<input[^>]*value=""/;
+const INPUT_VALUE_CHICKEN = /<input[^>]*value="chicken curry"/;
+
 /** The field as it renders at an address, with the given query string. */
 function at(search: string, field: ReactElement): string {
   return html(
@@ -15,18 +22,18 @@ function at(search: string, field: ReactElement): string {
 describe('LiveSearchField', () => {
   it('starts with the text already in the address', () => {
     const out = at('?q=chicken+curry', <LiveSearchField />);
-    expect(out).toMatch(/<input[^>]*value="chicken curry"/);
+    expect(out).toMatch(INPUT_VALUE_CHICKEN);
   });
 
   it('starts empty when the address has no text', () => {
     const out = at('?sort=time', <LiveSearchField />);
-    expect(out).toMatch(/<input[^>]*value=""/);
+    expect(out).toMatch(INPUT_VALUE);
   });
 
   it('is named after the parameter it keeps the text in', () => {
-    expect(at('', <LiveSearchField />)).toMatch(/<input[^>]*name="q"/);
+    expect(at('', <LiveSearchField />)).toMatch(INPUT_NAME);
     expect(at('?find=soup', <LiveSearchField param="find" />)).toMatch(
-      /<input[^>]*name="find"[^>]*value="soup"|<input[^>]*value="soup"[^>]*name="find"/,
+      INPUT_NAME_FIND,
     );
   });
 
@@ -41,6 +48,6 @@ describe('LiveSearchField', () => {
   });
 
   it('is not busy until it has something to load', () => {
-    expect(at('', <LiveSearchField />)).toMatch(/<input[^>]*aria-busy="false"/);
+    expect(at('', <LiveSearchField />)).toMatch(INPUT_ARIA_BUSY);
   });
 });

@@ -40,6 +40,7 @@ export function sizesFor(
  */
 export function CoverImage({
   src,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   fallback,
   alt = '',
@@ -50,6 +51,7 @@ export function CoverImage({
   sizes = '(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw',
 }: Readonly<{
   src: string;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className: string;
   /** What to show if the image fails to load. */
   fallback: ReactNode;
@@ -107,6 +109,7 @@ export function CoverImage({
       loading={priority ? 'eager' : 'lazy'}
       fetchPriority={priority ? 'high' : undefined}
       decoding={priority ? undefined : 'async'}
+      // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
       className={className}
       onError={() => setFailed(true)}
     />

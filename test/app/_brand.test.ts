@@ -13,6 +13,8 @@ import {
 import { PRIVACY_LAST_UPDATED, TERMS_LAST_UPDATED } from '@/utils/site';
 import { pngSize } from '../png';
 
+const ESC_A_HYPHEN_Z_PLUS = /\b[a-z]+(_[a-z]+)+\b/;
+
 async function exists(file: string): Promise<boolean> {
   try {
     await access(file);
@@ -120,7 +122,7 @@ describe('what assistants are told', () => {
   it('names the MCP address and does not hand-list tools that may change', async () => {
     const llms = await readLlms();
     expect(llms).toContain(`${BRAND_URL}/mcp`);
-    expect(llms).not.toMatch(/\b[a-z]+(_[a-z]+)+\b/);
+    expect(llms).not.toMatch(ESC_A_HYPHEN_Z_PLUS);
   });
 
   it('puts the Cooklang spec under Optional, where outside links belong', async () => {

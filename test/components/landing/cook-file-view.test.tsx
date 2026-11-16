@@ -4,13 +4,15 @@ import { CookFile } from '@/components/landing/cook-file-view';
 import { RECIPES } from '@/components/landing/demo-recipes';
 import { html } from '../render';
 
+const Z0_COOK = /[a-z0-9-]\.cook/;
+
 const recipe = RECIPES.find((r) => r.cooklang)!;
 
 describe('CookFile', () => {
   it('is a window titled with the recipe file name', () => {
     const out = html(<CookFile recipe={recipe} />);
     expect(out).toContain('aria-label="A recipe as a plain text file"');
-    expect(out).toMatch(/[a-z0-9-]\.cook/);
+    expect(out).toMatch(Z0_COOK);
   });
 
   it('highlights ingredients in the file', () => {

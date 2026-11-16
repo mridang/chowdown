@@ -21,6 +21,12 @@ import type {
 } from '@/lib/cooklang/cooklang';
 import { own } from '@/utils/own';
 
+const START_DIGITS_PLUS_SPACE_STAR = /^(\d+)\s*\/\s*(\d+)$/;
+const START_DIGITS_PLUS_SPACE_PLUS = /^(\d+)\s+(\d+)\s*\/\s*(\d+)$/;
+const START_DIGITS_PLUS_SPACE_STAR_2 = /^(\d+)?\s*([½⅓⅔¼¾⅛⅜⅝⅞])$/;
+const START_DIGITS_COLON_COMMA_DIGITS = /^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/;
+const START_DIGITS_ANY_COMMA_SLASH = /^[\d.,/]+/;
+
 /** Supported measurement systems. */
 export type UnitSystem = 'metric' | 'us' | 'imperial';
 
@@ -119,7 +125,7 @@ function roundTo(value: number, step: number): string {
 
 /** Parse the leading number of a quantity string, supporting simple fractions. */
 function parseNumber(text: string): number | null {
-  const frac = /^(\d+)\s*\/\s*(\d+)$/.exec(text);
+  const frac = START_DIGITS_PLUS_SPACE_STAR.exec(text);
   if (frac) {
     return Number(frac[1]) / Number(frac[2]);
   }
@@ -170,7 +176,7 @@ const LINE_BREAK = /[\n\r\u2028\u2029]/;
  */
 export function convertQuantity(quantity: string, system: UnitSystem): string {
   const text = quantity.trim();
-  const number = /^[\d.,/]+/.exec(text)?.[0];
+  const number = START_DIGITS_ANY_COMMA_SLASH.exec(text)?.[0];
   const tail = text.slice(number?.length ?? 0);
   // The unit is the rest of one line: a line break in it is not a quantity.
   if (number === undefined || LINE_BREAK.test(tail.trimStart())) {
@@ -212,9 +218,11 @@ export function convertRecipe(
   system: UnitSystem,
 ): ParsedRecipe {
   const ingredients: readonly ParsedIngredient[] = recipe.ingredients.map(
-    (i) => ({
-      ...i,
-      quantity: i.quantity ? convertQuantity(i.quantity, system) : i.quantity,
+    (index) => ({
+      ...index,
+      quantity: index.quantity
+        ? convertQuantity(index.quantity, system)
+        : index.quantity,
     }),
   );
   const steps: readonly (readonly StepToken[])[] = recipe.steps.map((step) =>
@@ -276,18 +284,18 @@ const FRACTION_GLYPHS: Readonly<Record<string, number>> = {
 /** The value of an amount like "1 1/2" or "3/4" or "2,5"; undefined if it isn't one. */
 function amountValue(text: string): number | undefined {
   // "1,000" is a thousand; "2,5" is two and a half.
-  if (/^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/.test(text)) {
+  if (START_DIGITS_COLON_COMMA_DIGITS.test(text)) {
     return Number(text.replaceAll(',', ''));
   }
-  const glyph = /^(\d+)?\s*([½⅓⅔¼¾⅛⅜⅝⅞])$/.exec(text);
+  const glyph = START_DIGITS_PLUS_SPACE_STAR_2.exec(text);
   if (glyph) {
     return Number(glyph[1] ?? 0) + (FRACTION_GLYPHS[glyph[2] ?? ''] ?? 0);
   }
-  const mixed = /^(\d+)\s+(\d+)\s*\/\s*(\d+)$/.exec(text);
+  const mixed = START_DIGITS_PLUS_SPACE_PLUS.exec(text);
   if (mixed) {
     return Number(mixed[1]) + Number(mixed[2]) / Number(mixed[3]);
   }
-  const frac = /^(\d+)\s*\/\s*(\d+)$/.exec(text);
+  const frac = START_DIGITS_PLUS_SPACE_STAR.exec(text);
   if (frac) {
     return Number(frac[1]) / Number(frac[2]);
   }

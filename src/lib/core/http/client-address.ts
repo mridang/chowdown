@@ -1,3 +1,4 @@
+const START_N0_HYPHEN_N9_A = /^[0-9a-f]{1,4}$/;
 /**
  * @packageDocumentation
  *
@@ -62,7 +63,7 @@ function ipv6Groups(address: string): readonly number[] | undefined {
     ...Array.from({ length: missing }, () => '0'),
     ...after,
   ].map((group) =>
-    /^[0-9a-f]{1,4}$/.test(group) ? Number.parseInt(group, 16) : Number.NaN,
+    START_N0_HYPHEN_N9_A.test(group) ? Number.parseInt(group, 16) : Number.NaN,
   );
   return groups.length === 8 && groups.every((g) => !Number.isNaN(g))
     ? groups

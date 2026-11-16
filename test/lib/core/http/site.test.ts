@@ -11,6 +11,8 @@ import {
   RARELY_CHANGING,
 } from '@/lib/core/http';
 
+const collator = new Intl.Collator();
+
 describe('site settings', () => {
   it('lets the edge keep the same pages that may be indexed', () => {
     expect([...EDGE_CACHED_PAGES]).toEqual([...PUBLIC_PAGES]);
@@ -59,16 +61,16 @@ describe('site settings', () => {
   });
 
   it('lets the social cards, the icons and the manifest be cached for a day', () => {
-    expect([...RARELY_CHANGING].toSorted((a, b) => a.localeCompare(b))).toEqual(
-      [
-        '/apple-icon.png',
-        '/favicon.ico',
-        '/icon.svg',
-        '/manifest.webmanifest',
-        '/opengraph-image.png',
-        '/twitter-image.png',
-      ],
-    );
+    expect(
+      [...RARELY_CHANGING].toSorted((a, b) => collator.compare(a, b)),
+    ).toEqual([
+      '/apple-icon.png',
+      '/favicon.ico',
+      '/icon.svg',
+      '/manifest.webmanifest',
+      '/opengraph-image.png',
+      '/twitter-image.png',
+    ]);
   });
 
   it('names only the Google photo host as an outside picture source', () => {

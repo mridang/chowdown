@@ -13,11 +13,13 @@ import { cn } from '@/components/ui/cn';
  */
 export function FavouriteBadge({
   on,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
 }: Readonly<{
   /** Whether the recipe is drawn as a favourite. */
   on: boolean;
   /** Extra classes, typically the position over the card's photo. */
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
 }>): ReactElement {
   return (

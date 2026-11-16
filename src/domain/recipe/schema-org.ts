@@ -14,6 +14,9 @@
 
 import type { ParsedRecipe } from '@/lib/cooklang';
 
+const COMMA_SEMICOLON = /[,;]/;
+const START_SPACE_STAR_DIGITS_PLUS = /^\s*(\d+(?:\.\d+)?)\s*$/;
+
 /** The subset of schema.org/Recipe we emit. All fields optional but `name`. */
 export interface RecipeJsonLd {
   readonly '@context': 'https://schema.org';
@@ -88,7 +91,7 @@ export function toIsoDuration(value: string): string | undefined {
     /(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)\b/iy,
   );
   // A bare number with no unit is read as minutes ("prep: 20").
-  const bare = hours || mins ? null : /^\s*(\d+(?:\.\d+)?)\s*$/.exec(value);
+  const bare = hours || mins ? null : START_SPACE_STAR_DIGITS_PLUS.exec(value);
   if (!hours && !mins && !bare) {
     return undefined;
   }
@@ -110,7 +113,7 @@ export function toIsoDuration(value: string): string | undefined {
 /** Split a comma/semicolon-separated metadata value into trimmed parts. */
 function splitList(value: string): readonly string[] {
   return value
-    .split(/[,;]/)
+    .split(COMMA_SEMICOLON)
     .map((s) => s.trim())
     .filter(Boolean);
 }
@@ -164,8 +167,10 @@ export function recipeToJsonLd(
     name: recipe.title,
     ...(recipe.ingredients.length > 0
       ? {
-          recipeIngredient: recipe.ingredients.map((i) =>
-            i.quantity ? `${i.quantity} ${i.name}`.trim() : i.name,
+          recipeIngredient: recipe.ingredients.map((index) =>
+            index.quantity
+              ? `${index.quantity} ${index.name}`.trim()
+              : index.name,
           ),
         }
       : {}),

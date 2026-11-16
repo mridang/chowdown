@@ -8,6 +8,8 @@ import {
 import { toCardRecipe } from '@/domain/recipe/card-data';
 import { html } from '../render';
 
+const H2_DAL_H2 = /<h2[^>]*>Dal<\/h2>/;
+
 const SOURCE = [
   '>> title: Dal',
   '>> time: 35 min',
@@ -127,7 +129,7 @@ describe('RecipeCard', () => {
 
   it('titles the card with the heading level it is given', () => {
     expect(html(<RecipeCard recipe={recipe} headingLevel="h2" />)).toMatch(
-      /<h2[^>]*>Dal<\/h2>/,
+      H2_DAL_H2,
     );
   });
 });

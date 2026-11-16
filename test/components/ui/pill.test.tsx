@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { PillLink } from '@/components/ui/pill';
-import { classOf, html } from '../render';
+import { cssClassesOf, html } from '../render';
 
 describe('PillLink', () => {
   it('is a link to where it points', () => {
@@ -11,10 +11,10 @@ describe('PillLink', () => {
   });
 
   it('is an outline by default and a solid pill that stands out on request', () => {
-    expect(classOf(html(<PillLink href="/">x</PillLink>), 'a')).toContain(
+    expect(cssClassesOf(html(<PillLink href="/">x</PillLink>), 'a')).toContain(
       'border-field',
     );
-    const solid = classOf(
+    const solid = cssClassesOf(
       html(
         <PillLink href="/" variant="solid">
           x
@@ -28,7 +28,7 @@ describe('PillLink', () => {
 
   it('has two heights, and the shared focus ring', () => {
     expect(
-      classOf(
+      cssClassesOf(
         html(
           <PillLink href="/" size="sm">
             x
@@ -37,10 +37,10 @@ describe('PillLink', () => {
         'a',
       ),
     ).toContain('h-8');
-    expect(classOf(html(<PillLink href="/">x</PillLink>), 'a')).toContain(
+    expect(cssClassesOf(html(<PillLink href="/">x</PillLink>), 'a')).toContain(
       'h-9',
     );
-    expect(classOf(html(<PillLink href="/">x</PillLink>), 'a')).toContain(
+    expect(cssClassesOf(html(<PillLink href="/">x</PillLink>), 'a')).toContain(
       'focus-ring',
     );
   });

@@ -4,6 +4,9 @@ import type { FacetData } from '@/components/recipes/search-query';
 import { FacetSection } from '@/components/ui/facet';
 import { html } from '../render';
 
+const CUISINE_SPAN = /Cuisine<span/;
+const CUISINE_SPAN_SPAN = /Cuisine<span[^>]*>1<\/span>/;
+
 const FACET: FacetData = {
   key: 'cuisine',
   title: 'Cuisine',
@@ -35,7 +38,7 @@ describe('FacetSection', () => {
 
   it('badges the title with how many of its options are on', () => {
     const out = html(<FacetSection facet={FACET} />);
-    expect(out).toMatch(/Cuisine<span[^>]*>1<\/span>/);
+    expect(out).toMatch(CUISINE_SPAN_SPAN);
   });
 
   it('shows no badge while nothing in the group is on', () => {
@@ -43,7 +46,7 @@ describe('FacetSection', () => {
       ...FACET,
       options: FACET.options.map((o) => ({ ...o, active: false })),
     };
-    expect(html(<FacetSection facet={none} />)).not.toMatch(/Cuisine<span/);
+    expect(html(<FacetSection facet={none} />)).not.toMatch(CUISINE_SPAN);
   });
 
   it('shows each option’s label and how many recipes match', () => {

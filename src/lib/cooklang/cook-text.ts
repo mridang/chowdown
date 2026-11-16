@@ -1,5 +1,11 @@
 import { compareText } from '@/lib/intl';
 
+const LINE_BREAK_2 = /\r?\n/;
+const WWW = /^www\./;
+const SOURCE = /^>>\s*source:\s*(\S+)/im;
+const COOK = /\.cook$/i;
+const START_DOT_PLUS = /^\.+/;
+
 /**
  * @packageDocumentation
  *
@@ -47,7 +53,7 @@ export function sanitiseName(name: string): string {
   return name
     .replaceAll(/[/\\]+/g, ' ')
     .replaceAll(/\s+/g, ' ')
-    .replace(/^\.+/, '')
+    .replace(START_DOT_PLUS, '')
     .trim();
 }
 
@@ -69,7 +75,7 @@ export function isUncurated(filename: string): boolean {
  */
 export function recipeDisplayName(filename: string): string {
   return filename
-    .replace(/\.cook$/i, '')
+    .replace(COOK, '')
     .replace(new RegExp(`\\s*\\${UNCURATED_MARKER}\\s*`, 'i'), ' ')
     .replaceAll(/\s+/g, ' ')
     .trim();
@@ -78,7 +84,7 @@ export function recipeDisplayName(filename: string): string {
 /** Turn an arbitrary string into Cooklang comment lines (`-- ...` per line). */
 function asComment(text: string): string {
   return text
-    .split(/\r?\n/)
+    .split(LINE_BREAK_2)
     .map((line) => `-- ${line}`.trimEnd())
     .join('\n');
 }
@@ -166,7 +172,7 @@ export function upsertMetadata(
   source: string,
   pairs: readonly (readonly [string, string])[],
 ): string {
-  const lines = source.split(/\r?\n/);
+  const lines = source.split(LINE_BREAK_2);
   const byLowerKey = new Map(
     pairs.map(([k, v]) => [k.trim().toLowerCase(), { k: k.trim(), v }]),
   );
@@ -184,18 +190,22 @@ export function upsertMetadata(
   // first index is the one the Map keeps.
   const firstLineOfKey = new Map(
     keyOfLine
-      .flatMap((key, i) => (key === undefined ? [] : [[key, i] as const]))
+      .flatMap((key, index) =>
+        key === undefined ? [] : [[key, index] as const],
+      )
       .toReversed(),
   );
 
   // Rewrite the first metadata line for each key in place, and drop its repeats.
-  const rewritten = lines.flatMap((line, i) => {
-    const key = keyOfLine[i];
+  const rewritten = lines.flatMap((line, index) => {
+    const key = keyOfLine[index];
     const entry = key === undefined ? undefined : byLowerKey.get(key);
     if (!entry || key === undefined) {
       return [line];
     }
-    return firstLineOfKey.get(key) === i ? [`>> ${entry.k}: ${entry.v}`] : [];
+    return firstLineOfKey.get(key) === index
+      ? [`>> ${entry.k}: ${entry.v}`]
+      : [];
   });
 
   // Insert the keys that weren't already present.
@@ -230,7 +240,7 @@ function lastMetadataLine(lines: readonly string[]): number {
 export function removeMetadata(source: string, key: string): string {
   const target = key.trim().toLowerCase();
   return source
-    .split(/\r?\n/)
+    .split(LINE_BREAK_2)
     .filter((line) => {
       const key = metadataParts(line)?.key;
       return key === undefined || key.trim().toLowerCase() !== target;
@@ -250,7 +260,7 @@ const EMPTY_VALUE =
  */
 export function removeEmptyMetadata(source: string): string {
   return source
-    .split(/\r?\n/)
+    .split(LINE_BREAK_2)
     .filter((line) => {
       const value = metadataParts(line)?.value;
       return value === undefined || !EMPTY_VALUE.test(value.trim());
@@ -263,7 +273,7 @@ export function removeEmptyMetadata(source: string): string {
  * page they came from here, which is how we recognise a link we already have.
  */
 export function sourceUrlOf(source: string): string | undefined {
-  return /^>>\s*source:\s*(\S+)/im.exec(source)?.[1];
+  return SOURCE.exec(source)?.[1];
 }
 
 /**
@@ -277,7 +287,7 @@ export function domainOf(url: string): string | undefined {
     if (u.protocol !== 'http:' && u.protocol !== 'https:') {
       return undefined;
     }
-    return u.hostname.toLowerCase().replace(/^www\./, '') || undefined;
+    return u.hostname.toLowerCase().replace(WWW, '') || undefined;
   } catch {
     return undefined;
   }
@@ -303,7 +313,7 @@ const TRACKING_PARAM =
 export function normalizeSourceUrl(url: string): string {
   try {
     const u = new URL(url.trim());
-    const host = u.hostname.toLowerCase().replace(/^www\./, '');
+    const host = u.hostname.toLowerCase().replace(WWW, '');
     const kept = [...u.searchParams.entries()]
       .filter(([key]) => !TRACKING_PARAM.test(key))
       .toSorted(([a], [b]) => compareText(a, b));
@@ -348,7 +358,7 @@ export function appendNote(source: string, note: Readonly<Note>): string {
 
 /** Extract all personal notes from a recipe's source, in file order. */
 export function extractNotes(source: string): readonly Note[] {
-  return source.split(/\r?\n/).flatMap((line): readonly Note[] => {
+  return source.split(LINE_BREAK_2).flatMap((line): readonly Note[] => {
     const m = NOTE_LINE.exec(line);
     const text = (m?.[3] ?? '').trimStart();
     // The text after the marker is one line: a stray line break ends the match.
@@ -388,7 +398,7 @@ export function replaceNote(
   index: number,
   note: Readonly<Note>,
 ): string | undefined {
-  const lines = source.split(/\r?\n/);
+  const lines = source.split(LINE_BREAK_2);
   const at = noteLineIndex(lines, index);
   return at === undefined
     ? undefined
@@ -400,7 +410,7 @@ export function replaceNote(
  * there is no such note. Everything else in the file is untouched.
  */
 export function removeNote(source: string, index: number): string | undefined {
-  const lines = source.split(/\r?\n/);
+  const lines = source.split(LINE_BREAK_2);
   const at = noteLineIndex(lines, index);
   return at === undefined ? undefined : lines.toSpliced(at, 1).join('\n');
 }
@@ -413,8 +423,8 @@ function noteLineIndex(
   lines: readonly string[],
   index: number,
 ): number | undefined {
-  const noteLines = lines.flatMap((line, i) =>
-    NOTE_LINE.test(line) ? [i] : [],
+  const noteLines = lines.flatMap((line, position) =>
+    NOTE_LINE.test(line) ? [position] : [],
   );
   return index >= 0 ? noteLines[index] : undefined;
 }
@@ -446,8 +456,10 @@ export function appendCookingLog(
 
 /** Extract all cooking-log entries from a recipe's source, in file order. */
 export function extractCookingLogs(source: string): readonly CookingLogEntry[] {
-  return source.split(/\r?\n/).flatMap((line): readonly CookingLogEntry[] => {
-    const match = LOG_LINE.exec(line);
-    return match ? [{ date: match[1] ?? '', note: match[2] ?? '' }] : [];
-  });
+  return source
+    .split(LINE_BREAK_2)
+    .flatMap((line): readonly CookingLogEntry[] => {
+      const match = LOG_LINE.exec(line);
+      return match ? [{ date: match[1] ?? '', note: match[2] ?? '' }] : [];
+    });
 }

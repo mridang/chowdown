@@ -9,6 +9,8 @@ import {
   sessionIsCurrent,
 } from '@/lib/session';
 
+const SESSION_UNDERSCORE_SECRET = /SESSION_SECRET/;
+
 const SECRET = 'test-session-secret-value';
 
 /** A value that is deliberately missing, as opposed to a key that is left out. */
@@ -242,7 +244,10 @@ describe('requireSessionSecret', () => {
   });
 
   it('refuses when there is none, rather than falling back to a value anyone could guess', () => {
-    expect(() => requireSessionSecret(undefined)).toThrow(/SESSION_SECRET/);
-    expect(() => requireSessionSecret('')).toThrow(/SESSION_SECRET/);
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+    expect(() => requireSessionSecret(undefined)).toThrow(
+      SESSION_UNDERSCORE_SECRET,
+    );
+    expect(() => requireSessionSecret('')).toThrow(SESSION_UNDERSCORE_SECRET);
   });
 });

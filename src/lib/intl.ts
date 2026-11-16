@@ -46,8 +46,8 @@ function unitAt(text: string, index: number): number {
  */
 export function compareCodeUnits(x: string, y: string): number {
   const shared = Math.min(x.length, y.length);
-  for (let i = 0; i < shared; i += 1) {
-    const diff = unitAt(x, i) - unitAt(y, i);
+  for (let index = 0; index < shared; index += 1) {
+    const diff = unitAt(x, index) - unitAt(y, index);
     if (diff !== 0) {
       return Math.sign(diff);
     }

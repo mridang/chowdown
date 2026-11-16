@@ -17,6 +17,24 @@ import { foldText } from '@/lib/intl';
 import { toBaseAmount, type BaseAmount } from '@/lib/cooklang';
 import { own } from '@/utils/own';
 
+const collator = new Intl.Collator();
+
+const A_HYPHEN_Z_PLUS = /[^a-z]+/;
+const ES = /(?:ch|sh|x|z|ss|o)es$/;
+const COLON_IE_OR_Y_END = /(?:ie|y)$/;
+const A_HYPHEN_Z = /[a-z]/i;
+const OF = /^of\s+/i;
+const WHITESPACE_RUN = /\s+/;
+const START_X_SPACE_STAR = /^[x×]\s*/i;
+const TRAILING_DOT = /\.$/;
+const ONE_TWO_THREE =
+  /^(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/i;
+const DOZEN = /^dozen/i;
+const START_COLON_AN_OR_ONE = /^(?:an?|one)\s+(?=([a-z]+)\b)/i;
+const HALF_AN = /^half an? /i;
+const AN_DOZEN = /^an? dozen\b/i;
+const HALF_AN_DOZEN = /^half an? dozen\b/i;
+
 /** Something the person has, with an amount when they gave one. */
 export interface PantryItem {
   readonly name: string;
@@ -123,7 +141,7 @@ const UNIT_WORDS = new Set([
 
 /** Whether a word is a unit or container ("g", "cups", "tin"). */
 export function isUnitWord(word: string): boolean {
-  return UNIT_WORDS.has(word.replace(/\.$/, '').toLowerCase());
+  return UNIT_WORDS.has(word.replace(TRAILING_DOT, '').toLowerCase());
 }
 
 /** Containers: "2 x 400g tins of tomatoes" is 800 g of tomatoes. */
@@ -172,23 +190,20 @@ const NUM =
 /** Say "half a dozen" and "two" the way a number would be written. */
 function numberFromWords(text: string): string {
   return text
-    .replace(/^half an? dozen\b/i, '6')
-    .replace(/^an? dozen\b/i, '12')
-    .replace(/^half an? /i, '0.5 ')
-    .replace(/^(?:an?|one)\s+(?=([a-z]+)\b)/i, (whole, unit: string) =>
-      UNIT_WORDS.has(unit.toLowerCase()) && !/^dozen/i.test(unit)
-        ? '1 '
-        : whole,
+    .replace(HALF_AN_DOZEN, '6')
+    .replace(AN_DOZEN, '12')
+    .replace(HALF_AN, '0.5 ')
+    .replace(START_COLON_AN_OR_ONE, (whole, unit: string) =>
+      UNIT_WORDS.has(unit.toLowerCase()) && !DOZEN.test(unit) ? '1 ' : whole,
     )
-    .replace(
-      /^(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/i,
-      (_, word: string) => String(own(NUMBER_WORDS, word.toLowerCase())),
+    .replace(ONE_TWO_THREE, (_, word: string) =>
+      String(own(NUMBER_WORDS, word.toLowerCase())),
     );
 }
 
 /** A unit word without its full stop, lower-cased. */
 function unitWord(word: string): string {
-  return word.replace(/\.$/, '').toLowerCase();
+  return word.replace(TRAILING_DOT, '').toLowerCase();
 }
 
 /** The leading amount and unit of a pantry string, and what's left as the name. */
@@ -215,27 +230,30 @@ function leadingAmount(
     return undefined;
   }
   const amount = (lead[1] ?? '').trim();
-  const words = lead[2].trim().split(/\s+/);
+  const words = lead[2].trim().split(WHITESPACE_RUN);
   const [firstWord = ''] = words;
   if (words.length > 1 && UNIT_WORDS.has(unitWord(firstWord))) {
     const rest = words.slice(1).join(' ');
     return {
       quantity: `${amount} ${unitWord(firstWord)}`,
-      name: rest.replace(/^of\s+/i, ''),
+      name: rest.replace(OF, ''),
     };
   }
   // "3x tomato" is three tomatoes
-  return { quantity: amount, name: words.join(' ').replace(/^[x×]\s*/i, '') };
+  return {
+    quantity: amount,
+    name: words.join(' ').replace(START_X_SPACE_STAR, ''),
+  };
 }
 
 /** "tins of tomatoes" → "tomatoes". */
 function withoutContainer(text: string): string {
-  const words = text.trim().split(/\s+/);
+  const words = text.trim().split(WHITESPACE_RUN);
   const rest =
     words.length > 1 && CONTAINERS.has(unitWord(words[0] ?? ''))
       ? words.slice(1).join(' ')
       : text.trim();
-  return rest.replace(/^of\s+/i, '');
+  return rest.replace(OF, '');
 }
 
 /**
@@ -262,7 +280,7 @@ export function parsePantryItem(text: string): PantryItem {
       quantity: (after[2] ?? after[3] ?? '').trim(),
     };
   }
-  return { name: /[a-z]/i.test(trimmed) ? trimmed : '' };
+  return { name: A_HYPHEN_Z.test(trimmed) ? trimmed : '' };
 }
 
 /** Words that describe an ingredient without changing what it is. */
@@ -431,7 +449,9 @@ const IRREGULAR: Readonly<Record<string, string>> = {
 function stem(word: string): string {
   const w = singular(own(IRREGULAR, word) ?? word);
   // chili / chilli / chilly and cookie / cooky all end the same way
-  return w.length > 3 && /(?:ie|y)$/.test(w) ? w.replace(/(?:ie|y)$/, 'i') : w;
+  return w.length > 3 && COLON_IE_OR_Y_END.test(w)
+    ? w.replace(COLON_IE_OR_Y_END, 'i')
+    : w;
 }
 
 /** A word with a regular plural ending taken off, if it has one. */
@@ -442,7 +462,7 @@ function singular(w: string): string {
   if (w.endsWith('ies') && w.length > 4) {
     return `${w.slice(0, -3)}y`;
   }
-  if (/(?:ch|sh|x|z|ss|o)es$/.test(w)) {
+  if (ES.test(w)) {
     return w.slice(0, -2);
   }
   if (w.endsWith('ss') || w.endsWith('us') || w.endsWith('is')) {
@@ -519,7 +539,7 @@ function withoutParentheses(name: string): string {
 /** The meaningful words of an ingredient name: singular, synonyms folded. */
 export function ingredientWords(name: string): readonly string[] {
   const words = foldText(withoutParentheses(name))
-    .split(/[^a-z]+/)
+    .split(A_HYPHEN_Z_PLUS)
     .filter((w) => w && !DESCRIPTORS.has(w))
     .map((w) => stem(w))
     .map((w) => stem(own(SYNONYMS, w) ?? w))
@@ -605,7 +625,7 @@ const STAPLE_WORDS = new Set([
  */
 export function isStaple(name: string): boolean {
   const words = foldText(withoutParentheses(name))
-    .split(/[^a-z]+/)
+    .split(A_HYPHEN_Z_PLUS)
     .filter(Boolean);
   return (
     words.length > 0 &&
@@ -785,10 +805,10 @@ export function matchRecipe(
     ingredients,
     (ingredient) =>
       ingredientWords(ingredient.name)
-        .toSorted((a, b) => a.localeCompare(b))
+        .toSorted((a, b) => collator.compare(a, b))
         .join(' ') || ingredient.name,
   );
-  const outcomes = [...groups.values()].map((lines) =>
+  const outcomes = Array.from(groups.values(), (lines) =>
     matchIngredient(lines, pantry, assumeStaples),
   );
   const covered = outcomes.flatMap((o) => (o.kind === 'covered' ? [o] : []));

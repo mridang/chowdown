@@ -4,6 +4,9 @@ import { BRAND_NAME } from '@/app/_brand';
 import { BarePage, MessagePage } from '@/components/site/bare-page';
 import { html } from '../render';
 
+const H1_WE_COULDN = /<h1[^>]*>We couldn&#x27;t find that page<\/h1>/;
+const DIV_HREF_MAIN = /^<div[^>]*><a href="#main"[^>]*>Skip to content<\/a>/;
+
 describe('BarePage', () => {
   it('brings its own main landmark and a wordmark that links home', () => {
     const out = html(<BarePage>hello</BarePage>);
@@ -14,9 +17,7 @@ describe('BarePage', () => {
   });
 
   it('starts with a skip link to the main landmark', () => {
-    expect(html(<BarePage>x</BarePage>)).toMatch(
-      /^<div[^>]*><a href="#main"[^>]*>Skip to content<\/a>/,
-    );
+    expect(html(<BarePage>x</BarePage>)).toMatch(DIV_HREF_MAIN);
   });
 });
 
@@ -31,7 +32,7 @@ describe('MessagePage', () => {
         <p>It may have moved.</p>
       </MessagePage>,
     );
-    expect(out).toMatch(/<h1[^>]*>We couldn&#x27;t find that page<\/h1>/);
+    expect(out).toMatch(H1_WE_COULDN);
     expect(out).toContain('Page not found');
     expect(out).toContain('It may have moved.');
     expect(out).toContain('href="/"');

@@ -3,12 +3,19 @@ import { describe, expect, it } from '@jest/globals';
 import TermsPage, { metadata } from '@/app/(site)/terms/page';
 import { html } from '../../../components/render';
 
+const HREF_BACK_TO = /<a [^>]*href="\/"[^>]*>.*Back to Chowdown<\/a>/;
+const HREF_PRIVACY_PRIVACY =
+  /<a [^>]*href="\/privacy"[^>]*>privacy policy<\/a>/;
+const HREF_HTTPS_GITHUB =
+  /<a [^>]*href="https:\/\/github\.com\/mridang\/chowdown"[^>]*>GitHub<\/a>/;
+const H1_TERMS_OF = /<h1[^>]*>Terms of Service<\/h1>/;
+
 describe('TermsPage', () => {
   const out = html(<TermsPage />);
 
   it('has one heading, the terms’ title', () => {
     expect(out.match(/<h1/g)).toHaveLength(1);
-    expect(out).toMatch(/<h1[^>]*>Terms of Service<\/h1>/);
+    expect(out).toMatch(H1_TERMS_OF);
   });
 
   it('covers use, recipes, AI, the service, the code, data and contact', () => {
@@ -36,13 +43,11 @@ describe('TermsPage', () => {
 
   it('names the licence and links to the code', () => {
     expect(out).toContain('Apache 2.0 licence');
-    expect(out).toMatch(
-      /<a [^>]*href="https:\/\/github\.com\/mridang\/chowdown"[^>]*>GitHub<\/a>/,
-    );
+    expect(out).toMatch(HREF_HTTPS_GITHUB);
   });
 
   it('sends people to the privacy policy for their data', () => {
-    expect(out).toMatch(/<a [^>]*href="\/privacy"[^>]*>privacy policy<\/a>/);
+    expect(out).toMatch(HREF_PRIVACY_PRIVACY);
   });
 
   it('gives the contact address', () => {
@@ -50,7 +55,7 @@ describe('TermsPage', () => {
   });
 
   it('links back home', () => {
-    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to Chowdown<\/a>/);
+    expect(out).toMatch(HREF_BACK_TO);
   });
 });
 

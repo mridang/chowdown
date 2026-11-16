@@ -27,7 +27,7 @@ function recipe(id: string, over: Partial<CardRecipe> = {}): CardRecipe {
 }
 
 const many = (n: number, over: Partial<CardRecipe> = {}) =>
-  Array.from({ length: n }, (_, i) => recipe(`r${i}`, over));
+  Array.from({ length: n }, (_, index) => recipe(`r${index}`, over));
 
 describe('todaySeed', () => {
   it('is the same all day and moves on at midnight UTC', () => {

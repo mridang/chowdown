@@ -4,6 +4,8 @@ import { PROMPT_DEFINITIONS, getPrompt } from '@/domain/mcp/prompts';
 import { RpcError } from '@/lib/mcp';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
 
+const START_A_HYPHEN_Z_PLUS = /^[a-z]+(?:-[a-z]+)*$/;
+
 /** The opening message's text. */
 function textOf(name: string, args?: unknown): string {
   return getPrompt(name, args).messages[0]?.content.text ?? '';
@@ -24,7 +26,7 @@ describe('PROMPT_DEFINITIONS', () => {
     const names = PROMPT_DEFINITIONS.map((p) => p.name);
     expect(new Set(names).size).toBe(names.length);
     for (const name of names) {
-      expect(name).toMatch(/^[a-z]+(?:-[a-z]+)*$/);
+      expect(name).toMatch(START_A_HYPHEN_Z_PLUS);
     }
   });
 
@@ -36,7 +38,7 @@ describe('PROMPT_DEFINITIONS', () => {
       textOf('plan-the-week'),
     ];
     const mentioned = texts.flatMap((text) =>
-      [...text.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/g)].map((m) => m[0]),
+      Array.from(text.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/g), (m) => m[0]),
     );
     expect(mentioned.length).toBeGreaterThan(0);
     for (const name of mentioned) {
@@ -110,6 +112,7 @@ describe('getPrompt', () => {
   });
 
   it('answers as a single user message', () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     const result = getPrompt('what-should-i-cook', undefined);
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0]?.role).toBe('user');

@@ -24,13 +24,16 @@ type IconProps = SVGProps<SVGSVGElement> & {
 };
 
 /** The class list for an icon of the given size, joined with any of its own. */
+// eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
 function iconClass(size?: IconSize, className?: string): string | undefined {
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   const joined = [size ? ICON_SIZES[size] : '', className ?? '']
     .filter(Boolean)
     .join(' ');
   return joined || undefined;
 }
 
+// eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
 function Icon({ children, size, className, ...props }: IconProps) {
   return (
     <svg
@@ -406,6 +409,7 @@ export const PlusCircleIcon = (p: IconProps) => (
  */
 export function DriveIcon({
   size,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   ...props
 }: IconProps): React.ReactElement {
@@ -458,6 +462,7 @@ export const SparklesIcon = (p: IconProps) => (
 );
 
 /** The multi-colour Google "G", for the sign-in button. */
+// eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
 export function GoogleIcon({ size, className, ...props }: IconProps) {
   return (
     <svg
@@ -495,6 +500,7 @@ export function GoogleIcon({ size, className, ...props }: IconProps) {
  */
 export function McpIcon({
   size,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   ...props
 }: IconProps): React.ReactElement {
@@ -534,6 +540,7 @@ export function McpIcon({
  */
 export function Html5Icon({
   size,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   ...props
 }: IconProps): React.ReactElement {

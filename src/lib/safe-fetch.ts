@@ -20,6 +20,9 @@
 
 import { parseUrl } from '@/utils/url';
 
+const START_DIGITS_ANY_PLUS_END = /^[\d.]+$/;
+const TRAILING_DOT = /\.$/;
+
 /**
  * Who we say we are when the caller names nobody. A caller passes its own
  * `userAgent` (its site name and a contact address) so an operator who sees us
@@ -59,11 +62,11 @@ export function isPublicWebUrl(value: string): boolean {
     return false;
   }
   // `localhost.` is the same host as `localhost`.
-  const host = url.hostname.toLowerCase().replace(/\.$/, '');
+  const host = url.hostname.toLowerCase().replace(TRAILING_DOT, '');
   return !(
     !host.includes('.') ||
     host.startsWith('[') ||
-    /^[\d.]+$/.test(host) ||
+    START_DIGITS_ANY_PLUS_END.test(host) ||
     NOT_PUBLIC.test(host)
   );
 }

@@ -12,6 +12,9 @@ import {
   said,
 } from '../../../lib/mcp/tool-fakes';
 
+const AND_MORE = /; and 2 more\./;
+const ALLOWANCE_USED_UP = /allowance.*used up.*2 hour/;
+
 describe('the daily allowance for tools that call a model', () => {
   const used = (wait: number | undefined) =>
     fakeServices({
@@ -36,7 +39,7 @@ describe('the daily allowance for tools that call a model', () => {
         },
       );
       expect(result.isError).toBe(true);
-      expect(said(result)).toMatch(/allowance.*used up.*2 hour/);
+      expect(said(result)).toMatch(ALLOWANCE_USED_UP);
       expect(opened).not.toHaveBeenCalled();
       expect(fake.created).toEqual([]);
     },
@@ -47,6 +50,7 @@ describe('the daily allowance for tools that call a model', () => {
       'import_recipe',
       { content: 'A page about bread' },
       folder(),
+      // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
       used(undefined),
     );
     expect(result.isError).not.toBe(true);
@@ -84,8 +88,12 @@ describe('two edits of one recipe at the same time', () => {
   it('all of four land', async () => {
     const fake = folder({ 'Pancakes.cook': PANCAKES });
     const results = await Promise.all(
-      Array.from({ length: 4 }, (_, i) =>
-        call('log_cooking', { recipe: 'pancakes', note: `cook ${i}` }, fake),
+      Array.from({ length: 4 }, (_, index) =>
+        call(
+          'log_cooking',
+          { recipe: 'pancakes', note: `cook ${index}` },
+          fake,
+        ),
       ),
     );
     expect(results.map((r) => r.isError)).toEqual([
@@ -96,8 +104,8 @@ describe('two edits of one recipe at the same time', () => {
     ]);
     const final = fake.contents.get('Pancakes.cook') ?? '';
     expect(logged(final)).toBe(4);
-    for (const i of [0, 1, 2, 3]) {
-      expect(final).toContain(`cook ${i}`);
+    for (const index of [0, 1, 2, 3]) {
+      expect(final).toContain(`cook ${index}`);
     }
   });
 
@@ -398,6 +406,6 @@ describe('when very many recipes match one reference', () => {
     );
     expect(result.isError).toBe(true);
     expect(said(result)).toContain('Several recipes match "pie"');
-    expect(said(result)).toMatch(/; and 2 more\./);
+    expect(said(result)).toMatch(AND_MORE);
   });
 });

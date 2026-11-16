@@ -16,6 +16,11 @@ import {
 } from '@/components/ui/dialog';
 import { html } from '../render';
 
+const ARIA_DESCRIBEDBY = /aria-describedby="([^"]+)"/;
+const ARIA_LABELLEDBY = /aria-labelledby="([^"]+)"/;
+const DIALOG_DIALOG = /<dialog[^>]*><\/dialog>/;
+const BUTTON_TYPE_BUTTON = /<button type="button" class="mt-2">Open<\/button>/;
+
 /** A dialog with a title and a description, open or closed as told. */
 const sample = (open: boolean, props: { showClose?: boolean } = {}) =>
   html(
@@ -31,8 +36,8 @@ const sample = (open: boolean, props: { showClose?: boolean } = {}) =>
 describe('Dialog', () => {
   it('has a button that opens it, and no content while it is closed', () => {
     const out = sample(false);
-    expect(out).toMatch(/<button type="button" class="mt-2">Open<\/button>/);
-    expect(out).toMatch(/<dialog[^>]*><\/dialog>/);
+    expect(out).toMatch(BUTTON_TYPE_BUTTON);
+    expect(out).toMatch(DIALOG_DIALOG);
     expect(out).not.toContain('Filters');
   });
 
@@ -44,8 +49,8 @@ describe('Dialog', () => {
 
   it('is named and described by its title and description', () => {
     const out = sample(true);
-    const labelledBy = /aria-labelledby="([^"]+)"/.exec(out)?.[1];
-    const describedBy = /aria-describedby="([^"]+)"/.exec(out)?.[1];
+    const labelledBy = ARIA_LABELLEDBY.exec(out)?.[1];
+    const describedBy = ARIA_DESCRIBEDBY.exec(out)?.[1];
     expect(labelledBy).toBeDefined();
     expect(out).toContain(`<h2 id="${labelledBy}">`);
     expect(out).toContain(`<p id="${describedBy}">`);

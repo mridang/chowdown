@@ -10,8 +10,8 @@ const RECIPE: RecipeCardData = {
   title: 'Pasta al Limone',
   uncurated: false,
   metadata: [['servings', '4']],
-  ingredients: Array.from({ length: 9 }, (_, i) => ({
-    name: `item ${i + 1}`,
+  ingredients: Array.from({ length: 9 }, (_, index) => ({
+    name: `item ${index + 1}`,
     quantity: '',
   })),
   cookware: [],

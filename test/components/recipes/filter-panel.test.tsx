@@ -4,6 +4,8 @@ import { FilterPanel } from '@/components/recipes/filter-panel';
 import type { FacetData } from '@/components/recipes/search-query';
 import { html } from '../render';
 
+const OPEN = /^[^>]*\sopen=""/;
+
 /** A filter with one option, switched on or off. */
 const facet = (
   key: FacetData['key'],
@@ -46,9 +48,7 @@ describe('FilterPanel', () => {
     const open = (title: string) =>
       out
         .split('<details')
-        .some(
-          (group) => group.includes(title) && /^[^>]*\sopen=""/.test(group),
-        );
+        .some((group) => group.includes(title) && OPEN.test(group));
     expect(open('Protein')).toBe(true);
     expect(open('Source')).toBe(true);
     expect(open('Method')).toBe(false);

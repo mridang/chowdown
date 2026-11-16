@@ -23,12 +23,14 @@ export function HeroPhoto({
   images,
   title,
   tone,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
 }: Readonly<{
   /** Photo addresses, the cover first. */
   images: readonly string[];
   title: string;
   tone: Tone;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
 }>): ReactElement {
   const [index, setIndex] = useState(0);
@@ -60,16 +62,16 @@ export function HeroPhoto({
           aria-label="Photos"
           className="absolute inset-x-3 bottom-3 flex max-w-max snap-x gap-1.5 overflow-x-auto rounded-card bg-paper/90 p-1.5 print:hidden"
         >
-          {images.map((src, i) => (
+          {images.map((src, position) => (
             <button
               key={src}
               type="button"
-              aria-label={`Show photo ${i + 1} of ${images.length}`}
-              aria-pressed={i === index}
-              onClick={() => setIndex(i)}
+              aria-label={`Show photo ${position + 1} of ${images.length}`}
+              aria-pressed={position === index}
+              onClick={() => setIndex(position)}
               className={cn(
                 'relative size-12 shrink-0 snap-start overflow-hidden rounded-control border-2 transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ink',
-                i === index ? 'border-flame' : 'border-transparent',
+                position === index ? 'border-flame' : 'border-transparent',
               )}
             >
               <CoverImage

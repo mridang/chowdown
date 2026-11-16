@@ -17,9 +17,11 @@ export interface Crumb {
  */
 export function Breadcrumb({
   crumbs,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
 }: Readonly<{
   crumbs: readonly Crumb[];
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
 }>): ReactElement {
   return (

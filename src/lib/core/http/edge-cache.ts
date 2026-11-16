@@ -20,6 +20,9 @@ import {
   EDGE_TTL_SECONDS,
 } from './site';
 
+const FFFF = /^(::ffff:)?127\./;
+const COLON_DIGITS_PLUS_END = /:\d+$/;
+
 /** The most query parameters a kept page may carry. */
 const MAX_PARAMS = 8;
 /** The longest value a parameter of a kept page may have. */
@@ -41,13 +44,13 @@ const LOCAL_HOSTS: ReadonlySet<string> = new Set([
 function isLocal(request: Request, url: URL): boolean {
   const host = (request.headers.get('host') ?? '')
     .toLowerCase()
-    .replace(/:\d+$/, '');
+    .replace(COLON_DIGITS_PLUS_END, '');
   const caller = request.headers.get('cf-connecting-ip') ?? '';
   return (
     LOCAL_HOSTS.has(url.hostname) ||
     LOCAL_HOSTS.has(host) ||
     caller === '::1' ||
-    /^(::ffff:)?127\./.test(caller)
+    FFFF.test(caller)
   );
 }
 

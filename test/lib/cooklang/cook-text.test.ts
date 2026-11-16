@@ -20,6 +20,10 @@ import {
   uncuratedFilename,
   upsertMetadata,
 } from '@/lib/cooklang';
+
+const IMAGES = /images/i;
+const COOK_LINE_ONE = /-- \[cook \d{4}-\d{2}-\d{2}\] line one line two/;
+
 import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
 describe('uncurated filenames', () => {
@@ -91,7 +95,7 @@ describe('cooking logs', () => {
 
   it('flattens multi-line notes to one comment line', () => {
     const next = appendCookingLog('x', 'line one\nline two', new Date());
-    expect(next).toMatch(/-- \[cook \d{4}-\d{2}-\d{2}\] line one line two/);
+    expect(next).toMatch(COOK_LINE_ONE);
   });
 
   it('round-trips entries via extractCookingLogs', () => {
@@ -300,7 +304,7 @@ describe('removeMetadata', () => {
       '>> title: T\n>> Images: https://a.com/x.jpg\n>> source: https://a.com\n\nCook.\n',
       'images',
     );
-    expect(out).not.toMatch(/images/i);
+    expect(out).not.toMatch(IMAGES);
     expect(out).toContain('>> title: T');
     expect(out).toContain('>> source: https://a.com');
     expect(out).toContain('Cook.');

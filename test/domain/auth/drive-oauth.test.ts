@@ -8,6 +8,9 @@ import {
   revokeToken,
 } from '@/domain/auth/drive-oauth';
 
+const TOKEN_REFRESH_FAILED = /Token refresh failed: unexpected response/;
+const INVALID_GRANT = /invalid_grant/;
+
 const base = {
   clientId: 'client-id',
   redirectUri: 'https://chowdown.test/auth/callback',
@@ -51,6 +54,7 @@ describe('grantedDrive', () => {
   it('is false when the person unticked Drive, or Google said nothing', () => {
     expect(grantedDrive('openid email profile')).toBe(false);
     expect(grantedDrive('')).toBe(false);
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(grantedDrive(undefined)).toBe(false);
   });
 
@@ -90,13 +94,13 @@ describe('refreshAccessToken', () => {
 
   it('keeps invalid_grant in the message so the login can be recognised as revoked', async () => {
     answerWith({ error: 'invalid_grant' }, 400);
-    await expect(refreshAccessToken(params)).rejects.toThrow(/invalid_grant/);
+    await expect(refreshAccessToken(params)).rejects.toThrow(INVALID_GRANT);
   });
 
   it('throws when the answer is not a token', async () => {
     answerWith({ access_token: 5, expires_in: 'soon' });
     await expect(refreshAccessToken(params)).rejects.toThrow(
-      /Token refresh failed: unexpected response/,
+      TOKEN_REFRESH_FAILED,
     );
   });
 });

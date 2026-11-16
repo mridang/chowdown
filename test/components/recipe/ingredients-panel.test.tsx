@@ -7,11 +7,13 @@ import {
 import { RecipeStateProvider } from '@/components/recipe/recipe-state';
 import { html } from '../render';
 
+const H2_CLASS_FONT = /<h2 class="[^"]*font-display[^"]*">Ingredients<\/h2>/;
+
 const panel = (ingredients: { name: string; quantity: string }[]) =>
   html(
     <RecipeStateProvider servings={4} initialUnits="original">
       <IngredientsPanel
-        ingredients={ingredients.map((i) => ({ ...i, notes: [] }))}
+        ingredients={ingredients.map((index) => ({ ...index, notes: [] }))}
         cookware={['pan']}
       />
     </RecipeStateProvider>,
@@ -20,7 +22,7 @@ const panel = (ingredients: { name: string; quantity: string }[]) =>
 describe('IngredientsPanel', () => {
   it('titles the list with a level-two heading in the display face', () => {
     const out = panel([{ name: 'onion', quantity: '1' }]);
-    expect(out).toMatch(/<h2 class="[^"]*font-display[^"]*">Ingredients<\/h2>/);
+    expect(out).toMatch(H2_CLASS_FONT);
   });
 
   it('lists each ingredient as a tick-off checkbox', () => {
@@ -43,7 +45,10 @@ describe('IngredientsPanel', () => {
         <IngredientsPanel ingredients={[]} cookware={[]} />
       </RecipeStateProvider>,
     );
-    const ids = [...two.matchAll(/id="([^"]+)">Servings</g)].map((m) => m[1]);
+    const ids = Array.from(
+      two.matchAll(/id="([^"]+)">Servings</g),
+      (m) => m[1],
+    );
     expect(ids).toHaveLength(2);
     expect(ids[0]).not.toBe(ids[1]);
     expect(two).toContain(`aria-labelledby="${ids[0]}"`);

@@ -14,6 +14,9 @@ import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 
+const START_DIGITS_PLUS_END = /^\d+$/;
+const BASIC_REALM = /^Basic realm=/;
+
 const ORIGIN = 'https://app.test';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 
@@ -33,7 +36,7 @@ beforeEach(() => {
 afterEach(() => restore());
 
 /** A fresh authorization code for user 7 and client `client-1`. */
-async function newCode(): Promise<string> {
+async function issueCode(): Promise<string> {
   return issueAuthorizationCode(
     new D1OAuthStore(database),
     {
@@ -69,7 +72,7 @@ async function redeem(): Promise<Record<string, string>> {
   const res = await token({
     grant_type: 'authorization_code',
     client_id: 'client-1',
-    code: await newCode(),
+    code: await issueCode(),
     redirect_uri: 'https://app.example/cb',
     code_verifier: VERIFIER,
   });
@@ -87,7 +90,7 @@ describe('POST /oauth/token', () => {
     const res = await token({
       grant_type: 'authorization_code',
       client_id: 'client-1',
-      code: await newCode(),
+      code: await issueCode(),
       redirect_uri: 'https://app.example/cb',
       code_verifier: VERIFIER,
     });
@@ -99,7 +102,7 @@ describe('POST /oauth/token', () => {
     const res = await token({
       grant_type: 'authorization_code',
       client_id: 'client-1',
-      code: await newCode(),
+      code: await issueCode(),
       redirect_uri: 'https://app.example/cb',
       code_verifier: VERIFIER,
     });
@@ -116,7 +119,7 @@ describe('POST /oauth/token', () => {
     const res = await token({
       grant_type: 'authorization_code',
       client_id: 'client-1',
-      code: await newCode(),
+      code: await issueCode(),
       redirect_uri: 'https://app.example/cb',
       code_verifier: `${VERIFIER}x`,
     });
@@ -137,7 +140,7 @@ describe('POST /oauth/token', () => {
       { 'cf-connecting-ip': '203.0.113.7', authorization: 'Basic YTpi' },
     );
     expect(res.status).toBe(401);
-    expect(res.headers.get('www-authenticate')).toMatch(/^Basic realm=/);
+    expect(res.headers.get('www-authenticate')).toMatch(BASIC_REALM);
     expect(await res.json()).toMatchObject({ error: 'invalid_client' });
   });
 
@@ -151,7 +154,7 @@ describe('POST /oauth/token', () => {
     const ok = await token({
       grant_type: 'authorization_code',
       client_id: 'client-1',
-      code: await newCode(),
+      code: await issueCode(),
       redirect_uri: 'https://app.example/cb',
       code_verifier: VERIFIER,
     });
@@ -301,13 +304,13 @@ describe('POST /oauth/token, bodies and rate limits', () => {
         { grant_type: 'password', client_id: 'c' },
         { 'cf-connecting-ip': ip },
       );
-    for (let i = 0; i < 120; i += 1) {
+    for (let index = 0; index < 120; index += 1) {
       const refusedAgain = await hit('203.0.113.7');
       expect(refusedAgain.status).toBe(400);
     }
     const limited = await hit('203.0.113.7');
     expect(limited.status).toBe(429);
-    expect(limited.headers.get('retry-after')).toMatch(/^\d+$/);
+    expect(limited.headers.get('retry-after')).toMatch(START_DIGITS_PLUS_END);
     expect(await limited.json()).toMatchObject({
       error: 'temporarily_unavailable',
     });

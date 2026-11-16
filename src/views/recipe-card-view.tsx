@@ -53,8 +53,8 @@ function InlineCard({
         <MetaRow metadata={recipe.metadata} />
         {shown.length > 0 ? (
           <ul className="chips" aria-label="Ingredients">
-            {shown.map((ingredient, i) => (
-              <li className="chip" key={`${ingredient.name}-${i}`}>
+            {shown.map((ingredient, index) => (
+              <li className="chip" key={`${ingredient.name}-${index}`}>
                 {ingredient.name}
               </li>
             ))}

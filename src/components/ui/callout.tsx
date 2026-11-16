@@ -29,11 +29,13 @@ const SHAPES = {
 export function Callout({
   tone = 'neutral',
   shape = 'inline',
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   children,
 }: Readonly<{
   tone?: keyof typeof TONES;
   shape?: keyof typeof SHAPES;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
   children: ReactNode;
 }>): ReactElement {

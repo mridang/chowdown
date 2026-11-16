@@ -1,3 +1,5 @@
+const START_COLON_INLINE_OR_EVAL =
+  /^(?:inline|eval|self|trusted-types-sink|wasm-eval)$/;
 /**
  * @packageDocumentation
  *
@@ -83,10 +85,7 @@ function pathOf(address: string): string {
  * keywords browsers use (`inline`, `eval`, `self`), or just the origin.
  */
 function blockedOf(address: string): string {
-  if (
-    address === '' ||
-    /^(?:inline|eval|self|trusted-types-sink|wasm-eval)$/.test(address)
-  ) {
+  if (address === '' || START_COLON_INLINE_OR_EVAL.test(address)) {
     return address;
   }
   try {

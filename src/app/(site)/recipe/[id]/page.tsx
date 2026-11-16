@@ -109,7 +109,7 @@ export default async function RecipePage({
 
   // Personal notes go beside the ingredient or step they belong to; the rest
   // (whole-recipe notes and any whose target is gone) are listed below.
-  const ingredientNames = recipe.ingredients.map((i) => i.name);
+  const ingredientNames = recipe.ingredients.map((index) => index.name);
   const grouped = groupNotes(notes, ingredientNames, recipe.steps.length);
   const panelIngredients: readonly PanelIngredient[] = recipe.ingredients.map(
     (ingredient, index) => ({

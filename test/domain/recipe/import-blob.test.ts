@@ -88,7 +88,7 @@ describe('hostile text', () => {
   it('plans thousands of links in linear time', () => {
     const text = Array.from(
       { length: 5000 },
-      (_, i) => `${urls.hostABBase}${i}`,
+      (_, index) => `${urls.hostABBase}${index}`,
     ).join(' ');
     expect(milliseconds(() => planImport(text))).toBeLessThan(200);
     expect(planImport(text)).toHaveLength(5000);

@@ -41,8 +41,8 @@ function CookLine({ line }: Readonly<{ line: string }>): ReactElement {
   );
   return (
     <>
-      {parts.map((part, i) => (
-        <span key={i} className={markClass(part)}>
+      {parts.map((part, index) => (
+        <span key={index} className={markClass(part)}>
           {part}
         </span>
       ))}
@@ -65,8 +65,8 @@ export function CookFile({
       title={`${fileSlug(recipe.title, 28)}.cook`}
     >
       <pre className="overflow-hidden p-4 font-mono text-[12.5px] leading-relaxed whitespace-pre-wrap sm:p-5">
-        {previewLines(recipe.cooklang ?? '', lines).map((line, i) => (
-          <span key={i} className="block">
+        {previewLines(recipe.cooklang ?? '', lines).map((line, index) => (
+          <span key={index} className="block">
             <CookLine line={tidyLine(line)} />
           </span>
         ))}

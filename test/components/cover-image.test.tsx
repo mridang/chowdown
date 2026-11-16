@@ -3,6 +3,9 @@ import { describe, expect, it } from '@jest/globals';
 import { CoverImage, sizesFor } from '@/components/cover-image';
 import { html } from './render';
 
+const SRC_SET = /srcSet="[^"]*320w[^"]*480w[^"]*640w/;
+const IMG_SRC_IMG = /<img[^>]*src="\/img\?/;
+
 const FALLBACK = <p>No photo</p>;
 
 describe('CoverImage', () => {
@@ -15,8 +18,8 @@ describe('CoverImage', () => {
         alt="Tacos"
       />,
     );
-    expect(out).toMatch(/<img[^>]*src="\/img\?/);
-    expect(out).toMatch(/srcSet="[^"]*320w[^"]*480w[^"]*640w/);
+    expect(out).toMatch(IMG_SRC_IMG);
+    expect(out).toMatch(SRC_SET);
     expect(out).toContain('alt="Tacos"');
     expect(out).toContain('class="mt-2"');
   });
@@ -110,6 +113,7 @@ describe('sizesFor', () => {
 describe('CoverImage sizes', () => {
   const props = {
     src: 'https://cdn.example.com/a.jpg',
+    // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
     className: 'mt-2',
     fallback: FALLBACK,
     sizes: '50vw',

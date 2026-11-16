@@ -16,6 +16,9 @@ import {
 import { compareCodeUnits, compareText } from '@/lib/intl';
 import type { CursorPosition } from '@/lib/core/api';
 
+const START_LT_SIGN_GT_PLUS = /^(?<sign>[+-]?)(?<field>title|modified_at)$/;
+const LEADING_SPACE = /^ /;
+
 /** A recipe as the query needs it. */
 export interface QueryableRecipe extends FilterableRecipe {
   readonly id: string;
@@ -31,8 +34,8 @@ export interface SortOrder {
 
 /** Parse `sort` (`title`, `+title`, `-modified_at`…); undefined if invalid. */
 export function parseSort(raw: string | null): SortOrder | undefined {
-  const value = (raw ?? '+title').trim().replace(/^ /, '+');
-  const match = /^(?<sign>[+-]?)(?<field>title|modified_at)$/.exec(value);
+  const value = (raw ?? '+title').trim().replace(LEADING_SPACE, '+');
+  const match = START_LT_SIGN_GT_PLUS.exec(value);
   const field = match?.groups?.['field'];
   return field === 'title' || field === 'modified_at'
     ? { field, descending: match?.groups?.['sign'] === '-' }

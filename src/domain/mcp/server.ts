@@ -53,6 +53,8 @@ import {
   findAppResource,
 } from '@/domain/mcp/ui-resources';
 
+const RECIPES = /^recipes:(\d{1,9})$/;
+
 export type { JsonRpcMessage, JsonRpcResponse } from '@/lib/mcp';
 
 /** Runs a tool by name; the real one opens Drive and the database, so tests pass their own. */
@@ -146,7 +148,7 @@ function offsetOfCursor(cursor: unknown): number {
     return 0;
   }
   const text = typeof cursor === 'string' ? decodedCursor(cursor) : undefined;
-  const match = text?.match(/^recipes:(\d{1,9})$/);
+  const match = text?.match(RECIPES);
   if (!match) {
     throw new RpcError(ERROR_INVALID_PARAMS, 'Invalid cursor');
   }

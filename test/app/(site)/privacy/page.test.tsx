@@ -3,12 +3,17 @@ import { describe, expect, it } from '@jest/globals';
 import PrivacyPage, { metadata } from '@/app/(site)/privacy/page';
 import { html } from '../../../components/render';
 
+const HREF_BACK_TO = /<a [^>]*href="\/"[^>]*>.*Back to Chowdown<\/a>/;
+const HREF_HTTPS_MYACCOUNT =
+  /<a [^>]*href="https:\/\/myaccount\.google\.com\/permissions"[^>]*>your Google account permissions<\/a>/;
+const H1_PRIVACY_POLICY = /<h1[^>]*>Privacy Policy<\/h1>/;
+
 describe('PrivacyPage', () => {
   const out = html(<PrivacyPage />);
 
   it('has one heading, the policy’s title', () => {
     expect(out.match(/<h1/g)).toHaveLength(1);
-    expect(out).toMatch(/<h1[^>]*>Privacy Policy<\/h1>/);
+    expect(out).toMatch(H1_PRIVACY_POLICY);
   });
 
   it('states what is accessed, what is stored and what is not done', () => {
@@ -67,13 +72,11 @@ describe('PrivacyPage', () => {
   });
 
   it('sends people to Google to remove access', () => {
-    expect(out).toMatch(
-      /<a [^>]*href="https:\/\/myaccount\.google\.com\/permissions"[^>]*>your Google account permissions<\/a>/,
-    );
+    expect(out).toMatch(HREF_HTTPS_MYACCOUNT);
   });
 
   it('links back home', () => {
-    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>.*Back to Chowdown<\/a>/);
+    expect(out).toMatch(HREF_BACK_TO);
   });
 });
 

@@ -135,7 +135,7 @@ export async function saveSimilarLists(
   userId: number,
   lists: ReadonlyMap<string, string>,
 ): Promise<void> {
-  const statements = [...lists].map(([driveFileId, json]) =>
+  const statements = Array.from(lists, ([driveFileId, json]) =>
     db
       .update(embeddings)
       .set({ similar: json })

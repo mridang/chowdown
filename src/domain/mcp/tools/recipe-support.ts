@@ -44,6 +44,10 @@ import {
   type ToolResult,
 } from '@/lib/mcp';
 
+const START_SPACE_STAR_GT = /^\s*>>/;
+const LINE_BREAK = /\r?\n/;
+const ESC_L_ESC_N_PLUS = /[^\p{L}\p{N}]+/u;
+
 /** How many close names to offer when a recipe is not found. */
 export const SUGGESTION_COUNT = 5;
 
@@ -71,7 +75,7 @@ export function closeNames(
   asked: string,
 ): readonly DriveFile[] {
   const words = foldText(asked)
-    .split(/[^\p{L}\p{N}]+/u)
+    .split(ESC_L_ESC_N_PLUS)
     .filter((word) => word.length >= 3);
   return files
     .filter((file) => {
@@ -194,10 +198,10 @@ export const EDIT_ATTEMPTS = 5;
 /** How often each line occurs in a text, for telling what an edit added. */
 export function lineCounts(text: string): ReadonlyMap<string, number> {
   return new Map(
-    [...Map.groupBy(text.split('\n'), (line) => line)].map(([line, same]) => [
-      line,
-      same.length,
-    ]),
+    Array.from(
+      Map.groupBy(text.split('\n'), (line) => line),
+      ([line, same]) => [line, same.length],
+    ),
   );
 }
 
@@ -362,8 +366,8 @@ export const NAMESAKES_COMPARED = 3;
  */
 export function bodyOf(text: string): string {
   return text
-    .split(/\r?\n/)
-    .filter((line) => !/^\s*>>/.test(line))
+    .split(LINE_BREAK)
+    .filter((line) => !START_SPACE_STAR_GT.test(line))
     .map((line) => line.trimEnd())
     .join('\n')
     .trim();
@@ -513,7 +517,7 @@ export function noteTargetProblem(
     }
     const listed = recipe.ingredients
       .slice(0, INGREDIENTS_LISTED)
-      .map((i) => plainTitle(i.name))
+      .map((index) => plainTitle(index.name))
       .join(', ');
     const more =
       recipe.ingredients.length > INGREDIENTS_LISTED ? ', and more' : '';

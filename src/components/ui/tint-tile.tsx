@@ -19,9 +19,11 @@ const TINTS: Readonly<Record<Tone, string>> = {
  */
 export function TintTile({
   tone,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
 }: Readonly<{
   tone: Tone;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
 }>): ReactElement {
   return (

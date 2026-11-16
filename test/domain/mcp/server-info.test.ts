@@ -14,6 +14,9 @@ import {
 } from '@/domain/mcp/server-info';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
 
+const FETCH_THAT_PAGE = /fetch that page once more/;
+const NEVER_FETCHES = /never fetches/i;
+
 const root = process.cwd();
 
 /** The width and height written in a PNG file's header. */
@@ -124,13 +127,14 @@ describe('CAPABILITIES', () => {
 
 describe('INSTRUCTIONS', () => {
   it('do not claim the server never fetches pages, because import_recipe and tag_recipe do', () => {
-    expect(INSTRUCTIONS).not.toMatch(/never fetches/i);
-    expect(INSTRUCTIONS).toMatch(/fetch that page once more/);
+    expect(INSTRUCTIONS).not.toMatch(NEVER_FETCHES);
+    expect(INSTRUCTIONS).toMatch(FETCH_THAT_PAGE);
   });
 
   it('only name tools that exist', () => {
     const names = TOOLS.map((t) => t.name) as readonly string[];
-    const mentioned = [...INSTRUCTIONS.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/g)].map(
+    const mentioned = Array.from(
+      INSTRUCTIONS.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/g),
       (m) => m[0],
     );
     expect(mentioned.length).toBeGreaterThan(5);

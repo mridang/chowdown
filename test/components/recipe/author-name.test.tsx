@@ -3,6 +3,12 @@ import { describe, expect, it } from '@jest/globals';
 import { AuthorName, handwritingFor } from '@/components/recipe/author-name';
 import { html } from '../render';
 
+const SPAN = /^<span /;
+const START_LT_P = /^<p /;
+const CLASS_TRUNCATE = /class="[^"]*\btruncate\b[^"]*"/;
+const FONT_HAND = /font-hand-(\w+)/;
+const ETHAN_CHLEBOWSKI_SPAN = />Ethan Chlebowski<\/span>$/;
+
 /** Real-looking names: every first name with every surname (400 people). */
 const FIRST = [
   'Ethan',
@@ -108,7 +114,7 @@ describe('handwritingFor', () => {
 describe('AuthorName', () => {
   it('draws the name as text', () => {
     expect(html(<AuthorName name="Ethan Chlebowski" />)).toMatch(
-      />Ethan Chlebowski<\/span>$/,
+      ETHAN_CHLEBOWSKI_SPAN,
     );
   });
 
@@ -130,8 +136,7 @@ describe('AuthorName', () => {
   it('uses every one of the seven faces for some name', () => {
     const used = new Set(
       PEOPLE.map(
-        (person) =>
-          /font-hand-(\w+)/.exec(html(<AuthorName name={person} />))?.[1],
+        (person) => FONT_HAND.exec(html(<AuthorName name={person} />))?.[1],
       ),
     );
     expect(used.size).toBe(7);
@@ -151,7 +156,7 @@ describe('AuthorName', () => {
     const long = 'A'.repeat(200);
     const out = html(<AuthorName name={long} />);
     expect(out).toContain(`title="${long}"`);
-    expect(out).toMatch(/class="[^"]*\btruncate\b[^"]*"/);
+    expect(out).toMatch(CLASS_TRUNCATE);
     expect(out).toContain('max-w-full');
     expect(out).toContain('min-w-0');
   });
@@ -162,8 +167,8 @@ describe('AuthorName', () => {
   });
 
   it('renders as the element asked for', () => {
-    expect(html(<AuthorName name="Ada" as="p" />)).toMatch(/^<p /);
-    expect(html(<AuthorName name="Ada" />)).toMatch(/^<span /);
+    expect(html(<AuthorName name="Ada" as="p" />)).toMatch(START_LT_P);
+    expect(html(<AuthorName name="Ada" />)).toMatch(SPAN);
   });
 
   it('never turns a hostile name into markup', () => {

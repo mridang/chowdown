@@ -51,9 +51,9 @@ function screen(
 /** A list of `n` recipes with distinct names. */
 function recipes(n: number): RecipeListData {
   return {
-    recipes: Array.from({ length: n }, (_, i) => ({
-      id: `id${i + 1}`,
-      title: `Recipe ${i + 1}`,
+    recipes: Array.from({ length: n }, (_, index) => ({
+      id: `id${index + 1}`,
+      title: `Recipe ${index + 1}`,
       uncurated: false,
     })),
   };

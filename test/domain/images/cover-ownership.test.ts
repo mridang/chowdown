@@ -26,13 +26,12 @@ function recipe(userId: number, fileId: string, source: string): void {
 
 beforeEach(() => {
   database = sqliteDatabase(...APP_MIGRATIONS);
-  [1, 2].forEach((id) =>
+  for (const id of [1, 2])
     database.raw
       .prepare(
         "INSERT INTO users (id, google_sub, email, created_at, updated_at) VALUES (?, ?, ?, 't', 't')",
       )
-      .run(id, `sub-${id}`, `user${id}@example.com`),
-  );
+      .run(id, `sub-${id}`, `user${id}@example.com`);
 });
 
 describe('userHasCover', () => {

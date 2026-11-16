@@ -9,6 +9,8 @@
 
 import { flatNoteKey, type Note } from '@/lib/cooklang';
 
+const START_N1_HYPHEN_N9_DIGITS = /^[1-9]\d{0,5}$/;
+
 /** A note as the API shows it. */
 export interface NoteResource {
   readonly id: string;
@@ -52,7 +54,7 @@ export function noteResource(
 
 /** The 0-based index for a note id, or undefined if it isn't a position. */
 export function noteIndex(id: string): number | undefined {
-  return /^[1-9]\d{0,5}$/.test(id) ? Number(id) - 1 : undefined;
+  return START_N1_HYPHEN_N9_DIGITS.test(id) ? Number(id) - 1 : undefined;
 }
 
 /** A validated note body, or what was wrong with it. */

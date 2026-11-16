@@ -27,7 +27,7 @@ export function toggledIn(
   index: number,
 ): ReadonlySet<number> {
   return ticked.has(index)
-    ? new Set([...ticked].filter((i) => i !== index))
+    ? new Set([...ticked].filter((position) => position !== index))
     : new Set([...ticked, index]);
 }
 

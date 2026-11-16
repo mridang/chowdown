@@ -9,7 +9,14 @@ import {
   LegalSection,
   longDate,
 } from '@/app/(site)/privacy/_components/legal-section';
-import { classOf, html } from '../../../../components/render';
+import { cssClassesOf, html } from '../../../../components/render';
+
+const HREF_PRIVACY_PRIVACY =
+  /<a [^>]*href="\/privacy"[^>]*>privacy policy<\/a>/;
+const HREF_HTTPS_EXAMPLE =
+  /<a href="https:\/\/example\.com\/" target="_blank" rel="noopener noreferrer"[^>]*>Example<\/a>/;
+const H2_WHAT_WE = /<h2[^>]*>What we store<\/h2>/;
+const H1_PRIVACY_POLICY = /<h1[^>]*>Privacy Policy<\/h1>/;
 
 describe('longDate', () => {
   it('writes an ISO day as day, month name and year', () => {
@@ -31,7 +38,7 @@ describe('LegalPage', () => {
   it('heads the page with its eyebrow and its one title', () => {
     expect(out).toContain('Privacy');
     expect(out.match(/<h1/g)).toHaveLength(1);
-    expect(out).toMatch(/<h1[^>]*>Privacy Policy<\/h1>/);
+    expect(out).toMatch(H1_PRIVACY_POLICY);
   });
 
   it('says when the page last changed', () => {
@@ -64,7 +71,7 @@ describe('LegalSection', () => {
       </LegalSection>,
     );
     expect(out).toContain('<section>');
-    expect(out).toMatch(/<h2[^>]*>What we store<\/h2>/);
+    expect(out).toMatch(H2_WHAT_WE);
     expect(out.indexOf('What we store')).toBeLessThan(
       out.indexOf('Your name.'),
     );
@@ -77,7 +84,7 @@ describe('LegalItem', () => {
     expect(out).toContain('<li');
     expect(out).toContain('aria-hidden="true"');
     expect(out).toContain('Your email.');
-    expect(classOf(out, 'span')).toContain('bg-brand');
+    expect(cssClassesOf(out, 'span')).toContain('bg-brand');
   });
 });
 
@@ -86,21 +93,19 @@ describe('LegalLink', () => {
     const out = html(
       <LegalLink href="https://example.com/">Example</LegalLink>,
     );
-    expect(out).toMatch(
-      /<a href="https:\/\/example\.com\/" target="_blank" rel="noopener noreferrer"[^>]*>Example<\/a>/,
-    );
+    expect(out).toMatch(HREF_HTTPS_EXAMPLE);
   });
 
   it('links a page of this site in the same tab', () => {
     const out = html(<LegalLink href="/privacy">privacy policy</LegalLink>);
-    expect(out).toMatch(/<a [^>]*href="\/privacy"[^>]*>privacy policy<\/a>/);
+    expect(out).toMatch(HREF_PRIVACY_PRIVACY);
     expect(out).not.toContain('target="_blank"');
   });
 
   it('is underlined in the accent colour', () => {
     const out = html(<LegalLink href="/terms">terms</LegalLink>);
-    expect(classOf(out, 'a')).toContain('text-accent');
-    expect(classOf(out, 'a')).toContain('underline');
+    expect(cssClassesOf(out, 'a')).toContain('text-accent');
+    expect(cssClassesOf(out, 'a')).toContain('underline');
   });
 });
 

@@ -14,9 +14,12 @@ import {
   TERMS_LAST_UPDATED,
 } from '@/utils/site';
 
+const START_DIGITS_HYPHEN_DIGITS_HYPHEN = /^\d{4}-\d{2}-\d{2}$/;
+const START_HTTPS_COLON_SLASH_PLUS = /^https:\/\/[^/]+$/;
+
 describe('site identity', () => {
   it('gives the site an https address with no trailing slash', () => {
-    expect(SITE_URL).toMatch(/^https:\/\/[^/]+$/);
+    expect(SITE_URL).toMatch(START_HTTPS_COLON_SLASH_PLUS);
   });
 
   it('names the site in its address', () => {
@@ -47,7 +50,7 @@ describe('date constants', () => {
   it.each([PRIVACY_LAST_UPDATED, TERMS_LAST_UPDATED, GPC_LAST_UPDATE])(
     '%s is a valid ISO calendar date',
     (date) => {
-      expect(date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(date).toMatch(START_DIGITS_HYPHEN_DIGITS_HYPHEN);
       expect(new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10)).toBe(
         date,
       );

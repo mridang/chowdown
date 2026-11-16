@@ -5,6 +5,9 @@ import type { User } from '@/domain/auth/store';
 import { SESSION_SECRET, appRequest } from './auth-test-kit';
 import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
 
+const SESSION_SECRET_2 = /SESSION_SECRET/;
+const EMAIL = /email/;
+
 const tracing = installFakeTracing();
 
 const person = {
@@ -22,7 +25,7 @@ const upsertGoogleUser = jest
   .mockResolvedValue(person);
 const afterSignIn = jest
   .fn<(user: unknown) => Promise<void>>()
-  .mockResolvedValue(undefined);
+  .mockResolvedValue();
 
 jest.unstable_mockModule('@/domain/auth/store', () => ({
   upsertGoogleUser,
@@ -141,7 +144,7 @@ describe('completeSignIn', () => {
 
   it('refuses a Google account with no email address, recording nothing', async () => {
     await expect(completeSignIn(context(), { sub: 'g1' })).rejects.toThrow(
-      /email/,
+      EMAIL,
     );
     expect(upsertGoogleUser).not.toHaveBeenCalled();
   });
@@ -152,7 +155,7 @@ describe('completeSignIn', () => {
         sub: 'g1',
         email: 'ada@example.com',
       }),
-    ).rejects.toThrow(/SESSION_SECRET/);
+    ).rejects.toThrow(SESSION_SECRET_2);
     expect(upsertGoogleUser).not.toHaveBeenCalled();
     expect(afterSignIn).not.toHaveBeenCalled();
   });

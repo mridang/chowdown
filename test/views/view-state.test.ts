@@ -42,6 +42,7 @@ describe('describeRequest', () => {
   });
 
   it('says nothing when the arguments do not', () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(describeRequest(undefined)).toBeUndefined();
     expect(describeRequest({ [FIRST]: '  ', other: 3 })).toBeUndefined();
   });

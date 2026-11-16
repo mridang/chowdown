@@ -70,7 +70,7 @@ export function extractFacetTags(recipe: Readonly<ParsedRecipe>): RecipeTags {
     ]),
   );
   const diet = classifyDietType(
-    recipe.ingredients.map((i) => i.name),
+    recipe.ingredients.map((index) => index.name),
     written['protein'] ?? [],
   );
   return diet ? { ...written, diet_type: [diet] } : written;

@@ -10,6 +10,11 @@ import {
 import type { StepTimer } from '@/components/recipe/timer-state';
 import { htmlAt } from '../render';
 
+const BUTTON_TYPE_BUTTON = /<button type="button"[^>]*>/;
+const SVG_SVG_MINUTES = /<svg[^>]*>.*<\/svg>5 minutes/s;
+const SPAN_CLASS_TEXT = /<span class="text-forest">pan<\/span>/;
+const SPAN_CLASS_UNDERLINE = /<span class="[^"]*underline[^"]*">onion<\/span>/;
+
 const MIN = 60_000;
 const NOW = 5_000_000;
 
@@ -58,13 +63,13 @@ describe('StepBody', () => {
   );
 
   it('underlines ingredients and shows the amount for the servings chosen', () => {
-    expect(body).toMatch(/<span class="[^"]*underline[^"]*">onion<\/span>/);
+    expect(body).toMatch(SPAN_CLASS_UNDERLINE);
     expect(body).toContain('(2)');
   });
 
   it('colours cookware, and gives a timer a clock', () => {
-    expect(body).toMatch(/<span class="text-forest">pan<\/span>/);
-    expect(body).toMatch(/<svg[^>]*>.*<\/svg>5 minutes/s);
+    expect(body).toMatch(SPAN_CLASS_TEXT);
+    expect(body).toMatch(SVG_SVG_MINUTES);
   });
 
   it('leaves out the amount of an ingredient that has none', () => {
@@ -95,7 +100,7 @@ describe('a timer in a step', () => {
       <StepBody tokens={tokens} stepIndex={2} />,
       timersWith(),
     );
-    expect(out).toMatch(/<button type="button"[^>]*>/);
+    expect(out).toMatch(BUTTON_TYPE_BUTTON);
     expect(out).toContain('<span class="sr-only">Start timer: </span>');
     expect(out).toContain('5 minutes</button>');
   });

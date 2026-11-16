@@ -20,6 +20,7 @@ export function TextLink({
   href,
   variant = 'inline',
   external,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   children,
 }: Readonly<{
@@ -27,6 +28,7 @@ export function TextLink({
   variant?: keyof typeof VARIANTS;
   /** The address is on another site: open it in a new tab. */
   external?: boolean;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
   children: ReactNode;
 }>): ReactElement {

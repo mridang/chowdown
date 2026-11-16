@@ -24,7 +24,7 @@ const PAUSE_MS = 200;
  * that works without JavaScript) is not submitted.
  */
 export function LiveSearchField({
-  param = 'q',
+  param: parameter = 'q',
   resets = [],
   ...props
 }: Readonly<
@@ -41,10 +41,10 @@ export function LiveSearchField({
   const [pending, startTransition] = useTransition();
   const parsers = useMemo(
     () => ({
-      [param]: parseAsString.withDefault(''),
+      [parameter]: parseAsString.withDefault(''),
       ...Object.fromEntries(resets.map((name) => [name, parseAsString])),
     }),
-    [param, resets],
+    [parameter, resets],
   );
   const [values, setValues] = useQueryStates(parsers, {
     shallow: false,
@@ -53,13 +53,13 @@ export function LiveSearchField({
     startTransition,
     limitUrlUpdates: debounce(PAUSE_MS),
   });
-  const text = values[param] ?? '';
+  const text = values[parameter] ?? '';
 
   /** Put the text in the address, clearing the parameters that depend on it. */
   const update = (next: string, options?: Options) =>
     setValues(
       {
-        [param]: next.trim() === '' ? null : next,
+        [parameter]: next.trim() === '' ? null : next,
         ...Object.fromEntries(resets.map((name) => [name, null])),
       },
       options,
@@ -68,15 +68,17 @@ export function LiveSearchField({
   return (
     <SearchField
       {...props}
-      name={param}
+      name={parameter}
       value={text}
       aria-busy={pending}
-      onChange={(e) => void update(e.target.value)}
-      onKeyDown={(e) => {
-        props.onKeyDown?.(e);
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          void update(e.currentTarget.value, { limitUrlUpdates: debounce(0) });
+      onChange={(event) => void update(event.target.value)}
+      onKeyDown={(event) => {
+        props.onKeyDown?.(event);
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          void update(event.currentTarget.value, {
+            limitUrlUpdates: debounce(0),
+          });
         }
       }}
     />

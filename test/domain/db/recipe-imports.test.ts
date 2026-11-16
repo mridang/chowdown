@@ -15,6 +15,8 @@ import { fakeDb } from '../../lib/core/db/fake-db';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
+const START_N0_HYPHEN_N9_A = /^[0-9a-f-]{36}$/;
+
 const items = [{ kind: 'text', status: 'FAILED' }] as unknown as ImportItem[];
 const row = {
   id: 'i1',
@@ -29,7 +31,7 @@ describe('createRecipeImport', () => {
     const { db, calls } = fakeDb();
     const created = await createRecipeImport(db, 1, items);
     expect(created).toMatchObject({ status: 'COMPLETED', items });
-    expect(created.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(created.id).toMatch(START_N0_HYPHEN_N9_A);
     const stored = calls.find((c) => c.method === 'values')?.args[0] as {
       items: string;
       user_id: number;

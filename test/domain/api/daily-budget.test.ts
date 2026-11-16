@@ -41,7 +41,7 @@ describe('budgetRefusal', () => {
   });
 
   it('is a 429 problem with Retry-After once it is used up', async () => {
-    for (let i = 0; i < 3; i += 1) {
+    for (let index = 0; index < 3; index += 1) {
       await budgetRefusal(SMALL, 7, 'import', { store, now: NOW });
     }
     const refusal = await budgetRefusal(SMALL, 7, 'import', {

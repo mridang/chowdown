@@ -13,6 +13,7 @@ describe('ArgumentChecker', () => {
   });
 
   it('treats absent arguments as none, filling in what the tool defaults', () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(checker.check(new CountTool(), undefined)).toEqual({
       args: { limit: 0 },
     });

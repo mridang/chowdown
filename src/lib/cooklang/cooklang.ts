@@ -14,6 +14,12 @@ import {
   parseIngredientLine,
 } from '@/lib/cooklang/ingredient-line';
 
+const COOK = /\.cook$/i;
+const LINE_BREAK = /\r?\n/;
+const BRACES = /[{}]/;
+const ZA = /[A-Za-z]/;
+const START_SPACE_SLASH_ESC_STAR = /^[\s/\-•*]+/;
+
 /** A measured thing: an ingredient, a piece of cookware, or a timer. */
 interface RawQuantity {
   readonly name?: string;
@@ -125,8 +131,10 @@ function repaired(item: Readonly<Shown>): Shown {
   if (!UNTIDY_NAME.test(item.name) && !leadingUnit(item.name)) {
     return item;
   }
-  const parsed = parseIngredientLine(item.name.replace(/^[\s/\-•*]+/, ''));
-  const hasUnit = /[A-Za-z]/.test(item.quantity);
+  const parsed = parseIngredientLine(
+    item.name.replace(START_SPACE_SLASH_ESC_STAR, ''),
+  );
+  const hasUnit = ZA.test(item.quantity);
   if (item.quantity === '') {
     return { name: parsed.name, quantity: quantityLabel(parsed) };
   }
@@ -161,7 +169,7 @@ function ingredientLine(
     return undefined;
   }
   const rest = line.slice(1);
-  const brace = rest.search(/[{}]/);
+  const brace = rest.search(BRACES);
   if (brace === -1) {
     return rest === ''
       ? undefined
@@ -209,7 +217,7 @@ interface Declaration {
  * left exactly as it was.
  */
 function splitDeclaration(source: string): Declaration {
-  const lines = source.split(/\r?\n/);
+  const lines = source.split(LINE_BREAK);
   const firstBody = lines.findIndex(
     (line) => line.trim() !== '' && !line.startsWith('>>'),
   );
@@ -257,13 +265,17 @@ export function parseRecipe(source: string, filename: string): ParsedRecipe {
   // this reads it through our own decoupled structural view.
   const raw = new Recipe(rest) as unknown as RawRecipe;
   const metadata = raw.metadata ?? {};
-  const title = metadata['title'] || filename.replace(/\.cook$/i, '');
+  const title = metadata['title'] || filename.replace(COOK, '');
 
-  const declaredNames = new Set(declared.map((i) => i.name.toLowerCase()));
+  const declaredNames = new Set(
+    declared.map((index) => index.name.toLowerCase()),
+  );
   const inline = (raw.ingredients ?? [])
-    .map((i) => repaired({ name: i.name ?? '', quantity: formatQuantity(i) }))
+    .map((index) =>
+      repaired({ name: index.name ?? '', quantity: formatQuantity(index) }),
+    )
     // An ingredient the declaration already lists is not a new one when a step mentions it.
-    .filter((i) => !declaredNames.has(i.name.toLowerCase()));
+    .filter((index) => !declaredNames.has(index.name.toLowerCase()));
 
   return {
     title,

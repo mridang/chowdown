@@ -14,6 +14,8 @@
 
 import { GoogleOAuthClient, type AccessTokenResponse } from '@/lib/google';
 
+const WHITESPACE_RUN = /\s+/;
+
 /** The one Drive permission chowdown uses: files the app itself created. */
 export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
@@ -26,7 +28,7 @@ export const DRIVE_SCOPES = ['openid', DRIVE_SCOPE] as const;
 
 /** Whether a token response's granted scopes include Drive access. */
 export function grantedDrive(scope: string | undefined): boolean {
-  return (scope ?? '').split(/\s+/).includes(DRIVE_SCOPE);
+  return (scope ?? '').split(WHITESPACE_RUN).includes(DRIVE_SCOPE);
 }
 
 /**

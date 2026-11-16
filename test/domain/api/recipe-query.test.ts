@@ -116,7 +116,7 @@ describe('title ordering', () => {
   const order = { field: 'title' as const, descending: false };
   const ids = (titles: string[]) =>
     sortRecipes(
-      titles.map((t, i) => recipe(String(i), t)),
+      titles.map((t, index) => recipe(String(index), t)),
       order,
     ).map((r) => r.title);
 

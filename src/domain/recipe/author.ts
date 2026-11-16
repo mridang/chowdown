@@ -26,6 +26,19 @@ import { upsertMetadata } from '@/lib/cooklang';
 import { decodeEntities, visibleText } from '@/domain/recipe/html-text';
 import { scanHtml } from '@/domain/recipe/import-html-scan';
 
+const TAB = /[ \t]/;
+const PATTERN_2 = /(?!)/;
+const START_GT_SPACE_STAR_COLON =
+  /^>>\s*(?:author|by):[ \t]*(\S[^\n\r\u2028\u2029]*)/im;
+const DOT_A_HYPHEN_Z_END = /\.[a-z]{2,}$/i;
+const ESC_L = /\p{L}{3,}/u;
+const ESC_L_2 = /\p{L}{2,}/u;
+const HTTPS_WWW = /[\d<>@/\\{}[\]=]|https?:|www\./i;
+const SPACE_COMMA_SEMICOLON_COLON_ANY = /[\s,;:.]/;
+const SPACE_COMMA_SEMICOLON_COLON = /[\s,;:]/;
+const SPACE_OR_HYPHEN_SPACE_ANY = /\s[|–—-]\s.*$/;
+const TITLE = /<title[^>]*>([^<]{0,300})</i;
+
 /** What a page says about who made its recipe, gathered but not yet judged. */
 export interface AuthorEvidence {
   /** Names in the `author` of the page's Recipe, best first. */
@@ -153,7 +166,7 @@ export function authorEvidence(html: string): AuthorEvidence {
     0,
     6,
   );
-  const title = /<title[^>]*>([^<]{0,300})</i.exec(html)?.[1] ?? '';
+  const title = TITLE.exec(html)?.[1] ?? '';
   return {
     recipeAuthors: authorsOf(['Recipe']),
     articleAuthors: authorsOf([
@@ -236,20 +249,18 @@ export function cleanAuthorName(raw: string): string | undefined {
       .trim()
       .replace(NAME_PREFIX, '')
       // "Jane Cook | Some Blog" and "Jane Cook - Some Blog" are the name and a site.
-      .replace(/\s[|–—-]\s.*$/, ''),
-    /[\s,;:]/,
-    /[\s,;:.]/,
+      .replace(SPACE_OR_HYPHEN_SPACE_ANY, ''),
+    SPACE_COMMA_SEMICOLON_COLON,
+    SPACE_COMMA_SEMICOLON_COLON_ANY,
   );
   const words = stripped.split(' ').filter(Boolean);
   const lengthOk =
     stripped.length >= 2 && stripped.length <= 60 && words.length <= 5;
-  const noJunk =
-    !/[\d<>@/\\{}[\]=]|https?:|www\./i.test(stripped) &&
-    !NOT_A_NAME.test(stripped);
+  const noJunk = !HTTPS_WWW.test(stripped) && !NOT_A_NAME.test(stripped);
   // An initial or two is no name ("H. I").
   const hasName =
-    words.some((word) => /\p{L}{2,}/u.test(word)) &&
-    words.some((word) => /\p{L}{3,}/u.test(word));
+    words.some((word) => ESC_L_2.test(word)) &&
+    words.some((word) => ESC_L.test(word));
   const wellFormed = lengthOk && noJunk && hasName;
   return wellFormed ? withCapitals(stripped) : undefined;
 }
@@ -271,7 +282,7 @@ function withCapitals(name: string): string {
 
 /** Whether a name looks like a person's (or a blog named like a person), not a web address. */
 export function looksLikeAPerson(name: string): boolean {
-  return !/\.[a-z]{2,}$/i.test(name) && name.split(' ').length <= 5;
+  return !DOT_A_HYPHEN_Z_END.test(name) && name.split(' ').length <= 5;
 }
 
 /** Join the names of several authors: "Kevin and Amanda", "A, B and C". */
@@ -415,11 +426,9 @@ export async function findAuthor(
 
 /** The author a recipe's Cooklang source names (`>> author:` or `>> by:`), if it names one. */
 export function authorFromSource(cook: string): string | undefined {
-  const name = /^>>\s*(?:author|by):[ \t]*(\S[^\n\r\u2028\u2029]*)/im.exec(
-    cook,
-  )?.[1];
+  const name = START_GT_SPACE_STAR_COLON.exec(cook)?.[1];
   // The name stops before any trailing spaces and tabs.
-  return name === undefined ? undefined : trimEdges(name, /(?!)/, /[ \t]/);
+  return name === undefined ? undefined : trimEdges(name, PATTERN_2, TAB);
 }
 
 /** Whether Cooklang source already names an author. */

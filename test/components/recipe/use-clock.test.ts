@@ -38,7 +38,7 @@ describe('subscribeToClock', () => {
     const { environment, callbacks } = fakeEnvironment();
     const onChange = jest.fn();
     subscribeToClock(onChange, environment);
-    callbacks.beat.forEach((beat) => beat());
+    for (const beat of callbacks.beat) beat();
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
@@ -46,7 +46,7 @@ describe('subscribeToClock', () => {
     const { environment, callbacks } = fakeEnvironment();
     const onChange = jest.fn();
     subscribeToClock(onChange, environment);
-    callbacks.visible.forEach((visible) => visible());
+    for (const visible of callbacks.visible) visible();
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 

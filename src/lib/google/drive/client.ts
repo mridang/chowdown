@@ -23,6 +23,8 @@ import {
   type DriveFileListResponse,
 } from './models';
 
+const START_WORD_HYPHEN_PLUS_END = /^[\w-]+$/;
+
 /** Base address of the Drive metadata API. */
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 /** Base address of the Drive upload API. */
@@ -37,7 +39,7 @@ const MAX_LIST_PAGES = 20;
  * Checked before an id from a URL is used in a query.
  */
 export function isDriveFileId(id: string): boolean {
-  return /^[\w-]+$/.test(id);
+  return START_WORD_HYPHEN_PLUS_END.test(id);
 }
 
 /**

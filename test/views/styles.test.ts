@@ -4,6 +4,15 @@ import { APP_STYLES } from '@/views/app';
 import { DARK_PALETTE, LIGHT_PALETTE } from '@/views/palette';
 import { STYLES } from '@/views/styles';
 
+const LIST_HYPHEN_STYLE_COLON_SPACE = /list-style:\s*none/;
+const DOT_SR_HYPHEN_ONLY_ESC = /\.sr-only \{[^}]*clip-path:inset\(50%\)/;
+const CALC_ESC_DIGITS_PLUS_PX = /calc\((\d+)px \+ var\(--safe-top/;
+const OUTLINE_HYPHEN_OFFSET_COLON_DIGITS = /outline-offset: (\d+)px/;
+const OUTLINE_COLON_DIGITS_PLUS_PX = /outline: (\d+)px/;
+const URL_ESC = /url\(/;
+const VAR_ESC_HYPHEN_FONT_HYPHEN = /var\(--font-sans,/;
+const VAR_ESC_HYPHEN_COLOR_HYPHEN = /var\(--color-background-secondary, #/;
+
 describe('STYLES', () => {
   it('follows the host’s theme, with the operating system only as a fallback', () => {
     expect(STYLES).toContain(':root[data-theme="dark"]');
@@ -11,8 +20,8 @@ describe('STYLES', () => {
   });
 
   it('uses the host’s variables, with fallbacks for hosts that send none', () => {
-    expect(STYLES).toMatch(/var\(--color-background-secondary, #/);
-    expect(STYLES).toMatch(/var\(--font-sans,/);
+    expect(STYLES).toMatch(VAR_ESC_HYPHEN_COLOR_HYPHEN);
+    expect(STYLES).toMatch(VAR_ESC_HYPHEN_FONT_HYPHEN);
   });
 
   it('keeps controls clear of the safe area and large enough to tap', () => {
@@ -27,7 +36,7 @@ describe('STYLES', () => {
 
   it('loads nothing: no imports, no remote urls', () => {
     expect(STYLES).not.toContain('@import');
-    expect(STYLES).not.toMatch(/url\(/);
+    expect(STYLES).not.toMatch(URL_ESC);
   });
 
   it('leaves the page background transparent so the host shows through', () => {
@@ -50,12 +59,10 @@ function declaration(selector: string, property: string): string {
 describe('keyboard focus', () => {
   it('leaves room at the frame edge for the whole focus ring', () => {
     const ring =
-      Number(/outline: (\d+)px/.exec(STYLES)?.[1]) +
-      Number(/outline-offset: (\d+)px/.exec(STYLES)?.[1]);
+      Number(OUTLINE_COLON_DIGITS_PLUS_PX.exec(STYLES)?.[1]) +
+      Number(OUTLINE_HYPHEN_OFFSET_COLON_DIGITS.exec(STYLES)?.[1]);
     const base = Number(
-      /calc\((\d+)px \+ var\(--safe-top/.exec(
-        declaration('.wrap', 'padding'),
-      )?.[1],
+      CALC_ESC_DIGITS_PLUS_PX.exec(declaration('.wrap', 'padding'))?.[1],
     );
     expect(ring).toBe(4);
     expect(base).toBeGreaterThanOrEqual(ring);
@@ -76,13 +83,13 @@ describe('text sizes', () => {
 
 describe('assistive text', () => {
   it('has a visually hidden class for text only screen readers get', () => {
-    expect(STYLES).toMatch(/\.sr-only \{[^}]*clip-path:inset\(50%\)/);
+    expect(STYLES).toMatch(DOT_SR_HYPHEN_ONLY_ESC);
   });
 });
 
 describe('lists', () => {
   it('hide their markers without `none`, which makes WebKit drop the list meaning', () => {
-    expect(STYLES).not.toMatch(/list-style:\s*none/);
+    expect(STYLES).not.toMatch(LIST_HYPHEN_STYLE_COLON_SPACE);
     expect(STYLES.match(/list-style-type:""/g)?.length).toBeGreaterThanOrEqual(
       4,
     );

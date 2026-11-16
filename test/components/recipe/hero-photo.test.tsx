@@ -3,6 +3,9 @@ import { describe, expect, it } from '@jest/globals';
 import { HeroPhoto } from '@/components/recipe/hero-photo';
 import { html } from '../render';
 
+const DIV_CLASS_ARIA = /<div[^>]*class="([^"]*)"[^>]*aria-label="Photos"/;
+const DIV_ARIA_LABEL = /<div[^>]*aria-label="Photos"[^>]*class="([^"]*)"/;
+
 describe('HeroPhoto', () => {
   it('shows a tinted tile in the recipe colour when there is no photo', () => {
     const out = html(<HeroPhoto images={[]} title="Dal" tone="forest" />);
@@ -44,8 +47,7 @@ describe('HeroPhoto', () => {
       />,
     );
     const strip =
-      /<div[^>]*aria-label="Photos"[^>]*class="([^"]*)"/.exec(out)?.[1] ??
-      /<div[^>]*class="([^"]*)"[^>]*aria-label="Photos"/.exec(out)?.[1];
+      DIV_ARIA_LABEL.exec(out)?.[1] ?? DIV_CLASS_ARIA.exec(out)?.[1];
     expect(strip).toContain('overflow-x-auto');
     expect(strip).toContain('max-w-max');
     expect(strip).toContain('snap-x');

@@ -17,6 +17,8 @@ import { SESSION_COOKIE, driveHint, folderHint } from '@/domain/auth/app';
 import { isDriveConnected } from '@/domain/auth/drive-access';
 import { SessionTokens } from '@/lib/session';
 
+const WHITESPACE_RUN = /\s+/;
+
 /** What the header shows about the signed-in person. */
 export interface ShellUser {
   /** Their first name, for "Hi Mridang". */
@@ -41,7 +43,7 @@ export function firstNameOf(
   name: string | null | undefined,
   email: string,
 ): string {
-  const first = (name ?? '').trim().split(/\s+/, 1)[0];
+  const first = (name ?? '').trim().split(WHITESPACE_RUN, 1)[0];
   return first || email.split('@', 1)[0] || email;
 }
 

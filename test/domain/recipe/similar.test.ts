@@ -88,8 +88,8 @@ function sequence(seed: number): () => number {
 /** `count` rows with distinct random 4-d vectors (so no ties muddy the comparison). */
 function randomRows(count: number, seed: number): readonly EmbeddingRow[] {
   const next = sequence(seed);
-  return Array.from({ length: count }, (_, i) =>
-    row(`r${i}`, `Recipe ${i}`, [next(), next(), next(), next()]),
+  return Array.from({ length: count }, (_, index) =>
+    row(`r${index}`, `Recipe ${index}`, [next(), next(), next(), next()]),
   );
 }
 
@@ -110,11 +110,11 @@ describe('updateSimilarLists incrementally', () => {
       const after = [...before, added];
       const incremental = updateSimilarLists(after, ['new'], N);
       const fresh = everyList(after, N);
-      after.forEach((r) => {
+      for (const r of after) {
         const next =
           incremental.get(r.drive_file_id) ?? parseSimilar(r.similar);
         expect(next).toEqual(fresh.get(r.drive_file_id));
-      });
+      }
     },
   );
 
@@ -135,11 +135,11 @@ describe('updateSimilarLists incrementally', () => {
         N,
       );
       const fresh = everyList(edited, N);
-      edited.forEach((r) => {
+      for (const r of edited) {
         const next =
           incremental.get(r.drive_file_id) ?? parseSimilar(r.similar);
         expect(next).toEqual(fresh.get(r.drive_file_id));
-      });
+      }
     },
   );
 
@@ -148,10 +148,10 @@ describe('updateSimilarLists incrementally', () => {
     const after = before.filter((r) => r.drive_file_id !== 'r0');
     const incremental = updateSimilarLists(after, [], N);
     const fresh = everyList(after, N);
-    after.forEach((r) => {
+    for (const r of after) {
       const next = incremental.get(r.drive_file_id) ?? parseSimilar(r.similar);
       expect(next).toEqual(fresh.get(r.drive_file_id));
-    });
+    }
   });
 
   it('leaves out the recipes whose lists cannot have changed', () => {
@@ -197,9 +197,8 @@ describe('refreshSimilarLists', () => {
     const insert = made.raw.prepare(
       'INSERT INTO embeddings (user_id, drive_file_id, title, vector, similar) VALUES (1, ?, ?, ?, ?)',
     );
-    list.forEach((r) =>
-      insert.run(r.drive_file_id, r.title, r.vector, r.similar),
-    );
+    for (const r of list)
+      insert.run(r.drive_file_id, r.title, r.vector, r.similar);
     return made;
   }
 

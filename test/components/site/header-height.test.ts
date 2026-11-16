@@ -8,6 +8,10 @@ import {
   STICKY_SIDEBAR_CLASS,
 } from '@/components/site/header-height';
 
+const MD_TOP = /md:top-(\d+)/;
+const VH_REM = /100vh-([\d.]+)rem/;
+const SVH_REM = /100svh-([\d.]+)rem/;
+
 /** The first number (in rem) found after `prefix` in a class string. */
 function remAfter(classes: string, prefix: RegExp): number {
   const match = prefix.exec(classes);
@@ -27,7 +31,7 @@ describe('header height', () => {
   });
 
   it('keeps the content area just clear of the whole header', () => {
-    const offset = remAfter(MAIN_MIN_HEIGHT_CLASS, /100svh-([\d.]+)rem/);
+    const offset = remAfter(MAIN_MIN_HEIGHT_CLASS, SVH_REM);
     const header = STRIP_REM + HEADER_ROW_REM + RULE_REM;
     // The offset is the header's height, rounded up to the next quarter rem.
     expect(offset).toBeGreaterThanOrEqual(header);
@@ -36,19 +40,17 @@ describe('header height', () => {
   });
 
   it('pins a sidebar below the header and caps it to the screen beneath', () => {
-    const top = remAfter(STICKY_SIDEBAR_CLASS, /md:top-(\d+)/) / 4;
-    const cap = remAfter(STICKY_SIDEBAR_CLASS, /100vh-([\d.]+)rem/);
+    const top = remAfter(STICKY_SIDEBAR_CLASS, MD_TOP) / 4;
+    const cap = remAfter(STICKY_SIDEBAR_CLASS, VH_REM);
     expect(top).toBeGreaterThan(STRIP_REM + HEADER_ROW_REM + RULE_REM);
     // The cap leaves the same gap below the sidebar as above it.
     expect(cap - top).toBe(1);
   });
 
   it('pins the recipe page’s panel a little lower than a sidebar, with the same gaps', () => {
-    const top = remAfter(STICKY_PANEL_CLASS, /md:top-(\d+)/) / 4;
-    const cap = remAfter(STICKY_PANEL_CLASS, /100vh-([\d.]+)rem/);
-    expect(top).toBeGreaterThan(
-      remAfter(STICKY_SIDEBAR_CLASS, /md:top-(\d+)/) / 4,
-    );
+    const top = remAfter(STICKY_PANEL_CLASS, MD_TOP) / 4;
+    const cap = remAfter(STICKY_PANEL_CLASS, VH_REM);
+    expect(top).toBeGreaterThan(remAfter(STICKY_SIDEBAR_CLASS, MD_TOP) / 4);
     expect(cap - top).toBe(1);
   });
 });

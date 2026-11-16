@@ -4,11 +4,14 @@ import { NOT_FOUND_LINK, NOT_FOUND_NOTE } from '@/app/_brand';
 import NotFound, { metadata } from '@/app/not-found';
 import { html } from '../components/render';
 
+const HREF_BACK_TO = /<a [^>]*href="\/"[^>]*>Back to the home page<\/a>/;
+const H1_WE_COULDN = /<h1[^>]*>We couldn&#x27;t find that page<\/h1>/;
+
 describe('NotFound', () => {
   const out = html(<NotFound />);
 
   it('says the page could not be found, as the page’s heading', () => {
-    expect(out).toMatch(/<h1[^>]*>We couldn&#x27;t find that page<\/h1>/);
+    expect(out).toMatch(H1_WE_COULDN);
   });
 
   it('says what may have happened', () => {
@@ -16,7 +19,7 @@ describe('NotFound', () => {
   });
 
   it('offers a way back home, and the app’s own second way if it has one', () => {
-    expect(out).toMatch(/<a [^>]*href="\/"[^>]*>Back to the home page<\/a>/);
+    expect(out).toMatch(HREF_BACK_TO);
     for (const link of NOT_FOUND_LINK ? [NOT_FOUND_LINK] : []) {
       expect(out).toContain(`href="${link.href}"`);
       expect(out).toContain(`>${link.label}</a>`);

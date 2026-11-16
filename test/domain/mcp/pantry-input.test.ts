@@ -20,22 +20,22 @@ describe('pantryOf', () => {
   it('reads a single string or object that is not in a list', () => {
     expect(pantryOf('garlic')).toEqual([{ name: 'garlic' }]);
     expect(pantryOf({ name: 'rice' })).toEqual([{ name: 'rice' }]);
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(pantryOf(undefined)).toEqual([]);
   });
 
   it('splits on commas, semicolons, ampersands and the word "and"', () => {
     expect(
       pantryOf('onions, garlic; ginger & chillies and lemons').map(
-        (i) => i.name,
+        (index) => index.name,
       ),
     ).toEqual(['onions', 'garlic', 'ginger', 'chillies', 'lemons']);
   });
 
   it('keeps words that merely contain "and" whole', () => {
-    expect(pantryOf('sandwich bread, brandy').map((i) => i.name)).toEqual([
-      'sandwich bread',
-      'brandy',
-    ]);
+    expect(
+      pantryOf('sandwich bread, brandy').map((index) => index.name),
+    ).toEqual(['sandwich bread', 'brandy']);
   });
 
   it('does not split inside brackets', () => {
@@ -43,7 +43,7 @@ describe('pantryOf', () => {
   });
 
   it('keeps names that are one thing despite an "and"', () => {
-    expect(pantryOf('salt and pepper').map((i) => i.name)).toEqual([
+    expect(pantryOf('salt and pepper').map((index) => index.name)).toEqual([
       'salt and pepper',
     ]);
   });
@@ -61,7 +61,7 @@ describe('pantryOf', () => {
 
   it('reads at most 60 items', () => {
     expect(
-      pantryOf(Array.from({ length: 80 }, (_, i) => `item${i}`)),
+      pantryOf(Array.from({ length: 80 }, (_, index) => `item${index}`)),
     ).toHaveLength(60);
   });
 
@@ -94,7 +94,9 @@ describe('pantryOf', () => {
   });
 
   it('caps how much it will read, so a huge request cannot hog the server', () => {
-    const items = pantryOf(Array.from({ length: 5000 }, (_, i) => `item ${i}`));
+    const items = pantryOf(
+      Array.from({ length: 5000 }, (_, index) => `item ${index}`),
+    );
     expect(items).toHaveLength(60);
     const long = pantryOf(['x'.repeat(100_000)]);
     expect(long[0]?.name.length).toBeLessThanOrEqual(80);

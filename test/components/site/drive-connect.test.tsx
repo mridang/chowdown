@@ -7,11 +7,15 @@ import {
 } from '@/components/site/drive-connect';
 import { html } from '../render';
 
+const H2_COULDN_REACH = /<h2[^>]*>Couldn’t reach Google Drive<\/h2>/;
+const H1_CONNECT = /<h1[^>]*>Connect/;
+const H2_CONNECT_YOUR = /<h2[^>]*>Connect your Google Drive<\/h2>/;
+
 describe('DriveConnectPanel', () => {
   it('invites someone to connect, with a button that always asks again', () => {
     const out = html(<DriveConnectPanel returnTo="/recipes/add" />);
     expect(out).toContain('One more step');
-    expect(out).toMatch(/<h2[^>]*>Connect your Google Drive<\/h2>/);
+    expect(out).toMatch(H2_CONNECT_YOUR);
     expect(out).toContain('Connect Google Drive');
     expect(out).toContain('/auth/drive?returnTo=%2Frecipes%2Fadd&amp;force=1');
   });
@@ -25,9 +29,7 @@ describe('DriveConnectPanel', () => {
   });
 
   it('is the page heading when it is the whole page', () => {
-    expect(html(<DriveConnectPanel heading="h1" />)).toMatch(
-      /<h1[^>]*>Connect/,
-    );
+    expect(html(<DriveConnectPanel heading="h1" />)).toMatch(H1_CONNECT);
   });
 
   it('explains a failed attempt in an announced note', () => {
@@ -66,7 +68,7 @@ describe('DriveConnectNotice', () => {
 describe('DriveUnreachable', () => {
   it('says Drive could not be reached, not that there are no recipes', () => {
     const out = html(<DriveUnreachable />);
-    expect(out).toMatch(/<h2[^>]*>Couldn’t reach Google Drive<\/h2>/);
+    expect(out).toMatch(H2_COULDN_REACH);
     expect(out).toContain('Your recipes are safe in your Drive');
     expect(out).not.toContain('No recipes');
   });

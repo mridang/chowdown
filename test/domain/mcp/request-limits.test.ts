@@ -13,6 +13,8 @@ import {
 } from '@/domain/mcp/request-limits';
 import type { RateLimitStore } from '@/lib/rate-limit';
 
+const collator = new Intl.Collator();
+
 const URL = 'https://chowdown.test/mcp';
 
 /** A request whose body is `body`, with extra headers. */
@@ -25,7 +27,7 @@ const streamed = (pieces: readonly Uint8Array[]) =>
     method: 'POST',
     body: new ReadableStream<Uint8Array>({
       start(controller) {
-        pieces.forEach((piece) => controller.enqueue(piece));
+        for (const piece of pieces) controller.enqueue(piece);
         controller.close();
       },
     }),
@@ -205,9 +207,9 @@ describe('checkRateLimits', () => {
       ),
     );
     expect(await checkRateLimits(someone, [list], deps(store))).toBeNull();
-    expect([...counters.keys()].toSorted((a, b) => a.localeCompare(b))).toEqual(
-      ['mcp-request:7', 'mcp-tool-call:7'],
-    );
+    expect(
+      [...counters.keys()].toSorted((a, b) => collator.compare(a, b)),
+    ).toEqual(['mcp-request:7', 'mcp-tool-call:7']);
   });
 
   it('counts each user on their own', async () => {

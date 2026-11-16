@@ -4,17 +4,20 @@ import {
   buildCsp,
   cspSurfaceFor,
   forwardedHeaders,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- the name is exported from its module and used by other modules
   newNonce,
   nonceOf,
   EXTRA_DIRECTIVES,
   EXTRA_IMG_SOURCES,
 } from '@/lib/core/http';
 
+const ZA_Z0 = /^[A-Za-z0-9+/]+=*$/;
+
 describe('newNonce', () => {
   it('is base64 of 16 bytes, and different every time', () => {
     const a = newNonce();
     expect(Buffer.from(a, 'base64')).toHaveLength(16);
-    expect(a).toMatch(/^[A-Za-z0-9+/]+=*$/);
+    expect(a).toMatch(ZA_Z0);
     expect(newNonce()).not.toBe(a);
   });
 });

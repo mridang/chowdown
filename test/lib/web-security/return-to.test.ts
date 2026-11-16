@@ -21,6 +21,7 @@ describe('safeReturnPath', () => {
     expect(safeReturnPath('/a\nb')).toBeUndefined();
     expect(safeReturnPath('')).toBeUndefined();
     expect(safeReturnPath(null)).toBeUndefined();
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(safeReturnPath(undefined)).toBeUndefined();
   });
 });

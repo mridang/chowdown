@@ -1,3 +1,8 @@
+const LD_JSON = /ld\+json/i;
+const LT_SLASH_COLON_SCRIPT_OR =
+  /<\/(?:script|style|noscript|svg|template)\s*>/i;
+const SCRIPT_STYLE_NOSCRIPT = /<(script|style|noscript|svg|template)\b/i;
+const LT_COLON_SCRIPT_OR_STYLE = /<(?:script|style|noscript|svg|template)\b/i;
 /**
  * @packageDocumentation
  *
@@ -37,16 +42,12 @@ export function decodeEntities(text: string): string {
  * for a reader. An unterminated script drops everything after it.
  */
 export function withoutScriptsAndStyles(html: string): string {
-  const [head = '', ...rest] = html.split(
-    /<(?:script|style|noscript|svg|template)\b/i,
-  );
+  const [head = '', ...rest] = html.split(LT_COLON_SCRIPT_OR_STYLE);
   return (
     head +
     rest
       .map((part) => {
-        const closer = /<\/(?:script|style|noscript|svg|template)\s*>/i.exec(
-          part,
-        );
+        const closer = LT_SLASH_COLON_SCRIPT_OR.exec(part);
         return closer ? part.slice(closer.index + closer[0].length) : '';
       })
       .join('')
@@ -62,20 +63,18 @@ export function withoutScriptsAndStyles(html: string): string {
  * {@link withoutScriptsAndStyles}; an unterminated block drops the rest.
  */
 export function withoutBulkMarkup(html: string): string {
-  const [head = '', ...rest] = html.split(
-    /<(script|style|noscript|svg|template)\b/i,
-  );
+  const [head = '', ...rest] = html.split(SCRIPT_STYLE_NOSCRIPT);
   const kept: string[] = [head];
-  for (let i = 0; i + 1 < rest.length; i += 2) {
-    const name = (rest[i] ?? '').toLowerCase();
-    const part = rest[i + 1] ?? '';
-    const closer = /<\/(?:script|style|noscript|svg|template)\s*>/i.exec(part);
+  for (let index = 0; index + 1 < rest.length; index += 2) {
+    const name = (rest[index] ?? '').toLowerCase();
+    const part = rest[index + 1] ?? '';
+    const closer = LT_SLASH_COLON_SCRIPT_OR.exec(part);
     if (!closer) {
       break;
     }
     const end = closer.index + closer[0].length;
     const startTag = part.slice(0, part.indexOf('>') + 1);
-    if (name === 'script' && /ld\+json/i.test(startTag)) {
+    if (name === 'script' && LD_JSON.test(startTag)) {
       kept.push(`<script${part.slice(0, end)}`);
     }
     kept.push(part.slice(end));

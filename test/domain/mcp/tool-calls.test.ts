@@ -18,6 +18,9 @@ import {
   said,
 } from '../../lib/mcp/tool-fakes';
 
+const THE_ARGUMENTS_ARE =
+  /The arguments are: recipe \(required\), note \(required\), ingredient, step\.$/;
+
 describe('the arguments are checked before anything runs', () => {
   it('refuses an unknown tool without opening Drive', async () => {
     const open = jest.fn(async () => {
@@ -178,9 +181,7 @@ describe('refusals say what to change', () => {
       { note: 'y', extra: 1 },
       folder(),
     );
-    expect(said(result)).toMatch(
-      /The arguments are: recipe \(required\), note \(required\), ingredient, step\.$/,
-    );
+    expect(said(result)).toMatch(THE_ARGUMENTS_ARE);
     expect(said(await call('list_recipes', { x: 1 }, folder()))).toContain(
       'The arguments are: limit, offset.',
     );
@@ -251,7 +252,7 @@ describe('refusals say what to change', () => {
 
   it('reports at most ten problems of a hostile call, and stays short', async () => {
     const hostile = Object.fromEntries(
-      Array.from({ length: 5000 }, (_, i) => [`k${i}`, 'x'.repeat(50)]),
+      Array.from({ length: 5000 }, (_, index) => [`k${index}`, 'x'.repeat(50)]),
     );
     const result = await call('annotate_recipe', hostile, folder());
     expect(said(result).length).toBeLessThan(1500);

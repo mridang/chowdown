@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { planImport } from '@/domain/recipe/import-blob';
 import { prepareImport } from '@/domain/recipe/prepare-import';
 
+const AI_ERROR = /AiError|1234/;
+
 /** A page carrying a schema.org Recipe, so no model call is needed. */
 const PAGE = `<html><script type="application/ld+json">${JSON.stringify({
   '@type': 'Recipe',
@@ -88,7 +90,7 @@ describe('prepareImport', () => {
       'https://bad.example.com/a https://good.example.com/b',
       env,
     );
-    expect(items.map((i) => i.status)).toEqual(['FAILED', 'DRAFT']);
+    expect(items.map((index) => index.status)).toEqual(['FAILED', 'DRAFT']);
   });
 
   it('prepares no more than ten units, whatever it is given', async () => {
@@ -98,7 +100,7 @@ describe('prepareImport', () => {
     const { env } = envAnswering('{}');
     const text = Array.from(
       { length: 25 },
-      (_, i) => `https://a.example.com/${i}`,
+      (_, index) => `https://a.example.com/${index}`,
     ).join(' ');
     const items = await prepare(text, env);
     expect(items).toHaveLength(10);
@@ -190,7 +192,7 @@ describe('prepareImport', () => {
         env,
       );
       expect(problem).toContain('converter unavailable');
-      expect(problem).not.toMatch(/AiError|1234/);
+      expect(problem).not.toMatch(AI_ERROR);
     });
 
     it('says unreachable when the request itself fails', async () => {

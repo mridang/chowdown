@@ -126,14 +126,14 @@ export function CookMode({
   const timers = useStepTimers(title);
 
   // Left and right arrows move between steps.
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (!open) {
       return undefined;
     }
     const onKey = (event: KeyboardEvent) => {
       const offset = stepOffsetForEvent(event);
       if (offset !== 0) {
-        setIndex((i) => clampStep(i + offset, steps.length));
+        setIndex((position) => clampStep(position + offset, steps.length));
       }
     };
     globalThis.addEventListener('keydown', onKey);
@@ -182,45 +182,47 @@ export function CookMode({
               aria-valuemax={steps.length}
               aria-valuenow={index + 1}
             >
-              {steps.map((_, i) => (
+              {steps.map((_, position) => (
                 <div
-                  key={i}
+                  key={position}
                   className={cn(
                     'h-1.5 flex-1 rounded-full transition-colors',
-                    i <= index ? 'bg-flame' : 'bg-ink/10',
+                    position <= index ? 'bg-flame' : 'bg-ink/10',
                   )}
                 />
               ))}
             </div>
 
             <ol className="my-auto flex flex-col gap-6 py-10">
-              {steps.map((step, i) => (
+              {steps.map((step, position) => (
                 <li
-                  key={i}
-                  aria-current={i === index ? 'step' : undefined}
+                  key={position}
+                  aria-current={position === index ? 'step' : undefined}
                   className={cn(
                     'flex gap-5 transition-opacity',
-                    i === index ? 'opacity-100' : 'hidden opacity-30 sm:flex',
-                    Math.abs(i - index) > 1 && 'sm:hidden',
+                    position === index
+                      ? 'opacity-100'
+                      : 'hidden opacity-30 sm:flex',
+                    Math.abs(position - index) > 1 && 'sm:hidden',
                   )}
                 >
                   <NumberBadge
-                    value={i + 1}
-                    size={i === index ? 'lg' : 'md'}
-                    tone={i === index ? 'flame' : 'quiet'}
+                    value={position + 1}
+                    size={position === index ? 'lg' : 'md'}
+                    tone={position === index ? 'flame' : 'quiet'}
                   />
                   <p
                     className={cn(
                       'font-display leading-snug font-medium',
-                      i === index
+                      position === index
                         ? 'text-3xl sm:text-5xl'
                         : 'text-xl text-muted',
                     )}
                   >
                     {/* The number badge is decorative, and the list may have lost its numbering. */}
-                    <span className="sr-only">Step {i + 1}: </span>
-                    {i === index ? (
-                      <StepBody tokens={step} stepIndex={i} />
+                    <span className="sr-only">Step {position + 1}: </span>
+                    {position === index ? (
+                      <StepBody tokens={step} stepIndex={position} />
                     ) : (
                       stepText(step)
                     )}
@@ -248,7 +250,9 @@ export function CookMode({
                 variant="outline"
                 size="lg"
                 disabled={index === 0}
-                onClick={() => setIndex((i) => clampStep(i - 1, steps.length))}
+                onClick={() =>
+                  setIndex((position) => clampStep(position - 1, steps.length))
+                }
                 className="disabled:opacity-40"
               >
                 <ChevronLeftIcon size="md" />
@@ -262,7 +266,9 @@ export function CookMode({
                 <Button
                   size="lg"
                   onClick={() =>
-                    setIndex((i) => clampStep(i + 1, steps.length))
+                    setIndex((position) =>
+                      clampStep(position + 1, steps.length),
+                    )
                   }
                 >
                   Next

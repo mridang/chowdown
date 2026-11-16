@@ -16,6 +16,7 @@ export function EmptyState({
   title,
   headingAs = 'h2',
   actions,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   children,
 }: Readonly<{
@@ -26,6 +27,7 @@ export function EmptyState({
   headingAs?: ElementType;
   /** The way forward: a button or two, centred under the text. */
   actions?: ReactNode;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
   /** The explanation, between the headline and the actions. */
   children?: ReactNode;

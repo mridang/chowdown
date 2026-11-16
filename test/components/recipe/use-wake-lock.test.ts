@@ -10,7 +10,7 @@ import {
 function fakeSentinel() {
   const listeners: Array<() => void> = [];
   const release = jest.fn(async () => {
-    listeners.forEach((listener) => listener());
+    for (const listener of listeners) listener();
   });
   return {
     sentinel: {
@@ -21,7 +21,9 @@ function fakeSentinel() {
     },
     release,
     /** What the browser does when the page is hidden. */
-    browserReleases: () => listeners.forEach((listener) => listener()),
+    browserReleases: () => {
+      for (const listener of listeners) listener();
+    },
   };
 }
 
@@ -56,13 +58,13 @@ function fakePage(
     /** The tab is hidden: the browser takes the lock back. */
     hide: () => {
       Object.assign(state, { visible: false });
-      sentinels.forEach((made) => made.browserReleases());
-      watchers.forEach((watcher) => watcher());
+      for (const made of sentinels) made.browserReleases();
+      for (const watcher of watchers) watcher();
     },
     /** The tab is shown again. */
     show: () => {
       Object.assign(state, { visible: true });
-      watchers.forEach((watcher) => watcher());
+      for (const watcher of watchers) watcher();
     },
   };
 }

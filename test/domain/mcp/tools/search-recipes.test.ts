@@ -22,7 +22,10 @@ describe('search_recipes', () => {
   it('pages through a long list of matches', async () => {
     const many = folder(
       Object.fromEntries(
-        Array.from({ length: 120 }, (_, i) => [`Pie ${i}.cook`, PANCAKES]),
+        Array.from({ length: 120 }, (_, index) => [
+          `Pie ${index}.cook`,
+          PANCAKES,
+        ]),
       ),
     );
     const first = await call('search_recipes', { query: 'pie' }, many);

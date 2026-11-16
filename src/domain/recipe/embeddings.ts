@@ -20,7 +20,7 @@ const EMBED_MODEL = '@cf/baai/bge-base-en-v1.5';
  */
 export function buildEmbeddingText(recipe: Readonly<ParsedRecipe>): string {
   const meta = recipe.metadata.map(([k, v]) => `${k}: ${v}`).join('; ');
-  const ingredients = recipe.ingredients.map((i) => i.name).join(', ');
+  const ingredients = recipe.ingredients.map((index) => index.name).join(', ');
   const method = recipe.steps
     .map((step) =>
       step
@@ -73,7 +73,10 @@ function dotProduct(
   b: readonly number[],
   length: number,
 ): number {
-  return a.reduce((sum, x, i) => (i < length ? sum + x * (b[i] ?? 0) : sum), 0);
+  return a.reduce(
+    (sum, x, index) => (index < length ? sum + x * (b[index] ?? 0) : sum),
+    0,
+  );
 }
 
 /** Cosine from a dot product and the two squared lengths (0 if either is zero). */

@@ -4,10 +4,12 @@ import { MenuLink } from '@/components/site/menu-link';
 import { driveLink } from '@/components/site/drive-link';
 import { htmlAt } from '../render';
 
+const HREF_APP_RECIPES = /<a [^>]*href="\/app"[^>]*>Recipes<\/a>/;
+
 describe('MenuLink', () => {
   it('is an ordinary link inside the app', () => {
     const out = htmlAt(<MenuLink label="Recipes" href="/app" />);
-    expect(out).toMatch(/<a [^>]*href="\/app"[^>]*>Recipes<\/a>/);
+    expect(out).toMatch(HREF_APP_RECIPES);
     expect(out).not.toContain('target=');
   });
 

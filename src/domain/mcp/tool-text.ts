@@ -18,6 +18,8 @@ import { countOf } from '@/lib/intl';
 import type { StepToken } from '@/lib/cooklang';
 import type { RecipeCardData, RecipeListItem } from '@/domain/mcp/ui-types';
 
+const START_SPACE_STAR_HYPHEN = /^\s*-{3,}/;
+
 /** The most recipes a list prints before saying how many more there are. */
 export const LIST_TEXT_LIMIT = 200;
 
@@ -163,7 +165,7 @@ export const RECIPE_TEXT_CLOSE = '--- end of the saved recipe ---';
  * can look like the end.
  */
 function defused(line: string): string {
-  return /^\s*-{3,}/.test(line) ? `\\${line}` : line;
+  return START_SPACE_STAR_HYPHEN.test(line) ? `\\${line}` : line;
 }
 
 /**

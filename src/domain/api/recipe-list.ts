@@ -69,9 +69,9 @@ export async function listRecipes(
       'sort must be title or modified_at, optionally prefixed with + or -.',
     );
   }
-  const cursorParam = query.get('cursor');
-  const after = cursorParam ? decodeCursor(cursorParam) : undefined;
-  if (cursorParam && !after) {
+  const cursorParameter = query.get('cursor');
+  const after = cursorParameter ? decodeCursor(cursorParameter) : undefined;
+  if (cursorParameter && !after) {
     return problems.badRequest('The cursor is not valid.');
   }
 

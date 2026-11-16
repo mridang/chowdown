@@ -32,8 +32,8 @@ export function SortSelect({
       <span>Sort</span>
       <Select
         value={value}
-        onChange={(e) => {
-          const chosen = options.find((o) => o.value === e.target.value);
+        onChange={(event) => {
+          const chosen = options.find((o) => o.value === event.target.value);
           if (chosen) {
             router.push(chosen.href, { scroll: false });
           }

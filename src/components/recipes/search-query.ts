@@ -15,6 +15,8 @@ import { DIET_TYPES } from '@/domain/recipe/diet-type';
 import { sentenceCase } from '@/utils/text';
 import { compareText, foldText } from '@/lib/intl';
 
+const WHITESPACE_RUN = /\s+/;
+
 /** The query-string bag Next gives a page. */
 export type RawParams = Readonly<
   Record<string, string | readonly string[] | undefined>
@@ -184,7 +186,7 @@ function matchesText(recipe: CardRecipe, text: string): boolean {
     ].join(' '),
   );
   return foldText(text)
-    .split(/\s+/)
+    .split(WHITESPACE_RUN)
     .filter(Boolean)
     .every((word) => haystack.includes(word));
 }
@@ -280,8 +282,8 @@ export function hrefFor(query: Query): string {
 /** The URL that shows the next page of the same results. */
 export function moreHref(query: Query): string {
   const base = hrefFor(query);
-  const sep = base.includes('?') ? '&' : '?';
-  return `${base}${sep}limit=${query.limit + PAGE_SIZE}`;
+  const separator = base.includes('?') ? '&' : '?';
+  return `${base}${separator}limit=${query.limit + PAGE_SIZE}`;
 }
 
 /** The query with one value of one filter switched on or off. */
@@ -375,7 +377,7 @@ function countValues(
     recipes.flatMap((recipe) => valuesOf(recipe, key)),
     (value) => value,
   );
-  return [...groups].map(([value, found]) => [value, found.length] as const);
+  return Array.from(groups, ([value, found]) => [value, found.length] as const);
 }
 
 /** Comparing two counts by where their value sits in a fixed list. */

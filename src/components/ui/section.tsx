@@ -13,11 +13,13 @@ const SURFACES = {
 export function Section({
   surface = 'page',
   children,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   id,
 }: Readonly<{
   surface?: keyof typeof SURFACES;
   children: ReactNode;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
   /** Lets the header's links jump to this section. */
   id?: string;

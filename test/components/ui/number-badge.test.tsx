@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { NumberBadge } from '@/components/ui/number-badge';
-import { classOf, html } from '../render';
+import { cssClassesOf, html } from '../render';
 
 describe('NumberBadge', () => {
   it('shows the number, hidden from assistive technology', () => {
@@ -12,16 +12,16 @@ describe('NumberBadge', () => {
 
   it('comes in three sizes and two tones', () => {
     expect(
-      classOf(html(<NumberBadge value={1} size="lg" />), 'span'),
+      cssClassesOf(html(<NumberBadge value={1} size="lg" />), 'span'),
     ).toContain('h-12 w-12');
     expect(
-      classOf(html(<NumberBadge value={1} size="md" />), 'span'),
+      cssClassesOf(html(<NumberBadge value={1} size="md" />), 'span'),
     ).toContain('h-9 w-9');
-    expect(classOf(html(<NumberBadge value={1} />), 'span')).toContain(
+    expect(cssClassesOf(html(<NumberBadge value={1} />), 'span')).toContain(
       'bg-flame',
     );
     expect(
-      classOf(html(<NumberBadge value={1} tone="quiet" />), 'span'),
+      cssClassesOf(html(<NumberBadge value={1} tone="quiet" />), 'span'),
     ).toContain('bg-ink/10');
   });
 });
