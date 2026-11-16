@@ -86,7 +86,7 @@ export class ImageService {
   }
 
   /** Serve one `/img` request: see {@link serveImage}. */
-  serve(request: Request): Promise<Response> {
+  async serve(request: Request): Promise<Response> {
     return serveImage(request, this.#deps);
   }
 }

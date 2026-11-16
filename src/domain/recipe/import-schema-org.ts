@@ -152,7 +152,7 @@ function firstString(value: unknown): string | undefined {
 
 /** Author display name from schema.org `author` (string, object, or array). */
 function authorName(value: unknown): string | undefined {
-  const node = Array.isArray(value) ? value[0] : value;
+  const node: unknown = Array.isArray(value) ? value[0] : value;
   if (typeof node === 'string') {
     return node.trim();
   }
@@ -190,7 +190,7 @@ function listOf(value: unknown): readonly unknown[] {
 
 /** Video URL from schema.org `video` (VideoObject contentUrl/embedUrl/url). */
 function videoUrl(value: unknown): string | undefined {
-  const node = Array.isArray(value) ? value[0] : value;
+  const node: unknown = Array.isArray(value) ? value[0] : value;
   if (typeof node === 'string') {
     return node.trim();
   }

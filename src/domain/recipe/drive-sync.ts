@@ -18,7 +18,7 @@ import {
 import { setRecipesFolderId, type User } from '@/domain/db/users';
 import { listRecipeFiles } from '@/domain/drive/recipe-files';
 import { ensureRecipesFolder } from '@/domain/drive/recipes-folder';
-import { type DriveFile } from '@/lib/google/drive';
+import type { DriveFile } from '@/lib/google/drive';
 import { getDatabase } from '@/domain/db/client';
 import { syncRecipeTags } from '@/domain/recipe/tag-index';
 
@@ -80,10 +80,10 @@ const liveDeps: DriveSyncDeps = {
   rememberFolder: setRecipesFolderId,
   listFiles: listRecipeFiles,
   listCached: listSyncRecipes,
-  syncTags: (user, files, token, cached) =>
+  syncTags: async (user, files, token, cached) =>
     syncRecipeTags(user, files, token, undefined, cached),
   // The database helper takes a plain array; hand it a copy of ours.
-  pruneRecipes: (db, userId, keep, since, cached) =>
+  pruneRecipes: async (db, userId, keep, since, cached) =>
     deleteRecipesNotIn(db, userId, [...keep], since, cached),
   pruneEmbeddings: deleteOrphanEmbeddings,
 };

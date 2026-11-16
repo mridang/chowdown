@@ -31,13 +31,14 @@ export function createKeyedQueue(): KeyedQueue {
   /** Jobs that are scheduled but have not started, by key. */
   const waiting = new Map<string, Promise<void>>();
   return {
+    // eslint-disable-next-line @typescript-eslint/promise-function-async -- callers rely on a second request for a waiting key getting back the very same promise, which an async function would replace with a new one
     run: (key, job) => {
       const queued = waiting.get(key);
       if (queued) {
         return queued;
       }
       const after = tails.get(key) ?? Promise.resolve();
-      const next = after.then(() => {
+      const next = after.then(async () => {
         waiting.delete(key);
         return job();
       });

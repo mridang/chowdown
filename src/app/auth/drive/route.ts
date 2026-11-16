@@ -8,7 +8,8 @@
  * (unless `?force=1`, from a page that has found the stored login unusable).
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import {
   getCurrentUser,

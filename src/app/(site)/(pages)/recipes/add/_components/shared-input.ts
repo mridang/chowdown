@@ -80,7 +80,7 @@ function isText(char: string): boolean {
 
 /** The first value of a query parameter, whether it came once or repeated. */
 function first(value: string | readonly string[] | undefined): string {
-  return (Array.isArray(value) ? value[0] : value) ?? '';
+  return (typeof value === 'object' ? value[0] : value) ?? '';
 }
 
 /** The code points that end a line other than `\n`: carriage return, line and paragraph separators. */
@@ -93,20 +93,28 @@ const OTHER_LINE_BREAKS: ReadonlySet<number> = new Set([
  * everything that is not text removed, the ends trimmed.
  */
 function cleaned(value: string): string {
-  return [...value.replaceAll('\r\n', '\n')]
-    .flatMap((char) => {
-      if (OTHER_LINE_BREAKS.has(char.codePointAt(0) ?? 0)) {
-        return ['\n'];
-      }
-      return isText(char) ? [char] : [];
-    })
-    .join('')
-    .trim();
+  let text = '';
+  for (const char of value.replaceAll('\r\n', '\n')) {
+    if (OTHER_LINE_BREAKS.has(char.codePointAt(0) ?? 0)) {
+      text += '\n';
+    } else if (isText(char)) {
+      text += char;
+    } else {
+      // Not text: dropped.
+    }
+  }
+  return text.trim();
 }
+
+const segmenter = new Intl.Segmenter();
 
 /** `text` cut to at most `limit` characters, never in the middle of an emoji. */
 function capped(text: string, limit: number): string {
-  return [...text].slice(0, limit).join('').trim();
+  return [...segmenter.segment(text)]
+    .slice(0, limit)
+    .map((part) => part.segment)
+    .join('')
+    .trim();
 }
 
 /**

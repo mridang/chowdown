@@ -66,11 +66,13 @@ const URL = 'https://chowdown.test/api/recipes/imports';
 const jsonHeaders = { 'content-type': 'application/json' };
 
 /** A POST with the given body text. */
-const post = (body: string, headers: Record<string, string> = jsonHeaders) =>
-  POST(new Request(URL, { method: 'POST', headers, body }));
+const post = async (
+  body: string,
+  headers: Record<string, string> = jsonHeaders,
+) => POST(new Request(URL, { method: 'POST', headers, body }));
 
 /** A POST of `{ input }`. */
-const postInput = (input: string) => post(JSON.stringify({ input }));
+const postInput = async (input: string) => post(JSON.stringify({ input }));
 
 /** `count` distinct links, one after another. */
 const links = (count: number) =>
@@ -197,7 +199,7 @@ describe('POST /api/recipes/imports', () => {
       kind: 'url',
       url: 'https://a0.example.com/r',
     });
-    const created = (await res.json()) as { id: string; items: unknown[] };
+    const created = await res.json<{ id: string; items: unknown[] }>();
     expect(created.items).toHaveLength(10);
     expect(res.headers.get('location')).toBe(`${URL}/${created.id}`);
     expect(stored(7)).toHaveLength(1);
@@ -234,7 +236,7 @@ describe('GET /api/recipes/imports', () => {
     insert.run('i4', 8, '[]', '2026-01-04T00:00:00.000Z');
   }
 
-  const list = (query = '') => GET(new Request(`${URL}${query}`));
+  const list = async (query = '') => GET(new Request(`${URL}${query}`));
 
   it('answers 401 when nobody is signed in', async () => {
     session.uid = null;
@@ -247,7 +249,7 @@ describe('GET /api/recipes/imports', () => {
     const res = await list();
     expect(res.status).toBe(200);
     expect(res.headers.get('cache-control')).toBe('private, no-cache');
-    const body = (await res.json()) as { items: Record<string, unknown>[] };
+    const body = await res.json<{ items: Record<string, unknown>[] }>();
     expect(body.items).toEqual([
       expect.objectContaining({ id: 'i3', item_count: 0 }),
       expect.objectContaining({ id: 'i2', item_count: 2 }),
@@ -259,20 +261,20 @@ describe('GET /api/recipes/imports', () => {
   it('pages with a cursor', async () => {
     seed();
     const firstRes = await list('?limit=2');
-    const first = (await firstRes.json()) as {
+    const first = await firstRes.json<{
       items: { id: string }[];
       next?: string;
-    };
+    }>();
     expect(first.items.map((index) => index.id)).toEqual(['i3', 'i2']);
     expect(first.next).toBeDefined();
     const cursor = new globalThis.URL(first.next ?? '').searchParams.get(
       'cursor',
     );
     const secondRes = await list(`?limit=2&cursor=${cursor}`);
-    const second = (await secondRes.json()) as {
+    const second = await secondRes.json<{
       items: { id: string }[];
       next?: string;
-    };
+    }>();
     expect(second.items.map((index) => index.id)).toEqual(['i1']);
     expect(second.next).toBeUndefined();
   });

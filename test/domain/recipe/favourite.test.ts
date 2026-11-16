@@ -49,7 +49,7 @@ function fakes(
       background.push(work);
     },
   };
-  return { deps, settle: () => Promise.all(background), heart };
+  return { deps, settle: async () => Promise.all(background), heart };
 }
 
 describe('setFavouriteAndTag', () => {

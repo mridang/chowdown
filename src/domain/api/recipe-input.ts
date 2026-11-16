@@ -85,7 +85,7 @@ export type ReplacementInput =
  * `cooklang`, held to the same limits as a new recipe.
  */
 export function parseReplacementCooklang(body: unknown): ReplacementInput {
-  const cooklang =
+  const cooklang: unknown =
     typeof body === 'object' && body !== null
       ? Reflect.get(body, 'cooklang')
       : undefined;

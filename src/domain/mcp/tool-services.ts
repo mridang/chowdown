@@ -110,14 +110,15 @@ async function bestEffort(
  */
 export function guardFileOps(files: FileOps): FileOps {
   return {
-    list: () => guarded('Google Drive', files.list),
-    read: (fileId) => guarded('Google Drive', () => files.read(fileId)),
-    create: (name, content) =>
-      guarded('Google Drive', () => files.create(name, content)),
-    update: (fileId, content) =>
-      guarded('Google Drive', () => files.update(fileId, content)),
-    index: (fileId, name, source) =>
-      bestEffort('the recipe database', () =>
+    list: async () => guarded('Google Drive', files.list),
+    read: async (fileId) =>
+      guarded('Google Drive', async () => files.read(fileId)),
+    create: async (name, content) =>
+      guarded('Google Drive', async () => files.create(name, content)),
+    update: async (fileId, content) =>
+      guarded('Google Drive', async () => files.update(fileId, content)),
+    index: async (fileId, name, source) =>
+      bestEffort('the recipe database', async () =>
         files.index(fileId, name, source),
       ),
   };
@@ -294,22 +295,25 @@ export interface DriveContext {
 export async function openUserDrive(
   user: Readonly<User>,
 ): Promise<DriveContext> {
-  const token = await guarded('Google Drive', () => getUserAccessToken(user));
+  const token = await guarded('Google Drive', async () =>
+    getUserAccessToken(user),
+  );
   const folderId =
     user.recipes_folder_id ??
-    (await guarded('Google Drive', () => ensureRecipesFolder(token)));
+    (await guarded('Google Drive', async () => ensureRecipesFolder(token)));
   const units = user.units ?? '';
   return {
     user,
     token,
     system: isUnitSystem(units) ? units : undefined,
     files: guardFileOps({
-      list: () => listRecipeFiles(folderId, token),
-      read: (fileId) => getFileContent(fileId, token),
-      create: (name, content) =>
+      list: async () => listRecipeFiles(folderId, token),
+      read: async (fileId) => getFileContent(fileId, token),
+      create: async (name, content) =>
         createRecipeFile(folderId, name, content, token),
-      update: (fileId, content) => updateRecipeFile(fileId, content, token),
-      index: (fileId, name, source) =>
+      update: async (fileId, content) =>
+        updateRecipeFile(fileId, content, token),
+      index: async (fileId, name, source) =>
         indexRecipeWrite(getDatabase(), user.id, fileId, name, source),
     }),
   };
@@ -318,59 +322,59 @@ export async function openUserDrive(
 /** The real database, AI models and page fetcher, each guarded. */
 export const liveToolServices: ToolServices = {
   searchIndex: async (user, files, token, first) => {
-    const cached = await guarded('the recipe database', () =>
+    const cached = await guarded('the recipe database', async () =>
       listEmbeddings(getDatabase(), user.id),
     );
     const plan = planBackfill(files, cached, EMBEDDINGS_PER_CALL, first);
     return {
-      rows: await guarded('the recipe search index', () =>
+      rows: await guarded('the recipe search index', async () =>
         ensureEmbeddings(user, plan.files, token),
       ),
       waiting: plan.waiting,
     };
   },
-  embedQuery: (text) =>
-    guarded('the AI model', () => embedText(getEnv(), text)),
-  findImported: (userId, url) =>
+  embedQuery: async (text) =>
+    guarded('the AI model', async () => embedText(getEnv(), text)),
+  findImported: async (userId, url) =>
     guarded('the recipe database', async () => {
       const row = await findRecipeBySourceUrl(getDatabase(), userId, url);
       return row
         ? { id: row.drive_file_id, name: row.name, source: row.source }
         : undefined;
     }),
-  convertImport: (content, options) =>
-    guarded('the recipe converter', () =>
+  convertImport: async (content, options) =>
+    guarded('the recipe converter', async () =>
       convertImport(content, getEnv(), options),
     ),
-  tagBestEffort: (source, name) =>
+  tagBestEffort: async (source, name) =>
     tagCookSourceBestEffort(source, name, getEnv()),
-  tag: (source, filename) =>
-    guarded('the recipe tagger', () =>
+  tag: async (source, filename) =>
+    guarded('the recipe tagger', async () =>
       tagCookSource(source, filename, getEnv()),
     ),
   addCover: addMissingCover,
-  setFavourite: (userId, fileId, on) =>
+  setFavourite: async (userId, fileId, on) =>
     guarded('the recipe database', async () => {
       await setFavouriteAndTag(userId, fileId, on);
     }),
-  setUnits: (userId, system) =>
-    guarded('the recipe database', () =>
+  setUnits: async (userId, system) =>
+    guarded('the recipe database', async () =>
       setUserUnits(getDatabase(), userId, system),
     ),
-  spendModelBudget: (userId) =>
+  spendModelBudget: async (userId) =>
     spendBudget(DAILY_BUDGETS.assistantModel, userId),
   openDrive: openUserDrive,
   scenario: (user) => ({
-    rows: () =>
-      guarded('the recipe database', () =>
+    rows: async () =>
+      guarded('the recipe database', async () =>
         listRecipesByUser(getDatabase(), user.id),
       ),
-    favouriteIds: () =>
-      guarded('the recipe database', () =>
+    favouriteIds: async () =>
+      guarded('the recipe database', async () =>
         listFavouriteIds(getDatabase(), user.id),
       ),
     // Not guarded: the scenario code decides which sync failures matter.
-    sync: () => syncFromDrive(user),
+    sync: async () => syncFromDrive(user),
     inBackground: runInBackground,
   }),
 };

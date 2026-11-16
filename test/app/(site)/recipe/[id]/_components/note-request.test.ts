@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import { postNote } from '@/app/(site)/recipe/[id]/_components/note-request';
+import { z } from 'zod';
 
 afterEach(() => {
   jest.restoreAllMocks();
@@ -18,7 +19,7 @@ describe('postNote', () => {
     expect(url).toBe('/api/recipes/dal/notes');
     expect(init?.method).toBe('POST');
     expect(init?.headers).toEqual({ 'Content-Type': 'application/json' });
-    expect(JSON.parse(String(init?.body))).toEqual({
+    expect(JSON.parse(z.string().parse(init?.body))).toEqual({
       text: 'more salt',
       ingredient: 'salt',
     });
@@ -29,7 +30,9 @@ describe('postNote', () => {
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response(null, { status: 201 }));
     await postNote('dal', 'lovely', '');
-    expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toEqual({
+    expect(
+      JSON.parse(z.string().parse(fetcher.mock.calls[0]?.[1]?.body)),
+    ).toEqual({
       text: 'lovely',
     });
   });

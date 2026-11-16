@@ -97,7 +97,7 @@ const liveDeps: FavouriteDeps = {
   findRecipe: getRecipeByFileId,
   // A one-line metadata change doesn't alter what the recipe means, so skip
   // re-embedding it.
-  index: (db, userId, fileId, name, source) =>
+  index: async (db, userId, fileId, name, source) =>
     indexRecipeWrite(db, userId, fileId, name, source, null, { embed: false }),
   background: runInBackground,
 };
@@ -147,7 +147,7 @@ export async function setFavouriteAndTag(
 ): Promise<boolean> {
   const state = await deps.saveHeart(deps.database(), userId, driveFileId, on);
   deps.background(
-    deps.serialise(`${userId}:${driveFileId}`, () =>
+    deps.serialise(`${userId}:${driveFileId}`, async () =>
       writeFavouriteTag(deps, userId, driveFileId),
     ),
   );

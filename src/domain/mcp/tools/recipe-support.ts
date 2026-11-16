@@ -11,16 +11,16 @@
  * message that says a result was cut short has to read the same in every list.
  */
 
-import { type User } from '@/domain/db/users';
+import type { User } from '@/domain/db/users';
 import { runScenarioTool, type ScenarioToolName } from '@/domain/mcp/scenarios';
-import { type ToolContent } from '@/domain/mcp/tool-context';
+import type { ToolContent } from '@/domain/mcp/tool-context';
 import {
   recipeCardResult,
   recipeListSummaryResult,
 } from '@/domain/mcp/tool-results';
 import {
-  DriveContext,
   EMBEDDINGS_PER_CALL,
+  type DriveContext,
   type ToolServices,
 } from '@/domain/mcp/tool-services';
 import {
@@ -30,8 +30,9 @@ import {
   rangeText,
 } from '@/domain/mcp/tool-text';
 import { resolveFile } from '@/domain/recipe/match';
-import { parseRecipe, recipeDisplayName } from '@/lib/cooklang';
-import { type DriveFile } from '@/lib/google/drive';
+import type { parseRecipe } from '@/lib/cooklang';
+import { recipeDisplayName } from '@/lib/cooklang';
+import type { DriveFile } from '@/lib/google/drive';
 import { countOf, foldText } from '@/lib/intl';
 import {
   errorResult,
@@ -479,7 +480,11 @@ export function noteTarget(args: ToolArgs): NoteTarget {
   }
   return step == null
     ? { scope: 'general', key: '', where: '' }
-    : { scope: 'step', key: String(step), where: ` on step ${String(step)}` };
+    : {
+        scope: 'step',
+        key: textArg(step),
+        where: ` on step ${textArg(step)}`,
+      };
 }
 
 /** How many of a recipe's ingredients an error lists when the one asked for is not among them. */

@@ -159,10 +159,9 @@ describe('quantity scanning (linear-time rewrites)', () => {
     ['\u00BD tsp', ['\u00BD tsp', { dimension: 'volume', amount: 2.46446 }]],
     ['1 /2 cup', ['1 /2 cup', { dimension: 'volume', amount: 118.294 }]],
   ])('converts and measures %j', (input, expected) => {
-    expect([
-      convertQuantity(input as string, 'us'),
-      toBaseAmount(input as string) ?? null,
-    ]).toEqual(expected);
+    expect([convertQuantity(input, 'us'), toBaseAmount(input) ?? null]).toEqual(
+      expected,
+    );
   });
   it('scans on a long adversarial input', () => {
     const started = performance.now();

@@ -340,7 +340,7 @@ describe('handleMcpPost — malformed bodies', () => {
         fakeRate().deps,
       );
       expect(res.status).toBe(400);
-      expect(((await res.json()) as Reply).error?.code).toBe(-32_700);
+      expect(await res.json<Reply>()).toHaveProperty('error.code', -32_700);
     }
   });
 
@@ -486,7 +486,7 @@ describe('handleMcpPost — request size', () => {
       fakeRate().deps,
     );
     expect(res.status).toBe(413);
-    expect(((await res.json()) as Reply).error?.code).toBe(-32_600);
+    expect(await res.json<Reply>()).toHaveProperty('error.code', -32_600);
   });
 
   it('refuses a body with no announced length that turns out to be over the limit', async () => {
@@ -948,7 +948,7 @@ describe('unauthorizedResponse', () => {
 });
 
 describe('handleMcpPost — junk bodies and the rate limit', () => {
-  const junk = (rate: RateLimitDeps) =>
+  const junk = async (rate: RateLimitDeps) =>
     handleMcpPost(postText('{nope'), user, ALL_SCOPES, SELF, rate);
 
   it('answers a caller who keeps sending unparseable bodies with a 429 once they pass the general allowance', async () => {
@@ -974,7 +974,7 @@ describe('handleMcpPost — junk bodies and the rate limit', () => {
     const res = await junk(rate.deps);
     expect(res.status).toBe(429);
     expect(res.headers.get('retry-after')).toBe('60');
-    expect(((await res.json()) as Reply).error?.code).toBe(-32_603);
+    expect(await res.json<Reply>()).toHaveProperty('error.code', -32_603);
   });
 
   it.each([
@@ -1023,17 +1023,21 @@ describe('every reply from the endpoint', () => {
     number,
     () => Promise<{ readonly headers: Headers }>,
   ][] = [
-    ['a result', 200, () => send({ jsonrpc: '2.0', id: 1, method: 'ping' })],
+    [
+      'a result',
+      200,
+      async () => send({ jsonrpc: '2.0', id: 1, method: 'ping' }),
+    ],
     [
       'a notification',
       202,
-      () => send({ jsonrpc: '2.0', method: 'notifications/initialized' }),
+      async () => send({ jsonrpc: '2.0', method: 'notifications/initialized' }),
     ],
-    ['a parse error', 400, () => send(7)],
+    ['a parse error', 400, async () => send(7)],
     [
       'a scope refusal',
       403,
-      () =>
+      async () =>
         send(
           {
             jsonrpc: '2.0',
@@ -1048,7 +1052,7 @@ describe('every reply from the endpoint', () => {
     [
       'an unknown method',
       404,
-      () =>
+      async () =>
         send(modern('nope/nothing'), {
           'mcp-protocol-version': '2026-07-28',
           'mcp-method': 'nope/nothing',
@@ -1057,7 +1061,7 @@ describe('every reply from the endpoint', () => {
     [
       'an oversized body',
       413,
-      () =>
+      async () =>
         handleMcpPost(
           postText('{}', { 'content-length': String(MAX_BODY_BYTES + 1) }),
           user,
@@ -1126,7 +1130,7 @@ describe('respondToMcp', () => {
     });
   }
 
-  const ask = (
+  const ask = async (
     method: string,
     asked: jest.Mock<Authenticate>,
     headers: Record<string, string> = {},

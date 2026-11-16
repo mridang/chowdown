@@ -28,7 +28,7 @@ beforeEach(() => {
   world = openWorld();
 });
 
-afterEach(() => world.close());
+afterEach(async () => world.close());
 
 const SOURCE = '>> title: Curry\n\nCook @onion{1}.\n';
 const WITH_NOTE = `${SOURCE}\n-- [note] Use less salt\n`;
@@ -62,9 +62,9 @@ describe('GET /api/recipes/:id/notes', () => {
     await withRecipe(WITH_NOTE);
     const res = await GET(fromApp('GET', '/api/recipes/f1/notes'), ctx());
     expect(res.status).toBe(200);
-    const body = (await res.json()) as {
+    const body = await res.json<{
       items: { id: string; text: string; scope: string }[];
-    };
+    }>();
     expect(body.items).toEqual([
       { id: '1', scope: 'GENERAL', text: 'Use less salt' },
     ]);
@@ -72,7 +72,7 @@ describe('GET /api/recipes/:id/notes', () => {
 });
 
 describe('POST /api/recipes/:id/notes', () => {
-  const add = (json: unknown, headers: Record<string, string> = {}) =>
+  const add = async (json: unknown, headers: Record<string, string> = {}) =>
     POST(fromApp('POST', '/api/recipes/f1/notes', { json, headers }), ctx());
 
   it('answers 401 when nobody is signed in', async () => {
@@ -119,7 +119,7 @@ describe('POST /api/recipes/:id/notes', () => {
   it('numbers a second note 2', async () => {
     await withRecipe(WITH_NOTE);
     const res = await add({ text: 'And more pepper' });
-    expect(((await res.json()) as { id: string }).id).toBe('2');
+    expect(await res.json<{ id: string }>()).toHaveProperty('id', '2');
   });
 
   it('answers 404 for a recipe the person does not have, without touching Drive', async () => {

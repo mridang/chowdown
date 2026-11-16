@@ -25,7 +25,7 @@ const noop = () => undefined;
 function screen(
   state: ViewState<RecipeCardData>,
   expanded = false,
-  onOpenLink: ((url: string) => void) | undefined = undefined,
+  onOpenLink?: (url: string) => void,
 ): string {
   return html(
     <RecipeCardScreen

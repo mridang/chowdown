@@ -47,6 +47,9 @@ describe('jsonLdText', () => {
   it('can never close the script tag it is placed in', () => {
     const text = jsonLdText({ name: '</script><script>alert(1)</script>' });
     expect(text).not.toContain('<');
-    expect(JSON.parse(text).name).toBe('</script><script>alert(1)</script>');
+    const parsed: unknown = JSON.parse(text);
+    expect(parsed).toMatchObject({
+      name: '</script><script>alert(1)</script>',
+    });
   });
 });

@@ -16,7 +16,6 @@
 
 import { BRAND_NAME } from '@/app/_brand';
 
-const SAFARI = /Safari\//;
 const VERSION = /Version\/[\d.]+/;
 const I_PHONE_I_PAD_I_POD = /iPhone|iPad|iPod/;
 
@@ -82,7 +81,7 @@ export function isIosSafari(
   return (
     isIosDevice(userAgent, maxTouchPoints) &&
     VERSION.test(userAgent) &&
-    SAFARI.test(userAgent) &&
+    userAgent.includes('Safari/') &&
     !NOT_SAFARI.test(userAgent)
   );
 }

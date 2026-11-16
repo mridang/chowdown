@@ -17,6 +17,7 @@ import {
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 import { insertUser, testEnv } from './session-fixture';
+import { z } from 'zod';
 
 const { forgetAccessTokens, getUserAccessToken } =
   await import('@/domain/auth/user-access-token');
@@ -95,7 +96,9 @@ describe('getUserAccessToken', () => {
     const user = await connectedUser(31);
     const spy = googleAnswers(token('t'));
     await getUserAccessToken(user);
-    const body = new URLSearchParams(String(spy.mock.calls[0]?.[1]?.body));
+    const body = z
+      .instanceof(URLSearchParams)
+      .parse(spy.mock.calls[0]?.[1]?.body);
     expect(body.get('refresh_token')).toBe('refresh-token');
     expect(body.get('grant_type')).toBe('refresh_token');
     forgetAccessTokens(31);

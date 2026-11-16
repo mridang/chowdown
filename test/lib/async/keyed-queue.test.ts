@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { createKeyedQueue } from '@/lib/async';
 
 /** Let queued microtasks run, so a job that is ready to start has started. */
-const tick = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+const tick = async () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 /** A promise that can be settled from outside, to hold a job open. */
 function gate() {

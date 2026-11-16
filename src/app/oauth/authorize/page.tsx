@@ -91,7 +91,7 @@ export default async function AuthorizePage({
   const address = clientAddress(requestHeaders);
   const db = getDatabase();
 
-  const check = await validateAuthorizeRequest(params, origin, (id) =>
+  const check = await validateAuthorizeRequest(params, origin, async (id) =>
     resolveClient(db, id, fetch, { origin, address }),
   );
   if (!check.ok) {

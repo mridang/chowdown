@@ -88,7 +88,7 @@ describe('two edits of one recipe at the same time', () => {
   it('all of four land', async () => {
     const fake = folder({ 'Pancakes.cook': PANCAKES });
     const results = await Promise.all(
-      Array.from({ length: 4 }, (_, index) =>
+      Array.from({ length: 4 }, async (_, index) =>
         call(
           'log_cooking',
           { recipe: 'pancakes', note: `cook ${index}` },

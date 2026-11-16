@@ -14,13 +14,13 @@ afterEach(() => {
 function answerWith(respond: (init?: RequestInit) => Promise<Response>) {
   return jest
     .spyOn(globalThis, 'fetch')
-    .mockImplementation((_url, init) => respond(init));
+    .mockImplementation(async (_url, init) => respond(init));
 }
 
 /** A fetch that never answers until its request is aborted, like a slow import. */
 function hangUntilAborted() {
   return answerWith(
-    (init) =>
+    async (init) =>
       new Promise<Response>((_resolve, reject) => {
         init?.signal?.addEventListener('abort', () =>
           reject(new DOMException('Aborted', 'AbortError')),

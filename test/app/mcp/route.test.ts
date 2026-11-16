@@ -31,11 +31,9 @@ const URL = `${ORIGIN}/mcp`;
 const OTHER = 'https://evil.example';
 /** A tool that only reads, and one that changes something. */
 const READ_TOOL =
-  TOOL_REGISTRY.all.find((tool) => tool.annotations.readOnlyHint === true)
-    ?.name ?? '';
+  TOOL_REGISTRY.all.find((tool) => tool.annotations.readOnlyHint)?.name ?? '';
 const WRITE_TOOL =
-  TOOL_REGISTRY.all.find((tool) => tool.annotations.readOnlyHint !== true)
-    ?.name ?? '';
+  TOOL_REGISTRY.all.find((tool) => !tool.annotations.readOnlyHint)?.name ?? '';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 
 /** Every migration, in order: the route reads users, grants and rate-limit counters. */
@@ -147,7 +145,8 @@ describe('OPTIONS /mcp', () => {
   it('refuses a preflight from an origin we do not know', async () => {
     const res = await OPTIONS(request('OPTIONS', { origin: OTHER }));
     expect(res.status).toBe(403);
-    expect(((await res.json()) as { error: { code: number } }).error.code).toBe(
+    expect(await res.json<{ error: { code: number } }>()).toHaveProperty(
+      'error.code',
       -32_600,
     );
   });
@@ -218,10 +217,10 @@ describe('with a valid token', () => {
     const res = await POST(request('POST', bearer(token), rpc('tools/list')));
     expect(res.status).toBe(200);
     expect(res.headers.get('cache-control')).toBe('no-store');
-    const body = (await res.json()) as {
+    const body = await res.json<{
       id: number;
       result: { tools: { name: string }[] };
-    };
+    }>();
     expect(body.id).toBe(1);
     expect(body.result.tools.map((tool) => tool.name)).toContain(READ_TOOL);
   });

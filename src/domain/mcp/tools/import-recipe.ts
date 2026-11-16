@@ -5,7 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 import { recipeCardResult } from '@/domain/mcp/tool-results';
 import { plainTitle } from '@/domain/mcp/tool-text';
 import { modelBudgetRefusal } from '@/domain/mcp/tools/recipe-support';
@@ -93,7 +93,7 @@ export class ImportRecipeTool extends McpTool<
     const content = textArg(args['content']);
     const outcome = await importRecipe(
       {
-        findExisting: (url) => services.findImported(ctx.user.id, url),
+        findExisting: async (url) => services.findImported(ctx.user.id, url),
         convert: services.convertImport,
         tag: services.tagBestEffort,
         create: ctx.files.create,

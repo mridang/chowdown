@@ -48,7 +48,7 @@ describe('cleanTitle separators (linear-time rewrite)', () => {
   ])(
     'keeps the part before the first padded separator %j',
     (input, expected) => {
-      expect(cleanTitle(input as string)).toEqual(expected);
+      expect(cleanTitle(input)).toEqual(expected);
     },
   );
   it('scans on a long adversarial input', () => {

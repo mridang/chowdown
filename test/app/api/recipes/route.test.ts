@@ -27,7 +27,7 @@ beforeEach(() => {
   world = openWorld();
 });
 
-afterEach(() => world.close());
+afterEach(async () => world.close());
 
 const CURRY =
   '>> title: Curry\n>> source: https://site.com/curry\n\nCook @onion{1}.\n';
@@ -43,7 +43,7 @@ describe('GET /api/recipes', () => {
     addRecipe(world, uid, 'f1', CURRY, 'Curry.cook');
     const res = await GET(fromApp('GET', '/api/recipes'));
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { items: { id: string }[] };
+    const body = await res.json<{ items: { id: string }[] }>();
     expect(body.items.map((r) => r.id)).toEqual(['f1']);
   });
 
@@ -63,7 +63,7 @@ describe('GET /api/recipes', () => {
 
 describe('POST /api/recipes', () => {
   const curry = { name: 'Curry', cooklang: CURRY };
-  const create = (json: unknown = curry) =>
+  const create = async (json: unknown = curry) =>
     POST(fromApp('POST', '/api/recipes', { json }));
 
   it('answers 401 when nobody is signed in', async () => {
@@ -100,7 +100,7 @@ describe('POST /api/recipes', () => {
     await signIn(world, { drive: true });
     const res = await create({ name: '', cooklang: '' });
     expect(res.status).toBe(400);
-    const body = (await res.json()) as { errors?: string[] };
+    const body = await res.json<{ errors?: string[] }>();
     expect(body.errors?.length).toBeGreaterThan(0);
   });
 
@@ -125,7 +125,7 @@ describe('POST /api/recipes', () => {
         .prepare('SELECT user_id AS u FROM recipes WHERE drive_file_id = ?')
         .get('created-1'),
     ).toEqual({ u: uid });
-    const body = (await res.json()) as { id: string; title: string };
+    const body = await res.json<{ id: string; title: string }>();
     expect(body.id).toBe('created-1');
   });
 
@@ -143,13 +143,12 @@ describe('POST /api/recipes', () => {
 
   it('answers 502 and caches nothing when Drive fails', async () => {
     await signIn(world, { drive: true });
-    jest
-      .spyOn(globalThis, 'fetch')
-      .mockImplementation(async (input) =>
-        String(input).includes('oauth2')
-          ? Response.json({ access_token: 't', expires_in: 3599 })
-          : new Response('boom', { status: 500 }),
-      );
+    jest.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = input instanceof Request ? input.url : String(input);
+      return url.includes('oauth2')
+        ? Response.json({ access_token: 't', expires_in: 3599 })
+        : new Response('boom', { status: 500 });
+    });
     const res = await create();
     expect(res.status).toBe(502);
     expect(

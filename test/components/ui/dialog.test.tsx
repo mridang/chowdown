@@ -208,11 +208,11 @@ describe('closedBy', () => {
 describe('supportsLightDismiss', () => {
   it('is true for a dialog whose browser knows closedBy', () => {
     const prototype = { closedBy: 'closerequest' };
-    expect(supportsLightDismiss(Object.create(prototype))).toBe(true);
+    expect(supportsLightDismiss({ __proto__: prototype })).toBe(true);
   });
 
   it('is false for a dialog whose browser does not, so it must watch for the click itself', () => {
-    expect(supportsLightDismiss(Object.create({ open: false }))).toBe(false);
+    expect(supportsLightDismiss({ __proto__: { open: false } })).toBe(false);
   });
 });
 

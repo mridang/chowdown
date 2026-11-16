@@ -430,14 +430,14 @@ describe('metadata and note scanning (linear-time rewrites)', () => {
     ['>> k:\n>> k: unknown\n>> k: v\r\nz', '>> k: z\nz\n'],
     ['>>: x\n>> k', '>>: x\n>> k\n>> k: z\n'],
   ])('upserts %j', (input, expected) => {
-    expect(upsertMetadata(input as string, [['k', 'z']])).toEqual(expected);
+    expect(upsertMetadata(input, [['k', 'z']])).toEqual(expected);
   });
   it.each([
     ['>> k: a\n>> author: x\n>> k: b\nbody', '>> author: x\nbody'],
     ['>> k:\n>> k: unknown\n>> k: v\r\nz', 'z'],
     ['>>: x\n>> k', '>>: x\n>> k'],
   ])('removes %j', (input, expected) => {
-    expect(removeMetadata(input as string, 'k')).toEqual(expected);
+    expect(removeMetadata(input, 'k')).toEqual(expected);
   });
   it.each([
     [
@@ -447,7 +447,7 @@ describe('metadata and note scanning (linear-time rewrites)', () => {
     ['>> k:\n>> k: unknown\n>> k: v\r\nz', '>> k: v\nz'],
     ['>>: x\n>> k', '>>: x\n>> k'],
   ])('drops empty %j', (input, expected) => {
-    expect(removeEmptyMetadata(input as string)).toEqual(expected);
+    expect(removeEmptyMetadata(input)).toEqual(expected);
   });
   it.each([
     ['-- [note] hello', [{ scope: 'general', key: '', text: 'hello' }]],
@@ -459,7 +459,7 @@ describe('metadata and note scanning (linear-time rewrites)', () => {
     ['-- [note]  a\u2028b', []],
     ['x\n-- [note]', [{ scope: 'general', key: '', text: '' }]],
   ])('extracts notes %j', (input, expected) => {
-    expect(extractNotes(input as string)).toEqual(expected);
+    expect(extractNotes(input)).toEqual(expected);
   });
   it.each([
     ['a \n b', '\n-- [cook 1970-01-01] a b\n'],
@@ -467,16 +467,14 @@ describe('metadata and note scanning (linear-time rewrites)', () => {
     ['a\r\n\r\nb', '\n-- [cook 1970-01-01] a b\n'],
     [' x \n', '\n-- [cook 1970-01-01] x\n'],
   ])('flattens a log %j', (input, expected) => {
-    expect(appendCookingLog('', input as string, new Date(0))).toEqual(
-      expected,
-    );
+    expect(appendCookingLog('', input, new Date(0))).toEqual(expected);
   });
   it.each([
     ['https://www.Ex.com/a//?utm_source=x&b=1', 'ex.com/a?b=1'],
     ['https://ex.com///', 'ex.com'],
     ['https://ex.com', 'ex.com'],
   ])('normalises %j', (input, expected) => {
-    expect(normalizeSourceUrl(input as string)).toEqual(expected);
+    expect(normalizeSourceUrl(input)).toEqual(expected);
   });
   it('scans on a long adversarial input', () => {
     const started = performance.now();

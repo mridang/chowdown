@@ -32,7 +32,7 @@ function fakeSpeech() {
     cancel: jest.fn(() => order.push('cancel')),
   };
   const environment: SpeechEnvironment = {
-    synthesiser: synthesiser as never,
+    synthesiser: synthesiser,
     createUtterance: (text) => {
       const made = fakeUtterance(text);
       utterances.push(made);

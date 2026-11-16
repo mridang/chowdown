@@ -112,7 +112,7 @@ function ManualEditor({
       <div className="mt-5 flex flex-wrap gap-3">
         <Button
           size="lg"
-          onClick={save}
+          onClick={() => void save()}
           disabled={busy || !name.trim()}
           aria-busy={busy}
           className="disabled:opacity-50"

@@ -22,6 +22,16 @@ export function CopyField({
   label: string;
 }>): ReactElement {
   const [copied, setCopied] = useState(false);
+  const copy = async (): Promise<void> => {
+    // `clipboard` is missing on insecure pages; then there is nothing to confirm.
+    if (!navigator.clipboard) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), CONFIRMATION_MS);
+  };
   return (
     <div className="flex h-12 items-center gap-2 rounded-control border border-field bg-surface pr-1 pl-4">
       <code
@@ -31,19 +41,7 @@ export function CopyField({
       >
         {value}
       </code>
-      <Button
-        onClick={async () => {
-          // `clipboard` is missing on insecure pages; then there is nothing to confirm.
-
-          if (!navigator.clipboard) {
-            return;
-          }
-
-          await navigator.clipboard.writeText(value);
-          setCopied(true);
-          setTimeout(() => setCopied(false), CONFIRMATION_MS);
-        }}
-      >
+      <Button onClick={() => void copy()}>
         {copied ? <CheckIcon size="sm" /> : <CopyIcon size="sm" />}
         {copied ? 'Copied' : 'Copy'}
       </Button>

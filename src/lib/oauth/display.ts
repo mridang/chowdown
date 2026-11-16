@@ -34,6 +34,8 @@ export const NEUTRAL_CLIENT_NAME = 'An unnamed app';
  */
 const INVISIBLE = /[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}]/gu;
 
+const segmenter = new Intl.Segmenter();
+
 /**
  * Clean a name a client gave for itself so it is safe to show: Unicode
  * normalised (NFKC, so full-width and ligature look-alikes become the plain
@@ -57,7 +59,11 @@ export function sanitiseDisplayName(
     .replaceAll(/\s+/gu, ' ')
     .replaceAll(INVISIBLE, '')
     .trim();
-  const capped = [...cleaned].slice(0, maxLength).join('').trim();
+  const capped = [...segmenter.segment(cleaned)]
+    .slice(0, maxLength)
+    .map((part) => part.segment)
+    .join('')
+    .trim();
   return capped || fallback;
 }
 

@@ -404,7 +404,7 @@ describe('fetchCapped', () => {
     });
 
     it('says timeout when the site is too slow to answer', async () => {
-      const fetcher: SafeFetcher = (_url, init) =>
+      const fetcher: SafeFetcher = async (_url, init) =>
         new Promise((_resolve, reject) =>
           init.signal?.addEventListener('abort', () =>
             reject(init.signal?.reason),
@@ -443,10 +443,10 @@ describe('fetchCapped', () => {
   it('uses the real fetch when no fetcher is given', async () => {
     const real = globalThis.fetch;
     const calls: string[] = [];
-    globalThis.fetch = (async (input: RequestInfo | URL) => {
-      calls.push(String(input));
+    globalThis.fetch = async (input: RequestInfo | URL) => {
+      calls.push(input instanceof Request ? input.url : String(input));
       return new Response('real');
-    }) as typeof fetch;
+    };
     try {
       const result = await fetchCapped('https://a.com/real', OPTIONS);
       expect(result.ok && new TextDecoder().decode(result.bytes)).toBe('real');

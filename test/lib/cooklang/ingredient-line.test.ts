@@ -169,7 +169,7 @@ describe('parseIngredientLine on hostile or odd input', () => {
     const started = Date.now();
     parseIngredientLine(`${'1 '.repeat(2000)}x`);
     parseIngredientLine(`${'('.repeat(5000)}x`);
-    parseIngredientLine(`${','.repeat(5000)}`);
+    parseIngredientLine(','.repeat(5000));
     expect(Date.now() - started).toBeLessThan(200);
   });
 
@@ -226,7 +226,7 @@ describe('ingredient line scanning (linear-time rewrites)', () => {
     ],
     ['flour (sifted), chopped;', { name: 'flour', note: 'sifted; , chopped;' }],
   ])('parses %j', (input, expected) => {
-    expect(parseIngredientLine(input as string)).toEqual(expected);
+    expect(parseIngredientLine(input)).toEqual(expected);
   });
   it('scans on a long adversarial input', () => {
     const started = performance.now();

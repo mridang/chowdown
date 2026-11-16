@@ -71,7 +71,7 @@ afterEach(() => restore());
 const URL = 'https://app.test/api/users/self/connections';
 
 describe('DELETE /api/users/self/connections/:grant_id', () => {
-  const del = (id: string, headers: Record<string, string> = {}) =>
+  const del = async (id: string, headers: Record<string, string> = {}) =>
     DELETE(
       new Request(`${URL}/${id}`, {
         method: 'DELETE',
@@ -129,7 +129,7 @@ describe('DELETE /api/users/self/connections/:grant_id', () => {
     const info = jest.spyOn(console, 'info').mockImplementation(() => {});
     await del('g1');
     expect(
-      info.mock.calls.map(([line]) => JSON.parse(String(line))),
+      info.mock.calls.map(([line]): unknown => JSON.parse(String(line))),
     ).toContainEqual(
       expect.objectContaining({
         event: 'oauth.grant_revoked',

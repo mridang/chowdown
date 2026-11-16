@@ -163,7 +163,7 @@ describe('fetchPage', () => {
 
   it('says timed out when the site is too slow', async () => {
     globalThis.fetch = jest.fn<typeof fetch>(
-      (_url, init) =>
+      async (_url, init) =>
         new Promise<Response>((_resolve, reject) =>
           init?.signal?.addEventListener('abort', () =>
             reject(init.signal?.reason),

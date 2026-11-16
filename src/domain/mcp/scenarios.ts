@@ -183,7 +183,7 @@ function facetWanted(
 ): { readonly wanted: readonly string[]; readonly problem?: string } {
   const wanted = stringListArg(raw);
   const f = facet(key);
-  if (!f || !f.values || wanted.length === 0) {
+  if (!f?.values || wanted.length === 0) {
     return { wanted };
   }
   const known = new Map(f.values.map((v) => [foldText(v), v]));

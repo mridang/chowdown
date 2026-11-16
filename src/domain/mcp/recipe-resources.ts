@@ -173,7 +173,7 @@ export type RecipeLister = (
  * @param database - Where the cache is; a function so it is looked up per call.
  */
 export function cachedRecipeLister(database: () => Database): RecipeLister {
-  return (user, offset, limit) =>
+  return async (user, offset, limit) =>
     guarded('the recipe database', () =>
       database()
         .select({ id: recipes.drive_file_id, name: recipes.name })

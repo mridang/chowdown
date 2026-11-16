@@ -36,7 +36,7 @@ function seeded() {
 }
 
 /** Cache a recipe for `userId` through the repository. */
-const save = (
+const save = async (
   made: ReturnType<typeof seeded>,
   userId: number,
   fileId: string,

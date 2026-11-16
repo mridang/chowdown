@@ -21,7 +21,7 @@ import {
 } from '@/domain/db/embeddings';
 import type { User } from '@/domain/db/users';
 import { getFileContent } from '@/domain/drive/recipe-files';
-import { type DriveFile } from '@/lib/google/drive';
+import type { DriveFile } from '@/lib/google/drive';
 import { getEnv } from '@/lib/core/runtime';
 import { getDatabase } from '@/domain/db/client';
 import { parseRecipe, recipeDisplayName } from '@/lib/cooklang';
@@ -134,10 +134,10 @@ async function refreshEmbedding(
   file: DriveFile,
   cached: EmbeddingRow | undefined,
 ): Promise<EmbeddingOutcome> {
-  if (cached && cached.modified_time === (file.modifiedTime ?? null)) {
+  if (cached?.modified_time === (file.modifiedTime ?? null)) {
     return 'current';
   }
-  if (cached && cached.modified_time === null && file.modifiedTime) {
+  if (cached?.modified_time === null && file.modifiedTime) {
     // Embedded at write time, before Drive's timestamp was known: the vector
     // is current, so adopt the timestamp instead of re-embedding.
     await deps.save(db, {
@@ -182,7 +182,7 @@ export async function ensureEmbeddings(
   const existing = await deps.listCached(db, user.id);
   const byId = new Map(existing.map((r) => [r.drive_file_id, r]));
   // One file at a time: each may call Workers AI, which has tight limits.
-  const outcomes = await mapSequentially(files, (file) =>
+  const outcomes = await mapSequentially(files, async (file) =>
     refreshEmbedding(deps, db, user.id, token, file, byId.get(file.id)),
   );
   const fileIds = new Set(files.map((f) => f.id));

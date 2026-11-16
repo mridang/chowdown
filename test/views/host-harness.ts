@@ -10,7 +10,7 @@ import {
 import type { DocumentRoot } from '@/views/host-wiring';
 
 /** Wait for queued messages to be delivered, in both directions. */
-export function settle(): Promise<void> {
+export async function settle(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 20));
 }
 

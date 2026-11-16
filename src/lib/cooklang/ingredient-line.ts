@@ -248,32 +248,31 @@ function withoutParentheses(line: string): {
   readonly text: string;
   readonly notes: readonly string[];
 } {
-  const walked = [...line].reduce<ParenthesesWalk>(
-    (walk, char) => {
-      if (char === '(') {
-        return walk.depth === 0
-          ? Object.assign(walk, { depth: 1, text: `${walk.text} ` })
-          : Object.assign(walk, {
-              depth: walk.depth + 1,
-              buffer: `${walk.buffer}(`,
-            });
+  const walked: ParenthesesWalk = { text: '', notes: [], depth: 0, buffer: '' };
+  for (const char of line) {
+    if (char === '(') {
+      if (walked.depth === 0) {
+        walked.depth = 1;
+        walked.text = `${walked.text} `;
+      } else {
+        walked.depth += 1;
+        walked.buffer = `${walked.buffer}(`;
       }
-      if (char === ')' && walk.depth > 0) {
-        if (walk.depth === 1) {
-          walk.notes.push(walk.buffer);
-          return Object.assign(walk, { depth: 0, buffer: '' });
-        }
-        return Object.assign(walk, {
-          depth: walk.depth - 1,
-          buffer: `${walk.buffer})`,
-        });
+    } else if (char === ')' && walked.depth > 0) {
+      if (walked.depth === 1) {
+        walked.notes.push(walked.buffer);
+        walked.depth = 0;
+        walked.buffer = '';
+      } else {
+        walked.depth -= 1;
+        walked.buffer = `${walked.buffer})`;
       }
-      return walk.depth > 0
-        ? Object.assign(walk, { buffer: `${walk.buffer}${char}` })
-        : Object.assign(walk, { text: `${walk.text}${char}` });
-    },
-    { text: '', notes: [], depth: 0, buffer: '' },
-  );
+    } else if (walked.depth > 0) {
+      walked.buffer = `${walked.buffer}${char}`;
+    } else {
+      walked.text = `${walked.text}${char}`;
+    }
+  }
   const notes =
     walked.depth > 0 ? [...walked.notes, walked.buffer] : walked.notes;
   return {

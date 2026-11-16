@@ -5,7 +5,7 @@ import { ImportVisual } from '@/components/landing/features/import-visual';
 import { html } from '../../render';
 
 describe('ImportVisual', () => {
-  const recipe = RECIPES[0]!;
+  const recipe = RECIPES[0];
   const out = html(<ImportVisual recipe={recipe} />);
 
   it('shows the pasted link from the recipe site', () => {

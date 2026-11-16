@@ -101,5 +101,13 @@ export function canonicalArguments(
  * `String()` (so `5` is "5"). Unlike {@link stringArg} it does not trim.
  */
 export function textArg(value: unknown): string {
-  return String(value ?? '');
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    typeof value === 'bigint'
+  ) {
+    return String(value);
+  }
+  return '';
 }

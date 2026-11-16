@@ -152,7 +152,9 @@ async function routeFiles(dir: string): Promise<readonly string[]> {
 /** Every `METHOD /path` the route files export, with `[x]` written `{x}`. */
 async function registered(): Promise<readonly string[]> {
   const files = await routeFiles(API_DIR);
-  const texts = await Promise.all(files.map((file) => readFile(file, 'utf8')));
+  const texts = await Promise.all(
+    files.map(async (file) => readFile(file, 'utf8')),
+  );
   return files.flatMap((file, index) => {
     const url = `/api${path
       .relative(API_DIR, path.dirname(file))
@@ -209,7 +211,7 @@ beforeEach(() => {
   world = openWorld();
 });
 
-afterEach(() => world.close());
+afterEach(async () => world.close());
 
 /** Sign in with Drive, and give the person a recipe with a note, a favourite, an import and a connected app. */
 async function arrange(): Promise<void> {
@@ -321,29 +323,30 @@ type Handler = (
 
 /** The module of each route, by its path in the document. */
 const ROUTES: Readonly<Record<string, () => Promise<object>>> = {
-  '/api/recipes': () => import('@/app/api/recipes/route'),
-  '/api/recipes/{id}': () => import('@/app/api/recipes/[id]/route'),
-  '/api/recipes/{id}/notes': () => import('@/app/api/recipes/[id]/notes/route'),
-  '/api/recipes/{id}/notes/{note_id}': () =>
+  '/api/recipes': async () => import('@/app/api/recipes/route'),
+  '/api/recipes/{id}': async () => import('@/app/api/recipes/[id]/route'),
+  '/api/recipes/{id}/notes': async () =>
+    import('@/app/api/recipes/[id]/notes/route'),
+  '/api/recipes/{id}/notes/{note_id}': async () =>
     import('@/app/api/recipes/[id]/notes/[note_id]/route'),
-  '/api/recipes/{id}/similar': () =>
+  '/api/recipes/{id}/similar': async () =>
     import('@/app/api/recipes/[id]/similar/route'),
-  '/api/recipes/suggestions': () =>
+  '/api/recipes/suggestions': async () =>
     import('@/app/api/recipes/suggestions/route'),
-  '/api/recipes/imports': () => import('@/app/api/recipes/imports/route'),
-  '/api/recipes/imports/{id}': () =>
+  '/api/recipes/imports': async () => import('@/app/api/recipes/imports/route'),
+  '/api/recipes/imports/{id}': async () =>
     import('@/app/api/recipes/imports/[id]/route'),
-  '/api/users/self': () => import('@/app/api/users/self/route'),
-  '/api/users/self/favourites': () =>
+  '/api/users/self': async () => import('@/app/api/users/self/route'),
+  '/api/users/self/favourites': async () =>
     import('@/app/api/users/self/favourites/route'),
-  '/api/users/self/favourites/{recipe_id}': () =>
+  '/api/users/self/favourites/{recipe_id}': async () =>
     import('@/app/api/users/self/favourites/[recipe_id]/route'),
-  '/api/users/self/connections': () =>
+  '/api/users/self/connections': async () =>
     import('@/app/api/users/self/connections/route'),
-  '/api/users/self/connections/{grant_id}': () =>
+  '/api/users/self/connections/{grant_id}': async () =>
     import('@/app/api/users/self/connections/[grant_id]/route'),
-  '/api/sessions': () => import('@/app/api/sessions/route'),
-  '/api/sessions/self': () => import('@/app/api/sessions/self/route'),
+  '/api/sessions': async () => import('@/app/api/sessions/route'),
+  '/api/sessions/self': async () => import('@/app/api/sessions/self/route'),
 };
 
 /** The concrete path of an operation with its parameters filled in. */

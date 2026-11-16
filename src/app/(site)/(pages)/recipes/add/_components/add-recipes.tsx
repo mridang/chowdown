@@ -272,7 +272,7 @@ export function AddRecipes({
           <div className="mt-5 flex flex-wrap gap-3">
             <Button
               size="lg"
-              onClick={prepare}
+              onClick={() => void prepare()}
               disabled={busy || !input.trim()}
               aria-busy={busy}
               className="disabled:opacity-50"
@@ -340,7 +340,7 @@ export function AddRecipes({
           <div className="mt-5 flex flex-wrap gap-3">
             <Button
               size="lg"
-              onClick={saveCurrent}
+              onClick={() => void saveCurrent()}
               disabled={busy}
               aria-busy={busy}
               className="disabled:opacity-50"

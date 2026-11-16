@@ -25,7 +25,7 @@ type Row = typeof recipeImports.$inferSelect;
 /** The drafts stored in a row's `items` column (written by {@link createRecipeImport}). */
 function itemsOf(json: string): readonly ImportItem[] {
   const parsed: unknown = JSON.parse(json);
-  return Array.isArray(parsed) ? parsed : [];
+  return Array.isArray(parsed) ? (parsed as readonly ImportItem[]) : [];
 }
 
 /** The import a stored row stands for. */

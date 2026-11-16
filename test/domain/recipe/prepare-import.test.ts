@@ -22,7 +22,7 @@ function envAnswering(response: string) {
 const MODEL_COOKLANG = '>> title: Soup\n\nSimmer @leek{2} for ~{20%minutes}.\n';
 
 /** Prepare what `text` plans to. */
-const prepare = (text: string, env: CloudflareEnv) =>
+const prepare = async (text: string, env: CloudflareEnv) =>
   prepareImport(planImport(text), env);
 
 afterEach(() => {
@@ -110,10 +110,10 @@ describe('prepareImport', () => {
   it('adds the author the fetched page names to a recipe the model converted', async () => {
     const html =
       '<html><head><meta name="author" content="Liz Marino"></head><body>A recipe for soup with no structured data at all.</body></html>';
-    globalThis.fetch = (async () =>
+    globalThis.fetch = async () =>
       new Response(html, {
         headers: { 'content-type': 'text/html' },
-      })) as unknown as typeof fetch;
+      });
     const { env } = envAnswering(MODEL_COOKLANG);
     const [item] = await prepare('https://soup.example.com/leek', env);
     expect(item?.status).toBe('DRAFT');

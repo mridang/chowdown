@@ -95,7 +95,7 @@ const liveDeps: CollectionDeps = {
   claimLease: claimDriveLease,
   sync: syncFromDrive,
   claimBackfill: claimBackfillLease,
-  backfill: (db, userId, limit) =>
+  backfill: async (db, userId, limit) =>
     backfillEmbeddings(db, getEnv(), userId, limit),
   background: runInBackground,
   redirect,
@@ -169,7 +169,7 @@ async function backfillIfFree(
  * @param deps - Collaborators; leave out to use the real ones.
  */
 export async function loadCollection(
-  returnTo: string = '/app',
+  returnTo = '/app',
   deps: CollectionDeps = liveDeps,
 ): Promise<Collection> {
   const session = (await deps.session()) ?? deps.redirect('/');

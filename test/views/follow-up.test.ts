@@ -34,30 +34,33 @@ describe('followUpChannels', () => {
 describe('firstThatWorks', () => {
   it('stops at the first route that works', async () => {
     const tried: string[] = [];
-    const used = await firstThatWorks(['openai', 'mcp-message'], (channel) => {
-      tried.push(channel);
-      return Promise.resolve(true);
-    });
+    const used = await firstThatWorks(
+      ['openai', 'mcp-message'],
+      async (channel) => {
+        tried.push(channel);
+        return true;
+      },
+    );
     expect(used).toBe('openai');
     expect(tried).toEqual(['openai']);
   });
 
   it('falls through when a route fails or throws', async () => {
-    const used = await firstThatWorks(['openai', 'mcp-message'], (channel) =>
-      channel === 'openai'
-        ? Promise.reject(new Error('host said no'))
-        : Promise.resolve(true),
+    const used = await firstThatWorks(
+      ['openai', 'mcp-message'],
+      async (channel) =>
+        channel === 'openai'
+          ? Promise.reject(new Error('host said no'))
+          : Promise.resolve(true),
     );
     expect(used).toBe('mcp-message');
   });
 
   it('reports that nothing worked', async () => {
     expect(
-      await firstThatWorks(['mcp-message'], () => Promise.resolve(false)),
+      await firstThatWorks(['mcp-message'], async () => false),
     ).toBeUndefined();
-    expect(
-      await firstThatWorks([], () => Promise.resolve(true)),
-    ).toBeUndefined();
+    expect(await firstThatWorks([], async () => true)).toBeUndefined();
   });
 });
 

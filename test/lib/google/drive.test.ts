@@ -14,7 +14,7 @@ const realFetch = globalThis.fetch;
 /** Make the next `fetch` answer with the given status. */
 function respond(status: number, body = '') {
   const fetchMock = jest.fn(async () => new Response(body, { status }));
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
+  globalThis.fetch = fetchMock;
   return fetchMock;
 }
 
@@ -92,7 +92,7 @@ describe('listRecipeFiles', () => {
         },
       ),
     );
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    globalThis.fetch = fetchMock;
     await listRecipeFiles('folder', 'tok');
     expect(fetchMock).toHaveBeenCalledTimes(20);
   });

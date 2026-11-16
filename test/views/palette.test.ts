@@ -84,8 +84,8 @@ describe('the palettes', () => {
   it('are written as six-digit hex colours, as the contrast check reads them', () => {
     for (const colour of [
       ON_ACCENT,
-      ...Object.values(LIGHT_PALETTE),
-      ...Object.values(DARK_PALETTE),
+      ...Object.values<string>({ ...LIGHT_PALETTE }),
+      ...Object.values<string>({ ...DARK_PALETTE }),
     ]) {
       expect(colour).toMatch(START_HASH_N0_HYPHEN_N9);
     }

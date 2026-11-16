@@ -32,7 +32,7 @@ beforeEach(() => {
   world = openWorld();
 });
 
-afterEach(() => world.close());
+afterEach(async () => world.close());
 
 /** The context Next hands a handler for `.../favourites/:recipe_id`. */
 const ctx = (id: string) => ({ params: Promise.resolve({ recipe_id: id }) });
@@ -73,7 +73,7 @@ describe('GET /api/users/self/favourites/:recipe_id', () => {
 });
 
 describe('PUT /api/users/self/favourites/:recipe_id', () => {
-  const heart = (id: string, headers: Record<string, string> = {}) =>
+  const heart = async (id: string, headers: Record<string, string> = {}) =>
     PUT(fromApp('PUT', '/x', { headers }), ctx(id));
 
   it('answers 401 when nobody is signed in', async () => {
@@ -136,7 +136,8 @@ describe('PUT /api/users/self/favourites/:recipe_id', () => {
 });
 
 describe('DELETE /api/users/self/favourites/:recipe_id', () => {
-  const unheart = (id: string) => DELETE(fromApp('DELETE', '/x'), ctx(id));
+  const unheart = async (id: string) =>
+    DELETE(fromApp('DELETE', '/x'), ctx(id));
 
   it('answers 401 when nobody is signed in', async () => {
     const res = await unheart('a');

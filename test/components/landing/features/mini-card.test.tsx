@@ -6,7 +6,7 @@ import { html } from '../../render';
 
 describe('MiniCard', () => {
   it('shows the title, the time and the difficulty', () => {
-    const recipe = RECIPES[0]!;
+    const recipe = RECIPES[0];
     const out = html(<MiniCard recipe={recipe} />);
     expect(out).toContain(recipe.title);
     expect(out).toContain(recipe.difficulty);

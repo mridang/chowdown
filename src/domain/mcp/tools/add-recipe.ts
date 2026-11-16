@@ -5,7 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 import {
   label,
   modelBudgetRefusal,
@@ -83,7 +83,7 @@ export class AddRecipeTool extends McpTool<
       dish,
       dish,
       content,
-      () => services.tagBestEffort(content, dish),
+      async () => services.tagBestEffort(content, dish),
       (file) => `Saved "${label(file)}".`,
     );
   }

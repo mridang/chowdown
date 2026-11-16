@@ -116,7 +116,7 @@ describe('what the installed app offers', () => {
 });
 
 describe('what assistants are told', () => {
-  const readLlms = () =>
+  const readLlms = async () =>
     readFile(path.join(process.cwd(), 'public/llms.txt'), 'utf8');
 
   it('names the MCP address and does not hand-list tools that may change', async () => {

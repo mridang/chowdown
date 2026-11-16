@@ -24,6 +24,6 @@ const OFFLINE_MESSAGE =
  * Never throws: a refusal carries the server's own words, and a network
  * failure carries a fixed sentence.
  */
-export function deleteAccount(): Promise<DeletionResult> {
+export async function deleteAccount(): Promise<DeletionResult> {
   return requestDeletion('/api/users/self', OFFLINE_MESSAGE);
 }

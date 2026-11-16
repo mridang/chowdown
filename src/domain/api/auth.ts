@@ -142,7 +142,7 @@ export async function requireUid(
   request: Request,
   resolver: CurrentUserResolver = requestCookieResolver,
 ): Promise<Auth<number>> {
-  return authenticate(request, () => resolver.currentUid(request));
+  return authenticate(request, async () => resolver.currentUid(request));
 }
 
 /**
@@ -154,7 +154,7 @@ export async function requireLiveUid(
   request: Request,
   resolver: CurrentUserResolver = requestCookieResolver,
 ): Promise<Auth<number>> {
-  return authenticate(request, () => resolver.currentLiveUid(request));
+  return authenticate(request, async () => resolver.currentLiveUid(request));
 }
 
 /** The caller's full user record, for routes that need Drive access. */
@@ -162,7 +162,7 @@ export async function requireUser(
   request: Request,
   resolver: CurrentUserResolver = requestCookieResolver,
 ): Promise<Auth<User>> {
-  return authenticate(request, () => resolver.currentUser(request));
+  return authenticate(request, async () => resolver.currentUser(request));
 }
 
 /** The value of an {@link Auth}, or the refusal thrown as a problem `Response` (for controllers). */

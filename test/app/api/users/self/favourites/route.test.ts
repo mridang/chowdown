@@ -26,7 +26,7 @@ beforeEach(() => {
   world = openWorld();
 });
 
-afterEach(() => world.close());
+afterEach(async () => world.close());
 
 describe('GET /api/users/self/favourites', () => {
   it('answers 401 when nobody is signed in', async () => {
@@ -45,9 +45,9 @@ describe('GET /api/users/self/favourites', () => {
       .run(uid);
     const res = await GET(fromApp('GET', '/api/users/self/favourites'));
     expect(res.status).toBe(200);
-    const body = (await res.json()) as {
+    const body = await res.json<{
       items: { id: string; favourite: boolean }[];
-    };
+    }>();
     expect(body.items.map((r) => [r.id, r.favourite])).toEqual([['b', true]]);
   });
 
@@ -57,7 +57,7 @@ describe('GET /api/users/self/favourites', () => {
     const res = await GET(
       fromApp('GET', '/api/users/self/favourites?favourite=false'),
     );
-    expect(((await res.json()) as { items: unknown[] }).items).toEqual([]);
+    expect(await res.json<{ items: unknown[] }>()).toHaveProperty('items', []);
   });
 
   it('answers 401 once the session was ended', async () => {

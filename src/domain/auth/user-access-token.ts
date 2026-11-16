@@ -36,16 +36,18 @@ export async function getUserAccessToken(
   }
   const sealed = user.refresh_token_enc;
   const env = getEnv();
-  return accessTokens.resolve(accessTokenKey(user.id, sealed), () =>
+  return accessTokens.resolve(accessTokenKey(user.id, sealed), async () =>
     accessTokenFor(sealed, {
-      decrypt: (stored) => decryptSecret(stored, env.TOKEN_ENCRYPTION_KEY),
-      refresh: (refreshToken) =>
+      decrypt: async (stored) =>
+        decryptSecret(stored, env.TOKEN_ENCRYPTION_KEY),
+      refresh: async (refreshToken) =>
         refreshAccessToken({
           refreshToken,
           clientId: env.GOOGLE_OAUTH_CLIENT_ID,
           clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
         }),
-      forget: (stored) => clearRefreshToken(getDatabase(), user.id, stored),
+      forget: async (stored) =>
+        clearRefreshToken(getDatabase(), user.id, stored),
     }),
   );
 }

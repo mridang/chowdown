@@ -222,7 +222,7 @@ function stringProblems(
   subject: string,
 ): readonly string[] {
   // JSON Schema counts characters as code points, not UTF-16 units.
-  const length = [...value].length;
+  const length = value.match(/./gsu)?.length ?? 0;
   return [
     ...(schema.minLength !== undefined && length < schema.minLength
       ? [`${subject} must be at least ${characters(schema.minLength)} long.`]

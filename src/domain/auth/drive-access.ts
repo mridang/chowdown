@@ -91,7 +91,8 @@ export function isAuthFailure(error: unknown): boolean {
  * counts as out of date: reissuing it once saves a database read on every page.
  */
 export function sessionHintStale(
-  hint: boolean | undefined = undefined,
+  // eslint-disable-next-line sonarjs/bool-param-default -- a cookie from before the hint existed is undefined, and every caller passes it explicitly
+  hint: boolean | undefined,
   connected: boolean,
 ): boolean {
   return hint !== connected;
