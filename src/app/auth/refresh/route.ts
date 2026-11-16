@@ -8,7 +8,8 @@
  * signed in.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { getCurrentUser, getSession, setSessionCookie } from '@/lib/core/auth';
 import { safeReturnPath } from '@/lib/web-security';

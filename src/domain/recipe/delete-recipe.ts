@@ -102,7 +102,7 @@ export async function deleteRecipeForUser(
     {
       owns: async (fileId) =>
         Boolean(await deps.findRecipe(db, user.id, fileId)),
-      trash: (fileId) => deps.trashFile(fileId, token),
+      trash: async (fileId) => deps.trashFile(fileId, token),
       forget: async (fileId) => {
         await deps.deleteData(db, user.id, fileId);
         // Other recipes may list this one as similar; recompute so none link

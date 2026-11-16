@@ -80,11 +80,11 @@ beforeEach(async () => {
 afterEach(() => restore());
 
 /** A GET of the account with the given headers. */
-const read = (headers?: Record<string, string>) =>
+const read = async (headers?: Record<string, string>) =>
   GET(new Request(URL, { headers: headers ?? { cookie } }));
 
 /** A DELETE of the account with the given headers. */
-const remove = (headers?: Record<string, string>) =>
+const remove = async (headers?: Record<string, string>) =>
   DELETE(
     new Request(URL, { method: 'DELETE', headers: headers ?? { cookie } }),
   );

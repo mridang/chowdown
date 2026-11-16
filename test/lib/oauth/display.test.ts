@@ -50,7 +50,7 @@ describe('sanitiseDisplayName', () => {
     const long = sanitiseDisplayName('x'.repeat(500), 'x');
     expect(long).toHaveLength(MAX_DISPLAY_NAME_LENGTH);
     const emoji = sanitiseDisplayName('\u{1F372}'.repeat(150), 'x');
-    expect([...emoji]).toHaveLength(MAX_DISPLAY_NAME_LENGTH);
+    expect(emoji.match(/./gsu)).toHaveLength(MAX_DISPLAY_NAME_LENGTH);
     expect(emoji.includes('�')).toBe(false);
   });
 

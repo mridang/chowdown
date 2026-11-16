@@ -14,7 +14,7 @@ beforeEach(() => {
   world = openWorld();
 });
 
-afterEach(() => world.close());
+afterEach(async () => world.close());
 
 describe('upsertGoogleUser', () => {
   it('creates the person on first sign-in, keyed by their Google account', async () => {

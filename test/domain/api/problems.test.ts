@@ -7,7 +7,7 @@ describe('driveNotConnected', () => {
     const res = driveNotConnected();
     expect(res.status).toBe(409);
     expect(res.headers.get('content-type')).toBe('application/problem+json');
-    const body = (await res.json()) as { type: string; detail: string };
+    const body = await res.json<{ type: string; detail: string }>();
     expect(body.type).toBe('/problems/drive-not-connected');
     expect(body.detail).toContain('Connect your Google Drive');
   });
@@ -18,7 +18,7 @@ describe('upstream', () => {
     const res = upstream('drive down');
     expect(res.status).toBe(502);
     expect(res.headers.get('content-type')).toBe('application/problem+json');
-    const body = (await res.json()) as { type: string; detail: string };
+    const body = await res.json<{ type: string; detail: string }>();
     expect(body.type).toBe('/problems/upstream-failure');
     expect(body.detail).toBe('drive down');
   });

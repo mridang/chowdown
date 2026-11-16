@@ -17,6 +17,7 @@ import {
   settleBackground,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import { z } from 'zod';
 
 const NAME = /"name":"([^"]+)"/;
 const FILES = /\/files\/([\w-]+)/;
@@ -151,7 +152,7 @@ export function fakeGoogle(
   const requests: string[] = [];
   const counter = { created: 0 };
   jest.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
-    const url = String(input);
+    const url = input instanceof Request ? input.url : String(input);
     const method = init?.method ?? 'GET';
     requests.push(`${method} ${url}`);
     if (url.startsWith('https://oauth2.googleapis.com/token')) {
@@ -178,7 +179,10 @@ export function fakeGoogle(
     }
     if (method === 'POST' && url.includes('uploadType=multipart')) {
       counter.created += 1;
-      const text = String(init?.body ?? '');
+      const text = z
+        .string()
+        .default('')
+        .parse(init?.body ?? undefined);
       const name = NAME.exec(text)?.[1] ?? 'new.cook';
       const content =
         text
@@ -197,7 +201,13 @@ export function fakeGoogle(
       if (!file) {
         return new Response('not found', { status: 404 });
       }
-      files.set(id, { ...file, content: String(init?.body ?? '') });
+      files.set(id, {
+        ...file,
+        content: z
+          .string()
+          .default('')
+          .parse(init?.body ?? undefined),
+      });
       return new Response('{}');
     }
     if (method === 'PATCH' && url.includes('fields=id') && id) {

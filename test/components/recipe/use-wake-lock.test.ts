@@ -69,7 +69,7 @@ function fakePage(
   };
 }
 
-const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
+const settled = async () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('shouldRequestLock', () => {
   it('asks only when idle and visible', () => {

@@ -11,7 +11,7 @@ const WHAT_TO_EXPECT = /What to expect/;
 const NEWLINE_HASH_ANY_PLUS = /\n## .+/;
 const NEWLINE_GT_ANY_PLUS = /\n> .+/;
 
-const read = (name: string) =>
+const read = async (name: string) =>
   readFile(path.join(process.cwd(), 'public', name), 'utf8');
 
 const [llmsText, policyText, headersText] = await Promise.all([

@@ -64,7 +64,7 @@ function shown(source: string) {
   const recipe = parseRecipe(source, 'x.cook');
   return {
     ingredients: recipe.ingredients.map((index) =>
-      index.quantity ? `${index.name} — ${index.quantity}` : `${index.name}`,
+      index.quantity ? `${index.name} — ${index.quantity}` : index.name,
     ),
     steps: recipe.steps.map((step) =>
       step.map((t) => (t.kind === 'text' ? t.text : `[${t.kind}]`)).join(''),
@@ -214,9 +214,7 @@ describe('declared ingredient lines (linear-time rewrite)', () => {
     ],
     ['@a{\n', [{ name: 'a', quantity: '' }]],
   ])('declares %j', (input, expected) => {
-    expect(parseRecipe(input as string, 'a.cook').ingredients).toEqual(
-      expected,
-    );
+    expect(parseRecipe(input, 'a.cook').ingredients).toEqual(expected);
   });
   it('scans on a long adversarial input', () => {
     const started = performance.now();

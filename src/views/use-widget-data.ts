@@ -205,13 +205,13 @@ export function useWidgetData<T>(
   }, [app, hostMode]);
 
   const sendFollowUp = useCallback(
-    (prompt: string): Promise<boolean> =>
+    async (prompt: string): Promise<boolean> =>
       sendFollowUpMessage(app, getOpenAi(), prompt),
     [app],
   );
 
   const callTool = useCallback(
-    <U>(
+    async <U>(
       name: string,
       args: Readonly<Record<string, unknown>>,
       toolGuard: (value: unknown) => value is U,

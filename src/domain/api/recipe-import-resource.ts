@@ -29,7 +29,7 @@ export type ImportInput =
 
 /** Check the `input` of `POST /api/recipes/imports`: required, not blank, within the limit. */
 export function parseImportInput(body: unknown): ImportInput {
-  const input =
+  const input: unknown =
     typeof body === 'object' && body !== null
       ? Reflect.get(body, 'input')
       : undefined;

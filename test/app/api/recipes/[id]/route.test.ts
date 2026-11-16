@@ -34,7 +34,7 @@ beforeEach(() => {
   world = openWorld();
 });
 
-afterEach(() => world.close());
+afterEach(async () => world.close());
 
 const SOURCE = '>> title: Curry\n\nCook @onion{1} in a #pan.\n';
 
@@ -69,7 +69,7 @@ describe('GET /api/recipes/:id', () => {
     expect(res.status).toBe(200);
     expect(res.headers.get('etag')).toMatch(START_DQUOTE);
     expect(res.headers.get('vary')).toBe('Accept');
-    const body = (await res.json()) as { id: string; cooklang: string };
+    const body = await res.json<{ id: string; cooklang: string }>();
     expect(body).toMatchObject({ id: 'f1', cooklang: SOURCE });
   });
 
@@ -111,7 +111,7 @@ describe('GET /api/recipes/:id', () => {
 });
 
 describe('PUT /api/recipes/:id', () => {
-  const replace = (json: unknown, headers: Record<string, string> = {}) =>
+  const replace = async (json: unknown, headers: Record<string, string> = {}) =>
     PUT(fromApp('PUT', '/api/recipes/f1', { json, headers }), ctx('f1'));
 
   it('answers 401 when nobody is signed in', async () => {
@@ -153,7 +153,7 @@ describe('PUT /api/recipes/:id', () => {
     const { google } = await withRecipe();
     const res = await replace({ cooklang: `x${'\n'.repeat(150_000)}` });
     expect(res.status).toBe(400);
-    expect(((await res.json()) as { errors: string[] }).errors).toEqual([
+    expect(await res.json<{ errors: string[] }>()).toHaveProperty('errors', [
       'cooklang: at most 5000 lines.',
     ]);
     expect(google.files.get('f1')?.content).toBe(SOURCE);
@@ -215,20 +215,19 @@ describe('PUT /api/recipes/:id', () => {
 
   it('answers 502 when Drive fails', async () => {
     await withRecipe();
-    jest
-      .spyOn(globalThis, 'fetch')
-      .mockImplementation(async (input) =>
-        String(input).includes('oauth2')
-          ? Response.json({ access_token: 't', expires_in: 3599 })
-          : new Response('boom', { status: 500 }),
-      );
+    jest.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = input instanceof Request ? input.url : String(input);
+      return url.includes('oauth2')
+        ? Response.json({ access_token: 't', expires_in: 3599 })
+        : new Response('boom', { status: 500 });
+    });
     const res = await replace({ cooklang: 'x' });
     expect(res.status).toBe(502);
   });
 });
 
 describe('PATCH /api/recipes/:id', () => {
-  const patch = (json: unknown, type = 'application/merge-patch+json') =>
+  const patch = async (json: unknown, type = 'application/merge-patch+json') =>
     PATCH(fromApp('PATCH', '/api/recipes/f1', { json, type }), ctx('f1'));
 
   it('answers 401 when nobody is signed in', async () => {
@@ -288,7 +287,7 @@ describe('PATCH /api/recipes/:id', () => {
 });
 
 describe('DELETE /api/recipes/:id', () => {
-  const remove = (id = 'f1') =>
+  const remove = async (id = 'f1') =>
     DELETE(fromApp('DELETE', `/api/recipes/${id}`), ctx(id));
 
   it('answers 401 when nobody is signed in', async () => {

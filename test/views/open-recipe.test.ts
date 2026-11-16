@@ -58,19 +58,18 @@ function host(overrides: Partial<OpenRecipeHost> = {}) {
     data: RECIPE,
   };
   const value: OpenRecipeHost = {
-    sendFollowUp: (prompt) => {
+    sendFollowUp: async (prompt) => {
       sent.push(prompt);
-      return Promise.resolve(true);
+      return true;
     },
     canCallTools: true,
-    callTool: (name, args) => {
+    callTool: async (name, args) => {
       calls.push({ name, args });
-      return Promise.resolve(outcome);
+      return outcome;
     },
     expanded: false,
-    collapse: () => {
+    collapse: async () => {
       collapsed.push('collapse');
-      return Promise.resolve();
     },
     ...overrides,
   };
@@ -121,7 +120,7 @@ describe('openRecipe', () => {
   });
 
   it('opens the recipe in place by id when no route carries a message', async () => {
-    const h = host({ sendFollowUp: () => Promise.resolve(false) });
+    const h = host({ sendFollowUp: async () => false });
     const actions = await tap({ id: 'abc_123', title: 'Pasta' }, h.value);
     expect(h.calls).toEqual([
       { name: 'get_recipe', args: { recipe: 'abc_123' } },
@@ -135,7 +134,7 @@ describe('openRecipe', () => {
 
   it('says so when the host can neither message nor run tools', async () => {
     const h = host({
-      sendFollowUp: () => Promise.resolve(false),
+      sendFollowUp: async () => false,
       canCallTools: false,
     });
     const actions = await tap({ id: 'abc_123', title: 'Pasta' }, h.value);

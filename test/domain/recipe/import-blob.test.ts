@@ -159,12 +159,12 @@ describe('splitTextBlocks separators (linear-time rewrite)', () => {
       ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n---'],
     ],
   ])('splits %j', (input, expected) => {
-    expect(splitTextBlocks(input as string)).toEqual(expected);
+    expect(splitTextBlocks(input)).toEqual(expected);
   });
   it('scans on a long adversarial input', () => {
     const started = performance.now();
     splitTextBlocks(`${'a'.repeat(30)}${'\n '.repeat(50_000)}x`);
-    splitTextBlocks(`${'\n --- '.repeat(20_000)}`);
+    splitTextBlocks('\n --- '.repeat(20_000));
     expect(performance.now() - started).toBeLessThan(FAST_MS);
   });
 });

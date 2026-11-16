@@ -226,7 +226,7 @@ function leadingAmount(
     }
   }
   const lead = new RegExp(String.raw`^(${NUM})\s*(.*)$`).exec(text);
-  if (!lead || !lead[2]) {
+  if (!lead?.[2]) {
     return undefined;
   }
   const amount = (lead[1] ?? '').trim();

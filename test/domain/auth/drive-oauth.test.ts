@@ -7,6 +7,7 @@ import {
   refreshAccessToken,
   revokeToken,
 } from '@/domain/auth/drive-oauth';
+import { z } from 'zod';
 
 const TOKEN_REFRESH_FAILED = /Token refresh failed: unexpected response/;
 const INVALID_GRANT = /invalid_grant/;
@@ -87,7 +88,9 @@ describe('refreshAccessToken', () => {
       access_token: 'new',
       expires_in: 3599,
     });
-    const form = new URLSearchParams(String(fetchSpy.mock.calls[0]?.[1]?.body));
+    const form = z
+      .instanceof(URLSearchParams)
+      .parse(fetchSpy.mock.calls[0]?.[1]?.body);
     expect(form.get('grant_type')).toBe('refresh_token');
     expect(form.get('refresh_token')).toBe('rt');
   });
@@ -112,7 +115,7 @@ describe('revokeToken', () => {
     const [url, init] = fetchSpy.mock.calls[0] ?? [];
     expect(url).toBe('https://oauth2.googleapis.com/revoke');
     expect(init?.method).toBe('POST');
-    expect(new URLSearchParams(String(init?.body)).get('token')).toBe(
+    expect(z.instanceof(URLSearchParams).parse(init?.body).get('token')).toBe(
       'the-token',
     );
   });

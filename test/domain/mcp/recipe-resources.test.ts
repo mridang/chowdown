@@ -2,7 +2,8 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import type { User } from '@/domain/db/users';
-import { BackendFailureError, RpcError } from '@/lib/mcp';
+import type { RpcError } from '@/lib/mcp';
+import { BackendFailureError } from '@/lib/mcp';
 import {
   RECIPE_TEMPLATE,
   cachedRecipeLister,
@@ -149,7 +150,7 @@ describe('readRecipeResource', () => {
 
   it('repeats only the start of an absurdly long address in the refusal', async () => {
     const error = await refusal(`recipe:///${'a'.repeat(5000)}!`);
-    expect(String((error.data as { uri: string }).uri)).toHaveLength(200);
+    expect((error.data as { uri: string }).uri).toHaveLength(200);
   });
 
   it('refuses an id the user has no recipe for, with the address in the detail', async () => {

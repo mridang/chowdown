@@ -98,7 +98,7 @@ export async function prepareImport(
   units: readonly ImportUnit[],
   env: CloudflareEnv,
 ): Promise<readonly ImportItem[]> {
-  return mapSequentially(units.slice(0, MAX_IMPORT_UNITS), (unit) =>
+  return mapSequentially(units.slice(0, MAX_IMPORT_UNITS), async (unit) =>
     prepareUnit(unit, env),
   );
 }

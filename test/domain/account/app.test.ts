@@ -30,7 +30,7 @@ beforeEach(async () => {
   person = found;
 });
 
-afterEach(() => world.close());
+afterEach(async () => world.close());
 
 /** Delete-time tidying for the person, with its background work finished. */
 async function tidy(): Promise<void> {

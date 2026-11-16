@@ -7,4 +7,4 @@
  */
 
 /** Base for every API request/response model. @public */
-export type ApiModel = Record<never, never>;
+export type ApiModel = object;

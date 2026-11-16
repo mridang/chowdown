@@ -151,24 +151,16 @@ function blockOf(prelude: string): string {
   }
   const open = css.indexOf('{', start);
   const rest = css.slice(open + 1);
-  const body = [...rest].reduce<{
-    readonly depth: number;
-    readonly text: string;
-    readonly done: boolean;
-  }>(
-    (state, char) => {
-      if (state.done) {
-        return state;
-      }
-      const depth =
-        state.depth + (char === '{' ? 1 : 0) - (char === '}' ? 1 : 0);
-      return depth < 0
-        ? Object.assign(state, { done: true })
-        : { depth, text: state.text + char, done: false };
-    },
-    { depth: 0, text: '', done: false },
-  );
-  return body.text;
+  let depth = 0;
+  let text = '';
+  for (const char of rest) {
+    depth += (char === '{' ? 1 : 0) - (char === '}' ? 1 : 0);
+    if (depth < 0) {
+      break;
+    }
+    text += char;
+  }
+  return text;
 }
 
 describe('typography the browser does for us', () => {

@@ -84,7 +84,7 @@ describe('GET /api/recipes/imports/:id', () => {
 });
 
 describe('DELETE /api/recipes/imports/:id', () => {
-  const remove = (id: string) =>
+  const remove = async (id: string) =>
     DELETE(new Request(`${URL}/${id}`, { method: 'DELETE' }), context(id));
 
   it('answers 401 when nobody is signed in, and deletes nothing', async () => {

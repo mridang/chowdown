@@ -11,7 +11,7 @@
 
 import type { RecipeCardData, RecipeListItem } from '@/domain/mcp/ui-types';
 import type { ListAction } from '@/views/list-state';
-import { type ToolOutcome } from '@/views/payload';
+import type { ToolOutcome } from '@/views/payload';
 import { isRecipeCardData } from '@/views/guards';
 
 /**

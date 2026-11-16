@@ -60,7 +60,7 @@ let fetched: string[];
 /** Make every fetch answer with a fresh response from `respond`. */
 function serving(respond: () => Response): void {
   globalThis.fetch = (async (url: string) => {
-    fetched.push(String(url));
+    fetched.push(url);
     return respond();
   }) as unknown as typeof fetch;
 }
@@ -72,7 +72,7 @@ const jpeg = () =>
   });
 
 /** A request for a picture. */
-const ask = (url = PHOTO, width: string | number = WIDTH) =>
+const ask = async (url = PHOTO, width: string | number = WIDTH) =>
   GET(
     new Request(
       `https://app.test/img?url=${encodeURIComponent(url)}&w=${width}`,

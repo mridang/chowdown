@@ -56,7 +56,7 @@ export function LiveSearchField({
   const text = values[parameter] ?? '';
 
   /** Put the text in the address, clearing the parameters that depend on it. */
-  const update = (next: string, options?: Options) =>
+  const update = async (next: string, options?: Options) =>
     setValues(
       {
         [parameter]: next.trim() === '' ? null : next,

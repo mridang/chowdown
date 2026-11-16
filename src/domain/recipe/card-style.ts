@@ -32,10 +32,10 @@ function firstUnit(char: string): number {
 export function toneFor(text: string): Tone {
   // A small rolling hash over the characters; kept below 997 so it never
   // outgrows a safe integer however long the text is.
-  const hash = [...text].reduce(
-    (sum, char) => (sum * 31 + firstUnit(char)) % 997,
-    0,
-  );
+  let hash = 0;
+  for (const char of text) {
+    hash = (hash * 31 + firstUnit(char)) % 997;
+  }
   return TONES.at(hash % TONES.length) ?? TONES[0];
 }
 

@@ -53,7 +53,9 @@ describe('rateLimit', () => {
 
   it('lets a subject through until it has used up the window', async () => {
     const answers = await Promise.all(
-      [1, 2, 3].map((tick) => rateLimit(store, TOOLS, 'ann', 1000 + tick)),
+      [1, 2, 3].map(async (tick) =>
+        rateLimit(store, TOOLS, 'ann', 1000 + tick),
+      ),
     );
     expect(answers).toEqual([
       { allowed: true, remaining: 2 },
@@ -64,7 +66,7 @@ describe('rateLimit', () => {
 
   it('refuses the next hit and says how long until the window ends', async () => {
     await Promise.all(
-      [1, 2, 3].map((t) => rateLimit(store, TOOLS, 'ann', 1000 + t)),
+      [1, 2, 3].map(async (t) => rateLimit(store, TOOLS, 'ann', 1000 + t)),
     );
     expect(await rateLimit(store, TOOLS, 'ann', 1030)).toEqual({
       allowed: false,
@@ -74,7 +76,7 @@ describe('rateLimit', () => {
 
   it('starts a fresh window once the old one has run out', async () => {
     await Promise.all(
-      [1, 2, 3, 4].map((t) => rateLimit(store, TOOLS, 'ann', 1000 + t)),
+      [1, 2, 3, 4].map(async (t) => rateLimit(store, TOOLS, 'ann', 1000 + t)),
     );
     expect(await rateLimit(store, TOOLS, 'ann', 1061)).toEqual({
       allowed: true,
@@ -84,7 +86,7 @@ describe('rateLimit', () => {
 
   it('counts each subject, and each named limit, on its own', async () => {
     await Promise.all(
-      [1, 2, 3, 4].map((t) => rateLimit(store, TOOLS, 'ann', 1000 + t)),
+      [1, 2, 3, 4].map(async (t) => rateLimit(store, TOOLS, 'ann', 1000 + t)),
     );
     const bob = await rateLimit(store, TOOLS, 'bob', 1010);
     expect(bob.allowed).toBe(true);
@@ -99,12 +101,12 @@ describe('rateLimit', () => {
 
   it('never tells a client to retry in less than a second', async () => {
     await Promise.all(
-      [1, 2, 3].map((t) => rateLimit(store, TOOLS, 'ann', 1000 + t)),
+      [1, 2, 3].map(async (t) => rateLimit(store, TOOLS, 'ann', 1000 + t)),
     );
     const answer = await rateLimit(store, TOOLS, 'ann', 1060);
-    expect(
-      answer.allowed === false && answer.retryAfterSeconds,
-    ).toBeGreaterThanOrEqual(1);
+    expect(!answer.allowed && answer.retryAfterSeconds).toBeGreaterThanOrEqual(
+      1,
+    );
   });
 });
 

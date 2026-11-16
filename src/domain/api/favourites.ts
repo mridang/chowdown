@@ -22,7 +22,7 @@ export const favouritesCollection = new ApiController<{
 }).on({
   method: 'GET',
   // listRecipes already builds the page result; send it as-is.
-  handle: (_input, { request, uid }) =>
+  handle: async (_input, { request, uid }) =>
     listRecipes(request, uid, { favourite: 'true' }),
   encode: (result) => result,
 });

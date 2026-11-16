@@ -7,7 +7,8 @@ describe('driveFailure', () => {
   it('says to connect Drive when that is what is missing', async () => {
     const res = driveFailure(new DriveNotConnectedError(), 'unused');
     expect(res.status).toBe(409);
-    expect(((await res.json()) as { type: string }).type).toBe(
+    expect(await res.json<{ type: string }>()).toHaveProperty(
+      'type',
       '/problems/drive-not-connected',
     );
   });
@@ -15,7 +16,8 @@ describe('driveFailure', () => {
   it('reports any other failure as an upstream problem with the given detail', async () => {
     const res = driveFailure(new Error('Drive GET -> 500'), 'Nothing changed.');
     expect(res.status).toBe(502);
-    expect(((await res.json()) as { detail: string }).detail).toBe(
+    expect(await res.json<{ detail: string }>()).toHaveProperty(
+      'detail',
       'Nothing changed.',
     );
   });

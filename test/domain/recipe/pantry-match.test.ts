@@ -406,10 +406,7 @@ describe('parenthesised notes (linear-time rewrite)', () => {
     ['butter (unsalted', [['butter'], false]],
     ['a (b (c) d) e', [['d', 'e'], false]],
   ])('reads %j', (input, expected) => {
-    expect([
-      ingredientWords(input as string),
-      isStaple(input as string),
-    ]).toEqual(expected);
+    expect([ingredientWords(input), isStaple(input)]).toEqual(expected);
   });
   it('scans on a long adversarial input', () => {
     const started = performance.now();

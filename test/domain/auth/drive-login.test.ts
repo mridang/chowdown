@@ -15,6 +15,7 @@ import {
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 import { testEnv } from './session-fixture';
+import { z } from 'zod';
 
 let restore: () => void;
 let env: Record<string, unknown>;
@@ -42,11 +43,14 @@ describe('revokeDriveLogin', () => {
       String(env['TOKEN_ENCRYPTION_KEY']),
     );
     await revokeDriveLogin(userWith(sealed));
-    expect(String(spy.mock.calls[0]?.[0])).toBe(
+    expect(z.string().parse(spy.mock.calls[0]?.[0])).toBe(
       'https://oauth2.googleapis.com/revoke',
     );
     expect(
-      new URLSearchParams(String(spy.mock.calls[0]?.[1]?.body)).get('token'),
+      z
+        .instanceof(URLSearchParams)
+        .parse(spy.mock.calls[0]?.[1]?.body)
+        .get('token'),
     ).toBe('the-refresh-token');
   });
 

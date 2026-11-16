@@ -36,7 +36,7 @@ beforeEach(() => {
   jest.spyOn(console, 'error').mockImplementation(() => undefined);
 });
 
-afterEach(() => world.close());
+afterEach(async () => world.close());
 
 const DRIVE_URL = 'https://www.googleapis.com/drive/v3/files';
 
@@ -61,7 +61,7 @@ const driveAnswers = () =>
  * Finish a Drive round trip for `sub`, with or without the Drive permission and
  * a refresh token, from a browser holding `cookies`.
  */
-function connect(
+async function connect(
   cookies: Record<string, string> = {},
   options: {
     sub?: string;

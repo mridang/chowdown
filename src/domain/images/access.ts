@@ -39,8 +39,8 @@ export function signatureFor(): string | undefined {
  * Async to match the shared `ImageAccess` interface the service awaits; who may
  * ask is decided by {@link authenticate} and {@link mayFetch}, not a signature.
  */
-export function signatureValid(): Promise<boolean> {
-  return Promise.resolve(true);
+export async function signatureValid(): Promise<boolean> {
+  return true;
 }
 
 /**

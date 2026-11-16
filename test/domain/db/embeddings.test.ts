@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
+import { z } from 'zod';
 
 import {
   deleteEmbeddingsNotIn,
@@ -40,7 +41,10 @@ function stamps(made: ReturnType<typeof withRecipes>) {
     made.raw
       .prepare('SELECT drive_file_id, embedded_at FROM recipes')
       .all()
-      .map((row) => [row['drive_file_id'], row['embedded_at'] !== null]),
+      .map((row): [string, boolean] => [
+        z.string().parse(row['drive_file_id']),
+        row['embedded_at'] !== null,
+      ]),
   );
 }
 

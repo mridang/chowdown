@@ -7,6 +7,7 @@ import {
   postRecipe,
   readImport,
 } from '@/app/(site)/(pages)/recipes/add/_components/recipe-requests';
+import { z } from 'zod';
 
 afterEach(() => {
   jest.restoreAllMocks();
@@ -16,7 +17,7 @@ afterEach(() => {
 function stubFetch() {
   return jest
     .spyOn(globalThis, 'fetch')
-    .mockImplementation(() => Promise.resolve(Response.json({})));
+    .mockImplementation(async () => Response.json({}));
 }
 
 describe('postRecipe', () => {
@@ -28,7 +29,7 @@ describe('postRecipe', () => {
     expect(url).toBe('/api/recipes');
     expect(init?.method).toBe('POST');
     expect(init?.headers).toEqual({ 'Content-Type': 'application/json' });
-    expect(JSON.parse(String(init?.body))).toEqual({
+    expect(JSON.parse(z.string().parse(init?.body))).toEqual({
       name: 'Pancakes',
       cooklang: '>> servings: 2',
     });
@@ -42,7 +43,7 @@ describe('postImport', () => {
     const [url, init] = fetchSpy.mock.calls[0] ?? [];
     expect(url).toBe('/api/recipes/imports');
     expect(init?.method).toBe('POST');
-    expect(JSON.parse(String(init?.body))).toEqual({
+    expect(JSON.parse(z.string().parse(init?.body))).toEqual({
       input: 'https://example.com/pasta',
     });
   });
@@ -67,9 +68,9 @@ describe('discardImport', () => {
   });
 
   it('shrugs off a failure, since nothing waits on it', async () => {
-    jest
-      .spyOn(globalThis, 'fetch')
-      .mockImplementation(() => Promise.reject(new Error('offline')));
+    jest.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      throw new Error('offline');
+    });
     expect(() => discardImport('abc')).not.toThrow();
     await Promise.resolve();
   });

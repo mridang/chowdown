@@ -34,7 +34,7 @@ beforeEach(() => {
   world = openWorld();
 });
 
-afterEach(() => world.close());
+afterEach(async () => world.close());
 
 /** The session the route put in its response cookie. */
 async function reissued(res: Awaited<ReturnType<typeof GET>>) {

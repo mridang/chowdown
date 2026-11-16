@@ -265,7 +265,7 @@ export function RecipeListApp(): ReactElement {
   } = bridge;
 
   const open = useCallback(
-    (recipe: RecipeListItem) =>
+    async (recipe: RecipeListItem) =>
       openRecipe(
         recipe,
         { sendFollowUp, canCallTools, callTool, expanded, collapse },

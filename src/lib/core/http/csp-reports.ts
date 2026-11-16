@@ -65,10 +65,7 @@ function field(
   body: Readonly<Record<string, unknown>>,
   ...keys: readonly string[]
 ): string {
-  return (
-    (keys.map((key) => body[key]).find((v) => typeof v === 'string') as
-      string | undefined) ?? ''
-  );
+  return keys.map((key) => body[key]).find((v) => typeof v === 'string') ?? '';
 }
 
 /** The path of an address, without its origin, query or fragment; '' when it is not one. */

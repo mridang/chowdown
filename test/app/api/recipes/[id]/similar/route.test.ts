@@ -26,7 +26,7 @@ beforeEach(() => {
   world = openWorld();
 });
 
-afterEach(() => world.close());
+afterEach(async () => world.close());
 
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 const request = () => fromApp('GET', '/api/recipes/f1/similar');
@@ -48,7 +48,7 @@ describe('GET /api/recipes/:id/similar', () => {
     addRecipe(world, uid, 'f1', '>> title: A\n');
     const res = await GET(request(), ctx('f1'));
     expect(res.status).toBe(200);
-    expect(((await res.json()) as { items: unknown[] }).items).toEqual([]);
+    expect(await res.json<{ items: unknown[] }>()).toHaveProperty('items', []);
   });
 
   it('answers the stored list, best first, as id and title', async () => {
@@ -67,7 +67,7 @@ describe('GET /api/recipes/:id/similar', () => {
       );
     const res = await GET(request(), ctx('f1'));
     expect(res.headers.get('cache-control')).toBe('private, no-cache');
-    expect(((await res.json()) as { items: unknown[] }).items).toEqual([
+    expect(await res.json<{ items: unknown[] }>()).toHaveProperty('items', [
       { id: 'x', title: 'Ex' },
       { id: 'y', title: 'Why' },
     ]);

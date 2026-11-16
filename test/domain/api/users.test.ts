@@ -21,7 +21,7 @@ beforeEach(() => {
   world = openWorld();
 });
 
-afterEach(() => world.close());
+afterEach(async () => world.close());
 
 describe('GET /api/users/self', () => {
   it('answers the profile, in API form', async () => {
@@ -32,7 +32,7 @@ describe('GET /api/users/self', () => {
 });
 
 describe('PATCH /api/users/self', () => {
-  const patch = (json: unknown, type = 'application/merge-patch+json') =>
+  const patch = async (json: unknown, type = 'application/merge-patch+json') =>
     PATCH(fromApp('PATCH', '/api/users/self', { json, type }));
 
   it('answers 401 when nobody is signed in', async () => {
@@ -66,9 +66,7 @@ describe('PATCH /api/users/self', () => {
     await signIn(world);
     await patch({ measurement_system: 'METRIC' });
     const res = await patch({ measurement_system: null });
-    expect((await res.json()) as object).not.toHaveProperty(
-      'measurement_system',
-    );
+    expect(await res.json<object>()).not.toHaveProperty('measurement_system');
     expect(world.raw.prepare('SELECT units FROM users').get()).toEqual({
       units: null,
     });

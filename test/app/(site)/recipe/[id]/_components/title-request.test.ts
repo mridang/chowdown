@@ -5,6 +5,7 @@ import {
   COULD_NOT_RENAME,
   patchTitle,
 } from '@/app/(site)/recipe/[id]/_components/title-request';
+import { z } from 'zod';
 
 afterEach(() => {
   jest.restoreAllMocks();
@@ -25,7 +26,7 @@ describe('patchTitle', () => {
       'Content-Type': 'application/merge-patch+json',
       'If-Match': '"abc"',
     });
-    expect(JSON.parse(String(init?.body))).toEqual({
+    expect(JSON.parse(z.string().parse(init?.body))).toEqual({
       title: 'Red lentil dal',
     });
   });

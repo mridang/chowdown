@@ -107,7 +107,7 @@ describe('toIsoDuration (linear-time rewrite)', () => {
     ['about 10 mins', 'PT10M'],
     ['1 month', null],
   ])('reads %j', (input, expected) => {
-    expect(toIsoDuration(input as string) ?? null).toEqual(expected);
+    expect(toIsoDuration(input) ?? null).toEqual(expected);
   });
   it('scans on a long adversarial input', () => {
     const started = performance.now();

@@ -5,7 +5,7 @@ import { CookVisual } from '@/components/landing/features/cook-visual';
 import { html } from '../../render';
 
 describe('CookVisual', () => {
-  const recipe = RECIPES[0]!;
+  const recipe = RECIPES[0];
   const out = html(<CookVisual recipe={recipe} />);
 
   it('is one labelled image of a phone in cook mode', () => {

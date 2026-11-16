@@ -5,7 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import { type ToolContent, type ToolContext } from '@/domain/mcp/tool-context';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 import { plainTitle } from '@/domain/mcp/tool-text';
 import { saveUnlessThere } from '@/domain/mcp/tools/recipe-support';
 import {

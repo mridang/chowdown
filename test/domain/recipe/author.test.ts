@@ -369,7 +369,7 @@ describe('author text scanning (linear-time rewrites)', () => {
     [',;: ', null],
     ['Jane Cook...  ', 'Jane Cook'],
   ])('cleans %j', (input, expected) => {
-    expect(cleanAuthorName(input as string) ?? null).toEqual(expected);
+    expect(cleanAuthorName(input) ?? null).toEqual(expected);
   });
   it.each([
     ['>> author: Jane Doe  \t\nx', 'Jane Doe'],
@@ -378,7 +378,7 @@ describe('author text scanning (linear-time rewrites)', () => {
     ['>> title: x\n>> author:A B', 'A B'],
     ['x>> author: q', null],
   ])('reads the source byline %j', (input, expected) => {
-    expect(authorFromSource(input as string) ?? null).toEqual(expected);
+    expect(authorFromSource(input) ?? null).toEqual(expected);
   });
   it('scans on a long adversarial input', () => {
     const started = performance.now();

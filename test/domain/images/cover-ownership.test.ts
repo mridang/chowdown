@@ -105,7 +105,7 @@ describe('userHasCover with the recipe_images index', () => {
   }
 
   /** Cache a recipe the way a sync does, so it is indexed. */
-  const save = (userId: number, fileId: string, source: string) =>
+  const save = async (userId: number, fileId: string, source: string) =>
     upsertRecipe(database.db, {
       user_id: userId,
       drive_file_id: fileId,

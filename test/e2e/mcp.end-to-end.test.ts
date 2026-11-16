@@ -133,65 +133,70 @@ const SUITE_USER = { id: 1, refresh_token_enc: null } as Readonly<User>;
 
 /** The MCP endpoint on a loopback port, answering as `/mcp` does. */
 async function listen(): Promise<{ server: Server; url: string }> {
-  const server = createServer(async (incoming, outgoing) => {
-    // The server's own address, not the request's `Host` header, so a request
-    // that names another host (DNS rebinding) is refused rather than echoed.
-    const address = server.address();
-    const origin = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
-    const hasBody = incoming.method !== 'GET' && incoming.method !== 'HEAD';
-    const request = new Request(new URL(incoming.url ?? '/', origin), {
-      method: incoming.method,
-      headers: Object.fromEntries(
-        Object.entries(incoming.headers).flatMap(([name, value]) =>
-          typeof value === 'string' ? [[name, value]] : [],
+  const server = createServer((incoming, outgoing) => {
+    void (async () => {
+      // The server's own address, not the request's `Host` header, so a request
+      // that names another host (DNS rebinding) is refused rather than echoed.
+      const address = server.address();
+      const origin = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
+      const hasBody = incoming.method !== 'GET' && incoming.method !== 'HEAD';
+      const request = new Request(new URL(incoming.url ?? '/', origin), {
+        method: incoming.method,
+        headers: Object.fromEntries(
+          Object.entries(incoming.headers).flatMap(([name, value]) =>
+            typeof value === 'string' ? [[name, value]] : [],
+          ),
         ),
-      ),
-      ...(hasBody
-        ? { body: Readable.toWeb(incoming) as ReadableStream, duplex: 'half' }
-        : {}),
-    });
-    try {
-      const response = await respondToMcp(
-        request,
-        origin,
-        async () => ({
-          kind: 'ok',
-          user: SUITE_USER,
-          scope: [SCOPE_READ, SCOPE_WRITE],
-        }),
-        {
-          // Counters in memory, with the same fixed windows as the database ones.
-          store: () => {
-            const windows = new Map<
-              string,
-              { count: number; windowStart: number }
-            >();
-            return {
-              hit: async (key, now, windowSeconds) => {
-                const current = windows.get(key);
-                const next =
-                  current && current.windowStart > now - windowSeconds
-                    ? {
-                        count: current.count + 1,
-                        windowStart: current.windowStart,
-                      }
-                    : { count: 1, windowStart: now };
-                windows.set(key, next);
-                return next;
-              },
-              purge: async () => {},
-            };
+        ...(hasBody
+          ? { body: Readable.toWeb(incoming) as ReadableStream, duplex: 'half' }
+          : {}),
+      });
+      try {
+        const response = await respondToMcp(
+          request,
+          origin,
+          async () => ({
+            kind: 'ok',
+            user: SUITE_USER,
+            scope: [SCOPE_READ, SCOPE_WRITE],
+          }),
+          {
+            // Counters in memory, with the same fixed windows as the database ones.
+            store: () => {
+              const windows = new Map<
+                string,
+                { count: number; windowStart: number }
+              >();
+              return {
+                hit: async (key, now, windowSeconds) => {
+                  const current = windows.get(key);
+                  const next =
+                    current && current.windowStart > now - windowSeconds
+                      ? {
+                          count: current.count + 1,
+                          windowStart: current.windowStart,
+                        }
+                      : { count: 1, windowStart: now };
+                  windows.set(key, next);
+                  return next;
+                },
+                purge: async () => {},
+              };
+            },
+            now: () => Math.floor(Date.now() / 1000),
+            random: () => 1,
           },
-          now: () => Math.floor(Date.now() / 1000),
-          random: () => 1,
-        },
-      );
-      outgoing.writeHead(response.status, Object.fromEntries(response.headers));
-      outgoing.end(Buffer.from(await response.arrayBuffer()));
-    } catch (error: unknown) {
-      console.error(error);
-      outgoing.writeHead(500).end();
-    }
+        );
+        outgoing.writeHead(
+          response.status,
+          Object.fromEntries(response.headers),
+        );
+        outgoing.end(Buffer.from(await response.arrayBuffer()));
+      } catch (error: unknown) {
+        console.error(error);
+        outgoing.writeHead(500).end();
+      }
+    })();
   });
   const port = await new Promise<number>((resolve) => {
     server.listen(0, '127.0.0.1', () => {
@@ -238,8 +243,9 @@ describe('the MCP server against the official conformance suite', () => {
             baseline,
           ],
           { maxBuffer: 64 * 1024 * 1024 },
-        ).catch((error: Error & { stdout?: string }) => {
-          throw new Error(error.stdout ?? error.message);
+        ).catch((error: unknown) => {
+          const failure = error as Error & { stdout?: string };
+          throw new Error(failure.stdout ?? failure.message);
         }),
       ).resolves.toBeDefined();
     },

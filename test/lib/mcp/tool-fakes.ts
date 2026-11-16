@@ -186,7 +186,7 @@ export function fakeServices(overrides: Partial<ToolServices> = {}) {
 }
 
 /** Call a tool against a fake folder and fake services. */
-export function call(
+export async function call(
   name: string,
   args: Record<string, unknown>,
   fake: ReturnType<typeof folder>,

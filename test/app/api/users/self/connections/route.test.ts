@@ -65,7 +65,7 @@ describe('GET /api/users/self/connections', () => {
     const res = await GET(new Request(URL));
     expect(res.status).toBe(200);
     expect(res.headers.get('cache-control')).toBe('private, no-cache');
-    const body = (await res.json()) as { items: unknown[] };
+    const body = await res.json<{ items: unknown[] }>();
     expect(body.items).toEqual([
       {
         id: 'g1',
@@ -92,9 +92,9 @@ describe('GET /api/users/self/connections', () => {
       )
       .run();
     const res = await GET(new Request(URL));
-    const body = (await res.json()) as {
+    const body = await res.json<{
       items: { id: string; scopes: string[]; installs: number }[];
-    };
+    }>();
     expect(body.items[0]).toMatchObject({
       id: 'g1',
       scopes: [SCOPE_READ, SCOPE_WRITE],
@@ -114,26 +114,26 @@ describe('GET /api/users/self/connections', () => {
       )
       .run();
     const res = await GET(new Request(URL));
-    const body = (await res.json()) as {
+    const body = await res.json<{
       items: { id: string; domain?: string }[];
-    };
+    }>();
     expect(body.items.find((a) => a.id === 'g4')?.domain).toBe('claude.ai');
     expect(body.items.find((a) => a.id === 'g1')).not.toHaveProperty('domain');
   });
 
   it('pages the list: a short page links to the next, and the cursor continues after it', async () => {
     const firstRes = await GET(new Request(`${URL}?limit=1`));
-    const first = (await firstRes.json()) as {
+    const first = await firstRes.json<{
       next?: string;
       items: { id: string }[];
-    };
+    }>();
     expect(first.items.map((a) => a.id)).toEqual(['g1']);
     expect(first.next).toContain('cursor=');
     const secondRes = await GET(new Request(first.next ?? ''));
-    const second = (await secondRes.json()) as {
+    const second = await secondRes.json<{
       next?: string;
       items: { id: string }[];
-    };
+    }>();
     expect(second.items.map((a) => a.id)).toEqual(['g2']);
     expect(second.next).toBeUndefined();
   });

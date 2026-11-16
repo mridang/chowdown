@@ -76,10 +76,10 @@ describe('guardFileOps', () => {
   });
 
   it.each([
-    ['list', (f: FileOps) => f.list()],
-    ['read', (f: FileOps) => f.read('a')],
-    ['create', (f: FileOps) => f.create('B.cook', 'x')],
-    ['update', (f: FileOps) => f.update('a', 'x')],
+    ['list', async (f: FileOps) => f.list()],
+    ['read', async (f: FileOps) => f.read('a')],
+    ['create', async (f: FileOps) => f.create('B.cook', 'x')],
+    ['update', async (f: FileOps) => f.update('a', 'x')],
   ])('turns a failing %s into a Google Drive failure', async (name, run) => {
     const files = guardFileOps(ops({ [name]: boom }));
     await expect(run(files)).rejects.toMatchObject({ service: 'Google Drive' });

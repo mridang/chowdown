@@ -37,7 +37,10 @@ function textOf(value: unknown): string | undefined {
 }
 
 /** Ask the server to save a recipe to the person's Drive. The name is trimmed. */
-export function postRecipe(name: string, cooklang: string): Promise<Response> {
+export async function postRecipe(
+  name: string,
+  cooklang: string,
+): Promise<Response> {
   return fetch('/api/recipes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -56,7 +59,7 @@ export function createdRecipeId(body: unknown): string | undefined {
  * give up: aborting it ends the wait (the server may still finish; nothing is
  * saved until they review it).
  */
-export function postImport(
+export async function postImport(
   input: string,
   signal?: AbortSignal,
 ): Promise<Response> {

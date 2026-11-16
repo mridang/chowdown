@@ -84,7 +84,7 @@ class RedirectedError extends Error {
 const pageRows = (
   options: { recipe?: boolean; epoch?: number } = {},
 ): RecipePageRows => ({
-  recipe: options.recipe === false ? undefined : (row('r1') as never),
+  recipe: options.recipe === false ? undefined : row('r1'),
   favourite: false,
   similarJson: null,
   similarRecipes: [],

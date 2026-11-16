@@ -58,7 +58,7 @@ const liveDeps: MutateLiveDeps = {
   findRecipe: getRecipeByFileId,
   readFile: getFileContent,
   writeFile: updateRecipeFile,
-  index: (db, userId, fileId, name, source) =>
+  index: async (db, userId, fileId, name, source) =>
     indexRecipeWrite(db, userId, fileId, name, source),
 };
 

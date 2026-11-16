@@ -29,7 +29,7 @@ jest.unstable_mockModule('@/domain/api/auth', () => ({
 const FILES: readonly DriveFile[] = [
   { id: 'f1', name: 'Lemon chicken.cook' },
   { id: 'f2', name: 'Pea soup.cook' },
-] as unknown as readonly DriveFile[];
+];
 
 const getUserAccessToken = jest.fn<(user: unknown) => Promise<string>>(
   async () => 'token',
@@ -80,7 +80,7 @@ beforeEach(() => {
 
 afterEach(() => restore());
 
-const ask = (query: string) =>
+const ask = async (query: string) =>
   GET(new Request(`https://chowdown.test/api/recipes/suggestions?${query}`));
 
 describe('GET /api/recipes/suggestions', () => {

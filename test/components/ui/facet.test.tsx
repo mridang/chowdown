@@ -20,7 +20,7 @@ const FACET: FacetData = {
       href: '/app?cuisine=indian&cuisine=thai',
     },
   ],
-} as FacetData;
+};
 
 describe('FacetSection', () => {
   it('lists each option as a link that follows its own address', () => {

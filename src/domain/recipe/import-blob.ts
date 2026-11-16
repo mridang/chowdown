@@ -39,9 +39,11 @@ const TRAILING: ReadonlySet<string> = new Set('.,;:!?)]}>\'"');
  */
 function trimTrailing(raw: string): string {
   // Code points, so a surrogate pair is never split; every trailing character is ASCII.
-  const chars = [...raw];
-  const keep = chars.findLastIndex((char) => !TRAILING.has(char));
-  return chars.slice(0, keep + 1).join('');
+  let end = raw.length;
+  while (end > 0 && TRAILING.has(raw.charAt(end - 1))) {
+    end -= 1;
+  }
+  return raw.slice(0, end);
 }
 
 /**

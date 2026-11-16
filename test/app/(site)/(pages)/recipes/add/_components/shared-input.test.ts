@@ -111,7 +111,7 @@ describe('sharedImportInput', () => {
     const out = sharedImportInput({
       text: '🍳'.repeat(MAX_SHARED_CHARACTERS + 5),
     });
-    expect([...out]).toHaveLength(MAX_SHARED_CHARACTERS);
+    expect(out.match(/./gsu)).toHaveLength(MAX_SHARED_CHARACTERS);
     expect(out).toBe('🍳'.repeat(MAX_SHARED_CHARACTERS));
   });
 

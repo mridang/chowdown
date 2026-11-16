@@ -140,7 +140,7 @@ export function EditableTitle({
         )}
       </div>
       {editing ? (
-        <form onSubmit={save} className="print:hidden">
+        <form onSubmit={(event) => void save(event)} className="print:hidden">
           <label htmlFor={inputId} className="sr-only">
             Recipe title
           </label>

@@ -5,7 +5,7 @@ import { RenderedRecipe } from '@/components/landing/rendered-recipe';
 import { html } from '../render';
 
 describe('RenderedRecipe', () => {
-  const recipe = RECIPES[0]!;
+  const recipe = RECIPES[0];
   const out = html(<RenderedRecipe recipe={recipe} />);
 
   it('is labelled with the recipe it shows', () => {

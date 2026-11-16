@@ -54,10 +54,7 @@ export function mcpUrl(origin: string): string {
  * app connected more than once says so ("Can edit (2 installs)"): the scopes
  * shown are the widest of any install, and disconnecting ends all of them.
  */
-export function accessLabel(
-  scopes: readonly string[],
-  installs: number = 1,
-): string {
+export function accessLabel(scopes: readonly string[], installs = 1): string {
   const access = scopes.includes(SCOPE_WRITE) ? 'Can edit' : 'Read only';
   return installs > 1 ? `${access} (${installs} installs)` : access;
 }

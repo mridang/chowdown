@@ -129,7 +129,7 @@ describe('handleMcpMessage routing', () => {
   const MODERN_META = {
     _meta: { 'io.modelcontextprotocol/protocolVersion': '2026-07-28' },
   };
-  const send = (message: Record<string, unknown>) =>
+  const send = async (message: Record<string, unknown>) =>
     handleMcpMessage(
       someone,
       { jsonrpc: '2.0', id: 1, ...message },
@@ -367,7 +367,7 @@ describe('handleMcpMessage — the newest revision', () => {
     },
   };
   const SERVER_INFO_KEY = 'io.modelcontextprotocol/serverInfo';
-  const send = (
+  const send = async (
     message: Record<string, unknown>,
     runTool?: ToolRunner,
   ): Promise<JsonRpcResponse | null> =>
@@ -615,7 +615,7 @@ const someone = { id: 1, refresh_token_enc: null } as User;
 const neverRun: ToolRunner = async () => {
   throw new Error('the tool must not run');
 };
-const send = (
+const send = async (
   message: Record<string, unknown>,
   runTool: ToolRunner = neverRun,
 ) =>
@@ -844,7 +844,7 @@ describe('handleMcpMessage — tool errors and other faults', () => {
 
 describe('lists with more than one page, and lists with only one', () => {
   const someone = { id: 1, refresh_token_enc: null } as User;
-  const list = (
+  const list = async (
     params: Record<string, unknown> | undefined,
     method = 'resources/list',
     lister: RecipeLister = noRecipes,

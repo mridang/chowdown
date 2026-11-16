@@ -41,7 +41,7 @@ beforeEach(() => {
   }
 });
 
-afterEach(() => world.close());
+afterEach(async () => world.close());
 
 describe('GET /auth/drive — error context', () => {
   it('names the flow and where the person is in it', async () => {

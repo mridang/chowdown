@@ -55,7 +55,7 @@ describe('list_recipes', () => {
     it('gives pages that together name every recipe once', async () => {
       const fake = many();
       const pages = await Promise.all(
-        [0, 50, 100, 150, 200].map((offset) =>
+        [0, 50, 100, 150, 200].map(async (offset) =>
           call('list_recipes', { offset }, fake),
         ),
       );

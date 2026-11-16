@@ -33,8 +33,7 @@ const jsonLdPage = `<html><head><script type="application/ld+json">${JSON.string
 
 describe('convertImport', () => {
   it('prefers structured data fetched from the source page', async () => {
-    globalThis.fetch = (async () =>
-      new Response(jsonLdPage)) as unknown as typeof fetch;
+    globalThis.fetch = async () => new Response(jsonLdPage);
     const cook = await convertImport(
       'plain article text',
       envWith('>> title: LLM\n'),
@@ -47,10 +46,8 @@ describe('convertImport', () => {
   });
 
   it('falls back to the model and adds the og:image as the cover', async () => {
-    globalThis.fetch = (async () =>
-      new Response(
-        '<meta property="og:image" content="https://a.com/og.jpg">',
-      )) as unknown as typeof fetch;
+    globalThis.fetch = async () =>
+      new Response('<meta property="og:image" content="https://a.com/og.jpg">');
     const cook = await convertImport(
       'article text',
       envWith('>> title: From Model\n\nMix @egg{1}.\n'),
@@ -61,8 +58,7 @@ describe('convertImport', () => {
   });
 
   it('still converts when the source page cannot be fetched', async () => {
-    globalThis.fetch = (async () =>
-      new Response('blocked', { status: 403 })) as unknown as typeof fetch;
+    globalThis.fetch = async () => new Response('blocked', { status: 403 });
     const cook = await convertImport(
       'article text',
       envWith('>> title: From Model\n\nMix @egg{1}.\n'),
@@ -102,8 +98,7 @@ const metadataOnlyPage = `<html><head><script type="application/ld+json">${JSON.
 
 describe('structured data with no recipe in it', () => {
   it('converts the passed content instead and keeps the page image', async () => {
-    globalThis.fetch = (async () =>
-      new Response(metadataOnlyPage)) as unknown as typeof fetch;
+    globalThis.fetch = async () => new Response(metadataOnlyPage);
     const cook = await convertImport(
       'Ingredients: 1 egg. Method: boil it.',
       envWith('>> title: Real\n\nBoil @egg{1}.\n'),
@@ -138,7 +133,7 @@ describe('convertToCooklang', () => {
 describe('what the model is shown', () => {
   /** The user message the model was sent. */
   function sentTo(env: CloudflareEnv): string {
-    const run = env.AI.run as unknown as jest.Mock<
+    const run = Reflect.get(env.AI, 'run') as unknown as jest.Mock<
       (model: string, input: { messages: { content: string }[] }) => unknown
     >;
     return run.mock.calls[0]?.[1].messages.at(-1)?.content ?? '';
@@ -219,8 +214,7 @@ describe('hostile pages', () => {
   const hostile = '<meta content="a" '.repeat(2000) + '<script '.repeat(25_000);
 
   it('are read in well under a second by every path that reads a page', async () => {
-    globalThis.fetch = (async () =>
-      new Response(hostile)) as unknown as typeof fetch;
+    globalThis.fetch = async () => new Response(hostile);
     const started = performance.now();
     await convertImport(
       'article text',
@@ -254,10 +248,8 @@ describe('addMissingCover', () => {
   });
 
   it('adds the page og:image as the cover', async () => {
-    globalThis.fetch = (async () =>
-      new Response(
-        '<meta property="og:image" content="https://a.com/og.jpg">',
-      )) as unknown as typeof fetch;
+    globalThis.fetch = async () =>
+      new Response('<meta property="og:image" content="https://a.com/og.jpg">');
     const out = await addMissingCover(
       '>> title: T\n>> source: https://a.com/x\n\nCook.\n',
     );
@@ -265,10 +257,10 @@ describe('addMissingCover', () => {
   });
 
   it('prefers the Recipe JSON-LD image over og:image', async () => {
-    globalThis.fetch = (async () =>
+    globalThis.fetch = async () =>
       new Response(
         `${jsonLdPage}<meta property="og:image" content="https://a.com/og.jpg">`,
-      )) as unknown as typeof fetch;
+      );
     const out = await addMissingCover(
       '>> title: T\n>> source: https://a.com/x\n\nCook.\n',
     );
@@ -276,8 +268,7 @@ describe('addMissingCover', () => {
   });
 
   it('returns the source unchanged when the page cannot be fetched', async () => {
-    globalThis.fetch = (async () =>
-      new Response('blocked', { status: 403 })) as unknown as typeof fetch;
+    globalThis.fetch = async () => new Response('blocked', { status: 403 });
     const src = '>> title: T\n>> source: https://a.com/x\n\nCook.\n';
     expect(await addMissingCover(src)).toBe(src);
   });

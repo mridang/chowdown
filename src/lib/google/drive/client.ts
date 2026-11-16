@@ -55,7 +55,7 @@ export class DriveClient {
   constructor(accessToken: string, fetcher?: typeof fetch) {
     this.#accessToken = accessToken;
     // Resolve the global fetch lazily so a test that swaps it still takes effect.
-    this.#fetch = fetcher ?? ((input, init) => fetch(input, init));
+    this.#fetch = fetcher ?? (async (input, init) => fetch(input, init));
     // Each listing read passes an absolute endpoint as the path, so base is empty.
     this.#http = new JsonClient('', this.#fetch);
   }
@@ -112,7 +112,7 @@ export class DriveClient {
       );
     }
     const created: unknown = await response.json();
-    const id =
+    const id: unknown =
       typeof created === 'object' && created !== null
         ? Reflect.get(created, 'id')
         : undefined;

@@ -17,7 +17,7 @@ export function testEnv(): Record<string, unknown> {
 }
 
 /** A signed session token for a person, optionally under a given epoch or expiry. */
-export function sessionTokenFor(
+export async function sessionTokenFor(
   user: Readonly<{ id: number; email?: string }>,
   options: Readonly<{ ep?: number; exp?: number }> = {},
 ): Promise<string> {

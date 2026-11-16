@@ -129,7 +129,7 @@ export async function backfillEmbeddings(
 ): Promise<number> {
   const missing = await deps.listMissing(db, userId, limit);
   // One at a time: each calls Workers AI, which has tight concurrency limits.
-  await mapSequentially(missing, (r) =>
+  await mapSequentially(missing, async (r) =>
     embedAndStore(
       deps,
       db,

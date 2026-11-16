@@ -30,7 +30,7 @@ beforeEach(() => {
   world = openWorld();
 });
 
-afterEach(() => world.close());
+afterEach(async () => world.close());
 
 const SOURCE =
   '>> title: Curry\n\nCook @onion{1}.\n\n-- [note] First\n-- [note] Second\n';
@@ -81,7 +81,7 @@ describe('GET /api/recipes/:id/notes/:note_id', () => {
 });
 
 describe('PUT /api/recipes/:id/notes/:note_id', () => {
-  const replace = (
+  const replace = async (
     noteId: string,
     json: unknown,
     headers: Record<string, string> = {},
@@ -123,7 +123,7 @@ describe('PUT /api/recipes/:id/notes/:note_id', () => {
 });
 
 describe('DELETE /api/recipes/:id/notes/:note_id', () => {
-  const remove = (noteId: string, headers: Record<string, string> = {}) =>
+  const remove = async (noteId: string, headers: Record<string, string> = {}) =>
     DELETE(fromApp('DELETE', '/x', { headers }), ctx(noteId));
 
   it('answers 401 when nobody is signed in', async () => {
