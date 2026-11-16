@@ -10,6 +10,8 @@ import {
 import { RecipeStateProvider } from '@/components/recipe/recipe-state';
 import { htmlAt } from '../render';
 
+const BUTTON_COOK_MODE = /<button[^>]*>.*Cook mode<\/button>/s;
+
 const STEPS = [
   [{ kind: 'text' as const, text: 'Chop.' }],
   [{ kind: 'text' as const, text: 'Fry.' }],
@@ -23,7 +25,7 @@ describe('CookMode', () => {
   );
 
   it('offers a "Cook mode" button', () => {
-    expect(out).toMatch(/<button[^>]*>.*Cook mode<\/button>/s);
+    expect(out).toMatch(BUTTON_COOK_MODE);
   });
 
   it('keeps the full-screen view closed until it is asked for', () => {

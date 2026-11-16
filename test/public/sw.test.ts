@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import vm from 'node:vm';
 
+const collator = new Intl.Collator();
+
 /** The worker's source, read once so `loadWorker` stays synchronous for every spec. */
 const WORKER_SOURCE = await readFile(
   path.join(process.cwd(), 'public/sw.js'),
@@ -108,7 +110,7 @@ describe('public/sw.js', () => {
   it('listens for install, activate and fetch', () => {
     const { listeners } = loadWorker({ online: true, preload: true });
     expect(
-      [...listeners.keys()].toSorted((a, b) => a.localeCompare(b)),
+      [...listeners.keys()].toSorted((a, b) => collator.compare(a, b)),
     ).toEqual(['activate', 'fetch', 'install', 'notificationclick', 'push']);
   });
 

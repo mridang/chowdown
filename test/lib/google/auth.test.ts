@@ -2,6 +2,9 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import { GoogleOAuthClient, SIGN_IN_SCOPES } from '@/lib/google';
 
+const CLIENT_SECRET_IS_REQUIRED = /clientSecret is required/;
+const INVALID_GRANT = /invalid_grant/;
+
 const client = new GoogleOAuthClient({
   clientId: 'client-id',
   clientSecret: 'client-secret',
@@ -101,7 +104,7 @@ describe('exchangeCode', () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.status).toBe(400);
-      expect(result.raw).toMatch(/invalid_grant/);
+      expect(result.raw).toMatch(INVALID_GRANT);
     }
   });
 
@@ -144,7 +147,7 @@ describe('a client with no secret', () => {
     const noSecret = new GoogleOAuthClient({ clientId: 'client-id' });
     await expect(
       noSecret.exchangeCode({ code: 'c', redirectUri: 'https://app.test/cb' }),
-    ).rejects.toThrow(/clientSecret is required/);
+    ).rejects.toThrow(CLIENT_SECRET_IS_REQUIRED);
   });
 });
 

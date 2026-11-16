@@ -3,6 +3,9 @@ import { describe, expect, it } from '@jest/globals';
 import { SortSelect } from '@/components/recipes/sort-select';
 import { htmlAt } from '../render';
 
+const OPTION_VALUE_TITLE = /<option value="title" selected="">/;
+const OPTION_VALUE_TIME = /<option value="time" selected="">/;
+
 const OPTIONS = [
   { value: 'title', label: 'Title A–Z', href: '/app' },
   { value: 'time', label: 'Quickest first', href: '/app?sort=time' },
@@ -26,7 +29,7 @@ describe('SortSelect', () => {
   });
 
   it('shows the order in force as chosen', () => {
-    expect(out).toMatch(/<option value="time" selected="">/);
-    expect(out).not.toMatch(/<option value="title" selected="">/);
+    expect(out).toMatch(OPTION_VALUE_TIME);
+    expect(out).not.toMatch(OPTION_VALUE_TITLE);
   });
 });

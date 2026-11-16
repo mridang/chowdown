@@ -1,3 +1,4 @@
+const ESC_COLON_STOCK_OR_BROTH = /\b(?:stock|broth|bouillon|cubes?)\b/;
 /**
  * @packageDocumentation
  *
@@ -167,7 +168,7 @@ function prepare(name: string): string {
     .toLowerCase();
   // The "chicken or vegetable" escape hatch only makes sense for stock-style
   // ingredients; "chicken or vegetable pie" really does contain chicken.
-  const withoutChoices = /\b(?:stock|broth|bouillon|cubes?)\b/.test(plain)
+  const withoutChoices = ESC_COLON_STOCK_OR_BROTH.test(plain)
     ? plain.replaceAll(OPTIONAL_MEAT_STOCK, ' ')
     : plain;
   const withoutLookAlikes = withoutChoices

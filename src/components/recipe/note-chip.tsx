@@ -10,9 +10,11 @@ import { cn } from '@/components/ui/cn';
  */
 export function NoteChip({
   text,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
 }: Readonly<{
   text: string;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
 }>): ReactElement {
   return (

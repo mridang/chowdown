@@ -17,6 +17,8 @@
 import { base64ToBytes } from '@/utils/base64';
 import { parseUrl } from '@/utils/url';
 
+const BASE64 = /^=\?base64\?(.*)\?=$/;
+
 /** The newest revision, which has no handshake and no sessions. */
 export const MODERN_VERSION = '2026-07-28';
 
@@ -487,7 +489,7 @@ export function decodeHeaderValue(value: string | null): string | undefined {
   if (value === null) {
     return undefined;
   }
-  const encoded = /^=\?base64\?(.*)\?=$/.exec(value)?.[1];
+  const encoded = BASE64.exec(value)?.[1];
   if (encoded === undefined) {
     return value;
   }

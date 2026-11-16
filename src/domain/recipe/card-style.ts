@@ -1,3 +1,4 @@
+const WHITESPACE = /\s/;
 /**
  * @packageDocumentation
  *
@@ -47,7 +48,10 @@ export function cleanTitle(title: string): string {
   // The first separator with whitespace on both sides ends the title.
   for (const found of title.matchAll(/[|–—]/g)) {
     const at = found.index;
-    if (/\s/.test(title.charAt(at - 1)) && /\s/.test(title.charAt(at + 1))) {
+    if (
+      WHITESPACE.test(title.charAt(at - 1)) &&
+      WHITESPACE.test(title.charAt(at + 1))
+    ) {
       return title.slice(0, at).trim() || title;
     }
   }

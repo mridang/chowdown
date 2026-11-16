@@ -7,6 +7,8 @@ import {
 } from '@/domain/recipe/tagging';
 import { parseRecipe } from '@/lib/cooklang';
 
+const DIET_VEGETARIAN = /- diet [^\n]*Vegetarian/;
+
 const SOURCE = '>> title: Curry\n\nCook @chicken{500%g} in a #pan{}.\n';
 
 function envReturning(response: unknown): CloudflareEnv {
@@ -97,6 +99,6 @@ describe('the tagging prompt', () => {
     expect(system).not.toContain('diet_type');
     expect(system).not.toContain('Pescatarian');
     expect(system).toContain('- diet (choose all that apply): Gluten-free');
-    expect(system).not.toMatch(/- diet [^\n]*Vegetarian/);
+    expect(system).not.toMatch(DIET_VEGETARIAN);
   });
 });

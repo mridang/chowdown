@@ -48,9 +48,9 @@ describe('listText', () => {
   });
 
   it('stops at the limit and says how many were left out', () => {
-    const many = Array.from({ length: LIST_TEXT_LIMIT + 3 }, (_, i) => ({
-      id: String(i),
-      title: `R${i}`,
+    const many = Array.from({ length: LIST_TEXT_LIMIT + 3 }, (_, index) => ({
+      id: String(index),
+      title: `R${index}`,
       uncurated: false,
     }));
     const lines = listText(many).split('\n');
@@ -189,9 +189,9 @@ describe('cardText', () => {
   });
 
   it('keeps only the latest cooking-log entries', () => {
-    const logs = Array.from({ length: 14 }, (_, i) => ({
-      date: `2026-01-${String(i + 1).padStart(2, '0')}`,
-      note: `n${i}`,
+    const logs = Array.from({ length: 14 }, (_, index) => ({
+      date: `2026-01-${String(index + 1).padStart(2, '0')}`,
+      note: `n${index}`,
     }));
     const lines = cardText({ ...card, logs }).split('\n');
     expect(lines.filter((l) => l.startsWith('- 2026-'))).toHaveLength(10);

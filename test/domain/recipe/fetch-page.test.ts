@@ -4,6 +4,8 @@ import { SITE_NAME, SITE_URL } from '@/utils/site';
 import { fetchPage, PageFetchError } from '@/domain/recipe/fetch-page';
 import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
+const MOZILLA = /Mozilla/;
+
 /** The User-Agent `fetchPage` builds from the site's identity at the call site. */
 const USER_AGENT = `${SITE_NAME.toLowerCase()}/1.0 (+${SITE_URL})`;
 
@@ -46,7 +48,7 @@ describe('fetchPage', () => {
     await expect(fetchPage('https://a.com/x')).resolves.toBe('<html>ok</html>');
     const headers = calls[0]?.init.headers as Record<string, string>;
     expect(headers['User-Agent']).toBe(USER_AGENT);
-    expect(headers['User-Agent']).not.toMatch(/Mozilla/);
+    expect(headers['User-Agent']).not.toMatch(MOZILLA);
     expect(headers['Accept']).toContain('text/html');
   });
 

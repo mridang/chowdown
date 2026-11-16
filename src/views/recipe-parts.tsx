@@ -34,9 +34,9 @@ export function MetaRow({
 }: Readonly<{ metadata: RecipeCardData['metadata'] }>): ReactElement | null {
   return metadata.length > 0 ? (
     <div className="meta">
-      {metadata.map(([key, value], i) => (
+      {metadata.map(([key, value], index) => (
         <span key={key}>
-          {i > 0 ? (
+          {index > 0 ? (
             <span className="sep" aria-hidden="true">
               ·&nbsp;
             </span>
@@ -79,8 +79,8 @@ export function Step({
 }: Readonly<{ tokens: readonly StepToken[] }>): ReactElement {
   return (
     <p>
-      {tokens.map((token, i) => (
-        <Token key={i} token={token} />
+      {tokens.map((token, index) => (
+        <Token key={index} token={token} />
       ))}
     </p>
   );
@@ -164,8 +164,8 @@ export function FullRecipe({
             Ingredients
           </h2>
           <ul className="ings">
-            {recipe.ingredients.map((ingredient, i) => (
-              <li className="ing" key={`${ingredient.name}-${i}`}>
+            {recipe.ingredients.map((ingredient, index) => (
+              <li className="ing" key={`${ingredient.name}-${index}`}>
                 <span>{ingredient.name}</span>
                 {ingredient.quantity ? (
                   <span className="q">{ingredient.quantity}</span>
@@ -177,8 +177,8 @@ export function FullRecipe({
             <>
               <h2 className="h2 spaced">Cookware</h2>
               <ul className="cooks">
-                {recipe.cookware.map((item, i) => (
-                  <li className="cook" key={`${item}-${i}`}>
+                {recipe.cookware.map((item, index) => (
+                  <li className="cook" key={`${item}-${index}`}>
                     {item}
                   </li>
                 ))}
@@ -191,11 +191,11 @@ export function FullRecipe({
             Method
           </h2>
           <ol className="steps">
-            {recipe.steps.map((tokens, i) => (
-              <li className="step" key={i}>
+            {recipe.steps.map((tokens, index) => (
+              <li className="step" key={index}>
                 <span className="num">
                   <span className="sr-only">Step </span>
-                  {i + 1}
+                  {index + 1}
                 </span>
                 <Step tokens={tokens} />
               </li>
@@ -204,8 +204,8 @@ export function FullRecipe({
           {recipe.logs.length > 0 ? (
             <div className="logs">
               <h2 className="h2">Cooking log</h2>
-              {recipe.logs.map((entry, i) => (
-                <div className="log" key={i}>
+              {recipe.logs.map((entry, index) => (
+                <div className="log" key={index}>
                   <span className="d">{entry.date}</span> — {entry.note}
                 </div>
               ))}

@@ -27,23 +27,23 @@ describe('the handwriting faces', () => {
   });
 
   it('each cover Latin and Latin-extended, so names such as Łukasz are drawn in the face', () => {
-    asked.forEach((options) =>
-      expect(options['subsets']).toEqual(['latin', 'latin-ext']),
-    );
+    for (const options of asked.values())
+      expect(options['subsets']).toEqual(['latin', 'latin-ext']);
   });
 
   it('swap in when they arrive, rather than never showing on a first visit', () => {
-    asked.forEach((options) => expect(options['display']).toBe('swap'));
+    for (const options of asked.values())
+      expect(options['display']).toBe('swap');
   });
 
   it('are not preloaded, so a page fetches only the face its name uses', () => {
-    asked.forEach((options) => expect(options['preload']).toBe(false));
+    for (const options of asked.values())
+      expect(options['preload']).toBe(false);
   });
 
   it('each fall back to the system cursive face', () => {
-    asked.forEach((options) =>
-      expect(options['fallback']).toEqual(['cursive']),
-    );
+    for (const options of asked.values())
+      expect(options['fallback']).toEqual(['cursive']);
   });
 
   it('are all defined on the page, in the order the component indexes them', () => {

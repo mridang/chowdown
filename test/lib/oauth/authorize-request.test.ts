@@ -13,6 +13,9 @@ import {
 
 import { quietSecurityLogs } from './quiet-logs';
 import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+
+const START_U0020_U0021_U0023_HYPHEN =
+  /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/;
 import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
 const ORIGIN = 'https://site.example';
@@ -257,6 +260,7 @@ describe('grantedScope', () => {
     const asked = [SCOPE_READ, SCOPE_WRITE] as const;
     expect(grantedScope(asked, 'write')).toEqual(asked);
     expect(grantedScope(asked, null)).toEqual(asked);
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(grantedScope(asked, undefined)).toEqual(asked);
     expect(grantedScope(asked, 'anything else')).toEqual(asked);
     expect(grantedScope(asked, 'read')).toEqual([SCOPE_READ]);
@@ -330,7 +334,7 @@ describe('error_description is printable ASCII without quotes or backslashes (RF
     const result = await check(overrides);
     expect(result.ok).toBe(false);
     expect(!result.ok && result.description).toMatch(
-      /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/,
+      START_U0020_U0021_U0023_HYPHEN,
     );
   });
 });

@@ -74,9 +74,10 @@ const postInput = (input: string) => post(JSON.stringify({ input }));
 
 /** `count` distinct links, one after another. */
 const links = (count: number) =>
-  Array.from({ length: count }, (_, i) => `https://a${i}.example.com/r`).join(
-    '\n',
-  );
+  Array.from(
+    { length: count },
+    (_, index) => `https://a${index}.example.com/r`,
+  ).join('\n');
 
 /** The rows stored for a user. */
 const stored = (uid: number) =>
@@ -91,7 +92,7 @@ describe('POST /api/recipes/imports', () => {
   });
 
   it("answers 429 with Retry-After once the day's import allowance is used, without doing the work", async () => {
-    for (let i = 0; i < DAILY_BUDGETS.import.limit; i += 1) {
+    for (let index = 0; index < DAILY_BUDGETS.import.limit; index += 1) {
       const accepted = await postInput('https://a.example.com/r');
       expect(accepted.status).toBe(201);
     }
@@ -103,7 +104,7 @@ describe('POST /api/recipes/imports', () => {
   });
 
   it('counts the allowance per person', async () => {
-    for (let i = 0; i < DAILY_BUDGETS.import.limit; i += 1) {
+    for (let index = 0; index < DAILY_BUDGETS.import.limit; index += 1) {
       await postInput('https://a.example.com/r');
     }
     session.uid = 8;
@@ -169,7 +170,9 @@ describe('POST /api/recipes/imports', () => {
 
   it('turns away thousands of tiny links in one request just the same', async () => {
     const res = await postInput(
-      Array.from({ length: 5000 }, (_, i) => `https://a.b/${i}`).join(' '),
+      Array.from({ length: 5000 }, (_, index) => `https://a.b/${index}`).join(
+        ' ',
+      ),
     );
     expect(res.status).toBe(400);
     expect(prepareImport).not.toHaveBeenCalled();
@@ -178,7 +181,8 @@ describe('POST /api/recipes/imports', () => {
   it('counts pasted recipes as units too', async () => {
     const recipes = Array.from(
       { length: 6 },
-      (_, i) => `Recipe ${i}: mix flour and water, then bake it for an hour.`,
+      (_, index) =>
+        `Recipe ${index}: mix flour and water, then bake it for an hour.`,
     ).join('\n\n');
     const res = await postInput(`${links(5)}\n\n${recipes}`);
     expect(res.status).toBe(400);
@@ -259,7 +263,7 @@ describe('GET /api/recipes/imports', () => {
       items: { id: string }[];
       next?: string;
     };
-    expect(first.items.map((i) => i.id)).toEqual(['i3', 'i2']);
+    expect(first.items.map((index) => index.id)).toEqual(['i3', 'i2']);
     expect(first.next).toBeDefined();
     const cursor = new globalThis.URL(first.next ?? '').searchParams.get(
       'cursor',
@@ -269,7 +273,7 @@ describe('GET /api/recipes/imports', () => {
       items: { id: string }[];
       next?: string;
     };
-    expect(second.items.map((i) => i.id)).toEqual(['i1']);
+    expect(second.items.map((index) => index.id)).toEqual(['i1']);
     expect(second.next).toBeUndefined();
   });
 

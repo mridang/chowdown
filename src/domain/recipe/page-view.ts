@@ -20,6 +20,8 @@ import {
   type UnitSystem,
 } from '@/lib/cooklang';
 
+const DIGITS_PLUS = /\d+/;
+
 /** What the servings stepper starts on when a recipe doesn't say. */
 export const DEFAULT_SERVINGS = 4;
 
@@ -39,7 +41,7 @@ export function declaredServings(
     const lower = key.toLowerCase();
     return lower === 'servings' || lower === 'serves';
   })?.[1];
-  const parsed = Number.parseInt(/\d+/.exec(value ?? '')?.[0] ?? '', 10);
+  const parsed = Number.parseInt(DIGITS_PLUS.exec(value ?? '')?.[0] ?? '', 10);
   if (!Number.isFinite(parsed) || parsed < 1) {
     return undefined;
   }
@@ -163,16 +165,16 @@ export function groupNotes(
   const lowered = ingredientNames.map((name) => name.toLowerCase());
   const placements = notes.map((note) => placeNote(note, lowered, stepCount));
   return {
-    byIngredient: ingredientNames.map((_, i) =>
+    byIngredient: ingredientNames.map((_, index) =>
       placements.flatMap((p) =>
-        p.kind === 'ingredient' && p.ingredientIndexes.includes(i)
+        p.kind === 'ingredient' && p.ingredientIndexes.includes(index)
           ? [p.text]
           : [],
       ),
     ),
-    byStep: Array.from({ length: stepCount }, (_, i) =>
+    byStep: Array.from({ length: stepCount }, (_, index) =>
       placements.flatMap((p) =>
-        p.kind === 'step' && p.index === i ? [p.text] : [],
+        p.kind === 'step' && p.index === index ? [p.text] : [],
       ),
     ),
     general: placements.flatMap((p) => (p.kind === 'general' ? [p.note] : [])),

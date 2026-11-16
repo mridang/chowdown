@@ -70,7 +70,7 @@ export async function joinedHost(
   >();
   const deliver = (data: unknown, source: unknown) => {
     setTimeout(() => {
-      [...listeners].forEach((listener) => listener({ data, source }));
+      for (const listener of listeners) listener({ data, source });
     }, 0);
   };
   const viewWindow: { postMessage: (data: unknown) => void } = {

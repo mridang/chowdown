@@ -60,6 +60,13 @@ function beepAt(context: BeepContext, at: number): void {
   oscillator.stop(at + BEEP_LENGTH + 0.02);
 }
 
+/** Play the run of beeps that makes up one alarm. */
+function beepEach(context: BeepContext): void {
+  for (const offset of BEEP_OFFSETS) {
+    beepAt(context, context.currentTime + offset);
+  }
+}
+
 /**
  * Make the beeper. Call it from the tap that starts a timer: browsers only
  * allow sound that began with a user gesture, and an audio context made then
@@ -81,11 +88,7 @@ export function createAlarm(
     ring: () => {
       void context
         .resume()
-        .then(() =>
-          BEEP_OFFSETS.forEach((offset) =>
-            beepAt(context, context.currentTime + offset),
-          ),
-        )
+        .then(() => beepEach(context))
         .catch(() => undefined);
     },
     close: () => {

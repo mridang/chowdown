@@ -27,8 +27,8 @@ describe('list_recipes', () => {
     const many = () =>
       folder(
         Object.fromEntries(
-          Array.from({ length: 250 }, (_, i) => [
-            `Recipe ${String(i).padStart(3, '0')}.cook`,
+          Array.from({ length: 250 }, (_, index) => [
+            `Recipe ${String(index).padStart(3, '0')}.cook`,
             PANCAKES,
           ]),
         ),

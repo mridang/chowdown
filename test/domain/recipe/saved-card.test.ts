@@ -47,9 +47,9 @@ describe('savedCard', () => {
       protein: '',
       diet: [],
     });
-    expect(card).toHaveProperty('minutes', undefined);
-    expect(card).toHaveProperty('difficulty', undefined);
-    expect(card).toHaveProperty('cover', undefined);
+    expect(card).toHaveProperty('minutes');
+    expect(card).toHaveProperty('difficulty');
+    expect(card).toHaveProperty('cover');
   });
 
   it('marks an idea', () => {

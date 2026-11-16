@@ -20,12 +20,14 @@ const BAR_HEIGHTS = ['h-2', 'h-3', 'h-4'] as const;
 export function Difficulty({
   level,
   showLabel = true,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
 }: Readonly<{
   /** `Easy`, `Medium` or `Hard`. */
   level: string;
   /** Show the word beside the bars; off where the bars alone are enough. */
   showLabel?: boolean;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
 }>): ReactElement {
   const filled = LEVELS[level] ?? 1;

@@ -18,6 +18,7 @@ import {
 } from '@/lib/core/auth';
 import { isDriveConnected } from '@/domain/auth/drive-access';
 import { buildDriveAuthUrl } from '@/domain/auth/drive-oauth';
+// eslint-disable-next-line unicorn/no-keyword-prefix -- the name is exported from its module and used by other modules
 import { newState, safeReturnPath } from '@/lib/web-security';
 import { getEnv } from '@/lib/core/runtime';
 import { setErrorContext } from '@/lib/core/observability/context';

@@ -16,8 +16,11 @@ function fakeUtterance(text: string) {
     addEventListener: (type: string, listener: (event: unknown) => void) => {
       listeners.set(type, [...(listeners.get(type) ?? []), listener]);
     },
-    fire: (type: string, event: unknown = {}) =>
-      listeners.get(type)?.forEach((listener) => listener(event)),
+    fire: (type: string, event: unknown = {}) => {
+      for (const listener of listeners.get(type) ?? []) {
+        listener(event);
+      }
+    },
   };
 }
 
@@ -88,6 +91,7 @@ describe('isStoppedOnPurpose', () => {
 
   it('is false for every other error and for none', () => {
     expect(isStoppedOnPurpose('audio-busy')).toBe(false);
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(isStoppedOnPurpose(undefined)).toBe(false);
   });
 });

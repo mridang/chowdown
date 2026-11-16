@@ -30,9 +30,11 @@ export function FilterChip({
 /** A small count badge, e.g. The number of active filters. */
 export function CountBadge({
   children,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
 }: Readonly<{
   children: ReactNode;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
 }>): ReactElement {
   return (

@@ -22,12 +22,14 @@ export function PillLink({
   href,
   variant = 'outline',
   size = 'md',
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   children,
 }: Readonly<{
   href: string;
   variant?: keyof typeof VARIANTS;
   size?: keyof typeof SIZES;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
   children: ReactNode;
 }>): ReactElement {

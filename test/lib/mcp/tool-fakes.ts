@@ -12,6 +12,8 @@ import type { DriveFile } from '@/lib/google/drive';
 import { callTool } from '@/domain/mcp/tool-calls';
 import type { DriveContext, ToolServices } from '@/domain/mcp/tool-services';
 
+const ID = /^id-/;
+
 /** The signed-in user the tests act as. */
 export const USER = { id: 7, units: null, recipes_folder_id: 'folder' } as User;
 
@@ -65,7 +67,7 @@ export function folder(
   const created: DriveFile[] = [];
   const updates: [string, string][] = [];
   const indexed: [string, string, string][] = [];
-  const nameOf = (id: string) => id.replace(/^id-/, '');
+  const nameOf = (id: string) => id.replace(ID, '');
   let unsetSystem: DriveContext['system'];
   const ctx: DriveContext = {
     user: USER,
@@ -73,7 +75,7 @@ export function folder(
     system: unsetSystem,
     files: {
       list: async () =>
-        [...contents.keys()].map((name) => ({ id: `id-${name}`, name })),
+        Array.from(contents.keys(), (name) => ({ id: `id-${name}`, name })),
       read: async (id) => {
         const name = nameOf(id);
         const text = contents.get(name) ?? '';

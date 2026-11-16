@@ -7,6 +7,8 @@ import {
 } from '@/domain/drive/recipe-files';
 import { isDriveFileId } from '@/lib/google/drive';
 
+const BOUNDARY = /boundary=(.+)$/;
+
 const realFetch = globalThis.fetch;
 
 /** Make the next `fetch` answer with the given status. */
@@ -110,7 +112,7 @@ describe('createRecipeFile', () => {
       RequestInit,
     ];
     const type = (init.headers as Record<string, string>)['Content-Type']!;
-    const boundary = /boundary=(.+)$/.exec(type)![1]!;
+    const boundary = BOUNDARY.exec(type)![1]!;
     expect(boundary).not.toBe('chowdown-boundary');
     const body = init.body as string;
     expect(body.split(`--${boundary}`)).toHaveLength(4);

@@ -4,12 +4,14 @@ import { AccountMenu, Avatar } from '@/components/site/account-menu';
 import { driveLink } from '@/components/site/drive-link';
 import { htmlAt } from '../render';
 
+const IMG_SRC_HTTPS = /<img[^>]*src="https:\/\/photos\.test\/ada\.png"/;
+
 describe('Avatar', () => {
   it('shows the person’s photo, without sending our address to Google', () => {
     const out = htmlAt(
       <Avatar name="Ada Lovelace" picture="https://photos.test/ada.png" />,
     );
-    expect(out).toMatch(/<img[^>]*src="https:\/\/photos\.test\/ada\.png"/);
+    expect(out).toMatch(IMG_SRC_HTTPS);
     expect(out).toContain('referrerPolicy="no-referrer"');
     expect(out).toContain('alt=""');
   });

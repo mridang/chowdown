@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { HomeLanding } from '@/components/landing/home-landing';
-import { classOf, html } from '../render';
+import { cssClassesOf, html } from '../render';
 
 describe('HomeLanding', () => {
   it('has a single top heading and the sections it links to', () => {
@@ -17,6 +17,6 @@ describe('HomeLanding', () => {
     const out = html(<HomeLanding signInFailed />);
     expect(out).toContain(note);
     expect(out).toContain('rounded-card');
-    expect(classOf(out, 'div')).toContain('pt-6');
+    expect(cssClassesOf(out, 'div')).toContain('pt-6');
   });
 });

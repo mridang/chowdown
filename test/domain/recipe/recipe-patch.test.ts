@@ -72,8 +72,8 @@ describe('applyRecipePatch', () => {
 
   it('refuses read-only or unknown properties instead of half-applying the patch', () => {
     const list = errors({ title: 'X', favourite: true, ingredients: [] });
-    expect(list.some((e) => e.startsWith('favourite'))).toBe(true);
-    expect(list.some((e) => e.startsWith('ingredients'))).toBe(true);
+    expect(list.some((item) => item.startsWith('favourite'))).toBe(true);
+    expect(list.some((item) => item.startsWith('ingredients'))).toBe(true);
     expect(applyRecipePatch(SOURCE, { title: 'X', favourite: true }).ok).toBe(
       false,
     );

@@ -25,13 +25,13 @@ export default function AppLoading(): ReactElement {
       </div>
       <Container className="grid grid-cols-1 gap-6 py-8 md:grid-cols-[16rem_minmax(0,1fr)] md:gap-10">
         <div className="hidden md:block">
-          {SIDEBAR_ROWS.map((i) => (
-            <Skeleton key={i} className="mb-3 h-10 w-full" />
+          {SIDEBAR_ROWS.map((index) => (
+            <Skeleton key={index} className="mb-3 h-10 w-full" />
           ))}
         </div>
         <div className="grid gap-5 min-[1700px]:grid-cols-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3">
-          {CARDS.map((i) => (
-            <Skeleton key={i} tone="block" className="h-80" />
+          {CARDS.map((index) => (
+            <Skeleton key={index} tone="block" className="h-80" />
           ))}
         </div>
       </Container>

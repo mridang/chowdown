@@ -27,6 +27,7 @@ describe('isRecord', () => {
     expect(isRecord([])).toBe(true);
     expect(isRecord(null)).toBe(false);
     expect(isRecord('text')).toBe(false);
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(isRecord(undefined)).toBe(false);
   });
 });
@@ -66,6 +67,7 @@ describe('textOf', () => {
   });
 
   it('is empty for no content', () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(textOf(undefined)).toBe('');
     expect(textOf([])).toBe('');
   });

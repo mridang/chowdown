@@ -81,7 +81,7 @@ describe('embedText', () => {
 describe('cosineBetween', () => {
   /** A repeatable pseudo-random vector. */
   const vector = (seed: number, length = 16) =>
-    Array.from({ length }, (_, i) => Math.sin(seed * 31 + i * 7.3));
+    Array.from({ length }, (_, index) => Math.sin(seed * 31 + index * 7.3));
 
   it('gives exactly the same answer as cosineSimilarity', () => {
     for (const seed of [1, 2, 3, 4, 5]) {

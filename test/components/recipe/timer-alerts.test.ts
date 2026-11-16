@@ -14,7 +14,7 @@ import {
 /** A stand-in audio context that records what the beep asks of it. */
 function fakeContext(options: { readonly refuse?: boolean } = {}) {
   const calls: string[] = [];
-  const param = (name: string) => ({
+  const parameter = (name: string) => ({
     setValueAtTime: (value: number, at: number) =>
       calls.push(`${name}.set(${value},${at})`),
     exponentialRampToValueAtTime: (value: number, at: number) =>
@@ -30,13 +30,13 @@ function fakeContext(options: { readonly refuse?: boolean } = {}) {
     }),
     close: jest.fn(async () => undefined),
     createOscillator: () => ({
-      frequency: param('freq'),
+      frequency: parameter('freq'),
       connect: () => calls.push('osc.connect'),
       start: (at: number) => calls.push(`osc.start(${at})`),
       stop: (at: number) => calls.push(`osc.stop(${at})`),
     }),
     createGain: () => ({
-      gain: param('gain'),
+      gain: parameter('gain'),
       connect: () => calls.push('gain.connect'),
     }),
   };
@@ -54,6 +54,7 @@ const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('createAlarm', () => {
   it('gives no alarm where the browser has no audio', () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(createAlarm(undefined)).toBeUndefined();
   });
 

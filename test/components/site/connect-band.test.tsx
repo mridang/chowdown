@@ -4,6 +4,8 @@ import { ConnectBand } from '@/components/site/connect-band';
 import { MCP_URL } from '@/utils/site';
 import { html } from '../render';
 
+const HREF_CONNECT_SET = /<a [^>]*href="\/connect"[^>]*>Set it up/;
+
 describe('ConnectBand', () => {
   const out = html(<ConnectBand />);
 
@@ -14,7 +16,7 @@ describe('ConnectBand', () => {
   });
 
   it('links to the full instructions', () => {
-    expect(out).toMatch(/<a [^>]*href="\/connect"[^>]*>Set it up/);
+    expect(out).toMatch(HREF_CONNECT_SET);
   });
 
   it('says which assistants it is for', () => {

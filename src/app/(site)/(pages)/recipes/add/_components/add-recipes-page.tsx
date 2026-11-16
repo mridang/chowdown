@@ -89,7 +89,7 @@ function ManualEditor({
           <TextInput
             id="recipe-name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(event) => setName(event.target.value)}
             placeholder="Recipe name (e.g. Pancakes)"
           />
         </FormField>
@@ -102,7 +102,7 @@ function ManualEditor({
             id="recipe-cook"
             mono
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(event) => setContent(event.target.value)}
             rows={12}
             spellCheck={false}
           />

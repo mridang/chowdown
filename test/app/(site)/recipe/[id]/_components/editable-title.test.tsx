@@ -3,6 +3,10 @@ import { describe, expect, it } from '@jest/globals';
 import { EditableTitle } from '@/app/(site)/recipe/[id]/_components/editable-title';
 import { htmlAt } from '../../../../../components/render';
 
+const BUTTON_TYPE_BUTTON = /<button[^>]*type="button"/;
+const BUTTON_ARIA_LABEL = /<button[^>]*aria-label="Edit title"/;
+const H1_RED_LENTIL = /<h1[^>]*>Red lentil dal<\/h1>/;
+
 describe('EditableTitle', () => {
   const out = htmlAt(
     <EditableTitle recipeId="dal" title="Red lentil dal" etag={'"abc"'} />,
@@ -11,12 +15,12 @@ describe('EditableTitle', () => {
 
   it('keeps the title as the page’s one level-one heading', () => {
     expect(out.match(/<h1/g)).toHaveLength(1);
-    expect(out).toMatch(/<h1[^>]*>Red lentil dal<\/h1>/);
+    expect(out).toMatch(H1_RED_LENTIL);
   });
 
   it('offers a labelled pen button that does not submit anything', () => {
-    expect(out).toMatch(/<button[^>]*aria-label="Edit title"/);
-    expect(out).toMatch(/<button[^>]*type="button"/);
+    expect(out).toMatch(BUTTON_ARIA_LABEL);
+    expect(out).toMatch(BUTTON_TYPE_BUTTON);
   });
 
   it('shows the pen on a touch screen, and on a mouse only for hover or focus', () => {

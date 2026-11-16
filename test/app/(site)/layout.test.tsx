@@ -3,6 +3,9 @@ import type { ReactNode } from 'react';
 
 import { html } from '../../components/render';
 
+const DIV_DATA_TESTID =
+  /^<div data-testid="nuqs"><div data-testid="shell">.*<\/div><\/div>$/;
+
 jest.unstable_mockModule('nuqs/adapters/next/app', () => ({
   NuqsAdapter: ({ children }: { children: ReactNode }) => (
     <div data-testid="nuqs">{children}</div>
@@ -29,8 +32,6 @@ describe('SiteLayout', () => {
   });
 
   it('keeps the search state in the address for the pages inside it', () => {
-    expect(out).toMatch(
-      /^<div data-testid="nuqs"><div data-testid="shell">.*<\/div><\/div>$/,
-    );
+    expect(out).toMatch(DIV_DATA_TESTID);
   });
 });

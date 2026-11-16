@@ -10,7 +10,9 @@ import { cn } from '@/components/ui/cn';
  * not-found and error pages; size it with a class (`size-14`).
  */
 export function BrandMark({
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
 }: Readonly<{ className?: string }>): ReactElement {
   return <PanIcon className={cn('text-flame', className)} strokeWidth={1.25} />;
 }
@@ -20,7 +22,9 @@ export function BrandMark({
  * beneath, linking home. Used in the site header and, scaled up, the footer.
  */
 export function Logo({
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
 }: Readonly<{ className?: string }>): ReactElement {
   return (
     <Link

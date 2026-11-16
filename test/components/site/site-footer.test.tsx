@@ -3,6 +3,9 @@ import { describe, expect, it } from '@jest/globals';
 import { SiteFooter } from '@/components/site/site-footer';
 import { html } from '../render';
 
+const H2_ABOUT_H2 = /<h2[^>]*>About<\/h2>/;
+const H2_EXPLORE_H2 = /<h2[^>]*>Explore<\/h2>/;
+
 describe('SiteFooter', () => {
   const out = html(<SiteFooter />);
 
@@ -12,7 +15,7 @@ describe('SiteFooter', () => {
   });
 
   it('links only to pages anyone can open', () => {
-    const hrefs = [...out.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+    const hrefs = Array.from(out.matchAll(/href="([^"]+)"/g), (m) => m[1]);
     expect(hrefs).toEqual(
       expect.arrayContaining(['/#features', '/#faq', '/privacy', '/terms']),
     );
@@ -21,8 +24,8 @@ describe('SiteFooter', () => {
   });
 
   it('groups the links under headings', () => {
-    expect(out).toMatch(/<h2[^>]*>Explore<\/h2>/);
-    expect(out).toMatch(/<h2[^>]*>About<\/h2>/);
+    expect(out).toMatch(H2_EXPLORE_H2);
+    expect(out).toMatch(H2_ABOUT_H2);
   });
 
   it('keeps its decoration from assistive technology', () => {

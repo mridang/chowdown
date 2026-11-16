@@ -39,6 +39,8 @@ import {
 } from '@/lib/mcp';
 import { pastTheEnd, plainTitle, rangeText } from '@/domain/mcp/tool-text';
 
+const WHITESPACE_RUN = /\s+/;
+
 /** A cached recipe, parsed once, with what the scenario tools look at. */
 export interface ScenarioRecipe {
   readonly id: string;
@@ -150,7 +152,7 @@ function spread(
 /** A run of recipes sharing an eating style, as lines of text. */
 interface DietRun {
   readonly diet: string;
-  readonly lines: readonly string[];
+  readonly lines: string[];
 }
 
 /** Recipes grouped under their eating style, in the usual order. */
@@ -158,12 +160,15 @@ function groupedByDiet(recipes: readonly ScenarioRecipe[]): string {
   const sorted = recipes.toSorted(
     (a, b) => dietRank(a) - dietRank(b) || byName(a, b),
   );
-  const runs = sorted.reduce<readonly DietRun[]>((done, recipe) => {
+  const runs = sorted.reduce<DietRun[]>((done, recipe) => {
     const diet = dietOf(recipe);
     const last = done.at(-1);
-    return last?.diet === diet
-      ? [...done.slice(0, -1), { diet, lines: [...last.lines, line(recipe)] }]
-      : [...done, { diet, lines: [line(recipe)] }];
+    if (last?.diet === diet) {
+      last.lines.push(line(recipe));
+    } else {
+      done.push({ diet, lines: [line(recipe)] });
+    }
+    return done;
   }, []);
   return runs
     .flatMap((run) => [`\n${run.diet}:`, ...run.lines])
@@ -255,7 +260,7 @@ export function browseRecipes(
       : (wanted.get(key) ?? []);
   const maxMinutes = numberArg(args['max_minutes']);
   const query = stringArg(args['query']);
-  const words = foldText(query).split(/\s+/).filter(Boolean);
+  const words = foldText(query).split(WHITESPACE_RUN).filter(Boolean);
   const favouritesOnly = args['favourites_only'] === true;
 
   // Everything but the time limit, so the recipes a time limit left out for not
@@ -502,10 +507,10 @@ function tally(
 ): ReadonlyMap<string, number> {
   const values = recipes.flatMap((r) => r.tags[key] ?? []);
   return new Map(
-    [...Map.groupBy(values, (v) => v)].map(([value, group]) => [
-      value,
-      group.length,
-    ]),
+    Array.from(
+      Map.groupBy(values, (v) => v),
+      ([value, group]) => [value, group.length],
+    ),
   );
 }
 

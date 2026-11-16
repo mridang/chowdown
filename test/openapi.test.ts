@@ -26,6 +26,12 @@ import {
   type World,
 } from './app/api/world';
 
+const collator = new Intl.Collator();
+
+const START_A_HYPHEN_Z_PLUS = /^([a-z]+|\{[a-z_]+\})$/;
+const START_N3_DOT_N1_DOT = /^3\.1\./;
+const START_HASH_SLASH = /^#\//;
+
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 // Importing fetches web pages and calls a model; the contract is about the API.
 jest.unstable_mockModule('@/domain/recipe/prepare-import', () => ({
@@ -97,7 +103,7 @@ function deref(node: Described): Described {
     return node;
   }
   const found = node.$ref
-    .replace(/^#\//, '')
+    .replace(START_HASH_SLASH, '')
     .split('/')
     .reduce<unknown>((at, key) => (at as Json | undefined)?.[key], spec);
   if (!found) {
@@ -107,13 +113,15 @@ function deref(node: Described): Described {
 }
 
 /** The `$ref`s anywhere inside a node. */
-function refsIn(node: unknown): readonly string[] {
+function referencesIn(node: unknown): readonly string[] {
   if (Array.isArray(node)) {
-    return node.flatMap((child) => refsIn(child));
+    return node.flatMap((child) => referencesIn(child));
   }
   if (node && typeof node === 'object') {
     return Object.entries(node).flatMap(([key, value]) =>
-      key === '$ref' && typeof value === 'string' ? [value] : refsIn(value),
+      key === '$ref' && typeof value === 'string'
+        ? [value]
+        : referencesIn(value),
     );
   }
   return [];
@@ -121,7 +129,7 @@ function refsIn(node: unknown): readonly string[] {
 
 /** A copy of strings in the locale's sort order, leaving the original as it is. */
 const sorted = (values: readonly string[]) =>
-  values.toSorted((a, b) => a.localeCompare(b));
+  values.toSorted((a, b) => collator.compare(a, b));
 
 // ---------------------------------------------------------------- the routes
 
@@ -402,7 +410,7 @@ async function expectProblem(
 
 describe('openapi.json', () => {
   it('is OpenAPI 3.1 and says what is outside /api', () => {
-    expect(spec.openapi).toMatch(/^3\.1\./);
+    expect(spec.openapi).toMatch(START_N3_DOT_N1_DOT);
     for (const outside of ['/auth/', '/oauth/', '/mcp', '/health']) {
       expect(spec.info.description).toContain(outside);
     }
@@ -427,7 +435,7 @@ describe('openapi.json', () => {
   });
 
   it('resolves every $ref', () => {
-    for (const reference of refsIn(spec)) {
+    for (const reference of referencesIn(spec)) {
       expect(() => deref({ $ref: reference })).not.toThrow();
     }
   });
@@ -442,7 +450,7 @@ describe('openapi.json', () => {
   it('uses lowercase, hyphen-free path segments', () => {
     for (const url of Object.keys(spec.paths)) {
       for (const segment of url.split('/').filter(Boolean)) {
-        expect(segment).toMatch(/^([a-z]+|\{[a-z_]+\})$/);
+        expect(segment).toMatch(START_A_HYPHEN_Z_PLUS);
       }
     }
   });

@@ -17,6 +17,8 @@ import {
   type World,
 } from '../../../../world';
 
+const START_DQUOTE = /^"/;
+
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const { DELETE, GET, PUT } =
@@ -94,7 +96,7 @@ describe('PUT /api/recipes/:id/notes/:note_id', () => {
     const google = await withNotes();
     const res = await replace('1', { text: 'Changed' });
     expect(res.status).toBe(200);
-    expect(res.headers.get('etag')).toMatch(/^"/);
+    expect(res.headers.get('etag')).toMatch(START_DQUOTE);
     expect(google.files.get('f1')?.content).toContain('Changed');
     expect(google.files.get('f1')?.content).not.toContain('First');
   });
@@ -139,7 +141,7 @@ describe('DELETE /api/recipes/:id/notes/:note_id', () => {
     const google = await withNotes();
     const res = await remove('1');
     expect(res.status).toBe(204);
-    expect(res.headers.get('etag')).toMatch(/^"/);
+    expect(res.headers.get('etag')).toMatch(START_DQUOTE);
     expect(google.files.get('f1')?.content).not.toContain('First');
     expect(google.files.get('f1')?.content).toContain('Second');
   });

@@ -20,6 +20,7 @@ const HEIGHTS = { md: 'h-10', lg: 'h-12' } as const;
 export function SearchField({
   size = 'md',
   action,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   ...props
 }: Readonly<
@@ -27,6 +28,7 @@ export function SearchField({
     size?: keyof typeof HEIGHTS;
     /** A control at the right end, inside the box (usually the submit button). */
     action?: ReactNode;
+    // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
     className?: string;
   } & Omit<ComponentProps<'input'>, 'size'>
 >): ReactElement {
@@ -133,6 +135,7 @@ export function describedByIds(
 
 /** A single-line text box. */
 export function TextInput({
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   ...props
 }: Readonly<ComponentProps<'input'>>): ReactElement {
@@ -151,6 +154,7 @@ export function TextInput({
 export function TextArea({
   mono,
   grow,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   ...props
 }: Readonly<
@@ -187,6 +191,7 @@ export function FormMessage({
 
 /** A drop-down list with a custom chevron; wrap it in a label or give it one. */
 export function Select({
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   children,
   ...props
@@ -213,6 +218,7 @@ export function Select({
 /** A select with its label beside it, matching the height and border of other fields. */
 export function SelectField({
   label,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   children,
   ...props

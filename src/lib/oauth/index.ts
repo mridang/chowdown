@@ -130,6 +130,7 @@ export {
   ACCESS_PREFIX,
   CODE_PREFIX,
   hashSecret,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- the name is exported from its module and used by other modules
   newSecret,
   REFRESH_PREFIX,
   type SecretPrefix,

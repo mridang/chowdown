@@ -1,3 +1,4 @@
+const START_HASH_STAR_ESC_HASH = /^([^?#]*)(\?[^#]*)?(#.*)?$/;
 /**
  * @packageDocumentation
  *
@@ -58,6 +59,6 @@ export function withQueryParams(
     return url.toString();
   }
   const [, base = '', query = '', hash = ''] =
-    /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(url.href) ?? [];
+    START_HASH_STAR_ESC_HASH.exec(url.href) ?? [];
   return `${base}${setSearchParams(query, params)}${hash}`;
 }

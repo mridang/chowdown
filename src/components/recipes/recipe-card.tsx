@@ -30,12 +30,14 @@ const GRID_PHOTO_SIZES =
 export function PhotoBlock({
   tone,
   cover,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   priority,
   sizes = GRID_PHOTO_SIZES,
 }: Readonly<{
   tone: Tone;
   cover?: string;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
   /** The photo is above the fold, so load it straight away. */
   priority?: boolean;

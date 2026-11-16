@@ -1,12 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { TextLink } from '@/components/ui/text-link';
-import { classOf, html } from '../render';
+import { cssClassesOf, html } from '../render';
 
 describe('TextLink', () => {
   it('is underlined so it reads as a link', () => {
     expect(
-      classOf(html(<TextLink href="/privacy">Privacy</TextLink>), 'a'),
+      cssClassesOf(html(<TextLink href="/privacy">Privacy</TextLink>), 'a'),
     ).toContain('underline');
   });
 
@@ -28,7 +28,7 @@ describe('TextLink', () => {
 
   it('has a stronger look for a standalone link', () => {
     expect(
-      classOf(
+      cssClassesOf(
         html(
           <TextLink href="/" variant="strong">
             x

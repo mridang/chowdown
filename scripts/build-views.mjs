@@ -25,6 +25,8 @@ import { createHash } from 'node:crypto';
 import { access, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+const ZOD_V4_LOCALES = /zod[\\/]v4[\\/]locales[\\/]index\.js$/;
+
 const root = path.resolve(import.meta.dirname, '..');
 const outDir = path.resolve(root, 'dist/views');
 
@@ -72,14 +74,11 @@ const VIEWS = candidates
 const slimZodLocales = {
   name: 'slim-zod-locales',
   setup(build) {
-    build.onLoad(
-      { filter: /zod[\\/]v4[\\/]locales[\\/]index\.js$/ },
-      (args) => ({
-        contents: "export { default as en } from './en.js';",
-        resolveDir: path.dirname(args.path),
-        loader: 'js',
-      }),
-    );
+    build.onLoad({ filter: ZOD_V4_LOCALES }, (args) => ({
+      contents: "export { default as en } from './en.js';",
+      resolveDir: path.dirname(args.path),
+      loader: 'js',
+    }));
   },
 };
 

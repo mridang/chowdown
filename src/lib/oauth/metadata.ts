@@ -37,7 +37,7 @@ export function issuerOf(origin: string): string {
 /** A path without its trailing slashes. */
 const withoutTrailingSlashes = (path: string): string => {
   let end = path.length;
-  while (end > 0 && path[end - 1] === '/') {
+  while (end > 0 && path.codePointAt(end - 1) === 47) {
     end -= 1;
   }
   return path.slice(0, end);

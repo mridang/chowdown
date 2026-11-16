@@ -34,7 +34,9 @@ afterEach(() => restore());
 
 /** A request with the given method and headers, carrying whatever is in the jar. */
 const request = (method: string, headers: Record<string, string> = {}) => {
-  const cookie = [...jar].map(([name, value]) => `${name}=${value}`).join('; ');
+  const cookie = Array.from(jar, ([name, value]) => `${name}=${value}`).join(
+    '; ',
+  );
   return new Request(`${ORIGIN}/api/thing`, {
     method,
     headers: { ...(cookie ? { cookie } : {}), ...headers },

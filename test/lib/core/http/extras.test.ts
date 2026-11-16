@@ -61,7 +61,7 @@ const page = (body: string, nonce: string) =>
   });
 
 describe('EDGE_LIMITS', () => {
-  const classOf = (method: string, pathname: string) =>
+  const cssClassesOf = (method: string, pathname: string) =>
     EDGE_LIMITS.classify(
       new Request(`https://app.test${pathname}`, { method }),
     );
@@ -92,7 +92,7 @@ describe('EDGE_LIMITS', () => {
     ['GET', '/app', 'site'],
     ['GET', '/recipe/abc', 'site'],
   ])('puts %s %s in %s', (method, pathname, expected) => {
-    expect(classOf(method, pathname)).toBe(expected);
+    expect(cssClassesOf(method, pathname)).toBe(expected);
   });
 
   it('counts an MCP request with a bearer token per token, and one without in the tight anonymous class', () => {
@@ -104,7 +104,7 @@ describe('EDGE_LIMITS', () => {
         }),
       ),
     ).toBe('mcp');
-    expect(classOf('POST', '/mcp')).toBe('mcpAnonymous');
+    expect(cssClassesOf('POST', '/mcp')).toBe('mcpAnonymous');
   });
 
   it('keeps the classes every app has, and tells a signed-in person by the session cookie', () => {

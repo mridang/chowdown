@@ -95,8 +95,10 @@ export function recipeResource(
     ...recipeSummary(row, favourite),
     images: [...(media.cover ? [media.cover] : []), ...media.rest],
     cooklang: row.source,
-    ingredients: parsed.ingredients.map((i) =>
-      i.quantity ? { name: i.name, quantity: i.quantity } : { name: i.name },
+    ingredients: parsed.ingredients.map((index) =>
+      index.quantity
+        ? { name: index.name, quantity: index.quantity }
+        : { name: index.name },
     ),
     cookware: parsed.cookware,
     steps: parsed.steps.map((step) => stepText(step)),

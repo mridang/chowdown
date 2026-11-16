@@ -31,6 +31,8 @@ import { openUserDrive, type DriveContext } from '@/domain/mcp/tool-services';
 import { guarded } from '@/domain/mcp/tool-services';
 import { plainTitle } from '@/domain/mcp/tool-text';
 
+const ZA_Z0 = /^[A-Za-z0-9_-]+$/;
+
 /** What every recipe address starts with: the scheme and the two slashes. */
 export const RECIPE_URI_PREFIX = 'recipe://';
 
@@ -66,7 +68,7 @@ function recipeIdOf(uri: string): string | undefined {
   const id = uri.startsWith(RECIPE_URI_BASE)
     ? uri.slice(RECIPE_URI_BASE.length)
     : uri.slice(RECIPE_URI_PREFIX.length);
-  return /^[A-Za-z0-9_-]+$/.test(id) ? id : undefined;
+  return ZA_Z0.test(id) ? id : undefined;
 }
 
 /** How much of an address an error repeats; a client may send a megabyte of it. */

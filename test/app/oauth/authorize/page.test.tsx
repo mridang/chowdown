@@ -19,6 +19,9 @@ import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 import { htmlAt } from '../../../components/render';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 
+const HREF_RETURN_TO = /href="([^"]*)"[^>]*>Return to the app/;
+const AUTH_LOGIN_RETURN_TO = /^\/auth\/login\?returnTo=/;
+
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
 class RedirectedError extends Error {
   override name = 'RedirectedError';
@@ -153,7 +156,7 @@ describe('the authorize page', () => {
     const result = await visit();
     expect(result).toHaveProperty('redirectedTo');
     const to = (result as { redirectedTo: string }).redirectedTo;
-    expect(to).toMatch(/^\/auth\/login\?returnTo=/);
+    expect(to).toMatch(AUTH_LOGIN_RETURN_TO);
     const back = new URL(
       decodeURIComponent(to.split('returnTo=', 2)[1] ?? ''),
       'https://app.test',
@@ -204,7 +207,7 @@ describe('the authorize page', () => {
       expect(markup).toContain('unsupported_response_type');
       expect(markup).toContain('Return to the app');
       expect(markup).toContain('https://app.example/cb');
-      const href = /href="([^"]*)"[^>]*>Return to the app/.exec(markup)?.[1];
+      const href = HREF_RETURN_TO.exec(markup)?.[1];
       const link = new URL((href ?? '').replaceAll('&amp;', '&'));
       expect(link.origin + link.pathname).toBe('https://app.example/cb');
       expect(link.searchParams.get('error')).toBe('unsupported_response_type');

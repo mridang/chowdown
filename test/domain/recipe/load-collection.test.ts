@@ -54,10 +54,10 @@ function rows(
             session_epoch: epoch ?? 0,
           } as AppPageRows['user']),
     // The first `embedded` recipes carry an embedding stamp, the rest do not.
-    recipes: Array.from({ length: recipes }, (_, i) => ({
-      drive_file_id: `r${i}`,
+    recipes: Array.from({ length: recipes }, (_, index) => ({
+      drive_file_id: `r${index}`,
       parse_error: null,
-      embedded_at: i < (embedded ?? recipes) ? 'stamp' : null,
+      embedded_at: index < (embedded ?? recipes) ? 'stamp' : null,
     })) as unknown as AppPageRows['recipes'],
     favouriteIds: ['r0'],
   };
@@ -70,7 +70,7 @@ function fakes(
 ) {
   const background: Promise<unknown>[] = [];
   const pageRows = jest.fn<CollectionDeps['pageRows']>();
-  reads.forEach((read) => pageRows.mockResolvedValueOnce(read));
+  for (const read of reads) pageRows.mockResolvedValueOnce(read);
   const deps: CollectionDeps = {
     session: async () => session(),
     database: () => db,

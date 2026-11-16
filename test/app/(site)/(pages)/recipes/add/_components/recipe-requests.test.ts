@@ -129,6 +129,7 @@ describe('readImport', () => {
   });
 
   it('is nothing for an answer that is not an import', () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(readImport(undefined)).toBeUndefined();
     expect(readImport({ items: [] })).toBeUndefined();
     expect(readImport({ id: 'i' })).toBeUndefined();

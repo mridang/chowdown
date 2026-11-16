@@ -40,6 +40,7 @@ export function FavouriteButton({
   recipeId,
   initial,
   variant = 'labelled',
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
 }: Readonly<{
   recipeId: string;
@@ -47,6 +48,7 @@ export function FavouriteButton({
   initial: boolean;
   variant?: FavouriteVariant;
   /** Extra classes, typically the position for the overlay variant. */
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
 }>): ReactElement {
   const { on, busy, toggle } = useFavourite(recipeId, initial);

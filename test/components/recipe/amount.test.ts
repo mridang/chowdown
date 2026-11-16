@@ -41,9 +41,8 @@ describe('AMOUNT_PATTERN', () => {
     new RegExp(`^(?:${AMOUNT_PATTERN})$`).test(text);
 
   it('matches every form parseAmount reads', () => {
-    ['5', '1.5', '1/2', '1 1/2', '½', '1½'].forEach((text) =>
-      expect(match(text)).toBe(true),
-    );
+    for (const text of ['5', '1.5', '1/2', '1 1/2', '½', '1½'])
+      expect(match(text)).toBe(true);
   });
 
   it('has no capture groups, so it can sit inside bigger patterns', () => {

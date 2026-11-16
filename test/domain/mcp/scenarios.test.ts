@@ -175,8 +175,8 @@ describe('browseRecipes', () => {
 describe('browseRecipes — pages', () => {
   const all = ['Vegan', 'Vegetarian', 'Pescatarian', 'Non-vegetarian'].flatMap(
     (diet) =>
-      Array.from({ length: 6 }, (_, i) =>
-        recipe(`${diet} dish ${i}`, { diet_type: [diet] }, [['x', '1']]),
+      Array.from({ length: 6 }, (_, index) =>
+        recipe(`${diet} dish ${index}`, { diet_type: [diet] }, [['x', '1']]),
       ),
   );
   const page = (offset: number, limit = 5) =>
@@ -407,10 +407,10 @@ describe('browseRecipes — what the eating style and the other filters mean', (
 
 describe('recipesFromIngredients — long lists and how items are read', () => {
   const many = (n: number) =>
-    Array.from({ length: n }, (_, i) =>
-      recipe(`Dish ${i}`, { diet_type: ['Vegan'] }, [
+    Array.from({ length: n }, (_, index) =>
+      recipe(`Dish ${index}`, { diet_type: ['Vegan'] }, [
         ['tomatoes', '2'],
-        [`thing ${i}`, '1'],
+        [`thing ${index}`, '1'],
       ]),
     );
 
@@ -461,15 +461,15 @@ describe('recipesFromIngredients — long lists and how items are read', () => {
     const { message } = recipesFromIngredients(many(3), {
       ingredients: ['tomatoes'],
     });
-    for (const i of [0, 1, 2]) {
-      expect(message).toContain(`- Dish ${i} (id: Dish ${i})`);
+    for (const index of [0, 1, 2]) {
+      expect(message).toContain(`- Dish ${index} (id: Dish ${index})`);
     }
   });
 
   it('stays quick on a huge request', () => {
     const started = Date.now();
     recipesFromIngredients(many(300), {
-      ingredients: Array.from({ length: 5000 }, (_, i) => `item ${i}`),
+      ingredients: Array.from({ length: 5000 }, (_, index) => `item ${index}`),
     });
     expect(Date.now() - started).toBeLessThan(3000);
   });
@@ -601,9 +601,9 @@ describe('runScenarioTool', () => {
 describe('a capped list stays representative', () => {
   const many = ['Vegan', 'Vegetarian', 'Pescatarian', 'Non-vegetarian'].flatMap(
     (diet) =>
-      Array.from({ length: 6 }, (_, i) =>
+      Array.from({ length: 6 }, (_, index) =>
         recipe(
-          `${diet} dish ${i}`,
+          `${diet} dish ${index}`,
           { cuisine: ['Indian'], diet_type: [diet] },
           [['x', '1']],
         ),

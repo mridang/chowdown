@@ -8,6 +8,8 @@ import {
 } from '@/components/recipe/actions';
 import { htmlAt } from '../render';
 
+const BUTTON_SHARE_BUTTON = /<button[^>]*>.*Share<\/button>/s;
+
 describe('focusMoreActionsButton', () => {
   it('focuses the "More actions" button inside the container', () => {
     const focus = jest.fn();
@@ -35,7 +37,7 @@ describe('focusMoreActionsButton', () => {
 describe('ShareButton', () => {
   it('is a button named "Share" before anything is copied', () => {
     const out = htmlAt(<ShareButton title="Dal" />);
-    expect(out).toMatch(/<button[^>]*>.*Share<\/button>/s);
+    expect(out).toMatch(BUTTON_SHARE_BUTTON);
     expect(out).not.toContain('Link copied');
   });
 

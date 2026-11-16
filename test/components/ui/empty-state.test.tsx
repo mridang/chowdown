@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { EmptyState } from '@/components/ui/empty-state';
-import { classOf, html } from '../render';
+import { cssClassesOf, html } from '../render';
 
 describe('EmptyState', () => {
   it('says what is missing, then how to carry on', () => {
@@ -16,11 +16,11 @@ describe('EmptyState', () => {
   });
 
   it('is a dashed outline by default and a solid card on request', () => {
-    expect(classOf(html(<EmptyState title="x" />), 'div')).toContain(
+    expect(cssClassesOf(html(<EmptyState title="x" />), 'div')).toContain(
       'border-dashed',
     );
     const card = html(<EmptyState variant="card" title="x" />);
-    expect(classOf(card, 'div')).toContain('bg-white');
+    expect(cssClassesOf(card, 'div')).toContain('bg-white');
     expect(card).not.toContain('border-dashed');
   });
 

@@ -6,6 +6,7 @@ import { cn } from '@/components/ui/cn';
 export function Skeleton({
   tone = 'bar',
   shape = 'rounded',
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
 }: Readonly<{
   /** `bar` for text and controls, `block` for a card or photo (a lighter grey). */
@@ -16,6 +17,7 @@ export function Skeleton({
    * (a photo), `circle` is round (an avatar, a step number).
    */
   shape?: 'rounded' | 'square' | 'circle';
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
 }>): ReactElement {
   const colour = tone === 'bar' ? 'bg-ink/10' : 'bg-ink/5';
@@ -36,11 +38,13 @@ export function Skeleton({
  */
 export function SkeletonFrame({
   label = 'Loading',
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   children,
 }: Readonly<{
   /** What assistive technology announces, e.g. "Loading your recipes". */
   label?: string;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
   children: ReactNode;
 }>): ReactElement {

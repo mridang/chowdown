@@ -7,8 +7,13 @@ import {
 } from '@/app/(site)/recipe/[id]/_components/recipe-hero';
 import { htmlAt } from '../../../../../components/render';
 
+const BY_ETHAN = />by<.*Ethan/;
+const FONT_HAND_ETHAN = /font-hand-\w[^"]*"[^>]*>Ethan Chlebowski</;
+const H1_DAL_H1 = /<h1[^>]*>Dal<\/h1>/;
+
 describe('heroCrumbs', () => {
   it('starts at the list of recipes', () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(heroCrumbs(undefined)).toEqual([{ label: 'Recipes', href: '/app' }]);
   });
 
@@ -26,11 +31,13 @@ describe('heroEyebrow', () => {
   });
 
   it('shows whichever of the two the recipe has', () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(heroEyebrow('indian', undefined)).toBe('Indian');
     expect(heroEyebrow(undefined, 'dinner')).toBe('Dinner');
   });
 
   it('is undefined when the recipe has neither', () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(heroEyebrow(undefined, undefined)).toBeUndefined();
     expect(heroEyebrow('', '')).toBeUndefined();
   });
@@ -58,7 +65,7 @@ describe('RecipeHero', () => {
   it('titles the page with the recipe in the one level-one heading', () => {
     const out = markup();
     expect(out.match(/<h1/g)).toHaveLength(1);
-    expect(out).toMatch(/<h1[^>]*>Dal<\/h1>/);
+    expect(out).toMatch(H1_DAL_H1);
   });
 
   it('lets the title be edited in place', () => {
@@ -120,7 +127,7 @@ describe('RecipeHero', () => {
   it('sets only the author in the handwriting face', () => {
     const out = markup({ sourceUrl: SOURCE, author: 'Ethan Chlebowski' });
     expect(out.match(/font-hand-/g)).toHaveLength(1);
-    expect(out).toMatch(/font-hand-\w[^"]*"[^>]*>Ethan Chlebowski</);
+    expect(out).toMatch(FONT_HAND_ETHAN);
   });
 
   it('keeps the source line under the title when there is no author', () => {
@@ -147,7 +154,7 @@ describe('RecipeHero', () => {
 
   it('shows the author alone with no source line and no gap', () => {
     const out = markup({ author: 'Ethan' });
-    expect(out).toMatch(/>by<.*Ethan/);
+    expect(out).toMatch(BY_ETHAN);
     expect(out).not.toContain('>From<');
   });
 

@@ -23,11 +23,13 @@ export function NumberBadge({
   value,
   size = 'sm',
   tone = 'flame',
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
 }: Readonly<{
   value: number;
   size?: keyof typeof SIZES;
   tone?: keyof typeof TONES;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
 }>): ReactElement {
   return (

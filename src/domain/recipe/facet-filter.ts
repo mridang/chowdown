@@ -15,6 +15,8 @@ import { compareText, foldText } from '@/lib/intl';
 import { FACETS } from '@/domain/recipe/taxonomy';
 import type { RecipeTags } from '@/domain/recipe/tag-index';
 
+const WHITESPACE_RUN = /\s+/;
+
 /** Parsed filter state from the query string. */
 export interface FilterState {
   readonly q: string;
@@ -38,7 +40,7 @@ export type SearchParams = Readonly<
 >;
 
 /** Split a param (string, CSV, or repeated) into trimmed, non-empty values. */
-function paramValues(
+function parameterValues(
   raw: string | readonly string[] | undefined,
 ): readonly string[] {
   const list = typeof raw === 'string' ? [raw] : (raw ?? []);
@@ -53,13 +55,15 @@ export function parseFilters(params: SearchParams): FilterState {
   const q = typeof params['q'] === 'string' ? params['q'].trim() : '';
   const selected = Object.fromEntries(
     FACETS.flatMap((f) => {
-      const vals = paramValues(params[f.key]);
+      const vals = parameterValues(params[f.key]);
       return vals.length > 0 ? [[f.key, vals] as const] : [];
     }),
   );
   const fav = params['fav'];
   const favouritesOnly = fav === '1' || fav === 'true';
-  const domains = paramValues(params[DOMAIN_KEY]).map((d) => d.toLowerCase());
+  const domains = parameterValues(params[DOMAIN_KEY]).map((d) =>
+    d.toLowerCase(),
+  );
   return { q, favouritesOnly, selected, domains };
 }
 
@@ -93,7 +97,7 @@ export function matchesFilters(
       .flat()
       .some((v) =>
         foldText(v)
-          .split(/\s+/)
+          .split(WHITESPACE_RUN)
           .some((word) => word.startsWith(q)),
       );
     if (!inName && !inTags) {
@@ -207,8 +211,10 @@ export function buildDomainFacet(
 ): FacetView | null {
   const domains = recipes.flatMap((r) => (r.domain ? [r.domain] : []));
   const counts = Map.groupBy(domains, (domain) => domain);
-  const values = [...counts.entries()]
-    .map(([domain, same]) => [domain, same.length] as const)
+  const values = Array.from(
+    counts.entries(),
+    ([domain, same]) => [domain, same.length] as const,
+  )
     .filter(
       ([domain, count]) =>
         count >= MIN_DOMAIN_RECIPES || state.domains.includes(domain),

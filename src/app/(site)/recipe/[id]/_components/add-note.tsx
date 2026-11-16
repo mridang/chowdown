@@ -83,7 +83,7 @@ export function AddNote({
           id="note-text"
           grow
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(event) => setText(event.target.value)}
           rows={3}
           ref={field}
           placeholder="e.g. use 3 avocados instead of 2"
@@ -93,7 +93,7 @@ export function AddNote({
         <SelectField
           label="Attach to"
           value={target}
-          onChange={(e) => setTarget(e.target.value)}
+          onChange={(event) => setTarget(event.target.value)}
         >
           <option value="">the whole recipe</option>
           {ingredients.map((name, index) => (

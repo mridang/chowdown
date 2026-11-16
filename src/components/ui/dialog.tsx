@@ -222,7 +222,7 @@ function useMounted(open: boolean): boolean {
     setWasOpen(open);
     setLeaving(!open);
   }
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (leaving) {
       const timer = setTimeout(() => setLeaving(false), LEAVE_MS);
       return () => clearTimeout(timer);
@@ -264,6 +264,7 @@ const VARIANTS = {
 /** The dimmed backdrop and the content panel together. */
 export function DialogContent({
   variant = 'full',
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   children,
   closeLabel = 'Close',
@@ -301,7 +302,7 @@ export function DialogContent({
 
   // A click outside closes a dialog that can be dismissed. The browser does it
   // itself under `closedby="any"`; this is only for the ones that cannot.
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     const dialog = ref.current;
     if (dialog && dismissable && !supportsLightDismiss(dialog)) {
       const onClick = backdropClickHandler(dialog, () => setOpen(false));

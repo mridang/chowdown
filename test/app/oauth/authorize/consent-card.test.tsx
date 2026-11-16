@@ -6,6 +6,16 @@ import { html } from '../../../components/render';
 import { BRAND_NAME } from '@/app/_brand';
 import { SCOPE_READ, SCOPE_TEXT, SCOPE_WRITE } from '@/domain/mcp/app';
 
+const VALUE_APPROVE_NAME = /value="approve" name="decision">Approve/;
+const VALUE_DENY_NAME = /value="deny" name="decision">Cancel/;
+const FORM_ARIA_LABEL = /<form [^>]*aria-label=/;
+const VALUE_WRITE_CHECKED =
+  /value="write"[^>]*checked|checked=""[^>]*value="write"/;
+const INPUT_NAME_ACCESS = /<input[^>]*name="access"[^>]*value="read"/;
+const INPUT_NAME_ACCESS_2 = /<input[^>]*name="access"[^>]*value="write"/;
+const SPAN_CLASS_FONT =
+  /<span class="[^"]*font-semibold[^"]*">claude\.ai<\/span><code/;
+
 const FIELDS = [
   { name: 'client_id', value: 'https://claude.ai/oauth/meta' },
   { name: 'state', value: 'a"b<c' },
@@ -68,9 +78,7 @@ describe('ConsentCard', () => {
   it('shows the full redirect address and, bold on its own line, the host', () => {
     const markup = card();
     expect(markup).toContain('https://claude.ai/mcp/auth_callback</code>');
-    expect(markup).toMatch(
-      /<span class="[^"]*font-semibold[^"]*">claude\.ai<\/span><code/,
-    );
+    expect(markup).toMatch(SPAN_CLASS_FONT);
   });
 
   it('shows the ASCII form of an international host, never the look-alike letters', () => {
@@ -100,12 +108,10 @@ describe('ConsentCard', () => {
   it('offers a read-only choice when the app asked to change things, with everything as the default', () => {
     const markup = card();
     expect(markup).toContain('<legend');
-    expect(markup).toMatch(/<input[^>]*name="access"[^>]*value="write"/);
-    expect(markup).toMatch(/<input[^>]*name="access"[^>]*value="read"/);
+    expect(markup).toMatch(INPUT_NAME_ACCESS_2);
+    expect(markup).toMatch(INPUT_NAME_ACCESS);
     expect(markup.match(/name="access"[^>]*checked/g)).toHaveLength(1);
-    expect(markup).toMatch(
-      /value="write"[^>]*checked|checked=""[^>]*value="write"/,
-    );
+    expect(markup).toMatch(VALUE_WRITE_CHECKED);
   });
 
   it('offers no choice when the app asked only to read', () => {
@@ -161,7 +167,7 @@ describe('ConsentCard', () => {
   it('labels the form, carries the request through and offers both decisions', () => {
     const markup = card();
     expect(markup).toContain('action="/oauth/consent" method="post"');
-    expect(markup).toMatch(/<form [^>]*aria-label=/);
+    expect(markup).toMatch(FORM_ARIA_LABEL);
     expect(markup).toContain(
       'aria-label="Approve or cancel connecting Claude"',
     );
@@ -170,8 +176,8 @@ describe('ConsentCard', () => {
     );
     // Attribute values are escaped, so a state with quotes cannot break out.
     expect(markup).toContain('name="state" value="a&quot;b&lt;c"');
-    expect(markup).toMatch(/value="deny" name="decision">Cancel/);
-    expect(markup).toMatch(/value="approve" name="decision">Approve/);
+    expect(markup).toMatch(VALUE_DENY_NAME);
+    expect(markup).toMatch(VALUE_APPROVE_NAME);
   });
 
   it('says who is signed in', () => {

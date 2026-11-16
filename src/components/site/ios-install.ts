@@ -16,6 +16,10 @@
 
 import { BRAND_NAME } from '@/app/_brand';
 
+const SAFARI = /Safari\//;
+const VERSION = /Version\/[\d.]+/;
+const I_PHONE_I_PAD_I_POD = /iPhone|iPad|iPod/;
+
 /** The `localStorage` key that remembers the tip was dismissed. */
 export const IOS_HINT_STORAGE_KEY = `${BRAND_NAME.toLowerCase()}:ios-install-hint-dismissed`;
 
@@ -61,8 +65,8 @@ export type InstallEnvironment = Readonly<{
  */
 function isIosDevice(userAgent: string, maxTouchPoints: number): boolean {
   return (
-    /iPhone|iPad|iPod/.test(userAgent) ||
-    (/Macintosh/.test(userAgent) && maxTouchPoints > 1)
+    I_PHONE_I_PAD_I_POD.test(userAgent) ||
+    (userAgent.includes('Macintosh') && maxTouchPoints > 1)
   );
 }
 
@@ -77,8 +81,8 @@ export function isIosSafari(
 ): boolean {
   return (
     isIosDevice(userAgent, maxTouchPoints) &&
-    /Version\/[\d.]+/.test(userAgent) &&
-    /Safari\//.test(userAgent) &&
+    VERSION.test(userAgent) &&
+    SAFARI.test(userAgent) &&
     !NOT_SAFARI.test(userAgent)
   );
 }

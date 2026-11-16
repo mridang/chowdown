@@ -1,3 +1,4 @@
+const TRAILING_HYPHEN = /-$/;
 /**
  * @packageDocumentation
  *
@@ -19,7 +20,7 @@ export function fileSlug(title: string, max = 30): string {
     .replaceAll(/[^a-z0-9]+/g, '-')
     .replaceAll(/^-|-$/g, '')
     .slice(0, max)
-    .replace(/-$/, '');
+    .replace(TRAILING_HYPHEN, '');
 }
 
 /**

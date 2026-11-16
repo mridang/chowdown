@@ -193,8 +193,8 @@ export async function ensureEmbeddings(
     files.map((f) => f.id),
   );
   if (outcomes.includes('embedded') || stale) {
-    const embeddedIds = files.flatMap((file, i) =>
-      outcomes[i] === 'embedded' ? [file.id] : [],
+    const embeddedIds = files.flatMap((file, index) =>
+      outcomes[index] === 'embedded' ? [file.id] : [],
     );
     await deps.refreshLists(db, user.id, embeddedIds);
   }

@@ -22,6 +22,7 @@ const [WRITE_TOOL = ''] = WRITE_TOOLS;
 
 describe('normaliseScope', () => {
   it('grants everything supported when nothing is asked for', () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(normaliseScope(undefined)).toEqual([SCOPE_READ, SCOPE_WRITE]);
     expect(normaliseScope('  ')).toEqual([SCOPE_READ, SCOPE_WRITE]);
   });

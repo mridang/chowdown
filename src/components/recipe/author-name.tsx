@@ -2,6 +2,8 @@ import type { ReactElement } from 'react';
 
 import { cn } from '@/components/ui/cn';
 
+const WHITESPACE_RUN = /\s+/;
+
 /** How one face is drawn: its class list, and its font size at each of the two sizes. */
 type FaceLook = Readonly<{
   /** The `font-hand-*` token (see `globals.css`) and the weight. */
@@ -81,7 +83,7 @@ function normalisedName(name: string): string {
   return name
     .normalize('NFC')
     .toLowerCase()
-    .split(/\s+/)
+    .split(WHITESPACE_RUN)
     .filter(Boolean)
     .join(' ');
 }

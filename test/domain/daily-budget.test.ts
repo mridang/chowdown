@@ -45,9 +45,9 @@ describe('DAILY_BUDGETS', () => {
 
 describe('spendBudget', () => {
   it('lets calls through until the budget is used, then says when it renews', async () => {
-    for (let i = 0; i < 3; i += 1) {
+    for (let index = 0; index < 3; index += 1) {
       expect(
-        await spendBudget(SMALL, 7, { store, now: NOW + i }),
+        await spendBudget(SMALL, 7, { store, now: NOW + index }),
       ).toBeUndefined();
     }
     const wait = await spendBudget(SMALL, 7, { store, now: NOW + 10 });
@@ -56,7 +56,7 @@ describe('spendBudget', () => {
   });
 
   it('counts each person on their own', async () => {
-    for (let i = 0; i < 3; i += 1) {
+    for (let index = 0; index < 3; index += 1) {
       await spendBudget(SMALL, 7, { store, now: NOW });
     }
     expect(await spendBudget(SMALL, 7, { store, now: NOW })).toBeDefined();
@@ -65,14 +65,14 @@ describe('spendBudget', () => {
 
   it('counts each budget on its own', async () => {
     const other: RateLimit = { ...SMALL, name: 'budget-other' };
-    for (let i = 0; i < 3; i += 1) {
+    for (let index = 0; index < 3; index += 1) {
       await spendBudget(SMALL, 7, { store, now: NOW });
     }
     expect(await spendBudget(other, 7, { store, now: NOW })).toBeUndefined();
   });
 
   it('starts again once the day has passed', async () => {
-    for (let i = 0; i < 4; i += 1) {
+    for (let index = 0; index < 4; index += 1) {
       await spendBudget(SMALL, 7, { store, now: NOW });
     }
     expect(

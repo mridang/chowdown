@@ -3,6 +3,9 @@ import { describe, expect, it } from '@jest/globals';
 import { DeleteDialog } from '@/components/recipe/delete-dialog';
 import { htmlAt } from '../render';
 
+const ARIA_LABELLEDBY = /aria-labelledby="([^"]+)"/;
+const H2_DELETE_THIS = /<h2[^>]*>Delete this recipe\?<\/h2>/;
+
 const markup = (open: boolean) =>
   htmlAt(
     <DeleteDialog
@@ -22,8 +25,8 @@ describe('DeleteDialog', () => {
 
   it('is named by its question and described by what will happen', () => {
     const out = markup(true);
-    expect(out).toMatch(/<h2[^>]*>Delete this recipe\?<\/h2>/);
-    const labelled = /aria-labelledby="([^"]+)"/.exec(out)?.[1];
+    expect(out).toMatch(H2_DELETE_THIS);
+    const labelled = ARIA_LABELLEDBY.exec(out)?.[1];
     expect(out).toContain(`id="${labelled}"`);
     expect(out).toContain('aria-describedby=');
   });

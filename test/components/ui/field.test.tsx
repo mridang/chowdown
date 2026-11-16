@@ -9,7 +9,12 @@ import {
   TextArea,
   TextInput,
 } from '@/components/ui/field';
-import { classOf, html } from '../render';
+import { cssClassesOf, html } from '../render';
+
+const ID_NAME_ERROR =
+  /<p id="name-error" role="alert"[^>]*>A name is needed\.<\/p>/;
+const INPUT_ARIA_DESCRIBEDBY = /<input[^>]*aria-describedby="name-error"/;
+const INPUT_ARIA_INVALID = /<input[^>]*aria-invalid="true"/;
 
 describe('FormField', () => {
   it('ties the label to the control by id, with help text under it', () => {
@@ -51,11 +56,9 @@ describe('FormField', () => {
         <TextInput id="name" />
       </FormField>,
     );
-    expect(out).toMatch(/<input[^>]*aria-invalid="true"/);
-    expect(out).toMatch(/<input[^>]*aria-describedby="name-error"/);
-    expect(out).toMatch(
-      /<p id="name-error" role="alert"[^>]*>A name is needed\.<\/p>/,
-    );
+    expect(out).toMatch(INPUT_ARIA_INVALID);
+    expect(out).toMatch(INPUT_ARIA_DESCRIBEDBY);
+    expect(out).toMatch(ID_NAME_ERROR);
   });
 
   it('points the control at both its help text and its error', () => {
@@ -103,25 +106,39 @@ describe('describedByIds', () => {
 
 describe('TextInput and TextArea', () => {
   it('share one look', () => {
-    expect(classOf(html(<TextInput />), 'input')).toContain('border-field');
-    expect(classOf(html(<TextArea />), 'textarea')).toContain('border-field');
+    expect(cssClassesOf(html(<TextInput />), 'input')).toContain(
+      'border-field',
+    );
+    expect(cssClassesOf(html(<TextArea />), 'textarea')).toContain(
+      'border-field',
+    );
   });
 
   it('darken their edge on hover as well as focus, since the resting edge is now clear', () => {
-    expect(classOf(html(<TextInput />), 'input')).toContain('hover:border-ink');
-    expect(classOf(html(<TextInput />), 'input')).not.toContain(
+    expect(cssClassesOf(html(<TextInput />), 'input')).toContain(
+      'hover:border-ink',
+    );
+    expect(cssClassesOf(html(<TextInput />), 'input')).not.toContain(
       'hover:border-ink/50',
     );
   });
 
   it('show code-like text in a monospace face on request', () => {
-    expect(classOf(html(<TextArea mono />), 'textarea')).toContain('font-mono');
-    expect(classOf(html(<TextArea />), 'textarea')).not.toContain('font-mono');
+    expect(cssClassesOf(html(<TextArea mono />), 'textarea')).toContain(
+      'font-mono',
+    );
+    expect(cssClassesOf(html(<TextArea />), 'textarea')).not.toContain(
+      'font-mono',
+    );
   });
 
   it('grows with what is typed only when asked, through the autogrow rule in globals.css', () => {
-    expect(classOf(html(<TextArea grow />), 'textarea')).toContain('autogrow');
-    expect(classOf(html(<TextArea />), 'textarea')).not.toContain('autogrow');
+    expect(cssClassesOf(html(<TextArea grow />), 'textarea')).toContain(
+      'autogrow',
+    );
+    expect(cssClassesOf(html(<TextArea />), 'textarea')).not.toContain(
+      'autogrow',
+    );
   });
 });
 
@@ -145,7 +162,7 @@ describe('Select and SelectField', () => {
     );
     expect(out).toContain('<select');
     expect(out).toContain('<svg');
-    expect(classOf(out, 'select')).toContain('appearance-none');
+    expect(cssClassesOf(out, 'select')).toContain('appearance-none');
   });
 
   it('puts the label beside the select', () => {

@@ -17,6 +17,11 @@ import {
 import { SERVER_INFO } from '@/domain/mcp/server-info';
 import type { RateLimitStore } from '@/lib/rate-limit';
 
+const collator = new Intl.Collator();
+
+const RATE_LIMIT = /Rate limit/;
+const TOO_LARGE = /too large/;
+
 const ALL_SCOPES = ['recipes:read', 'recipes:write'];
 const SELF = 'https://chowdown.test';
 const META = 'io.modelcontextprotocol/protocolVersion';
@@ -69,7 +74,7 @@ function fakeRate(over: Partial<RateLimitDeps> = {}): {
   };
   return {
     deps: { store: () => store, now: () => 5000, random: () => 0.5, ...over },
-    keys: () => [...counters.keys()].toSorted((a, b) => a.localeCompare(b)),
+    keys: () => [...counters.keys()].toSorted((a, b) => collator.compare(a, b)),
     purged,
   };
 }
@@ -493,7 +498,7 @@ describe('handleMcpPost — request size', () => {
       params: { name: 'import_recipe', arguments: { content: padding } },
     });
     expect(status).toBe(413);
-    expect(json?.error?.message).toMatch(/too large/);
+    expect(json?.error?.message).toMatch(TOO_LARGE);
   });
 
   it('accepts a sizeable body within the limit', async () => {
@@ -780,8 +785,8 @@ describe('handleMcpPost — rate limiting', () => {
 
   it('answers a user over their tool-call allowance with 429, Retry-After and a JSON-RPC error', async () => {
     const rate = fakeRate();
-    for (let i = 0; i < 120; i++) {
-      const res = await send(call(i), {}, ALL_SCOPES, rate.deps);
+    for (let index = 0; index < 120; index++) {
+      const res = await send(call(index), {}, ALL_SCOPES, rate.deps);
       expect(res.status).toBe(200);
     }
     const { status, headers, json } = await send(
@@ -799,13 +804,13 @@ describe('handleMcpPost — rate limiting', () => {
         data: { retryAfterSeconds: 60 },
       },
     });
-    expect(json?.error?.message).toMatch(/Rate limit/);
+    expect(json?.error?.message).toMatch(RATE_LIMIT);
   });
 
   it('exposes Retry-After to browsers', async () => {
     const rate = fakeRate();
-    for (let i = 0; i < 120; i++) {
-      await send(call(i), {}, ALL_SCOPES, rate.deps);
+    for (let index = 0; index < 120; index++) {
+      await send(call(index), {}, ALL_SCOPES, rate.deps);
     }
     const { headers } = await send(call(0), {}, ALL_SCOPES, rate.deps);
     expect(headers.get('access-control-expose-headers')).toContain(
@@ -815,8 +820,8 @@ describe('handleMcpPost — rate limiting', () => {
 
   it('keeps listing and the handshake available to a user who has used up their calls', async () => {
     const rate = fakeRate();
-    for (let i = 0; i < 121; i++) {
-      await send(call(i), {}, ALL_SCOPES, rate.deps);
+    for (let index = 0; index < 121; index++) {
+      await send(call(index), {}, ALL_SCOPES, rate.deps);
     }
     for (const method of ['tools/list', 'resources/list', 'ping']) {
       const { status } = await send(
@@ -831,8 +836,8 @@ describe('handleMcpPost — rate limiting', () => {
 
   it('counts each user on their own', async () => {
     const rate = fakeRate();
-    for (let i = 0; i < 121; i++) {
-      await send(call(i), {}, ALL_SCOPES, rate.deps);
+    for (let index = 0; index < 121; index++) {
+      await send(call(index), {}, ALL_SCOPES, rate.deps);
     }
     const res = await handleMcpPost(
       post(call(1)),
@@ -859,23 +864,23 @@ describe('handleMcpPost — rate limiting', () => {
   it('counts every call in a batch', async () => {
     const rate = fakeRate();
     const { status } = await send(
-      Array.from({ length: 20 }, (_, i) => call(i)),
+      Array.from({ length: 20 }, (_, index) => call(index)),
       {},
       ALL_SCOPES,
       rate.deps,
     );
     expect(status).toBe(200);
     const again = await send(
-      Array.from({ length: 20 }, (_, i) => call(i)),
+      Array.from({ length: 20 }, (_, index) => call(index)),
       {},
       ALL_SCOPES,
       rate.deps,
     );
     expect(again.status).toBe(200);
     // 120 in six batches of twenty; the seventh goes over.
-    for (let i = 0; i < 4; i++) {
+    for (let index = 0; index < 4; index++) {
       await send(
-        Array.from({ length: 20 }, (_, j) => call(j)),
+        Array.from({ length: 20 }, (_, index) => call(index)),
         {},
         ALL_SCOPES,
         rate.deps,
@@ -1067,12 +1072,12 @@ describe('every reply from the endpoint', () => {
       async () => {
         const rate = fakeRate();
         await Array.from({ length: 120 }).reduce<Promise<unknown>>(
-          async (done, _, i) => {
+          async (done, _, index) => {
             await done;
             return send(
               {
                 jsonrpc: '2.0',
-                id: i,
+                id: index,
                 method: 'tools/call',
                 params: { name: 'ghost' },
               },

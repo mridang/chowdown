@@ -9,8 +9,16 @@ import { APP_RESOURCES } from '@/domain/mcp/ui-resources';
 import { SCOPE_READ, scopeForTool } from '@/lib/oauth';
 import { PANCAKES, call, fakeServices, folder } from '../../lib/mcp/tool-fakes';
 
+const collator = new Intl.Collator();
+
+const BY_MEANING_NOT = /^By meaning, not name:/;
+const BY_NAME_ONLY = /^By name only:/;
+const YOURSELF_DO_NOT =
+  /YOURSELF|do NOT|Call this when|Use this when|Use it|prefer /;
+const ZA_Z0 = /^[A-Za-z0-9_.-]{1,128}$/;
+
 /** A JSON Schema 2020-12 validator that rejects schemas with unknown keywords. */
-function newAjv(): Ajv2020 {
+function createAjv(): Ajv2020 {
   return new Ajv2020({ strict: true, allowUnionTypes: true });
 }
 
@@ -65,14 +73,16 @@ describe('the tool catalogue', () => {
     const names = TOOLS.map((t) => t.name);
     expect(new Set(names).size).toBe(names.length);
     for (const name of names) {
-      expect(name).toMatch(/^[A-Za-z0-9_.-]{1,128}$/);
+      expect(name).toMatch(ZA_Z0);
     }
   });
 
   it('has a set of good arguments for every tool, and for no other', () => {
     expect(
-      Object.keys(GOOD_ARGUMENTS).toSorted((a, b) => a.localeCompare(b)),
-    ).toEqual(TOOLS.map((t) => t.name).toSorted((a, b) => a.localeCompare(b)));
+      Object.keys(GOOD_ARGUMENTS).toSorted((a, b) => collator.compare(a, b)),
+    ).toEqual(
+      TOOLS.map((t) => t.name).toSorted((a, b) => collator.compare(a, b)),
+    );
   });
 
   it('finds a tool by name', () => {
@@ -84,9 +94,7 @@ describe('the tool catalogue', () => {
   it('describes what each tool does without telling the model how to behave', () => {
     for (const tool of TOOLS) {
       expect(tool.description.length).toBeGreaterThan(20);
-      expect(tool.description).not.toMatch(
-        /YOURSELF|do NOT|Call this when|Use this when|Use it|prefer /,
-      );
+      expect(tool.description).not.toMatch(YOURSELF_DO_NOT);
     }
   });
 
@@ -145,9 +153,9 @@ describe('how the tools name what they take', () => {
     const withName = TOOLS.filter((t) =>
       Object.keys(propertiesOf(t.name)).includes('name'),
     ).map((t) => t.name);
-    expect(withName.toSorted((a, b) => a.localeCompare(b))).toEqual(
+    expect(withName.toSorted((a, b) => collator.compare(a, b))).toEqual(
       ['add_recipe', 'capture_idea', 'import_recipe'].toSorted((a, b) =>
-        a.localeCompare(b),
+        collator.compare(a, b),
       ),
     );
   });
@@ -275,10 +283,8 @@ describe('what the model has to read', () => {
   });
 
   it('leads the two search tools with what tells them apart', () => {
-    expect(toolNamed('search_recipes')?.description).toMatch(/^By name only:/);
-    expect(toolNamed('find_recipes')?.description).toMatch(
-      /^By meaning, not name:/,
-    );
+    expect(toolNamed('search_recipes')?.description).toMatch(BY_NAME_ONLY);
+    expect(toolNamed('find_recipes')?.description).toMatch(BY_MEANING_NOT);
   });
 });
 
@@ -402,7 +408,7 @@ describe('the input schemas', () => {
   it.each(TOOLS.map((t) => [t.name, t] as const))(
     '%s is a valid, closed JSON Schema 2020-12 object',
     (_name, tool) => {
-      expect(newAjv().validateSchema(tool.inputSchema)).toBe(true);
+      expect(createAjv().validateSchema(tool.inputSchema)).toBe(true);
       expect(tool.inputSchema.type).toBe('object');
       expect(tool.inputSchema.additionalProperties).toBe(false);
       const properties = Object.keys(tool.inputSchema.properties ?? {});
@@ -460,7 +466,7 @@ describe('the output schemas', () => {
   it('are valid JSON Schema 2020-12', () => {
     for (const tool of TOOLS) {
       if ('outputSchema' in tool) {
-        expect(newAjv().validateSchema(tool.outputSchema ?? {})).toBe(true);
+        expect(createAjv().validateSchema(tool.outputSchema ?? {})).toBe(true);
       }
     }
   });
@@ -499,7 +505,7 @@ describe('the input checker agrees with ajv', () => {
   it.each(TOOLS.map((t) => [t.name, t] as const))(
     '%s: on its good arguments and every single-edit variation of them',
     (_name, tool) => {
-      const ajvValid = newAjv().compile(tool.inputSchema);
+      const ajvValid = createAjv().compile(tool.inputSchema);
       const good = GOOD_ARGUMENTS[tool.name] ?? {};
       const properties = Object.keys(tool.inputSchema.properties ?? {});
       const variants: readonly unknown[] = [
@@ -540,7 +546,9 @@ describe('every result conforms to the tool that returned it', () => {
 
   it('has an output schema for the tools that draw a card or a list', () => {
     expect(
-      OUTPUT_TOOLS.map((t) => t.name).toSorted((a, b) => a.localeCompare(b)),
+      OUTPUT_TOOLS.map((t) => t.name).toSorted((a, b) =>
+        collator.compare(a, b),
+      ),
     ).toEqual([
       'add_recipe',
       'annotate_recipe',
@@ -571,7 +579,7 @@ describe('every result conforms to the tool that returned it', () => {
       expect(result.isError).toBeUndefined();
       expect(result.content[0]?.text.length).toBeGreaterThan(10);
       if ('outputSchema' in tool) {
-        const accepts = newAjv().compile(tool.outputSchema ?? {});
+        const accepts = createAjv().compile(tool.outputSchema ?? {});
         expect({
           tool: tool.name,
           errors: accepts(result.structuredContent) ? [] : accepts.errors,
@@ -613,7 +621,7 @@ describe('every result conforms to the tool that returned it', () => {
 
   it('answers a search with nothing found as an empty list that the schema accepts', async () => {
     const tool = toolNamed('search_recipes');
-    const accepts = newAjv().compile(tool?.outputSchema ?? {});
+    const accepts = createAjv().compile(tool?.outputSchema ?? {});
     const result = await call('search_recipes', { query: 'zzz' }, kitchen());
     expect(result.isError).toBeUndefined();
     expect(accepts(result.structuredContent)).toBe(true);

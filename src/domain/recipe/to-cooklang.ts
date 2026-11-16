@@ -28,6 +28,11 @@ import {
   extractRecipeFromHtml,
 } from '@/domain/recipe/import-schema-org';
 
+const IMAGES = /^>>\s*images:\s*(\S+)/im;
+const IMAGES_2 = /^>>\s*images:/im;
+const NEWLINE_SPACE_STAR_END = /\n?```\s*$/;
+const Z_A = /^\s*```[a-zA-Z]*\s*\n?/;
+
 /** The model used for conversion. Swappable; fp8-fast balances quality/latency. */
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
@@ -98,10 +103,7 @@ async function askModel(
 
 /** Strip accidental markdown code fences a model may wrap the output in. */
 function stripFences(text: string): string {
-  return text
-    .replace(/^\s*```[a-zA-Z]*\s*\n?/, '')
-    .replace(/\n?```\s*$/, '')
-    .trim();
+  return text.replace(Z_A, '').replace(NEWLINE_SPACE_STAR_END, '').trim();
 }
 
 /**
@@ -182,10 +184,10 @@ export async function convertImport(
 
   const cook = await convertToCooklang(content, env, opts);
   const image =
-    /^>>\s*images:\s*(\S+)/im.exec(fromPage ?? '')?.[1] ??
+    IMAGES.exec(fromPage ?? '')?.[1] ??
     (page ? extractOgImage(page, opts.sourceUrl) : undefined);
   const covered =
-    image && !/^>>\s*images:/im.test(cook)
+    image && !IMAGES_2.test(cook)
       ? upsertMetadata(cook, [['images', image]])
       : cook;
   // The assistant's text rarely says who wrote it; the page it came from does.
@@ -200,7 +202,7 @@ export async function convertImport(
  * fetched (bot protection, timeout) — so it is always safe to call.
  */
 export async function addMissingCover(source: string): Promise<string> {
-  if (/^>>\s*images:/im.test(source)) {
+  if (IMAGES_2.test(source)) {
     return source;
   }
   const url = sourceUrlOf(source);
@@ -213,8 +215,7 @@ export async function addMissingCover(source: string): Promise<string> {
   }
   const fromJsonLd = extractRecipeFromHtml(page, url);
   const image =
-    (fromJsonLd && /^>>\s*images:\s*(\S+)/im.exec(fromJsonLd)?.[1]) ||
-    extractOgImage(page, url);
+    (fromJsonLd && IMAGES.exec(fromJsonLd)?.[1]) || extractOgImage(page, url);
   return image ? upsertMetadata(source, [['images', image]]) : source;
 }
 

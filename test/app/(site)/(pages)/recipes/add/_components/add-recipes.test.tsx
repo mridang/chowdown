@@ -3,26 +3,39 @@ import { describe, expect, it } from '@jest/globals';
 import { AddRecipes } from '@/app/(site)/(pages)/recipes/add/_components/add-recipes';
 import { html } from '../../../../../../components/render';
 
+const TEXTAREA_ID_IMPORT = /<textarea[^>]*id="import-input"[^>]*><\/textarea>/;
+const TEXTAREA_ID_IMPORT_2 =
+  /<textarea[^>]*id="import-input"[^>]*>https:\/\/example.com\/pancakes<\/textarea>/;
+const BUTTON_CLOSE_BUTTON = /<button[^>]*>.*Close<\/button>/;
+const BUTTON_DISABLED_PREPARE =
+  /<button[^>]*disabled=""[^>]*>Prepare recipes<\/button>/;
+const TEXTAREA_ID_IMPORT_3 = /<textarea[^>]*id="import-input"/;
+const LABEL_FOR_IMPORT =
+  /<label[^>]*for="import-input"[^>]*>Links or recipe text<\/label>/;
+const ROLE_STATUS_ARIA =
+  /<p role="status" aria-live="polite"[^>]*empty:hidden[^>]*><\/p>/;
+const H2_TABINDEX_ID = /<h2[^>]*tabindex="-1"[^>]*id="add-recipes-heading"/;
+const H2_ID_ADD =
+  /<h2[^>]*id="add-recipes-heading"[^>]*>Import links or text<\/h2>/;
+const SECTION_ARIA_LABELLEDBY =
+  /<section[^>]*aria-labelledby="add-recipes-heading"/;
+
 describe('AddRecipes', () => {
   const out = html(
     <AddRecipes onClose={() => undefined} onSaved={() => undefined} />,
   );
 
   it('is a section named by its heading', () => {
-    expect(out).toMatch(/<section[^>]*aria-labelledby="add-recipes-heading"/);
-    expect(out).toMatch(
-      /<h2[^>]*id="add-recipes-heading"[^>]*>Import links or text<\/h2>/,
-    );
+    expect(out).toMatch(SECTION_ARIA_LABELLEDBY);
+    expect(out).toMatch(H2_ID_ADD);
   });
 
   it('lets script move focus to the heading, without putting it in the Tab order', () => {
-    expect(out).toMatch(/<h2[^>]*tabindex="-1"[^>]*id="add-recipes-heading"/);
+    expect(out).toMatch(H2_TABINDEX_ID);
   });
 
   it('has an empty polite live region ready, so progress can be announced', () => {
-    expect(out).toMatch(
-      /<p role="status" aria-live="polite"[^>]*empty:hidden[^>]*><\/p>/,
-    );
+    expect(out).toMatch(ROLE_STATUS_ARIA);
   });
 
   it('offers no Cancel until something is running', () => {
@@ -34,20 +47,16 @@ describe('AddRecipes', () => {
   });
 
   it('starts by asking for links or text, in a labelled box', () => {
-    expect(out).toMatch(
-      /<label[^>]*for="import-input"[^>]*>Links or recipe text<\/label>/,
-    );
-    expect(out).toMatch(/<textarea[^>]*id="import-input"/);
+    expect(out).toMatch(LABEL_FOR_IMPORT);
+    expect(out).toMatch(TEXTAREA_ID_IMPORT_3);
   });
 
   it('has a button to prepare the recipes, which cannot be pressed with nothing pasted', () => {
-    expect(out).toMatch(
-      /<button[^>]*disabled=""[^>]*>Prepare recipes<\/button>/,
-    );
+    expect(out).toMatch(BUTTON_DISABLED_PREPARE);
   });
 
   it('can be closed', () => {
-    expect(out).toMatch(/<button[^>]*>.*Close<\/button>/);
+    expect(out).toMatch(BUTTON_CLOSE_BUTTON);
   });
 
   it('shows no error and no later step yet', () => {
@@ -68,9 +77,7 @@ describe('AddRecipes with something shared to the app', () => {
   );
 
   it('starts the box with what was shared', () => {
-    expect(out).toMatch(
-      /<textarea[^>]*id="import-input"[^>]*>https:\/\/example.com\/pancakes<\/textarea>/,
-    );
+    expect(out).toMatch(TEXTAREA_ID_IMPORT_2);
   });
 
   it('says where it came from, and that pressing the button is up to the person', () => {
@@ -90,6 +97,6 @@ describe('AddRecipes with something shared to the app', () => {
       <AddRecipes onClose={() => undefined} onSaved={() => undefined} />,
     );
     expect(plain).not.toContain('Shared from another app');
-    expect(plain).toMatch(/<textarea[^>]*id="import-input"[^>]*><\/textarea>/);
+    expect(plain).toMatch(TEXTAREA_ID_IMPORT);
   });
 });

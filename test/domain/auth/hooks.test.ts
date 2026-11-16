@@ -5,6 +5,8 @@ import { completeDriveConnect } from '@/domain/auth/drive-callback';
 import { OTHER_FLOWS, afterSignIn } from '@/domain/auth/hooks';
 import type { User } from '@/domain/auth/store';
 
+const collator = new Intl.Collator();
+
 describe('afterSignIn', () => {
   it('has nothing more to do once the person is recorded', async () => {
     await expect(afterSignIn({ id: 1 } as User)).resolves.toBeUndefined();
@@ -14,8 +16,8 @@ describe('afterSignIn', () => {
 describe('OTHER_FLOWS', () => {
   it('has a flow for every extra ask the app can start', () => {
     expect(
-      Object.keys(OTHER_FLOWS).toSorted((a, b) => a.localeCompare(b)),
-    ).toEqual([...EXTRA_PURPOSES].toSorted((a, b) => a.localeCompare(b)));
+      Object.keys(OTHER_FLOWS).toSorted((a, b) => collator.compare(a, b)),
+    ).toEqual([...EXTRA_PURPOSES].toSorted((a, b) => collator.compare(a, b)));
   });
 
   it('finishes a Drive round trip by connecting Drive', () => {

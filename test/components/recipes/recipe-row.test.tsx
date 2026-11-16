@@ -4,6 +4,8 @@ import { RecipeRow, RecipeRows } from '@/components/recipes/recipe-row';
 import { toCardRecipe } from '@/domain/recipe/card-data';
 import { html } from '../render';
 
+const H2_DAL_H2 = /<h2[^>]*>Dal<\/h2>/;
+
 const SOURCE = [
   '>> title: Dal',
   '>> source: https://www.example.com/dal',
@@ -30,7 +32,7 @@ describe('RecipeRow', () => {
 
   it('shows the title, cuisine, source site and facts', () => {
     const out = html(<RecipeRow recipe={recipe} headingLevel="h2" />);
-    expect(out).toMatch(/<h2[^>]*>Dal<\/h2>/);
+    expect(out).toMatch(H2_DAL_H2);
     expect(out).toContain('>Indian<');
     expect(out).toContain('example.com');
     expect(out).toContain('35 min');

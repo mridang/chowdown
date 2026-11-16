@@ -65,8 +65,8 @@ const CONNECTOR = /^\s*(?:(?:,|and|&|\+)\s*)?$/i;
  */
 function leadingRun(label: string): readonly RegExpExecArray[] {
   const matches = [...label.matchAll(TERM)];
-  const gap = matches.findIndex((match, i) => {
-    const before = matches[i - 1];
+  const gap = matches.findIndex((match, index) => {
+    const before = matches[index - 1];
     return (
       before !== undefined &&
       !CONNECTOR.test(label.slice(before.index + before[0].length, match.index))

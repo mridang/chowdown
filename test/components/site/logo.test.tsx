@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { Logo } from '@/components/site/logo';
-import { classOf, html } from '../render';
+import { cssClassesOf, html } from '../render';
 
 describe('Logo', () => {
   it('is the wordmark and a descriptor, linking home', () => {
@@ -12,7 +12,7 @@ describe('Logo', () => {
   });
 
   it('accepts extra classes, such as the footer scaling it up', () => {
-    expect(classOf(html(<Logo className="scale-125" />), 'a')).toContain(
+    expect(cssClassesOf(html(<Logo className="scale-125" />), 'a')).toContain(
       'scale-125',
     );
   });

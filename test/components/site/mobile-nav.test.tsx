@@ -3,13 +3,15 @@ import { describe, expect, it } from '@jest/globals';
 import { MobileNav } from '@/components/site/mobile-nav';
 import { htmlAt } from '../render';
 
+const BUTTON_ARIA_LABEL = /<button[^>]*aria-label="Menu"/;
+
 describe('MobileNav', () => {
   const out = htmlAt(
     <MobileNav links={[{ label: 'Recipes', href: '/app' }]} />,
   );
 
   it('is a menu button that starts closed', () => {
-    expect(out).toMatch(/<button[^>]*aria-label="Menu"/);
+    expect(out).toMatch(BUTTON_ARIA_LABEL);
     expect(out).toContain('aria-expanded="false"');
   });
 

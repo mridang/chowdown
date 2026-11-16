@@ -18,6 +18,7 @@
  * limits is in its own `extras.ts`, which has the same exports everywhere.
  */
 
+// eslint-disable-next-line unicorn/no-keyword-prefix -- the name is exported from its module and used by other modules
 import { buildCsp, cspSurfaceFor, forwardedHeaders, newNonce } from './csp';
 import {
   edgeCache,

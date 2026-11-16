@@ -24,6 +24,8 @@ import { runInBackground } from '@/lib/core/runtime';
 import { getDatabase } from '@/domain/db/client';
 import { appOrigin } from '@/lib/core/origin';
 
+const BASIC = /^basic\s/i;
+
 /**
  * `POST /oauth/token`: trade an authorization code (`grant_type=
  * authorization_code`) or a refresh token (`grant_type=refresh_token`) for a
@@ -57,7 +59,7 @@ export async function POST(request: Request) {
     appOrigin(request),
     now,
     {
-      basicAuthAttempted: /^basic\s/i.test(
+      basicAuthAttempted: BASIC.test(
         request.headers.get('authorization') ?? '',
       ),
     },

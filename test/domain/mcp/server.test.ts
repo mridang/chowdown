@@ -34,6 +34,11 @@ import { TOOLS } from '@/domain/mcp/tool-definitions';
 import { PANCAKES, call, fakeServices, folder } from '../../lib/mcp/tool-fakes';
 import { SCOPE_READ, SCOPE_WRITE, scopeForTool } from '@/lib/oauth';
 
+const collator = new Intl.Collator();
+
+const INVALID_ARGUMENTS_FOR =
+  /Invalid arguments for get_recipe: .*`recipe` is required.*`limit` is not an argument/;
+
 /** The address of a view the server serves. */
 const FIRST_VIEW = APP_RESOURCES.at(0)?.uri ?? '';
 
@@ -45,9 +50,9 @@ function recipesNumbered(count: number): RecipeLister {
   return async (_user, offset, limit) =>
     Array.from(
       { length: Math.max(0, Math.min(limit, count - offset)) },
-      (_, i) => ({
-        id: `id${offset + i}`,
-        name: `Recipe ${String(offset + i).padStart(3, '0')}.cook`,
+      (_, index) => ({
+        id: `id${offset + index}`,
+        name: `Recipe ${String(offset + index).padStart(3, '0')}.cook`,
       }),
     );
 }
@@ -57,7 +62,7 @@ describe('MCP tool scopes', () => {
     const readTools = TOOLS.filter(
       (t) => scopeForTool(t.name) === SCOPE_READ,
     ).map((t) => t.name);
-    expect(readTools.toSorted((a, b) => a.localeCompare(b))).toEqual([
+    expect(readTools.toSorted((a, b) => collator.compare(a, b))).toEqual([
       'browse_recipes',
       'find_recipes',
       'find_similar',
@@ -737,9 +742,7 @@ describe('handleMcpMessage — tool errors and other faults', () => {
         content: [
           {
             type: 'text',
-            text: expect.stringMatching(
-              /Invalid arguments for get_recipe: .*`recipe` is required.*`limit` is not an argument/,
-            ),
+            text: expect.stringMatching(INVALID_ARGUMENTS_FOR),
           },
         ],
       },

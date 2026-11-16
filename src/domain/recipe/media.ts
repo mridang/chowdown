@@ -15,6 +15,9 @@
 import { type ParsedRecipe, upsertMetadata } from '@/lib/cooklang';
 import { bestRenditions } from '@/domain/recipe/image-renditions';
 
+const UNDEFINED_NULL_NAN = /^(undefined|null|nan|false)$/i;
+const WHITESPACE_RUN = /\s+/;
+
 /** A recipe's media for display. */
 export interface RecipeMedia {
   /** The cover image (first image), if any. */
@@ -52,7 +55,7 @@ export function extractMedia(recipe: Readonly<ParsedRecipe>): RecipeMedia {
   // a `?resize=440,400` query), but never spaces, so whitespace is safe.
   const images = bestRenditions(
     (meta(recipe, 'images') ?? '')
-      .split(/\s+/)
+      .split(WHITESPACE_RUN)
       .map((s) => s.trim())
       .filter((s) => isHttpUrl(s)),
   );
@@ -79,7 +82,7 @@ export function normalizeImageUrl(raw: string): string | undefined {
   }
   const url = new URL(trimmed);
   const last = url.pathname.split('/').findLast(Boolean) ?? '';
-  if (/^(undefined|null|nan|false)$/i.test(last)) {
+  if (UNDEFINED_NULL_NAN.test(last)) {
     return undefined;
   }
   return url.href;

@@ -18,6 +18,10 @@ import {
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 
+const NAME = /"name":"([^"]+)"/;
+const FILES = /\/files\/([\w-]+)/;
+const COOK = /\.cook$/;
+
 /** The address the app is served from in route tests. */
 export const ORIGIN = 'https://chowdown.test';
 
@@ -95,7 +99,9 @@ export function fromApp(
     options.json === undefined ? options.body : JSON.stringify(options.json);
   // The browser sends its cookies with every request; the API resolves identity
   // from them, so carry whatever signIn put in the jar.
-  const cookie = [...jar].map(([name, value]) => `${name}=${value}`).join('; ');
+  const cookie = Array.from(jar, ([name, value]) => `${name}=${value}`).join(
+    '; ',
+  );
   return new Request(`${ORIGIN}${path}`, {
     method,
     headers: {
@@ -122,7 +128,7 @@ export function addRecipe(
     .prepare(
       "INSERT INTO recipes (user_id, drive_file_id, name, title, source, first_opened_at, last_opened_at) VALUES (?, ?, ?, ?, ?, 'n', 'n')",
     )
-    .run(userId, fileId, name, name.replace(/\.cook$/, ''), source);
+    .run(userId, fileId, name, name.replace(COOK, ''), source);
 }
 
 /** A stand-in for Google's token endpoint and the Drive API. */
@@ -154,7 +160,7 @@ export function fakeGoogle(
     if (url.startsWith('https://oauth2.googleapis.com/revoke')) {
       return new Response('{}');
     }
-    const id = /\/files\/([\w-]+)/.exec(url)?.[1];
+    const id = FILES.exec(url)?.[1];
     if (method === 'GET' && url.includes('alt=media') && id) {
       const file = files.get(id);
       return file
@@ -163,7 +169,7 @@ export function fakeGoogle(
     }
     if (method === 'GET' && url.includes('/drive/v3/files?')) {
       return Response.json({
-        files: [...files].map(([fileId, f]) => ({
+        files: Array.from(files, ([fileId, f]) => ({
           id: fileId,
           name: f.name,
           modifiedTime: '2026-01-01T00:00:00.000Z',
@@ -173,7 +179,7 @@ export function fakeGoogle(
     if (method === 'POST' && url.includes('uploadType=multipart')) {
       counter.created += 1;
       const text = String(init?.body ?? '');
-      const name = /"name":"([^"]+)"/.exec(text)?.[1] ?? 'new.cook';
+      const name = NAME.exec(text)?.[1] ?? 'new.cook';
       const content =
         text
           .split('Content-Type: text/plain; charset=UTF-8\r\n\r\n', 2)[1]

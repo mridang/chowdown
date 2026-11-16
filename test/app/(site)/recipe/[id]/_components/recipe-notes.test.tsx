@@ -3,6 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { RecipeNotes } from '@/app/(site)/recipe/[id]/_components/recipe-notes';
 import { htmlAt } from '../../../../../components/render';
 
+const H2_YOUR_NOTES = /<h2[^>]*>.*Your notes<\/h2>/s;
+
 const markup = (general: readonly { label?: string; text: string }[]) =>
   htmlAt(
     <RecipeNotes recipeId="dal" general={general} ingredients={['onion']} />,
@@ -11,7 +13,7 @@ const markup = (general: readonly { label?: string; text: string }[]) =>
 
 describe('RecipeNotes', () => {
   it('is headed "Your notes"', () => {
-    expect(markup([])).toMatch(/<h2[^>]*>.*Your notes<\/h2>/s);
+    expect(markup([])).toMatch(H2_YOUR_NOTES);
   });
 
   it('invites the first note when there are none, and promises the recipe is untouched', () => {

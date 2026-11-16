@@ -35,8 +35,8 @@ export default function RecipeLoading(): ReactElement {
       </div>
       <Container>
         <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center gap-3.5">
+          {[0, 1, 2, 3].map((index) => (
+            <div key={index} className="flex items-center gap-3.5">
               <Skeleton className="size-11 shrink-0" />
               <div className="flex-1">
                 <Skeleton className="h-3 w-20" />
@@ -50,15 +50,15 @@ export default function RecipeLoading(): ReactElement {
             <Skeleton className="h-8 w-40" />
             <Skeleton className="mt-4 h-12 w-full" />
             <div className="mt-4 flex flex-col gap-3">
-              {[0, 1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-6 w-full" />
+              {[0, 1, 2, 3, 4, 5].map((index) => (
+                <Skeleton key={index} className="h-6 w-full" />
               ))}
             </div>
           </div>
           <div className="flex max-w-3xl flex-col gap-8">
             <Skeleton className="h-8 w-32" />
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="flex gap-5">
+            {[0, 1, 2, 3].map((index) => (
+              <div key={index} className="flex gap-5">
                 <Skeleton shape="circle" className="size-9 shrink-0" />
                 <div className="flex-1">
                   <Skeleton className="h-5 w-full" />

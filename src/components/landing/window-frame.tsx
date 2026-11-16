@@ -15,6 +15,7 @@ export function WindowFrame({
   children,
   label,
   title,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
 }: Readonly<{
   children: ReactNode;
@@ -22,6 +23,7 @@ export function WindowFrame({
   label: string;
   /** A name shown in the title bar, such as a file name. */
   title?: string;
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
 }>): ReactElement {
   return (

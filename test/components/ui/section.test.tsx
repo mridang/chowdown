@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { Section, SectionHeader } from '@/components/ui/section';
-import { classOf, html } from '../render';
+import { cssClassesOf, html } from '../render';
 
 describe('SectionHeader', () => {
   it('shows the eyebrow above the title, and an action beside them', () => {
@@ -33,11 +33,11 @@ describe('Section', () => {
   });
 
   it('is the page colour unless told otherwise', () => {
-    expect(classOf(html(<Section>x</Section>), 'section')).toContain(
+    expect(cssClassesOf(html(<Section>x</Section>), 'section')).toContain(
       'bg-paper',
     );
     expect(
-      classOf(html(<Section surface="white">x</Section>), 'section'),
+      cssClassesOf(html(<Section surface="white">x</Section>), 'section'),
     ).toContain('bg-white');
   });
 });

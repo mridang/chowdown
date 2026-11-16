@@ -16,6 +16,8 @@
  */
 
 /** What an address says about the photo it shows. */
+const collator = new Intl.Collator();
+
 interface Rendition {
   readonly url: string;
   /** The same for every copy of one photo: the address with its size removed. */
@@ -62,17 +64,17 @@ function renditionOf(url: string): Rendition {
     const parsed = new URL(url);
     const named = SIZE_IN_NAME.exec(parsed.pathname);
     const path = named ? `${named[1]}${named[4]}` : parsed.pathname;
-    const param = (name: string) => parsed.searchParams.get(name);
-    const [resizeWidth, resizeHeight] = (param('resize') ?? '').split(',');
+    const parameter = (name: string) => parsed.searchParams.get(name);
+    const [resizeWidth, resizeHeight] = (parameter('resize') ?? '').split(',');
     const width = positive(
-      named?.[2] ?? param('w') ?? param('width') ?? resizeWidth,
+      named?.[2] ?? parameter('w') ?? parameter('width') ?? resizeWidth,
     );
     const height = positive(
-      named?.[3] ?? param('h') ?? param('height') ?? resizeHeight,
+      named?.[3] ?? parameter('h') ?? parameter('height') ?? resizeHeight,
     );
     const rest = [...parsed.searchParams]
       .filter(([key]) => !SIZING_PARAMS.has(key.toLowerCase()))
-      .toSorted(([a], [b]) => a.localeCompare(b));
+      .toSorted(([a], [b]) => collator.compare(a, b));
     return {
       url,
       photo: `${parsed.origin}${path}?${new URLSearchParams(rest)}`,

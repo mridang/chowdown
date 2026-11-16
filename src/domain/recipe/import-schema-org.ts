@@ -31,12 +31,17 @@ import {
 import { scanHtml, type Attributes } from '@/domain/recipe/import-html-scan';
 import { validImageUrls } from '@/domain/recipe/media';
 
+const DIET = /Diet$/;
+const HTTPS_SCHEMA_ORG = /^https?:\/\/schema\.org\//;
+const RETURN_NEWLINE_PLUS = /\r?\n+/;
+const PT = /^PT(?:(\d+)H)?(?:(\d+)M)?$/;
+
 /** A JSON object whose members are not yet known to be anything in particular. */
 type JsonObject = Readonly<Record<string, unknown>>;
 
 /** Convert an ISO-8601 duration (`PT1H30M`) into a human string (`1 hr 30 min`). */
 export function humaniseDuration(iso: string): string | undefined {
-  const match = /^PT(?:(\d+)H)?(?:(\d+)M)?$/.exec(iso);
+  const match = PT.exec(iso);
   if (!match || (!match[1] && !match[2])) {
     return undefined;
   }
@@ -106,7 +111,7 @@ export function findRecipeNode(input: unknown): JsonObject | null {
 function normaliseInstructions(value: unknown): readonly string[] {
   if (typeof value === 'string') {
     return value
-      .split(/\r?\n+/)
+      .split(RETURN_NEWLINE_PLUS)
       .map((s) => s.trim())
       .filter(Boolean);
   }
@@ -201,13 +206,8 @@ function videoUrl(value: unknown): string | undefined {
 /** Join `suitableForDiet` values, stripping the schema.org URL/`Diet` decorations. */
 export function dietNames(value: unknown): string | undefined {
   const names = listOf(value)
-    .filter((i): i is string => typeof i === 'string')
-    .map((s) =>
-      s
-        .replace(/^https?:\/\/schema\.org\//, '')
-        .replace(/Diet$/, '')
-        .trim(),
-    )
+    .filter((index): index is string => typeof index === 'string')
+    .map((s) => s.replace(HTTPS_SCHEMA_ORG, '').replace(DIET, '').trim())
     .filter(Boolean);
   return names.length > 0 ? names.join(', ') : undefined;
 }
@@ -274,8 +274,8 @@ export function schemaOrgToCook(
   const rawIngredients = recipe['recipeIngredient'] ?? recipe['ingredients'];
   const ingredientLines = Array.isArray(rawIngredients)
     ? rawIngredients
-        .filter((i): i is string => typeof i === 'string')
-        .map((i) => toCookIngredient(parseIngredientLine(i)))
+        .filter((index): index is string => typeof index === 'string')
+        .map((index) => toCookIngredient(parseIngredientLine(index)))
     : [];
 
   const steps = normaliseInstructions(recipe['recipeInstructions']);
@@ -376,7 +376,7 @@ function collectById(
  * References are looked up across every JSON-LD block on the page, since the
  * Recipe and the image often live in different `<script>` tags.
  */
-export function resolveImageRefs(
+export function resolveImageRefs( // eslint-disable-line unicorn/prevent-abbreviations -- exported name that the tests import
   node: JsonObject,
   byId: ReadonlyMap<string, JsonObject>,
 ): JsonObject {

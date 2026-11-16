@@ -25,6 +25,8 @@ import {
   type World,
 } from '../../api/world';
 
+const DRIVE = /^drive\./;
+
 const tracing = installFakeTracing();
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
@@ -74,7 +76,7 @@ describe('GET /auth/drive', () => {
     expect(target?.searchParams.get('access_type')).toBe('offline');
     expect(target?.searchParams.get('login_hint')).toBe('ada@example.com');
     const state = target?.searchParams.get('state');
-    expect(state).toMatch(/^drive\./);
+    expect(state).toMatch(DRIVE);
     expect(
       (res as NextResponse).cookies.get('chowdown_oauth_state')?.value,
     ).toBe(state);

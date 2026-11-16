@@ -13,9 +13,11 @@ import { cn } from '@/components/ui/cn';
  * section.
  */
 export function Accordion({
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   ...props
 }: Readonly<ComponentProps<'div'>>): ReactElement {
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   return <div className={className} {...props} />;
 }
 
@@ -26,6 +28,7 @@ export function Accordion({
  * and `open` to start it expanded.
  */
 export function AccordionItem({
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   ...props
 }: Readonly<ComponentProps<'details'>>): ReactElement {
@@ -39,6 +42,7 @@ export function AccordionItem({
 
 /** The clickable heading row, with a chevron that turns when open. */
 export function AccordionTrigger({
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   children,
   ...props
@@ -63,6 +67,7 @@ export function AccordionTrigger({
 
 /** What an {@link AccordionItem} reveals when it is open. */
 export function AccordionContent({
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   children,
   ...props

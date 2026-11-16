@@ -11,6 +11,8 @@ import { fakeDb } from '../../lib/core/db/fake-db';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
+const collator = new Intl.Collator();
+
 describe('listEmbeddings', () => {
   it("lists the user's cached rows", async () => {
     const rows = [{ drive_file_id: 'a' }];
@@ -28,7 +30,7 @@ function withRecipes(...ids: readonly string[]) {
   const insert = made.raw.prepare(
     "INSERT INTO recipes (user_id, drive_file_id, name, source, first_opened_at, last_opened_at) VALUES (1, ?, ?, '', 't', 't')",
   );
-  ids.forEach((id) => insert.run(id, `${id}.cook`));
+  for (const id of ids) insert.run(id, `${id}.cook`);
   return made;
 }
 
@@ -95,7 +97,7 @@ describe('upsertEmbedding', () => {
     const conflict = calls.find((c) => c.method === 'onConflictDoUpdate');
     expect(
       Object.keys((conflict?.args[0] as { set: object }).set).toSorted((a, b) =>
-        a.localeCompare(b),
+        collator.compare(a, b),
       ),
     ).toEqual(['modified_time', 'title', 'vector']);
   });
@@ -109,7 +111,9 @@ describe('deleteEmbeddingsNotIn', () => {
   });
 
   it('deletes the files that are gone, a few ids at a time', async () => {
-    const cached = Array.from({ length: 120 }, (_, i) => ({ id: `f${i}` }));
+    const cached = Array.from({ length: 120 }, (_, index) => ({
+      id: `f${index}`,
+    }));
     const { db, calls } = fakeDb({ select: [cached] });
     await deleteEmbeddingsNotIn(db, 1, ['f0']);
     // 119 stale ids at 50 per statement: three statements.
@@ -120,7 +124,7 @@ describe('deleteEmbeddingsNotIn', () => {
 describe('saveSimilarLists', () => {
   it('writes the lists in batches of 50', async () => {
     const lists = new Map(
-      Array.from({ length: 120 }, (_, i) => [`f${i}`, '[]'] as const),
+      Array.from({ length: 120 }, (_, index) => [`f${index}`, '[]'] as const),
     );
     const { db, batches } = fakeDb();
     await saveSimilarLists(db, 1, lists);

@@ -28,22 +28,30 @@ import {
 } from '@/domain/mcp/ui-resources';
 import { SITE_URL } from '@/utils/site';
 
+const EVAL = /\beval\(/;
+const NEW_EVENT_SOURCE = /new EventSource\b/;
+const NEW_WEB_SOCKET = /new WebSocket\b/;
+const FETCH = /\bfetch\(/;
+const SRC_HREF = /\b(src|href)=/;
+const IFRAME = /<iframe\b/;
+const IMG = /<img\b/;
+const LINK = /<link\b/;
+const TITLE_TITLE = /<title>[^<]+<\/title>/;
+const DOCTYPE_HTML = /^<!doctype html>/;
+const UI_CHOWDOWN_RECIPE = /^ui:\/\/chowdown\/recipe-list-[0-9a-f]{12}\.html$/;
+const UI_CHOWDOWN_RECIPE_2 =
+  /^ui:\/\/chowdown\/recipe-card-[0-9a-f]{12}\.html$/;
+const SCRIPT_TYPE_MODULE = /<script type="module">[\s\S]*<\/script>/;
+
 /** The document with its inline script removed: what the host's CSP actually has to police. */
 function shellOf(html: string): string {
-  return html.replace(
-    /<script type="module">[\s\S]*<\/script>/,
-    '<script></script>',
-  );
+  return html.replace(SCRIPT_TYPE_MODULE, '<script></script>');
 }
 
 describe('ui resource addresses', () => {
   it('puts a hash of the HTML in each address, so a changed view gets a new one', () => {
-    expect(CARD_RESOURCE_URI).toMatch(
-      /^ui:\/\/chowdown\/recipe-card-[0-9a-f]{12}\.html$/,
-    );
-    expect(LIST_RESOURCE_URI).toMatch(
-      /^ui:\/\/chowdown\/recipe-list-[0-9a-f]{12}\.html$/,
-    );
+    expect(CARD_RESOURCE_URI).toMatch(UI_CHOWDOWN_RECIPE_2);
+    expect(LIST_RESOURCE_URI).toMatch(UI_CHOWDOWN_RECIPE);
     expect(CARD_RESOURCE_URI).toContain(cardHash.slice(0, 12));
     expect(LIST_RESOURCE_URI).toContain(listHash.slice(0, 12));
   });
@@ -155,12 +163,12 @@ describe('ui resources served', () => {
 
   it('ships a real HTML5 document for each view', () => {
     for (const resource of APP_RESOURCES) {
-      expect(resource.html).toMatch(/^<!doctype html>/);
+      expect(resource.html).toMatch(DOCTYPE_HTML);
       expect(resource.html).toContain('<meta charset="utf-8">');
       expect(resource.html).toContain(
         '<meta name="color-scheme" content="light dark">',
       );
-      expect(resource.html).toMatch(/<title>[^<]+<\/title>/);
+      expect(resource.html).toMatch(TITLE_TITLE);
       expect(resource.html).toContain('<div id="root">');
     }
   });
@@ -230,21 +238,21 @@ describe('Content-Security-Policy', () => {
   it('is true: the views load nothing from the network', () => {
     for (const { html } of [{ html: cardHtml }, { html: listHtml }]) {
       const shell = shellOf(html);
-      expect(shell).not.toMatch(/<link\b/);
-      expect(shell).not.toMatch(/<img\b/);
-      expect(shell).not.toMatch(/<iframe\b/);
-      expect(shell).not.toMatch(/\b(src|href)=/);
+      expect(shell).not.toMatch(LINK);
+      expect(shell).not.toMatch(IMG);
+      expect(shell).not.toMatch(IFRAME);
+      expect(shell).not.toMatch(SRC_HREF);
       expect(shell).not.toContain('@import');
-      expect(html).not.toMatch(/\bfetch\(/);
+      expect(html).not.toMatch(FETCH);
       expect(html).not.toContain('XMLHttpRequest');
-      expect(html).not.toMatch(/new WebSocket\b/);
-      expect(html).not.toMatch(/new EventSource\b/);
+      expect(html).not.toMatch(NEW_WEB_SOCKET);
+      expect(html).not.toMatch(NEW_EVENT_SOURCE);
     }
   });
 
   it('works under the default policy, which forbids eval', () => {
     for (const html of [cardHtml, listHtml]) {
-      expect(html).not.toMatch(/\beval\(/);
+      expect(html).not.toMatch(EVAL);
       expect(html).not.toContain('new Function(');
     }
   });

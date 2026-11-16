@@ -3,6 +3,24 @@ import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
 
+const BUTTON = /(^|,)\s*button,/;
+const BUTTON_NOT_DISABLED =
+  /(button:not\(:disabled\),[^{]*)\{\s*cursor: pointer;/;
+const DATA_POPOVER_DATA = /\[data-popover\]\[data-open\] \{\s*display: block/;
+const DATA_POPOVER_DISPLAY =
+  /\[data-popover\] \{\s*display: none;\s*position: absolute;/;
+const SUPPORTS_POPOVERTARGET = /@supports ([^{]*) \{\s*\[popovertarget\]/;
+const POPOVERTARGET_HAS_DATA =
+  /\[popovertarget\]:has\(\+ \[data-popover\]:popover-open\) \{\s*anchor-name: --popover-anchor/;
+const KEYFRAMES_DIALOG_IN = /@keyframes dialog-in \{\s*from \{\s*opacity: 0/;
+const HTML_HAS_DIALOG = /html:has\(dialog:modal\) \{\s*overflow: hidden;\s*\}/;
+const HTML_SCROLLBAR_GUTTER = /html \{\s*scrollbar-gutter: stable/;
+const LI_TEXT_WRAP = /p,\s*li,[\s\S]*\{\s*text-wrap: pretty/;
+const H1_H6_TEXT = /h1,[\s\S]*h6,\s*\.text-center \{\s*text-wrap: balance/;
+const FONT_HAND = /--font-hand:/;
+const MEDIA_PREFERS_REDUCED =
+  /@media \(prefers-reduced-motion: reduce\) \{([^{}]*\{[^}]*\})/;
+
 const css = await readFile(
   path.join(process.cwd(), 'src', 'app', 'globals.css'),
   'utf8',
@@ -58,7 +76,7 @@ function over(
   background: readonly [number, number, number],
 ): readonly [number, number, number] {
   const mixed = ink.map(
-    (v, i) => v * strength + (background[i] ?? 0) * (1 - strength),
+    (v, index) => v * strength + (background[index] ?? 0) * (1 - strength),
   );
   return [mixed[0] ?? 0, mixed[1] ?? 0, mixed[2] ?? 0];
 }
@@ -85,10 +103,7 @@ describe('the control border token', () => {
 });
 
 describe('reduced motion', () => {
-  const block =
-    /@media \(prefers-reduced-motion: reduce\) \{([^{}]*\{[^}]*\})/.exec(
-      css,
-    )?.[1];
+  const block = MEDIA_PREFERS_REDUCED.exec(css)?.[1];
 
   it('shortens every animation and transition for people who ask for less', () => {
     expect(block).toContain('animation-duration: 0.01ms');
@@ -117,15 +132,14 @@ describe('the handwriting font tokens', () => {
   ];
 
   it('expose each face as a theme font, so `font-hand-<face>` is a utility', () => {
-    faces.forEach((face) =>
+    for (const face of faces)
       expect(css).toContain(
         `--font-hand-${face}: var(--font-hand-${face}-face), cursive;`,
-      ),
-    );
+      );
   });
 
   it('leave no general `font-hand`, so handwriting cannot be applied to anything but a name', () => {
-    expect(css).not.toMatch(/--font-hand:/);
+    expect(css).not.toMatch(FONT_HAND);
   });
 });
 
@@ -149,7 +163,7 @@ function blockOf(prelude: string): string {
       const depth =
         state.depth + (char === '{' ? 1 : 0) - (char === '}' ? 1 : 0);
       return depth < 0
-        ? { ...state, done: true }
+        ? Object.assign(state, { done: true })
         : { depth, text: state.text + char, done: false };
     },
     { depth: 0, text: '', done: false },
@@ -166,22 +180,18 @@ describe('typography the browser does for us', () => {
   });
 
   it('balances headings and centred text, and tidies the last line of paragraphs and list items', () => {
-    expect(base).toMatch(
-      /h1,[\s\S]*h6,\s*\.text-center \{\s*text-wrap: balance/,
-    );
-    expect(base).toMatch(/p,\s*li,[\s\S]*\{\s*text-wrap: pretty/);
+    expect(base).toMatch(H1_H6_TEXT);
+    expect(base).toMatch(LI_TEXT_WRAP);
   });
 
   it('keeps room for the scrollbar, so a modal that hides it does not shift the page', () => {
-    expect(base).toMatch(/html \{\s*scrollbar-gutter: stable/);
+    expect(base).toMatch(HTML_SCROLLBAR_GUTTER);
   });
 });
 
 describe('the scroll lock behind a modal dialog', () => {
   it('is one CSS rule on the root, true only while a dialog is shown modally', () => {
-    expect(blockOf('@layer base')).toMatch(
-      /html:has\(dialog:modal\) \{\s*overflow: hidden;\s*\}/,
-    );
+    expect(blockOf('@layer base')).toMatch(HTML_HAS_DIALOG);
   });
 });
 
@@ -211,7 +221,7 @@ describe('the dialog entry and exit animation', () => {
   });
 
   it('fades in with a keyframe animation, which every browser understands', () => {
-    expect(css).toMatch(/@keyframes dialog-in \{\s*from \{\s*opacity: 0/);
+    expect(css).toMatch(KEYFRAMES_DIALOG_IN);
     expect(motion).toContain('animation: dialog-in 200ms');
   });
 
@@ -230,9 +240,7 @@ describe('the dialog entry and exit animation', () => {
 
 describe('popover placement', () => {
   it('anchors the open panel to its own button under one fixed name', () => {
-    expect(css).toMatch(
-      /\[popovertarget\]:has\(\+ \[data-popover\]:popover-open\) \{\s*anchor-name: --popover-anchor/,
-    );
+    expect(css).toMatch(POPOVERTARGET_HAS_DATA);
   });
 
   it('hangs the panel below the button, right edges together, flipping above if cramped', () => {
@@ -241,15 +249,16 @@ describe('popover placement', () => {
   });
 
   it('applies the anchored layout only where every part of it exists', () => {
-    const condition = /@supports ([^{]*) \{\s*\[popovertarget\]/.exec(css)?.[1];
-    [
+    const condition = SUPPORTS_POPOVERTARGET.exec(css)?.[1];
+    for (const part of [
       'selector(:popover-open)',
       'selector(:has(*))',
       '(anchor-name: --a)',
       '(position-anchor: --a)',
       '(position-area: bottom)',
       '(position-try-fallbacks: flip-block)',
-    ].forEach((part) => expect(condition).toContain(part));
+    ])
+      expect(condition).toContain(part);
   });
 
   it('reads a measured position where anchor positioning is missing', () => {
@@ -259,10 +268,8 @@ describe('popover placement', () => {
   });
 
   it('is an absolute box under its button, shown by data-open, where there are no popovers', () => {
-    expect(css).toMatch(
-      /\[data-popover\] \{\s*display: none;\s*position: absolute;/,
-    );
-    expect(css).toMatch(/\[data-popover\]\[data-open\] \{\s*display: block/);
+    expect(css).toMatch(DATA_POPOVER_DISPLAY);
+    expect(css).toMatch(DATA_POPOVER_DATA);
   });
 
   it('hands display back to the browser once it has popovers, so it decides when the panel shows', () => {
@@ -272,19 +279,20 @@ describe('popover placement', () => {
   });
 
   describe('cursor', () => {
-    const rule = /(button:not\(:disabled\),[^{]*)\{\s*cursor: pointer;/.exec(
-      css,
-    )?.[1];
+    const rule = BUTTON_NOT_DISABLED.exec(css)?.[1];
 
     it('is the pointer for anything clickable, since Tailwind 4 no longer gives buttons one', () => {
-      ['button:not(:disabled)', 'summary', 'select:not(:disabled)'].forEach(
-        (selector) => expect(rule).toContain(selector),
-      );
+      for (const selector of [
+        'button:not(:disabled)',
+        'summary',
+        'select:not(:disabled)',
+      ])
+        expect(rule).toContain(selector);
       expect(rule).toContain("[role='button']");
     });
 
     it('is left alone for disabled controls', () => {
-      expect(rule).not.toMatch(/(^|,)\s*button,/);
+      expect(rule).not.toMatch(BUTTON);
       expect(rule).toContain(':not(:disabled)');
     });
   });

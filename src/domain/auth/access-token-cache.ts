@@ -87,9 +87,11 @@ export function createAccessTokenCache(
   const remember = (key: string, pending: Promise<Entry>): void => {
     entries.delete(key);
     entries.set(key, pending);
-    [...entries.keys()]
-      .slice(0, Math.max(0, entries.size - maxEntries))
-      .forEach((oldest) => entries.delete(oldest));
+    for (const oldest of [...entries.keys()].slice(
+      0,
+      Math.max(0, entries.size - maxEntries),
+    ))
+      entries.delete(oldest);
   };
 
   /** Mint a token, remember the attempt under `key`, and answer with the token. */
@@ -127,9 +129,10 @@ export function createAccessTokenCache(
     },
     forgetUser: (userId) => {
       const prefix = `${userId}:`;
-      [...entries.keys()]
-        .filter((key) => key.startsWith(prefix))
-        .forEach((key) => entries.delete(key));
+      for (const key of [...entries.keys()].filter((key) =>
+        key.startsWith(prefix),
+      ))
+        entries.delete(key);
     },
   };
 }

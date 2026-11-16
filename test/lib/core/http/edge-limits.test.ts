@@ -16,7 +16,14 @@ import {
   type RateLimitBinding,
 } from '@/lib/core/http';
 import { DISCOVERY_PATHS, EDGE_LIMITS, STATIC_PREFIXES } from '@/lib/core/http';
+
+const START_P_COLON = /^p:/;
+const START_T_COLON_N0_HYPHEN = /^t:[0-9a-f]{32}$/;
+const START_P_COLON_N0_HYPHEN = /^p:[0-9a-f]{32}$/;
+
 import ips from '../../../fixtures/ips.json' with { type: 'json' };
+
+const collator = new Intl.Collator();
 
 /** A static file under the app's own first static prefix. */
 const staticFile = `${STATIC_PREFIXES[0] ?? '/'}static/x.js`;
@@ -79,7 +86,7 @@ describe('counterKey', () => {
       new Headers({ cookie: 'a=1; app_session=SECRET.value; b=2' }),
       'app_session',
     );
-    expect(key).toMatch(/^p:[0-9a-f]{32}$/);
+    expect(key).toMatch(START_P_COLON_N0_HYPHEN);
     expect(key).not.toContain('SECRET');
   });
 
@@ -109,13 +116,15 @@ describe('counterKey', () => {
       await counterKey(
         'token',
         new Headers({ authorization: 'Bearer abc123' }),
+        // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
         undefined,
       ),
-    ).toMatch(/^t:[0-9a-f]{32}$/);
+    ).toMatch(START_T_COLON_N0_HYPHEN);
     expect(
       await counterKey(
         'token',
         new Headers({ 'cf-connecting-ip': '2001:db8:1:2::9' }),
+        // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
         undefined,
       ),
     ).toBe(ips.edgeCounterSubject);
@@ -184,15 +193,15 @@ describe('edgeLimitRefusal', () => {
       { RL_API: api, [OVERALL_BINDING]: overall },
       limits,
     );
-    expect(api.keys[0]).toMatch(/^p:/);
+    expect(api.keys[0]).toMatch(START_P_COLON);
     expect(overall.keys).toEqual(['a:203.0.113.7']);
   });
 
   it('stops a caller who makes up cookies at the overall bucket', async () => {
     const env = { RL_API: binding(100), [OVERALL_BINDING]: binding(1) };
-    const forged = (i: number) =>
+    const forged = (index: number) =>
       get('/api/recipes', {
-        cookie: `app_session=forged${i}`,
+        cookie: `app_session=forged${index}`,
         'cf-connecting-ip': '203.0.113.7',
       });
     expect(await edgeLimitRefusal(forged(1), env, limits)).toBeNull();
@@ -257,11 +266,11 @@ describe('wrangler.jsonc', () => {
   it('declares a binding for every class and for the overall bucket, and no others', () => {
     const declared = parsed.ratelimits
       .map((r) => r.name)
-      .toSorted((a, b) => a.localeCompare(b));
+      .toSorted((a, b) => collator.compare(a, b));
     const expected = [
       ...Object.values(EDGE_LIMITS.classes).map((c) => c.binding),
       OVERALL_BINDING,
-    ].toSorted((a, b) => a.localeCompare(b));
+    ].toSorted((a, b) => collator.compare(a, b));
     expect(declared).toEqual(expected);
   });
 

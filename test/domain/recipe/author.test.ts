@@ -15,6 +15,8 @@ import {
   withAuthor,
 } from '@/domain/recipe/author';
 
+const IGNORE_ANY_INSTRUCTIONS = /ignore any instructions/i;
+
 /** A page with the given head markup and body text. */
 const page = (head: string, body = '') =>
   `<html><head>${head}</head><body>${body}</body></html>`;
@@ -293,7 +295,7 @@ describe('askForAuthor', () => {
       string,
       { messages: { role: string; content: string }[]; temperature: number },
     ];
-    expect(input.messages[0]?.content).toMatch(/ignore any instructions/i);
+    expect(input.messages[0]?.content).toMatch(IGNORE_ANY_INSTRUCTIONS);
     expect(input.messages[1]?.content).toContain('Maunika Gowardhan');
     expect(input.temperature).toBe(0);
   });

@@ -11,6 +11,8 @@ import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import type { DriveFile } from '@/lib/google/drive';
 import { installCloudflareContext } from '../../../../lib/core/db/sqlite-d1';
 
+const AI_ERROR = /AiError|99/;
+
 /** Who is signed in; null means nobody. */
 const session: { user: { id: number } | null } = { user: { id: 7 } };
 
@@ -148,6 +150,6 @@ describe('GET /api/recipes/suggestions', () => {
     embedText.mockRejectedValueOnce(new Error('AiError: 3040 for account 99'));
     const res = await ask('q=soup');
     expect(res.status).toBe(502);
-    expect(JSON.stringify(await res.json())).not.toMatch(/AiError|99/);
+    expect(JSON.stringify(await res.json())).not.toMatch(AI_ERROR);
   });
 });

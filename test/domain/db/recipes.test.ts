@@ -20,6 +20,10 @@ import { indexedPlan, planOf } from '../../lib/core/db/plan';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
+const collator = new Intl.Collator();
+
+const SELECT_2 = /^\s*select/i;
+
 /** A database with every migration applied and two people in it. */
 function seeded() {
   const made = sqliteDatabase(...APP_MIGRATIONS);
@@ -340,7 +344,7 @@ describe('listSyncRecipes and deleteRecipesNotIn', () => {
     const rows = await listSyncRecipes(made.db, 1);
     expect(rows.map((r) => r.drive_file_id)).toEqual(['a']);
     expect(
-      Object.keys(rows[0] ?? {}).toSorted((a, b) => a.localeCompare(b)),
+      Object.keys(rows[0] ?? {}).toSorted((a, b) => collator.compare(a, b)),
     ).toEqual(['drive_file_id', 'last_opened_at', 'modified_time', 'tags']);
     const plan = planOf(
       made.raw,
@@ -362,7 +366,7 @@ describe('listSyncRecipes and deleteRecipesNotIn', () => {
       return prepare(sql);
     };
     await deleteRecipesNotIn(made.db, 1, ['keep'], FUTURE, cached);
-    expect(sent.some((sql) => /^\s*select/i.test(sql))).toBe(false);
+    expect(sent.some((sql) => SELECT_2.test(sql))).toBe(false);
     expect(made.raw.prepare('SELECT drive_file_id FROM recipes').all()).toEqual(
       [{ drive_file_id: 'keep' }],
     );
@@ -417,7 +421,7 @@ describe('listUnembeddedRecipes', () => {
     const rows = await listUnembeddedRecipes(made.db, 1, 2);
     expect(rows.map((r) => r.drive_file_id)).toEqual(['a', 'b']);
     expect(
-      Object.keys(rows[0] ?? {}).toSorted((a, b) => a.localeCompare(b)),
+      Object.keys(rows[0] ?? {}).toSorted((a, b) => collator.compare(a, b)),
     ).toEqual(['drive_file_id', 'modified_time', 'name', 'source']);
   });
 

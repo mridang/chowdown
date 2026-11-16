@@ -1,3 +1,7 @@
+const LOGO_AVATAR_ICON =
+  /(^|[/_.-])(logo|avatar|icon|sprite|banner|pixel|tracking|gravatar|ads?)([/_.-]|$)/i;
+const UNDEFINED_NULL_NAN = /^(undefined|null|nan|false)$/i;
+const HTTPS = /^https?:$/;
 /**
  * Find the cover photo of the recipe page that is currently open.
  *
@@ -26,10 +30,7 @@
       const url = new URL(value.trim(), base);
       const last = url.pathname.split('/').findLast(Boolean) || '';
       // A scraper that found no image often produces ".../undefined" or "null".
-      if (
-        !/^https?:$/.test(url.protocol) ||
-        /^(undefined|null|nan|false)$/i.test(last)
-      ) {
+      if (!HTTPS.test(url.protocol) || UNDEFINED_NULL_NAN.test(last)) {
         return;
       }
       if (!found.includes(url.href)) {
@@ -46,32 +47,32 @@
   const byId = {};
   const walk = (value) => {
     if (Array.isArray(value)) {
-      value.forEach((item) => walk(item));
+      for (const item of value) walk(item);
     } else if (value && typeof value === 'object') {
       nodes.push(value);
       if (value['@id']) {
         byId[value['@id']] = value;
       }
-      Object.values(value).forEach((item) => walk(item));
+      for (const item of Object.values(value)) walk(item);
     } else {
       // Primitives carry no structured data, so there is nothing to index.
     }
   };
-  document
-    .querySelectorAll('script[type="application/ld+json"]')
-    .forEach((script) => {
-      try {
-        walk(JSON.parse(script.textContent));
-      } catch {
-        // ignore malformed blocks
-      }
-    });
+  for (const script of document.querySelectorAll(
+    'script[type="application/ld+json"]',
+  )) {
+    try {
+      walk(JSON.parse(script.textContent));
+    } catch {
+      // ignore malformed blocks
+    }
+  }
   const fromImageField = (value) => {
     if (!value) {
       return;
     }
     if (Array.isArray(value)) {
-      value.forEach((item) => fromImageField(item));
+      for (const item of value) fromImageField(item);
     } else if (typeof value === 'string') {
       add(value);
     } else if (value.url || value.contentUrl) {
@@ -86,9 +87,10 @@
       // Nothing usable in this value, so there is no cover to take from it.
     }
   };
-  nodes
-    .filter((node) => [node['@type'] || []].flat().includes('Recipe'))
-    .forEach((recipe) => fromImageField(recipe.image));
+  for (const recipe of nodes.filter((node) =>
+    [node['@type'] || []].flat().includes('Recipe'),
+  ))
+    fromImageField(recipe.image);
 
   // 2. Share images.
   const meta = (selector) =>
@@ -99,8 +101,7 @@
   // 3. Last resort: the largest real photo on the page. Skip logos, avatars and
   //    ads by matching whole path words ("uploads/" must not match "ads/").
   if (found.length === 0) {
-    const skip =
-      /(^|[/_.-])(logo|avatar|icon|sprite|banner|pixel|tracking|gravatar|ads?)([/_.-]|$)/i;
+    const skip = LOGO_AVATAR_ICON;
     const biggest = [...document.images]
       .filter(
         (img) =>

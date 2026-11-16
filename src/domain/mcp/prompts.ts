@@ -14,6 +14,8 @@
 
 import { ERROR_INVALID_PARAMS, RpcError } from '@/lib/mcp';
 
+const START_DIGITS_END = /^\d{1,3}$/;
+
 /** One argument a prompt accepts. */
 export interface PromptArgument {
   readonly name: string;
@@ -67,7 +69,8 @@ const MAX_PLAN_DAYS = 14;
  * number goes in.
  */
 function planDays(text: string | undefined): number {
-  const days = text !== undefined && /^\d{1,3}$/.test(text) ? Number(text) : 0;
+  const days =
+    text !== undefined && START_DIGITS_END.test(text) ? Number(text) : 0;
   return days >= 1 && days <= MAX_PLAN_DAYS ? days : DEFAULT_PLAN_DAYS;
 }
 

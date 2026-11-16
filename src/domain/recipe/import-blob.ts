@@ -1,3 +1,4 @@
+const WHITESPACE = /\s/;
 /**
  * @packageDocumentation
  *
@@ -73,7 +74,7 @@ const MIN_BLOCK = 20;
 /** The index after the whitespace run that starts at `from`. */
 function whitespaceEnd(text: string, from: number): number {
   let end = from;
-  while (end < text.length && /\s/.test(text.charAt(end))) {
+  while (end < text.length && WHITESPACE.test(text.charAt(end))) {
     end += 1;
   }
   return end;
@@ -87,10 +88,10 @@ function lineBreaks(
 ): { readonly count: number; readonly after: number } {
   let count = 0;
   let after = to;
-  for (let i = from; i < to; i += 1) {
-    if (text.charAt(i) === '\n') {
+  for (let index = from; index < to; index += 1) {
+    if (text.charAt(index) === '\n') {
       count += 1;
-      after = i + 1;
+      after = index + 1;
     }
   }
   return { count, after };

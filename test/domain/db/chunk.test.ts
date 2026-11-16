@@ -10,7 +10,7 @@ describe('chunked', () => {
 
   it('defaults to a size comfortably under the 100 parameters D1 allows', () => {
     expect(ID_CHUNK).toBeLessThan(100);
-    const ids = Array.from({ length: 120 }, (_, i) => i);
+    const ids = Array.from({ length: 120 }, (_, index) => index);
     expect(chunked(ids).map((c) => c.length)).toEqual([50, 50, 20]);
   });
 });

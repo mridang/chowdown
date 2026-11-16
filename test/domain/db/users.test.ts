@@ -16,6 +16,8 @@ import { fakeDb } from '../../lib/core/db/fake-db';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
+const collator = new Intl.Collator();
+
 /** A database with every migration applied and two people in it. */
 function seeded() {
   const made = sqliteDatabase(...APP_MIGRATIONS);
@@ -61,11 +63,9 @@ describe('upsertUser', () => {
     const { db, calls } = fakeDb({ insert: [[saved]] });
     await upsertUser(db, { google_sub: 's', email: 'a@b.com', name: 'Ann' });
     const set = updateOf(calls);
-    expect(Object.keys(set).toSorted((a, b) => a.localeCompare(b))).toEqual([
-      'email',
-      'name',
-      'updated_at',
-    ]);
+    expect(Object.keys(set).toSorted((a, b) => collator.compare(a, b))).toEqual(
+      ['email', 'name', 'updated_at'],
+    );
   });
 
   it('replaces the refresh token only when a new one comes (Google omits it on silent grants)', async () => {

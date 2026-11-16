@@ -7,6 +7,10 @@ import {
   type ThemePalette,
 } from '@/views/palette';
 
+const collator = new Intl.Collator();
+
+const START_HASH_N0_HYPHEN_N9 = /^#[0-9a-f]{6}$/;
+
 /** Relative luminance of a `#rrggbb` colour, as WCAG defines it. */
 function luminance(hex: string): number {
   const [r = 0, g = 0, b = 0] = [1, 3, 5].map((start) => {
@@ -71,9 +75,9 @@ describe.each([
 describe('the palettes', () => {
   it('give light and dark the same colours to fill in', () => {
     expect(
-      Object.keys(DARK_PALETTE).toSorted((a, b) => a.localeCompare(b)),
+      Object.keys(DARK_PALETTE).toSorted((a, b) => collator.compare(a, b)),
     ).toEqual(
-      Object.keys(LIGHT_PALETTE).toSorted((a, b) => a.localeCompare(b)),
+      Object.keys(LIGHT_PALETTE).toSorted((a, b) => collator.compare(a, b)),
     );
   });
 
@@ -83,7 +87,7 @@ describe('the palettes', () => {
       ...Object.values(LIGHT_PALETTE),
       ...Object.values(DARK_PALETTE),
     ]) {
-      expect(colour).toMatch(/^#[0-9a-f]{6}$/);
+      expect(colour).toMatch(START_HASH_N0_HYPHEN_N9);
     }
   });
 

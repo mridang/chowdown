@@ -46,6 +46,7 @@ describe('negotiateLegacyVersion', () => {
 
   it('answers with our newest older version otherwise', () => {
     expect(negotiateLegacyVersion('1999-01-01')).toBe('2025-11-25');
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(negotiateLegacyVersion(undefined)).toBe('2025-11-25');
     expect(negotiateLegacyVersion(42)).toBe('2025-11-25');
   });
@@ -729,6 +730,7 @@ describe('parseAllowedOrigins', () => {
   });
 
   it('is empty when there is no setting', () => {
+    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(parseAllowedOrigins(undefined)).toEqual([]);
     expect(parseAllowedOrigins('')).toEqual([]);
   });
