@@ -3,14 +3,29 @@ import { describe, expect, it } from '@jest/globals';
 import { APP_STYLES, DARK_PALETTE, LIGHT_PALETTE } from '@/views/app';
 import { STYLES } from '@/views/styles';
 
-const LIST_HYPHEN_STYLE_COLON_SPACE = /list-style:\s*none/u;
-const DOT_SR_HYPHEN_ONLY_ESC = /\.sr-only \{[^}]*clip-path:inset\(50%\)/u;
-const CALC_ESC_DIGITS_PLUS_PX = /calc\((\d+)px \+ var\(--safe-top/u;
-const OUTLINE_HYPHEN_OFFSET_COLON_DIGITS = /outline-offset: (\d+)px/u;
-const OUTLINE_COLON_DIGITS_PLUS_PX = /outline: (\d+)px/u;
-const URL_ESC = /url\(/u;
-const VAR_ESC_HYPHEN_FONT_HYPHEN = /var\(--font-sans,/u;
-const VAR_ESC_HYPHEN_COLOR_HYPHEN = /var\(--color-background-secondary, #/u;
+/** Matches the secondary background variable with a colour fallback. */
+const BACKGROUND_FALLBACK_PATTERN = /var\(--color-background-secondary, #/u;
+
+/** Matches a css url function. */
+const CSS_URL_PATTERN = /url\(/u;
+
+/** Matches a list-style of none. */
+const LIST_STYLE_NONE_PATTERN = /list-style:\s*none/u;
+
+/** Captures the focus outline offset. */
+const OUTLINE_OFFSET_PATTERN = /outline-offset: (\d+)px/u;
+
+/** Captures the focus outline width. */
+const OUTLINE_WIDTH_PATTERN = /outline: (\d+)px/u;
+
+/** Captures the pixel padding added to the top safe area. */
+const SAFE_TOP_PADDING_PATTERN = /calc\((\d+)px \+ var\(--safe-top/u;
+
+/** Matches the sans font variable. */
+const SANS_FONT_VARIABLE_PATTERN = /var\(--font-sans,/u;
+
+/** Matches the screen reader only rule that clips the element. */
+const SR_ONLY_CLIP_PATTERN = /\.sr-only \{[^}]*clip-path:inset\(50%\)/u;
 
 describe('STYLES', () => {
   it('follows the host’s theme, with the operating system only as a fallback', () => {
@@ -19,8 +34,8 @@ describe('STYLES', () => {
   });
 
   it('uses the host’s variables, with fallbacks for hosts that send none', () => {
-    expect(STYLES).toMatch(VAR_ESC_HYPHEN_COLOR_HYPHEN);
-    expect(STYLES).toMatch(VAR_ESC_HYPHEN_FONT_HYPHEN);
+    expect(STYLES).toMatch(BACKGROUND_FALLBACK_PATTERN);
+    expect(STYLES).toMatch(SANS_FONT_VARIABLE_PATTERN);
   });
 
   it('keeps controls clear of the safe area and large enough to tap', () => {
@@ -35,7 +50,7 @@ describe('STYLES', () => {
 
   it('loads nothing: no imports, no remote urls', () => {
     expect(STYLES).not.toContain('@import');
-    expect(STYLES).not.toMatch(URL_ESC);
+    expect(STYLES).not.toMatch(CSS_URL_PATTERN);
   });
 
   it('leaves the page background transparent so the host shows through', () => {
@@ -45,11 +60,10 @@ describe('STYLES', () => {
 
 /** The value of one rule's declaration, such as the padding of `.wrap`. */
 function declaration(selector: string, property: string): string {
-  const escapedSelector = selector.replace('.', String.raw`\.`);
-  const rule = new RegExp(
-    String.raw`(?:^|\n)${escapedSelector} \{([^}]*)\}`,
-    'u',
-  ).exec(STYLES);
+  const escaped = selector.replace('.', String.raw`\.`);
+  const rule = new RegExp(String.raw`(?:^|\n)${escaped} \{([^}]*)\}`, 'u').exec(
+    STYLES,
+  );
   const value = rule?.[1]?.match(
     new RegExp(String.raw`${property}:\s*([^;]*);`, 'u'),
   );
@@ -59,10 +73,10 @@ function declaration(selector: string, property: string): string {
 describe('keyboard focus', () => {
   it('leaves room at the frame edge for the whole focus ring', () => {
     const ring =
-      Number(OUTLINE_COLON_DIGITS_PLUS_PX.exec(STYLES)?.[1]) +
-      Number(OUTLINE_HYPHEN_OFFSET_COLON_DIGITS.exec(STYLES)?.[1]);
+      Number(OUTLINE_WIDTH_PATTERN.exec(STYLES)?.[1]) +
+      Number(OUTLINE_OFFSET_PATTERN.exec(STYLES)?.[1]);
     const base = Number(
-      CALC_ESC_DIGITS_PLUS_PX.exec(declaration('.wrap', 'padding'))?.[1],
+      SAFE_TOP_PADDING_PATTERN.exec(declaration('.wrap', 'padding'))?.[1],
     );
     expect(ring).toBe(4);
     expect(base).toBeGreaterThanOrEqual(ring);
@@ -83,13 +97,13 @@ describe('text sizes', () => {
 
 describe('assistive text', () => {
   it('has a visually hidden class for text only screen readers get', () => {
-    expect(STYLES).toMatch(DOT_SR_HYPHEN_ONLY_ESC);
+    expect(STYLES).toMatch(SR_ONLY_CLIP_PATTERN);
   });
 });
 
 describe('lists', () => {
   it('hide their markers without `none`, which makes WebKit drop the list meaning', () => {
-    expect(STYLES).not.toMatch(LIST_HYPHEN_STYLE_COLON_SPACE);
+    expect(STYLES).not.toMatch(LIST_STYLE_NONE_PATTERN);
     expect(STYLES.match(/list-style-type:""/gu)?.length).toBeGreaterThanOrEqual(
       4,
     );

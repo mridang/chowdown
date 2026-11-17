@@ -734,6 +734,7 @@ describe('isClientBusy', () => {
   it('recognises the busy answer and nothing else', () => {
     expect(isClientBusy({ busy: true, retryAfterSeconds: 3 })).toBe(true);
 
+    // eslint-disable-next-line sonarjs/no-undefined-argument -- the parameter is required and a missing client is a case under test
     expect(isClientBusy(undefined)).toBe(false);
     expect(
       isClientBusy({

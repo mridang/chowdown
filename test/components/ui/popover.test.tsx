@@ -92,19 +92,27 @@ describe('Popover', () => {
   });
 });
 
+/** A panel that has the Popover API on its prototype, as an element does. */
+class InheritsPopover {
+  get popover(): null {
+    return null;
+  }
+}
+
+/** A panel that has some other member on its prototype, but not the API. */
+class InheritsHidden {
+  get hidden(): boolean {
+    return false;
+  }
+}
+
 describe('supportsPopover', () => {
   it('is true for an element in a browser that has the Popover API', () => {
-    /** An element whose `popover` lives on its prototype, as in a browser that has the API. */
-    class PanelWithPopover {
-      get popover(): null {
-        return null;
-      }
-    }
-    expect(supportsPopover(new PanelWithPopover())).toBe(true);
+    expect(supportsPopover(new InheritsPopover())).toBe(true);
   });
 
   it('is false in a browser that does not, so the component shows the panel itself', () => {
-    expect(supportsPopover({ hidden: false })).toBe(false);
+    expect(supportsPopover(new InheritsHidden())).toBe(false);
   });
 });
 
@@ -149,11 +157,9 @@ describe('applyPlacement', () => {
 
 describe('focusLeft', () => {
   // Stand-ins for DOM nodes: all `focusLeft` asks of them is identity.
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- a stand-in for a DOM node: focusLeft only compares identity, and the test runs without a DOM
-  const inside = { id: 'inside' } as unknown as Node;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- a stand-in for a DOM node: focusLeft only compares identity, and the test runs without a DOM
-  const outside = { id: 'outside' } as unknown as Node;
-  const root = { contains: (node: Node | null) => node === inside };
+  const inside = { id: 'inside' };
+  const outside = { id: 'outside' };
+  const root = { contains: (node: { id: string } | null) => node === inside };
 
   it('is true when focus moves to something outside the popover', () => {
     expect(focusLeft(root, outside)).toBe(true);

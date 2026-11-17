@@ -22,16 +22,15 @@ describe('landingJsonLd', () => {
   it('gives every node a stable id that the others point at', () => {
     const ids = graph.map((n) => n['@id']);
     expect(new Set(ids).size).toBe(3);
-    expect(byType('WebSite')['publisher']).toHaveProperty(
-      '@id',
-      byType('Organization')['@id'],
-    );
+    expect(byType('WebSite')['publisher']).toMatchObject({
+      '@id': byType('Organization')['@id'],
+    });
   });
 
   it('says the app is free and works anywhere with a browser', () => {
     const app = byType('WebApplication');
     expect(app['isAccessibleForFree']).toBe(true);
-    expect(app['offers']).toHaveProperty('price', '0');
+    expect(app['offers']).toMatchObject({ price: '0' });
     expect(app['operatingSystem']).toBe('Any');
   });
 
@@ -48,9 +47,8 @@ describe('jsonLdText', () => {
   it('can never close the script tag it is placed in', () => {
     const text = jsonLdText({ name: '</script><script>alert(1)</script>' });
     expect(text).not.toContain('<');
-    expect(JSON.parse(text)).toHaveProperty(
-      'name',
-      '</script><script>alert(1)</script>',
-    );
+    expect(JSON.parse(text)).toMatchObject({
+      name: '</script><script>alert(1)</script>',
+    });
   });
 });

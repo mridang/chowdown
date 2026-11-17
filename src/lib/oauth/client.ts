@@ -181,7 +181,7 @@ export interface ClientBusy {
 
 /** Whether a client lookup answered "ask again later". */
 export function isClientBusy(
-  lookup: OAuthClient | ClientBusy | undefined,
+  lookup?: OAuthClient | ClientBusy,
 ): lookup is ClientBusy {
   return lookup !== undefined && 'busy' in lookup;
 }
