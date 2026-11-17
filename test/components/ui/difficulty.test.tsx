@@ -4,7 +4,7 @@ import { Difficulty } from '@/components/ui/difficulty';
 import { html } from '../render';
 
 /** How many of the bars are drawn in the lit colour. */
-const lit = (markup: string): number => markup.match(/bg-ember/g)?.length ?? 0;
+const lit = (markup: string): number => markup.match(/bg-ember/gu)?.length ?? 0;
 
 describe('Difficulty', () => {
   it('lights one bar for Easy, two for Medium and three for Hard', () => {
@@ -15,7 +15,7 @@ describe('Difficulty', () => {
 
   it('always draws three bars', () => {
     const out = html(<Difficulty level="Medium" />);
-    expect(out.match(/rounded-\[1px\]/g)).toHaveLength(3);
+    expect(out.match(/rounded-\[1px\]/gu)).toHaveLength(3);
   });
 
   it('describes the meter as an image with its level', () => {

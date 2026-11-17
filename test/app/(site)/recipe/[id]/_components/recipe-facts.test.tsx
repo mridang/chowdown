@@ -80,7 +80,7 @@ describe('RecipeFacts', () => {
       <RecipeFacts facts={buildFacts({ minutes: 35, serves: 4, tags: {} })} />,
     );
     expect(out).toContain('<dl');
-    expect(out.match(/<dt/g)).toHaveLength(2);
+    expect(out.match(/<dt/gu)).toHaveLength(2);
     expect(out).toContain('Total time');
     expect(out).toContain('35 min');
     expect(out).toContain('Serves');

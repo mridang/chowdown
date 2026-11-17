@@ -67,7 +67,7 @@ describe('driveAttemptOf', () => {
 
   it('ignores anything else, including repeats of the parameter', () => {
     expect(driveAttemptOf('<script>')).toBeUndefined();
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
     expect(driveAttemptOf(undefined)).toBeUndefined();
     expect(driveAttemptOf(['error', 'denied'])).toBe('error');
     expect(driveAttemptOf([])).toBeUndefined();
@@ -108,7 +108,7 @@ describe('isAuthFailure', () => {
 
   it('copes with non-Error values', () => {
     expect(isAuthFailure('invalid_grant')).toBe(true);
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
     expect(isAuthFailure(undefined)).toBe(false);
   });
 });

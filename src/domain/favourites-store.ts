@@ -19,7 +19,9 @@ const listeners = new Set<() => void>();
 
 /** Record the latest known favourite state for a recipe and notify hearts. */
 export function setFavouriteOverride(id: string, on: boolean): void {
+  // eslint-disable-next-line functional/immutable-data -- this module is the one deliberate store of tab state
   overrides.set(id, on);
+  // eslint-disable-next-line functional/no-loop-statements -- the loop only notifies listeners
   for (const listener of listeners) {
     listener();
   }
@@ -32,8 +34,10 @@ export function getFavouriteOverride(id: string): boolean | undefined {
 
 /** Subscribe to changes; returns the unsubscribe function. */
 export function subscribeFavourites(listener: () => void): () => void {
+  // eslint-disable-next-line functional/immutable-data -- this module is the one deliberate store of tab state
   listeners.add(listener);
   return () => {
+    // eslint-disable-next-line functional/immutable-data -- this module is the one deliberate store of tab state
     listeners.delete(listener);
   };
 }
@@ -56,5 +60,6 @@ export function liveFavouriteCount(serverIds: readonly string[]): number {
 
 /** Forget all overrides (used by tests). */
 export function resetFavouriteOverrides(): void {
+  // eslint-disable-next-line functional/immutable-data -- this module is the one deliberate store of tab state
   overrides.clear();
 }

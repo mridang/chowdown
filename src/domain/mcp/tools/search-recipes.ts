@@ -5,7 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { z } from 'zod';
 import { recipeListResult } from '@/domain/mcp/tool-results';
 import {
   pageWindow,
@@ -21,16 +21,14 @@ import {
 } from '@/domain/mcp/tools/schemas';
 import { recipeDisplayName } from '@/lib/cooklang';
 import { foldText } from '@/lib/intl';
-import {
-  type JsonSchema,
-  McpTool,
-  READS,
-  textArg,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
+import { McpTool, READS, textArg } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type {
+  JsonSchema,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
 
 export class SearchRecipesTool extends McpTool<
   'search_recipes',

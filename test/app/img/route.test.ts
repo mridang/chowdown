@@ -16,18 +16,21 @@ import {
   DEFAULT_WIDTH,
 } from '@/lib/cloudflare/images/site';
 
-const PUBLIC_MAX_AGE = /^public, max-age=\d+, s-maxage=\d+, immutable$/;
+const PUBLIC_MAX_AGE = /^public, max-age=\d+, s-maxage=\d+, immutable$/u;
 
 /** What the mocked access rules answer. */
-const rules: {
+interface AccessRules {
   signed: boolean;
   allowed: boolean;
   refusal?: Response;
-} = {
+}
+
+const rules: AccessRules = {
   signed: true,
   allowed: true,
 };
 
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/images/access is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/domain/images/access', () => ({
   authenticate: async () => rules.refusal,
   signatureFor: () => undefined,
@@ -41,6 +44,7 @@ const context = {
   waiting: [] as Promise<unknown>[],
 };
 
+// eslint-disable-next-line tslop/no-module-mocking -- @opennextjs/cloudflare is a platform module the code under test imports directly, and it only works inside a Worker
 jest.unstable_mockModule('@opennextjs/cloudflare', () => ({
   getCloudflareContext: () => ({
     env: context.env,
@@ -54,7 +58,8 @@ const PHOTO = `https://${ALLOWED_HOSTS?.[0] ?? 'photos.example.org'}/soup.jpg`;
 const WIDTH = ALLOWED_WIDTHS[0] ?? DEFAULT_WIDTH;
 
 const realFetch = globalThis.fetch;
-const realCaches = Reflect.get(globalThis, 'caches');
+const realCaches: unknown =
+  'caches' in globalThis ? globalThis.caches : undefined;
 let fetched: string[];
 
 /** Make every fetch answer with a fresh response from `respond`. */

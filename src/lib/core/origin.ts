@@ -60,5 +60,6 @@ export function appOriginFromHeaders(headers: Headers): string {
     return `${forwarded}://${host}`;
   }
   const local = host.startsWith('localhost') || host.startsWith('127.');
-  return `${local ? 'http' : 'https'}://${host}`;
+  const protocol = local ? 'http' : 'https';
+  return `${protocol}://${host}`;
 }

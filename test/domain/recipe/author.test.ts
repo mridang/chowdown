@@ -1,6 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { expectSamePattern, fuzzInputs } from '../../regex-equivalence';
 import {
   askForAuthor,
   BYLINE,
@@ -14,8 +13,9 @@ import {
   NOT_A_NAME,
   withAuthor,
 } from '@/domain/recipe/author';
+import { expectSamePattern, fuzzInputs } from '../../regex-equivalence';
 
-const IGNORE_ANY_INSTRUCTIONS = /ignore any instructions/i;
+const IGNORE_ANY_INSTRUCTIONS = /ignore any instructions/iu;
 
 /** A page with the given head markup and body text. */
 const page = (head: string, body = '') =>
@@ -79,16 +79,12 @@ describe('cleanAuthorName', () => {
 });
 
 describe('looksLikeAPerson', () => {
-  it('accepts names and blogs named like people', () => {
-    for (const name of [
-      'Nagi',
-      'Bong Eats',
-      'Maunika Gowardhan',
-      'Kevin and Amanda',
-    ]) {
+  it.each(['Nagi', 'Bong Eats', 'Maunika Gowardhan', 'Kevin and Amanda'])(
+    'accepts names and blogs named like people (%j)',
+    (name) => {
       expect(looksLikeAPerson(name)).toBe(true);
-    }
-  });
+    },
+  );
 
   it('refuses a web address', () => {
     expect(looksLikeAPerson('NerdyMamma.com')).toBe(false);
@@ -454,7 +450,7 @@ describe('NOT_A_NAME, rewritten', () => {
       'contributors?|subscribe|newsletter|cookies?|privacy|login|sign|unknown',
       String.raw`|anonymous|guest|author|undefined|null)\b`,
     ].join(''),
-    'i',
+    'iu',
   );
   const pieces = [
     'comment',

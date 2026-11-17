@@ -6,13 +6,13 @@ import { html } from '../render';
 describe('PageSkeleton', () => {
   it('tells assistive technology the page is loading', () => {
     const out = html(<PageSkeleton />);
-    expect(out).toContain('role="status"');
+    expect(out).toContain('<output');
     expect(out).toContain('aria-busy="true"');
     expect(out).toContain('Loading');
   });
 
   it('stands in for four cards', () => {
-    expect(html(<PageSkeleton />).match(/h-64/g)).toHaveLength(4);
+    expect(html(<PageSkeleton />).match(/h-64/gu)).toHaveLength(4);
   });
 
   it('sits in the same page column as the page it stands in for', () => {

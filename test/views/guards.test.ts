@@ -43,7 +43,7 @@ describe('isRecipeListData', () => {
   it('refuses entries without an id and a title', () => {
     expect(isRecipeListData({ recipes: [{ id: '1' }] })).toBe(false);
     expect(isRecipeListData({ recipes: 'many' })).toBe(false);
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
     expect(isRecipeListData(undefined)).toBe(false);
   });
 });

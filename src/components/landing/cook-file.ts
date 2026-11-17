@@ -1,4 +1,4 @@
-const TRAILING_HYPHEN = /-$/;
+const TRAILING_HYPHEN = /-$/u;
 /**
  * @packageDocumentation
  *
@@ -17,11 +17,14 @@ const HIDDEN_KEYS = ['>> images', '>> keywords', '>> favourite'] as const;
 export function fileSlug(title: string, max = 30): string {
   return title
     .toLowerCase()
-    .replaceAll(/[^a-z0-9]+/g, '-')
-    .replaceAll(/^-|-$/g, '')
+    .replaceAll(/[^a-z0-9]+/gu, '-')
+    .replaceAll(/^-|-$/gu, '')
     .slice(0, max)
     .replace(TRAILING_HYPHEN, '');
 }
+
+/** Splits a line into the characters a person sees. */
+const GRAPHEMES = new Intl.Segmenter('en', { granularity: 'grapheme' });
 
 /**
  * One line made ready to show: a metadata unit joined with `%` reads the way a
@@ -30,7 +33,11 @@ export function fileSlug(title: string, max = 30): string {
  */
 export function tidyLine(line: string): string {
   const clean = line.startsWith('>>') ? line.replace('%', ' ') : line;
-  return clean.length > 92 ? `${clean.slice(0, 90)}…` : clean;
+  const letters = Array.from(
+    GRAPHEMES.segment(clean),
+    ({ segment }) => segment,
+  );
+  return letters.length > 92 ? `${letters.slice(0, 90).join('')}…` : clean;
 }
 
 /**

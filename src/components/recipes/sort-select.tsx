@@ -1,9 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import type { ReactElement } from 'react';
-
 import { Select } from '@/components/ui/field';
+import type { ReactElement } from 'react';
 
 /** One way to order the list: its value, its label and the address that applies it. */
 export interface SortOption {

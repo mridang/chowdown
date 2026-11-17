@@ -9,8 +9,8 @@ import {
   modeFromResult,
   planExpand,
   reduceLayout,
-  type LayoutState,
 } from '@/views/display-mode';
+import type { LayoutState } from '@/views/display-mode';
 
 describe('display modes a View declares', () => {
   it('declares inline and fullscreen, the two layouts the Views implement', () => {
@@ -20,7 +20,7 @@ describe('display modes a View declares', () => {
   it('recognises the three modes of the spec and nothing else', () => {
     expect(['inline', 'fullscreen', 'pip'].every(isDisplayMode)).toBe(true);
     expect(isDisplayMode('window')).toBe(false);
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
     expect(isDisplayMode(undefined)).toBe(false);
     expect(isDisplayMode(3)).toBe(false);
   });
@@ -44,7 +44,7 @@ describe('planExpand', () => {
     expect(
       planExpand({ availableDisplayModes: ['inline', 'fullscreen'] }),
     ).toBe('request');
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
     expect(planExpand(undefined)).toBe('request');
   });
 

@@ -1,13 +1,14 @@
+import { cn } from '@/components/ui/cn';
 import type { ReactElement } from 'react';
 
-import { cn } from '@/components/ui/cn';
-
 /** How many of the three bars each level fills; an unknown level fills one. */
-const LEVELS: Readonly<Record<string, number>> = {
-  Easy: 1,
-  Medium: 2,
-  Hard: 3,
-};
+const LEVELS = new Map<string, number>(
+  Object.entries({
+    Easy: 1,
+    Medium: 2,
+    Hard: 3,
+  }),
+);
 
 /** The height of each bar, left to right: they rise so the level reads at a glance. */
 const BAR_HEIGHTS = ['h-2', 'h-3', 'h-4'] as const;
@@ -30,9 +31,10 @@ export function Difficulty({
   // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
 }>): ReactElement {
-  const filled = LEVELS[level] ?? 1;
+  const filled = LEVELS.get(level) ?? 1;
   return (
     <span className={cn('inline-flex items-center gap-1.5', className)}>
+      {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- the bars are drawn from elements, and an img element cannot hold children */}
       <span
         className="inline-flex items-end gap-[2px]"
         role="img"

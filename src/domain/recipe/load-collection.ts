@@ -18,18 +18,17 @@ import {
   sessionHintStale,
   wasDriveConnected,
 } from '@/domain/auth/drive-access';
-import { sessionIsCurrent, type SessionPayload } from '@/lib/session';
-import type { Database } from '@/domain/db/client';
-import { getAppPageRows, type AppPageRows } from '@/domain/db/recipe-page';
-import {
-  claimBackfillLease,
-  claimDriveLease,
-  type User,
-} from '@/domain/db/users';
+import { sessionIsCurrent } from '@/lib/session';
+import { getAppPageRows } from '@/domain/db/recipe-page';
+import { claimBackfillLease, claimDriveLease } from '@/domain/db/users';
 import { getEnv, runInBackground } from '@/lib/core/runtime';
 import { getDatabase } from '@/domain/db/client';
 import { syncFromDrive } from '@/domain/recipe/drive-sync';
 import { backfillEmbeddings } from '@/domain/recipe/embed-write';
+import type { User } from '@/domain/db/users';
+import type { AppPageRows } from '@/domain/db/recipe-page';
+import type { SessionPayload } from '@/lib/session';
+import type { Database } from '@/domain/db/client';
 
 /** Whether the person's Google Drive is connected, and how to word asking again. */
 export interface DriveStatus {
@@ -68,7 +67,7 @@ export interface CollectionDeps {
    */
   readonly claimLease: (db: Database, userId: number) => Promise<boolean>;
   /** Bring the cache in line with Drive. */
-  readonly sync: (user: Readonly<User>) => Promise<unknown>;
+  readonly sync: (user: Readonly<User>) => Promise<void>;
 
   /**
    * Take the lease on the embeddings top-up; false when another request holds
@@ -80,7 +79,7 @@ export interface CollectionDeps {
     db: Database,
     userId: number,
     limit: number,
-  ) => Promise<unknown>;
+  ) => Promise<void>;
   /** Run work after the response, without waiting for it. */
   readonly background: (work: Promise<unknown>) => void;
   /** Send the visitor elsewhere; never returns. */
@@ -93,10 +92,13 @@ const liveDeps: CollectionDeps = {
   database: getDatabase,
   pageRows: getAppPageRows,
   claimLease: claimDriveLease,
-  sync: syncFromDrive,
+  sync: async (user) => {
+    await syncFromDrive(user);
+  },
   claimBackfill: claimBackfillLease,
-  backfill: async (db, userId, limit) =>
-    backfillEmbeddings(db, getEnv(), userId, limit),
+  backfill: async (db, userId, limit) => {
+    await backfillEmbeddings(db, getEnv(), userId, limit);
+  },
   background: runInBackground,
   redirect,
 };

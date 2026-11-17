@@ -6,24 +6,22 @@ import { describe, expect, it } from '@jest/globals';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 import { cssClassesOf, html } from '../render';
 
-const H1_TABINDEX_CLASS = /<h1 tabindex="-1" class=/;
-const TEXT_INK_ACCENT = /\btext-(ink|accent|subtle|muted|on-ink)\b/;
+const H1_TABINDEX_CLASS = /<h1 tabindex="-1" class=/u;
+const TEXT_INK_ACCENT = /\btext-(ink|accent|subtle|muted|on-ink)\b/u;
 
 describe('Eyebrow', () => {
   it('is a tracked-caps paragraph in the accent colour by default', () => {
     const out = html(<Eyebrow>Your collection</Eyebrow>);
     expect(out.startsWith('<p')).toBe(true);
-    expect(cssClassesOf(out, 'p')).toContain('uppercase');
-    expect(cssClassesOf(out, 'p')).toContain('text-accent');
+    const classes = cssClassesOf(out, 'p');
+    expect(classes).toContain('uppercase');
+    expect(classes).toContain('text-accent');
   });
 
   it('takes its colour from the tone, one at a time', () => {
-    expect(cssClassesOf(html(<Eyebrow tone="ink">x</Eyebrow>), 'p')).toContain(
-      'text-ink',
-    );
-    expect(
-      cssClassesOf(html(<Eyebrow tone="ink">x</Eyebrow>), 'p'),
-    ).not.toContain('text-accent');
+    const ink = cssClassesOf(html(<Eyebrow tone="ink">x</Eyebrow>), 'p');
+    expect(ink).toContain('text-ink');
+    expect(ink).not.toContain('text-accent');
     expect(
       cssClassesOf(html(<Eyebrow tone="subtle">x</Eyebrow>), 'p'),
     ).toContain('text-subtle');
@@ -55,7 +53,7 @@ describe('Eyebrow', () => {
         ) {
           const source = await readFile(file, 'utf8');
           const cssClasses = Array.from(
-            source.matchAll(/<Eyebrow\b[^>]*className="([^"]*)"/g),
+            source.matchAll(/<Eyebrow\b[^>]*className="([^"]*)"/gu),
             (match) => match[1]!,
           );
           offenders.push(

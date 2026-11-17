@@ -1,8 +1,7 @@
-import type { ReactElement } from 'react';
-
 import { Tag } from '@/components/ui/chip';
 import { Eyebrow } from '@/components/ui/layout';
 import { sentenceCase } from '@/utils/text';
+import type { ReactElement } from 'react';
 
 /** The most keywords shown; a recipe can carry dozens, and a long row is noise. */
 export const MAX_TAGS = 10;

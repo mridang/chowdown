@@ -1,8 +1,7 @@
-import type { ReactElement } from 'react';
-
 import { HeartIcon } from '@/components/icons';
 import { heartOverlayClass } from '@/components/recipes/heart-look';
 import { cn } from '@/components/ui/cn';
+import type { ReactElement } from 'react';
 
 /**
  * A heart that only decorates: the same round overlay as the live

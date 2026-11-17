@@ -9,26 +9,13 @@
  */
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
-import type { Recipe } from '@/domain/db/recipes';
 import { compareText, countOf, foldText, listAnd } from '@/lib/intl';
-import {
-  parseRecipe,
-  recipeDisplayName,
-  type ParsedRecipe,
-} from '@/lib/cooklang';
-import {
-  DIET_TYPES,
-  suitableFor,
-  type DietType,
-} from '@/domain/recipe/diet-type';
+import { parseRecipe, recipeDisplayName } from '@/lib/cooklang';
+import { DIET_TYPES, suitableFor } from '@/domain/recipe/diet-type';
 import { minutesOf } from '@/domain/recipe/minutes';
-import {
-  matchRecipe,
-  rankMatches,
-  type PantryMatch,
-} from '@/domain/recipe/pantry-match';
+import { matchRecipe, rankMatches } from '@/domain/recipe/pantry-match';
 import { FACETS, facet } from '@/domain/recipe/taxonomy';
-import { rowTags, type RecipeTags } from '@/domain/recipe/tag-index';
+import { rowTags } from '@/domain/recipe/tag-index';
 import { pantryOf } from '@/domain/mcp/pantry-input';
 import {
   limitArg,
@@ -38,8 +25,13 @@ import {
   stringListArg,
 } from '@/lib/mcp';
 import { pastTheEnd, plainTitle, rangeText } from '@/domain/mcp/tool-text';
+import type { RecipeTags } from '@/domain/recipe/tag-index';
+import type { PantryMatch } from '@/domain/recipe/pantry-match';
+import type { DietType } from '@/domain/recipe/diet-type';
+import type { ParsedRecipe } from '@/lib/cooklang';
+import type { Recipe } from '@/domain/db/recipes';
 
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** A cached recipe, parsed once, with what the scenario tools look at. */
 export interface ScenarioRecipe {
@@ -152,7 +144,7 @@ function spread(
 /** A run of recipes sharing an eating style, as lines of text. */
 interface DietRun {
   readonly diet: string;
-  readonly lines: string[];
+  readonly lines: readonly string[];
 }
 
 /** Recipes grouped under their eating style, in the usual order. */
@@ -163,12 +155,9 @@ function groupedByDiet(recipes: readonly ScenarioRecipe[]): string {
   const runs = sorted.reduce<DietRun[]>((done, recipe) => {
     const diet = dietOf(recipe);
     const last = done.at(-1);
-    if (last?.diet === diet) {
-      last.lines.push(line(recipe));
-    } else {
-      done.push({ diet, lines: [line(recipe)] });
-    }
-    return done;
+    return last?.diet === diet
+      ? [...done.slice(0, -1), { diet, lines: [...last.lines, line(recipe)] }]
+      : [...done, { diet, lines: [line(recipe)] }];
   }, []);
   return runs
     .flatMap((run) => [`\n${run.diet}:`, ...run.lines])
@@ -176,11 +165,14 @@ function groupedByDiet(recipes: readonly ScenarioRecipe[]): string {
     .trim();
 }
 
+/** The known values of a facet argument, or an error line. */
+interface FacetWanted {
+  readonly wanted: readonly string[];
+  readonly problem?: string;
+}
+
 /** The values of a facet argument that the taxonomy knows, or an error line. */
-function facetWanted(
-  key: string,
-  raw: unknown,
-): { readonly wanted: readonly string[]; readonly problem?: string } {
+function facetWanted(key: string, raw: unknown): FacetWanted {
   const wanted = stringListArg(raw);
   const f = facet(key);
   if (!f?.values || wanted.length === 0) {
@@ -231,8 +223,11 @@ function untimedNote(untimed: number): string {
   if (untimed === 0) {
     return '';
   }
-  const one = untimed === 1;
-  return `\n\n(${countOf(untimed, 'other recipe')} fit${one ? 's' : ''} the rest but ${one ? "doesn't" : "don't"} say how long ${one ? 'it takes' : 'they take'}.)`;
+  const rest =
+    untimed === 1
+      ? "fits the rest but doesn't say how long it takes"
+      : "fit the rest but don't say how long they take";
+  return `\n\n(${countOf(untimed, 'other recipe')} ${rest}.)`;
 }
 
 /**
@@ -299,8 +294,7 @@ export function browseRecipes(
     return {
       message:
         `No recipes${subject}. Use list_filters to see what the collection holds` +
-        ' — or offer to import one.' +
-        note,
+        ` — or offer to import one.${note}`,
       recipes: [],
     };
   }
@@ -419,11 +413,13 @@ export function recipesFromIngredients(
   }
 
   const matches: readonly Matched[] = recipes
+    .values()
     .filter((r) => hasAny(r, 'diet_type', dietsFor(diets)))
     .map((recipe) => ({
       recipe,
       match: matchRecipe(recipe.ingredients, pantry, { assumeStaples }),
-    }));
+    }))
+    .toArray();
   const ranked = rankMatches(matches, allowMissing);
   const limit = limitArg(args['limit']);
   const offset = offsetArg(args['offset']);
@@ -452,14 +448,12 @@ export function recipesFromIngredients(
       };
     }
     return {
-      message:
-        `Nothing can be made from ${have} as it stands. The closest, which need a shop:\n` +
-        closest
-          .map(
-            ({ recipe, match }) =>
-              `${line(recipe)} — ${dietOf(recipe)}; ${gapText(match, 4)}`,
-          )
-          .join('\n'),
+      message: `Nothing can be made from ${have} as it stands. The closest, which need a shop:\n${closest
+        .map(
+          ({ recipe, match }) =>
+            `${line(recipe)} — ${dietOf(recipe)}; ${gapText(match, 4)}`,
+        )
+        .join('\n')}`,
       recipes: closest.map((m) => m.recipe),
     };
   }
@@ -468,24 +462,22 @@ export function recipesFromIngredients(
     `With ${have}:`,
     ...(canMake.length > 0
       ? [
-          `\nYou can make now (${countText(canMake.length, ranked.canMake.length, offset)}):\n` +
-            canMake
-              .map(
-                ({ recipe, match }) =>
-                  `${line(recipe)} — ${dietOf(recipe)}; uses ${match.used} of your ${pantry.length}`,
-              )
-              .join('\n'),
+          `\nYou can make now (${countText(canMake.length, ranked.canMake.length, offset)}):\n${canMake
+            .map(
+              ({ recipe, match }) =>
+                `${line(recipe)} — ${dietOf(recipe)}; uses ${match.used} of your ${pantry.length}`,
+            )
+            .join('\n')}`,
         ]
       : []),
     ...(almost.length > 0
       ? [
-          `\nAlmost there (${countText(almost.length, ranked.almost.length, offset)}):\n` +
-            almost
-              .map(
-                ({ recipe, match }) =>
-                  `${line(recipe)} — ${dietOf(recipe)}; ${gapText(match)}`,
-              )
-              .join('\n'),
+          `\nAlmost there (${countText(almost.length, ranked.almost.length, offset)}):\n${almost
+            .map(
+              ({ recipe, match }) =>
+                `${line(recipe)} — ${dietOf(recipe)}; ${gapText(match)}`,
+            )
+            .join('\n')}`,
         ]
       : []),
   ];
@@ -566,7 +558,7 @@ export interface ScenarioDeps {
   /** The Drive file ids the user has hearted. */
   readonly favouriteIds: () => Promise<readonly string[]>;
   /** Fill the cache from Drive; may throw. */
-  readonly sync: () => Promise<unknown>;
+  readonly sync: () => Promise<void>;
   /** Run a promise after the response is sent. */
   readonly inBackground: (work: Promise<unknown>) => void;
 }

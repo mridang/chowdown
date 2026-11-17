@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import type { ReactElement, ReactNode } from 'react';
-
 import { cn } from '@/components/ui/cn';
+import type { ReactElement, ReactNode } from 'react';
 
 /** How the link is drawn: `inline` among words, `strong` when it stands alone. */
 const VARIANTS = {

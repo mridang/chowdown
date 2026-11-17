@@ -154,5 +154,6 @@ export function reduceViewState<T>(
         ? { phase: 'failed', reason: 'timeout', message: TIMEOUT_MESSAGE }
         : state;
     }
+    // no default
   }
 }

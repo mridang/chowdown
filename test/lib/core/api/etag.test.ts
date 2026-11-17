@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { entityTag, ifMatchSatisfied, ifNoneMatchHit } from '@/lib/core/api';
 
-const START_DQUOTE_N0_HYPHEN_N9 = /^"[0-9a-f]{16}"$/;
+const START_DQUOTE_N0_HYPHEN_N9 = /^"[0-9a-f]{16}"$/u;
 
 describe('entityTag', () => {
   it('is a quoted 16-hex-digit tag that changes with the content', async () => {

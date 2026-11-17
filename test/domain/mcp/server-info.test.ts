@@ -14,8 +14,8 @@ import {
 } from '@/domain/mcp/server-info';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
 
-const FETCH_THAT_PAGE = /fetch that page once more/;
-const NEVER_FETCHES = /never fetches/i;
+const FETCH_THAT_PAGE = /fetch that page once more/u;
+const NEVER_FETCHES = /never fetches/iu;
 
 const root = process.cwd();
 
@@ -91,16 +91,17 @@ describe('SERVER_INFO', () => {
     expect(SERVER_INFO_META_KEY).toBe('io.modelcontextprotocol/serverInfo');
   });
 
-  it('lists icons that are absolute HTTPS addresses on this site, to real PNG files of the size they claim', async () => {
-    expect(SERVER_INFO.icons.length).toBeGreaterThan(0);
-    for (const icon of SERVER_INFO.icons) {
+  it.each(SERVER_INFO.icons)(
+    'lists icons that are absolute HTTPS addresses on this site, to real PNG files of the size they claim (%j)',
+    async (icon) => {
+      expect(SERVER_INFO.icons.length).toBeGreaterThan(0);
       expect(icon.src.startsWith(`${SITE_URL}/icons/`)).toBe(true);
       expect(new URL(icon.src).protocol).toBe('https:');
       expect(icon.mimeType).toBe('image/png');
       const file = new URL(icon.src).pathname.slice(1);
       expect(icon.sizes).toEqual([await pngSize(file)]);
-    }
-  });
+    },
+  );
 });
 
 describe('CAPABILITIES', () => {
@@ -114,15 +115,16 @@ describe('CAPABILITIES', () => {
     expect(UI_EXTENSION_ID).toBe('io.modelcontextprotocol/ui');
   });
 
-  it('promise no change notifications and no subscriptions', () => {
-    expect(CAPABILITIES.tools).not.toHaveProperty('listChanged');
-    expect(CAPABILITIES.resources).not.toHaveProperty('listChanged');
-    expect(CAPABILITIES.resources).not.toHaveProperty('subscribe');
-    expect(CAPABILITIES.prompts).not.toHaveProperty('listChanged');
-    for (const unsupported of ['logging', 'completions', 'tasks']) {
+  it.each(['logging', 'completions', 'tasks'])(
+    'promise no change notifications and no subscriptions (%j)',
+    (unsupported) => {
+      expect(CAPABILITIES.tools).not.toHaveProperty('listChanged');
+      expect(CAPABILITIES.resources).not.toHaveProperty('listChanged');
+      expect(CAPABILITIES.resources).not.toHaveProperty('subscribe');
+      expect(CAPABILITIES.prompts).not.toHaveProperty('listChanged');
       expect(CAPABILITIES).not.toHaveProperty(unsupported);
-    }
-  });
+    },
+  );
 });
 
 describe('INSTRUCTIONS', () => {
@@ -134,11 +136,11 @@ describe('INSTRUCTIONS', () => {
   it('only name tools that exist', () => {
     const names = TOOLS.map((t) => t.name) as readonly string[];
     const mentioned = Array.from(
-      INSTRUCTIONS.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/g),
+      INSTRUCTIONS.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/gu),
       (m) => m[0],
     );
-    expect(mentioned.length).toBeGreaterThan(5);
     for (const name of mentioned) {
+      expect(mentioned.length).toBeGreaterThan(5);
       expect(names).toContain(name);
     }
   });

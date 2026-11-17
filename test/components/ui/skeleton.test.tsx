@@ -20,9 +20,9 @@ describe('Skeleton shapes', () => {
       'rounded-control',
     );
     expect(
-      cssClassesOf(html(<Skeleton shape="square" />), 'div'),
+      cssClassesOf(html(<Skeleton corners="square" />), 'div'),
     ).not.toContain('rounded');
-    expect(cssClassesOf(html(<Skeleton shape="circle" />), 'div')).toContain(
+    expect(cssClassesOf(html(<Skeleton corners="circle" />), 'div')).toContain(
       'rounded-full',
     );
   });
@@ -37,14 +37,14 @@ describe('SkeletonFrame', () => {
 
   it('tells assistive technology the page is loading', () => {
     const out = html(<SkeletonFrame>shapes</SkeletonFrame>);
-    expect(out).toContain('role="status"');
+    expect(out).toContain('<output');
     expect(out).toContain('aria-busy="true"');
     expect(out).toContain('sr-only');
     expect(out).toContain('Loading');
   });
 
   it('pulses, unless the person wants less motion', () => {
-    const cls = cssClassesOf(html(<SkeletonFrame>x</SkeletonFrame>), 'div');
+    const cls = cssClassesOf(html(<SkeletonFrame>x</SkeletonFrame>), 'output');
     expect(cls).toContain('animate-pulse');
     expect(cls).toContain('motion-reduce:animate-none');
   });

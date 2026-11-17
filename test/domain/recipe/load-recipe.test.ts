@@ -1,16 +1,16 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { SessionPayload } from '@/lib/session';
-import type { Database } from '@/domain/db/client';
-import type { RecipePageRows } from '@/domain/db/recipe-page';
-import type { User } from '@/domain/db/users';
 import {
   ALSO_LIKE_COUNT,
   loadRecipePageRows,
   similarCards,
-  type RecipeLoadDeps,
 } from '@/domain/recipe/load-recipe';
 import { serializeSimilar } from '@/domain/recipe/similar';
+import type { RecipeLoadDeps } from '@/domain/recipe/load-recipe';
+import type { SessionPayload } from '@/lib/session';
+import type { Database } from '@/domain/db/client';
+import type { RecipePageRows } from '@/domain/db/recipe-page';
+import type { User } from '@/domain/db/users';
 
 /** A cached recipe row, as far as the cards need it. */
 const row = (id: string) =>
@@ -142,7 +142,8 @@ describe('loadRecipePageRows', () => {
 
   it('clears the session of an account that no longer exists', async () => {
     const deps = fakes({
-      pageRows: async () => pageRows({ epoch: void 0 }),
+      // eslint-disable-next-line sonarjs/no-undefined-assignment -- the key must be present with the value undefined, because the test is about an absent value and null means something else
+      pageRows: async () => pageRows({ epoch: undefined }),
     });
     await expect(loadRecipePageRows('r1', deps)).rejects.toMatchObject({
       to: '/auth/refresh',

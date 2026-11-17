@@ -9,7 +9,6 @@ import {
 import { NextResponse } from 'next/server';
 
 import { STATE_COOKIE } from '@/domain/auth/app';
-import type { User } from '@/domain/auth/store';
 import {
   answerFetch,
   appRequest,
@@ -17,14 +16,15 @@ import {
   jar,
 } from '../../../domain/auth/auth-test-kit';
 import { installFakeTracing } from '../observability/fake-tracing';
+import type { User } from '@/domain/db/users';
 
 const tracing = installFakeTracing();
 
 const person = { id: 7, email: 'a@b.com' } as User;
 const getCurrentUser = jest.fn<() => Promise<User | null>>();
 
-// Mock the specific module and import the kit from its own file: mocking the
-// package barrel would replace GoogleAuthKit too.
+// Mock the specific module and import the kit from its own file: mocking the package barrel would replace GoogleAuthKit too.
+// eslint-disable-next-line tslop/no-module-mocking -- @/lib/core/auth/current-user is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser,
 }));
@@ -98,9 +98,7 @@ beforeEach(() => {
   google.userinfo = 'ok';
   completeSignIn.mockClear();
   completeOther.mockClear();
-  for (const key of Object.keys(tracing.attributes)) {
-    delete tracing.attributes[key];
-  }
+  tracing.reset();
   jest.spyOn(console, 'error').mockImplementation(() => undefined);
   jest.spyOn(console, 'warn').mockImplementation(() => undefined);
   answerFetch({
@@ -210,12 +208,13 @@ describe('the error context of the callback handler', () => {
     });
   });
 
-  it('never puts the state, the code, a token or Google’s text in the context', async () => {
-    google.token = 'fails';
-    await runCallback('code=the-code&state=signin.a', 'signin.a');
-    const everything = JSON.stringify(tracing.attributes);
-    for (const secret of ['the-code', 'signin.a', 'SECRET-DETAIL', 'at']) {
+  it.each(['the-code', 'signin.a', 'SECRET-DETAIL', 'at'])(
+    'never puts the state, the code, a token or Google’s text in the context (%j)',
+    async (secret) => {
+      google.token = 'fails';
+      await runCallback('code=the-code&state=signin.a', 'signin.a');
+      const everything = JSON.stringify(tracing.attributes);
       expect(everything).not.toContain(secret);
-    }
-  });
+    },
+  );
 });

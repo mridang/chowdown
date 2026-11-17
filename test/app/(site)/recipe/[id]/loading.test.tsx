@@ -7,7 +7,7 @@ describe('RecipeLoading', () => {
   const out = html(<RecipeLoading />);
 
   it('tells assistive technology the recipe is loading', () => {
-    expect(out).toContain('role="status"');
+    expect(out).toContain('<output');
     expect(out).toContain('aria-busy="true"');
   });
 
@@ -20,8 +20,8 @@ describe('RecipeLoading', () => {
   });
 
   it('draws one placeholder per fact, ingredient and step', () => {
-    expect(out.match(/size-11/g)).toHaveLength(4);
-    expect(out.match(/h-6 w-full/g)).toHaveLength(6);
-    expect(out.match(/rounded-full/g)).toHaveLength(4);
+    expect(out.match(/size-11/gu)).toHaveLength(4);
+    expect(out.match(/h-6 w-full/gu)).toHaveLength(6);
+    expect(out.match(/rounded-full/gu)).toHaveLength(4);
   });
 });

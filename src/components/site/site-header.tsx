@@ -1,10 +1,9 @@
 import Link from 'next/link';
-import { Suspense, type ReactElement } from 'react';
+import { Suspense } from 'react';
 
 import { GoogleIcon, PlusIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
 import { Container } from '@/components/ui/layout';
-import type { ShellUser } from '@/domain/auth/shell-user';
 
 import { AccountMenu } from '@/components/site/account-menu';
 import { driveLink } from '@/components/site/drive-link';
@@ -13,6 +12,8 @@ import { HeaderNav } from '@/components/site/header-nav';
 import { Logo } from '@/components/site/logo';
 import { MobileNav } from '@/components/site/mobile-nav';
 import { menuLinks, VISITOR_NAV } from '@/components/site/nav-links';
+import type { ReactElement } from 'react';
+import type { ShellUser } from '@/domain/auth/shell-user';
 
 /**
  * What sits beside the account menu for someone signed in: the "Add recipe"

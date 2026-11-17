@@ -1,6 +1,6 @@
-import { describe, expect, it } from '@jest/globals';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { describe, expect, it } from '@jest/globals';
 
 import {
   SECURITY_HEADERS,
@@ -30,38 +30,35 @@ describe('openerPolicyFor', () => {
     expect(openerPolicyFor('/oauth/authorize')).toBe('unsafe-none');
   });
 
-  it('cuts other windows off everywhere else', () => {
-    for (const pathname of [
-      '/',
-      '/some/page',
-      '/oauth/consent',
-      '/oauth/token',
-      '/mcp',
-    ]) {
+  it.each(['/', '/some/page', '/oauth/consent', '/oauth/token', '/mcp'])(
+    'cuts other windows off everywhere else (%j)',
+    (pathname) => {
       expect(openerPolicyFor(pathname)).toBe('same-origin');
-    }
-  });
+    },
+  );
 });
 
 describe('applyResponseHeaders — files other sites and browsers fetch', () => {
-  it('serves every cached file to other sites and does not mark it noindex', () => {
-    for (const pathname of CACHED_FILES) {
+  it.each(CACHED_FILES)(
+    'serves every cached file to other sites and does not mark it noindex (%j)',
+    (pathname) => {
       const out = applyResponseHeaders(at(pathname), new Response('x'));
       expect(out.headers.get('cross-origin-resource-policy')).toBe(
         'cross-origin',
       );
       expect(out.headers.has('x-robots-tag')).toBe(false);
-    }
-  });
+    },
+  );
 
-  it('lets a browser keep every cached file for a day', () => {
-    for (const pathname of CACHED_FILES) {
+  it.each(CACHED_FILES)(
+    'lets a browser keep every cached file for a day (%j)',
+    (pathname) => {
       const out = applyResponseHeaders(at(pathname), new Response('x'));
       expect(out.headers.get('cache-control')).toBe(
         'public, max-age=86400, stale-while-revalidate=604800',
       );
-    }
-  });
+    },
+  );
 });
 
 describe('applyResponseHeaders', () => {
@@ -148,17 +145,19 @@ describe('applyResponseHeaders', () => {
 });
 
 describe('Cross-Origin-Resource-Policy', () => {
-  it('keeps pages and data to this site', () => {
-    for (const path of ['/', '/some/page', '/some/page/abc', '/api/things']) {
+  it.each(['/', '/some/page', '/some/page/abc', '/api/things'])(
+    'keeps pages and data to this site (%j)',
+    (path) => {
       expect(resourcePolicyFor(path)).toBe('same-site');
-    }
-  });
+    },
+  );
 
-  it('opens the files other sites embed or fetch on purpose', () => {
-    for (const path of CACHED_FILES) {
+  it.each(CACHED_FILES)(
+    'opens the files other sites embed or fetch on purpose (%j)',
+    (path) => {
       expect(resourcePolicyFor(path)).toBe('cross-origin');
-    }
-  });
+    },
+  );
 
   it('is sent on every response, and a route may set its own', () => {
     const [cached = '/'] = CACHED_FILES;
@@ -190,12 +189,16 @@ describe('Strict-Transport-Security', () => {
 });
 
 describe('X-Robots-Tag', () => {
-  it('keeps crawlers out of every page except the ones the app makes public', () => {
-    for (const path of [...PRIVATE_PATHS, '/oauth/authorize']) {
+  it.each([...PRIVATE_PATHS, '/oauth/authorize'])(
+    'keeps crawlers out of %j',
+    (path) => {
       expect(
         applyResponseHeaders(at(path), html()).headers.get('X-Robots-Tag'),
       ).toBe('noindex, nofollow');
-    }
+    },
+  );
+
+  it('leaves the pages the app makes public open to crawlers', () => {
     for (const path of PUBLIC_PAGES) {
       expect(
         applyResponseHeaders(at(path), html()).headers.get('X-Robots-Tag'),
@@ -203,13 +206,14 @@ describe('X-Robots-Tag', () => {
     }
   });
 
-  it('leaves the files crawlers are meant to read unmarked', () => {
-    for (const path of CACHED_FILES) {
+  it.each(CACHED_FILES)(
+    'leaves the files crawlers are meant to read unmarked (%j)',
+    (path) => {
       expect(
         applyResponseHeaders(at(path), html()).headers.get('X-Robots-Tag'),
       ).toBeNull();
-    }
-  });
+    },
+  );
 });
 
 describe('applyResponseHeaders — page cache rules', () => {
@@ -272,15 +276,16 @@ describe('SECURITY_HEADERS', () => {
 });
 
 describe('public/_headers', () => {
-  it('gives static files the same security headers as the Worker gives pages', async () => {
-    const file = await readFile(
-      path.join(process.cwd(), 'public/_headers'),
-      'utf8',
-    );
-    for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+  it.each(Object.entries(SECURITY_HEADERS))(
+    'gives static files the same security headers as the Worker gives pages (%j %j)',
+    async (name, value) => {
+      const file = await readFile(
+        path.join(process.cwd(), 'public/_headers'),
+        'utf8',
+      );
       expect(file).toContain(`${name}: ${value}`);
-    }
-  });
+    },
+  );
 
   it('gives static files the default resource policy and detaches it where files are open', async () => {
     const file = await readFile(
@@ -328,18 +333,14 @@ describe('replacingHeaders', () => {
 });
 
 describe('applyResponseHeaders — reporting', () => {
-  it('tells the browser where the policies send their reports, on every response', () => {
-    for (const pathname of [
-      '/',
-      '/some/page',
-      '/api/things',
-      '/oauth/authorize',
-    ]) {
+  it.each(['/', '/some/page', '/api/things', '/oauth/authorize'])(
+    'tells the browser where the policies send their reports, on every response (%j)',
+    (pathname) => {
       expect(
         applyResponseHeaders(at(pathname), html()).headers.get(
           'reporting-endpoints',
         ),
       ).toBe('csp-endpoint="/csp/reports"');
-    }
-  });
+    },
+  );
 });

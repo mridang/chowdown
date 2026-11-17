@@ -10,14 +10,13 @@
 
 import { driveResultPath } from '@/domain/auth/drive-access';
 import { completeDriveConnect } from '@/domain/auth/drive-callback';
-import type { OtherFlow } from '@/domain/auth/sign-in';
-import type { User } from '@/domain/auth/store';
+import type { User } from '@/domain/db/users';
 
 /** What runs once the person is recorded and before their session is issued. */
 export const afterSignIn: (user: Readonly<User>) => Promise<void> = async () =>
   undefined;
 
 /** The asks besides signing in, by the purpose label in their `state` (see `EXTRA_PURPOSES` in `app.ts`). */
-export const OTHER_FLOWS: Readonly<Partial<Record<string, OtherFlow>>> = {
+export const OTHER_FLOWS = {
   drive: { failurePath: driveResultPath, complete: completeDriveConnect },
 };

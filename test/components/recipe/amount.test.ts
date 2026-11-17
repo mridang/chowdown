@@ -38,15 +38,19 @@ describe('parseAmount', () => {
 
 describe('AMOUNT_PATTERN', () => {
   const match = (text: string) =>
-    new RegExp(`^(?:${AMOUNT_PATTERN})$`).test(text);
+    new RegExp(`^(?:${AMOUNT_PATTERN})$`, 'u').test(text);
 
-  it('matches every form parseAmount reads', () => {
-    for (const text of ['5', '1.5', '1/2', '1 1/2', '½', '1½'])
+  it.each(['5', '1.5', '1/2', '1 1/2', '½', '1½'])(
+    'matches every form parseAmount reads (%j)',
+    (text) => {
       expect(match(text)).toBe(true);
-  });
+    },
+  );
 
   it('has no capture groups, so it can sit inside bigger patterns', () => {
-    expect(new RegExp(`(?:${AMOUNT_PATTERN})`).exec('x')).toBeNull();
-    expect(new RegExp(`(${AMOUNT_PATTERN})`).exec('1 1/2')).toHaveLength(2);
+    expect(new RegExp(`(?:${AMOUNT_PATTERN})`, 'u').exec('x')).toBeNull();
+    expect(new RegExp(`(${AMOUNT_PATTERN})`, 'u').exec('1 1/2')).toHaveLength(
+      2,
+    );
   });
 });

@@ -3,26 +3,29 @@ import { describe, expect, it, jest } from '@jest/globals';
 import {
   keepScreenAwake,
   shouldRequestLock,
-  type WakeLockEnvironment,
 } from '@/components/recipe/use-wake-lock';
+import type { WakeLockEnvironment } from '@/components/recipe/use-wake-lock';
 
 /** A wake lock sentinel that can be released by the "browser" as well as by the page. */
 function fakeSentinel() {
-  const listeners: Array<() => void> = [];
+  const addEventListener = jest.fn(
+    (_type: string, _listener: () => void) => undefined,
+  );
+  const listeners = () =>
+    addEventListener.mock.calls.map(([, listener]) => listener);
   const release = jest.fn(async () => {
-    for (const listener of listeners) listener();
+    for (const listener of listeners()) {
+      listener();
+    }
   });
   return {
-    sentinel: {
-      release,
-      addEventListener: (_type: string, listener: () => void) => {
-        listeners.push(listener);
-      },
-    },
+    sentinel: { release, addEventListener },
     release,
     /** What the browser does when the page is hidden. */
     browserReleases: () => {
-      for (const listener of listeners) listener();
+      for (const listener of listeners()) {
+        listener();
+      }
     },
   };
 }
@@ -31,45 +34,58 @@ function fakeSentinel() {
 function fakePage(
   options: { readonly refuse?: boolean; readonly visible?: boolean } = {},
 ) {
-  const sentinels: ReturnType<typeof fakeSentinel>[] = [];
-  const watchers: Array<() => void> = [];
-  const state = { visible: options.visible ?? true };
+  const makeSentinel =
+    jest.fn<() => ReturnType<typeof fakeSentinel>>(fakeSentinel);
+  const isVisible = jest.fn(() => options.visible ?? true);
+  const onVisibilityChange = jest.fn((_watcher: () => void) => () => undefined);
+  const watchers = () =>
+    onVisibilityChange.mock.calls.map(([watcher]) => watcher);
+  const made = () =>
+    makeSentinel.mock.results.flatMap((result) =>
+      result.type === 'return' ? [result.value] : [],
+    );
   const request = jest.fn(async (...args: readonly ['screen']) => {
     expect(args).toEqual(['screen']);
     if (options.refuse) {
       throw new Error('denied');
     }
-    const made = fakeSentinel();
-    sentinels.push(made);
-    return made.sentinel;
+    return makeSentinel().sentinel;
   });
   const environment: WakeLockEnvironment = {
     wakeLock: { request } as never,
-    isVisible: () => state.visible,
-    onVisibilityChange: (watcher) => {
-      watchers.push(watcher);
-      return () => undefined;
-    },
+    isVisible,
+    onVisibilityChange,
   };
   return {
     environment,
     request,
-    sentinels,
+    get sentinels() {
+      return made();
+    },
     /** The tab is hidden: the browser takes the lock back. */
     hide: () => {
-      Object.assign(state, { visible: false });
-      for (const made of sentinels) made.browserReleases();
-      for (const watcher of watchers) watcher();
+      isVisible.mockReturnValue(false);
+      for (const sentinel of made()) {
+        sentinel.browserReleases();
+      }
+      for (const watcher of watchers()) {
+        watcher();
+      }
     },
     /** The tab is shown again. */
     show: () => {
-      Object.assign(state, { visible: true });
-      for (const watcher of watchers) watcher();
+      isVisible.mockReturnValue(true);
+      for (const watcher of watchers()) {
+        watcher();
+      }
     },
   };
 }
 
-const settled = async () => new Promise((resolve) => setTimeout(resolve, 0));
+const settled = async () =>
+  new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
 
 describe('shouldRequestLock', () => {
   it('asks only when idle and visible', () => {
@@ -91,7 +107,7 @@ describe('keepScreenAwake', () => {
   it('does not ask while the page is hidden', () => {
     const page = fakePage({ visible: false });
     keepScreenAwake(page.environment);
-    expect(page.request).not.toHaveBeenCalled();
+    expect(page.request.mock.calls).toEqual([]);
   });
 
   it('asks again when the page is shown after being hidden', async () => {
@@ -100,10 +116,10 @@ describe('keepScreenAwake', () => {
     await settled();
     page.hide();
     await settled();
-    expect(page.request).toHaveBeenCalledTimes(1);
+    expect(page.request.mock.calls).toHaveLength(1);
     page.show();
     await settled();
-    expect(page.request).toHaveBeenCalledTimes(2);
+    expect(page.request.mock.calls).toHaveLength(2);
   });
 
   it('keeps going through many hides and shows', async () => {
@@ -114,9 +130,9 @@ describe('keepScreenAwake', () => {
       page.hide();
       page.show();
       await settled();
-      expect(page.request).toHaveBeenCalledTimes(cycle + 1);
+      expect(page.request.mock.calls).toHaveLength(cycle + 1);
     }
-    expect(page.request).toHaveBeenCalledTimes(4);
+    expect(page.request.mock.calls).toHaveLength(4);
   });
 
   it('does not ask twice when the page is shown while a request is in flight', async () => {
@@ -125,7 +141,7 @@ describe('keepScreenAwake', () => {
     page.show();
     page.show();
     await settled();
-    expect(page.request).toHaveBeenCalledTimes(1);
+    expect(page.request.mock.calls).toHaveLength(1);
   });
 
   it('does not ask again while a lock is still held', async () => {
@@ -133,7 +149,7 @@ describe('keepScreenAwake', () => {
     keepScreenAwake(page.environment);
     await settled();
     page.show();
-    expect(page.request).toHaveBeenCalledTimes(1);
+    expect(page.request.mock.calls).toHaveLength(1);
   });
 
   it('asks again if the lock is released for another reason while visible', async () => {
@@ -142,7 +158,7 @@ describe('keepScreenAwake', () => {
     await settled();
     page.sentinels[0]?.browserReleases();
     await settled();
-    expect(page.request).toHaveBeenCalledTimes(2);
+    expect(page.request.mock.calls).toHaveLength(2);
   });
 
   it('lets the screen sleep when stopped', async () => {
@@ -150,7 +166,7 @@ describe('keepScreenAwake', () => {
     const stop = keepScreenAwake(page.environment);
     await settled();
     stop();
-    expect(page.sentinels[0]?.release).toHaveBeenCalledTimes(1);
+    expect(page.sentinels[0]?.release.mock.calls).toEqual([[]]);
   });
 
   it('gives a lock straight back if stopped before it was granted', async () => {
@@ -158,7 +174,7 @@ describe('keepScreenAwake', () => {
     const stop = keepScreenAwake(page.environment);
     stop();
     await settled();
-    expect(page.sentinels[0]?.release).toHaveBeenCalledTimes(1);
+    expect(page.sentinels[0]?.release.mock.calls).toEqual([[]]);
   });
 
   it('does not ask again after being stopped, even if the page is shown', async () => {
@@ -169,7 +185,7 @@ describe('keepScreenAwake', () => {
     await settled();
     page.show();
     await settled();
-    expect(page.request).toHaveBeenCalledTimes(1);
+    expect(page.request.mock.calls).toHaveLength(1);
   });
 
   it('is silent when the browser refuses, and tries again at the next chance', async () => {
@@ -178,10 +194,11 @@ describe('keepScreenAwake', () => {
     await settled();
     page.show();
     await settled();
-    expect(page.request).toHaveBeenCalledTimes(2);
+    expect(page.request.mock.calls).toHaveLength(2);
   });
 
   it('does nothing, and stops without error, in a browser with no wake lock', () => {
+    // eslint-disable-next-line no-unassigned-vars -- never assigned on purpose: it stands for an environment with no wake lock, and writing undefined inline is reported by sonarjs/no-undefined-assignment
     let wakeLock: WakeLockEnvironment['wakeLock'];
     const stop = keepScreenAwake({
       wakeLock,

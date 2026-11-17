@@ -1,17 +1,10 @@
 'use client';
 
-import {
-  createContext,
-  useContext,
-  useMemo,
-  useState,
-  type Dispatch,
-  type ReactElement,
-  type ReactNode,
-  type SetStateAction,
-} from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
+import { displayQuantity } from '@/domain/recipe/page-view';
+import type { Dispatch, ReactElement, ReactNode, SetStateAction } from 'react';
 
-import { displayQuantity, type UnitChoice } from '@/domain/recipe/page-view';
+import type { UnitChoice } from '@/domain/recipe/page-view';
 
 /** What the controls on a recipe page share. */
 interface RecipeState {

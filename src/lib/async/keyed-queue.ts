@@ -39,15 +39,19 @@ export function createKeyedQueue(): KeyedQueue {
       }
       const after = tails.get(key) ?? Promise.resolve();
       const next = after.then(async () => {
+        // eslint-disable-next-line functional/immutable-data -- the queue is two maps updated in place by design
         waiting.delete(key);
         return job();
       });
       const settled = next.then(() => undefined).catch(() => undefined);
+      // eslint-disable-next-line functional/immutable-data -- the queue is two maps updated in place by design
       waiting.set(key, next);
+      // eslint-disable-next-line functional/immutable-data -- the queue is two maps updated in place by design
       tails.set(key, settled);
       // Forget a key once nothing newer has been queued behind this job.
       const forget = (): void => {
         if (tails.get(key) === settled) {
+          // eslint-disable-next-line functional/immutable-data -- the queue is two maps updated in place by design
           tails.delete(key);
         }
       };

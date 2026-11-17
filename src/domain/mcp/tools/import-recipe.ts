@@ -5,7 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { z } from 'zod';
 import { recipeCardResult } from '@/domain/mcp/tool-results';
 import { plainTitle } from '@/domain/mcp/tool-text';
 import { modelBudgetRefusal } from '@/domain/mcp/tools/recipe-support';
@@ -19,18 +19,14 @@ import {
 } from '@/domain/mcp/tools/schemas';
 import { importRecipe } from '@/domain/recipe/import-recipe';
 import { recipeDisplayName } from '@/lib/cooklang';
-import {
-  errorResult,
-  type JsonSchema,
-  McpTool,
-  NOT_BLANK,
-  textArg,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
-  writes,
+import { errorResult, McpTool, NOT_BLANK, textArg, writes } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type {
+  JsonSchema,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
 
 export class ImportRecipeTool extends McpTool<
   'import_recipe',
@@ -50,7 +46,7 @@ export class ImportRecipeTool extends McpTool<
         .string()
         .min(1)
         .max(CONTENT_MAX)
-        .regex(new RegExp(NOT_BLANK))
+        .regex(new RegExp(NOT_BLANK, 'u'))
         .describe(
           "The recipe's text (title, ingredients, steps) or the page's JSON-LD Recipe block; page text or HTML also works, but only the first 12,000 characters are read unless a JSON-LD Recipe is present. Never a URL.",
         ),
@@ -116,14 +112,20 @@ export class ImportRecipeTool extends McpTool<
       );
     }
     const name = plainTitle(recipeDisplayName(outcome.name));
-    let message: string;
-    if (outcome.kind === 'existing') {
-      message = `"${name}" is already in your recipes.`;
-    } else if (outcome.kind === 'repaired') {
-      message = `Repaired "${name}" — the earlier import had no ingredients or steps.`;
-    } else {
-      message = `Imported "${name}".`;
-    }
+    const messageFor = (kind: 'existing' | 'repaired' | 'imported'): string => {
+      if (kind === 'existing') {
+        return `"${name}" is already in your recipes.`;
+      }
+      if (kind === 'repaired') {
+        return `Repaired "${name}" — the earlier import had no ingredients or steps.`;
+      }
+      return `Imported "${name}".`;
+    };
+    const message = messageFor(
+      outcome.kind === 'existing' || outcome.kind === 'repaired'
+        ? outcome.kind
+        : 'imported',
+    );
     return recipeCardResult(
       outcome.id,
       outcome.name,

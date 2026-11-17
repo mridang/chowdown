@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 
 import { readBodyText, readFormBody, readJsonBody } from '@/lib/core/api';
 
@@ -51,12 +51,12 @@ describe('readBodyText', () => {
   });
 
   it('refuses a body that announces itself as too large without reading it', async () => {
-    let pulled = false;
+    const pulled = jest.fn();
     // A zero buffer means nothing is pulled unless someone reads.
     const stream = new ReadableStream<Uint8Array>(
       {
         pull() {
-          pulled = true;
+          pulled();
         },
       },
       { highWaterMark: 0 },
@@ -68,17 +68,17 @@ describe('readBodyText', () => {
       duplex: 'half',
     } as RequestInit);
     expect(await readBodyText(request, 100)).toEqual({ kind: 'too-large' });
-    expect(pulled).toBe(false);
+    expect(pulled.mock.calls).toEqual([]);
   });
 
   it('cuts off a chunked body as soon as it passes the limit and cancels the upload', async () => {
-    let cancelled = false;
+    const cancelled = jest.fn();
     const stream = new ReadableStream<Uint8Array>({
       pull(controller) {
         controller.enqueue(new Uint8Array(40));
       },
       cancel() {
-        cancelled = true;
+        cancelled();
       },
     });
     const request = new Request('https://app.test/x', {
@@ -87,7 +87,7 @@ describe('readBodyText', () => {
       duplex: 'half',
     } as RequestInit);
     expect(await readBodyText(request, 100)).toEqual({ kind: 'too-large' });
-    expect(cancelled).toBe(true);
+    expect(cancelled.mock.calls).toEqual([[]]);
   });
 
   it('accepts a body of exactly the limit and refuses one byte more', async () => {
@@ -130,9 +130,9 @@ describe('readJsonBody', () => {
   });
 
   it('passes a too-large body through', async () => {
-    expect(
-      await readJsonBody(chunked(['"' + 'a'.repeat(50) + '"']), 10),
-    ).toEqual({ kind: 'too-large' });
+    expect(await readJsonBody(chunked([`"${'a'.repeat(50)}"`]), 10)).toEqual({
+      kind: 'too-large',
+    });
   });
 });
 
@@ -150,7 +150,7 @@ describe('readFormBody', () => {
   });
 
   it('refuses a form over the limit', async () => {
-    expect(await readFormBody(chunked(['a=' + 'b'.repeat(50)]), 10)).toEqual({
+    expect(await readFormBody(chunked([`a=${'b'.repeat(50)}`]), 10)).toEqual({
       kind: 'too-large',
     });
   });

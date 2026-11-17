@@ -1,4 +1,5 @@
-const WHITESPACE = /\s/;
+const NON_WHITESPACE = /\S/u;
+const NOT_DASH = /[^-]/u;
 /**
  * @packageDocumentation
  *
@@ -26,7 +27,7 @@ export type ImportUnit =
   | { readonly kind: 'text'; readonly text: string };
 
 /** What a link looks like in pasted text: from `http(s)://` up to a space or a quote/bracket. */
-const URL_IN_TEXT = /https?:\/\/[^\s<>"'`)]+/gi;
+const URL_IN_TEXT = /https?:\/\/[^\s<>"'`)]+/giu;
 
 /** Characters that commonly trail a URL in prose and aren't part of it. */
 const TRAILING: ReadonlySet<string> = new Set('.,;:!?)]}>\'"');
@@ -39,11 +40,10 @@ const TRAILING: ReadonlySet<string> = new Set('.,;:!?)]}>\'"');
  */
 function trimTrailing(raw: string): string {
   // Code points, so a surrogate pair is never split; every trailing character is ASCII.
-  let end = raw.length;
-  while (end > 0 && TRAILING.has(raw.charAt(end - 1))) {
-    end -= 1;
-  }
-  return raw.slice(0, end);
+  const chars = Array.from(raw);
+  return chars
+    .slice(0, chars.findLastIndex((char) => !TRAILING.has(char)) + 1)
+    .join('');
 }
 
 /**
@@ -75,28 +75,25 @@ const MIN_BLOCK = 20;
 
 /** The index after the whitespace run that starts at `from`. */
 function whitespaceEnd(text: string, from: number): number {
-  let end = from;
-  while (end < text.length && WHITESPACE.test(text.charAt(end))) {
-    end += 1;
-  }
-  return end;
+  // A slice shares the text's memory, so this costs the length of the run only.
+  const offset = text.slice(from).search(NON_WHITESPACE);
+  return offset === -1 ? text.length : from + offset;
+}
+
+/** How many line breaks a span holds, and the index after the last. */
+interface LineBreaks {
+  readonly count: number;
+  readonly after: number;
 }
 
 /** How many line breaks `text` holds from `from` up to (not including) `to`, and the index after the last. */
-function lineBreaks(
-  text: string,
-  from: number,
-  to: number,
-): { readonly count: number; readonly after: number } {
-  let count = 0;
-  let after = to;
-  for (let index = from; index < to; index += 1) {
-    if (text.charAt(index) === '\n') {
-      count += 1;
-      after = index + 1;
-    }
-  }
-  return { count, after };
+function lineBreaks(text: string, from: number, to: number): LineBreaks {
+  const span = text.slice(from, to);
+  const last = span.lastIndexOf('\n');
+  return {
+    count: span.split('\n').length - 1,
+    after: last === -1 ? to : from + last + 1,
+  };
 }
 
 /**
@@ -111,10 +108,8 @@ function separatorEnd(text: string, at: number): number {
   if (run.count >= 3) {
     return run.after;
   }
-  let dashEnd = runEnd;
-  while (text.charAt(dashEnd) === '-') {
-    dashEnd += 1;
-  }
+  const dashes = text.slice(runEnd).search(NOT_DASH);
+  const dashEnd = dashes === -1 ? text.length : runEnd + dashes;
   if (dashEnd - runEnd >= 3) {
     const trailing = lineBreaks(text, dashEnd, whitespaceEnd(text, dashEnd));
     if (trailing.count > 0) {
@@ -127,18 +122,23 @@ function separatorEnd(text: string, at: number): number {
 /** `input` cut at every separator (see {@link separatorEnd}). */
 function splitAtSeparators(input: string): readonly string[] {
   const parts: string[] = [];
+  // eslint-disable-next-line functional/no-let -- the scan is a cursor over untrusted text; recursion would overflow the stack and copying would be quadratic
   let start = 0;
+  // eslint-disable-next-line functional/no-let -- the scan is a cursor over untrusted text; recursion would overflow the stack and copying would be quadratic
   let at = input.indexOf('\n');
+  // eslint-disable-next-line functional/no-loop-statements -- the scan is a cursor over untrusted text; recursion would overflow the stack and copying would be quadratic
   while (at !== -1) {
     const end = separatorEnd(input, at);
     if (end === -1) {
       at = input.indexOf('\n', at + 1);
     } else {
+      // eslint-disable-next-line functional/immutable-data -- collecting the parts of the scan
       parts.push(input.slice(start, at));
       start = end;
       at = input.indexOf('\n', end);
     }
   }
+  // eslint-disable-next-line functional/immutable-data -- collecting the parts of the scan
   parts.push(input.slice(start));
   return parts;
 }

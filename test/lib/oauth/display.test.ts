@@ -13,7 +13,7 @@ import {
 } from '@/lib/oauth';
 import { SCOPE_READ, SCOPE_TEXT, SCOPE_WRITE } from '@/domain/mcp/app';
 
-const U0021_HYPHEN_U007E = /[^\u0021-\u007E]/;
+const U0021_HYPHEN_U007E = /[^\u0021-\u007E]/u;
 
 describe('sanitiseDisplayName', () => {
   it('keeps an ordinary name', () => {
@@ -39,7 +39,7 @@ describe('sanitiseDisplayName', () => {
     expect(sanitiseDisplayName('  Claude \n\n  Desktop\t', 'x')).toBe(
       'Claude Desktop',
     );
-    expect(sanitiseDisplayName('A B C', 'x')).toBe('A B C');
+    expect(sanitiseDisplayName('A\u2028B\u2029C', 'x')).toBe('A B C');
   });
 
   it('normalises look-alike forms to the plain letters', () => {
@@ -196,15 +196,16 @@ describe('describeRedirect', () => {
   describe('the note about a different site', () => {
     const published = { kind: 'domain', domain: 'claude.ai' } as const;
 
-    it('stays quiet when the redirect is on the publishing domain or one of its subdomains', () => {
-      for (const uri of [
-        'https://claude.ai/cb',
-        'https://app.claude.ai/cb',
-        'https://claude.ai:8443/cb',
-      ]) {
+    it.each([
+      'https://claude.ai/cb',
+      'https://app.claude.ai/cb',
+      'https://claude.ai:8443/cb',
+    ])(
+      'stays quiet when the redirect is on the publishing domain or one of its subdomains (%j)',
+      (uri) => {
         expect(describeRedirect(uri, published).note).toBeUndefined();
-      }
-    });
+      },
+    );
 
     it('stays quiet when the publishing domain is a subdomain of the redirect host', () => {
       expect(

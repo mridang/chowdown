@@ -1,14 +1,12 @@
-import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
-
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
+import { loadCollection } from '@/domain/recipe/load-collection';
+import { asCalls } from '../../calls';
+
 import type { SessionPayload } from '@/lib/session';
 import type { Database } from '@/domain/db/client';
 import type { AppPageRows } from '@/domain/db/recipe-page';
-import {
-  loadCollection,
-  type CollectionDeps,
-} from '@/domain/recipe/load-collection';
+import type { CollectionDeps } from '@/domain/recipe/load-collection';
 
 const db = {} as Database;
 
@@ -70,7 +68,9 @@ function fakes(
 ) {
   const background: Promise<unknown>[] = [];
   const pageRows = jest.fn<CollectionDeps['pageRows']>();
-  for (const read of reads) pageRows.mockResolvedValueOnce(read);
+  for (const read of reads) {
+    pageRows.mockResolvedValueOnce(read);
+  }
   const deps: CollectionDeps = {
     session: async () => session(),
     database: () => db,
@@ -141,9 +141,10 @@ describe('loadCollection', () => {
     const { deps, background } = fakes([rows()], {
       claimLease: async () => false,
     });
-    await loadCollection('/app', deps);
+    const collection = await loadCollection('/app', deps);
     await Promise.all(background);
-    expect(deps.sync).not.toHaveBeenCalled();
+    expect(collection.recipes).toHaveLength(2);
+    expect(asCalls(deps.sync).mock.calls).toEqual([]);
   });
 
   it('starts only one sync when several views arrive together', async () => {
@@ -184,18 +185,20 @@ describe('loadCollection', () => {
         ] as unknown as AppPageRows['recipes'],
       },
     ]);
-    await loadCollection('/app', deps);
+    const collection = await loadCollection('/app', deps);
     await Promise.all(background);
-    expect(deps.backfill).not.toHaveBeenCalled();
+    expect(collection.recipes).toHaveLength(2);
+    expect(asCalls(deps.backfill).mock.calls).toEqual([]);
   });
 
   it('leaves the top-up alone while another request holds the lease on it', async () => {
     const { deps, background } = fakes([rows({ recipes: 3, embedded: 1 })], {
       claimBackfill: async () => false,
     });
-    await loadCollection('/app', deps);
+    const collection = await loadCollection('/app', deps);
     await Promise.all(background);
-    expect(deps.backfill).not.toHaveBeenCalled();
+    expect(collection.recipes).toHaveLength(3);
+    expect(asCalls(deps.backfill).mock.calls).toEqual([]);
   });
 
   it('syncs and waits on a first visit, then reads again', async () => {

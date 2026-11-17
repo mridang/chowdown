@@ -8,15 +8,14 @@
  * approval.
  */
 
-import type { ReactElement } from 'react';
-
 import { CenteredCard } from '@/components/site/centered-card';
 import { DriveConnectPanel } from '@/components/site/drive-connect';
 import {
   isDriveConnected,
   wasDriveConnected,
 } from '@/domain/auth/drive-access';
-import type { User } from '@/domain/auth/store';
+import type { ReactElement } from 'react';
+import type { User } from '@/domain/db/users';
 
 /**
  * The screen to show instead of the approval, or null when the person may go

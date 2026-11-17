@@ -1,14 +1,14 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { RecipeCardData } from '@/domain/mcp/ui-types';
-import type { ListAction } from '@/views/list-state';
 import {
   OPEN_RECIPE_TOOL,
   isRecipeId,
   openRecipe,
   openRecipePrompt,
-  type OpenRecipeHost,
 } from '@/views/open-recipe';
+import type { OpenRecipeHost } from '@/views/open-recipe';
+import type { RecipeCardData } from '@/domain/mcp/ui-types';
+import type { ListAction } from '@/views/list-state';
 import type { ToolOutcome } from '@/views/payload';
 
 const RECIPE: RecipeCardData = {

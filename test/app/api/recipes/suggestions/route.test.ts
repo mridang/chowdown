@@ -8,17 +8,22 @@ import {
 } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
-import type { DriveFile } from '@/lib/google/drive';
 import { installCloudflareContext } from '../../../../lib/core/db/sqlite-d1';
+import type { DriveFile } from '@/lib/google/drive';
 
-const AI_ERROR = /AiError|99/;
+const AI_ERROR = /AiError|99/u;
 
 /** Who is signed in; null means nobody. */
-const session: { user: { id: number } | null } = { user: { id: 7 } };
+interface SessionState {
+  user: { id: number } | null;
+}
+
+const session: SessionState = { user: { id: 7 } };
 
 // The sign-in gate has its own tests (test/lib/api/auth.test.ts); here it just
 // says who is calling, in the shape the routes read.
 const { problems } = await import('@/lib/core/api');
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/api/auth is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/domain/api/auth', () => ({
   requireUser: async () =>
     session.user
@@ -51,18 +56,23 @@ const topSimilar = jest.fn<
   ) => readonly DriveFile[]
 >((_rows, _vector, files) => files.slice(0, 1));
 
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/auth/user-access-token is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/domain/auth/user-access-token', () => ({
   getUserAccessToken,
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/drive/recipe-files is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/domain/drive/recipe-files', () => ({
   listRecipeFiles,
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/drive/recipes-folder is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/domain/drive/recipes-folder', () => ({
   recipesFolderFor,
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/recipe/embeddings is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/domain/recipe/embeddings', () => ({
   embedText,
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/recipe/similar is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/domain/recipe/similar', () => ({
   ensureEmbeddings,
   topSimilar,

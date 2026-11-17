@@ -1,5 +1,3 @@
-import type { ReactElement } from 'react';
-
 import { HERO_RECIPE, RECIPES } from '@/components/landing/demo-recipes';
 import { Faq } from '@/components/landing/faq';
 import { Facts } from '@/components/landing/facts';
@@ -13,6 +11,7 @@ import { ButtonLink } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 import { jsonLdText, landingJsonLd } from '@/lib/core/seo';
+import type { ReactElement } from 'react';
 
 /**
  * The signed-out home: what chowdown is, why, and a way in. A static server
@@ -31,7 +30,7 @@ export function HomeLanding({
         <Container className="pt-6">
           <Callout
             tone="plain"
-            shape="banner"
+            layout="banner"
             className="text-sm leading-relaxed"
           >
             Signing in with Google didn’t work. Nothing was changed, so please
@@ -42,6 +41,7 @@ export function HomeLanding({
       {/* Structured data for search engines and assistants (never executed). */}
       <script
         type="application/ld+json"
+        // eslint-disable-next-line react/no-danger -- JSON-LD is script text, React would escape its quotes, and `<` is escaped by jsonLdText
         dangerouslySetInnerHTML={{ __html: jsonLdText(landingJsonLd()) }}
       />
       <Container className="grid grid-cols-1 items-center gap-14 py-12 lg:grid-cols-[0.95fr_1.1fr] lg:gap-16 lg:py-20">

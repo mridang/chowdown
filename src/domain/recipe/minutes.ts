@@ -7,7 +7,7 @@
 
 import { toIsoDuration } from '@/domain/recipe/schema-org';
 
-const PT = /^PT(?:(\d+)H)?(?:(\d+)M)?$/;
+const PT = /^PT(?:(\d+)H)?(?:(\d+)M)?$/u;
 
 /** Minutes for a time string, or undefined if it holds no time. */
 export function minutesOf(value: string | undefined): number | undefined {

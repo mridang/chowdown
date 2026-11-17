@@ -6,7 +6,8 @@ import {
   getUserById,
   upsertGoogleUser,
 } from '@/domain/auth/store';
-import { openWorld, type World } from '../../app/api/world';
+import { openWorld } from '../../app/api/world';
+import type { World } from '../../app/api/world';
 
 let world: World;
 

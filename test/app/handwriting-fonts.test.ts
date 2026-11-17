@@ -9,6 +9,7 @@ const loader = (name: string) => (options: { readonly variable: string }) => {
   asked.set(name, options);
   return { variable: `var-class${options.variable}` };
 };
+// eslint-disable-next-line tslop/no-module-mocking -- next/font/google is a build-time framework module that cannot run under Jest
 jest.unstable_mockModule('next/font/google', () => ({
   Caveat: loader('Caveat'),
   Kalam: loader('Kalam'),
@@ -26,25 +27,33 @@ describe('the handwriting faces', () => {
     expect(asked.size).toBe(7);
   });
 
-  it('each cover Latin and Latin-extended, so names such as Łukasz are drawn in the face', () => {
-    for (const options of asked.values())
+  it.each([...asked.values()])(
+    'each cover Latin and Latin-extended, so names such as Łukasz are drawn in the face (%j)',
+    (options) => {
       expect(options['subsets']).toEqual(['latin', 'latin-ext']);
-  });
+    },
+  );
 
-  it('swap in when they arrive, rather than never showing on a first visit', () => {
-    for (const options of asked.values())
+  it.each([...asked.values()])(
+    'swap in when they arrive, rather than never showing on a first visit (%j)',
+    (options) => {
       expect(options['display']).toBe('swap');
-  });
+    },
+  );
 
-  it('are not preloaded, so a page fetches only the face its name uses', () => {
-    for (const options of asked.values())
+  it.each([...asked.values()])(
+    'are not preloaded, so a page fetches only the face its name uses (%j)',
+    (options) => {
       expect(options['preload']).toBe(false);
-  });
+    },
+  );
 
-  it('each fall back to the system cursive face', () => {
-    for (const options of asked.values())
+  it.each([...asked.values()])(
+    'each fall back to the system cursive face (%j)',
+    (options) => {
       expect(options['fallback']).toEqual(['cursive']);
-  });
+    },
+  );
 
   it('are all defined on the page, in the order the component indexes them', () => {
     expect(HANDWRITING_VARIABLES.split(' ')).toEqual(

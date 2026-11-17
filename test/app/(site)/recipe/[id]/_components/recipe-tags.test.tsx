@@ -40,7 +40,7 @@ describe('RecipeTags', () => {
       (_, index) => `word${index}`,
     );
     const out = html(<RecipeTags keywords={words} />);
-    expect(out.match(/<a /g)).toHaveLength(MAX_TAGS);
+    expect(out.match(/<a /gu)).toHaveLength(MAX_TAGS);
     expect(out).toContain('Word0');
     expect(out).not.toContain(`Word${MAX_TAGS}`);
   });

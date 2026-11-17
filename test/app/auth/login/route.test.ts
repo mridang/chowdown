@@ -7,8 +7,6 @@ import {
   jest,
 } from '@jest/globals';
 
-import type { NextRequest, NextResponse } from 'next/server';
-
 import { GET } from '@/app/auth/login/route';
 import { RETURN_COOKIE, STATE_COOKIE } from '@/domain/auth/app';
 import {
@@ -16,8 +14,9 @@ import {
   appRequest,
   installEnv,
 } from '../../../domain/auth/auth-test-kit';
+import type { NextRequest, NextResponse } from 'next/server';
 
-const SIGNIN = /^signin\./;
+const SIGNIN = /^signin\./u;
 
 // The redirect path answers a NextResponse (it sets cookies); the 503 path
 // answers a plain problem Response. Only the redirect cases read cookies.
@@ -88,6 +87,7 @@ describe('GET /auth/login', () => {
     'https://evil.example/',
     '//evil.example',
     String.raw`/\evil.example`,
+    // eslint-disable-next-line no-script-url -- the value is a javascript: URL on purpose, to prove it is refused
     'javascript:alert(1)',
     '/a\r\nb',
   ])('refuses to remember the returnTo %s', async (target) => {

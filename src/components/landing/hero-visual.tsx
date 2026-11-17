@@ -1,8 +1,8 @@
+import { CookFile } from '@/components/landing/cook-file-view';
+import { RenderedRecipe } from '@/components/landing/rendered-recipe';
 import type { ReactElement } from 'react';
 
-import { CookFile } from '@/components/landing/cook-file-view';
 import type { SampleRecipe } from '@/components/landing/demo-recipes';
-import { RenderedRecipe } from '@/components/landing/rendered-recipe';
 
 /**
  * The hero picture: the plain text file on one side and the finished recipe it

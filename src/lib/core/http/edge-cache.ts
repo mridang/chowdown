@@ -20,8 +20,8 @@ import {
   EDGE_TTL_SECONDS,
 } from './site';
 
-const FFFF = /^(::ffff:)?127\./;
-const COLON_DIGITS_PLUS_END = /:\d+$/;
+const FFFF = /^(::ffff:)?127\./u;
+const COLON_DIGITS_PLUS_END = /:\d+$/u;
 
 /** The most query parameters a kept page may carry. */
 const MAX_PARAMS = 8;
@@ -72,16 +72,13 @@ function allowedQuery(
   if (entries.length > MAX_PARAMS) {
     return null;
   }
-  const names = new Set<string>();
-  for (const [name, value] of entries) {
-    if (
-      !allowed.has(name) ||
-      names.has(name) ||
-      value.length > MAX_VALUE_LENGTH
-    ) {
-      return null;
-    }
-    names.add(name);
+  if (
+    entries.some(
+      ([name, value]) => !allowed.has(name) || value.length > MAX_VALUE_LENGTH,
+    ) ||
+    new Set(entries.map(([name]) => name)).size !== entries.length
+  ) {
+    return null;
   }
   return new URLSearchParams(
     entries.toSorted(([a], [b]) => {
@@ -194,20 +191,19 @@ export async function withFreshNonce(
 
 /** Whether a value can be used as the edge cache: it answers `match` and `put`. */
 function isCache(value: unknown): value is Cache {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof Reflect.get(value, 'match') === 'function' &&
-    typeof Reflect.get(value, 'put') === 'function'
-  );
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const hasMatch = 'match' in value && typeof value.match === 'function';
+  return hasMatch && 'put' in value && typeof value.put === 'function';
 }
 
 /** Cloudflare's per-colo cache; absent when running under plain Node. */
 export function edgeCache(): Cache | undefined {
-  const store: unknown = Reflect.get(globalThis, 'caches');
+  const store: unknown = 'caches' in globalThis ? globalThis.caches : undefined;
   const cache: unknown =
-    typeof store === 'object' && store !== null
-      ? Reflect.get(store, 'default')
+    typeof store === 'object' && store !== null && 'default' in store
+      ? store.default
       : undefined;
   return isCache(cache) ? cache : undefined;
 }

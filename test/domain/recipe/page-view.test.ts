@@ -1,6 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { Note, StepToken } from '@/lib/cooklang';
 import {
   declaredServings,
   DEFAULT_SERVINGS,
@@ -12,6 +11,7 @@ import {
   servingsOf,
   stepText,
 } from '@/domain/recipe/page-view';
+import type { Note, StepToken } from '@/lib/cooklang';
 
 describe('servingsOf', () => {
   it('reads the servings metadata', () => {
@@ -54,7 +54,7 @@ describe('initialUnits', () => {
 
   it('shows the recipe as written when nothing valid is saved', () => {
     expect(initialUnits(null)).toBe('original');
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
     expect(initialUnits(undefined)).toBe('original');
     expect(initialUnits('furlongs')).toBe('original');
   });

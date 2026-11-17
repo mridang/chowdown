@@ -103,20 +103,18 @@ describe('timeBucket', () => {
 });
 
 describe('valuesOf', () => {
-  it('gives nothing for a fact the recipe lacks', () => {
-    for (const key of [
-      'difficulty',
-      'time',
-      'protein',
-      'cuisine',
-      'category',
-      'diet_type',
-      'diet',
-      'method',
-      'site',
-    ] as const) {
-      expect(valuesOf(BARE, key)).toEqual([]);
-    }
+  it.each([
+    'difficulty',
+    'time',
+    'protein',
+    'cuisine',
+    'category',
+    'diet_type',
+    'diet',
+    'method',
+    'site',
+  ] as const)('gives nothing for a fact the recipe lacks (%j)', (key) => {
+    expect(valuesOf(BARE, key)).toEqual([]);
   });
 
   it('gives the eating style from diet_type and the needs from diet', () => {

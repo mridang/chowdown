@@ -21,15 +21,16 @@ describe('Callout', () => {
       'rounded-control',
     );
     expect(
-      cssClassesOf(html(<Callout shape="banner">x</Callout>), 'div'),
+      cssClassesOf(html(<Callout layout="banner">x</Callout>), 'div'),
     ).toContain('rounded-card');
   });
 
   it('can be plain, in ordinary ink instead of the quiet note colour', () => {
     const out = html(<Callout tone="plain">x</Callout>);
-    expect(cssClassesOf(out, 'div')).toContain('bg-sand');
-    expect(cssClassesOf(out, 'div')).toContain('text-ink');
-    expect(cssClassesOf(out, 'div')).not.toContain('text-muted');
+    const classes = cssClassesOf(out, 'div');
+    expect(classes).toContain('bg-sand');
+    expect(classes).toContain('text-ink');
+    expect(classes).not.toContain('text-muted');
     expect(out).not.toContain('role=');
   });
 

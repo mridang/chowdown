@@ -8,13 +8,13 @@
  * "Find similar" row a single cheap read.
  */
 
-import type { Database } from '@/domain/db/client';
 import { upsertEmbedding } from '@/domain/db/embeddings';
 import { listUnembeddedRecipes } from '@/domain/db/recipes';
 import { parseRecipe, recipeDisplayName } from '@/lib/cooklang';
 import { buildEmbeddingText, embedText } from '@/domain/recipe/embeddings';
 import { mapSequentially } from '@/lib/async';
 import { refreshSimilarLists } from '@/domain/recipe/similar';
+import type { Database } from '@/domain/db/client';
 
 /**
  * What embedding reaches out to, gathered in one place so a test can hand in
@@ -41,7 +41,7 @@ export interface EmbedWriteDeps {
   readonly save: (
     db: Database,
     row: Parameters<typeof upsertEmbedding>[1],
-  ) => Promise<unknown>;
+  ) => Promise<void>;
   /** Turn text into an embedding vector. */
   readonly embed: (
     env: CloudflareEnv,
@@ -52,7 +52,7 @@ export interface EmbedWriteDeps {
     db: Database,
     userId: number,
     changedIds: readonly string[],
-  ) => Promise<unknown>;
+  ) => Promise<void>;
 }
 
 /** The real thing. */

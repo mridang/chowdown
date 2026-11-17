@@ -5,18 +5,12 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { z } from 'zod';
 import { label, withRecipe } from '@/domain/mcp/tools/recipe-support';
 import { RECIPE_REFERENCE } from '@/domain/mcp/tools/schemas';
-import {
-  McpTool,
-  textResult,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
-  writes,
-} from '@/lib/mcp';
-import { z } from 'zod';
+import { McpTool, textResult, writes } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type { ToolAnnotations, ToolArgs, ToolResult } from '@/lib/mcp';
 
 export class FavouriteRecipeTool extends McpTool<
   'favourite_recipe',

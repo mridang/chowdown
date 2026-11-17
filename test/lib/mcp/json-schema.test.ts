@@ -7,8 +7,8 @@ import {
   isJsonObject,
   unsupportedKeywords,
   validateJson,
-  type JsonSchema,
 } from '@/lib/mcp';
+import type { JsonSchema } from '@/lib/mcp';
 
 /** The problems found, with the subject spelled out as "It". */
 const problems = (schema: JsonSchema, value: unknown) =>
@@ -166,6 +166,7 @@ describe('objects', () => {
 
   it('names a missing required property, also when it is undefined', () => {
     // A property the object leaves out: its key stays present, with no value.
+    // eslint-disable-next-line no-unassigned-vars -- never assigned on purpose: it stands for a key that is present with no value, and writing undefined inline is reported by sonarjs/no-undefined-assignment
     let notProvided: undefined;
     expect(problems(schema, {})).toEqual(['`a` is required.']);
     expect(problems(schema, { a: notProvided })).toEqual(['`a` is required.']);
@@ -324,7 +325,7 @@ describe('unsupportedKeywords', () => {
 
   it('has nothing to say about a value that is not a schema', () => {
     expect(unsupportedKeywords(5)).toEqual([]);
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
     expect(unsupportedKeywords(undefined)).toEqual([]);
   });
 });

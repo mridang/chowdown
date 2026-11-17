@@ -8,8 +8,9 @@ describe('search_recipes', () => {
 
   it('matches names ignoring accents and case', async () => {
     const result = await call('search_recipes', { query: 'CREME' }, fake());
-    expect(said(result)).toContain('Found 1 recipe matching "CREME".');
-    expect(said(result)).toContain('Crème brûlée');
+    const text = said(result);
+    expect(text).toContain('Found 1 recipe matching "CREME".');
+    expect(text).toContain('Crème brûlée');
     expect(result.structuredContent).toMatchObject({ query: 'CREME' });
   });
 

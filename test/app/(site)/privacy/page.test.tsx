@@ -3,34 +3,35 @@ import { describe, expect, it } from '@jest/globals';
 import PrivacyPage, { metadata } from '@/app/(site)/privacy/page';
 import { html } from '../../../components/render';
 
-const HREF_BACK_TO = /<a [^>]*href="\/"[^>]*>.*Back to Chowdown<\/a>/;
+const HREF_BACK_TO = /<a [^>]*href="\/"[^>]*>.*Back to Chowdown<\/a>/u;
 const HREF_HTTPS_MYACCOUNT =
-  /<a [^>]*href="https:\/\/myaccount\.google\.com\/permissions"[^>]*>your Google account permissions<\/a>/;
-const H1_PRIVACY_POLICY = /<h1[^>]*>Privacy Policy<\/h1>/;
+  /<a [^>]*href="https:\/\/myaccount\.google\.com\/permissions"[^>]*>your Google account permissions<\/a>/u;
+const H1_PRIVACY_POLICY = /<h1[^>]*>Privacy Policy<\/h1>/u;
 
 describe('PrivacyPage', () => {
   const out = html(<PrivacyPage />);
 
   it('has one heading, the policy’s title', () => {
-    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out.match(/<h1/gu)).toHaveLength(1);
     expect(out).toMatch(H1_PRIVACY_POLICY);
   });
 
-  it('states what is accessed, what is stored and what is not done', () => {
-    for (const heading of [
-      'What we access',
-      'What we store',
-      'Artificial intelligence',
-      'Links you paste',
-      'Connected assistants',
-      'Cookies and logs',
-      'What we don’t do',
-      'Deleting your data',
-      'Contact',
-    ]) {
-      expect(out).toMatch(new RegExp(`<h2[^>]*>${heading}</h2>`));
-    }
-  });
+  it.each([
+    'What we access',
+    'What we store',
+    'Artificial intelligence',
+    'Links you paste',
+    'Connected assistants',
+    'Cookies and logs',
+    'What we don’t do',
+    'Deleting your data',
+    'Contact',
+  ])(
+    'states what is accessed, what is stored and what is not done (%j)',
+    (heading) => {
+      expect(out).toMatch(new RegExp(`<h2[^>]*>${heading}</h2>`, 'u'));
+    },
+  );
 
   it('says recipe text goes to Cloudflare Workers AI, and what for', () => {
     expect(out).toContain('Cloudflare Workers AI');

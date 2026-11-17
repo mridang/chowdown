@@ -33,8 +33,9 @@ describe('ToggleLink', () => {
     expect(out).not.toContain('aria-current');
   });
 
-  it('does not claim a role whose keyboard behaviour a link cannot give', () => {
-    for (const active of [true, false]) {
+  it.each([true, false])(
+    'does not claim a role whose keyboard behaviour a link cannot give (%j)',
+    (active) => {
       const out = html(
         <ToggleLink href="/app" active={active}>
           x
@@ -43,8 +44,8 @@ describe('ToggleLink', () => {
       expect(out).not.toContain('role=');
       expect(out).not.toContain('aria-checked');
       expect(out).not.toContain('aria-pressed');
-    }
-  });
+    },
+  );
 
   it('takes the look from the caller', () => {
     const out = html(

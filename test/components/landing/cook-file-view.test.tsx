@@ -4,7 +4,7 @@ import { CookFile } from '@/components/landing/cook-file-view';
 import { RECIPES } from '@/components/landing/demo-recipes';
 import { html } from '../render';
 
-const Z0_COOK = /[a-z0-9-]\.cook/;
+const Z0_COOK = /[a-z0-9-]\.cook/u;
 
 const recipe = RECIPES.find((r) => r.cooklang)!;
 
@@ -22,7 +22,7 @@ describe('CookFile', () => {
   it('shows no more lines than asked for', () => {
     const lines = (n: number) =>
       html(<CookFile recipe={recipe} lines={n} />).match(
-        /<span class="block">/g,
+        /<span class="block">/gu,
       )?.length;
     expect(lines(3)).toBe(3);
     expect(lines(5)).toBeGreaterThan(3);

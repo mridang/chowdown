@@ -1,7 +1,5 @@
-import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import type { ReactElement } from 'react';
 
 import { CenteredCard } from '@/components/site/centered-card';
 import { Eyebrow, Heading } from '@/components/ui/layout';
@@ -13,7 +11,6 @@ import {
   clientIdentity,
   describeRedirect,
   redirectWith,
-  type AuthorizeParams,
   validateAuthorizeRequest,
 } from '@/lib/oauth';
 import { getDatabase } from '@/domain/db/client';
@@ -21,6 +18,9 @@ import { appOriginFromHeaders } from '@/lib/core/origin';
 
 import { approvalGate } from '@/app/oauth/authorize/app-gate';
 import { ConsentCard } from '@/app/oauth/authorize/consent-card';
+import type { AuthorizeParams } from '@/lib/oauth';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 /** The tab title of the approval screen. */
 export const metadata: Metadata = { title: 'Connect an app' };

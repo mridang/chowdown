@@ -6,7 +6,7 @@ import { cssClassesOf, html } from '../render';
 describe('HomeLanding', () => {
   it('has a single top heading and the sections it links to', () => {
     const out = html(<HomeLanding />);
-    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out.match(/<h1/gu)).toHaveLength(1);
     expect(out).toContain('id="features"');
     expect(out).toContain('id="faq"');
   });

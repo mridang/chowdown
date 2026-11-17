@@ -12,11 +12,11 @@ import {
 import { cssClassesOf, html } from '../../../../components/render';
 
 const HREF_PRIVACY_PRIVACY =
-  /<a [^>]*href="\/privacy"[^>]*>privacy policy<\/a>/;
+  /<a [^>]*href="\/privacy"[^>]*>privacy policy<\/a>/u;
 const HREF_HTTPS_EXAMPLE =
-  /<a href="https:\/\/example\.com\/" target="_blank" rel="noopener noreferrer"[^>]*>Example<\/a>/;
-const H2_WHAT_WE = /<h2[^>]*>What we store<\/h2>/;
-const H1_PRIVACY_POLICY = /<h1[^>]*>Privacy Policy<\/h1>/;
+  /<a href="https:\/\/example\.com\/" target="_blank" rel="noopener noreferrer"[^>]*>Example<\/a>/u;
+const H2_WHAT_WE = /<h2[^>]*>What we store<\/h2>/u;
+const H1_PRIVACY_POLICY = /<h1[^>]*>Privacy Policy<\/h1>/u;
 
 describe('longDate', () => {
   it('writes an ISO day as day, month name and year', () => {
@@ -37,7 +37,7 @@ describe('LegalPage', () => {
 
   it('heads the page with its eyebrow and its one title', () => {
     expect(out).toContain('Privacy');
-    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out.match(/<h1/gu)).toHaveLength(1);
     expect(out).toMatch(H1_PRIVACY_POLICY);
   });
 
@@ -53,7 +53,7 @@ describe('LegalPage', () => {
 
   it('ends with a link back home, naming the app', () => {
     expect(out).toMatch(
-      new RegExp(`<a [^>]*href="/"[^>]*>.*Back to ${BRAND_NAME}</a>`),
+      new RegExp(`<a [^>]*href="/"[^>]*>.*Back to ${BRAND_NAME}</a>`, 'u'),
     );
     expect(out.indexOf('The body.')).toBeLessThan(out.indexOf('Back to'));
   });
@@ -104,8 +104,9 @@ describe('LegalLink', () => {
 
   it('is underlined in the accent colour', () => {
     const out = html(<LegalLink href="/terms">terms</LegalLink>);
-    expect(cssClassesOf(out, 'a')).toContain('text-accent');
-    expect(cssClassesOf(out, 'a')).toContain('underline');
+    const classes = cssClassesOf(out, 'a');
+    expect(classes).toContain('text-accent');
+    expect(classes).toContain('underline');
   });
 });
 

@@ -3,9 +3,9 @@ import { describe, expect, it } from '@jest/globals';
 import { CopyField } from '@/components/ui/copy-field';
 import { html } from '../render';
 
-const BUTTON_TYPE_BUTTON = /<button type="button"[^>]*>.*Copy<\/button>/;
+const BUTTON_TYPE_BUTTON = /<button type="button"[^>]*>.*Copy<\/button>/u;
 const CODE_ARIA_LABEL =
-  /<code[^>]*aria-label="MCP server address"[^>]*>https:\/\/app\.test\/mcp<\/code>/;
+  /<code[^>]*aria-label="MCP server address"[^>]*>https:\/\/app\.test\/mcp<\/code>/u;
 
 describe('CopyField', () => {
   const out = html(

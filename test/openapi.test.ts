@@ -1,3 +1,6 @@
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import Ajv2020 from 'ajv/dist/2020.js';
 import {
   afterEach,
   beforeEach,
@@ -6,34 +9,33 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import Ajv2020 from 'ajv/dist/2020.js';
-import { readdir, readFile } from 'node:fs/promises';
-import path from 'node:path';
 
 import { createRecipeImport } from '@/domain/db/recipe-imports';
 import { getDatabase } from '@/domain/db/client';
 import { SCOPE_READ } from '@/domain/mcp/app';
-import type { ImportUnit } from '@/domain/recipe/import-blob';
-import type { ImportItem } from '@/domain/recipe/prepare-import';
 import { appendNote } from '@/lib/cooklang';
-import { fakeCookies } from './domain/auth/session-fixture';
 import {
   addRecipe,
   fakeGoogle,
   fromApp,
   openWorld,
   signIn,
-  type World,
 } from './app/api/world';
+import { fakeCookies } from './domain/auth/auth-test-kit';
+import type { World } from './app/api/world';
+import type { ImportItem } from '@/domain/recipe/prepare-import';
+import type { ImportUnit } from '@/domain/recipe/import-blob';
 
 const collator = new Intl.Collator();
 
-const START_A_HYPHEN_Z_PLUS = /^([a-z]+|\{[a-z_]+\})$/;
-const START_N3_DOT_N1_DOT = /^3\.1\./;
-const START_HASH_SLASH = /^#\//;
+const START_A_HYPHEN_Z_PLUS = /^([a-z]+|\{[a-z_]+\})$/u;
+const START_N3_DOT_N1_DOT = /^3\.1\./u;
+const START_HASH_SLASH = /^#\//u;
 
+// eslint-disable-next-line tslop/no-module-mocking -- next/headers is a framework module the code under test imports directly, and it only works inside a Next request
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 // Importing fetches web pages and calls a model; the contract is about the API.
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/recipe/prepare-import is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/domain/recipe/prepare-import', () => ({
   prepareImport: async (
     units: readonly ImportUnit[],
@@ -80,7 +82,9 @@ interface Spec {
 const ROOT = process.cwd();
 
 /** A value that is deliberately missing, as opposed to a key that is left out. */
+// eslint-disable-next-line no-unassigned-vars -- never assigned on purpose: it stands for a key that is present with no value, and writing undefined inline is reported by sonarjs/no-undefined-assignment
 let absent: undefined;
+
 const spec = JSON.parse(
   await readFile(path.join(ROOT, 'openapi.json'), 'utf8'),
 ) as Spec;
@@ -162,15 +166,18 @@ async function registered(): Promise<readonly string[]> {
       .filter(Boolean)
       .map((segment) => `/${segment}`)
       .join('')
-      .replaceAll(/\[([a-z_]+)\]/g, '{$1}')}`;
+      .replaceAll(/\[([a-z_]+)\]/gu, '{$1}')}`;
     const text = texts[index] ?? '';
-    return METHODS.map((method) => method.toUpperCase())
+    return METHODS.values()
+      .map((method) => method.toUpperCase())
       .filter((method) =>
         new RegExp(
           String.raw`export (async function ${method}\b|const \{[^}]*\b${method}\b[^}]*\} =)`,
+          'u',
         ).test(text),
       )
-      .map((method) => `${method} ${url}`);
+      .map((method) => `${method} ${url}`)
+      .toArray();
   });
 }
 
@@ -254,59 +261,61 @@ interface Call {
 }
 
 /** A call that works for each operation, by operation id, and the status it answers. */
-const GOOD: Readonly<Record<string, Call & { readonly status: number }>> = {
-  listRecipes: { status: 200 },
-  createRecipe: {
-    status: 201,
-    json: { name: 'Soup', cooklang: '>> title: Soup\n\nBoil @water{1}.\n' },
-  },
-  getRecipe: { status: 200, params: { id: 'r1' } },
-  replaceRecipe: {
-    status: 200,
-    params: { id: 'r1' },
-    json: { cooklang: SOURCE },
-  },
-  updateRecipe: {
-    status: 200,
-    params: { id: 'r1' },
-    json: { title: 'Better curry' },
-    type: 'application/merge-patch+json',
-  },
-  deleteRecipe: { status: 204, params: { id: 'r1' } },
-  listRecipeNotes: { status: 200, params: { id: 'r1' } },
-  createRecipeNote: {
-    status: 201,
-    params: { id: 'r1' },
-    json: { text: 'Less salt' },
-  },
-  getRecipeNote: { status: 200, params: { id: 'r1', note_id: '1' } },
-  replaceRecipeNote: {
-    status: 200,
-    params: { id: 'r1', note_id: '1' },
-    json: { text: 'Lovelier' },
-  },
-  deleteRecipeNote: { status: 204, params: { id: 'r1', note_id: '1' } },
-  listSimilarRecipes: { status: 200, params: { id: 'r1' } },
-  listRecipeSuggestions: { status: 200, query: 'q=soup' },
-  listRecipeImports: { status: 200 },
-  createRecipeImport: {
-    status: 201,
-    json: { input: 'https://example.com/recipe' },
-  },
-  getRecipeImport: { status: 200, params: { id: 'IMPORT' } },
-  deleteRecipeImport: { status: 204, params: { id: 'IMPORT' } },
-  getCurrentUser: { status: 200 },
-  updateCurrentUser: { status: 200, json: { measurement_system: 'METRIC' } },
-  deleteCurrentUser: { status: 204 },
-  listFavourites: { status: 200 },
-  getFavourite: { status: 200, params: { recipe_id: 'r1' } },
-  addFavourite: { status: 204, params: { recipe_id: 'r1' } },
-  removeFavourite: { status: 204, params: { recipe_id: 'r1' } },
-  listConnections: { status: 200 },
-  deleteConnection: { status: 204, params: { grant_id: 'g1' } },
-  deleteSessions: { status: 204 },
-  deleteCurrentSession: { status: 204 },
-};
+const GOOD = new Map(
+  Object.entries<Call & { readonly status: number }>({
+    listRecipes: { status: 200 },
+    createRecipe: {
+      status: 201,
+      json: { name: 'Soup', cooklang: '>> title: Soup\n\nBoil @water{1}.\n' },
+    },
+    getRecipe: { status: 200, params: { id: 'r1' } },
+    replaceRecipe: {
+      status: 200,
+      params: { id: 'r1' },
+      json: { cooklang: SOURCE },
+    },
+    updateRecipe: {
+      status: 200,
+      params: { id: 'r1' },
+      json: { title: 'Better curry' },
+      type: 'application/merge-patch+json',
+    },
+    deleteRecipe: { status: 204, params: { id: 'r1' } },
+    listRecipeNotes: { status: 200, params: { id: 'r1' } },
+    createRecipeNote: {
+      status: 201,
+      params: { id: 'r1' },
+      json: { text: 'Less salt' },
+    },
+    getRecipeNote: { status: 200, params: { id: 'r1', note_id: '1' } },
+    replaceRecipeNote: {
+      status: 200,
+      params: { id: 'r1', note_id: '1' },
+      json: { text: 'Lovelier' },
+    },
+    deleteRecipeNote: { status: 204, params: { id: 'r1', note_id: '1' } },
+    listSimilarRecipes: { status: 200, params: { id: 'r1' } },
+    listRecipeSuggestions: { status: 200, query: 'q=soup' },
+    listRecipeImports: { status: 200 },
+    createRecipeImport: {
+      status: 201,
+      json: { input: 'https://example.com/recipe' },
+    },
+    getRecipeImport: { status: 200, params: { id: 'IMPORT' } },
+    deleteRecipeImport: { status: 204, params: { id: 'IMPORT' } },
+    getCurrentUser: { status: 200 },
+    updateCurrentUser: { status: 200, json: { measurement_system: 'METRIC' } },
+    deleteCurrentUser: { status: 204 },
+    listFavourites: { status: 200 },
+    getFavourite: { status: 200, params: { recipe_id: 'r1' } },
+    addFavourite: { status: 204, params: { recipe_id: 'r1' } },
+    removeFavourite: { status: 204, params: { recipe_id: 'r1' } },
+    listConnections: { status: 200 },
+    deleteConnection: { status: 204, params: { grant_id: 'g1' } },
+    deleteSessions: { status: 204 },
+    deleteCurrentSession: { status: 204 },
+  }),
+);
 
 /** The id of the import `arrange` made (it is generated). */
 function importId(): string {
@@ -322,36 +331,39 @@ type Handler = (
 ) => Promise<Response>;
 
 /** The module of each route, by its path in the document. */
-const ROUTES: Readonly<Record<string, () => Promise<object>>> = {
-  '/api/recipes': async () => import('@/app/api/recipes/route'),
-  '/api/recipes/{id}': async () => import('@/app/api/recipes/[id]/route'),
-  '/api/recipes/{id}/notes': async () =>
-    import('@/app/api/recipes/[id]/notes/route'),
-  '/api/recipes/{id}/notes/{note_id}': async () =>
-    import('@/app/api/recipes/[id]/notes/[note_id]/route'),
-  '/api/recipes/{id}/similar': async () =>
-    import('@/app/api/recipes/[id]/similar/route'),
-  '/api/recipes/suggestions': async () =>
-    import('@/app/api/recipes/suggestions/route'),
-  '/api/recipes/imports': async () => import('@/app/api/recipes/imports/route'),
-  '/api/recipes/imports/{id}': async () =>
-    import('@/app/api/recipes/imports/[id]/route'),
-  '/api/users/self': async () => import('@/app/api/users/self/route'),
-  '/api/users/self/favourites': async () =>
-    import('@/app/api/users/self/favourites/route'),
-  '/api/users/self/favourites/{recipe_id}': async () =>
-    import('@/app/api/users/self/favourites/[recipe_id]/route'),
-  '/api/users/self/connections': async () =>
-    import('@/app/api/users/self/connections/route'),
-  '/api/users/self/connections/{grant_id}': async () =>
-    import('@/app/api/users/self/connections/[grant_id]/route'),
-  '/api/sessions': async () => import('@/app/api/sessions/route'),
-  '/api/sessions/self': async () => import('@/app/api/sessions/self/route'),
-};
+const ROUTES = new Map(
+  Object.entries({
+    '/api/recipes': async () => import('@/app/api/recipes/route'),
+    '/api/recipes/{id}': async () => import('@/app/api/recipes/[id]/route'),
+    '/api/recipes/{id}/notes': async () =>
+      import('@/app/api/recipes/[id]/notes/route'),
+    '/api/recipes/{id}/notes/{note_id}': async () =>
+      import('@/app/api/recipes/[id]/notes/[note_id]/route'),
+    '/api/recipes/{id}/similar': async () =>
+      import('@/app/api/recipes/[id]/similar/route'),
+    '/api/recipes/suggestions': async () =>
+      import('@/app/api/recipes/suggestions/route'),
+    '/api/recipes/imports': async () =>
+      import('@/app/api/recipes/imports/route'),
+    '/api/recipes/imports/{id}': async () =>
+      import('@/app/api/recipes/imports/[id]/route'),
+    '/api/users/self': async () => import('@/app/api/users/self/route'),
+    '/api/users/self/favourites': async () =>
+      import('@/app/api/users/self/favourites/route'),
+    '/api/users/self/favourites/{recipe_id}': async () =>
+      import('@/app/api/users/self/favourites/[recipe_id]/route'),
+    '/api/users/self/connections': async () =>
+      import('@/app/api/users/self/connections/route'),
+    '/api/users/self/connections/{grant_id}': async () =>
+      import('@/app/api/users/self/connections/[grant_id]/route'),
+    '/api/sessions': async () => import('@/app/api/sessions/route'),
+    '/api/sessions/self': async () => import('@/app/api/sessions/self/route'),
+  } satisfies Readonly<Record<string, () => Promise<object>>>),
+);
 
 /** The concrete path of an operation with its parameters filled in. */
 function fill(url: string, params: Readonly<Record<string, string>>): string {
-  return url.replaceAll(/\{([a-z_]+)\}/g, (_, name: string) =>
+  return url.replaceAll(/\{([a-z_]+)\}/gu, (_, name: string) =>
     encodeURIComponent(params[name] ?? 'x'),
   );
 }
@@ -372,7 +384,7 @@ async function call(
   );
   const query = merged.query === undefined ? '' : `?${merged.query}`;
   const target = `${fill(url, params)}${query}`;
-  const load = ROUTES[url];
+  const load = ROUTES.get(url);
   if (!load) {
     throw new Error(`${key} has no route module in ROUTES`);
   }
@@ -412,12 +424,13 @@ async function expectProblem(
 // ------------------------------------------------------------------- tests
 
 describe('openapi.json', () => {
-  it('is OpenAPI 3.1 and says what is outside /api', () => {
-    expect(spec.openapi).toMatch(START_N3_DOT_N1_DOT);
-    for (const outside of ['/auth/', '/oauth/', '/mcp', '/health']) {
+  it.each(['/auth/', '/oauth/', '/mcp', '/health'])(
+    'is OpenAPI 3.1 and says what is outside /api (%j)',
+    (outside) => {
+      expect(spec.openapi).toMatch(START_N3_DOT_N1_DOT);
       expect(spec.info.description).toContain(outside);
-    }
-  });
+    },
+  );
 
   it('describes exactly the methods the routes under src/app/api export', async () => {
     const real = await registered();
@@ -426,9 +439,7 @@ describe('openapi.json', () => {
   });
 
   it('has a route module to call for every path it describes', () => {
-    expect(sorted(Object.keys(ROUTES))).toEqual(
-      sorted(Object.keys(spec.paths)),
-    );
+    expect(sorted([...ROUTES.keys()])).toEqual(sorted(Object.keys(spec.paths)));
   });
 
   it('describes nothing outside /api', () => {
@@ -437,30 +448,29 @@ describe('openapi.json', () => {
     );
   });
 
-  it('resolves every $ref', () => {
-    for (const reference of referencesIn(spec)) {
-      expect(() => deref({ $ref: reference })).not.toThrow();
-    }
+  it.each(referencesIn(spec))('resolves every $ref (%j)', (reference) => {
+    expect(() => deref({ $ref: reference })).not.toThrow();
   });
 
   it('has an operation id for every operation, no two alike, each with a prepared call', () => {
     const ids = operations.map(([, operation]) => operation.operationId);
     expect(ids.every(Boolean)).toBe(true);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(sorted(ids)).toEqual(sorted(Object.keys(GOOD)));
+    expect(sorted(ids)).toEqual(sorted([...GOOD.keys()]));
   });
 
-  it('uses lowercase, hyphen-free path segments', () => {
-    for (const url of Object.keys(spec.paths)) {
+  it.each(Object.keys(spec.paths))(
+    'uses lowercase, hyphen-free path segments (%j)',
+    (url) => {
       for (const segment of url.split('/').filter(Boolean)) {
         expect(segment).toMatch(START_A_HYPHEN_Z_PLUS);
       }
-    }
-  });
+    },
+  );
 });
 
 describe.each(operations)('%s', (key, operation) => {
-  const good = GOOD[operation.operationId] ?? { status: 0 };
+  const good = GOOD.get(operation.operationId) ?? { status: 0 };
   const open = (operation.security ?? []).length === 0;
   const parameters = (operation.parameters ?? []).map((parameter) =>
     deref(parameter),
@@ -478,15 +488,16 @@ describe.each(operations)('%s', (key, operation) => {
     expect(documented(operation)).toContain(429);
   });
 
-  it('documents every error as a problem document', () => {
-    for (const [code, response] of Object.entries(operation.responses)) {
+  it.each(Object.entries(operation.responses))(
+    'documents every error as a problem document (%j %j)',
+    (code, response) => {
       if (Number(code) >= 400) {
         expect(Object.keys(deref(response).content ?? {})).toEqual([
           'application/problem+json',
         ]);
       }
-    }
-  });
+    },
+  );
 
   it(
     open

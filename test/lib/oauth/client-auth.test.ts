@@ -1,13 +1,5 @@
 import { beforeAll, describe, expect, it, jest } from '@jest/globals';
-import {
-  SignJWT,
-  UnsecuredJWT,
-  exportJWK,
-  generateKeyPair,
-  type JWK,
-  type CryptoKey,
-} from 'jose';
-
+import { SignJWT, UnsecuredJWT, exportJWK, generateKeyPair } from 'jose';
 import {
   CLIENT_ASSERTION_TYPE,
   MAX_ASSERTION_LENGTH,
@@ -16,13 +8,15 @@ import {
   assertionSubject,
   fetchJwks,
   verifyClientAssertion,
-  type AssertionDeps,
 } from '../../../src/lib/oauth/client-auth';
+import type { CryptoKey, JSONWebKeySet } from 'jose';
 
-const ALREADY_USED = /already used/;
-const KEYS_COULD_NOT = /keys could not be fetched/;
-const TOO_LARGE = /too large/;
-const SIGNED_CLIENT_ASSERTION = /signed client_assertion/;
+import type { AssertionDeps } from '../../../src/lib/oauth/client-auth';
+
+const ALREADY_USED = /already used/u;
+const KEYS_COULD_NOT = /keys could not be fetched/u;
+const TOO_LARGE = /too large/u;
+const SIGNED_CLIENT_ASSERTION = /signed client_assertion/u;
 
 const CLIENT = 'https://chatgpt.com/oauth/client.json';
 const JWKS_URI = 'https://chatgpt.com/oauth/jwks.json';
@@ -33,7 +27,7 @@ const AUTH = { method: 'private_key_jwt', jwksUri: JWKS_URI } as const;
 
 let privateKey: CryptoKey;
 let otherKey: CryptoKey;
-let jwks: { keys: JWK[] };
+let jwks: JSONWebKeySet;
 
 beforeAll(async () => {
   const pair = await generateKeyPair('RS256', { extractable: true });
@@ -52,7 +46,7 @@ async function sign(
   alg = 'RS256',
   drop: string[] = [],
 ) {
-  const all: Record<string, unknown> = {
+  const all = {
     iss: CLIENT,
     sub: CLIENT,
     aud: ENDPOINT,
@@ -63,7 +57,7 @@ async function sign(
   };
   const jwt = new SignJWT(
     Object.fromEntries(
-      Object.entries(all).filter(
+      Object.entries<unknown>(all).filter(
         ([k, v]) => v !== undefined && !drop.includes(k),
       ),
     ),

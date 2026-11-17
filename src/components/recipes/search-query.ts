@@ -10,12 +10,12 @@
  * simply has no value for that filter, and sorts after the ones that do.
  */
 
-import type { CardRecipe } from '@/domain/recipe/card-data';
 import { DIET_TYPES } from '@/domain/recipe/diet-type';
 import { sentenceCase } from '@/utils/text';
-import { compareText, foldText } from '@/lib/intl';
+import { compareCodeUnits, compareText, foldText } from '@/lib/intl';
+import type { CardRecipe } from '@/domain/recipe/card-data';
 
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** The query-string bag Next gives a page. */
 export type RawParams = Readonly<
@@ -124,9 +124,9 @@ export function parseQuery(params: RawParams): Query {
     limit: Number.isInteger(limit) && limit >= PAGE_SIZE ? limit : PAGE_SIZE,
     // A filter with no values is left out, so "nothing chosen" is a missing key.
     selected: Object.fromEntries(
-      FACET_KEYS.map(
-        (key) => [key, selectedValues(params, key)] as const,
-      ).filter(([, values]) => values.length > 0),
+      FACET_KEYS.values()
+        .map((key) => [key, selectedValues(params, key)] as const)
+        .filter(([, values]) => values.length > 0),
     ),
   };
 }
@@ -164,6 +164,7 @@ export function valuesOf(recipe: CardRecipe, key: FacetKey): readonly string[] {
       case 'site': {
         return [recipe.site];
       }
+      // no default
     }
   })();
   return values.filter((v): v is string => typeof v === 'string' && v !== '');
@@ -221,7 +222,7 @@ export function matches(recipe: CardRecipe, query: Query): boolean {
 
 /** Title order, the way a person would alphabetise it; ties fall back to the id. */
 function byTitle(a: CardRecipe, b: CardRecipe): number {
-  return compareText(a.title, b.title) || a.id.localeCompare(b.id);
+  return compareText(a.title, b.title) || compareCodeUnits(a.id, b.id);
 }
 
 /** Smaller first, with a missing number after every real one. */
@@ -414,27 +415,30 @@ export function buildFacets(
   recipes: readonly CardRecipe[],
   query: Query,
 ): readonly FacetData[] {
-  return FACET_KEYS.map((key) => {
-    const chosen = query.selected[key] ?? [];
-    const counted = countValues(recipes, key);
-    // A source site needs a few recipes to be worth offering, unless it is
-    // already switched on (so it can be switched off again).
-    const offered =
-      key === 'site'
-        ? counted.filter(
-            ([value, n]) => n >= SITE_MIN || chosen.includes(value),
-          )
-        : counted;
-    return {
-      key,
-      title: TITLES[key],
-      options: offered.toSorted(orderFor(key)).map(([value, count]) => ({
-        value,
-        label: labelFor(key, value),
-        count,
-        active: chosen.includes(value),
-        href: hrefFor(toggled(query, key, value)),
-      })),
-    };
-  }).filter((facet) => facet.options.length > 0);
+  return FACET_KEYS.values()
+    .map((key) => {
+      const chosen = query.selected[key] ?? [];
+      const counted = countValues(recipes, key);
+      // A source site needs a few recipes to be worth offering, unless it is
+      // already switched on (so it can be switched off again).
+      const offered =
+        key === 'site'
+          ? counted.filter(
+              ([value, n]) => n >= SITE_MIN || chosen.includes(value),
+            )
+          : counted;
+      return {
+        key,
+        title: TITLES[key],
+        options: offered.toSorted(orderFor(key)).map(([value, count]) => ({
+          value,
+          label: labelFor(key, value),
+          count,
+          active: chosen.includes(value),
+          href: hrefFor(toggled(query, key, value)),
+        })),
+      };
+    })
+    .filter((facet) => facet.options.length > 0)
+    .toArray();
 }

@@ -43,9 +43,9 @@ export function LoadingCard({
           <div className="bar" />
           <div className="bar short" />
         </div>
-        <div className="status-line" role="status">
+        <output className="status-line">
           {request ? `Loading ${noun}: ${request}…` : `Loading ${noun}…`}
-        </div>
+        </output>
       </div>
     </div>
   );
@@ -84,9 +84,9 @@ export function Announcer({
   message,
 }: Readonly<{ message: string }>): ReactElement {
   return (
-    <div className="sr-only" role="status" aria-live="polite">
+    <output className="sr-only" aria-live="polite">
       {message}
-    </div>
+    </output>
   );
 }
 

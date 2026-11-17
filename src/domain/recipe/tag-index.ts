@@ -11,22 +11,20 @@
  * this is purely a tags-by-id lookup.
  */
 
-import type { Database } from '@/domain/db/client';
-import type { User } from '@/domain/db/users';
-import {
-  listSyncRecipes,
-  upsertRecipe,
-  type Recipe,
-} from '@/domain/db/recipes';
+import { listSyncRecipes, upsertRecipe } from '@/domain/db/recipes';
 import { getFileContent } from '@/domain/drive/recipe-files';
-import type { DriveFile } from '@/lib/google/drive';
 import { getEnv, runInBackground } from '@/lib/core/runtime';
 import { getDatabase } from '@/domain/db/client';
-import { parseRecipe, type ParsedRecipe } from '@/lib/cooklang';
+import { parseRecipe } from '@/lib/cooklang';
 import { embedRecipe } from '@/domain/recipe/embed-write';
 import { mapSequentially } from '@/lib/async';
 import { classifyDietType } from '@/domain/recipe/diet-type';
 import { canonicalValue, facet } from '@/domain/recipe/taxonomy';
+import type { ParsedRecipe } from '@/lib/cooklang';
+import type { Recipe } from '@/domain/db/recipes';
+import type { DriveFile } from '@/lib/google/drive';
+import type { User } from '@/domain/db/users';
+import type { Database } from '@/domain/db/client';
 
 /** A recipe's tags as `{ facetKey: canonicalValue[] }`. */
 export type RecipeTags = Readonly<Record<string, readonly string[]>>;
@@ -177,7 +175,7 @@ export interface TagSyncDeps {
   /** Download a file's text from Drive. */
   readonly readFile: (fileId: string, token: string) => Promise<string>;
   /** Write one recipe row into the cache. */
-  readonly save: (db: Database, row: RecipeRow) => Promise<unknown>;
+  readonly save: (db: Database, row: RecipeRow) => Promise<void>;
 }
 
 /** The fields {@link upsertRecipe} takes for one cached recipe. */

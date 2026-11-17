@@ -4,7 +4,7 @@ import { SITE_NAME, SITE_URL } from '@/utils/site';
 import { fetchPage, PageFetchError } from '@/domain/recipe/fetch-page';
 import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
-const MOZILLA = /Mozilla/;
+const MOZILLA = /Mozilla/u;
 
 /** The User-Agent `fetchPage` builds from the site's identity at the call site. */
 const USER_AGENT = `${SITE_NAME.toLowerCase()}/1.0 (+${SITE_URL})`;
@@ -164,11 +164,11 @@ describe('fetchPage', () => {
   it('says timed out when the site is too slow', async () => {
     globalThis.fetch = jest.fn<typeof fetch>(
       async (_url, init) =>
-        new Promise<Response>((_resolve, reject) =>
+        new Promise<Response>((_resolve, reject) => {
           init?.signal?.addEventListener('abort', () =>
             reject(init.signal?.reason),
-          ),
-        ),
+          );
+        }),
     );
     expect(await failure('https://a.com/x', 20)).toBe('timed out');
   });

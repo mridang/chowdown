@@ -4,7 +4,7 @@ import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import { VIEW_COOKIE } from '@/components/recipes/list-view';
 import { htmlAt } from '../../../components/render';
 
-const INPUT_VALUE_LIST = /<input[^>]*value="list"[^>]*>/;
+const INPUT_VALUE_LIST = /<input[^>]*value="list"[^>]*>/u;
 
 const collection = {
   recipes: [] as readonly unknown[],
@@ -12,11 +12,17 @@ const collection = {
   drive: { connected: false, reconnect: true, unreachable: false },
 };
 
-const saved: { view?: string } = {};
+interface SavedCookies {
+  view?: string;
+}
 
+const saved: SavedCookies = {};
+
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/recipe/load-collection is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/domain/recipe/load-collection', () => ({
   loadCollection: async () => collection,
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- next/headers is a framework module the code under test imports directly, and it only works inside a Next request
 jest.unstable_mockModule('next/headers', () => ({
   cookies: async () => ({
     get: (name: string) =>

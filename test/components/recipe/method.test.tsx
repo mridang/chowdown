@@ -18,7 +18,7 @@ describe('Method', () => {
 
   it('numbers each step with a badge hidden from assistive technology', () => {
     expect(
-      out.match(/<span aria-hidden="true" class="grid shrink-0/g),
+      out.match(/<span aria-hidden="true" class="grid shrink-0/gu),
     ).toHaveLength(2);
     expect(out).toContain('rounded-full');
     expect(out).toContain('Step 1: ');

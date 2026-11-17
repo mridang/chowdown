@@ -1,7 +1,5 @@
-import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import type { ReactElement } from 'react';
 
 import { DriveConnectNotice } from '@/components/site/drive-connect';
 import { getCurrentUser } from '@/lib/core/auth/current-user';
@@ -18,6 +16,8 @@ import { NumberBadge } from '@/components/ui/number-badge';
 import { PageHeader } from '@/components/ui/page-header';
 
 import { ConnectedApps } from '@/app/(site)/(pages)/connect/_components/connected-apps';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 /** The tab title and description of the Cook with AI page. */
 export const metadata: Metadata = {

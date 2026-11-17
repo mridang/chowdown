@@ -3,9 +3,9 @@ import { describe, expect, it } from '@jest/globals';
 import RecipeNotFound, { metadata } from '@/app/(site)/recipe/[id]/not-found';
 import { html } from '../../../../components/render';
 
-const HREF_RECIPES_ADD = /href="\/recipes\/add"[^>]*>Add a recipe/;
-const HREF_APP_BACK = /href="\/app"[^>]*>Back to your recipes/;
-const H1_WE_COULDN = /<h1[^>]*>We couldn&#x27;t find that recipe<\/h1>/;
+const HREF_RECIPES_ADD = /href="\/recipes\/add"[^>]*>Add a recipe/u;
+const HREF_APP_BACK = /href="\/app"[^>]*>Back to your recipes/u;
+const H1_WE_COULDN = /<h1[^>]*>We couldn&#x27;t find that recipe<\/h1>/u;
 
 describe('RecipeNotFound', () => {
   const out = html(<RecipeNotFound />);

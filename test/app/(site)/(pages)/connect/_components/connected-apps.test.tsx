@@ -4,11 +4,11 @@ import {
   ConnectedAppItem,
   ConnectedApps,
 } from '@/app/(site)/(pages)/connect/_components/connected-apps';
-import type { ConnectedApp } from '@/domain/connected-apps';
 import { html } from '../../../../../components/render';
+import type { ConnectedApp } from '@/domain/connected-apps';
 
-const DISABLED = /\sdisabled(=|\s|>)/;
-const ROLE_STATUS_LOADING = /<p[^>]*role="status"[^>]*>Loading…<\/p>/;
+const DISABLED = /\sdisabled(=|\s|>)/u;
+const OUTPUT_LOADING = /<output[^>]*>Loading…<\/output>/u;
 
 const APP: ConnectedApp = {
   id: 'g1',
@@ -25,7 +25,7 @@ const item = (app: ConnectedApp, busy = false) =>
 describe('ConnectedApps', () => {
   it('says it is loading until the list arrives, politely', () => {
     const out = html(<ConnectedApps />);
-    expect(out).toMatch(ROLE_STATUS_LOADING);
+    expect(out).toMatch(OUTPUT_LOADING);
   });
 
   it('does not show a list or an error before then', () => {
@@ -80,8 +80,9 @@ describe('ConnectedAppItem', () => {
   });
 
   it('has a Disconnect button named after the app, disabled while it works', () => {
-    expect(item(APP)).toContain('aria-label="Disconnect Claude"');
-    expect(item(APP)).not.toMatch(DISABLED);
+    const idle = item(APP);
+    expect(idle).toContain('aria-label="Disconnect Claude"');
+    expect(idle).not.toMatch(DISABLED);
     const busy = item(APP, true);
     expect(busy).toContain('disabled');
     expect(busy).toContain('Disconnecting…');

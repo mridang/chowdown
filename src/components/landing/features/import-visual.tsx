@@ -1,12 +1,11 @@
-import type { ReactElement } from 'react';
-
 import { fileSlug } from '@/components/landing/cook-file';
-import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import { WindowFrame } from '@/components/landing/window-frame';
 import { Card } from '@/components/ui/card';
 import { Eyebrow } from '@/components/ui/layout';
 import { TintTile } from '@/components/ui/tint-tile';
 import { sentenceCase } from '@/utils/text';
+import type { SampleRecipe } from '@/components/landing/demo-recipes';
+import type { ReactElement } from 'react';
 
 /** Importing: a pasted link becomes a draft with tags. */
 export function ImportVisual({

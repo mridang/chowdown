@@ -1,12 +1,14 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { User } from '@/domain/db/users';
-// eslint-disable-next-line unicorn/no-keyword-prefix -- the name is exported from its module and used by other modules
+// eslint-disable-next-line unicorn/no-keyword-prefix -- newSecret is the name the OAuth library exports
 import { ACCESS_PREFIX, REFRESH_PREFIX, newSecret } from '@/lib/oauth';
-import type { McpAuthDeps } from '@/domain/mcp/auth';
 import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
 
-const CDN_AT_ZA = /^cdn_at_[A-Za-z0-9_-]{43}$/;
+import type { User } from '@/domain/db/users';
+
+import type { McpAuthDeps } from '@/domain/mcp/auth';
+
+const CDN_AT_ZA = /^cdn_at_[A-Za-z0-9_-]{43}$/u;
 
 const tracing = installFakeTracing();
 const { authenticateMcpRequest } = await import('@/domain/mcp/auth');
@@ -48,9 +50,7 @@ describe('authenticateMcpRequest — error context', () => {
   });
 
   it('names no one for a token that is turned away', async () => {
-    for (const key of Object.keys(tracing.attributes)) {
-      delete tracing.attributes[key];
-    }
+    tracing.reset();
     await authenticateMcpRequest(withToken(BAD), ORIGIN, () => deps());
     expect(tracing.attributes).toEqual({});
   });

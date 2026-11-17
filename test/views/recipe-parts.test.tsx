@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { RecipeCardData } from '@/domain/mcp/ui-types';
 import { Eyebrow, FullRecipe, MetaRow, Step } from '@/views/recipe-parts';
 import { html } from '../components/render';
+import type { RecipeCardData } from '@/domain/mcp/ui-types';
 
 const RECIPE: RecipeCardData = {
   id: 'r1',
@@ -43,7 +43,7 @@ describe('MetaRow', () => {
     const out = html(<MetaRow metadata={RECIPE.metadata} />);
     expect(out).toContain('<b>servings</b> 4');
     expect(out).toContain('<b>time</b> 20 min');
-    expect(out.match(/class="sep"/g)).toHaveLength(1);
+    expect(out.match(/class="sep"/gu)).toHaveLength(1);
   });
 
   it('draws nothing when there are none', () => {
@@ -102,11 +102,13 @@ describe('FullRecipe', () => {
   it('never offers a source that is not a web link', () => {
     const out = html(
       <FullRecipe
+        // eslint-disable-next-line no-script-url -- the value is a javascript: URL on purpose, to prove it is refused
         recipe={{ ...RECIPE, source: 'javascript:alert(1)' }}
         onOpenLink={() => undefined}
       />,
     );
     expect(out).not.toContain('original recipe');
+    // eslint-disable-next-line no-script-url -- the value is a javascript: URL on purpose, to prove it is refused
     expect(out).not.toContain('javascript:');
   });
 

@@ -12,9 +12,9 @@ import {
 import { cssClassesOf, html } from '../render';
 
 const ID_NAME_ERROR =
-  /<p id="name-error" role="alert"[^>]*>A name is needed\.<\/p>/;
-const INPUT_ARIA_DESCRIBEDBY = /<input[^>]*aria-describedby="name-error"/;
-const INPUT_ARIA_INVALID = /<input[^>]*aria-invalid="true"/;
+  /<p id="name-error" role="alert"[^>]*>A name is needed\.<\/p>/u;
+const INPUT_ARIA_DESCRIBEDBY = /<input[^>]*aria-describedby="name-error"/u;
+const INPUT_ARIA_INVALID = /<input[^>]*aria-invalid="true"/u;
 
 describe('FormField', () => {
   it('ties the label to the control by id, with help text under it', () => {
@@ -115,12 +115,9 @@ describe('TextInput and TextArea', () => {
   });
 
   it('darken their edge on hover as well as focus, since the resting edge is now clear', () => {
-    expect(cssClassesOf(html(<TextInput />), 'input')).toContain(
-      'hover:border-ink',
-    );
-    expect(cssClassesOf(html(<TextInput />), 'input')).not.toContain(
-      'hover:border-ink/50',
-    );
+    const classes = cssClassesOf(html(<TextInput />), 'input');
+    expect(classes).toContain('hover:border-ink');
+    expect(classes).not.toContain('hover:border-ink/50');
   });
 
   it('show code-like text in a monospace face on request', () => {

@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { MAX_REPORTS_PER_REQUEST, summariseReports } from '@/lib/core/http';
 
-const RETURN_NEWLINE = /[\r\n]/;
+const RETURN_NEWLINE = /[\r\n]/u;
 
 /** A Reporting API report. */
 const modern = (body: Record<string, unknown>, type = 'csp-violation') => ({

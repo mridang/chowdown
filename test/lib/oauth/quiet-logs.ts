@@ -9,24 +9,24 @@ export type LogSpy = jest.SpiedFunction<typeof console.info>;
  * file; the lines are still recorded on the returned spies for tests that want
  * to look at them.
  */
-export function quietSecurityLogs(): {
-  readonly info: () => LogSpy;
-  readonly warn: () => LogSpy;
-} {
-  const spies: {
-    info?: LogSpy;
-    warn?: LogSpy;
-  } = {};
+export function quietSecurityLogs() {
+  const spies = new Map<'info' | 'warn', LogSpy>();
   beforeEach(() => {
-    spies.info = jest.spyOn(console, 'info').mockImplementation(() => {});
-    spies.warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    spies.set(
+      'info',
+      jest.spyOn(console, 'info').mockImplementation(() => {}),
+    );
+    spies.set(
+      'warn',
+      jest.spyOn(console, 'warn').mockImplementation(() => {}),
+    );
   });
   afterEach(() => {
-    spies.info?.mockRestore();
-    spies.warn?.mockRestore();
+    spies.get('info')?.mockRestore();
+    spies.get('warn')?.mockRestore();
   });
   return {
-    info: () => spies.info!,
-    warn: () => spies.warn!,
+    info: () => spies.get('info')!,
+    warn: () => spies.get('warn')!,
   };
 }

@@ -107,8 +107,9 @@ describe('isEdgeCacheable - the query string', () => {
     expect(ok('/?a=1&b=1&c=1&d=1&e=1&f=1&g=1&h=1&i=1', many)).toBe(false);
   });
 
-  it('never keeps what a developer sees on their own machine', () => {
-    for (const host of ['localhost:3000', '127.0.0.1:3000', '[::1]:3000']) {
+  it.each(['localhost:3000', '127.0.0.1:3000', '[::1]:3000'])(
+    'never keeps what a developer sees on their own machine (%j)',
+    (host) => {
       expect(
         isEdgeCacheable(
           new Request(`http://${host}/?alpha=1`),
@@ -117,8 +118,8 @@ describe('isEdgeCacheable - the query string', () => {
           allowed,
         ),
       ).toBe(false);
-    }
-  });
+    },
+  );
 
   it('never keeps a page that `wrangler dev` addressed by its route but was asked for on localhost', () => {
     for (const host of ['localhost:3000', '127.0.0.1:8787', '[::1]:3000']) {
@@ -185,6 +186,7 @@ describe('edgeCacheKey', () => {
     expect(edgeCacheKey(get('/'), 'v1').url).toMatch(
       new RegExp(
         String.raw`^https://edge\.${SITE_NAME.toLowerCase()}\.invalid/`,
+        'u',
       ),
     );
   });
@@ -277,7 +279,8 @@ describe('storableCopy', () => {
 });
 
 describe('edgeCache', () => {
-  const original = Reflect.get(globalThis, 'caches');
+  const original: unknown =
+    'caches' in globalThis ? globalThis.caches : undefined;
   afterEach(() => {
     Reflect.set(globalThis, 'caches', original);
   });

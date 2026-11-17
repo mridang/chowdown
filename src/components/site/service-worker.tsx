@@ -19,7 +19,7 @@ export const WORKER_URL = `/sw.js?${new URLSearchParams({
 export interface WorkerEnvironment {
   readonly production: boolean;
   readonly serviceWorker?: Readonly<{
-    register: (script: string, options: { scope: string }) => Promise<unknown>;
+    register: (script: string, options: { scope: string }) => Promise<void>;
   }>;
   readonly readyState: DocumentReadyState;
   readonly onLoad: (listener: () => void) => () => void;
@@ -60,7 +60,13 @@ export function ServiceWorker(): null {
       registerWhenLoaded({
         production: process.env.NODE_ENV === 'production',
         serviceWorker:
-          'serviceWorker' in navigator ? navigator.serviceWorker : undefined,
+          'serviceWorker' in navigator
+            ? {
+                register: async (script, options) => {
+                  await navigator.serviceWorker.register(script, options);
+                },
+              }
+            : undefined,
         readyState: document.readyState,
         onLoad: (listener) => {
           window.addEventListener('load', listener, { once: true });

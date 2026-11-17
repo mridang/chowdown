@@ -1,16 +1,16 @@
 import { describe, expect, it } from '@jest/globals';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
-import type { ReactElement } from 'react';
 
 import { LiveSearchField } from '@/components/ui/live-search-field';
 import { html } from '../render';
+import type { ReactElement } from 'react';
 
-const INPUT_ARIA_BUSY = /<input[^>]*aria-busy="false"/;
+const INPUT_ARIA_BUSY = /<input[^>]*aria-busy="false"/u;
 const INPUT_NAME_FIND =
-  /<input[^>]*name="find"[^>]*value="soup"|<input[^>]*value="soup"[^>]*name="find"/;
-const INPUT_NAME = /<input[^>]*name="q"/;
-const INPUT_VALUE = /<input[^>]*value=""/;
-const INPUT_VALUE_CHICKEN = /<input[^>]*value="chicken curry"/;
+  /<input[^>]*name="find"[^>]*value="soup"|<input[^>]*value="soup"[^>]*name="find"/u;
+const INPUT_NAME = /<input[^>]*name="q"/u;
+const INPUT_VALUE = /<input[^>]*value=""/u;
+const INPUT_VALUE_CHICKEN = /<input[^>]*value="chicken curry"/u;
 
 /** The field as it renders at an address, with the given query string. */
 function at(search: string, field: ReactElement): string {

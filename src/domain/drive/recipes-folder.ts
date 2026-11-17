@@ -6,9 +6,9 @@
  */
 
 import { setRecipesFolderId } from '@/domain/db/users';
-import type { User } from '@/domain/db/users';
 import { getDatabase } from '@/domain/db/client';
 import { DriveClient } from '@/lib/google/drive';
+import type { User } from '@/domain/db/users';
 
 /** Name of the app-managed folder created in each user's Drive. */
 export const RECIPES_FOLDER_NAME = 'Recipes';

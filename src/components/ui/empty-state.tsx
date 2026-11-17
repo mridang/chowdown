@@ -1,8 +1,7 @@
-import type { ElementType, ReactElement, ReactNode } from 'react';
-
 import { Card } from '@/components/ui/card';
 import { cn } from '@/components/ui/cn';
 import { Eyebrow, Heading } from '@/components/ui/layout';
+import type { ElementType, ReactElement, ReactNode } from 'react';
 
 /**
  * What stands in for content that isn't there: no recipes yet, nothing matches

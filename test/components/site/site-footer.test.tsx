@@ -3,8 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { SiteFooter } from '@/components/site/site-footer';
 import { html } from '../render';
 
-const H2_ABOUT_H2 = /<h2[^>]*>About<\/h2>/;
-const H2_EXPLORE_H2 = /<h2[^>]*>Explore<\/h2>/;
+const H2_ABOUT_H2 = /<h2[^>]*>About<\/h2>/u;
+const H2_EXPLORE_H2 = /<h2[^>]*>Explore<\/h2>/u;
 
 describe('SiteFooter', () => {
   const out = html(<SiteFooter />);
@@ -15,7 +15,7 @@ describe('SiteFooter', () => {
   });
 
   it('links only to pages anyone can open', () => {
-    const hrefs = Array.from(out.matchAll(/href="([^"]+)"/g), (m) => m[1]);
+    const hrefs = Array.from(out.matchAll(/href="([^"]+)"/gu), (m) => m[1]);
     expect(hrefs).toEqual(
       expect.arrayContaining(['/#features', '/#faq', '/privacy', '/terms']),
     );

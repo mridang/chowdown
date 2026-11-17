@@ -8,17 +8,15 @@
  * will read so a huge request cannot hog the server.
  */
 
-import {
-  isUnitWord,
-  parsePantryItem,
-  type PantryItem,
-} from '@/domain/recipe/pantry-match';
+import { isPlainObject } from '@/lib/mcp';
+import { isUnitWord, parsePantryItem } from '@/domain/recipe/pantry-match';
+import type { PantryItem } from '@/domain/recipe/pantry-match';
 
-const AND = /\sand\s/i;
-const START_DIGITS_PLUS_SPACE_STAR = /^\d+\s*[x×]/;
-const ESC_OR_END = /\W|^$/;
-const START_DIGITS_ANY_COMMA_SLASH = /^[\d½¼¾⅓⅔.,/]+$/;
-const WHITESPACE_RUN = /\s+/;
+const AND = /\sand\s/iu;
+const START_DIGITS_PLUS_SPACE_STAR = /^\d+\s*[x×]/u;
+const ESC_OR_END = /\W|^$/u;
+const START_DIGITS_ANY_COMMA_SLASH = /^[\d½¼¾⅓⅔.,/]+$/u;
+const WHITESPACE_RUN = /\s+/u;
 
 /** The most pantry items a request may carry. */
 const MAX_PANTRY_ITEMS = 60;
@@ -34,13 +32,13 @@ const JOINED = '\u0000';
 
 /** Phrases with an "and" in them that name one thing. */
 const ONE_THING =
-  /\b(mac and cheese|salt and pepper|bread and butter|pork and beans|fish and chips|rice and peas|half and half)\b/gi;
+  /\b(mac and cheese|salt and pepper|bread and butter|pork and beans|fish and chips|rice and peas|half and half)\b/giu;
 
 /** A comma or semicolon that ends an item (not one inside a number like "1,5"), or an ampersand. */
-const SEPARATOR = /^(?:[,;](?=\s|$)|&)/;
+const SEPARATOR = /^(?:[,;](?=\s|$)|&)/u;
 
 /** The word "and" at the start of the text. */
-const AND_WORD = /^\band\b/i;
+const AND_WORD = /^\band\b/iu;
 
 /** A bare amount ("3", "400 g"): not an item, but the amount of the one before. */
 function isBareAmount(text: string): boolean {
@@ -70,13 +68,8 @@ function scanStep(text: string, scan: Scan, index: number): Scan {
     return { ...scan, skip: scan.skip - 1 };
   }
   const ch = text.charAt(index);
-  let depth = scan.depth;
-  if (ch === '(') {
-    depth += 1;
-  }
-  if (ch === ')') {
-    depth = Math.max(0, depth - 1);
-  }
+  const opened = ch === '(' ? scan.depth + 1 : scan.depth;
+  const depth = ch === ')' ? Math.max(0, scan.depth - 1) : opened;
   const rest = text.slice(index);
   if (depth === 0 && SEPARATOR.test(rest)) {
     return {
@@ -115,6 +108,7 @@ function splitItems(text: string): readonly string[] {
     (_, index) => index,
   ).reduce((scan, index) => scanStep(text, scan, index), start);
   return [...scanned.parts, scanned.current]
+    .values()
     .map((p) => p.trim())
     .filter(Boolean)
     .reduce<string[]>((items, raw) => {
@@ -124,11 +118,9 @@ function splitItems(text: string): readonly string[] {
         isBareAmount(raw) &&
         !START_DIGITS_PLUS_SPACE_STAR.test(raw)
       ) {
-        items[items.length - 1] = `${previous}, ${raw}`;
-      } else {
-        items.push(raw);
+        return [...items.slice(0, -1), `${previous}, ${raw}`];
       }
-      return items;
+      return [...items, raw];
     }, []);
 }
 
@@ -143,9 +135,11 @@ function itemsFromText(entry: string): readonly PantryItem[] {
 }
 
 /** The pantry item an object stands for (`{ name, quantity? }`), if it names one. */
-function itemFromObject(entry: object): readonly PantryItem[] {
-  const name: unknown = Reflect.get(entry, 'name');
-  const quantity: unknown = Reflect.get(entry, 'quantity');
+function itemFromObject(
+  entry: Readonly<Record<string, unknown>>,
+): readonly PantryItem[] {
+  const name = entry['name'];
+  const quantity = entry['quantity'];
   if (typeof name !== 'string' || !name.trim()) {
     return [];
   }
@@ -169,9 +163,7 @@ export function pantryOf(value: unknown): readonly PantryItem[] {
       if (typeof entry === 'string') {
         return itemsFromText(entry);
       }
-      return typeof entry === 'object' && entry !== null
-        ? itemFromObject(entry)
-        : [];
+      return isPlainObject(entry) ? itemFromObject(entry) : [];
     })
     .filter((item) => item.name)
     .slice(0, MAX_PANTRY_ITEMS);

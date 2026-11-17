@@ -7,11 +7,11 @@
  * own; `getUserAccessToken` in `current-user.ts` supplies the real ones.
  */
 
-import type { MintedToken } from '@/domain/auth/access-token-cache';
 import {
   DriveNotConnectedError,
   isAuthFailure,
 } from '@/domain/auth/drive-access';
+import type { MintedToken } from '@/domain/auth/access-token-cache';
 
 /** What the exchange needs from the outside world. */
 export interface AccessTokenDeps {

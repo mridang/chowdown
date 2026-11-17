@@ -12,8 +12,8 @@
 
 import { and, eq, sql } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { embeddings, favourites, recipes, users } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 
 /** What the recipe page reads for one recipe. */
 export interface RecipePageRows {

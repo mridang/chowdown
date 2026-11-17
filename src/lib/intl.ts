@@ -46,13 +46,11 @@ function unitAt(text: string, index: number): number {
  */
 export function compareCodeUnits(x: string, y: string): number {
   const shared = Math.min(x.length, y.length);
-  for (let index = 0; index < shared; index += 1) {
-    const diff = unitAt(x, index) - unitAt(y, index);
-    if (diff !== 0) {
-      return Math.sign(diff);
-    }
-  }
-  return Math.sign(x.length - y.length);
+  const diff = Array.from(
+    { length: shared },
+    (_, index) => unitAt(x, index) - unitAt(y, index),
+  ).find((gap) => gap !== 0);
+  return Math.sign(diff ?? x.length - y.length);
 }
 
 /**
@@ -127,12 +125,10 @@ export function relativeTime(
 ): string {
   const seconds = (new Date(when).getTime() - now.getTime()) / 1000;
   const magnitude = Math.abs(seconds);
-  for (const [unit, size] of UNITS) {
-    if (magnitude >= size) {
-      return relative.format(Math.round(seconds / size), unit);
-    }
-  }
-  return relative.format(0, 'second');
+  const found = UNITS.find(([, size]) => magnitude >= size);
+  return found
+    ? relative.format(Math.round(seconds / found[1]), found[0])
+    : relative.format(0, 'second');
 }
 
 /** Joins items with "and". */
@@ -295,14 +291,17 @@ export function truncate(text: string, limit: number): string {
   if (characterCount(text) <= limit) {
     return text;
   }
-  let kept = '';
-  let used = 0;
-  for (const { segment } of words.segment(text)) {
-    used += characterCount(segment);
-    if (used > limit) {
-      break;
-    }
-    kept += segment;
-  }
+  const { kept } = Array.from(
+    words.segment(text),
+    ({ segment }) => segment,
+  ).reduce(
+    (acc, segment) => {
+      const used = acc.used + characterCount(segment);
+      return acc.full || used > limit
+        ? { ...acc, full: true }
+        : { kept: acc.kept + segment, used, full: false };
+    },
+    { kept: '', used: 0, full: false },
+  );
   return `${kept.trimEnd()}…`;
 }

@@ -15,10 +15,11 @@ describe('newState', () => {
   it.each(PURPOSES)(
     'names its purpose (%s) and is different every time',
     (purpose) => {
-      expect(newState(purpose)).toMatch(
-        new RegExp(String.raw`^${purpose}\.[0-9a-f-]{36}$`),
+      const state = newState(purpose);
+      expect(state).toMatch(
+        new RegExp(String.raw`^${purpose}\.[0-9a-f-]{36}$`, 'u'),
       );
-      expect(newState(purpose)).not.toBe(newState(purpose));
+      expect(state).not.toBe(newState(purpose));
     },
   );
 });

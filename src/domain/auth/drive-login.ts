@@ -8,10 +8,10 @@
  */
 
 import { decryptSecret } from '@/lib/crypto';
-import type { User } from '@/domain/db/users';
 import { getEnv } from '@/lib/core/runtime';
 import { errorMessage, logError } from '@/utils/logging';
 import { revokeToken } from '@/domain/auth/drive-oauth';
+import type { User } from '@/domain/db/users';
 
 /**
  * Revoke the person's stored Drive refresh token at Google, if they have one.

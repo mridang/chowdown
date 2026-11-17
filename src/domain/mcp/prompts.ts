@@ -14,7 +14,7 @@
 
 import { ERROR_INVALID_PARAMS, RpcError } from '@/lib/mcp';
 
-const START_DIGITS_END = /^\d{1,3}$/;
+const START_DIGITS_END = /^\d{1,3}$/u;
 
 /** One argument a prompt accepts. */
 export interface PromptArgument {

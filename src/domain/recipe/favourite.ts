@@ -10,16 +10,17 @@
 
 import { getUserAccessToken } from '@/domain/auth/user-access-token';
 import { isDriveConnected } from '@/domain/auth/drive-access';
-import type { Database } from '@/domain/db/client';
 import { isFavourite, setFavourite } from '@/domain/db/favourites';
 import { getRecipeByFileId } from '@/domain/db/recipes';
-import { getUserById, type User } from '@/domain/db/users';
+import { getUserById } from '@/domain/db/users';
 import { getFileContent, updateRecipeFile } from '@/domain/drive/recipe-files';
 import { runInBackground } from '@/lib/core/runtime';
 import { getDatabase } from '@/domain/db/client';
 import { withFavouriteTag } from '@/domain/recipe/favourite-tag';
 import { createKeyedQueue } from '@/lib/async';
 import { indexRecipeWrite } from '@/domain/recipe/tag-index';
+import type { User } from '@/domain/db/users';
+import type { Database } from '@/domain/db/client';
 
 /**
  * What hearting a recipe reaches out to, gathered in one place so a test can
@@ -47,10 +48,7 @@ export interface FavouriteDeps {
    * Run a job after any earlier job for the same key, never alongside it
    * (see {@link createKeyedQueue}).
    */
-  readonly serialise: (
-    key: string,
-    job: () => Promise<void>,
-  ) => Promise<unknown>;
+  readonly serialise: (key: string, job: () => Promise<void>) => Promise<void>;
   /** The user row, if the account still exists. */
   readonly findUser: (db: Database, id: number) => Promise<User | undefined>;
   /** A Drive access token for the user. */
@@ -62,7 +60,7 @@ export interface FavouriteDeps {
     fileId: string,
     source: string,
     token: string,
-  ) => Promise<unknown>;
+  ) => Promise<void>;
   /** The cached row for one of the user's recipes, if they have it. */
   readonly findRecipe: (
     db: Database,
@@ -76,7 +74,7 @@ export interface FavouriteDeps {
     fileId: string,
     name: string,
     source: string,
-  ) => Promise<unknown>;
+  ) => Promise<void>;
   /** Run work after the response, without waiting for it. */
   readonly background: (work: Promise<unknown>) => void;
 }

@@ -10,7 +10,7 @@ import {
 import { RecipeStateProvider } from '@/components/recipe/recipe-state';
 import { htmlAt } from '../render';
 
-const BUTTON_COOK_MODE = /<button[^>]*>.*Cook mode<\/button>/s;
+const BUTTON_COOK_MODE = /<button[^>]*>.*Cook mode<\/button>/su;
 
 const STEPS = [
   [{ kind: 'text' as const, text: 'Chop.' }],
@@ -63,7 +63,7 @@ describe('stepOffsetForKey', () => {
 });
 
 /** An event target with the given extra members, as a form control or the page would be. */
-const target = (members: object): EventTarget =>
+const target = (members: Readonly<Record<string, unknown>>): EventTarget =>
   Object.assign(new EventTarget(), members);
 
 describe('usesArrowKeys', () => {

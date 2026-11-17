@@ -7,10 +7,8 @@ import {
   jest,
 } from '@jest/globals';
 
-import {
-  fakeCookies,
-  insertUser,
-} from '../../../../../../domain/auth/session-fixture';
+import { insertUser } from '../../../../../../domain/auth/session-fixture';
+import { fakeCookies } from '../../../../../../domain/auth/auth-test-kit';
 import { settleBackground } from '../../../../../../lib/core/db/sqlite-d1';
 import {
   addRecipe,
@@ -18,9 +16,10 @@ import {
   fromApp,
   openWorld,
   signIn,
-  type World,
 } from '../../../../world';
+import type { World } from '../../../../world';
 
+// eslint-disable-next-line tslop/no-module-mocking -- next/headers is a framework module the code under test imports directly, and it only works inside a Next request
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const { DELETE, GET, PUT } =

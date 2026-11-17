@@ -12,8 +12,9 @@
  */
 
 import { withoutBulkMarkup } from '@/domain/recipe/html-text';
-import { fetchCapped, type FetchFailure } from '@/lib/safe-fetch';
+import { fetchCapped } from '@/lib/safe-fetch';
 import { SITE_NAME, SITE_URL } from '@/utils/site';
+import type { FetchFailure } from '@/lib/safe-fetch';
 
 /**
  * Max characters of HTML kept, so a huge page can't blow a request up. It is
@@ -83,6 +84,7 @@ function describe(failure: FetchFailure): PageFailure {
     case 'too-large': {
       return 'unreachable';
     }
+    // no default
   }
 }
 

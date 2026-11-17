@@ -17,7 +17,7 @@ import { SESSION_COOKIE, driveHint, folderHint } from '@/domain/auth/app';
 import { isDriveConnected } from '@/domain/auth/drive-access';
 import { SessionTokens } from '@/lib/session';
 
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** What the header shows about the signed-in person. */
 export interface ShellUser {

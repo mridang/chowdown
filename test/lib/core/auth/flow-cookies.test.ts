@@ -32,7 +32,6 @@ describe('startFlowCookies', () => {
   });
 
   it('clears an earlier return path when there is none this time', () => {
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     const cookie = start(undefined).cookies.get(RETURN_COOKIE);
     expect(cookie).toMatchObject({ value: '', expires: new Date(0) });
   });

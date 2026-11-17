@@ -8,7 +8,6 @@ import {
 } from '@jest/globals';
 
 import { SESSION_COOKIE } from '@/domain/auth/app';
-import type { User } from '@/domain/auth/store';
 import {
   appRequest,
   fakeCookies,
@@ -16,7 +15,9 @@ import {
   jar,
   tokenFor,
 } from '../../../domain/auth/auth-test-kit';
+import type { User } from '@/domain/db/users';
 
+// eslint-disable-next-line tslop/no-module-mocking -- next/headers is a framework module the code under test imports directly, and it only works inside a Next request
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 /** The epoch each account's sessions must carry. */
@@ -34,6 +35,7 @@ const bumpSessionEpoch = jest.fn(async (id: number) => {
   epochs.set(id, (epochs.get(id) ?? 0) + 1);
 });
 
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/auth/store is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/domain/auth/store', () => ({
   getUserById,
   getSessionEpoch: async (id: number) => epochs.get(id),

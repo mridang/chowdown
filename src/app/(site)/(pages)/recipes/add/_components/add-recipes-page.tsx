@@ -2,12 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  useCallback,
-  useState,
-  type ReactElement,
-  type ReactNode,
-} from 'react';
+import { useCallback, useState } from 'react';
 
 import { ChevronLeftIcon, LinkIcon, NoteIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -27,6 +22,7 @@ import {
   createdRecipeId,
   postRecipe,
 } from '@/app/(site)/(pages)/recipes/add/_components/recipe-requests';
+import type { ReactElement, ReactNode } from 'react';
 
 /** Starter content offered when writing a recipe by hand. */
 const STARTER = `>> title: New Recipe
@@ -112,7 +108,9 @@ function ManualEditor({
       <div className="mt-5 flex flex-wrap gap-3">
         <Button
           size="lg"
-          onClick={() => void save()}
+          onClick={() => {
+            void save();
+          }}
           disabled={busy || !name.trim()}
           aria-busy={busy}
           className="disabled:opacity-50"

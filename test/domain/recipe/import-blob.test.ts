@@ -69,7 +69,7 @@ describe('planImport', () => {
 });
 
 /** How long `work` takes, in milliseconds. */
-function milliseconds(work: () => unknown): number {
+function milliseconds(work: () => void): number {
   const started = performance.now();
   work();
   return performance.now() - started;

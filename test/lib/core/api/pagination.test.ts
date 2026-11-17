@@ -7,8 +7,8 @@ import {
   sliceAfter,
   DEFAULT_LIMIT,
   MAX_LIMIT,
-  type CursorPosition,
 } from '@/lib/core/api';
+import type { CursorPosition } from '@/lib/core/api';
 
 describe('cursor', () => {
   it('round-trips a position through an opaque token', () => {
@@ -33,13 +33,14 @@ describe('parseLimit', () => {
     expect(parseLimit(String(MAX_LIMIT))).toBe(MAX_LIMIT);
   });
 
-  it('refuses a non-integer, a zero, or an over-limit value with a 400', async () => {
-    for (const raw of ['0', '-1', '1.5', 'abc', String(MAX_LIMIT + 1)]) {
+  it.each(['0', '-1', '1.5', 'abc', String(MAX_LIMIT + 1)])(
+    'refuses a non-integer, a zero, or an over-limit value with a 400 (%j)',
+    async (raw) => {
       const result = parseLimit(raw);
       expect(result).toBeInstanceOf(Response);
       expect((result as Response).status).toBe(400);
-    }
-  });
+    },
+  );
 });
 
 describe('sliceAfter', () => {

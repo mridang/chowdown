@@ -1,18 +1,18 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { SiteHeader } from '@/components/site/site-header';
-import type { ShellUser } from '@/domain/auth/shell-user';
 import { htmlAt } from '../render';
+import type { ShellUser } from '@/domain/auth/shell-user';
 
 const CLASS_MAX_MD =
-  /<a [^>]*class="[^"]*max-md:hidden[^"]*"[^>]*>.*Add recipe/;
+  /<a [^>]*class="[^"]*max-md:hidden[^"]*"[^>]*>.*Add recipe/u;
 const CLASS_BG_HIGHLIGHT =
-  /<a [^>]*class="[^"]*bg-highlight[^"]*"[^>]*href="\/recipes\/add"[^>]*>.*Add recipe<\/a>/;
-const HREF_APP_RECIPES = /<a [^>]*href="\/app"[^>]*>Recipes<\/a>/;
-const HREF_AUTH_LOGIN = /<a [^>]*href="\/auth\/login"[^>]*>.*Sign in<\/a>/;
-const HREF_FAQ_FAQ = /<a [^>]*href="\/#faq"[^>]*>FAQ<\/a>/;
-const HREF_FEATURES_FEATURES = /<a [^>]*href="\/#features"[^>]*>Features<\/a>/;
-const HREF_CHOWDOWN = /<a [^>]*href="\/"[^>]*>.*Chowdown/;
+  /<a [^>]*class="[^"]*bg-highlight[^"]*"[^>]*href="\/recipes\/add"[^>]*>.*Add recipe<\/a>/u;
+const HREF_APP_RECIPES = /<a [^>]*href="\/app"[^>]*>Recipes<\/a>/u;
+const HREF_AUTH_LOGIN = /<a [^>]*href="\/auth\/login"[^>]*>.*Sign in<\/a>/u;
+const HREF_FAQ_FAQ = /<a [^>]*href="\/#faq"[^>]*>FAQ<\/a>/u;
+const HREF_FEATURES_FEATURES = /<a [^>]*href="\/#features"[^>]*>Features<\/a>/u;
+const HREF_CHOWDOWN = /<a [^>]*href="\/"[^>]*>.*Chowdown/u;
 
 const ADA: ShellUser = {
   firstName: 'Ada',

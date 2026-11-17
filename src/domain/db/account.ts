@@ -11,7 +11,6 @@
 
 import { eq, inArray } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import {
   embeddings,
   favourites,
@@ -23,6 +22,7 @@ import {
   recipes,
   users,
 } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 
 /**
  * Delete the user row and every row that hangs off it: cached recipes and

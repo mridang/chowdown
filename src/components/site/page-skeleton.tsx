@@ -1,7 +1,6 @@
-import type { ReactElement } from 'react';
-
 import { Container } from '@/components/ui/layout';
 import { Skeleton, SkeletonFrame } from '@/components/ui/skeleton';
+import type { ReactElement } from 'react';
 
 /** The four card-shaped blocks the placeholder shows, as keys. */
 const CARDS = [0, 1, 2, 3] as const;

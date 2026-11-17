@@ -13,21 +13,15 @@ import {
   parseLimit,
   problems,
   sliceAfter,
-  type CursorPosition,
-  type Slice,
 } from '@/lib/core/api';
 import { compareNewestFirst } from '@/domain/api/newest-first';
-import {
-  liveUid,
-  requestCookieResolver,
-  type CurrentUserResolver,
-} from '@/domain/api/auth';
-import {
-  connectedAppResource,
-  type ConnectedApp,
-} from '@/domain/connected-apps';
+import { liveUid, requestCookieResolver } from '@/domain/api/auth';
+import { connectedAppResource } from '@/domain/connected-apps';
 import { listConnectedApps, revokeConnectedApp } from '@/domain/db/oauth';
 import { getDatabase } from '@/domain/db/client';
+import type { ConnectedApp } from '@/domain/connected-apps';
+import type { CurrentUserResolver } from '@/domain/api/auth';
+import type { CursorPosition, Slice } from '@/lib/core/api';
 
 /** The signed-in person's id. */
 interface UidContext {

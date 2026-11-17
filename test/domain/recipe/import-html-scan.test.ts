@@ -1,17 +1,17 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { ATTRIBUTE, scanHtml } from '@/domain/recipe/import-html-scan';
-
 import { expectSamePattern, fuzzInputs } from '../../regex-equivalence';
+
 /** How long `work` takes, in milliseconds. */
-function milliseconds(work: () => unknown): number {
+function milliseconds(work: () => void): number {
   const started = performance.now();
   work();
   return performance.now() - started;
 }
 
 /** Pages built to make a backtracking pattern spend seconds; each must be read in a blink. */
-const HOSTILE: Readonly<Record<string, string>> = {
+const HOSTILE = {
   'repeated meta with content only': '<meta content="a" '.repeat(2000),
   'unterminated script starts': '<script '.repeat(25_000),
   'unterminated script starts with attributes': '<script a=b '.repeat(16_000),
@@ -27,7 +27,7 @@ const HOSTILE: Readonly<Record<string, string>> = {
   'a thousand closed scripts':
     '<script type="application/ld+json">{}</script>'.repeat(4000),
   'script ends with no start': '</script>'.repeat(20_000),
-};
+} satisfies Readonly<Record<string, string>>;
 
 describe('scanHtml', () => {
   it('reads the attributes of meta tags, in either order and any quoting', () => {
@@ -118,7 +118,7 @@ describe('ATTRIBUTE, rewritten', () => {
       '`',
       ']+)))?',
     ].join(''),
-    'g',
+    'gu',
   );
   const pieces = [
     'a',

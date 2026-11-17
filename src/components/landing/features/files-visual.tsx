@@ -1,11 +1,10 @@
-import type { ReactElement } from 'react';
-
 import { CookFile } from '@/components/landing/cook-file-view';
 import { fileSlug } from '@/components/landing/cook-file';
-import type { SampleRecipes } from '@/components/landing/demo-recipes';
 import { WindowFrame } from '@/components/landing/window-frame';
 import { cn } from '@/components/ui/cn';
 import { TintTile } from '@/components/ui/tint-tile';
+import type { SampleRecipes } from '@/components/landing/demo-recipes';
+import type { ReactElement } from 'react';
 
 /** Your Drive: the folder of files, and the first one open beside it. */
 export function FilesVisual({

@@ -1,7 +1,7 @@
+import { NumberBadge } from '@/components/ui/number-badge';
 import type { ReactElement } from 'react';
 
 import type { SampleRecipe } from '@/components/landing/demo-recipes';
-import { NumberBadge } from '@/components/ui/number-badge';
 
 /** Cook mode: a phone showing one large step. */
 export function CookVisual({
@@ -9,6 +9,7 @@ export function CookVisual({
 }: Readonly<{ recipe: SampleRecipe }>): ReactElement {
   return (
     <div className="flex justify-center">
+      {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- the picture is drawn from elements, and an img element cannot hold children */}
       <div
         role="img"
         aria-label="Cook mode on a phone, showing one large step"

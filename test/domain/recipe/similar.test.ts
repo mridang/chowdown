@@ -1,9 +1,4 @@
-import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
-
-import type { EmbeddingRow } from '@/domain/db/embeddings';
-import type { Database } from '@/domain/db/client';
-import type { User } from '@/domain/db/users';
 import {
   ensureEmbeddings,
   parseSimilar,
@@ -12,11 +7,15 @@ import {
   similarFromRows,
   topSimilar,
   updateSimilarLists,
-  type EmbeddingDeps,
-  type SimilarRecipe,
 } from '@/domain/recipe/similar';
+import { asCalls } from '../../calls';
+
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import type { EmbeddingDeps, SimilarRecipe } from '@/domain/recipe/similar';
+import type { EmbeddingRow } from '@/domain/db/embeddings';
+import type { Database } from '@/domain/db/client';
+import type { User } from '@/domain/db/users';
 
 /** An embedding row with the given 2-d vector. */
 function row(id: string, title: string, vector: number[]): EmbeddingRow {
@@ -48,9 +47,9 @@ const everyList = (list: readonly EmbeddingRow[], n: number) =>
 describe('updateSimilarLists with every recipe changed', () => {
   it("lists each recipe's nearest others, best first, never itself", () => {
     const lists = everyList(rows, 2);
-    expect(lists.get('a')!.map((r) => r.id)).toEqual(['b', 'd']);
-    expect(lists.get('c')!.map((r) => r.id)).toEqual(['d', 'b']);
     for (const [id, list] of lists) {
+      expect(lists.get('a')!.map((r) => r.id)).toEqual(['b', 'd']);
+      expect(lists.get('c')!.map((r) => r.id)).toEqual(['d', 'b']);
       expect(list.map((r) => r.id)).not.toContain(id);
     }
   });
@@ -146,9 +145,9 @@ describe('updateSimilarLists incrementally', () => {
   it('repairs the lists that named a recipe that has since been removed', () => {
     const before = settled(randomRows(12, 3), N);
     const after = before.filter((r) => r.drive_file_id !== 'r0');
-    const incremental = updateSimilarLists(after, [], N);
-    const fresh = everyList(after, N);
     for (const r of after) {
+      const incremental = updateSimilarLists(after, [], N);
+      const fresh = everyList(after, N);
       const next = incremental.get(r.drive_file_id) ?? parseSimilar(r.similar);
       expect(next).toEqual(fresh.get(r.drive_file_id));
     }
@@ -197,8 +196,9 @@ describe('refreshSimilarLists', () => {
     const insert = made.raw.prepare(
       'INSERT INTO embeddings (user_id, drive_file_id, title, vector, similar) VALUES (1, ?, ?, ?, ?)',
     );
-    for (const r of list)
+    for (const r of list) {
       insert.run(r.drive_file_id, r.title, r.vector, r.similar);
+    }
     return made;
   }
 
@@ -389,6 +389,10 @@ describe('ensureEmbeddings', () => {
       deps,
     );
     expect(deps.embed).toHaveBeenCalledTimes(1);
+    expect(asCalls(deps.save)).toHaveBeenCalledWith(
+      db,
+      expect.objectContaining({ drive_file_id: 'a', modified_time: 'new' }),
+    );
     expect(asCalls(deps.refreshLists)).toHaveBeenCalledTimes(1);
   });
 

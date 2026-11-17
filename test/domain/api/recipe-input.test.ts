@@ -35,14 +35,15 @@ describe('parseNewRecipe', () => {
     );
   });
 
-  it('refuses blank or non-text Cooklang', () => {
-    for (const cooklang of ['  \n', 5, undefined]) {
+  it.each(['  \n', 5, undefined])(
+    'refuses blank or non-text Cooklang (%j)',
+    (cooklang) => {
       expect(parseNewRecipe({ name: 'a', cooklang })).toMatchObject({
         ok: false,
         errors: ['cooklang: required.'],
       });
-    }
-  });
+    },
+  );
 
   it('refuses Cooklang over the size limit, but not at it', () => {
     expect(
@@ -84,21 +85,15 @@ describe('parseReplacementCooklang', () => {
     });
   });
 
-  it('asks for the text when it is missing, blank or not text', () => {
-    for (const body of [
-      undefined,
-      null,
-      'x',
-      {},
-      { cooklang: ' ' },
-      { cooklang: 5 },
-    ]) {
+  it.each([undefined, null, 'x', {}, { cooklang: ' ' }, { cooklang: 5 }])(
+    'asks for the text when it is missing, blank or not text (%j)',
+    (body) => {
       expect(parseReplacementCooklang(body)).toEqual({
         ok: false,
         errors: ['cooklang: required.'],
       });
-    }
-  });
+    },
+  );
 
   it('refuses text over the size limit, but not at it', () => {
     expect(

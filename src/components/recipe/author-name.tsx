@@ -1,8 +1,7 @@
+import { cn } from '@/components/ui/cn';
 import type { ReactElement } from 'react';
 
-import { cn } from '@/components/ui/cn';
-
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** How one face is drawn: its class list, and its font size at each of the two sizes. */
 type FaceLook = Readonly<{
@@ -105,14 +104,18 @@ function hashOf(text: string): number {
     (_, index) => text.charAt(index).codePointAt(0) ?? 0,
   );
   const fnv = units.reduce(
+    // eslint-disable-next-line no-bitwise -- the 32-bit FNV hash with its finalizer is defined on bit operations, and the hash picks the colour
     (hash, unit) => Math.imul(hash ^ unit, 0x01_00_01_93),
 
     0x81_1c_9d_c5,
   );
 
+  // eslint-disable-next-line no-bitwise -- the 32-bit FNV hash with its finalizer is defined on bit operations, and the hash picks the colour
   const half = Math.imul(fnv ^ (fnv >>> 16), 0x85_eb_ca_6b);
 
+  // eslint-disable-next-line no-bitwise -- the 32-bit FNV hash with its finalizer is defined on bit operations, and the hash picks the colour
   const whole = Math.imul(half ^ (half >>> 13), 0xc2_b2_ae_35);
+  // eslint-disable-next-line no-bitwise -- the 32-bit FNV hash with its finalizer is defined on bit operations, and the hash picks the colour
   return (whole ^ (whole >>> 16)) >>> 0;
 }
 

@@ -1,16 +1,14 @@
-import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import { describe, expect, it, jest } from '@jest/globals';
-
-import type { Recipe } from '@/domain/db/recipes';
+import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 
 import {
   browseRecipes,
   filterOverview,
   recipesFromIngredients,
   runScenarioTool,
-  type ScenarioDeps,
-  type ScenarioRecipe,
 } from '@/domain/mcp/scenarios';
+import type { ScenarioDeps, ScenarioRecipe } from '@/domain/mcp/scenarios';
+import type { Recipe } from '@/domain/db/recipes';
 
 const recipe = (
   name: string,
@@ -138,13 +136,14 @@ describe('browseRecipes', () => {
     expect(message).toContain('call again with offset=2 for the next page');
   });
 
-  it('shows the id of every recipe, so a later call can name exactly that one', () => {
-    const { message } = browseRecipes(COLLECTION, { cuisine: 'Indian' });
-    for (const name of ['Chana masala', 'Palak paneer', 'Butter chicken']) {
+  it.each(['Chana masala', 'Palak paneer', 'Butter chicken'])(
+    'shows the id of every recipe, so a later call can name exactly that one (%j)',
+    (name) => {
+      const { message } = browseRecipes(COLLECTION, { cuisine: 'Indian' });
       expect(message).toContain(`- ${name} (`);
       expect(message).toContain(`id: ${name})`);
-    }
-  });
+    },
+  );
 
   it('keeps a recipe name with a line break on one line', () => {
     const { message } = browseRecipes(
@@ -457,13 +456,11 @@ describe('recipesFromIngredients — long lists and how items are read', () => {
     );
   });
 
-  it('shows ids on every line', () => {
+  it.each([0, 1, 2])('shows ids on every line (%j)', (index) => {
     const { message } = recipesFromIngredients(many(3), {
       ingredients: ['tomatoes'],
     });
-    for (const index of [0, 1, 2]) {
-      expect(message).toContain(`- Dish ${index} (id: Dish ${index})`);
-    }
+    expect(message).toContain(`- Dish ${index} (id: Dish ${index})`);
   });
 
   it('stays quick on a huge request', () => {
@@ -502,7 +499,7 @@ describe('runScenarioTool', () => {
   );
 
   const deps = (rows: Recipe[], overrides: Partial<ScenarioDeps> = {}) => {
-    const sync = jest.fn(async () => 0);
+    const sync = jest.fn(async () => {});
     const inBackground = jest.fn();
     const all: ScenarioDeps = {
       rows: async () => rows,
@@ -528,11 +525,12 @@ describe('runScenarioTool', () => {
   });
 
   it('fills an empty cache from Drive first, and waits for it', async () => {
-    let cached: Recipe[] = [];
-    const sync = jest.fn(async () => {
-      cached = [CURRY];
-    });
-    const { all } = deps([], { rows: async () => cached, sync });
+    const rows = jest
+      .fn<() => Promise<Recipe[]>>()
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([CURRY]);
+    const sync = jest.fn(async () => undefined);
+    const { all } = deps([], { rows, sync });
     const result = await runScenarioTool('browse_recipes', {}, all);
     expect(result.recipes.map((r) => r.name)).toEqual(['Curry']);
     expect(sync).toHaveBeenCalledTimes(1);

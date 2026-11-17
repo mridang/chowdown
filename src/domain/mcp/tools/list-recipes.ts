@@ -5,7 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { z } from 'zod';
 import { recipeListResult } from '@/domain/mcp/tool-results';
 import { listingMessage, pageWindow } from '@/domain/mcp/tools/recipe-support';
 import {
@@ -16,15 +16,14 @@ import {
   RECIPE_LIST_OUTPUT_SCHEMA,
   WIDGET_CALLABLE,
 } from '@/domain/mcp/tools/schemas';
-import {
-  type JsonSchema,
-  McpTool,
-  READS,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
+import { McpTool, READS } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type {
+  JsonSchema,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
 
 export class ListRecipesTool extends McpTool<
   'list_recipes',

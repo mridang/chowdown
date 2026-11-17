@@ -7,22 +7,20 @@ import { html } from '../../render';
 describe('FiltersVisual', () => {
   const out = html(<FiltersVisual recipes={RECIPES} />);
 
-  it('shows the difficulty and time groups with their options', () => {
-    for (const text of [
-      'Difficulty',
-      'Time',
-      'Easy',
-      'Medium',
-      'Hard',
-      'Up to 15 min',
-      '16–30 min',
-    ]) {
-      expect(out).toContain(text);
-    }
+  it.each([
+    'Difficulty',
+    'Time',
+    'Easy',
+    'Medium',
+    'Hard',
+    'Up to 15 min',
+    '16–30 min',
+  ])('shows the difficulty and time groups with their options (%j)', (text) => {
+    expect(out).toContain(text);
   });
 
   it('ticks exactly two options', () => {
-    expect(out.match(/bg-ink text-white/g)).toHaveLength(2);
+    expect(out.match(/bg-ink text-white/gu)).toHaveLength(2);
   });
 
   it('counts the easy recipes next to Easy', () => {

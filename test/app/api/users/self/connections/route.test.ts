@@ -1,19 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
 import { makeConnectionsCollection } from '@/domain/api/connections';
-import type { CurrentUserResolver } from '@/domain/api/auth';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../../../../lib/core/db/sqlite-d1';
-import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { APP_MIGRATIONS } from '../../../../../lib/core/db/migrations';
+import type { DatabaseSync } from 'node:sqlite';
+import type { CurrentUserResolver } from '@/domain/api/auth';
 
 /** Who is signed in; null means nobody. */
 /** `ended`: the person signed out everywhere, though the cookie itself still verifies. */
-const session: { uid: number | null; ended: boolean } = {
+interface SessionState {
+  uid: number | null;
+  ended: boolean;
+}
+
+const session: SessionState = {
   uid: 7,
   ended: false,
 };
@@ -138,13 +142,14 @@ describe('GET /api/users/self/connections', () => {
     expect(second.next).toBeUndefined();
   });
 
-  it('answers 400 for a limit out of range and for a cursor it did not issue', async () => {
-    for (const query of ['limit=0', 'limit=101', 'limit=x', 'cursor=nope']) {
+  it.each(['limit=0', 'limit=101', 'limit=x', 'cursor=nope'])(
+    'answers 400 for a limit out of range and for a cursor it did not issue (%j)',
+    async (query) => {
       const res = await GET(new Request(`${URL}?${query}`));
       expect(res.status).toBe(400);
       expect(res.headers.get('content-type')).toBe('application/problem+json');
-    }
-  });
+    },
+  );
 
   it('answers 401 for a session that was ended everywhere', async () => {
     session.ended = true;

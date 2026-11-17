@@ -10,10 +10,11 @@ describe('get_recipe', () => {
       { recipe: 'pancakes' },
       folder({ 'Pancakes.cook': PANCAKES }),
     );
-    expect(said(result)).toContain('Showing the "Pancakes" recipe.');
-    expect(said(result)).toContain('- 200 g flour');
-    expect(said(result)).toContain('1. Mix 200 g flour with 2 eggs in a bowl.');
-    expect(said(result)).toContain('servings: 4');
+    const text = said(result);
+    expect(text).toContain('Showing the "Pancakes" recipe.');
+    expect(text).toContain('- 200 g flour');
+    expect(text).toContain('1. Mix 200 g flour with 2 eggs in a bowl.');
+    expect(text).toContain('servings: 4');
     expect(result.structuredContent).toMatchObject({ id: 'id-Pancakes.cook' });
   });
 
@@ -59,8 +60,9 @@ describe('get_recipe', () => {
     );
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toBeUndefined();
-    expect(said(result)).toContain('No recipe found matching "pancake mix".');
-    expect(said(result)).toContain('Pancakes (id: id-Pancakes.cook)');
+    const text = said(result);
+    expect(text).toContain('No recipe found matching "pancake mix".');
+    expect(text).toContain('Pancakes (id: id-Pancakes.cook)');
   });
 
   it('points at the listing tools when nothing is even close', async () => {
@@ -79,10 +81,9 @@ describe('get_recipe', () => {
       folder({ 'Apple pie.cook': PANCAKES, 'Pie crust.cook': PANCAKES }),
     );
     expect(result.isError).toBeUndefined();
-    expect(said(result)).toContain('Showing the "Apple pie" recipe.');
-    expect(said(result)).toContain(
-      'also matches Pie crust (id: id-Pie crust.cook)',
-    );
+    const text = said(result);
+    expect(text).toContain('Showing the "Apple pie" recipe.');
+    expect(text).toContain('also matches Pie crust (id: id-Pie crust.cook)');
   });
 
   it('keeps a recipe name with a line break on one line, in the sentence and in the recipe text', async () => {

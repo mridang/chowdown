@@ -23,8 +23,8 @@ import {
 import { SITE_NAME } from '@/utils/site';
 
 const START_U0020_U0021_U0023_HYPHEN =
-  /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/;
-const DCR = /^dcr_/;
+  /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/u;
+const DCR = /^dcr_/u;
 
 import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
@@ -52,6 +52,7 @@ const CHATGPT_DOCUMENT = {
 };
 
 /** A key the document carries with no value, as an override can send it. */
+// eslint-disable-next-line no-unassigned-vars -- never assigned on purpose: it stands for a key that is present with no value, and writing undefined inline is reported by sonarjs/no-undefined-assignment
 let notProvided: undefined;
 
 describe('isMetadataDocumentUrl', () => {
@@ -102,6 +103,7 @@ describe('parseClientMetadataDocument', () => {
     ).toBe(false);
     expect(
       parseClientMetadataDocument(
+        // eslint-disable-next-line no-script-url -- the value is a javascript: URL on purpose, to prove it is refused
         { ...goodDocument, redirect_uris: ['javascript:alert(1)'] },
         URL_ID,
       ).ok,
@@ -273,19 +275,20 @@ describe('parseRegistration', () => {
     ).toMatch(DCR);
   });
 
-  it('rejects missing, unsafe or too many redirect URIs', () => {
-    for (const redirectUris of [
-      undefined,
-      [],
-      [urls.exampleCallback],
-      Array.from({ length: 21 }, (_, index) => `https://a.com/${index}`),
-    ]) {
+  it.each([
+    undefined,
+    [],
+    [urls.exampleCallback],
+    Array.from({ length: 21 }, (_, index) => `https://a.com/${index}`),
+  ])(
+    'rejects missing, unsafe or too many redirect URIs (%j)',
+    (redirectUris) => {
       expect(parseRegistration({ redirect_uris: redirectUris })).toMatchObject({
         ok: false,
         error: 'invalid_redirect_uri',
       });
-    }
-  });
+    },
+  );
 
   it('rejects unsupported grants', () => {
     const base = { redirect_uris: ['https://a.com/cb'] };
@@ -437,7 +440,10 @@ describe('fetchClientMetadata details', () => {
       RequestInit | undefined;
     expect(init?.headers).toMatchObject({ 'User-Agent': FETCH_USER_AGENT });
     expect(FETCH_USER_AGENT).toMatch(
-      new RegExp(String.raw`^${SITE_NAME.toLowerCase()}-oauth/1 \(\+https://`),
+      new RegExp(
+        String.raw`^${SITE_NAME.toLowerCase()}-oauth/1 \(\+https://`,
+        'u',
+      ),
     );
   });
 
@@ -481,16 +487,17 @@ describe('fetchClientMetadata details', () => {
 });
 
 describe('redirect rules in client metadata', () => {
-  it('rejects a document whose redirect URIs include a disallowed scheme', () => {
-    for (const uri of [urls.exampleCallback, 'mailto:a@b.c', 'myapp://cb']) {
+  it.each([urls.exampleCallback, 'mailto:a@b.c', 'myapp://cb'])(
+    'rejects a document whose redirect URIs include a disallowed scheme (%j)',
+    (uri) => {
       expect(
         parseClientMetadataDocument(
           { ...goodDocument, redirect_uris: ['https://chatgpt.com/cb', uri] },
           URL_ID,
         ).ok,
       ).toBe(false);
-    }
-  });
+    },
+  );
 
   it('accepts the redirect URIs of the real clients', () => {
     expect(
@@ -540,8 +547,9 @@ describe('readCappedText', () => {
     new Response(
       new ReadableStream<Uint8Array>({
         start(controller) {
-          for (const part of parts)
+          for (const part of parts) {
             controller.enqueue(new TextEncoder().encode(part));
+          }
           controller.close();
         },
       }),
@@ -566,32 +574,32 @@ describe('readCappedText', () => {
   });
 
   it('gives up as soon as the body passes the cap, without reading the rest', async () => {
-    let pulled = 0;
+    const pulled = jest.fn();
     const response = new Response(
       new ReadableStream<Uint8Array>({
         pull(controller) {
-          pulled += 1;
+          pulled();
           controller.enqueue(new Uint8Array(40));
         },
       }),
     );
     expect(await readCappedText(response, 100)).toBeUndefined();
-    expect(pulled).toBeLessThan(10);
+    expect(pulled.mock.calls.length).toBeLessThan(10);
   });
 
   it('refuses a declared Content-Length over the cap without reading', async () => {
-    let pulled = 0;
+    const pulled = jest.fn();
     const response = new Response(
       new ReadableStream<Uint8Array>({
         pull(controller) {
-          pulled += 1;
+          pulled();
           controller.enqueue(new Uint8Array(1));
         },
       }),
       { headers: { 'content-length': '5000' } },
     );
     expect(await readCappedText(response, 100)).toBeUndefined();
-    expect(pulled).toBeLessThanOrEqual(1);
+    expect(pulled.mock.calls.length).toBeLessThanOrEqual(1);
   });
 
   it('reads an empty response as empty text', async () => {
@@ -708,7 +716,7 @@ describe('cached document freshness', () => {
 describe('isClientBusy', () => {
   it('recognises the busy answer and nothing else', () => {
     expect(isClientBusy({ busy: true, retryAfterSeconds: 3 })).toBe(true);
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
     expect(isClientBusy(undefined)).toBe(false);
     expect(
       isClientBusy({
@@ -832,10 +840,11 @@ describe('error_description is printable ASCII without quotes or backslashes (RF
     expect(!result.ok && result.description).toMatch(allowed);
   });
 
-  it('for a registration request that is too large or not JSON', () => {
-    for (const text of ['x'.repeat(MAX_REGISTRATION_BYTES + 1), 'nope']) {
+  it.each(['x'.repeat(MAX_REGISTRATION_BYTES + 1), 'nope'])(
+    'for a registration request that is too large or not JSON (%j)',
+    (text) => {
       const result = parseRegistrationText(text);
       expect(!result.ok && result.description).toMatch(allowed);
-    }
-  });
+    },
+  );
 });

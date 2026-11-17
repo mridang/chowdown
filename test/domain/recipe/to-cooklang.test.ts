@@ -71,8 +71,12 @@ describe('convertImport', () => {
   it('does not fetch when no source url is given', async () => {
     const spy = jest.fn<typeof fetch>();
     globalThis.fetch = spy;
-    await convertImport('article', envWith('>> title: T\n\nMix.\n'));
-    expect(spy).not.toHaveBeenCalled();
+    const cook = await convertImport(
+      'article',
+      envWith('>> title: T\n\nMix.\n'),
+    );
+    expect(cook).toContain('>> title: T');
+    expect(spy.mock.calls).toEqual([]);
   });
 
   it('uses structured data already present in the content without fetching', async () => {
@@ -133,10 +137,16 @@ describe('convertToCooklang', () => {
 describe('what the model is shown', () => {
   /** The user message the model was sent. */
   function sentTo(env: CloudflareEnv): string {
-    const run = Reflect.get(env.AI, 'run') as unknown as jest.Mock<
-      (model: string, input: { messages: { content: string }[] }) => unknown
-    >;
-    return run.mock.calls[0]?.[1].messages.at(-1)?.content ?? '';
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- env.AI.run is the jest.fn that envWith created, so reading its calls does not detach a real method
+    const input: unknown = jest.mocked(env.AI.run).mock.calls[0]?.[1];
+    const messages =
+      typeof input === 'object' && input !== null && 'messages' in input
+        ? input.messages
+        : undefined;
+    const last: unknown = Array.isArray(messages) ? messages.at(-1) : undefined;
+    return typeof last === 'object' && last !== null && 'content' in last
+      ? String(last.content)
+      : '';
   }
 
   it('is the page without its scripts and style sheets, so a long script cannot push the recipe out', async () => {
@@ -145,16 +155,18 @@ describe('what the model is shown', () => {
       `<script>${'x'.repeat(30_000)}</script><style>p{}</style><p>Boil the pasta for ten minutes.</p>`,
       env,
     );
-    expect(sentTo(env)).toContain('Boil the pasta for ten minutes.');
-    expect(sentTo(env)).not.toContain('xxxx');
-    expect(sentTo(env)).not.toContain('p{}');
+    const sent = sentTo(env);
+    expect(sent).toContain('Boil the pasta for ten minutes.');
+    expect(sent).not.toContain('xxxx');
+    expect(sent).not.toContain('p{}');
   });
 
   it('drops everything after a script that is never closed', async () => {
     const env = envWith('Mix @egg{1}.');
     await convertToCooklang('<p>Boil.</p><script>var a = 1;', env);
-    expect(sentTo(env)).toContain('Boil.');
-    expect(sentTo(env)).not.toContain('var a');
+    const sent = sentTo(env);
+    expect(sent).toContain('Boil.');
+    expect(sent).not.toContain('var a');
   });
 
   it('leaves plain text alone', async () => {

@@ -1,6 +1,5 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import { cn } from '@/components/ui/cn';
+import type { ReactElement, ReactNode } from 'react';
 
 /** One key for each of the three dots of the title bar. */
 const DOTS = [0, 1, 2] as const;
@@ -27,6 +26,7 @@ export function WindowFrame({
   className?: string;
 }>): ReactElement {
   return (
+    // eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- the frame is drawn from elements, and an img element cannot hold children
     <div
       role="img"
       aria-label={label}

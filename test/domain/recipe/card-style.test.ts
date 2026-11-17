@@ -30,7 +30,7 @@ describe('levelOf', () => {
 
   it('is nothing for anything else', () => {
     expect(levelOf('easy')).toBeUndefined();
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
     expect(levelOf(undefined)).toBeUndefined();
   });
 });

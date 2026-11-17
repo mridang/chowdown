@@ -1,10 +1,15 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 /** What the mocked Cloudflare context holds; null means there is no context at all. */
-const context: { current: { env: object; ctx: object } | null } = {
+interface MockedContext {
+  current: { env: object; ctx: object } | null;
+}
+
+const context: MockedContext = {
   current: null,
 };
 
+// eslint-disable-next-line tslop/no-module-mocking -- @opennextjs/cloudflare is a platform module the code under test imports directly, and it only works inside a Worker
 jest.unstable_mockModule('@opennextjs/cloudflare', () => ({
   getCloudflareContext: () => {
     if (context.current === null) {
@@ -17,7 +22,8 @@ jest.unstable_mockModule('@opennextjs/cloudflare', () => ({
 const { ImageService, imageCache, imagesBinding, runInBackground } =
   await import('@/lib/cloudflare/images/server');
 
-const realCaches = Reflect.get(globalThis, 'caches');
+const realCaches: unknown =
+  'caches' in globalThis ? globalThis.caches : undefined;
 
 afterEach(() => {
   context.current = null;
@@ -72,22 +78,19 @@ describe('runInBackground', () => {
   });
 
   it('lets the work run on its own outside a Cloudflare context', async () => {
-    let done = false;
-    runInBackground(
-      Promise.resolve().then(() => {
-        done = true;
-        return done;
-      }),
-    );
+    const finished = jest.fn();
+    runInBackground(Promise.resolve().then(() => finished()));
     await Promise.resolve();
     await Promise.resolve();
-    expect(done).toBe(true);
+    expect(finished.mock.calls).toEqual([[]]);
   });
 
   it('logs work that fails rather than letting it escape', async () => {
     const log = jest.spyOn(console, 'error').mockImplementation(() => {});
     runInBackground(Promise.reject(new Error('boom')));
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
     expect(log).toHaveBeenCalledWith(
       'image background task failed',
       expect.any(Error),

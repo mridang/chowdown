@@ -8,10 +8,7 @@
  * {@link createDatabase}.
  */
 
-import {
-  createDatabase as createGenericDatabase,
-  type Database as GenericDatabase,
-} from '@/lib/core/db/client';
+import { createDatabase as createGenericDatabase } from '@/lib/core/db/client';
 import { getDB } from '@/lib/core/runtime';
 import {
   embeddings,
@@ -26,6 +23,7 @@ import {
   recipes,
   users,
 } from '@/domain/db/schema';
+import type { Database as GenericDatabase } from '@/lib/core/db/client';
 
 /** Every table of chowdown's schema, keyed as Drizzle expects. */
 const schema = {

@@ -19,13 +19,12 @@ import type {
   ParsedRecipe,
   StepToken,
 } from '@/lib/cooklang/cooklang';
-import { own } from '@/utils/own';
 
-const START_DIGITS_PLUS_SPACE_STAR = /^(\d+)\s*\/\s*(\d+)$/;
-const START_DIGITS_PLUS_SPACE_PLUS = /^(\d+)\s+(\d+)\s*\/\s*(\d+)$/;
-const START_DIGITS_PLUS_SPACE_STAR_2 = /^(\d+)?\s*([½⅓⅔¼¾⅛⅜⅝⅞])$/;
-const START_DIGITS_COLON_COMMA_DIGITS = /^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/;
-const START_DIGITS_ANY_COMMA_SLASH = /^[\d.,/]+/;
+const START_DIGITS_PLUS_SPACE_STAR = /^(\d+)\s*\/\s*(\d+)$/u;
+const START_DIGITS_PLUS_SPACE_PLUS = /^(\d+)\s+(\d+)\s*\/\s*(\d+)$/u;
+const START_DIGITS_PLUS_SPACE_STAR_2 = /^(\d+)?\s*([½⅓⅔¼¾⅛⅜⅝⅞])$/u;
+const START_DIGITS_COLON_COMMA_DIGITS = /^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/u;
+const START_DIGITS_ANY_COMMA_SLASH = /^[\d.,/]+/u;
 
 /** Supported measurement systems. */
 export type UnitSystem = 'metric' | 'us' | 'imperial';
@@ -37,62 +36,66 @@ export function isUnitSystem(value: string): value is UnitSystem {
 }
 
 /** Mass units → grams. */
-const MASS_TO_G: Readonly<Record<string, number>> = {
-  g: 1,
-  gram: 1,
-  grams: 1,
-  kg: 1000,
-  kgs: 1000,
-  mg: 0.001,
-  kilo: 1000,
-  kilos: 1000,
-  kilogram: 1000,
-  kilograms: 1000,
-  gr: 1,
-  gm: 1,
-  gms: 1,
-  oz: 28.3495,
-  ounce: 28.3495,
-  ounces: 28.3495,
-  lb: 453.592,
-  lbs: 453.592,
-  pound: 453.592,
-  pounds: 453.592,
-};
+const MASS_TO_G = new Map<string, number>(
+  Object.entries({
+    g: 1,
+    gram: 1,
+    grams: 1,
+    kg: 1000,
+    kgs: 1000,
+    mg: 0.001,
+    kilo: 1000,
+    kilos: 1000,
+    kilogram: 1000,
+    kilograms: 1000,
+    gr: 1,
+    gm: 1,
+    gms: 1,
+    oz: 28.3495,
+    ounce: 28.3495,
+    ounces: 28.3495,
+    lb: 453.592,
+    lbs: 453.592,
+    pound: 453.592,
+    pounds: 453.592,
+  }),
+);
 
 /** Volume units → millilitres (cup/tbsp/tsp assumed US when used as a source). */
-const VOL_TO_ML: Readonly<Record<string, number>> = {
-  ml: 1,
-  milliliter: 1,
-  millilitre: 1,
-  milliliters: 1,
-  millilitres: 1,
-  l: 1000,
-  liter: 1000,
-  litre: 1000,
-  liters: 1000,
-  litres: 1000,
-  dl: 100,
-  cl: 10,
-  tbs: 14.7868,
-  tbsps: 14.7868,
-  tsps: 4.92892,
-  qt: 946.353,
-  pt: 473.176,
-  tsp: 4.92892,
-  teaspoon: 4.92892,
-  teaspoons: 4.92892,
-  tbsp: 14.7868,
-  tablespoon: 14.7868,
-  tablespoons: 14.7868,
-  cup: 236.588,
-  cups: 236.588,
-  floz: 29.5735,
-  pint: 473.176,
-  pints: 473.176,
-  quart: 946.353,
-  quarts: 946.353,
-};
+const VOL_TO_ML = new Map<string, number>(
+  Object.entries({
+    ml: 1,
+    milliliter: 1,
+    millilitre: 1,
+    milliliters: 1,
+    millilitres: 1,
+    l: 1000,
+    liter: 1000,
+    litre: 1000,
+    liters: 1000,
+    litres: 1000,
+    dl: 100,
+    cl: 10,
+    tbs: 14.7868,
+    tbsps: 14.7868,
+    tsps: 4.92892,
+    qt: 946.353,
+    pt: 473.176,
+    tsp: 4.92892,
+    teaspoon: 4.92892,
+    teaspoons: 4.92892,
+    tbsp: 14.7868,
+    tablespoon: 14.7868,
+    tablespoons: 14.7868,
+    cup: 236.588,
+    cups: 236.588,
+    floz: 29.5735,
+    pint: 473.176,
+    pints: 473.176,
+    quart: 946.353,
+    quarts: 946.353,
+  }),
+);
 
 /** A unit name and its size in millilitres. */
 type VolumeTarget = readonly [unit: string, ml: number];
@@ -145,11 +148,13 @@ function formatMass(grams: number, system: UnitSystem): string {
 }
 
 /** The rounding step for each volume unit; any other unit rounds to halves. */
-const ROUNDING_STEP: Readonly<Record<string, number>> = {
-  ml: 1,
-  l: 0.01,
-  cup: 0.25,
-};
+const ROUNDING_STEP = new Map<string, number>(
+  Object.entries({
+    ml: 1,
+    l: 0.01,
+    cup: 0.25,
+  }),
+);
 
 /** Format a volume given in millilitres for the target system. */
 function formatVolume(ml: number, system: UnitSystem): string {
@@ -157,7 +162,7 @@ function formatVolume(ml: number, system: UnitSystem): string {
   const fitting = targets.find(([, size]) => ml >= size);
   if (fitting) {
     const [unit, size] = fitting;
-    const step = own(ROUNDING_STEP, unit) ?? 0.5;
+    const step = ROUNDING_STEP.get(unit) ?? 0.5;
     const amount = roundTo(ml / size, step);
     return `${amount} ${unit === 'cup' && Number(amount) > 1 ? 'cups' : unit}`;
   }
@@ -167,7 +172,7 @@ function formatVolume(ml: number, system: UnitSystem): string {
 }
 
 /** What ends a line for `.` in a regular expression. */
-const LINE_BREAK = /[\n\r\u2028\u2029]/;
+const LINE_BREAK = /[\n\r\u2028\u2029]/u;
 
 /**
  * Convert a single quantity string (e.g. "200 g", "2 cups", "180 C") to the
@@ -191,11 +196,11 @@ export function convertQuantity(quantity: string, system: UnitSystem): string {
   if (value === null || !unit) {
     return quantity;
   }
-  const gramsPerUnit = own(MASS_TO_G, unit);
+  const gramsPerUnit = MASS_TO_G.get(unit);
   if (gramsPerUnit !== undefined) {
     return formatMass(value * gramsPerUnit, system);
   }
-  const mlPerUnit = own(VOL_TO_ML, unit);
+  const mlPerUnit = VOL_TO_ML.get(unit);
   if (mlPerUnit !== undefined) {
     return formatVolume(value * mlPerUnit, system);
   }
@@ -266,20 +271,23 @@ function formatAmount(value: number): string {
 const AMOUNT = String.raw`\d+(?:[.,]\d+)?(?:\s+\d+\s*\/\s*\d+|\s*\/\s*\d+)?`;
 const SCALABLE = new RegExp(
   String.raw`^(${AMOUNT})(?:\s*[-–]\s*(${AMOUNT}))?\s*(.*)$`,
+  'u',
 );
 
 /** Vulgar-fraction characters and what they are worth. */
-const FRACTION_GLYPHS: Readonly<Record<string, number>> = {
-  '½': 1 / 2,
-  '⅓': 1 / 3,
-  '⅔': 2 / 3,
-  '¼': 1 / 4,
-  '¾': 3 / 4,
-  '⅛': 1 / 8,
-  '⅜': 3 / 8,
-  '⅝': 5 / 8,
-  '⅞': 7 / 8,
-};
+const FRACTION_GLYPHS = new Map<string, number>(
+  Object.entries({
+    '½': 1 / 2,
+    '⅓': 1 / 3,
+    '⅔': 2 / 3,
+    '¼': 1 / 4,
+    '¾': 3 / 4,
+    '⅛': 1 / 8,
+    '⅜': 3 / 8,
+    '⅝': 5 / 8,
+    '⅞': 7 / 8,
+  }),
+);
 
 /** The value of an amount like "1 1/2" or "3/4" or "2,5"; undefined if it isn't one. */
 function amountValue(text: string): number | undefined {
@@ -289,7 +297,7 @@ function amountValue(text: string): number | undefined {
   }
   const glyph = START_DIGITS_PLUS_SPACE_STAR_2.exec(text);
   if (glyph) {
-    return Number(glyph[1] ?? 0) + (FRACTION_GLYPHS[glyph[2] ?? ''] ?? 0);
+    return Number(glyph[1] ?? 0) + (FRACTION_GLYPHS.get(glyph[2] ?? '') ?? 0);
   }
   const mixed = START_DIGITS_PLUS_SPACE_PLUS.exec(text);
   if (mixed) {
@@ -341,6 +349,7 @@ const PLAIN_NUMBER = String.raw`\d+(?:[.,]\d+)?(?:\s+\d+\s*\/\s*\d+|\s*\/\s*\d+)
 /** The number a quantity starts with, in whichever of the three notations it is written. */
 export const LEADING_NUMBER = new RegExp(
   `^(${[THOUSANDS_NUMBER, VULGAR_NUMBER, PLAIN_NUMBER].join('|')})`,
+  'u',
 );
 
 /** How much of something, in a base unit, so two quantities can be compared. */
@@ -372,11 +381,11 @@ export function toBaseAmount(quantity: string): BaseAmount | undefined {
     .toLowerCase()
     .replaceAll('.', '')
     .replace('fl oz', 'floz');
-  const gramsPerUnit = own(MASS_TO_G, unit);
+  const gramsPerUnit = MASS_TO_G.get(unit);
   if (gramsPerUnit !== undefined) {
     return { dimension: 'mass', amount: value * gramsPerUnit };
   }
-  const mlPerUnit = own(VOL_TO_ML, unit);
+  const mlPerUnit = VOL_TO_ML.get(unit);
   if (mlPerUnit !== undefined) {
     return { dimension: 'volume', amount: value * mlPerUnit };
   }

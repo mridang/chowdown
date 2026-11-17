@@ -4,7 +4,7 @@ import { AccountMenu, Avatar } from '@/components/site/account-menu';
 import { driveLink } from '@/components/site/drive-link';
 import { htmlAt } from '../render';
 
-const IMG_SRC_HTTPS = /<img[^>]*src="https:\/\/photos\.test\/ada\.png"/;
+const IMG_SRC_HTTPS = /<img[^>]*src="https:\/\/photos\.test\/ada\.png"/u;
 
 describe('Avatar', () => {
   it('shows the person’s photo, without sending our address to Google', () => {

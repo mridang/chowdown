@@ -6,16 +6,17 @@
  * lists carry; the full *recipe* adds the Cooklang source and its parsed parts.
  */
 
-import type { Recipe } from '@/domain/db/recipes';
 import {
   isUncurated,
   parseRecipe,
   recipeDisplayName,
   sourceUrlOf,
-  type StepToken,
 } from '@/lib/cooklang';
 import { extractMedia } from '@/domain/recipe/media';
-import { rowTags, type RecipeTags } from '@/domain/recipe/tag-index';
+import { rowTags } from '@/domain/recipe/tag-index';
+import type { StepToken } from '@/lib/cooklang';
+import type { RecipeTags } from '@/domain/recipe/tag-index';
+import type { Recipe } from '@/domain/db/recipes';
 
 /** What list endpoints return for each recipe. */
 export interface RecipeSummary {
@@ -59,7 +60,7 @@ export function stepText(tokens: readonly StepToken[]): string {
       }
     })
     .join('')
-    .replaceAll(/\s+/g, ' ')
+    .replaceAll(/\s+/gu, ' ')
     .trim();
 }
 

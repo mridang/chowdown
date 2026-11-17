@@ -1,17 +1,16 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { APP_STYLES } from '@/views/app';
-import { DARK_PALETTE, LIGHT_PALETTE } from '@/views/palette';
+import { APP_STYLES, DARK_PALETTE, LIGHT_PALETTE } from '@/views/app';
 import { STYLES } from '@/views/styles';
 
-const LIST_HYPHEN_STYLE_COLON_SPACE = /list-style:\s*none/;
-const DOT_SR_HYPHEN_ONLY_ESC = /\.sr-only \{[^}]*clip-path:inset\(50%\)/;
-const CALC_ESC_DIGITS_PLUS_PX = /calc\((\d+)px \+ var\(--safe-top/;
-const OUTLINE_HYPHEN_OFFSET_COLON_DIGITS = /outline-offset: (\d+)px/;
-const OUTLINE_COLON_DIGITS_PLUS_PX = /outline: (\d+)px/;
-const URL_ESC = /url\(/;
-const VAR_ESC_HYPHEN_FONT_HYPHEN = /var\(--font-sans,/;
-const VAR_ESC_HYPHEN_COLOR_HYPHEN = /var\(--color-background-secondary, #/;
+const LIST_HYPHEN_STYLE_COLON_SPACE = /list-style:\s*none/u;
+const DOT_SR_HYPHEN_ONLY_ESC = /\.sr-only \{[^}]*clip-path:inset\(50%\)/u;
+const CALC_ESC_DIGITS_PLUS_PX = /calc\((\d+)px \+ var\(--safe-top/u;
+const OUTLINE_HYPHEN_OFFSET_COLON_DIGITS = /outline-offset: (\d+)px/u;
+const OUTLINE_COLON_DIGITS_PLUS_PX = /outline: (\d+)px/u;
+const URL_ESC = /url\(/u;
+const VAR_ESC_HYPHEN_FONT_HYPHEN = /var\(--font-sans,/u;
+const VAR_ESC_HYPHEN_COLOR_HYPHEN = /var\(--color-background-secondary, #/u;
 
 describe('STYLES', () => {
   it('follows the host’s theme, with the operating system only as a fallback', () => {
@@ -27,7 +26,7 @@ describe('STYLES', () => {
   it('keeps controls clear of the safe area and large enough to tap', () => {
     expect(STYLES).toContain('var(--safe-top, 0px)');
     expect(STYLES).toContain('var(--safe-bottom, 0px)');
-    expect(STYLES.match(/min-height:44px/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(STYLES.match(/min-height:44px/gu)?.length).toBeGreaterThanOrEqual(3);
   });
 
   it('respects the request for reduced motion', () => {
@@ -49,11 +48,12 @@ function declaration(selector: string, property: string): string {
   const escapedSelector = selector.replace('.', String.raw`\.`);
   const rule = new RegExp(
     String.raw`(?:^|\n)${escapedSelector} \{([^}]*)\}`,
+    'u',
   ).exec(STYLES);
   const value = rule?.[1]?.match(
-    new RegExp(String.raw`${property}:\s*([^;]*);`),
+    new RegExp(String.raw`${property}:\s*([^;]*);`, 'u'),
   );
-  return value?.[1]?.replaceAll(/\s+/g, ' ').trim() ?? '';
+  return value?.[1]?.replaceAll(/\s+/gu, ' ').trim() ?? '';
 }
 
 describe('keyboard focus', () => {
@@ -71,7 +71,7 @@ describe('keyboard focus', () => {
 
 describe('text sizes', () => {
   it('are relative, so they follow the person’s text size setting', () => {
-    const fixed = [...STYLES.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/g)];
+    const fixed = [...STYLES.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/gu)];
     expect(fixed.map((match) => match[0])).toEqual([]);
   });
 
@@ -90,7 +90,7 @@ describe('assistive text', () => {
 describe('lists', () => {
   it('hide their markers without `none`, which makes WebKit drop the list meaning', () => {
     expect(STYLES).not.toMatch(LIST_HYPHEN_STYLE_COLON_SPACE);
-    expect(STYLES.match(/list-style-type:""/g)?.length).toBeGreaterThanOrEqual(
+    expect(STYLES.match(/list-style-type:""/gu)?.length).toBeGreaterThanOrEqual(
       4,
     );
   });

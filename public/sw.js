@@ -17,13 +17,13 @@ const ORIGIN = self.location.origin;
 /** A colour from the query string, only if it is a plain `#rrggbb` value. */
 function colour(name, fallback) {
   const value = PARAMS.get(name);
-  return value && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
+  return value && /^#[0-9a-fA-F]{6}$/u.test(value) ? value : fallback;
 }
 
 /** Text made safe to place inside HTML. */
 function escapeHtml(text) {
   return text.replace(
-    /[&<>"']/g,
+    /[&<>"']/gu,
     (c) =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[
         c

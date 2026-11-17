@@ -15,26 +15,19 @@ import {
   isUncurated,
   parseRecipe,
   recipeDisplayName,
-  type UnitSystem,
 } from '@/lib/cooklang';
-import type { DriveFile } from '@/lib/google/drive';
 import { cardText, listText } from '@/domain/mcp/tool-text';
 import {
   CARD_RESOURCE_URI,
   LIST_RESOURCE_URI,
 } from '@/domain/mcp/ui-resources';
+import { textResult } from '@/lib/mcp';
+import type { ToolResult } from '@/lib/mcp';
 import type { RecipeCardData, RecipeListData } from '@/domain/mcp/ui-types';
 
-import { textResult, type ToolResult } from '@/lib/mcp';
+import type { UnitSystem } from '@/lib/cooklang';
+import type { DriveFile } from '@/lib/google/drive';
 import type { ToolContent } from '@/domain/mcp/tool-context';
-
-export {
-  dataResult,
-  errorResult,
-  type TextContent,
-  textResult,
-  type ToolResult,
-} from '@/lib/mcp';
 
 /** Metadata keys worth showing in the card's meta row (the rest stay in the file). */
 const CARD_META_KEYS: ReadonlySet<string> = new Set([

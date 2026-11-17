@@ -1,13 +1,13 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { TimerTray } from '@/components/recipe/timer-tray';
+import { html } from '../render';
 import type { StepTimer } from '@/components/recipe/timer-state';
 import type { StepTimers } from '@/components/recipe/use-step-timers';
-import { html } from '../render';
 
-const ANIMATE_BLINK_FLASH = /animate-|blink|flash/;
+const ANIMATE_BLINK_FLASH = /animate-|blink|flash/u;
 const ROLE_TIMER_ARIA =
-  /<p role="timer" aria-label="Step 1 timer"[^>]*>.*4:07/s;
+  /<p role="timer" aria-label="Step 1 timer"[^>]*>.*4:07/su;
 
 const MIN = 60_000;
 const NOW = 5_000_000;
@@ -54,7 +54,7 @@ describe('TimerTray', () => {
       />,
     );
     expect(out).toContain('<ul aria-label="Timers"');
-    expect(out.match(/<li /g)).toHaveLength(2);
+    expect(out.match(/<li /gu)).toHaveLength(2);
     expect(out).toContain('Step 1');
     expect(out).toContain('Step 3');
   });
@@ -115,9 +115,11 @@ describe('TimerTray', () => {
     const out = html(
       <TimerTray timers={timers([timer('0:1', 0, { status: 'done' })])} />,
     );
-    const buttons = out.match(/<button[^>]*>/g) ?? [];
+    const buttons = out.match(/<button[^>]*>/gu) ?? [];
     expect(buttons).toHaveLength(3);
-    for (const button of buttons) expect(button).toContain('min-h-11');
+    for (const button of buttons) {
+      expect(button).toContain('min-h-11');
+    }
     expect(out).not.toMatch(ANIMATE_BLINK_FLASH);
   });
 });

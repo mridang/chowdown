@@ -1,14 +1,13 @@
 'use client';
 
-import type { ReactElement } from 'react';
-
 import { ClockIcon } from '@/components/icons';
 import { Heading } from '@/components/ui/layout';
 import { NumberBadge } from '@/components/ui/number-badge';
-import type { StepToken } from '@/lib/cooklang';
 
 import { NoteChip } from '@/components/recipe/note-chip';
 import { useRecipeState } from '@/components/recipe/recipe-state';
+import type { StepToken } from '@/lib/cooklang';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * The shared look of an inline highlight. Each kind has its own tint and weight,
@@ -18,11 +17,12 @@ import { useRecipeState } from '@/components/recipe/recipe-state';
 const HIGHLIGHT = 'box-decoration-clone rounded px-1 py-px font-semibold';
 
 /** One piece of a step: plain text or an ingredient, cookware or timer highlight. */
-function Token({ token }: Readonly<{ token: StepToken }>): ReactElement {
+// eslint-disable-next-line sonarjs/function-return-type -- text is returned as it is, and wrapping it in a fragment is a useless fragment
+function Token({ token }: Readonly<{ token: StepToken }>): ReactNode {
   const { quantity } = useRecipeState();
   switch (token.kind) {
     case 'text': {
-      return <>{token.text}</>;
+      return token.text;
     }
     case 'ingredient': {
       return (
@@ -49,6 +49,7 @@ function Token({ token }: Readonly<{ token: StepToken }>): ReactElement {
         </span>
       );
     }
+    // no default
   }
 }
 

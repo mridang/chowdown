@@ -1,5 +1,5 @@
 const START_COLON_INLINE_OR_EVAL =
-  /^(?:inline|eval|self|trusted-types-sink|wasm-eval)$/;
+  /^(?:inline|eval|self|trusted-types-sink|wasm-eval)$/u;
 /**
  * @packageDocumentation
  *
@@ -40,7 +40,7 @@ export const MAX_REPORTS_PER_REQUEST = 20;
 
 /** The schemes extensions use for their own addresses. */
 const EXTENSION_SCHEME =
-  /^(?:chrome|moz|safari|safari-web|ms-browser|edge)-extension:/i;
+  /^(?:chrome|moz|safari|safari-web|ms-browser|edge)-extension:/iu;
 
 /** A JSON object. */
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
@@ -57,7 +57,7 @@ function short(value: unknown, limit: number): string {
     const code = char.codePointAt(0) ?? 0;
     return code < 32 || code === 127 ? ' ' : char;
   }).join('');
-  return printable.replaceAll(/\s+/g, ' ').trim().slice(0, limit);
+  return printable.replaceAll(/\s+/gu, ' ').trim().slice(0, limit);
 }
 
 /** The first of `keys` in `body` that holds text. */
@@ -161,6 +161,8 @@ export function summariseReports(body: unknown): readonly ReportSummary[] {
     : legacyCspEntries(body);
   return entries
     .slice(0, MAX_REPORTS_PER_REQUEST)
+    .values()
     .filter(([, report]) => !fromExtension(report))
-    .map(([type, report]) => summarise(type, report));
+    .map(([type, report]) => summarise(type, report))
+    .toArray();
 }

@@ -44,28 +44,28 @@ function fakeContext(options: { readonly refuse?: boolean } = {}) {
 }
 
 /** A constructor that hands back the given context, as `AudioContext` would. */
-function constructing(context: object): never {
-  return function () {
+function constructing(context: Readonly<Record<string, unknown>>): never {
+  return function constructed() {
     return context;
   } as never;
 }
 
-const settled = async () => new Promise((resolve) => setTimeout(resolve, 0));
+const settled = async () =>
+  new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
 
 describe('createAlarm', () => {
   it('gives no alarm where the browser has no audio', () => {
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(createAlarm(undefined)).toBeUndefined();
   });
 
   it('makes its audio context straight away, from the tap, and resumes it', () => {
     const { context } = fakeContext();
-    const Context = jest.fn(function () {
-      return context;
-    });
+    const Context = jest.fn(() => context);
     createAlarm(Context as never);
-    expect(Context).toHaveBeenCalledTimes(1);
-    expect(context.resume).toHaveBeenCalled();
+    expect(Context.mock.calls).toEqual([[]]);
+    expect(context.resume.mock.calls).toEqual([[]]);
   });
 
   it('plays three beeps, each starting at its own time', async () => {
@@ -97,7 +97,7 @@ describe('createAlarm', () => {
   it('closes the audio context when asked', () => {
     const { context } = fakeContext();
     createAlarm(constructing(context))?.close();
-    expect(context.close).toHaveBeenCalledTimes(1);
+    expect(context.close.mock.calls).toEqual([[]]);
   });
 });
 

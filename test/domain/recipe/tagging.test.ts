@@ -7,7 +7,7 @@ import {
 } from '@/domain/recipe/tagging';
 import { parseRecipe } from '@/lib/cooklang';
 
-const DIET_VEGETARIAN = /- diet [^\n]*Vegetarian/;
+const DIET_VEGETARIAN = /- diet [^\n]*Vegetarian/u;
 
 const SOURCE = '>> title: Curry\n\nCook @chicken{500%g} in a #pan{}.\n';
 

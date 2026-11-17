@@ -3,22 +3,22 @@ import { describe, expect, it } from '@jest/globals';
 import { AddRecipes } from '@/app/(site)/(pages)/recipes/add/_components/add-recipes';
 import { html } from '../../../../../../components/render';
 
-const TEXTAREA_ID_IMPORT = /<textarea[^>]*id="import-input"[^>]*><\/textarea>/;
+const TEXTAREA_ID_IMPORT = /<textarea[^>]*id="import-input"[^>]*><\/textarea>/u;
 const TEXTAREA_ID_IMPORT_2 =
-  /<textarea[^>]*id="import-input"[^>]*>https:\/\/example.com\/pancakes<\/textarea>/;
-const BUTTON_CLOSE_BUTTON = /<button[^>]*>.*Close<\/button>/;
+  /<textarea[^>]*id="import-input"[^>]*>https:\/\/example.com\/pancakes<\/textarea>/u;
+const BUTTON_CLOSE_BUTTON = /<button[^>]*>.*Close<\/button>/u;
 const BUTTON_DISABLED_PREPARE =
-  /<button[^>]*disabled=""[^>]*>Prepare recipes<\/button>/;
-const TEXTAREA_ID_IMPORT_3 = /<textarea[^>]*id="import-input"/;
+  /<button[^>]*disabled=""[^>]*>Prepare recipes<\/button>/u;
+const TEXTAREA_ID_IMPORT_3 = /<textarea[^>]*id="import-input"/u;
 const LABEL_FOR_IMPORT =
-  /<label[^>]*for="import-input"[^>]*>Links or recipe text<\/label>/;
-const ROLE_STATUS_ARIA =
-  /<p role="status" aria-live="polite"[^>]*empty:hidden[^>]*><\/p>/;
-const H2_TABINDEX_ID = /<h2[^>]*tabindex="-1"[^>]*id="add-recipes-heading"/;
+  /<label[^>]*for="import-input"[^>]*>Links or recipe text<\/label>/u;
+const OUTPUT_ARIA =
+  /<output aria-live="polite"[^>]*empty:hidden[^>]*><\/output>/u;
+const H2_TABINDEX_ID = /<h2[^>]*tabindex="-1"[^>]*id="add-recipes-heading"/u;
 const H2_ID_ADD =
-  /<h2[^>]*id="add-recipes-heading"[^>]*>Import links or text<\/h2>/;
+  /<h2[^>]*id="add-recipes-heading"[^>]*>Import links or text<\/h2>/u;
 const SECTION_ARIA_LABELLEDBY =
-  /<section[^>]*aria-labelledby="add-recipes-heading"/;
+  /<section[^>]*aria-labelledby="add-recipes-heading"/u;
 
 describe('AddRecipes', () => {
   const out = html(
@@ -35,7 +35,7 @@ describe('AddRecipes', () => {
   });
 
   it('has an empty polite live region ready, so progress can be announced', () => {
-    expect(out).toMatch(ROLE_STATUS_ARIA);
+    expect(out).toMatch(OUTPUT_ARIA);
   });
 
   it('offers no Cancel until something is running', () => {

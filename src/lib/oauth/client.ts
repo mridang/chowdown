@@ -20,8 +20,8 @@ import { bytesToBase64Url } from '@/utils/base64';
 import { SITE_NAME, SITE_URL } from '@/utils/site';
 import { parseUrl } from '@/utils/url';
 
-const MAX_AGE = /^max-age=(\d+)$/;
-const START_DIGITS_ANY_PLUS_END = /^[\d.]+$/;
+const MAX_AGE = /^max-age=(\d+)$/u;
+const START_DIGITS_ANY_PLUS_END = /^[\d.]+$/u;
 
 /** A client as the authorization server uses it. */
 export interface OAuthClient {
@@ -531,6 +531,7 @@ export function registrationResponse(
   client: Readonly<OAuthClient>,
   issuedAt: number,
 ): Readonly<Record<string, unknown>> {
+  // eslint-disable-next-line tslop/no-known-value-widening -- an RFC 7591 registration response is an open JSON dictionary
   return {
     client_id: client.clientId,
     client_name: client.name,

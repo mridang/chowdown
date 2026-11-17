@@ -17,10 +17,13 @@
 import { problems } from '@/lib/core/api';
 import { isPublicWebUrl } from '@/lib/safe-fetch';
 import { SITE_NAME, SITE_URL } from '@/utils/site';
-import { DEFAULT_WIDTH, isAllowedHost, snapWidth } from './address';
-import { fetchImage, type ImageFetch, type ImagesLike } from './proxy';
+import { DEFAULT_WIDTH } from '@/lib/cloudflare/images/site';
+import { isAllowedHost, snapWidth } from './address';
+import { fetchImage } from './proxy';
+import type { SafeFetcher } from '@/lib/safe-fetch';
+import type { ImagesLike } from './proxy';
 
-const START_W_SLASH = /^W\//;
+const START_W_SLASH = /^W\//u;
 
 /** The two cache operations the service uses. */
 export type ImageCache = Pick<Cache, 'match' | 'put'>;
@@ -49,7 +52,7 @@ export interface ImageServiceDeps {
   /** The Images binding, where the deployment has one. */
   readonly images?: ImagesLike;
   /** Fetch the picture from its site; the real `fetch` when left out. */
-  readonly fetcher?: ImageFetch;
+  readonly fetcher?: SafeFetcher;
   /** The app's access rules. */
   readonly access: ImageAccess;
   /** Run work after the response is sent (storing the copy). */

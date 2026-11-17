@@ -10,12 +10,12 @@ import {
   MAX_IMPORTS_PER_USER,
   purgeExpiredRecipeImports,
 } from '@/domain/db/recipe-imports';
-import type { ImportItem } from '@/domain/recipe/prepare-import';
 import { fakeDb } from '../../lib/core/db/fake-db';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import type { ImportItem } from '@/domain/recipe/prepare-import';
 
-const START_N0_HYPHEN_N9_A = /^[0-9a-f-]{36}$/;
+const START_N0_HYPHEN_N9_A = /^[0-9a-f-]{36}$/u;
 
 const items = [{ kind: 'text', status: 'FAILED' }] as unknown as ImportItem[];
 const row = {
@@ -85,8 +85,9 @@ describe('createRecipeImport retention', () => {
     insertRow(made, 'stale', 1, days(IMPORT_RETENTION_DAYS + 1));
     insertRow(made, 'recent', 1, days(1));
     await createRecipeImport(made.db, 1, items);
-    expect(idsOf(made, 1)).not.toContain('stale');
-    expect(idsOf(made, 1)).toContain('recent');
+    const kept = idsOf(made, 1);
+    expect(kept).not.toContain('stale');
+    expect(kept).toContain('recent');
   });
 
   it('keeps only the newest imports once the person is over their cap', async () => {

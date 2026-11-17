@@ -7,20 +7,14 @@
  * proxy are in `address.ts`.
  */
 
-import {
-  fetchCapped,
-  type FetchFailure,
-  type SafeFetcher,
-} from '@/lib/safe-fetch';
+import { fetchCapped } from '@/lib/safe-fetch';
+import type { FetchFailure, SafeFetcher } from '@/lib/safe-fetch';
 
 /** The most a picture may weigh before we refuse it. */
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 /** How long an original is kept at the edge by the fetch, in seconds. */
 const ORIGINAL_KEEP_SECONDS = 7 * 24 * 60 * 60;
-
-/** The fetch function, narrowed to what the proxy needs, so tests can fake it. */
-export type ImageFetch = SafeFetcher;
 
 /**
  * The part of Cloudflare's Images binding the proxy uses (scale an image, encode
@@ -42,7 +36,8 @@ export function isImagesBinding(value: unknown): value is ImagesLike {
   return (
     typeof value === 'object' &&
     value !== null &&
-    typeof Reflect.get(value, 'input') === 'function'
+    'input' in value &&
+    typeof value.input === 'function'
   );
 }
 
@@ -67,7 +62,7 @@ export type ImageResult =
 const SCALE_FROM_BYTES = 24 * 1024;
 
 /** Formats worth scaling. (A GIF may be animated, which scaling would flatten.) */
-const SCALABLE = /^image\/(jpeg|jpg|png|webp|avif)$/;
+const SCALABLE = /^image\/(jpeg|jpg|png|webp|avif)$/u;
 
 /** The format scaled pictures are sent in: every browser that can show a modern page reads it. */
 const SCALED_TYPE = 'image/webp';
@@ -149,6 +144,7 @@ function refusalFor(failure: FetchFailure): ImageResult {
     case 'unreachable': {
       return refusal(502, 'The image site did not answer.');
     }
+    // no default
   }
 }
 
@@ -166,7 +162,7 @@ export async function fetchImage(
   url: string,
   width: number,
   deps: Readonly<{
-    fetcher?: ImageFetch;
+    fetcher?: SafeFetcher;
     images?: ImagesLike;
     userAgent?: string;
   }> = {},

@@ -7,7 +7,6 @@ import {
   jest,
 } from '@jest/globals';
 
-import type { LayoutAction } from '@/views/display-mode';
 import {
   applyDocumentContext,
   applyHostContext,
@@ -16,14 +15,11 @@ import {
   runServerTool,
   sendFollowUpMessage,
 } from '@/views/host-wiring';
+import { joinedHost, recordingRoot, settle } from './host-harness';
+import type { JoinedHost } from './host-harness';
+import type { LayoutAction } from '@/views/display-mode';
 import type { OpenAiApi } from '@/views/openai-bridge';
 import type { ViewAction } from '@/views/view-state';
-import {
-  joinedHost,
-  recordingRoot,
-  settle,
-  type JoinedHost,
-} from './host-harness';
 
 type Data = { readonly n: number };
 
@@ -32,7 +28,8 @@ function isData(value: unknown): value is Data {
   return (
     typeof value === 'object' &&
     value !== null &&
-    typeof Reflect.get(value, 'n') === 'number'
+    'n' in value &&
+    typeof value.n === 'number'
   );
 }
 

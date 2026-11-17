@@ -9,15 +9,14 @@ import {
   useContext,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
-  type ComponentProps,
-  type ReactElement,
-  type ReactNode,
 } from 'react';
 
 import { CloseIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
+import type { ComponentProps, ReactElement, ReactNode } from 'react';
 
 /** What the parts of one dialog share: whether it is open, and the ids that tie its title and description to it. */
 interface DialogState {
@@ -70,17 +69,17 @@ export function Dialog({
     },
     [onOpenChange],
   );
+  const context = useMemo(
+    () => ({
+      open,
+      setOpen,
+      titleId: `${id}-title`,
+      descriptionId: `${id}-description`,
+    }),
+    [open, setOpen, id],
+  );
   return (
-    <DialogContext.Provider
-      value={{
-        open,
-        setOpen,
-        titleId: `${id}-title`,
-        descriptionId: `${id}-description`,
-      }}
-    >
-      {children}
-    </DialogContext.Provider>
+    <DialogContext.Provider value={context}>{children}</DialogContext.Provider>
   );
 }
 
@@ -140,6 +139,11 @@ export function syncModal(
   change();
 }
 
+/** The props that carry a dialog's `closedby` attribute. */
+interface ClosedBy {
+  readonly closedby: 'any' | 'none';
+}
+
 /**
  * The `closedby` attribute for a dialog, as props to spread onto it. `any` is
  * light dismiss: the browser closes the dialog itself for a click outside it
@@ -148,9 +152,7 @@ export function syncModal(
  * know the attribute, but the lint rule that checks property names does not yet,
  * so it is passed as a spread.
  */
-export function closedBy(dismissable: boolean): {
-  readonly closedby: 'any' | 'none';
-} {
+export function closedBy(dismissable: boolean): ClosedBy {
   return { closedby: dismissable ? 'any' : 'none' };
 }
 
@@ -160,7 +162,9 @@ export function closedBy(dismissable: boolean): {
  * not, the dialog has to watch for that click, with {@link backdropClickHandler}.
  * @param dialog - Any dialog element; the feature is looked for on its prototype.
  */
-export function supportsLightDismiss(dialog: object): boolean {
+export function supportsLightDismiss(
+  dialog: HTMLDialogElement | Readonly<Record<string, unknown>>,
+): boolean {
   return 'closedBy' in dialog;
 }
 

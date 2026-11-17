@@ -20,6 +20,7 @@ import {
  * have, and its feature list) comes from `@/utils/site`.
  */
 export function landingJsonLd(): Readonly<Record<string, unknown>> {
+  // eslint-disable-next-line tslop/no-known-value-widening -- JSON-LD is an open dictionary of schema.org terms
   return {
     '@context': 'https://schema.org',
     '@graph': [

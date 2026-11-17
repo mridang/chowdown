@@ -16,10 +16,8 @@
 
 import { parseRecipe } from '@/lib/cooklang';
 import { withImages } from '@/domain/recipe/media';
-import {
-  hasRecipeBody,
-  type ConversionOptions,
-} from '@/domain/recipe/to-cooklang';
+import { hasRecipeBody } from '@/domain/recipe/to-cooklang';
+import type { ConversionOptions } from '@/domain/recipe/to-cooklang';
 
 /** What an import ended up doing. */
 export type ImportOutcome =

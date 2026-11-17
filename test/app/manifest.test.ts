@@ -1,12 +1,12 @@
-import { describe, expect, it } from '@jest/globals';
 import { access, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { describe, expect, it } from '@jest/globals';
 
 import { BACKGROUND_COLOR, THEME_COLOR } from '@/app/_brand';
 import manifest from '@/app/manifest';
 import { pngSize } from '../png';
 
-const LEADING_SLASH = /^\//;
+const LEADING_SLASH = /^\//u;
 const LU = /^\p{Lu}/u;
 
 /** Whether anything exists at `file`. */
@@ -56,22 +56,24 @@ describe('web app manifest', () => {
     );
   });
 
-  it('points every icon at a file that exists', async () => {
-    for (const icon of m.icons ?? []) {
+  it.each(m.icons ?? [])(
+    'points every icon at a file that exists (%j)',
+    async (icon) => {
       expect(await exists(path.join(process.cwd(), 'public', icon.src))).toBe(
         true,
       );
-    }
-  });
+    },
+  );
 
-  it('declares each icon at the size the file really has', async () => {
-    for (const icon of m.icons ?? []) {
+  it.each(m.icons ?? [])(
+    'declares each icon at the size the file really has (%j)',
+    async (icon) => {
       const { width, height } = await pngSize(
         path.join(process.cwd(), 'public', icon.src),
       );
       expect(icon.sizes).toBe(`${width}x${height}`);
-    }
-  });
+    },
+  );
 
   it('has a monochrome icon for Android themed icons', () => {
     const mono = (m.icons ?? []).filter(
@@ -84,11 +86,12 @@ describe('web app manifest', () => {
     expect(m.launch_handler).toEqual({ client_mode: 'navigate-existing' });
   });
 
-  it('points every shortcut inside its scope', () => {
-    for (const shortcut of m.shortcuts ?? []) {
+  it.each(m.shortcuts ?? [])(
+    'points every shortcut inside its scope (%j)',
+    (shortcut) => {
       expect(shortcut.url.startsWith(m.scope!)).toBe(true);
-    }
-  });
+    },
+  );
 
   it('turns the browser bar the brand colour, with the page colour behind the splash', () => {
     expect(m.theme_color).toBe(THEME_COLOR);
@@ -103,49 +106,53 @@ describe('web app manifest', () => {
 
   // Chrome only shows the rich install dialog when a screenshot of each form
   // factor exists; whatever is declared must be a real, correctly sized file.
-  it('declares screenshots Chrome will accept, if any', async () => {
-    const shots = m.screenshots ?? [];
-    for (const shot of shots) {
-      const { width, height } = await pngSize(
-        path.join(process.cwd(), 'public', shot.src),
-      );
-      expect(shot.sizes).toBe(`${width}x${height}`);
-      expect(Math.min(width, height)).toBeGreaterThanOrEqual(320);
-      expect(Math.max(width, height)).toBeLessThanOrEqual(3840);
-      expect(
-        Math.max(width, height) / Math.min(width, height),
-      ).toBeLessThanOrEqual(2.3);
-      expect(['wide', 'narrow']).toContain(shot.form_factor);
-    }
-    for (const factor of ['wide', 'narrow']) {
+  it.each(['wide', 'narrow'])(
+    'declares screenshots Chrome will accept, if any (%j)',
+    async (factor) => {
+      const shots = m.screenshots ?? [];
+      for (const shot of shots) {
+        const { width, height } = await pngSize(
+          path.join(process.cwd(), 'public', shot.src),
+        );
+        expect(shot.sizes).toBe(`${width}x${height}`);
+        expect(Math.min(width, height)).toBeGreaterThanOrEqual(320);
+        expect(Math.max(width, height)).toBeLessThanOrEqual(3840);
+        expect(
+          Math.max(width, height) / Math.min(width, height),
+        ).toBeLessThanOrEqual(2.3);
+        expect(['wide', 'narrow']).toContain(shot.form_factor);
+      }
       const ratios = new Set(
         shots.filter((s) => s.form_factor === factor).map((s) => s.sizes),
       );
       expect(ratios.size).toBeLessThanOrEqual(1);
-    }
-  });
+    },
+  );
 
-  it('carries no text or camera metadata in the screenshots, which are public', async () => {
-    const allowed = new Set(['IHDR', 'PLTE', 'tRNS', 'pHYs', 'IDAT', 'IEND']);
-    for (const shot of m.screenshots ?? []) {
+  it.each(m.screenshots ?? [])(
+    'carries no text or camera metadata in the screenshots, which are public (%j)',
+    async (shot) => {
+      const allowed = new Set(['IHDR', 'PLTE', 'tRNS', 'pHYs', 'IDAT', 'IEND']);
       const chunks = await pngChunks(
         path.join(process.cwd(), 'public', shot.src),
       );
       expect(chunks.filter((c) => !allowed.has(c))).toEqual([]);
-    }
-  });
+    },
+  );
 
-  it('keeps each screenshot below the weight of the page it advertises', async () => {
-    for (const shot of m.screenshots ?? []) {
+  it.each(m.screenshots ?? [])(
+    'keeps each screenshot below the weight of the page it advertises (%j)',
+    async (shot) => {
       const { size: bytes } = await stat(
         path.join(process.cwd(), 'public', shot.src),
       );
       expect(bytes).toBeLessThan(300 * 1024);
-    }
-  });
+    },
+  );
 
-  it('gives every shortcut an icon that exists, at the size the file really has', async () => {
-    for (const shortcut of m.shortcuts ?? []) {
+  it.each(m.shortcuts ?? [])(
+    'gives every shortcut an icon that exists, at the size the file really has (%j)',
+    async (shortcut) => {
       expect(shortcut.icons).toHaveLength(1);
       for (const icon of shortcut.icons ?? []) {
         const { width, height } = await pngSize(
@@ -155,8 +162,8 @@ describe('web app manifest', () => {
         // web.dev: a single 192px icon is the size to ship when one has to do.
         expect(width).toBeGreaterThanOrEqual(96);
       }
-    }
-  });
+    },
+  );
 
   it('keeps a share target, if it has one, inside its scope', () => {
     expect((m.share_target?.action ?? m.scope!).startsWith(m.scope!)).toBe(

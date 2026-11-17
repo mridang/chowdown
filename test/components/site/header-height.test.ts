@@ -8,9 +8,9 @@ import {
   STICKY_SIDEBAR_CLASS,
 } from '@/components/site/header-height';
 
-const MD_TOP = /md:top-(\d+)/;
-const VH_REM = /100vh-([\d.]+)rem/;
-const SVH_REM = /100svh-([\d.]+)rem/;
+const MD_TOP = /md:top-(\d+)/u;
+const VH_REM = /100vh-([\d.]+)rem/u;
+const SVH_REM = /100svh-([\d.]+)rem/u;
 
 /** The first number (in rem) found after `prefix` in a class string. */
 function remAfter(classes: string, prefix: RegExp): number {

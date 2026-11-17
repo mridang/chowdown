@@ -67,6 +67,7 @@ export async function readJson(
         response: problems.badRequest('The request body is not valid JSON.'),
       };
     }
+    // no default
   }
 }
 

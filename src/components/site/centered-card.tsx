@@ -1,7 +1,6 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import { BarePage } from '@/components/site/bare-page';
 import { Card } from '@/components/ui/card';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * A single card centred on a bare page (no site header or footer): the layout

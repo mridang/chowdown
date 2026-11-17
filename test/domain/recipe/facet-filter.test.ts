@@ -6,8 +6,8 @@ import {
   facetCounts,
   matchesFilters,
   parseFilters,
-  type FilterableRecipe,
 } from '@/domain/recipe/facet-filter';
+import type { FilterableRecipe } from '@/domain/recipe/facet-filter';
 
 const recipes: FilterableRecipe[] = [
   {
@@ -47,14 +47,22 @@ describe('matchesFilters', () => {
   it('matches free text against name and tags', () => {
     const state = parseFilters({ q: 'mexican' });
     expect(
-      recipes.filter((r) => matchesFilters(r, state)).map((r) => r.display),
+      recipes
+        .values()
+        .filter((r) => matchesFilters(r, state))
+        .map((r) => r.display)
+        .toArray(),
     ).toEqual(['Guacamole', 'Beef Tacos']);
   });
   it('ANDs across facets, ORs within a facet', () => {
     const state = parseFilters({ protein: 'chicken,beef', cuisine: 'Mexican' });
     // chicken OR beef, AND Mexican → only Beef Tacos
     expect(
-      recipes.filter((r) => matchesFilters(r, state)).map((r) => r.display),
+      recipes
+        .values()
+        .filter((r) => matchesFilters(r, state))
+        .map((r) => r.display)
+        .toArray(),
     ).toEqual(['Beef Tacos']);
   });
   it('returns everything when there are no filters', () => {
@@ -99,7 +107,11 @@ describe('favourites filter', () => {
   it('keeps only hearted recipes when on', () => {
     const state = parseFilters({ fav: '1' });
     expect(
-      withHearts.filter((r) => matchesFilters(r, state)).map((r) => r.display),
+      withHearts
+        .values()
+        .filter((r) => matchesFilters(r, state))
+        .map((r) => r.display)
+        .toArray(),
     ).toEqual(['A']);
   });
 
@@ -124,8 +136,10 @@ describe('source site filter', () => {
   ];
   const names = (query: Record<string, string>) =>
     sited
+      .values()
       .filter((r) => matchesFilters(r, parseFilters(query)))
-      .map((r) => r.display);
+      .map((r) => r.display)
+      .toArray();
 
   it('reads ?site= as lower-cased sites', () => {
     expect(parseFilters({ site: 'A.com, b.com' }).domains).toEqual([
@@ -179,8 +193,10 @@ describe('accent-insensitive search', () => {
   ];
   const find = (q: string) =>
     list
+      .values()
       .filter((r) => matchesFilters(r, parseFilters({ q })))
-      .map((r) => r.display);
+      .map((r) => r.display)
+      .toArray();
 
   it('finds accented titles from plain letters, in any case', () => {
     expect(find('creme')).toEqual(['Crème brûlée']);

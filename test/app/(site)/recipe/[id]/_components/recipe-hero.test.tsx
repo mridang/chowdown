@@ -7,13 +7,12 @@ import {
 } from '@/app/(site)/recipe/[id]/_components/recipe-hero';
 import { htmlAt } from '../../../../../components/render';
 
-const BY_ETHAN = />by<.*Ethan/;
-const FONT_HAND_ETHAN = /font-hand-\w[^"]*"[^>]*>Ethan Chlebowski</;
-const H1_DAL_H1 = /<h1[^>]*>Dal<\/h1>/;
+const BY_ETHAN = />by<.*Ethan/u;
+const FONT_HAND_ETHAN = /font-hand-\w[^"]*"[^>]*>Ethan Chlebowski</u;
+const H1_DAL_H1 = /<h1[^>]*>Dal<\/h1>/u;
 
 describe('heroCrumbs', () => {
   it('starts at the list of recipes', () => {
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(heroCrumbs(undefined)).toEqual([{ label: 'Recipes', href: '/app' }]);
   });
 
@@ -31,13 +30,11 @@ describe('heroEyebrow', () => {
   });
 
   it('shows whichever of the two the recipe has', () => {
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(heroEyebrow('indian', undefined)).toBe('Indian');
     expect(heroEyebrow(undefined, 'dinner')).toBe('Dinner');
   });
 
   it('is undefined when the recipe has neither', () => {
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(heroEyebrow(undefined, undefined)).toBeUndefined();
     expect(heroEyebrow('', '')).toBeUndefined();
   });
@@ -49,7 +46,7 @@ describe('RecipeHero', () => {
     htmlAt(
       <RecipeHero
         recipeId="dal"
-        etag={'"abc"'}
+        etag='"abc"'
         title="Dal"
         images={[]}
         tone="forest"
@@ -64,7 +61,7 @@ describe('RecipeHero', () => {
 
   it('titles the page with the recipe in the one level-one heading', () => {
     const out = markup();
-    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out.match(/<h1/gu)).toHaveLength(1);
     expect(out).toMatch(H1_DAL_H1);
   });
 
@@ -126,7 +123,7 @@ describe('RecipeHero', () => {
 
   it('sets only the author in the handwriting face', () => {
     const out = markup({ sourceUrl: SOURCE, author: 'Ethan Chlebowski' });
-    expect(out.match(/font-hand-/g)).toHaveLength(1);
+    expect(out.match(/font-hand-/gu)).toHaveLength(1);
     expect(out).toMatch(FONT_HAND_ETHAN);
   });
 

@@ -12,14 +12,10 @@
  * because a fault in bookkeeping must not stop a person using the app.
  */
 
-import {
-  D1RateLimitStore,
-  rateLimit,
-  type RateLimit,
-  type RateLimitStore,
-} from '@/lib/rate-limit';
+import { D1RateLimitStore, rateLimit } from '@/lib/rate-limit';
 import { errorMessage, logError } from '@/utils/logging';
 import { getDatabase } from '@/domain/db/client';
+import type { RateLimit, RateLimitStore } from '@/lib/rate-limit';
 
 /** Seconds in a day. */
 const DAY_SECONDS = 86_400;

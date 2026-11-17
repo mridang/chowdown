@@ -1,22 +1,22 @@
-import type { ReactElement } from 'react';
-
 import { PlayIcon } from '@/components/icons';
 import { FavouriteButton } from '@/components/recipes/favourite-button';
 import { CookMode } from '@/components/recipe/cook-mode';
 import { HeroPhoto } from '@/components/recipe/hero-photo';
 import { MoreMenu, ShareButton } from '@/components/recipe/actions';
-import { Breadcrumb, type Crumb } from '@/components/ui/breadcrumb';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Eyebrow } from '@/components/ui/layout';
 import { TextLink } from '@/components/ui/text-link';
 import { sentenceCase } from '@/utils/text';
-import type { Tone } from '@/domain/recipe/card-data';
-import type { StepToken } from '@/lib/cooklang';
-
 import {
   AuthorLine,
   SourceLine,
 } from '@/app/(site)/recipe/[id]/_components/byline';
 import { EditableTitle } from '@/app/(site)/recipe/[id]/_components/editable-title';
+import type { Tone } from '@/domain/recipe/card-style';
+import type { StepToken } from '@/lib/cooklang';
+
+import type { Crumb } from '@/components/ui/breadcrumb';
+import type { ReactElement } from 'react';
 
 /**
  * The trail above the title: always "Recipes", plus the recipe's cuisine (a

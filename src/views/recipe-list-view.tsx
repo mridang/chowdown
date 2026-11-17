@@ -17,14 +17,12 @@
  * layout draws every recipe and a filter box.
  */
 
-import { useCallback, useReducer, type ReactElement } from 'react';
+import { useCallback, useReducer } from 'react';
 
-import type { RecipeListData, RecipeListItem } from '@/domain/mcp/ui-types';
 import {
   INITIAL_LIST_STATE,
   reduceListState,
   visibleRecipes,
-  type ListState,
 } from '@/views/list-state';
 import { openRecipe } from '@/views/open-recipe';
 import { isRecipeListData } from '@/views/guards';
@@ -32,8 +30,11 @@ import { CloseHint, FullRecipe, focusWhenShown } from '@/views/recipe-parts';
 import { Announcer, LoadingCard, MessageCard } from '@/views/status-panels';
 import { STYLES } from '@/views/styles';
 import { useWidgetData } from '@/views/use-widget-data';
-import type { ViewState } from '@/views/view-state';
 import { countOf } from '@/lib/intl';
+import type { ListState } from '@/views/list-state';
+import type { ViewState } from '@/views/view-state';
+import type { ReactElement } from 'react';
+import type { RecipeListData, RecipeListItem } from '@/domain/mcp/ui-types';
 
 /** What {@link RecipeGrid} needs besides the recipes themselves. */
 interface RecipeGridProps {
@@ -89,9 +90,9 @@ function RecipeGrid({
         />
       ) : null}
       {shown.length === 0 ? (
-        <div className="empty" role="status">
+        <output className="empty">
           {query || filter ? 'No recipes matched.' : 'No recipes yet.'}
-        </div>
+        </output>
       ) : (
         <ul className="grid" aria-label="Recipes">
           {shown.map((recipe) => (
@@ -179,6 +180,7 @@ export function RecipeListScreen({
       case 'ready': {
         break;
       }
+      // no default
     }
     if (list.detail.status === 'ready') {
       return (
@@ -227,9 +229,7 @@ export function RecipeListScreen({
           />
         ) : null}
         {list.notice ? (
-          <div className="status-line" role="status">
-            {list.notice}
-          </div>
+          <output className="status-line">{list.notice}</output>
         ) : null}
       </div>
     );
@@ -278,11 +278,17 @@ export function RecipeListApp(): ReactElement {
     <RecipeListScreen
       state={state}
       list={list}
-      onOpen={(recipe) => void open(recipe)}
+      onOpen={(recipe) => {
+        void open(recipe);
+      }}
       onCloseDetail={() => dispatch({ type: 'closed-detail' })}
       expanded={expanded}
-      onExpand={() => void bridge.expand()}
-      onCollapse={() => void collapse()}
+      onExpand={() => {
+        void bridge.expand();
+      }}
+      onCollapse={() => {
+        void collapse();
+      }}
       onFilter={(value) => dispatch({ type: 'filter-changed', value })}
       closeHint={closeHint}
       onOpenLink={openLink}

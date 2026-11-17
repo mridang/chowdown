@@ -5,8 +5,8 @@ import {
   isStoppedOnPurpose,
   speak,
   stopSpeaking,
-  type SpeechEnvironment,
 } from '@/components/recipe/speaker';
+import type { SpeechEnvironment } from '@/components/recipe/speaker';
 
 /** An utterance that records its listeners so a test can fire them. */
 function fakeUtterance(text: string) {
@@ -32,7 +32,7 @@ function fakeSpeech() {
     cancel: jest.fn(() => order.push('cancel')),
   };
   const environment: SpeechEnvironment = {
-    synthesiser: synthesiser,
+    synthesiser,
     createUtterance: (text) => {
       const made = fakeUtterance(text);
       utterances.push(made);
@@ -62,7 +62,7 @@ describe('speak', () => {
     const onEnd = jest.fn();
     speak(environment, 'x', { onEnd });
     utterances[0]?.fire('end');
-    expect(onEnd).toHaveBeenCalledTimes(1);
+    expect(onEnd.mock.calls).toEqual([[{}]]);
   });
 
   it('tells the caller about a real failure', () => {
@@ -70,7 +70,7 @@ describe('speak', () => {
     const onEnd = jest.fn();
     speak(environment, 'x', { onEnd });
     utterances[0]?.fire('error', { error: 'synthesis-failed' });
-    expect(onEnd).toHaveBeenCalledTimes(1);
+    expect(onEnd.mock.calls).toEqual([[]]);
   });
 
   it('does not treat being stopped on purpose as an ending', () => {
@@ -79,7 +79,7 @@ describe('speak', () => {
     speak(environment, 'x', { onEnd });
     utterances[0]?.fire('error', { error: 'canceled' });
     utterances[0]?.fire('error', { error: 'interrupted' });
-    expect(onEnd).not.toHaveBeenCalled();
+    expect(onEnd.mock.calls).toEqual([]);
   });
 });
 
@@ -91,7 +91,7 @@ describe('isStoppedOnPurpose', () => {
 
   it('is false for every other error and for none', () => {
     expect(isStoppedOnPurpose('audio-busy')).toBe(false);
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
     expect(isStoppedOnPurpose(undefined)).toBe(false);
   });
 });
@@ -100,7 +100,7 @@ describe('stopSpeaking', () => {
   it('cancels the synthesiser', () => {
     const cancel = jest.fn();
     stopSpeaking({ cancel });
-    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(cancel.mock.calls).toEqual([[]]);
   });
 });
 

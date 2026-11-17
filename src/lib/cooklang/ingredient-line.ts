@@ -1,18 +1,18 @@
 const START_COLON_HEAPING_OR_HEAPED =
-  /^(?:(?:heaping|heaped|level|rounded|scant|generous)\s+)?([a-z]+)\.?(?:\s+of)?(?:\s+|$)/i;
-const COMMA_SPACE = /,\s/;
-const SPACE_COMMA = /\s,/;
-const SPACE_COMMA_SEMICOLON_COLON_ANY = /[\s,;:./-]/;
-const START_COLON_OF_OR_X = /^(?:of|x)\s+/i;
-const WHITESPACE = /\s/;
-const AN = /^an? [^,]{1,16}$/i;
-const ZA = /^[A-Za-z]/;
-const ZA_2 = /^\s+([A-Za-z]+)\.?(?=$|[\s,/])/;
-const ZA_3 = /^-?([A-Za-z]+)\.?(?=$|[\s,/])/;
-const START_N0_DIGITS = /^0\d/;
-const TRAILING_DOT = /\.$/;
-const SPACE_COMMA_SEMICOLON_COLON = /[\s,;:]/;
-const START_HYPHEN_STAR_SPACE_PLUS = /^[-•*·\s]+/;
+  /^(?:(?:heaping|heaped|level|rounded|scant|generous)\s+)?([a-z]+)\.?(?:\s+of)?(?:\s+|$)/iu;
+const COMMA_SPACE = /,\s/u;
+const SPACE_COMMA = /\s,/u;
+const SPACE_COMMA_SEMICOLON_COLON_ANY = /[\s,;:./-]/u;
+const START_COLON_OF_OR_X = /^(?:of|x)\s+/iu;
+const WHITESPACE = /\s/u;
+const AN = /^an? [^,]{1,16}$/iu;
+const ZA = /^[A-Za-z]/u;
+const ZA_2 = /^\s+([A-Za-z]+)\.?(?=$|[\s,/])/u;
+const ZA_3 = /^-?([A-Za-z]+)\.?(?=$|[\s,/])/u;
+const START_N0_DIGITS = /^0\d/u;
+const TRAILING_DOT = /\.$/u;
+const SPACE_COMMA_SEMICOLON_COLON = /[\s,;:]/u;
+const START_HYPHEN_STAR_SPACE_PLUS = /^[-•*·\s]+/u;
 /**
  * @packageDocumentation
  *
@@ -43,21 +43,23 @@ export interface ParsedIngredientLine {
 const MAX_LINE = 300;
 
 /** The vulgar fractions (and their ASCII spelling) that appear in recipes. */
-const VULGAR: Readonly<Record<string, string>> = {
-  '½': '1/2',
-  '¼': '1/4',
-  '¾': '3/4',
-  '⅓': '1/3',
-  '⅔': '2/3',
-  '⅛': '1/8',
-  '⅜': '3/8',
-  '⅝': '5/8',
-  '⅞': '7/8',
-  '⅕': '1/5',
-  '⅖': '2/5',
-  '⅗': '3/5',
-  '⅘': '4/5',
-};
+const VULGAR = new Map<string, string>(
+  Object.entries({
+    '½': '1/2',
+    '¼': '1/4',
+    '¾': '3/4',
+    '⅓': '1/3',
+    '⅔': '2/3',
+    '⅛': '1/8',
+    '⅜': '3/8',
+    '⅝': '5/8',
+    '⅞': '7/8',
+    '⅕': '1/5',
+    '⅖': '2/5',
+    '⅗': '3/5',
+    '⅘': '4/5',
+  }),
+);
 
 /** Words that measure something, as the word right after a quantity. */
 const UNITS: ReadonlySet<string> = new Set([
@@ -155,11 +157,11 @@ const UNITS: ReadonlySet<string> = new Set([
 
 /** Words that describe how a measure is filled, between the number and the unit ("1 heaping tsp"). */
 const MEASURE_ADJECTIVES =
-  /^\s+(heaping|heaped|level|rounded|scant|generous)(?=\s)/i;
+  /^\s+(heaping|heaped|level|rounded|scant|generous)(?=\s)/iu;
 
 /** Phrases that stand in for a quantity when there is no number. */
 const FREE_QUANTITY =
-  /^(?:to taste|as needed|as required|a pinch|pinch|a dash|dash|a handful|handful|a few|few|some|a little|for serving|for garnish|optional)$/i;
+  /^(?:to taste|as needed|as required|a pinch|pinch|a dash|dash|a handful|handful|a few|few|some|a little|for serving|for garnish|optional)$/iu;
 
 /** How a preparation word may be softened: "finely chopped". */
 const PREPARATION_ADVERBS =
@@ -183,7 +185,7 @@ const PREPARATION_LEADS =
  */
 export const PREPARATION = new RegExp(
   `^(?:${PREPARATION_ADVERBS}?(?:${PREPARATION_VERBS})|${PREPARATION_LEADS})`,
-  'i',
+  'iu',
 );
 
 /** A number: `3`, `2.5`, `1/2`, or a mixed number `1 1/2`. */
@@ -192,27 +194,29 @@ const NUMBER = String.raw`\d+/\d+|\d+(?:[.,]\d+)?(?:\s\d+/\d+)?`;
 /** A number or a range of two (`8-12`, `2 to 3`). */
 const QUANTITY = new RegExp(
   String.raw`^(?:about |approx\.? |approximately |around |~\s?)?((?:${NUMBER})(?:\s?(?:-|to)\s?(?:${NUMBER}))?)`,
-  'i',
+  'iu',
 );
 
 /** Spell vulgar fractions out, joined to a whole number with a space (`1½` becomes `1 1/2`). */
 function withAsciiFractions(text: string): string {
-  return text.replaceAll(/(\d)?([½¼¾⅓⅔⅛⅜⅝⅞⅕⅖⅗⅘])/g, (_, whole, fraction) => {
-    const ascii = VULGAR[fraction as string] ?? '';
+  return text.replaceAll(/(\d)?([½¼¾⅓⅔⅛⅜⅝⅞⅕⅖⅗⅘])/gu, (_, whole, fraction) => {
+    const ascii = VULGAR.get(fraction as string) ?? '';
     return whole ? `${whole as string} ${ascii}` : ascii;
   });
 }
 
 /** The character references that turn up in text copied from web pages. */
-const ENTITIES: Readonly<Record<string, string>> = {
-  '&amp;': '&',
-  '&#39;': "'",
-  '&apos;': "'",
-  '&quot;': '"',
-  '&nbsp;': ' ',
-  '&lt;': '<',
-  '&gt;': '>',
-};
+const ENTITIES = new Map<string, string>(
+  Object.entries({
+    '&amp;': '&',
+    '&#39;': "'",
+    '&apos;': "'",
+    '&quot;': '"',
+    '&nbsp;': ' ',
+    '&lt;': '<',
+    '&gt;': '>',
+  }),
+);
 
 /** Tidy characters that only make parsing harder: dashes, spaces, bullets, a leading "of". */
 function tidied(raw: string): string {
@@ -220,11 +224,11 @@ function tidied(raw: string): string {
     raw
       .slice(0, MAX_LINE)
       .replaceAll(
-        /&(?:amp|apos|quot|nbsp|lt|gt|#39);/g,
-        (entity) => ENTITIES[entity] ?? entity,
+        /&(?:amp|apos|quot|nbsp|lt|gt|#39);/gu,
+        (entity) => ENTITIES.get(entity) ?? entity,
       )
-      .replaceAll(/[–—−]/g, '-')
-      .replaceAll(/\s+/g, ' ')
+      .replaceAll(/[–—−]/gu, '-')
+      .replaceAll(/\s+/gu, ' ')
       .trim(),
   )
     .replace(START_HYPHEN_STAR_SPACE_PLUS, '')
@@ -233,10 +237,16 @@ function tidied(raw: string): string {
 
 /** The state of the walk that pulls parenthesised text out of a line. */
 interface ParenthesesWalk {
-  readonly notes: string[];
-  depth: number;
-  buffer: string;
-  text: string;
+  readonly notes: readonly string[];
+  readonly depth: number;
+  readonly buffer: string;
+  readonly text: string;
+}
+
+/** A line's text with its parenthesised phrases taken out, and those phrases. */
+interface TextAndNotes {
+  readonly text: string;
+  readonly notes: readonly string[];
 }
 
 /**
@@ -244,39 +254,34 @@ interface ParenthesesWalk {
  * phrases (outermost ones, nesting kept inside them). An unmatched `(` swallows
  * the rest of the line as a note rather than leaving a stray bracket in a name.
  */
-function withoutParentheses(line: string): {
-  readonly text: string;
-  readonly notes: readonly string[];
-} {
-  const walked: ParenthesesWalk = { text: '', notes: [], depth: 0, buffer: '' };
-  for (const char of line) {
-    if (char === '(') {
-      if (walked.depth === 0) {
-        walked.depth = 1;
-        walked.text = `${walked.text} `;
-      } else {
-        walked.depth += 1;
-        walked.buffer = `${walked.buffer}(`;
+function withoutParentheses(line: string): TextAndNotes {
+  const walked = Array.from(line).reduce<ParenthesesWalk>(
+    (state, char) => {
+      if (char === '(') {
+        return state.depth === 0
+          ? { ...state, depth: 1, text: `${state.text} ` }
+          : { ...state, depth: state.depth + 1, buffer: `${state.buffer}(` };
       }
-    } else if (char === ')' && walked.depth > 0) {
-      if (walked.depth === 1) {
-        walked.notes.push(walked.buffer);
-        walked.depth = 0;
-        walked.buffer = '';
-      } else {
-        walked.depth -= 1;
-        walked.buffer = `${walked.buffer})`;
+      if (char === ')' && state.depth > 0) {
+        return state.depth === 1
+          ? {
+              ...state,
+              notes: [...state.notes, state.buffer],
+              depth: 0,
+              buffer: '',
+            }
+          : { ...state, depth: state.depth - 1, buffer: `${state.buffer})` };
       }
-    } else if (walked.depth > 0) {
-      walked.buffer = `${walked.buffer}${char}`;
-    } else {
-      walked.text = `${walked.text}${char}`;
-    }
-  }
+      return state.depth > 0
+        ? { ...state, buffer: `${state.buffer}${char}` }
+        : { ...state, text: `${state.text}${char}` };
+    },
+    { text: '', notes: [], depth: 0, buffer: '' },
+  );
   const notes =
     walked.depth > 0 ? [...walked.notes, walked.buffer] : walked.notes;
   return {
-    text: walked.text.replaceAll(/\s+/g, ' ').trim(),
+    text: walked.text.replaceAll(/\s+/gu, ' ').trim(),
     notes: notes
       .map((note) =>
         trimEdges(
@@ -290,17 +295,19 @@ function withoutParentheses(line: string): {
 }
 
 /** Spellings that are really another unit, so a list reads the same however each line was typed. */
-const UNIT_SPELLINGS: Readonly<Record<string, string>> = {
-  tspn: 'tsp',
-  tbs: 'tbsp',
-  tbl: 'tbsp',
-  gr: 'g',
-};
+const UNIT_SPELLINGS = new Map<string, string>(
+  Object.entries({
+    tspn: 'tsp',
+    tbs: 'tbsp',
+    tbl: 'tbsp',
+    gr: 'g',
+  }),
+);
 
 /** A unit word without a trailing full stop (`oz.`), lower-cased and in its usual spelling. */
 function unitKey(word: string): string {
   const bare = word.replace(TRAILING_DOT, '').toLowerCase();
-  return UNIT_SPELLINGS[bare] ?? bare;
+  return UNIT_SPELLINGS.get(bare) ?? bare;
 }
 
 /** A quantity read off the front of some text. */
@@ -330,21 +337,13 @@ function leadingQuantity(text: string): LeadingQuantity | undefined {
     : afterQuantity;
   // A unit may be glued to the number (`100g`) or hyphenated to it (`1-inch`).
   const attached = ZA_3.exec(afterNumber);
-  const attachedUnit = attached?.[1];
   const spaced = ZA_2.exec(afterNumber);
-  const spacedUnit = spaced?.[1];
-  let unit: string | undefined;
-  let consumed = 0;
-  if (attachedUnit && UNITS.has(unitKey(attachedUnit))) {
-    unit = attachedUnit;
-    consumed = attached?.[0].length ?? 0;
-  } else if (spacedUnit && UNITS.has(unitKey(spacedUnit))) {
-    unit = spacedUnit;
-    consumed = spaced?.[0].length ?? 0;
-  } else {
-    // No unit follows the number, so nothing is consumed.
-  }
-  const rest = afterNumber.slice(consumed);
+  // No unit following the number means nothing is consumed.
+  const picked = [attached, spaced].find(
+    (found) => found?.[1] && UNITS.has(unitKey(found[1])),
+  );
+  const unit = picked?.[1];
+  const rest = afterNumber.slice(picked?.[0].length ?? 0);
   // "7up" and "2x4" are names with a digit in them, not an amount and a word.
   if (!unit && ZA.test(afterNumber)) {
     return undefined;
@@ -360,6 +359,7 @@ function leadingQuantity(text: string): LeadingQuantity | undefined {
 function withoutAlternativeMeasure(text: string): string {
   const match = new RegExp(
     String.raw`^\s*/\s*(?:${NUMBER})(?:-(?:${NUMBER}))?\s*[A-Za-z]*\.?(?=$|[\s,])`,
+    'u',
   ).exec(text);
   return match ? text.slice(match[0].length) : text;
 }
@@ -390,37 +390,24 @@ function amountPhrase(phrase: string): LeadingQuantity | undefined {
 
 /** `text` without the leading characters `leading` accepts and the trailing ones `trailing` accepts. */
 function trimEdges(text: string, leading: RegExp, trailing: RegExp): string {
-  let start = 0;
-  let end = text.length;
-  while (start < end && leading.test(text.charAt(start))) {
-    start += 1;
-  }
-  while (end > start && trailing.test(text.charAt(end - 1))) {
-    end -= 1;
-  }
-  return text.slice(start, end);
+  const chars = Array.from(text);
+  const start = chars.findIndex((char) => !leading.test(char));
+  const end = chars.findLastIndex(
+    (char, index) => index >= start && !trailing.test(char),
+  );
+  return start === -1 || end === -1 ? '' : chars.slice(start, end + 1).join('');
 }
 
 /** `text` with its first whitespace-padded `to` ("1 to 2") turned into a hyphen. */
 function withHyphenForTo(text: string): string {
-  for (const found of text.matchAll(/to/gi)) {
-    let from = found.index;
-    let end = from + 2;
-    if (
-      !WHITESPACE.test(text.charAt(from - 1)) ||
-      !WHITESPACE.test(text.charAt(end))
-    ) {
-      continue;
-    }
-    while (from > 0 && WHITESPACE.test(text.charAt(from - 1))) {
-      from -= 1;
-    }
-    while (end < text.length && WHITESPACE.test(text.charAt(end))) {
-      end += 1;
-    }
-    return `${text.slice(0, from)}-${text.slice(end)}`;
-  }
-  return text;
+  const found = Array.from(text.matchAll(/to/giu)).find(
+    (match) =>
+      WHITESPACE.test(text.charAt(match.index - 1)) &&
+      WHITESPACE.test(text.charAt(match.index + 2)),
+  );
+  return found
+    ? `${text.slice(0, found.index).trimEnd()}-${text.slice(found.index + 2).trimStart()}`
+    : text;
 }
 
 /** `text` with the whitespace around every hyphen removed. */
@@ -442,7 +429,7 @@ function cleanedName(text: string): string {
     SPACE_COMMA_SEMICOLON_COLON_ANY,
     SPACE_COMMA_SEMICOLON_COLON_ANY,
   )
-    .replaceAll(/\s+/g, ' ')
+    .replaceAll(/\s+/gu, ' ')
     .trim();
 }
 
@@ -452,15 +439,18 @@ function joinedNotes(notes: readonly string[]): string | undefined {
   return unique.length > 0 ? unique.join('; ') : undefined;
 }
 
+/** An ingredient's name and, when it has one, its preparation note. */
+interface NameAndNote {
+  readonly name: string;
+  readonly note?: string;
+}
+
 /**
  * Split `name, rest` into the name and a preparation note, when `rest` reads
  * like one ("diced", "finely chopped", "to taste"). A comma inside a name
  * ("boneless, skinless chicken breasts") is left alone.
  */
-function splitPreparation(text: string): {
-  readonly name: string;
-  readonly note?: string;
-} {
+function splitPreparation(text: string): NameAndNote {
   // A comma with a space before it is how a note is set apart: "mozzarella , chilled".
   const spaced = text.search(SPACE_COMMA);
   if (spaced > 0) {
@@ -478,7 +468,7 @@ function splitPreparation(text: string): {
 
 /** A loose amount at the start of a line: "a pinch of saffron", "a handful of mint". */
 const LOOSE_AMOUNT =
-  /^(a pinch|a dash|a handful|a few|a bit|a little|a splash|a drizzle|a knob|a sprinkle)(?: of)?\s+(\S.*)$/i;
+  /^(a pinch|a dash|a handful|a few|a bit|a little|a splash|a drizzle|a knob|a sprinkle)(?: of)?\s+(\S.*)$/iu;
 
 /**
  * Parse one ingredient line into a quantity, unit, name and note.
@@ -587,8 +577,8 @@ function withNote(note: string | undefined): { readonly note?: string } {
 export function toCookIngredient(ing: Readonly<ParsedIngredientLine>): string {
   const safe = (text: string): string =>
     text
-      .replaceAll(/[{}@#~()%]/g, ' ')
-      .replaceAll(/\s+/g, ' ')
+      .replaceAll(/[{}@#~()%]/gu, ' ')
+      .replaceAll(/\s+/gu, ' ')
       .trim();
   const amount =
     ing.quantity && ing.unit

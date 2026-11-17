@@ -1,11 +1,10 @@
-import type { DatabaseSync } from 'node:sqlite';
-
 import { generateKeyBase64 } from '@/lib/crypto';
 import { SessionTokens } from '@/lib/session';
 import { SESSION_SECRET } from './auth-test-kit';
+import type { DatabaseSync } from 'node:sqlite';
 
 /** The bindings and secrets a Worker would have, for `installCloudflareContext`. */
-export function testEnv(): Record<string, unknown> {
+export function testEnv() {
   return {
     SESSION_SECRET,
     TOKEN_ENCRYPTION_KEY: generateKeyBase64(),
@@ -55,5 +54,3 @@ export function insertUser(
     );
   return id;
 }
-
-export { fakeCookies, SESSION_SECRET, jar } from './auth-test-kit';

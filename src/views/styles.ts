@@ -11,13 +11,9 @@
  * theme at all.
  */
 
-import {
-  DARK_PALETTE,
-  LIGHT_PALETTE,
-  ON_ACCENT,
-  type ThemePalette,
-} from '@/views/palette';
-import { APP_STYLES } from '@/views/app';
+import { ON_ACCENT } from '@/views/palette';
+import { APP_STYLES, DARK_PALETTE, LIGHT_PALETTE } from '@/views/app';
+import type { ThemePalette } from '@/views/palette';
 
 /** The custom properties that differ between the light and dark themes. */
 function themeVariables(palette: ThemePalette): string {
@@ -106,6 +102,7 @@ button { font: inherit; }
 .skeleton .bar.short { width:40%; }
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.45; } }
 .status-line { color: var(--muted); font-size:.78125rem; margin-top:12px; }
+output.empty, output.status-line:not(.hint) { display:block; }
 .notice { margin:0; line-height:1.55; white-space:pre-line; }
 .card.error { border-color: var(--color-border-danger, #a73d39); }
 .card.error .eyebrow { color: var(--color-text-danger, #a73d39); }

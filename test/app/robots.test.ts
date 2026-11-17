@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { BRAND_URL, CRAWLABLE_PATHS, PRIVATE_PATHS } from '@/app/_brand';
 import robots from '@/app/robots';
 
-const ESC_END = /\$$/;
+const ESC_END = /\$$/u;
 
 type Group = { userAgent: string; allow: string[]; disallow: string[] };
 
@@ -18,11 +18,17 @@ describe('robots.txt', () => {
    */
   const allowed = (target: string): boolean => {
     const matches = (pattern: string): boolean => {
-      const escaped = pattern.replaceAll(/[.+?^{}()|[\]\\]/g, String.raw`\$&`);
-      return new RegExp(`^${escaped.replaceAll('*', '.*')}`).test(target);
+      const escaped = pattern.replaceAll(/[.+?^{}()|[\]\\]/gu, String.raw`\$&`);
+      return new RegExp(`^${escaped.replaceAll('*', '.*')}`, 'u').test(target);
     };
     const hit = (patterns: string[]): number =>
-      Math.max(-1, ...patterns.filter((p) => matches(p)).map((p) => p.length));
+      Math.max(
+        -1,
+        ...patterns
+          .values()
+          .filter((p) => matches(p))
+          .map((p) => p.length),
+      );
     return hit(rule.allow) >= hit(rule.disallow);
   };
 
@@ -36,11 +42,12 @@ describe('robots.txt', () => {
     expect(rule.disallow).toEqual([...PRIVATE_PATHS]);
   });
 
-  it('lets crawlers read each public page', () => {
-    for (const path of CRAWLABLE_PATHS) {
+  it.each(CRAWLABLE_PATHS)(
+    'lets crawlers read each public page (%j)',
+    (path) => {
       expect(allowed(path.replace(ESC_END, ''))).toBe(true);
-    }
-  });
+    },
+  );
 
   // A bare `Disallow: /app` is a prefix rule and once hid /apple-icon.png too.
   it.each([

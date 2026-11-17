@@ -1,10 +1,11 @@
-import type { Metadata } from 'next';
-import { Suspense, type ReactElement } from 'react';
+import { Suspense } from 'react';
 
 import { Dashboard } from '@/components/home/dashboard';
 import { HomeLanding } from '@/components/landing/home-landing';
 import { PageSkeleton } from '@/components/site/page-skeleton';
 import { getShellUser } from '@/domain/auth/shell-user';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 /**
  * The same address serves two pages: the landing page for visitors, which

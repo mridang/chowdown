@@ -7,15 +7,15 @@ import {
   jest,
 } from '@jest/globals';
 
+import { z } from 'zod';
 import { revokeDriveLogin } from '@/domain/auth/drive-login';
 import { encryptSecret } from '@/lib/crypto';
-import type { User } from '@/domain/db/users';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 import { testEnv } from './session-fixture';
-import { z } from 'zod';
+import type { User } from '@/domain/db/users';
 
 let restore: () => void;
 let env: Record<string, unknown>;
@@ -56,8 +56,8 @@ describe('revokeDriveLogin', () => {
 
   it('does nothing for someone who never connected Drive', async () => {
     const spy = jest.spyOn(globalThis, 'fetch');
-    await revokeDriveLogin(userWith(null));
-    expect(spy).not.toHaveBeenCalled();
+    await expect(revokeDriveLogin(userWith(null))).resolves.toBeUndefined();
+    expect(spy.mock.calls).toEqual([]);
   });
 
   it('swallows a refusal from Google, since the account is already deleted', async () => {

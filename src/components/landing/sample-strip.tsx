@@ -1,12 +1,11 @@
-import type { ReactElement } from 'react';
-
 import { ClockIcon } from '@/components/icons';
-import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/components/ui/cn';
 import { Container } from '@/components/ui/layout';
 import { TintTile } from '@/components/ui/tint-tile';
 import { duration } from '@/utils/text';
+import type { SampleRecipe } from '@/components/landing/demo-recipes';
+import type { ReactElement } from 'react';
 
 /** A row of example recipes, drawn as tinted tiles with their facts. */
 export function SampleStrip({

@@ -9,9 +9,10 @@ describe('list_recipes', () => {
       {},
       folder({ 'Pancakes.cook': PANCAKES, 'Soup.cook': PANCAKES }),
     );
-    expect(said(result)).toContain('Showing your 2 recipes.');
-    expect(said(result)).toContain('- Pancakes (id: id-Pancakes.cook)');
-    expect(said(result)).toContain('- Soup (id: id-Soup.cook)');
+    const text = said(result);
+    expect(text).toContain('Showing your 2 recipes.');
+    expect(text).toContain('- Pancakes (id: id-Pancakes.cook)');
+    expect(text).toContain('- Soup (id: id-Soup.cook)');
     expect(result.structuredContent).toMatchObject({
       recipes: [{ title: 'Pancakes' }, { title: 'Soup' }],
     });
@@ -62,8 +63,9 @@ describe('list_recipes', () => {
       const all = pages.flatMap((page) => idsOf(page));
       expect(all).toHaveLength(250);
       expect(new Set(all).size).toBe(250);
-      expect(said(pages[4]!)).not.toContain('Call again');
-      expect(said(pages[4]!)).toContain('Showing recipes 201-250 of 250.');
+      const last = said(pages[4]!);
+      expect(last).not.toContain('Call again');
+      expect(last).toContain('Showing recipes 201-250 of 250.');
     });
 
     it('takes the page size from limit, up to 200', async () => {

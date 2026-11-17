@@ -11,18 +11,12 @@
  * message that says a result was cut short has to read the same in every list.
  */
 
-import type { User } from '@/domain/db/users';
-import { runScenarioTool, type ScenarioToolName } from '@/domain/mcp/scenarios';
-import type { ToolContent } from '@/domain/mcp/tool-context';
+import { runScenarioTool } from '@/domain/mcp/scenarios';
 import {
   recipeCardResult,
   recipeListSummaryResult,
 } from '@/domain/mcp/tool-results';
-import {
-  EMBEDDINGS_PER_CALL,
-  type DriveContext,
-  type ToolServices,
-} from '@/domain/mcp/tool-services';
+import { EMBEDDINGS_PER_CALL } from '@/domain/mcp/tool-services';
 import {
   nextPageHint,
   pastTheEnd,
@@ -30,9 +24,7 @@ import {
   rangeText,
 } from '@/domain/mcp/tool-text';
 import { resolveFile } from '@/domain/recipe/match';
-import type { parseRecipe } from '@/lib/cooklang';
 import { recipeDisplayName } from '@/lib/cooklang';
-import type { DriveFile } from '@/lib/google/drive';
 import { countOf, foldText } from '@/lib/intl';
 import {
   errorResult,
@@ -41,12 +33,17 @@ import {
   offsetArg,
   textArg,
   textResult,
-  type ToolArgs,
-  type ToolResult,
 } from '@/lib/mcp';
+import type { ToolArgs, ToolResult } from '@/lib/mcp';
+import type { DriveFile } from '@/lib/google/drive';
+import type { DriveContext, ToolServices } from '@/domain/mcp/tool-services';
+import type { parseRecipe } from '@/lib/cooklang';
+import type { ScenarioToolName } from '@/domain/mcp/scenarios';
+import type { ToolContent } from '@/domain/mcp/tool-context';
+import type { User } from '@/domain/db/users';
 
-const START_SPACE_STAR_GT = /^\s*>>/;
-const LINE_BREAK = /\r?\n/;
+const START_SPACE_STAR_GT = /^\s*>>/u;
+const LINE_BREAK = /\r?\n/u;
 const ESC_L_ESC_N_PLUS = /[^\p{L}\p{N}]+/u;
 
 /** How many close names to offer when a recipe is not found. */
@@ -93,10 +90,11 @@ export function notFound(
 ): ToolResult<ToolContent> {
   const near = closeNames(files, asked);
   return errorResult(
-    `No recipe found matching "${asked.trim()}". ` +
-      (near.length > 0
+    `No recipe found matching "${asked.trim()}". ${
+      near.length > 0
         ? `Recipes with similar names: ${near.map((file) => candidate(file)).join('; ')}.`
-        : 'list_recipes shows every saved recipe and search_recipes finds one by name.'),
+        : 'list_recipes shows every saved recipe and search_recipes finds one by name.'
+    }`,
   );
 }
 
@@ -152,6 +150,7 @@ export async function withRecipeIn(
         ? then(best, others)
         : ambiguous(reference, key, match.files);
     }
+    // no default
   }
 }
 
@@ -478,7 +477,7 @@ export function noteTarget(args: ToolArgs): NoteTarget {
       where: ` on ${plainTitle(ingredient)}`,
     };
   }
-  return step == null
+  return step === undefined || step === null
     ? { scope: 'general', key: '', where: '' }
     : {
         scope: 'step',
@@ -530,11 +529,9 @@ export function noteTargetProblem(
       recipe.ingredients.length > 0
         ? `Its ingredients are: ${listed}${more}. `
         : '';
-    return (
-      `That recipe has no ingredient called "${plainTitle(target.key)}". ` +
-      its +
-      'Nothing was changed; leave `ingredient` out for a note on the whole recipe.'
-    );
+    return `That recipe has no ingredient called "${plainTitle(target.key)}". ${
+      its
+    }Nothing was changed; leave \`ingredient\` out for a note on the whole recipe.`;
   }
   return undefined;
 }
@@ -556,7 +553,8 @@ export async function modelBudgetRefusal(
   return wait === undefined
     ? undefined
     : errorResult(
-        `The daily allowance for importing, adding and tagging recipes through an assistant is used up. It renews in about ${Math.ceil(wait / 3600)} hour(s). Everything that only reads recipes still works.`,
+        // eslint-disable-next-line intl/prefer-intl -- the budget renews on whole hours, and countOf words the number
+        `The daily allowance for importing, adding and tagging recipes through an assistant is used up. It renews in about ${countOf(Math.ceil(wait / 3600), 'hour')}. Everything that only reads recipes still works.`,
       );
 }
 

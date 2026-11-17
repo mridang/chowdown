@@ -14,20 +14,19 @@
 
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-import {
-  isImagesBinding,
-  type ImagesLike,
-} from '@/lib/cloudflare/images/proxy';
-import {
-  serveImage,
-  type ImageCache,
-  type ImageServiceDeps,
+import { isImagesBinding } from '@/lib/cloudflare/images/proxy';
+import { serveImage } from '@/lib/cloudflare/images/service';
+import type { ImagesLike } from '@/lib/cloudflare/images/proxy';
+import type {
+  ImageCache,
+  ImageServiceDeps,
 } from '@/lib/cloudflare/images/service';
 
 /** The Images binding, where the deployment has one. */
 export function imagesBinding(): ImagesLike | undefined {
   try {
-    const binding: unknown = Reflect.get(getCloudflareContext().env, 'IMAGES');
+    const { env } = getCloudflareContext();
+    const binding: unknown = 'IMAGES' in env ? env.IMAGES : undefined;
     return isImagesBinding(binding) ? binding : undefined;
   } catch {
     return undefined;
@@ -36,20 +35,19 @@ export function imagesBinding(): ImagesLike | undefined {
 
 /** Whether a value can be used as the edge cache: it answers `match` and `put`. */
 function isCache(value: unknown): value is ImageCache {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof Reflect.get(value, 'match') === 'function' &&
-    typeof Reflect.get(value, 'put') === 'function'
-  );
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const hasMatch = 'match' in value && typeof value.match === 'function';
+  return hasMatch && 'put' in value && typeof value.put === 'function';
 }
 
 /** Cloudflare's per-location cache; absent when running under plain Node. */
 export function imageCache(): ImageCache | undefined {
-  const store: unknown = Reflect.get(globalThis, 'caches');
+  const store: unknown = 'caches' in globalThis ? globalThis.caches : undefined;
   const cache: unknown =
-    typeof store === 'object' && store !== null
-      ? Reflect.get(store, 'default')
+    typeof store === 'object' && store !== null && 'default' in store
+      ? store.default
       : undefined;
   return isCache(cache) ? cache : undefined;
 }
@@ -90,5 +88,3 @@ export class ImageService {
     return serveImage(request, this.#deps);
   }
 }
-
-export { type ImageAccess } from '@/lib/cloudflare/images/service';

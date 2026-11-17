@@ -21,23 +21,25 @@ const SMALLEST = Math.min(...ALLOWED_WIDTHS);
 const LARGEST = Math.max(...ALLOWED_WIDTHS);
 
 describe('snapWidth', () => {
-  it('snaps a width up to one the app offers', () => {
-    expect(snapWidth(1)).toBe(SMALLEST);
-    for (const width of ALLOWED_WIDTHS) {
+  it.each(ALLOWED_WIDTHS)(
+    'snaps a width up to one the app offers (%j)',
+    (width) => {
+      expect(snapWidth(1)).toBe(SMALLEST);
       expect(snapWidth(width)).toBe(width);
-    }
-  });
+    },
+  );
 
   it('uses the largest width for anything wider', () => {
     expect(snapWidth(LARGEST + 1)).toBe(LARGEST);
     expect(snapWidth(100_000)).toBe(LARGEST);
   });
 
-  it('always answers a width the app offers', () => {
-    for (const width of [1, 100, 321, 481, 777, 1281, 5000]) {
+  it.each([1, 100, 321, 481, 777, 1281, 5000])(
+    'always answers a width the app offers (%j)',
+    (width) => {
       expect(ALLOWED_WIDTHS).toContain(snapWidth(width));
-    }
-  });
+    },
+  );
 });
 
 describe('imageSrc', () => {
@@ -61,11 +63,9 @@ describe('imageSrc', () => {
 });
 
 describe('imageSrcSet', () => {
-  it('builds a srcset with each width', () => {
+  it.each(ALLOWED_WIDTHS)('builds a srcset with each width (%j)', (width) => {
     const set = imageSrcSet(`https://${HOST}/x.jpg`);
-    for (const width of ALLOWED_WIDTHS) {
-      expect(set).toContain(`&w=${width} ${width}w`);
-    }
+    expect(set).toContain(`&w=${width} ${width}w`);
   });
 
   it('builds one for just the widths asked for', () => {
@@ -104,6 +104,7 @@ describe('isProxyableUrl', () => {
   it.each([
     'file:///etc/passwd',
     urls.ftpImage,
+    // eslint-disable-next-line no-script-url -- the value is a javascript: URL on purpose, to prove it is refused
     'javascript:alert(1)',
     'https://localhost/x.jpg',
     'http://127.0.0.1/x.jpg',

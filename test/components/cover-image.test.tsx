@@ -3,8 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { CoverImage, sizesFor } from '@/components/cover-image';
 import { html } from './render';
 
-const SRC_SET = /srcSet="[^"]*320w[^"]*480w[^"]*640w/;
-const IMG_SRC_IMG = /<img[^>]*src="\/img\?/;
+const SRC_SET = /srcSet="[^"]*320w[^"]*480w[^"]*640w/u;
+const IMG_SRC_IMG = /<img[^>]*src="\/img\?/u;
 
 const FALLBACK = <p>No photo</p>;
 

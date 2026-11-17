@@ -4,7 +4,7 @@ import { DELETE } from '@/app/api/sessions/self/route';
 import { SESSION_COOKIE } from '@/domain/auth/app';
 import { appRequest } from '../../../../domain/auth/auth-test-kit';
 
-const EXPIRES_THU_JAN = /expires=Thu, 01 Jan 1970/i;
+const EXPIRES_THU_JAN = /expires=Thu, 01 Jan 1970/iu;
 
 describe('DELETE /api/sessions/self', () => {
   it('clears the session cookie and answers 204', async () => {

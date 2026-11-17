@@ -3,18 +3,18 @@ import { describe, expect, it } from '@jest/globals';
 import { EditableTitle } from '@/app/(site)/recipe/[id]/_components/editable-title';
 import { htmlAt } from '../../../../../components/render';
 
-const BUTTON_TYPE_BUTTON = /<button[^>]*type="button"/;
-const BUTTON_ARIA_LABEL = /<button[^>]*aria-label="Edit title"/;
-const H1_RED_LENTIL = /<h1[^>]*>Red lentil dal<\/h1>/;
+const BUTTON_TYPE_BUTTON = /<button[^>]*type="button"/u;
+const BUTTON_ARIA_LABEL = /<button[^>]*aria-label="Edit title"/u;
+const H1_RED_LENTIL = /<h1[^>]*>Red lentil dal<\/h1>/u;
 
 describe('EditableTitle', () => {
   const out = htmlAt(
-    <EditableTitle recipeId="dal" title="Red lentil dal" etag={'"abc"'} />,
+    <EditableTitle recipeId="dal" title="Red lentil dal" etag='"abc"' />,
     { pathname: '/recipe/dal' },
   );
 
   it('keeps the title as the page’s one level-one heading', () => {
-    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out.match(/<h1/gu)).toHaveLength(1);
     expect(out).toMatch(H1_RED_LENTIL);
   });
 

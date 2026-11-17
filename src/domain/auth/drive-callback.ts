@@ -8,8 +8,6 @@
  * "Recipes" folder exists and refreshes the session.
  */
 
-import type { NextResponse } from 'next/server';
-
 import { encryptSecret } from '@/lib/crypto';
 import {
   getUserById,
@@ -29,9 +27,10 @@ import {
 import { driveResultPath } from '@/domain/auth/drive-access';
 import { checkDriveGrant } from '@/domain/auth/drive-grant';
 import { finishFlow } from '@/lib/core/auth/flow-cookies';
-import type { GoogleUserResponse, TokenResponse } from '@/lib/google';
 import { SessionTokens, sessionIsCurrent } from '@/lib/session';
 import { setSessionCookie } from '@/lib/core/auth/session-cookie';
+import type { GoogleUserResponse, TokenResponse } from '@/lib/google';
+import type { NextResponse } from 'next/server';
 import type { FlowContext } from '@/domain/auth/sign-in';
 
 /**

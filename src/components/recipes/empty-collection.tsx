@@ -1,8 +1,7 @@
-import type { ReactElement } from 'react';
-
 import { PlusIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import type { ReactElement } from 'react';
 
 /**
  * What a signed-in person with no recipes sees in place of a list: a friendly

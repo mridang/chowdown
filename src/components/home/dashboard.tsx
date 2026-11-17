@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { ArrowIcon, PlusIcon, SearchIcon } from '@/components/icons';
 import { ConnectBand } from '@/components/site/connect-band';
@@ -8,14 +7,9 @@ import {
   DriveConnectPanel,
   DriveUnreachable,
 } from '@/components/site/drive-connect';
-import type { NavLink } from '@/components/site/nav-links';
 import { EmptyCollection } from '@/components/recipes/empty-collection';
 import { RecipeCard, RecipeGrid } from '@/components/recipes/recipe-card';
-import {
-  hrefFor,
-  parseQuery,
-  type RawParams,
-} from '@/components/recipes/search-query';
+import { hrefFor, parseQuery } from '@/components/recipes/search-query';
 import { Button } from '@/components/ui/button';
 import { SearchField } from '@/components/ui/field';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
@@ -29,10 +23,14 @@ import {
   ROW_SIZE,
   todaySeed,
 } from '@/components/home/shelves';
-import type { ShellUser } from '@/domain/auth/shell-user';
 import { countOf } from '@/lib/intl';
-import { toCardRecipe, type CardRecipe } from '@/domain/recipe/card-data';
+import { toCardRecipe } from '@/domain/recipe/card-data';
 import { loadCollection } from '@/domain/recipe/load-collection';
+import type { CardRecipe } from '@/domain/recipe/card-data';
+import type { RawParams } from '@/components/recipes/search-query';
+import type { ShellUser } from '@/domain/auth/shell-user';
+import type { NavLink } from '@/components/site/nav-links';
+import type { ReactElement } from 'react';
 
 /** The recipe list at the filters given, as a link. */
 function listHref(params: RawParams): string {

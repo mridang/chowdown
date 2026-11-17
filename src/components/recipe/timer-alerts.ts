@@ -62,6 +62,7 @@ function beepAt(context: BeepContext, at: number): void {
 
 /** Play the run of beeps that makes up one alarm. */
 function beepEach(context: BeepContext): void {
+  // eslint-disable-next-line functional/no-loop-statements -- each beep is a side effect on the audio context
   for (const offset of BEEP_OFFSETS) {
     beepAt(context, context.currentTime + offset);
   }

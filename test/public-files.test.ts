@@ -1,15 +1,15 @@
-import { describe, expect, it } from '@jest/globals';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { describe, expect, it } from '@jest/globals';
 
 import { BRAND_NAME, BRAND_URL, SECURITY_CONTACT } from '@/app/_brand';
 
-const GOOD_FAITH = /good faith/;
-const OUT_OF_SCOPE = /Out of scope/;
-const IN_SCOPE = /In scope/;
-const WHAT_TO_EXPECT = /What to expect/;
-const NEWLINE_HASH_ANY_PLUS = /\n## .+/;
-const NEWLINE_GT_ANY_PLUS = /\n> .+/;
+const GOOD_FAITH = /good faith/u;
+const OUT_OF_SCOPE = /Out of scope/u;
+const IN_SCOPE = /In scope/u;
+const WHAT_TO_EXPECT = /What to expect/u;
+const NEWLINE_HASH_ANY_PLUS = /\n## .+/u;
+const NEWLINE_GT_ANY_PLUS = /\n> .+/u;
 
 const read = async (name: string) =>
   readFile(path.join(process.cwd(), 'public', name), 'utf8');
@@ -21,7 +21,7 @@ const [llmsText, policyText, headersText] = await Promise.all([
 ]);
 
 /** Plain-text files are served without a charset, so they must be ASCII. */
-const NON_ASCII = /[\u0080-￿]/;
+const NON_ASCII = /[\u0080-￿]/u;
 
 describe('public/llms.txt', () => {
   const text = llmsText;
@@ -36,11 +36,11 @@ describe('public/llms.txt', () => {
 
   it('links only to this site, outside the Optional section', () => {
     const links = Array.from(
-      main.matchAll(/\]\((https?:[^)]+)\)/g),
+      main.matchAll(/\]\((https?:[^)]+)\)/gu),
       (m) => m[1]!,
     );
-    expect(links.length).toBeGreaterThan(0);
     for (const link of links) {
+      expect(links.length).toBeGreaterThan(0);
       expect(link.startsWith(`${BRAND_URL}/`)).toBe(true);
     }
   });

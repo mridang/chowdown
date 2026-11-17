@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { MobileNav } from '@/components/site/mobile-nav';
 import { htmlAt } from '../render';
 
-const BUTTON_ARIA_LABEL = /<button[^>]*aria-label="Menu"/;
+const BUTTON_ARIA_LABEL = /<button[^>]*aria-label="Menu"/u;
 
 describe('MobileNav', () => {
   const out = htmlAt(

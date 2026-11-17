@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { DriveFile } from '@/lib/google/drive';
 import { matchFile, resolveFile } from '@/domain/recipe/match';
+import type { DriveFile } from '@/lib/google/drive';
 
 const files = [
   { id: 'a1', name: 'Chicken Ghee Roast.cook' },

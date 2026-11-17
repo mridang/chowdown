@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
+import { z } from 'zod';
 import {
   createdRecipeId,
   discardImport,
@@ -7,7 +8,6 @@ import {
   postRecipe,
   readImport,
 } from '@/app/(site)/(pages)/recipes/add/_components/recipe-requests';
-import { z } from 'zod';
 
 afterEach(() => {
   jest.restoreAllMocks();
@@ -130,7 +130,6 @@ describe('readImport', () => {
   });
 
   it('is nothing for an answer that is not an import', () => {
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(readImport(undefined)).toBeUndefined();
     expect(readImport({ items: [] })).toBeUndefined();
     expect(readImport({ id: 'i' })).toBeUndefined();

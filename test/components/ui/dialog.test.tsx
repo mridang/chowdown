@@ -16,10 +16,10 @@ import {
 } from '@/components/ui/dialog';
 import { html } from '../render';
 
-const ARIA_DESCRIBEDBY = /aria-describedby="([^"]+)"/;
-const ARIA_LABELLEDBY = /aria-labelledby="([^"]+)"/;
-const DIALOG_DIALOG = /<dialog[^>]*><\/dialog>/;
-const BUTTON_TYPE_BUTTON = /<button type="button" class="mt-2">Open<\/button>/;
+const ARIA_DESCRIBEDBY = /aria-describedby="([^"]+)"/u;
+const ARIA_LABELLEDBY = /aria-labelledby="([^"]+)"/u;
+const DIALOG_DIALOG = /<dialog[^>]*><\/dialog>/u;
+const BUTTON_TYPE_BUTTON = /<button type="button" class="mt-2">Open<\/button>/u;
 
 /** A dialog with a title and a description, open or closed as told. */
 const sample = (open: boolean, props: { showClose?: boolean } = {}) =>
@@ -140,15 +140,15 @@ describe('syncModal', () => {
   it('shows a closed dialog modally when it should be open', () => {
     const dialog = fakeDialog(false);
     syncModal(dialog, true);
-    expect(dialog.showModal).toHaveBeenCalledTimes(1);
-    expect(dialog.close).not.toHaveBeenCalled();
+    expect(dialog.showModal.mock.calls).toEqual([[]]);
+    expect(dialog.close.mock.calls).toEqual([]);
   });
 
   it('closes an open dialog when it should be closed', () => {
     const dialog = fakeDialog(true);
     syncModal(dialog, false);
-    expect(dialog.close).toHaveBeenCalledTimes(1);
-    expect(dialog.showModal).not.toHaveBeenCalled();
+    expect(dialog.close.mock.calls).toEqual([[]]);
+    expect(dialog.showModal.mock.calls).toEqual([]);
   });
 
   it('does nothing when it already is what it should be (showModal would throw)', () => {
@@ -156,8 +156,8 @@ describe('syncModal', () => {
     syncModal(shown, true);
     const hidden = fakeDialog(false);
     syncModal(hidden, false);
-    expect(shown.showModal).not.toHaveBeenCalled();
-    expect(hidden.close).not.toHaveBeenCalled();
+    expect(shown.showModal.mock.calls).toEqual([]);
+    expect(hidden.close.mock.calls).toEqual([]);
   });
 });
 
@@ -167,13 +167,13 @@ describe('backdropClickHandler', () => {
   it('closes the dialog for a click on the dialog itself, which is its backdrop', () => {
     const close = jest.fn();
     backdropClickHandler(dialog, close)({ target: dialog });
-    expect(close).toHaveBeenCalledTimes(1);
+    expect(close.mock.calls).toEqual([[]]);
   });
 
   it('ignores a click on something inside the dialog', () => {
     const close = jest.fn();
     backdropClickHandler(dialog, close)({ target: new EventTarget() });
-    expect(close).not.toHaveBeenCalled();
+    expect(close.mock.calls).toEqual([]);
   });
 });
 
@@ -182,16 +182,16 @@ describe('cancelHandler', () => {
     const close = jest.fn();
     const preventDefault = jest.fn();
     cancelHandler(true, close)({ preventDefault });
-    expect(preventDefault).toHaveBeenCalledTimes(1);
-    expect(close).toHaveBeenCalledTimes(1);
+    expect(preventDefault.mock.calls).toEqual([[]]);
+    expect(close.mock.calls).toEqual([[]]);
   });
 
   it('refuses to close a dialog that is busy, but still stops the browser doing it', () => {
     const close = jest.fn();
     const preventDefault = jest.fn();
     cancelHandler(false, close)({ preventDefault });
-    expect(preventDefault).toHaveBeenCalledTimes(1);
-    expect(close).not.toHaveBeenCalled();
+    expect(preventDefault.mock.calls).toEqual([[]]);
+    expect(close.mock.calls).toEqual([]);
   });
 });
 

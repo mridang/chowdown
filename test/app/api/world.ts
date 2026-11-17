@@ -1,27 +1,27 @@
 import { jest } from '@jest/globals';
 import { NextRequest } from 'next/server';
 
-import type { DatabaseSync } from 'node:sqlite';
+import { z } from 'zod';
 
-import { encryptSecret } from '@/lib/crypto';
 import { SESSION_COOKIE } from '@/domain/auth/app';
+import { encryptSecret } from '@/lib/crypto';
 import {
   insertUser,
-  jar,
   sessionTokenFor,
   testEnv,
 } from '../../domain/auth/session-fixture';
+import { jar } from '../../domain/auth/auth-test-kit';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
   installCloudflareContext,
   settleBackground,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
-import { z } from 'zod';
+import type { DatabaseSync } from 'node:sqlite';
 
-const NAME = /"name":"([^"]+)"/;
-const FILES = /\/files\/([\w-]+)/;
-const COOK = /\.cook$/;
+const NAME = /"name":"([^"]+)"/u;
+const FILES = /\/files\/([\w-]+)/u;
+const COOK = /\.cook$/u;
 
 /** The address the app is served from in route tests. */
 export const ORIGIN = 'https://chowdown.test';
@@ -239,5 +239,3 @@ export function locationOf(response: Response): URL | undefined {
   const target = response.headers.get('location');
   return target ? new URL(target) : undefined;
 }
-
-export { answerFetch } from '../../domain/auth/auth-test-kit';

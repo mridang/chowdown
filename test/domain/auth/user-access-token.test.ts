@@ -7,17 +7,17 @@ import {
   jest,
 } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
+import { z } from 'zod';
 
-import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import { encryptSecret } from '@/lib/crypto';
+import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
 import { insertUser, testEnv } from './session-fixture';
-import { z } from 'zod';
+import type { DatabaseSync } from 'node:sqlite';
 
 const { forgetAccessTokens, getUserAccessToken } =
   await import('@/domain/auth/user-access-token');
@@ -44,13 +44,14 @@ describe('getUserAccessToken', () => {
     ...answers: readonly (Response | Error)[]
   ): jest.SpiedFunction<typeof fetch> {
     const spy = jest.spyOn(globalThis, 'fetch');
-    for (const answer of answers)
+    for (const answer of answers) {
       spy.mockImplementationOnce(async () => {
         if (answer instanceof Error) {
           throw answer;
         }
         return answer;
       });
+    }
     return spy;
   }
 
@@ -86,8 +87,10 @@ describe('getUserAccessToken', () => {
   it('trades the stored login for an access token once, then reuses it', async () => {
     const user = await connectedUser(30);
     const spy = googleAnswers(token('first'), token('second'));
-    expect(await getUserAccessToken(user)).toBe('first');
-    expect(await getUserAccessToken(user)).toBe('first');
+    const first = await getUserAccessToken(user);
+    const again = await getUserAccessToken(user);
+    expect(first).toBe('first');
+    expect(again).toBe('first');
     expect(spy).toHaveBeenCalledTimes(1);
     forgetAccessTokens(30);
   });
@@ -140,7 +143,8 @@ describe('getUserAccessToken', () => {
   it('does not cache a failure', async () => {
     const user = await connectedUser(36);
     googleAnswers(new TypeError('fetch failed'), token('recovered'));
-    await expect(getUserAccessToken(user)).rejects.toThrow('fetch failed');
+    const failure = getUserAccessToken(user);
+    await expect(failure).rejects.toThrow('fetch failed');
     expect(await getUserAccessToken(user)).toBe('recovered');
     forgetAccessTokens(36);
   });

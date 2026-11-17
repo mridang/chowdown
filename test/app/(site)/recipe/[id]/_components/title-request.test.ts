@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
+import { z } from 'zod';
 import {
   CHANGED_ELSEWHERE,
   COULD_NOT_RENAME,
   patchTitle,
 } from '@/app/(site)/recipe/[id]/_components/title-request';
-import { z } from 'zod';
 
 afterEach(() => {
   jest.restoreAllMocks();

@@ -35,14 +35,12 @@ export class ToolRegistry<
    *   unreachable.
    */
   constructor(tools: readonly McpTool<TName, TContext, TContent>[]) {
-    const byName = new Map<string, McpTool<TName, TContext, TContent>>();
-    for (const tool of tools) {
-      if (byName.has(tool.name)) {
-        throw new Error(`Two tools are called ${tool.name}.`);
-      }
-      byName.set(tool.name, tool);
+    const names = tools.map((tool) => tool.name);
+    const repeated = names.find((name, index) => names.indexOf(name) !== index);
+    if (repeated !== undefined) {
+      throw new Error(`Two tools are called ${repeated}.`);
     }
-    this.#byName = byName;
+    this.#byName = new Map(tools.map((tool) => [tool.name, tool]));
   }
 
   /** Every tool, in the order it was registered. */

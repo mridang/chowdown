@@ -11,12 +11,12 @@
  * `recipe` means from one tool should not meet a different rule in the next.
  */
 
+import { z } from 'zod';
 import {
   CARD_RESOURCE_URI,
   LIST_RESOURCE_URI,
 } from '@/domain/mcp/ui-resources';
 import { NOT_BLANK } from '@/lib/mcp';
-import { z } from 'zod';
 
 /** JSON Schema for the recipe-card `structuredContent` (a parsed recipe + extras). */
 export const RECIPE_CARD_OUTPUT_SCHEMA = {
@@ -138,7 +138,7 @@ export const RECIPE_REFERENCE = z
   .string()
   .min(1)
   .max(NAME_MAX)
-  .regex(new RegExp(NOT_BLANK));
+  .regex(new RegExp(NOT_BLANK, 'u'));
 
 /** The most results a question-shaped tool (browse, pantry) may be asked for. */
 export const LIMIT_MAX = 50;
@@ -166,13 +166,17 @@ export const OFFSET = z
 export const FACET_TEXT = z.string().max(200);
 
 /** A search query: some text with something in it. */
-export const QUERY = z.string().min(1).max(500).regex(new RegExp(NOT_BLANK));
+export const QUERY = z
+  .string()
+  .min(1)
+  .max(500)
+  .regex(new RegExp(NOT_BLANK, 'u'));
 
 /** A web address a tool may record or fetch: http or https. */
 export const WEB_URL = z
   .string()
   .max(2048)
-  .regex(new RegExp(String.raw`^https?://\S+$`));
+  .regex(/^https?:\/\/\S+$/u);
 
 /**
  * The largest block of page text or Cooklang a tool takes, in characters. The

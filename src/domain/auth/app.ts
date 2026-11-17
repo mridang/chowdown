@@ -10,8 +10,8 @@
  * happens after sign-in). Every app has these three, with the same exports.
  */
 
-import type { User } from '@/domain/db/users';
 import { isDriveConnected } from '@/domain/auth/drive-access';
+import type { User } from '@/domain/db/users';
 import type { SessionPayload } from '@/lib/session';
 
 /** Name of the session cookie. */
@@ -43,6 +43,12 @@ export const EXTRA_PURPOSES: readonly string[] = ['drive'];
  */
 export const ENDED_SESSION_PATH = '/auth/refresh';
 
+/** The extra claims of this app's session cookie. */
+export type SessionClaims = {
+  readonly drive: boolean;
+  readonly folder?: string;
+};
+
 /**
  * The claims this app's session cookie carries besides who the person is. They
  * are hints for the header, so it needs no database read: whether Google Drive
@@ -54,7 +60,7 @@ export const ENDED_SESSION_PATH = '/auth/refresh';
 export function sessionClaims(
   user: Readonly<Pick<User, 'refresh_token_enc' | 'recipes_folder_id'>>,
   connected: boolean = isDriveConnected(user),
-): Readonly<Record<string, string | boolean>> {
+): SessionClaims {
   return {
     drive: connected,
     ...(user.recipes_folder_id ? { folder: user.recipes_folder_id } : {}),

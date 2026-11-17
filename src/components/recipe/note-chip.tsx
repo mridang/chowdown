@@ -1,7 +1,6 @@
-import type { ReactElement } from 'react';
-
 import { NoteIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
+import type { ReactElement } from 'react';
 
 /**
  * One of the reader's own notes, shown beside the ingredient or step it was

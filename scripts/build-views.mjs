@@ -20,12 +20,20 @@
  * Run via `devbox run npm run build:views` (invoked before the Next build).
  */
 
-import { build as esbuildBuild } from 'esbuild';
 import { createHash } from 'node:crypto';
 import { access, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { build } from 'esbuild';
 
+// eslint-disable-next-line require-unicode-regexp -- esbuild hands the filter to Go's regexp engine, which rejects the (?u) flag that a JavaScript u flag becomes
 const ZOD_V4_LOCALES = /zod[\\/]v4[\\/]locales[\\/]index\.js$/;
+
+/** A size in kilobytes with one decimal, for the build log. */
+const KILOBYTES = new Intl.NumberFormat('en', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+  useGrouping: false,
+});
 
 const root = path.resolve(import.meta.dirname, '..');
 const outDir = path.resolve(root, 'dist/views');
@@ -36,7 +44,7 @@ const siteSource = await readFile(
   'utf8',
 );
 const SITE_NAME =
-  /export const SITE_NAME = '([^']+)'/.exec(siteSource)?.[1] ?? '';
+  /export const SITE_NAME = '([^']+)'/u.exec(siteSource)?.[1] ?? '';
 
 /**
  * The Views to bundle: every entry point `src/views/<name>.tsx` that mounts a
@@ -73,8 +81,8 @@ const VIEWS = candidates
  */
 const slimZodLocales = {
   name: 'slim-zod-locales',
-  setup(build) {
-    build.onLoad({ filter: ZOD_V4_LOCALES }, (args) => ({
+  setup(builder) {
+    builder.onLoad({ filter: ZOD_V4_LOCALES }, (args) => ({
       contents: "export { default as en } from './en.js';",
       resolveDir: path.dirname(args.path),
       loader: 'js',
@@ -84,8 +92,9 @@ const slimZodLocales = {
 
 await mkdir(outDir, { recursive: true });
 
+// eslint-disable-next-line functional/no-loop-statements -- the views are built one after another to keep esbuild's memory use flat
 for (const { name, title } of VIEWS) {
-  const result = await esbuildBuild({
+  const result = await build({
     entryPoints: [path.resolve(root, `src/views/${name}.tsx`)],
     bundle: true,
     format: 'iife',
@@ -113,6 +122,6 @@ for (const { name, title } of VIEWS) {
       `export const contentHash = ${JSON.stringify(contentHash)};\n`,
   );
   console.log(
-    `built view "${name}" → ${(html.length / 1024).toFixed(1)} KB (${contentHash.slice(0, 12)})`,
+    `built view "${name}" → ${KILOBYTES.format(html.length / 1024)} KB (${contentHash.slice(0, 12)})`,
   );
 }

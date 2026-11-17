@@ -25,8 +25,12 @@ export function buildEmbeddingText(recipe: Readonly<ParsedRecipe>): string {
     .map((step) =>
       step
         .map((t) => {
-          if (t.kind === 'text') return t.text;
-          if (t.kind === 'timer') return t.label;
+          if (t.kind === 'text') {
+            return t.text;
+          }
+          if (t.kind === 'timer') {
+            return t.label;
+          }
           return t.name;
         })
         .join(''),

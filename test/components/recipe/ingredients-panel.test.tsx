@@ -7,7 +7,7 @@ import {
 import { RecipeStateProvider } from '@/components/recipe/recipe-state';
 import { html } from '../render';
 
-const H2_CLASS_FONT = /<h2 class="[^"]*font-display[^"]*">Ingredients<\/h2>/;
+const H2_CLASS_FONT = /<h2 class="[^"]*font-display[^"]*">Ingredients<\/h2>/u;
 
 const panel = (ingredients: { name: string; quantity: string }[]) =>
   html(
@@ -30,7 +30,7 @@ describe('IngredientsPanel', () => {
       { name: 'onion', quantity: '1' },
       { name: 'salt', quantity: '' },
     ]);
-    expect(out.match(/role="checkbox"/g)).toHaveLength(2);
+    expect(out.match(/role="checkbox"/gu)).toHaveLength(2);
     expect(out).toContain('onion');
   });
 
@@ -46,7 +46,7 @@ describe('IngredientsPanel', () => {
       </RecipeStateProvider>,
     );
     const ids = Array.from(
-      two.matchAll(/id="([^"]+)">Servings</g),
+      two.matchAll(/id="([^"]+)">Servings</gu),
       (m) => m[1],
     );
     expect(ids).toHaveLength(2);

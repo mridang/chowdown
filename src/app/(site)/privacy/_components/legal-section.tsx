@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import type { ReactElement, ReactNode } from 'react';
 
 import { BRAND_NAME } from '@/app/_brand';
 import { Eyebrow, Heading } from '@/components/ui/layout';
 import { formatDay } from '@/lib/intl';
+import type { ReactElement, ReactNode } from 'react';
 
-const HTTPS = /^https?:\/\//i;
+const HTTPS = /^https?:\/\//iu;
 
 /** How a link inside a legal page looks: underlined, in the accent colour. */
 const LINK =

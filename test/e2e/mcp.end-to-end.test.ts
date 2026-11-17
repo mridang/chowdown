@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { createServer, type Server } from 'node:http';
+import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -9,9 +9,10 @@ import { promisify } from 'node:util';
 
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 
-import type { User } from '@/domain/db/users';
 import { respondToMcp } from '@/domain/mcp/http';
 import { SCOPE_READ, SCOPE_WRITE } from '@/lib/oauth';
+import type { Server } from 'node:http';
+import type { User } from '@/domain/db/users';
 
 const run = promisify(execFile);
 const require = createRequire(path.join(process.cwd(), 'package.json'));
@@ -65,7 +66,7 @@ const SHARED_GAPS = [
  * is expected to pass: initialize, ping, tools/list, resources/list,
  * prompts/list and DNS-rebinding protection must keep passing.
  */
-const REVISIONS: Readonly<Record<string, readonly string[]>> = {
+const REVISIONS = {
   // The newest revision: no handshake and no sessions.
   '2026-07-28': [
     ...SHARED_GAPS,
@@ -126,7 +127,7 @@ const REVISIONS: Readonly<Record<string, readonly string[]>> = {
     'resources-subscribe',
     'resources-unsubscribe',
   ],
-};
+} satisfies Readonly<Record<string, readonly string[]>>;
 
 /** Whoever the suite is: signed in, with every scope and no Google Drive. */
 const SUITE_USER = { id: 1, refresh_token_enc: null } as Readonly<User>;

@@ -17,19 +17,14 @@
  *   empty. Declaring more would only widen what a host has to trust.
  */
 
-import {
-  SUPPORTED_DISPLAY_MODES,
-  type DisplayMode,
-} from '@/views/display-mode';
-import {
-  contentHash as recipeCardHash,
-  html as recipeCardHtml,
-} from '../../../dist/views/recipe-card';
+import { SUPPORTED_DISPLAY_MODES } from '@/views/display-mode';
+import { SITE_URL } from '@/utils/site';
+import { contentHash, html } from '../../../dist/views/recipe-card';
 import {
   contentHash as recipeListHash,
   html as recipeListHtml,
 } from '../../../dist/views/recipe-list';
-import { SITE_URL } from '@/utils/site';
+import type { DisplayMode } from '@/views/display-mode';
 
 /**
  * MIME type the MCP Apps spec requires for UI resources. Defined locally so the
@@ -68,10 +63,7 @@ export const LEGACY_LIST_RESOURCE_URI = 'ui://recipe/list.html';
  * The `ui://` address of the interactive recipe card View. Tool definitions
  * point at this, so a host fetches the new HTML whenever the View changes.
  */
-export const CARD_RESOURCE_URI = hashedResourceUri(
-  'recipe-card',
-  recipeCardHash,
-);
+export const CARD_RESOURCE_URI = hashedResourceUri('recipe-card', contentHash);
 
 /**
  * The `ui://` address of the recipe list View. Tool definitions point at this,
@@ -82,17 +74,20 @@ export const LIST_RESOURCE_URI = hashedResourceUri(
   recipeListHash,
 );
 
+/** The metadata that links a tool to its view, in each host's spelling. */
+export interface ViewToolMeta {
+  readonly ui: { readonly resourceUri: string };
+  readonly 'ui/resourceUri': string;
+  readonly 'openai/outputTemplate': string;
+}
+
 /**
  * Tool metadata that links a tool to its view: the standard `_meta.ui` form,
  * the deprecated flat key older hosts read, and ChatGPT's `openai/outputTemplate`
  * alias, all pointing at the same address.
  * @param resourceUri - The view's `ui://` address.
  */
-export function viewToolMeta(resourceUri: string): {
-  readonly ui: { readonly resourceUri: string };
-  readonly 'ui/resourceUri': string;
-  readonly 'openai/outputTemplate': string;
-} {
+export function viewToolMeta(resourceUri: string): ViewToolMeta {
   return {
     ui: { resourceUri },
     [LEGACY_RESOURCE_URI_META_KEY]: resourceUri,
@@ -127,6 +122,12 @@ export interface OpenAiWidgetCsp {
   readonly frame_domains?: readonly string[];
 }
 
+/** A view's policy in the standard and ChatGPT forms. */
+export interface ViewCsp {
+  readonly ui: UiCsp;
+  readonly openai: OpenAiWidgetCsp;
+}
+
 /**
  * Build the Content-Security-Policy declaration for a view, in both the
  * standard and ChatGPT forms. Connect and resource lists are always present
@@ -134,10 +135,7 @@ export interface OpenAiWidgetCsp {
  * since omitting them already means "none" and a present-but-empty frame list
  * can trip the extra review hosts apply to embedded frames.
  */
-export function buildCsp(origins: ViewOrigins = {}): {
-  readonly ui: UiCsp;
-  readonly openai: OpenAiWidgetCsp;
-} {
+export function buildCsp(origins: ViewOrigins = {}): ViewCsp {
   const { connect = [], resource = [], frame = [], baseUri = [] } = origins;
   return {
     ui: {
@@ -268,7 +266,7 @@ export const APP_RESOURCES: readonly AppResource[] = [
     {
       name: 'Recipe card',
       description: 'Interactive Chowdown recipe card.',
-      html: recipeCardHtml,
+      html,
     },
     CARD_RESOURCE_URI,
     LEGACY_CARD_RESOURCE_URI,
@@ -291,7 +289,7 @@ export const APP_RESOURCES: readonly AppResource[] = [
  * it again when it redraws that conversation.
  */
 const HASHED_ADDRESS =
-  /^ui:\/\/chowdown\/(recipe-card|recipe-list)-[0-9a-f]{12}\.html$/;
+  /^ui:\/\/chowdown\/(recipe-card|recipe-list)-[0-9a-f]{12}\.html$/u;
 
 /**
  * The view served at `uri`: the current or legacy address, or any earlier

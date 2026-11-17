@@ -7,17 +7,16 @@
  * and `sort`.
  */
 
-import {
-  matchesFilters,
-  parseFilters,
-  type FilterableRecipe,
-  type SearchParams,
-} from '@/domain/recipe/facet-filter';
+import { matchesFilters, parseFilters } from '@/domain/recipe/facet-filter';
 import { compareCodeUnits, compareText } from '@/lib/intl';
+import type {
+  FilterableRecipe,
+  SearchParams,
+} from '@/domain/recipe/facet-filter';
 import type { CursorPosition } from '@/lib/core/api';
 
-const START_LT_SIGN_GT_PLUS = /^(?<sign>[+-]?)(?<field>title|modified_at)$/;
-const LEADING_SPACE = /^ /;
+const START_LT_SIGN_GT_PLUS = /^(?<sign>[+-]?)(?<field>title|modified_at)$/u;
+const LEADING_SPACE = /^ /u;
 
 /** A recipe as the query needs it. */
 export interface QueryableRecipe extends FilterableRecipe {

@@ -2,8 +2,8 @@ import { describe, expect, it } from '@jest/globals';
 
 import { parseIngredientLine, toCookIngredient } from '@/lib/cooklang';
 import { PREPARATION } from '@/lib/cooklang/ingredient-line';
-
 import { expectSamePattern, fuzzInputs } from '../../regex-equivalence';
+
 /** The Cooklang token a line becomes: what ends up in the file and so what the page shows. */
 const token = (line: string) => toCookIngredient(parseIngredientLine(line));
 
@@ -173,11 +173,12 @@ describe('parseIngredientLine on hostile or odd input', () => {
     expect(Date.now() - started).toBeLessThan(200);
   });
 
-  it('never returns an empty name for a line that has anything in it', () => {
-    for (const line of ['(2 tbsp)', ',', '1/2', '100 g']) {
+  it.each(['(2 tbsp)', ',', '1/2', '100 g'])(
+    'never returns an empty name for a line that has anything in it (%j)',
+    (line) => {
       expect(parseIngredientLine(line).name).not.toBe('');
-    }
-  });
+    },
+  );
 
   it('handles an unmatched bracket by keeping the rest as a note', () => {
     expect(parseIngredientLine('2 eggs (large')).toMatchObject({
@@ -247,7 +248,7 @@ describe('PREPARATION, rewritten', () => {
       'mashed|thawed|cut|ground)|optional|plus |to taste|for |at room|room te',
       'mp|or |about |such as|preferably|if )',
     ].join(''),
-    'i',
+    'iu',
   );
   const pieces = [
     'very ',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
   CheckIcon,
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/popover';
 
 import { DeleteDialog } from '@/components/recipe/delete-dialog';
+import type { ReactElement } from 'react';
 
 /** What the parts of the browser used to share a link look like, so they can be stood in for. */
 type ShareEnvironment = Readonly<{
@@ -74,7 +75,9 @@ export function ShareButton({
   return (
     <Button
       variant="outline"
-      onClick={() => void share()}
+      onClick={() => {
+        void share();
+      }}
       aria-live="polite"
       className="gap-2"
     >
@@ -126,6 +129,7 @@ export function MoreMenu({
     if (deleteWasOpen.current && !confirmingDelete) {
       focusMoreActionsButton(menuRoot.current);
     }
+    // eslint-disable-next-line functional/immutable-data -- a React ref is a mutable cell by design
     deleteWasOpen.current = confirmingDelete;
   }, [confirmingDelete]);
 

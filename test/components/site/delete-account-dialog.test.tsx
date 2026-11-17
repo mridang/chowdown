@@ -3,8 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { DeleteAccountDialog } from '@/components/site/delete-account-dialog';
 import { html } from '../render';
 
-const ARIA_LABELLEDBY = /aria-labelledby="([^"]+)"/;
-const H2_DELETE_YOUR = /<h2[^>]*>Delete your account\?<\/h2>/;
+const ARIA_LABELLEDBY = /aria-labelledby="([^"]+)"/u;
+const H2_DELETE_YOUR = /<h2[^>]*>Delete your account\?<\/h2>/u;
 
 const markup = (open: boolean) =>
   html(<DeleteAccountDialog open={open} onOpenChange={() => undefined} />);

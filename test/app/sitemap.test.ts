@@ -22,10 +22,11 @@ describe('sitemap', () => {
     );
   });
 
-  it('does not send the hints search engines ignore', () => {
-    for (const entry of entries) {
+  it.each(entries)(
+    'does not send the hints search engines ignore (%j)',
+    (entry) => {
       expect(entry.changeFrequency).toBeUndefined();
       expect(entry.priority).toBeUndefined();
-    }
-  });
+    },
+  );
 });

@@ -1,7 +1,6 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import { cn } from '@/components/ui/cn';
 import { Eyebrow, Heading } from '@/components/ui/layout';
+import type { ReactElement, ReactNode } from 'react';
 
 /** The background and text colour of each kind of band. */
 const SURFACES = {

@@ -11,19 +11,15 @@
  * only once.
  */
 
-import {
-  createLocalJWKSet,
-  decodeJwt,
-  jwtVerify,
-  type JSONWebKeySet,
-} from 'jose';
-
+import { createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
 import {
   ASSERTION_ALGORITHMS,
   FETCH_USER_AGENT,
   readCappedText,
-  type ClientAuth,
 } from './client';
+import type { JSONWebKeySet } from 'jose';
+
+import type { ClientAuth } from './client';
 import type { OAuthFailure } from './token-endpoint';
 
 /** The `client_assertion_type` a JWT assertion declares (RFC 7523 §2.2). */
@@ -57,6 +53,7 @@ export interface AssertionFields {
 /** What checking an assertion reaches out to. */
 export interface AssertionDeps {
   /** The client's key set, or undefined when it could not be fetched. */
+  // eslint-disable-next-line tslop/no-unknown-returns -- the key set is untrusted JSON, which the caller checks with jose
   readonly fetchJwks: (uri: string) => Promise<unknown>;
   /** Record a `jti` as used; false if the client had already used it. */
   readonly claimAssertion: (
@@ -81,6 +78,7 @@ const invalid = (description: string): OAuthFailure => ({
 export async function fetchJwks(
   uri: string,
   fetchImpl: typeof fetch = fetch,
+  // eslint-disable-next-line tslop/no-unknown-returns -- the key set is untrusted JSON, which the caller checks with jose
 ): Promise<unknown> {
   const response = await fetchImpl(uri, {
     redirect: 'manual',

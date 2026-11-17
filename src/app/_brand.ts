@@ -10,13 +10,12 @@
  * names in every app, and holds values only: no components, no side effects.
  */
 
-import type { MetadataRoute } from 'next';
-
 import {
   PRIVACY_LAST_UPDATED,
   SITE_NAME,
   TERMS_LAST_UPDATED,
 } from '@/utils/site';
+import type { MetadataRoute } from 'next';
 
 /** The name of the app, as the wordmark, the tab title suffix and the home-screen label. */
 export const BRAND_NAME = SITE_NAME;
@@ -106,16 +105,19 @@ export const MANIFEST_DESCRIPTION =
 /** The store categories of the installed app. */
 export const MANIFEST_CATEGORIES: readonly string[] = ['food', 'lifestyle'];
 
+/** One icon of a manifest shortcut. */
+interface ShortcutIcon {
+  readonly src: string;
+  readonly sizes: string;
+  readonly type: string;
+}
+
 /**
  * The launcher icon of one shortcut. Android draws shortcut icons at 48dp and
  * wants at least half the screen's density-scaled size, and web.dev recommends a
  * single 192px PNG when one size has to do, so that is what these are.
  */
-function shortcutIcon(name: 'recipes' | 'favourites' | 'add'): {
-  readonly src: string;
-  readonly sizes: string;
-  readonly type: string;
-} {
+function shortcutIcon(name: 'recipes' | 'favourites' | 'add'): ShortcutIcon {
   return {
     src: `/icons/shortcut-${name}-192.png`,
     sizes: '192x192',

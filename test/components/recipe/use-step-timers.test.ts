@@ -1,13 +1,14 @@
 import { describe, expect, it } from '@jest/globals';
-import { createElement, type ReactElement } from 'react';
-
+import { createElement } from 'react';
 import {
   StepTimersContext,
   useOptionalStepTimers,
   useStepTimers,
-  type StepTimers,
 } from '@/components/recipe/use-step-timers';
 import { html } from '../render';
+import type { ReactElement } from 'react';
+
+import type { StepTimers } from '@/components/recipe/use-step-timers';
 
 /** Renders what the hook returns, as JSON. */
 function Probe(): ReactElement {

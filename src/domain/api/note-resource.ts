@@ -7,9 +7,10 @@
  * clients that edit or delete should send the recipe's `ETag` as `If-Match`.
  */
 
-import { flatNoteKey, type Note } from '@/lib/cooklang';
+import { flatNoteKey } from '@/lib/cooklang';
+import type { Note } from '@/lib/cooklang';
 
-const START_N1_HYPHEN_N9_DIGITS = /^[1-9]\d{0,5}$/;
+const START_N1_HYPHEN_N9_DIGITS = /^[1-9]\d{0,5}$/u;
 
 /** A note as the API shows it. */
 export interface NoteResource {

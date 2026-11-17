@@ -7,8 +7,8 @@
  * refuse in the same words.
  */
 
-import type { MutateOutcome } from '@/domain/recipe/mutate-recipe';
 import { problems } from '@/lib/core/api';
+import type { MutateOutcome } from '@/domain/recipe/mutate-recipe';
 
 /** How a route words the failures that depend on what it was changing. */
 export interface MutationWording {
@@ -51,5 +51,6 @@ export function settleMutation<T>(
         response: problems.badRequest(wording.invalid, outcome.errors),
       };
     }
+    // no default
   }
 }

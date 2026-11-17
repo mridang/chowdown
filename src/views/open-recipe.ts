@@ -9,17 +9,17 @@
  * a display name.
  */
 
+import { isRecipeCardData } from '@/views/guards';
 import type { RecipeCardData, RecipeListItem } from '@/domain/mcp/ui-types';
 import type { ListAction } from '@/views/list-state';
 import type { ToolOutcome } from '@/views/payload';
-import { isRecipeCardData } from '@/views/guards';
 
 /**
  * What a Drive file id looks like: letters, digits, `_` and `-`. Anything else
  * in an "id" cannot be a real one, and the id is the only part of a recipe that
  * is allowed into a message the person appears to have written.
  */
-const RECIPE_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+const RECIPE_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/u;
 
 /** Whether `value` has the shape of a recipe (Drive file) id. */
 export function isRecipeId(value: string): boolean {

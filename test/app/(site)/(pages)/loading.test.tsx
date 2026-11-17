@@ -6,7 +6,7 @@ import { html } from '../../../components/render';
 describe('the loading shell for the account pages', () => {
   it('is the page skeleton, announced as loading', () => {
     const out = html(<PagesLoading />);
-    expect(out).toContain('role="status"');
+    expect(out).toContain('<output');
     expect(out).toContain('aria-busy="true"');
   });
 });

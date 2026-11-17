@@ -9,9 +9,10 @@ describe('REQUEST_ARGUMENTS', () => {
 });
 
 describe('APP_STYLES', () => {
-  it('styles the steps and the marked ingredients, cookware and timers', () => {
-    for (const selector of ['.step', '.tok-ing', '.tok-cook', '.tok-timer']) {
+  it.each(['.step', '.tok-ing', '.tok-cook', '.tok-timer'])(
+    'styles the steps and the marked ingredients, cookware and timers (%j)',
+    (selector) => {
       expect(APP_STYLES).toContain(selector);
-    }
-  });
+    },
+  );
 });

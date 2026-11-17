@@ -1,7 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
 import {
   authenticate,
   mayFetch,
@@ -13,9 +11,14 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import type { DatabaseSync } from 'node:sqlite';
 
 /** Who is signed in; null means nobody. Injected in place of the session cookie. */
-const session: { uid: number | null } = { uid: 7 };
+interface SessionState {
+  uid: number | null;
+}
+
+const session: SessionState = { uid: 7 };
 const sessionUid = async (): Promise<number | null> => session.uid;
 
 const PHOTO = 'https://photos.example.org/soup.jpg';

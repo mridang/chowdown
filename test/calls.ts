@@ -6,9 +6,7 @@ import type { jest } from '@jest/globals';
  * expand those types without end (error TS2589); viewing the mock through this
  * plain signature compares the calls and nothing else.
  */
-export type Calls = jest.Mock<
-  (...args: readonly unknown[]) => Promise<unknown>
->;
+export type Calls = jest.Mock<(...args: readonly unknown[]) => Promise<void>>;
 
 /** `fn` (a mock) seen as {@link Calls}, for `expect(asCalls(deps.save)).toHaveBeenCalledWith(…)`. */
 export function asCalls(fn: unknown): Calls {

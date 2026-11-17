@@ -31,7 +31,9 @@ function withRecipes(...ids: readonly string[]) {
   const insert = made.raw.prepare(
     "INSERT INTO recipes (user_id, drive_file_id, name, source, first_opened_at, last_opened_at) VALUES (1, ?, ?, '', 't', 't')",
   );
-  for (const id of ids) insert.run(id, `${id}.cook`);
+  for (const id of ids) {
+    insert.run(id, `${id}.cook`);
+  }
   return made;
 }
 
@@ -137,7 +139,7 @@ describe('saveSimilarLists', () => {
 
   it('does not touch the database for no lists', async () => {
     const { db, batches } = fakeDb();
-    await saveSimilarLists(db, 1, new Map());
+    await saveSimilarLists(db, 1, new Map<string, string>());
     expect(batches).toEqual([]);
   });
 });

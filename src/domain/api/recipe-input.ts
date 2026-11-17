@@ -86,8 +86,8 @@ export type ReplacementInput =
  */
 export function parseReplacementCooklang(body: unknown): ReplacementInput {
   const cooklang: unknown =
-    typeof body === 'object' && body !== null
-      ? Reflect.get(body, 'cooklang')
+    typeof body === 'object' && body !== null && 'cooklang' in body
+      ? body.cooklang
       : undefined;
   const errors = cooklangErrors(cooklang);
   return errors.length > 0 || typeof cooklang !== 'string'

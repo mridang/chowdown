@@ -1,6 +1,3 @@
-import type { ReactElement } from 'react';
-
-import type { SampleRecipes } from '@/components/landing/demo-recipes';
 import { AiVisual } from '@/components/landing/features/ai-visual';
 import { CookVisual } from '@/components/landing/features/cook-visual';
 import { Feature } from '@/components/landing/features/feature';
@@ -9,6 +6,8 @@ import { FiltersVisual } from '@/components/landing/features/filters-visual';
 import { ImportVisual } from '@/components/landing/features/import-visual';
 import { Container } from '@/components/ui/layout';
 import { Section } from '@/components/ui/section';
+import type { SampleRecipes } from '@/components/landing/demo-recipes';
+import type { ReactElement } from 'react';
 
 /** The product's selling points, one picture each. */
 export function Features({

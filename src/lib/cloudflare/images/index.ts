@@ -11,8 +11,8 @@
  * lives in `./server`.
  */
 
+export { DEFAULT_WIDTH } from './site';
 export {
-  DEFAULT_WIDTH,
   IMAGE_PATH,
   imageSrc,
   imageSrcSet,

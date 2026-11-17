@@ -8,13 +8,10 @@ import {
 } from '@jest/globals';
 
 import { DAILY_BUDGETS, spendBudget } from '@/domain/daily-budget';
-import {
-  D1RateLimitStore,
-  type RateLimit,
-  type RateLimitStore,
-} from '@/lib/rate-limit';
+import { D1RateLimitStore } from '@/lib/rate-limit';
 import { APP_MIGRATIONS } from '../lib/core/db/migrations';
 import { sqliteD1 } from '../lib/core/db/sqlite-d1';
+import type { RateLimit, RateLimitStore } from '@/lib/rate-limit';
 
 const NOW = 1_800_000_000;
 const SMALL: RateLimit = {

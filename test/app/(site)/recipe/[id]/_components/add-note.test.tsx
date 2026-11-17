@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { AddNote } from '@/app/(site)/recipe/[id]/_components/add-note';
 import { htmlAt } from '../../../../../components/render';
 
-const BUTTON_ADD_NOTE = /<button[^>]*>.*Add a note<\/button>/s;
+const BUTTON_ADD_NOTE = /<button[^>]*>.*Add a note<\/button>/su;
 
 describe('AddNote', () => {
   const out = htmlAt(<AddNote recipeId="dal" ingredients={['onion']} />, {

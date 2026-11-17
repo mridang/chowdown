@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { requestDeletion } from '@/components/ui/request-deletion';
@@ -11,6 +11,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog';
+import type { ReactElement } from 'react';
 
 /**
  * The confirmation that stands between a tap on "Delete recipe" and the recipe
@@ -107,7 +108,9 @@ export function DeleteDialog({
           <Button
             variant="primary"
             disabled={busy}
-            onClick={() => void confirm()}
+            onClick={() => {
+              void confirm();
+            }}
           >
             {busy ? 'Deleting…' : 'Delete recipe'}
           </Button>

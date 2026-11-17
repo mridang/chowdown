@@ -1,15 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import {
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type ReactElement,
-  type SubmitEvent,
-} from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import { PencilIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -18,6 +10,7 @@ import { TextInput } from '@/components/ui/field';
 import { Heading } from '@/components/ui/layout';
 
 import { patchTitle } from '@/app/(site)/recipe/[id]/_components/title-request';
+import type { KeyboardEvent, ReactElement, SubmitEvent } from 'react';
 
 /** What to say when the box is emptied and saved. */
 const EMPTY_TITLE = 'The title cannot be empty.';
@@ -74,6 +67,7 @@ export function EditableTitle({
     } else {
       // Nothing to hand back: the box was never open.
     }
+    // eslint-disable-next-line functional/immutable-data -- a React ref remembers the previous render's editing flag
     wasEditing.current = editing;
   }, [editing]);
 
@@ -140,7 +134,12 @@ export function EditableTitle({
         )}
       </div>
       {editing ? (
-        <form onSubmit={(event) => void save(event)} className="print:hidden">
+        <form
+          onSubmit={(event) => {
+            void save(event);
+          }}
+          className="print:hidden"
+        >
           <label htmlFor={inputId} className="sr-only">
             Recipe title
           </label>

@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 
 import { installFakeTracing } from '../observability/fake-tracing';
 
@@ -7,11 +7,11 @@ const { nonceOf, genericLimits, serve, serverTiming } =
   await import('@/lib/core/http');
 import type { ServeApp } from '@/lib/core/http';
 
-const DB_DUR_TOTAL = /^db;dur=3, total;/;
-const TOTAL_DUR = /^total;dur=/;
+const DB_DUR_TOTAL = /^db;dur=3, total;/u;
+const TOTAL_DUR = /^total;dur=/u;
 const TOTAL_DUR_EDGE =
-  /^total;dur=\d+(\.\d)?, edge;desc="skip", app;dur=\d+(\.\d)?$/;
-const START_N0_HYPHEN_N9_A = /^[0-9a-f-]{36}$/;
+  /^total;dur=\d+(\.\d)?, edge;desc="skip", app;dur=\d+(\.\d)?$/u;
+const START_N0_HYPHEN_N9_A = /^[0-9a-f-]{36}$/u;
 
 /** What is rate limited in these tests: the classes every app has, with sessions in `app_session`. */
 const limits = genericLimits('app_session');
@@ -20,18 +20,14 @@ const pages: ReadonlySet<string> = new Set(['/']);
 /** The query names these tests let a kept page carry. */
 const queryParams: ReadonlySet<string> = new Set(['alpha', 'beta']);
 /** A rate limit binding that refuses everyone, and counts how often it was asked. */
-function refusing(): {
-  limit: () => Promise<{ success: boolean }>;
-  asked: number;
-} {
-  const binding = {
-    asked: 0,
-    limit: async () => {
-      binding.asked += 1;
-      return { success: false };
+function refusing() {
+  const limit = jest.fn(async () => ({ success: false }));
+  return {
+    limit,
+    get asked() {
+      return limit.mock.calls.length;
     },
   };
-  return binding;
 }
 
 /** A cache that keeps responses in memory, keyed by URL. */
@@ -160,10 +156,9 @@ describe('serve', () => {
       app: json,
       limits,
     });
-    expect(b.headers.get('content-security-policy')).toContain(
-      'frame-ancestors',
-    );
-    expect(b.headers.get('content-security-policy')).not.toContain('nonce-');
+    const policy = b.headers.get('content-security-policy');
+    expect(policy).toContain('frame-ancestors');
+    expect(policy).not.toContain('nonce-');
   });
 
   it('gives the approval screen the policy that forbids framing and omits form-action', async () => {
@@ -203,8 +198,9 @@ describe('serve — flow id', () => {
     expect(response.headers.get('x-flow-id')).toBe('abc-123');
   });
 
-  it('makes one up when none was sent, or when it is not a sane id', async () => {
-    for (const sent of [undefined, 'has space', 'x'.repeat(129)]) {
+  it.each([undefined, 'has space', 'x'.repeat(129)])(
+    'makes one up when none was sent, or when it is not a sane id (%j)',
+    async (sent) => {
       const app = appAnswering(html);
       const response = await serve(
         get('/app', sent === undefined ? {} : { 'x-flow-id': sent }),
@@ -215,8 +211,8 @@ describe('serve — flow id', () => {
       const id = response.headers.get('x-flow-id') ?? '';
       expect(id).toMatch(START_N0_HYPHEN_N9_A);
       expect(app.seen[0]?.headers.get('x-flow-id')).toBe(id);
-    }
-  });
+    },
+  );
 
   it('is on a refusal too', async () => {
     const response = await serve(
@@ -296,9 +292,9 @@ describe('serve — rate limits', () => {
 describe('serve — the edge copy', () => {
   it('stores a public page and answers the next visitor without the app', async () => {
     const cache = memoryCache();
-    let renders = 0;
+    const renders = jest.fn();
     const app = appAnswering(() => {
-      renders += 1;
+      renders();
       return page('a', 'will-be-replaced');
     });
     const { context, pending } = ctx();
@@ -317,7 +313,7 @@ describe('serve — the edge copy', () => {
     });
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
-    expect(renders).toBe(1);
+    expect(renders.mock.calls).toHaveLength(1);
     expect(await second.text()).toContain('<script');
   });
 
@@ -332,11 +328,11 @@ describe('serve — the edge copy', () => {
     await Promise.all(pending);
     const second = await serve(get('/'), {}, context, deps);
     const third = await serve(get('/'), {}, context, deps);
-    const nonces = [first, second, third].map((r) =>
-      nonceOf(r.headers.get('content-security-policy') ?? ''),
-    );
-    expect(new Set(nonces).size).toBe(3);
     for (const response of [second, third]) {
+      const nonces = [first, second, third].map((r) =>
+        nonceOf(r.headers.get('content-security-policy') ?? ''),
+      );
+      expect(new Set(nonces).size).toBe(3);
       const nonce = nonceOf(
         response.headers.get('content-security-policy') ?? '',
       );
@@ -414,18 +410,19 @@ describe('serve — the edge copy', () => {
     expect(app.seen).toHaveLength(1);
   });
 
-  it('does not store a response that sets a cookie or is not a success', async () => {
-    for (const make of [
-      () =>
-        new Response('x', {
-          headers: { 'content-type': 'text/html', 'set-cookie': 'a=b' },
-        }),
-      () =>
-        new Response('x', {
-          status: 500,
-          headers: { 'content-type': 'text/html' },
-        }),
-    ]) {
+  it.each([
+    () =>
+      new Response('x', {
+        headers: { 'content-type': 'text/html', 'set-cookie': 'a=b' },
+      }),
+    () =>
+      new Response('x', {
+        status: 500,
+        headers: { 'content-type': 'text/html' },
+      }),
+  ])(
+    'does not store a response that sets a cookie or is not a success (%j)',
+    async (make) => {
       const cache = memoryCache();
       const { context, pending } = ctx();
       await serve(get('/'), {}, context, {
@@ -436,8 +433,8 @@ describe('serve — the edge copy', () => {
       });
       await Promise.all(pending);
       expect(cache.stored.size).toBe(0);
-    }
-  });
+    },
+  );
 
   it('keys the copy by release, so a deploy never serves old HTML', async () => {
     const cache = memoryCache();
@@ -481,10 +478,12 @@ describe('serve — Server-Timing', () => {
     const miss = await serve(get('/'), {}, context, deps);
     await Promise.all(pending);
     const hit = await serve(get('/'), {}, context, deps);
-    expect(miss.headers.get('server-timing')).toContain('edge;desc="miss"');
-    expect(miss.headers.get('server-timing')).toContain('app;dur=');
-    expect(hit.headers.get('server-timing')).toContain('edge;desc="hit"');
-    expect(hit.headers.get('server-timing')).not.toContain('app;dur=');
+    const missTiming = miss.headers.get('server-timing');
+    const hitTiming = hit.headers.get('server-timing');
+    expect(missTiming).toContain('edge;desc="miss"');
+    expect(missTiming).toContain('app;dur=');
+    expect(hitTiming).toContain('edge;desc="hit"');
+    expect(hitTiming).not.toContain('app;dur=');
   });
 
   it('is on a refusal, which never reaches the app', async () => {
@@ -495,8 +494,9 @@ describe('serve — Server-Timing', () => {
       ctx().context,
       { app: appAnswering(html), limits },
     );
-    expect(response.headers.get('server-timing')).toMatch(TOTAL_DUR);
-    expect(response.headers.get('server-timing')).not.toContain('app;dur=');
+    const timing = response.headers.get('server-timing');
+    expect(timing).toMatch(TOTAL_DUR);
+    expect(timing).not.toContain('app;dur=');
   });
 
   it('keeps timing the app already sent', async () => {

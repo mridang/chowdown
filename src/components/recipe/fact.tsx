@@ -1,6 +1,5 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import { Eyebrow } from '@/components/ui/layout';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * One fact about a recipe: a line icon in a tinted square, a small label and the

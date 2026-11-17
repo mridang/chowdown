@@ -8,11 +8,11 @@
  * pages ever ask for.
  */
 
-import type { Database } from '@/domain/db/client';
 import {
   hasIndexedImage,
   indexUnindexedRecipes,
 } from '@/domain/db/recipe-images';
+import type { Database } from '@/domain/db/client';
 
 /**
  * Whether one of the person's recipes lists `url` among its photos. The address

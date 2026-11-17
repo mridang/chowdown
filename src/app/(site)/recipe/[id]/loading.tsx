@@ -1,7 +1,6 @@
-import type { ReactElement } from 'react';
-
 import { Skeleton, SkeletonFrame } from '@/components/ui/skeleton';
 import { Container } from '@/components/ui/layout';
+import type { ReactElement } from 'react';
 
 /**
  * Shown the instant a recipe card is clicked, while the page itself loads.
@@ -16,7 +15,7 @@ export default function RecipeLoading(): ReactElement {
       <div className="border-b border-line">
         <div className="grid grid-cols-1 lg:grid-cols-2">
           <Skeleton
-            shape="square"
+            corners="square"
             className="aspect-16/10 lg:order-2 lg:aspect-auto lg:min-h-128"
           />
           <div className="px-4 py-8 sm:px-6 lg:order-1 lg:py-14 lg:pr-16 lg:pl-10">
@@ -59,7 +58,7 @@ export default function RecipeLoading(): ReactElement {
             <Skeleton className="h-8 w-32" />
             {[0, 1, 2, 3].map((index) => (
               <div key={index} className="flex gap-5">
-                <Skeleton shape="circle" className="size-9 shrink-0" />
+                <Skeleton corners="circle" className="size-9 shrink-0" />
                 <div className="flex-1">
                   <Skeleton className="h-5 w-full" />
                   <Skeleton className="mt-2 h-5 w-3/4" />

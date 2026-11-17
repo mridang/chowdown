@@ -1,12 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import {
-  EDGE_LIMITS,
-  genericClass,
-  nonceOf,
-  serve,
-  type ServeApp,
-} from '@/lib/core/http';
+import { EDGE_LIMITS, genericClass, nonceOf, serve } from '@/lib/core/http';
+import type { ServeApp } from '@/lib/core/http';
 
 /** A cache that keeps responses in memory, keyed by URL. */
 function memoryCache(): Cache & { readonly stored: Map<string, Response> } {
@@ -218,10 +213,9 @@ describe('serve', () => {
     const b = await serve(new Request('https://app.test/api/x'), {}, context, {
       app: json,
     });
-    expect(b.headers.get('content-security-policy')).toContain(
-      'frame-ancestors',
-    );
-    expect(b.headers.get('content-security-policy')).not.toContain('nonce-');
+    const policy = b.headers.get('content-security-policy');
+    expect(policy).toContain('frame-ancestors');
+    expect(policy).not.toContain('nonce-');
   });
 
   it('gives the approval screen the policy that forbids framing and omits form-action', async () => {
@@ -242,9 +236,9 @@ describe('serve', () => {
 
   it('stores a public page at the edge and answers the next visitor without the app', async () => {
     const cache = memoryCache();
-    let renders = 0;
+    const renders = jest.fn();
     const app = appAnswering(() => {
-      renders += 1;
+      renders();
       return page('a', 'will-be-replaced');
     });
     const { context, pending } = ctx();
@@ -259,7 +253,7 @@ describe('serve', () => {
     });
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
-    expect(renders).toBe(1);
+    expect(renders.mock.calls).toHaveLength(1);
     expect(await second.text()).toContain('<script');
   });
 
@@ -282,11 +276,11 @@ describe('serve', () => {
       app,
       cache,
     });
-    const nonces = [first, second, third].map((r) =>
-      nonceOf(r.headers.get('content-security-policy') ?? ''),
-    );
-    expect(new Set(nonces).size).toBe(3);
     for (const response of [second, third]) {
+      const nonces = [first, second, third].map((r) =>
+        nonceOf(r.headers.get('content-security-policy') ?? ''),
+      );
+      expect(new Set(nonces).size).toBe(3);
       const nonce = nonceOf(
         response.headers.get('content-security-policy') ?? '',
       );
@@ -317,18 +311,19 @@ describe('serve', () => {
     expect(cache.stored.size).toBe(0);
   });
 
-  it('does not store a response that sets a cookie or is not a success', async () => {
-    for (const make of [
-      () =>
-        new Response('x', {
-          headers: { 'content-type': 'text/html', 'set-cookie': 'a=b' },
-        }),
-      () =>
-        new Response('x', {
-          status: 500,
-          headers: { 'content-type': 'text/html' },
-        }),
-    ]) {
+  it.each([
+    () =>
+      new Response('x', {
+        headers: { 'content-type': 'text/html', 'set-cookie': 'a=b' },
+      }),
+    () =>
+      new Response('x', {
+        status: 500,
+        headers: { 'content-type': 'text/html' },
+      }),
+  ])(
+    'does not store a response that sets a cookie or is not a success (%j)',
+    async (make) => {
       const cache = memoryCache();
       const { context, pending } = ctx();
       await serve(new Request('https://app.test/'), {}, context, {
@@ -337,8 +332,8 @@ describe('serve', () => {
       });
       await Promise.all(pending);
       expect(cache.stored.size).toBe(0);
-    }
-  });
+    },
+  );
 
   it('keys the edge copy by release, so a deploy never serves old HTML', async () => {
     const cache = memoryCache();

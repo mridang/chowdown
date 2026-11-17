@@ -1,4 +1,4 @@
-const ESC_COLON_STOCK_OR_BROTH = /\b(?:stock|broth|bouillon|cubes?)\b/;
+const ESC_COLON_STOCK_OR_BROTH = /\b(?:stock|broth|bouillon|cubes?)\b/u;
 /**
  * @packageDocumentation
  *
@@ -38,15 +38,14 @@ const MEAT_NOUNS =
  * stock", "dairy free butter": the word says the animal product is absent, so
  * the phrase it qualifies (up to two words) is not one.
  */
-const FREE_FROM = new RegExp(
-  String.raw`\b(?:vegan|plant[\s-]?based|vegetarian|veggie|meatless|faux|mock|imitation|non[\s-]?dairy|(?:meat|dairy|egg|fish|chicken|beef|animal|lactose)[\s-]?free|no[\s-](?:chicken|beef|meat|fish|egg|dairy))[\s-]+(?:[\w']+[\s-]+)?[\w']+`,
-  'g',
-);
+const FREE_FROM =
+  // eslint-disable-next-line sonarjs/regex-complexity -- one alternation of the words that mark a free-from or plant-based product
+  /\b(?:vegan|plant[\s-]?based|vegetarian|veggie|meatless|faux|mock|imitation|non[\s-]?dairy|(?:meat|dairy|egg|fish|chicken|beef|animal|lactose)[\s-]?free|no[\s-](?:chicken|beef|meat|fish|egg|dairy))[\s-]+(?:[\w']+[\s-]+)?[\w']+/gu;
 
 /** Plants and nuts dressed up as meat: "tofu chorizo", "mushroom bacon", "walnut meat". */
 const PLANT_MEAT = new RegExp(
   String.raw`\b(?:tofu|tempeh|seitan|soy|soya|mushroom|jackfruit|eggplant|aubergine|walnut|cauliflower|chickpea|lentil|coconut|banana blossom)[\s-]+(?:${MEAT_NOUNS})\b`,
-  'g',
+  'gu',
 );
 
 const PLANT_MILK_BASES = String.raw`coconut|almond|soy|soya|oat|rice|cashew|hemp|nut|peanut|cocoa|cacao|shea|apple|hazelnut|macadamia|pea|walnut|pistachio|sunflower(?:\s+seed)?|sesame`;
@@ -62,7 +61,7 @@ export const PLANT_DAIRY = new RegExp(
     String.raw`\bcreamed corn\b`,
     String.raw`\bcoconut cream\b`,
   ].join('|'),
-  'g',
+  'gu',
 );
 
 /** Plants and other things that merely share a word with an animal product. */
@@ -81,18 +80,18 @@ const LOOK_ALIKES = new RegExp(
     String.raw`\bsuet[\s-]free\b|\bveg(?:etable|an)\s+suet\b|\bhoney(?:dew|comb)\b`,
     String.raw`\bcoconut\s+water\b|\bcocoa\b|\bdrumsticks?\b`,
   ].join('|'),
-  'g',
+  'gu',
 );
 
 /** Animal words that stand for an ingredient that is really something else. */
 const REWRITES = [
-  [/\bgoat'?s?\s+(milk|cheese|butter|yogh?urt|cream)\b/g, '$1'],
-  [/\b(?:quail|duck|goose)\s+eggs?\b/g, 'egg'],
+  [/\bgoat'?s?\s+(milk|cheese|butter|yogh?urt|cream)\b/gu, '$1'],
+  [/\b(?:quail|duck|goose)\s+eggs?\b/gu, 'egg'],
   [
-    /\b(crab|lobster|shrimp|prawn|crayfish|clam|oyster|scallop)\s+meat\b/g,
+    /\b(crab|lobster|shrimp|prawn|crayfish|clam|oyster|scallop)\s+meat\b/gu,
     '$1',
   ],
-  [/\b(tuna|salmon|swordfish|cod|halibut|fish)\s+steaks?\b/g, '$1'],
+  [/\b(tuna|salmon|swordfish|cod|halibut|fish)\s+steaks?\b/gu, '$1'],
 ] as const satisfies readonly (readonly [RegExp, string])[];
 
 /**
@@ -104,7 +103,7 @@ const OPTIONAL_MEAT_STOCK = new RegExp(
     String.raw`\b(?:chicken|beef|meat|lamb|pork|fish)(?:\s+(?:stock|broth|bouillon))?(?:\s+cubes?)?[\s(]*(?:/|or)\s*(?:vegetable|veggie|veg)\b`,
     String.raw`\b(?:vegetable|veggie|veg)(?:\s+(?:stock|broth|bouillon))?(?:\s+cubes?)?[\s(]*(?:/|or)\s*(?:chicken|beef|meat|lamb|pork|fish)(?:\s+(?:stock|broth|bouillon|cubes?))?\b`,
   ].join('|'),
-  'g',
+  'gu',
 );
 
 export const MEAT = new RegExp(
@@ -126,6 +125,7 @@ export const MEAT = new RegExp(
     ].join('|')})\b`,
     String.raw`^\s*(?:lean |extra lean )?mince\b`,
   ].join('|'),
+  'u',
 );
 
 export const FISH = new RegExp(
@@ -143,6 +143,7 @@ export const FISH = new RegExp(
     'uni|clamato|taramasalata|bottarga|bagoong|kamaboko|machli|jhinga|kimchi',
     'caesar|dover sole|lemon sole',
   ].join('|')})\b`,
+  'u',
 );
 
 export const DAIRY_OR_EGG = new RegExp(
@@ -157,14 +158,15 @@ export const DAIRY_OR_EGG = new RegExp(
     'half-and-half|alfredo|tzatziki|bechamel|hollandaise|ranch|dulce de leche',
     'queso|monterey jack|pepper jack|grana padano|asiago|cotija',
   ].join('|')})\b`,
+  'u',
 );
 
 /** An ingredient name with accents, case and plant-based look-alikes taken out. */
 function prepare(name: string): string {
   const plain = name
     .normalize('NFD')
-    .replaceAll(/[\u0300-\u036F]/g, '')
-    .replaceAll(/[\u2018\u2019]/g, "'")
+    .replaceAll(/[\u0300-\u036F]/gu, '')
+    .replaceAll(/[\u2018\u2019]/gu, "'")
     .toLowerCase();
   // The "chicken or vegetable" escape hatch only makes sense for stock-style
   // ingredients; "chicken or vegetable pie" really does contain chicken.
@@ -193,8 +195,10 @@ export function classifyDietType(
   protein: readonly string[] = [],
 ): DietType | undefined {
   const names = ingredientNames
+    .values()
     .filter((n) => n.trim() !== '')
-    .map((name) => prepare(name));
+    .map((name) => prepare(name))
+    .toArray();
   const mentions = (pattern: RegExp) => names.some((n) => pattern.test(n));
 
   const meatProtein = protein.some((p) =>

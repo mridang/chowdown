@@ -4,7 +4,7 @@ import { MenuLink } from '@/components/site/menu-link';
 import { driveLink } from '@/components/site/drive-link';
 import { htmlAt } from '../render';
 
-const HREF_APP_RECIPES = /<a [^>]*href="\/app"[^>]*>Recipes<\/a>/;
+const HREF_APP_RECIPES = /<a [^>]*href="\/app"[^>]*>Recipes<\/a>/u;
 
 describe('MenuLink', () => {
   it('is an ordinary link inside the app', () => {

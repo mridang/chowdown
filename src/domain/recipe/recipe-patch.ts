@@ -56,7 +56,7 @@ function patchTitle(state: PatchState, title: unknown): PatchState {
   return edited(
     state,
     upsertMetadata(state.source, [
-      ['title', title.trim().replaceAll(/\s+/g, ' ')],
+      ['title', title.trim().replaceAll(/\s+/gu, ' ')],
     ]),
   );
 }

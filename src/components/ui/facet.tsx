@@ -1,10 +1,4 @@
-import type { ReactElement } from 'react';
-
 import { CheckIcon, ProteinIcon } from '@/components/icons';
-import type {
-  FacetData,
-  FacetOptionData,
-} from '@/components/recipes/search-query';
 import {
   AccordionContent,
   AccordionItem,
@@ -14,19 +8,25 @@ import { CountBadge } from '@/components/ui/chip';
 import { cn } from '@/components/ui/cn';
 import { Difficulty } from '@/components/ui/difficulty';
 import { ToggleLink } from '@/components/ui/toggle-link';
+import type {
+  FacetData,
+  FacetOptionData,
+} from '@/components/recipes/search-query';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * What names an option: the difficulty filter draws a flame meter, the protein
  * filter puts the protein's icon before the words, and every other filter is
  * just its label.
  */
+// eslint-disable-next-line sonarjs/function-return-type -- text is returned as it is, and wrapping it in a fragment is a useless fragment
 function OptionLabel({
   facetKey,
   option,
 }: Readonly<{
   facetKey: FacetData['key'];
   option: FacetOptionData;
-}>): ReactElement {
+}>): ReactNode {
   switch (facetKey) {
     case 'difficulty': {
       return <Difficulty level={option.value} />;
@@ -44,7 +44,7 @@ function OptionLabel({
       );
     }
     default: {
-      return <>{option.label}</>;
+      return option.label;
     }
   }
 }

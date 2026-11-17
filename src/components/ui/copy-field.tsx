@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, type ReactElement } from 'react';
+import { useState } from 'react';
 
 import { CheckIcon, CopyIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import type { ReactElement } from 'react';
 
 /** How long "Copied" stays on the button before it goes back to "Copy". */
 const CONFIRMATION_MS = 1600;
@@ -34,6 +35,7 @@ export function CopyField({
   };
   return (
     <div className="flex h-12 items-center gap-2 rounded-control border border-field bg-surface pr-1 pl-4">
+      {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- a labelled group around a code element; a fieldset would add a border and legend layout */}
       <code
         role="group"
         aria-label={label}
@@ -41,7 +43,11 @@ export function CopyField({
       >
         {value}
       </code>
-      <Button onClick={() => void copy()}>
+      <Button
+        onClick={() => {
+          void copy();
+        }}
+      >
         {copied ? <CheckIcon size="sm" /> : <CopyIcon size="sm" />}
         {copied ? 'Copied' : 'Copy'}
       </Button>

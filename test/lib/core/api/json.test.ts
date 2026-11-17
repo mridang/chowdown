@@ -67,7 +67,9 @@ describe('readJson size limit', () => {
       headers: { 'content-type': 'application/json' },
       body: new ReadableStream<Uint8Array>({
         start(controller) {
-          for (const piece of pieces) controller.enqueue(encoder.encode(piece));
+          for (const piece of pieces) {
+            controller.enqueue(encoder.encode(piece));
+          }
           controller.close();
         },
       }),
@@ -157,15 +159,16 @@ describe('readJsonObject', () => {
     });
   });
 
-  it("answers 400 with the route's own sentence for other JSON", async () => {
-    for (const body of ['[1]', '"x"', '3', 'null']) {
+  it.each(['[1]', '"x"', '3', 'null'])(
+    "answers 400 with the route's own sentence for other JSON (%j)",
+    async (body) => {
       const { status, body: problem } = await refusal(
         await readJsonObject(post(body), 'The patch must be a JSON object.'),
       );
       expect(status).toBe(400);
       expect(problem.detail).toBe('The patch must be a JSON object.');
-    }
-  });
+    },
+  );
 
   it('passes on the media-type refusal', async () => {
     const { status } = await refusal(

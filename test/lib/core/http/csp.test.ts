@@ -11,7 +11,7 @@ import {
   EXTRA_IMG_SOURCES,
 } from '@/lib/core/http';
 
-const ZA_Z0 = /^[A-Za-z0-9+/]+=*$/;
+const ZA_Z0 = /^[A-Za-z0-9+/]+=*$/u;
 
 describe('newNonce', () => {
   it('is base64 of 16 bytes, and different every time', () => {
@@ -55,7 +55,7 @@ describe('buildCsp', () => {
     'manifest-src',
     'worker-src',
   ])('names %s itself, since nothing falls back to the default', (name) => {
-    expect(directive(name)).toMatch(new RegExp(`^${name} 'self'`));
+    expect(directive(name)).toMatch(new RegExp(`^${name} 'self'`, 'u'));
   });
 
   it('allows pictures from this site and the places site.ts names, nothing else', () => {
@@ -66,14 +66,15 @@ describe('buildCsp', () => {
     expect(directive('font-src')).toBe("font-src 'self'");
   });
 
-  it('adds the directives site.ts names to both kinds of policy', () => {
-    for (const surface of ['site', 'approval'] as const) {
+  it.each(['site', 'approval'] as const)(
+    'adds the directives site.ts names to both kinds of policy (%j)',
+    (surface) => {
       const directives = buildCsp('abc123==', surface).split('; ');
       for (const extra of EXTRA_DIRECTIVES) {
         expect(directives).toContain(extra);
       }
-    }
-  });
+    },
+  );
 
   it('forbids plugins, frames, media and a rewritten <base>', () => {
     expect(directive('object-src')).toBe("object-src 'none'");
@@ -136,26 +137,22 @@ describe('forwardedHeaders', () => {
 });
 
 describe('cspSurfaceFor', () => {
-  it('gives the approval screen its own policy and every other path the site policy', () => {
-    expect(cspSurfaceFor('/oauth/authorize')).toBe('approval');
-    for (const pathname of [
-      '/',
-      '/some/page',
-      '/oauth/consent',
-      '/oauth/authorize/x',
-      '/mcp',
-    ]) {
+  it.each(['/', '/some/page', '/oauth/consent', '/oauth/authorize/x', '/mcp'])(
+    'gives the approval screen its own policy and every other path the site policy (%j)',
+    (pathname) => {
+      expect(cspSurfaceFor('/oauth/authorize')).toBe('approval');
       expect(cspSurfaceFor(pathname)).toBe('site');
-    }
-  });
+    },
+  );
 });
 
 describe('reporting', () => {
-  it('points every policy at the report group and address', () => {
-    for (const surface of ['site', 'approval'] as const) {
+  it.each(['site', 'approval'] as const)(
+    'points every policy at the report group and address (%j)',
+    (surface) => {
       const csp = buildCsp('abc', surface);
       expect(csp).toContain('report-to csp-endpoint');
       expect(csp).toContain('report-uri /csp/reports');
-    }
-  });
+    },
+  );
 });

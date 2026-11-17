@@ -1,26 +1,24 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { User } from '@/domain/db/users';
-import type { McpAuth } from '@/domain/mcp/auth';
 import {
   corsFor,
   handleMcpPost,
   originRefusal,
   respondToMcp,
   unauthorizedResponse,
-  type Authenticate,
 } from '@/domain/mcp/http';
-import {
-  MAX_BODY_BYTES,
-  type RateLimitDeps,
-} from '@/domain/mcp/request-limits';
+import { MAX_BODY_BYTES } from '@/domain/mcp/request-limits';
 import { SERVER_INFO } from '@/domain/mcp/server-info';
+import type { Authenticate } from '@/domain/mcp/http';
+import type { RateLimitDeps } from '@/domain/mcp/request-limits';
+import type { McpAuth } from '@/domain/mcp/auth';
+import type { User } from '@/domain/db/users';
 import type { RateLimitStore } from '@/lib/rate-limit';
 
 const collator = new Intl.Collator();
 
-const RATE_LIMIT = /Rate limit/;
-const TOO_LARGE = /too large/;
+const RATE_LIMIT = /Rate limit/u;
+const TOO_LARGE = /too large/u;
 
 const ALL_SCOPES = ['recipes:read', 'recipes:write'];
 const SELF = 'https://chowdown.test';
@@ -51,11 +49,7 @@ const modernHeaders = (method: string, name?: string) => ({
 });
 
 /** Counters kept in a map, so no test reaches a database. */
-function fakeRate(over: Partial<RateLimitDeps> = {}): {
-  readonly deps: RateLimitDeps;
-  readonly keys: () => readonly string[];
-  readonly purged: number[];
-} {
+function fakeRate(over: Partial<RateLimitDeps> = {}) {
   const counters = new Map<string, { count: number; windowStart: number }>();
   const purged: number[] = [];
   const store: RateLimitStore = {
@@ -129,17 +123,18 @@ describe('originRefusal / corsFor', () => {
     });
   });
 
-  it('lets through no origin, our own and a known assistant', () => {
-    expect(originRefusal(new Request(`${SELF}/mcp`), SELF)).toBeNull();
-    for (const origin of [SELF, 'https://claude.ai']) {
+  it.each([SELF, 'https://claude.ai'])(
+    'lets through no origin, our own and a known assistant (%j)',
+    (origin) => {
+      expect(originRefusal(new Request(`${SELF}/mcp`), SELF)).toBeNull();
       expect(
         originRefusal(
           new Request(`${SELF}/mcp`, { headers: { origin } }),
           SELF,
         ),
       ).toBeNull();
-    }
-  });
+    },
+  );
 
   it('echoes an allowed caller’s origin instead of allowing everyone', () => {
     const cors = corsFor(
@@ -206,32 +201,32 @@ describe('originRefusal / corsFor', () => {
     ).toBe('chrome-extension://abcdef');
   });
 
-  it('echoes the headers a preflight asks for, so one more header does not fail it', () => {
-    const preflight = (requested: string) =>
-      corsFor(
-        new Request(`${SELF}/mcp`, {
-          method: 'OPTIONS',
-          headers: {
-            origin: 'https://claude.ai',
-            'access-control-request-headers': requested,
-          },
-        }),
-        SELF,
+  it.each(['a b c', 'x;y', 'a,', 'a'.repeat(513)])(
+    'echoes the headers a preflight asks for, so one more header does not fail it (%j)',
+    (odd) => {
+      const preflight = (requested: string) =>
+        corsFor(
+          new Request(`${SELF}/mcp`, {
+            method: 'OPTIONS',
+            headers: {
+              origin: 'https://claude.ai',
+              'access-control-request-headers': requested,
+            },
+          }),
+          SELF,
+        );
+      const asked = preflight('authorization, content-type, mcp-param-region');
+      expect(asked['Access-Control-Allow-Headers']).toBe(
+        'authorization, content-type, mcp-param-region',
       );
-    const asked = preflight('authorization, content-type, mcp-param-region');
-    expect(asked['Access-Control-Allow-Headers']).toBe(
-      'authorization, content-type, mcp-param-region',
-    );
-    expect(asked['Vary']).toBe('Origin, Access-Control-Request-Headers');
-    // Anything that is not a plain list of header names, or is absurdly long, is ignored.
-    for (const odd of ['a b c', 'x;y', 'a,', 'a'.repeat(513)]) {
+      expect(asked['Vary']).toBe('Origin, Access-Control-Request-Headers');
       const fallback = preflight(odd);
       expect(fallback['Access-Control-Allow-Headers']).toContain(
         'MCP-Protocol-Version',
       );
       expect(fallback['Vary']).toBe('Origin');
-    }
-  });
+    },
+  );
 
   it('puts the CORS headers on a normal reply, a refusal and a 202', async () => {
     const headers = { origin: 'https://claude.ai' };
@@ -269,8 +264,9 @@ describe('handleMcpPost — scopes', () => {
       fakeRate().deps,
     );
     expect(res.status).toBe(403);
-    expect(res.headers.get('www-authenticate')).toContain('insufficient_scope');
-    expect(res.headers.get('www-authenticate')).toContain('recipes:write');
+    const challenge = res.headers.get('www-authenticate');
+    expect(challenge).toContain('insufficient_scope');
+    expect(challenge).toContain('recipes:write');
   });
 
   it('names the request in the refusal, and uses no code from the legacy range', async () => {
@@ -320,18 +316,20 @@ describe('handleMcpPost — malformed bodies', () => {
     return { status, code: json?.error?.code, id: json?.id };
   };
 
-  it('answers JSON that is not an object with Invalid Request, not a crash', async () => {
-    for (const body of [[null], 7, 'ping', [[]], null, false, 0, '', true]) {
+  it.each([[null], 7, 'ping', [[]], null, false, 0, '', true])(
+    'answers JSON that is not an object with Invalid Request, not a crash (%j)',
+    async (body) => {
       expect(await invalid(body)).toEqual({
         status: 400,
         code: -32_600,
         id: null,
       });
-    }
-  });
+    },
+  );
 
-  it('answers text that is not JSON with Parse error', async () => {
-    for (const text of ['{nope', '', 'undefined']) {
+  it.each(['{nope', '', 'undefined'])(
+    'answers text that is not JSON with Parse error (%j)',
+    async (text) => {
       const res = await handleMcpPost(
         postText(text),
         user,
@@ -341,8 +339,8 @@ describe('handleMcpPost — malformed bodies', () => {
       );
       expect(res.status).toBe(400);
       expect(await res.json<Reply>()).toHaveProperty('error.code', -32_700);
-    }
-  });
+    },
+  );
 
   it('refuses an empty batch and an oversized one', async () => {
     expect(await invalid([])).toMatchObject({ status: 400, code: -32_600 });
@@ -401,8 +399,9 @@ describe('handleMcpPost — malformed bodies', () => {
     expect(json).toMatchObject({ id: 5, error: { code: -32_602 } });
   });
 
-  it('accepts string and integer ids, including zero and the empty string', async () => {
-    for (const id of ['abc', '', 0, -3, 2 ** 40]) {
+  it.each(['abc', '', 0, -3, 2 ** 40])(
+    'accepts string and integer ids, including zero and the empty string (%j)',
+    async (id) => {
       const { status, json } = await send({
         jsonrpc: '2.0',
         id,
@@ -410,8 +409,8 @@ describe('handleMcpPost — malformed bodies', () => {
       });
       expect(status).toBe(200);
       expect(json?.id).toBe(id);
-    }
-  });
+    },
+  );
 
   it('does not run a request method sent without an id', async () => {
     const rate = fakeRate();
@@ -428,12 +427,13 @@ describe('handleMcpPost — malformed bodies', () => {
     expect(rate.keys()).toEqual(['mcp-request:1']);
   });
 
-  it('gives a reply to something a server asked an empty 202, and runs nothing', async () => {
-    for (const body of [
-      { jsonrpc: '2.0', id: 3, result: {} },
-      { jsonrpc: '2.0', id: 3, error: { code: -1, message: 'no' } },
-      [{ jsonrpc: '2.0', id: 3, result: {} }],
-    ]) {
+  it.each([
+    { jsonrpc: '2.0', id: 3, result: {} },
+    { jsonrpc: '2.0', id: 3, error: { code: -1, message: 'no' } },
+    [{ jsonrpc: '2.0', id: 3, result: {} }],
+  ])(
+    'gives a reply to something a server asked an empty 202, and runs nothing (%j)',
+    async (body) => {
       const res = await handleMcpPost(
         post(body),
         user,
@@ -443,8 +443,8 @@ describe('handleMcpPost — malformed bodies', () => {
       );
       expect(res.status).toBe(202);
       expect(await res.text()).toBe('');
-    }
-  });
+    },
+  );
 
   it('refuses a reply from a client that speaks the newest revision, which must not send them', async () => {
     const { status, json } = await send(
@@ -818,12 +818,13 @@ describe('handleMcpPost — rate limiting', () => {
     );
   });
 
-  it('keeps listing and the handshake available to a user who has used up their calls', async () => {
-    const rate = fakeRate();
-    for (let index = 0; index < 121; index++) {
-      await send(call(index), {}, ALL_SCOPES, rate.deps);
-    }
-    for (const method of ['tools/list', 'resources/list', 'ping']) {
+  it.each(['tools/list', 'resources/list', 'ping'])(
+    'keeps listing and the handshake available to a user who has used up their calls (%j)',
+    async (method) => {
+      const rate = fakeRate();
+      for (let index = 0; index < 121; index++) {
+        await send(call(index), {}, ALL_SCOPES, rate.deps);
+      }
       const { status } = await send(
         { jsonrpc: '2.0', id: 1, method },
         {},
@@ -831,8 +832,8 @@ describe('handleMcpPost — rate limiting', () => {
         rate.deps,
       );
       expect(status).toBe(200);
-    }
-  });
+    },
+  );
 
   it('counts each user on their own', async () => {
     const rate = fakeRate();

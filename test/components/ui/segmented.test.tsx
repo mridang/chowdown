@@ -3,9 +3,9 @@ import { describe, expect, it } from '@jest/globals';
 import { Segmented } from '@/components/ui/segmented';
 import { html } from '../render';
 
-const VALUE_US_CHECKED = /value="us"[^>]*checked=""|checked=""[^>]*value="us"/;
-const LABEL_US_SPAN = /<label[^>]*>.*US<\/span><\/label>/;
-const LABEL_METRIC_SPAN = /<label[^>]*>.*Metric<\/span><\/label>/;
+const VALUE_US_CHECKED = /value="us"[^>]*checked=""|checked=""[^>]*value="us"/u;
+const LABEL_US_SPAN = /<label[^>]*>.*US<\/span><\/label>/u;
+const LABEL_METRIC_SPAN = /<label[^>]*>.*Metric<\/span><\/label>/u;
 
 const OPTIONS = [
   { value: 'metric', label: 'Metric' },
@@ -27,18 +27,18 @@ describe('Segmented', () => {
   });
 
   it('has one radio button for each option, labelled', () => {
-    expect(out.match(/type="radio"/g)).toHaveLength(2);
+    expect(out.match(/type="radio"/gu)).toHaveLength(2);
     expect(out).toMatch(LABEL_METRIC_SPAN);
     expect(out).toMatch(LABEL_US_SPAN);
   });
 
   it('checks only the selected option', () => {
-    expect(out.match(/checked=""/g)).toHaveLength(1);
+    expect(out.match(/checked=""/gu)).toHaveLength(1);
     expect(out).toMatch(VALUE_US_CHECKED);
   });
 
   it('groups the radios under one name, so arrow keys move between them', () => {
-    const names = Array.from(out.matchAll(/name="([^"]+)"/g), (m) => m[1]);
+    const names = Array.from(out.matchAll(/name="([^"]+)"/gu), (m) => m[1]);
     expect(new Set(names).size).toBe(1);
   });
 });

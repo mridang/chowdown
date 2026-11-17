@@ -11,12 +11,10 @@ import { recipeToJsonLd } from '@/domain/recipe/schema-org';
 import { parseRecipe } from '@/lib/cooklang';
 import { getDatabase } from '@/domain/db/client';
 import { entityTag, ifNoneMatchHit, problems } from '@/lib/core/api';
-import {
-  representationTag,
-  type RecipeRepresentation,
-} from '@/domain/recipe/etag';
+import { representationTag } from '@/domain/recipe/etag';
 import { appOrigin } from '@/lib/core/origin';
 import { recipeResource } from '@/domain/api/recipe-resource';
+import type { RecipeRepresentation } from '@/domain/recipe/etag';
 
 /** The media type of a recipe's Cooklang source. */
 export const COOKLANG_TYPE = 'text/x-cooklang';
@@ -53,7 +51,7 @@ export async function sendRecipe(
   }
   const kind = wantedType(request.headers.get('accept'));
   const etag = representationTag(await entityTag(rows.recipe.source), kind);
-  const headers: Readonly<Record<string, string>> = {
+  const headers = {
     ETag: etag,
     Vary: 'Accept',
     'Cache-Control': 'private, no-cache',

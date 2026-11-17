@@ -6,9 +6,10 @@
  * OAuth shape, and reading the bearer token.
  */
 
-import { readFormBody, type FormBody } from '@/lib/core/api';
+import { readFormBody } from '@/lib/core/api';
+import type { FormBody } from '@/lib/core/api';
 
-const BEARER = /^Bearer\s+(\S+)$/i;
+const BEARER = /^Bearer\s+(\S+)$/iu;
 
 /**
  * CORS for endpoints a browser-based client may call. The MCP headers are
@@ -20,7 +21,7 @@ const BEARER = /^Bearer\s+(\S+)$/i;
  * 405 instead of a CORS failure. `Retry-After` is exposed so a page can back
  * off when it is rate limited.
  */
-export const CORS_HEADERS: Readonly<Record<string, string>> = {
+export const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': [
@@ -84,7 +85,9 @@ export function bearerToken(request: Request): string | undefined {
 }
 
 /** Anything that looks up a submitted form field by name (`URLSearchParams` and `FormData` both do). */
-export type FormFields = Readonly<{ get(name: string): unknown }>;
+export type FormFields = Readonly<{
+  get(name: string): FormDataEntryValue | null;
+}>;
 
 /** The most a token, revocation or consent form may weigh. Real ones are a few hundred bytes; the PKCE verifier, code and tokens are the bulk. */
 export const MAX_OAUTH_FORM_BYTES = 16_384;
@@ -123,5 +126,6 @@ export function formFailure(
     case 'unreadable': {
       return oauthError('invalid_request', 'The request body is not readable.');
     }
+    // no default
   }
 }

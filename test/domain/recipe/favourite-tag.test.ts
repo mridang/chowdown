@@ -20,7 +20,7 @@ describe('withFavouriteTag', () => {
   it('is idempotent when turned on twice', () => {
     const once = withFavouriteTag(SRC, true);
     expect(withFavouriteTag(once, true)).toBe(once);
-    expect(once.match(/favourite/g)).toHaveLength(1);
+    expect(once.match(/favourite/gu)).toHaveLength(1);
   });
 
   it('removes the marker when turned off', () => {

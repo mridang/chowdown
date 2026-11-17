@@ -20,7 +20,7 @@ describe('pantryOf', () => {
   it('reads a single string or object that is not in a list', () => {
     expect(pantryOf('garlic')).toEqual([{ name: 'garlic' }]);
     expect(pantryOf({ name: 'rice' })).toEqual([{ name: 'rice' }]);
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
     expect(pantryOf(undefined)).toEqual([]);
   });
 

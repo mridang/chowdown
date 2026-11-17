@@ -59,6 +59,7 @@ describe('sharedImportInput', () => {
   });
 
   it('ignores addresses that are not http(s), or that carry a password', () => {
+    // eslint-disable-next-line no-script-url -- the value is a javascript: URL on purpose, to prove it is refused
     expect(sharedImportInput({ url: 'javascript:alert(1)' })).toBe('');
     expect(sharedImportInput({ url: 'ftp://example.com/x' })).toBe('');
     expect(sharedImportInput({ url: 'https://user:pw@example.com/x' })).toBe(
@@ -96,7 +97,7 @@ describe('sharedImportInput', () => {
   });
 
   it('reduces everything to plain text', () => {
-    expect(sharedImportInput({ text: 'a\u0000b‮c​d\r\ne f' })).toBe(
+    expect(sharedImportInput({ text: 'a\u0000b‮c​d\r\ne\u2028f' })).toBe(
       'abcd\ne\nf',
     );
   });

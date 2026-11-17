@@ -1,4 +1,4 @@
-const EQUALS_END = /={1,2}$/;
+const EQUALS_END = /={1,2}$/u;
 /**
  * @packageDocumentation
  *

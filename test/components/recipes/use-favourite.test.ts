@@ -41,13 +41,13 @@ describe('saveFavourite', () => {
   });
 
   it('flips the heart before the save finishes', async () => {
-    let seenDuringSave: boolean | undefined;
+    const seenDuringSave = jest.fn<(seen: boolean | undefined) => void>();
     const send: Send = async () => {
-      seenDuringSave = getFavouriteOverride('abc');
+      seenDuringSave(getFavouriteOverride('abc'));
       return { ok: true, status: 204 };
     };
     await saveFavourite('abc', true, send);
-    expect(seenDuringSave).toBe(true);
+    expect(seenDuringSave.mock.calls).toEqual([[true]]);
   });
 
   it('rolls the heart back when the server refuses', async () => {

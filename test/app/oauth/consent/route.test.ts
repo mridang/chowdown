@@ -7,25 +7,34 @@ import {
   jest,
 } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
+import { z } from 'zod';
 
-import { handleConsent } from '@/app/oauth/consent/handler';
-import type { CurrentUserResolver } from '@/domain/api/auth';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { s256 } from '@/lib/oauth';
+import { handleConsent } from '@/app/oauth/consent/handler';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../../lib/core/db/sqlite-d1';
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
-import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import urls from '../../../fixtures/insecure-urls.json' with { type: 'json' };
+import type { DatabaseSync } from 'node:sqlite';
+import type { CurrentUserResolver } from '@/domain/api/auth';
 
-const CDN = /^cdn_/;
+const CDN = /^cdn_/u;
 
 /** Who is signed in; null means nobody. */
 /** `ended`: the person signed out everywhere, though the cookie itself still verifies. */
-const session: { uid: number | null; ended: boolean } = {
+/** One line the app logs as JSON. */
+const LOG_LINE = z.record(z.string(), z.unknown());
+
+interface SessionState {
+  uid: number | null;
+  ended: boolean;
+}
+
+const session: SessionState = {
   uid: 7,
   ended: false,
 };
@@ -242,9 +251,10 @@ describe('POST /oauth/consent', () => {
     it('logs that the grant was narrowed', async () => {
       const info = jest.spyOn(console, 'info').mockImplementation(() => {});
       await consent({ access: 'read' });
-      expect(
-        info.mock.calls.map(([line]): unknown => JSON.parse(String(line))),
-      ).toContainEqual(
+      const logged = info.mock.calls.map(([line]) =>
+        LOG_LINE.parse(JSON.parse(String(line))),
+      );
+      expect(logged).toContainEqual(
         expect.objectContaining({
           event: 'oauth.scope_narrowed',
           clientId: 'dcr_abc',
@@ -259,9 +269,10 @@ describe('POST /oauth/consent', () => {
   it('logs a refusal as a security event', async () => {
     const info = jest.spyOn(console, 'info').mockImplementation(() => {});
     await consent({ decision: 'deny' });
-    expect(
-      info.mock.calls.map(([line]): unknown => JSON.parse(String(line))),
-    ).toContainEqual(
+    const logged = info.mock.calls.map(([line]) =>
+      LOG_LINE.parse(JSON.parse(String(line))),
+    );
+    expect(logged).toContainEqual(
       expect.objectContaining({
         event: 'oauth.consent_denied',
         clientId: 'dcr_abc',

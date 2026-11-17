@@ -17,7 +17,7 @@ import {
 } from './site';
 
 /** Security headers for every response. */
-export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
+export const SECURITY_HEADERS = {
   // Never let a browser guess a different content type for a response.
   'X-Content-Type-Options': 'nosniff',
   // Send other sites only our origin, and nothing at all on a downgrade.

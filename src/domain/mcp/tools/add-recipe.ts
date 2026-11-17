@@ -5,7 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { z } from 'zod';
 import {
   label,
   modelBudgetRefusal,
@@ -17,17 +17,14 @@ import {
   NAME_MAX,
   RECIPE_CARD_OUTPUT_SCHEMA,
 } from '@/domain/mcp/tools/schemas';
-import {
-  type JsonSchema,
-  McpTool,
-  NOT_BLANK,
-  textArg,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
-  writes,
+import { McpTool, NOT_BLANK, textArg, writes } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type {
+  JsonSchema,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
 
 export class AddRecipeTool extends McpTool<
   'add_recipe',
@@ -47,13 +44,13 @@ export class AddRecipeTool extends McpTool<
         .string()
         .min(1)
         .max(NAME_MAX)
-        .regex(new RegExp(NOT_BLANK))
+        .regex(new RegExp(NOT_BLANK, 'u'))
         .describe('The recipe name.'),
       content: z
         .string()
         .min(1)
         .max(CONTENT_MAX)
-        .regex(new RegExp(NOT_BLANK))
+        .regex(new RegExp(NOT_BLANK, 'u'))
         .describe('The full recipe in Cooklang format. Not a URL.'),
     })
     .strict();

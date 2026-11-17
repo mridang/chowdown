@@ -1,11 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { FacetData } from '@/components/recipes/search-query';
 import { FacetSection } from '@/components/ui/facet';
 import { html } from '../render';
+import type { FacetData } from '@/components/recipes/search-query';
 
-const CUISINE_SPAN = /Cuisine<span/;
-const CUISINE_SPAN_SPAN = /Cuisine<span[^>]*>1<\/span>/;
+const CUISINE_SPAN = /Cuisine<span/u;
+const CUISINE_SPAN_SPAN = /Cuisine<span[^>]*>1<\/span>/u;
 
 const FACET: FacetData = {
   key: 'cuisine',
@@ -31,7 +31,7 @@ describe('FacetSection', () => {
 
   it('marks only the switched-on options as current, without checkbox roles', () => {
     const out = html(<FacetSection facet={FACET} defaultOpen />);
-    expect(out.match(/aria-current="true"/g)).toHaveLength(1);
+    expect(out.match(/aria-current="true"/gu)).toHaveLength(1);
     expect(out).not.toContain('role="checkbox"');
     expect(out).not.toContain('aria-checked');
   });

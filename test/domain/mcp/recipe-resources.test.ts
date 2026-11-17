@@ -1,8 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
-import type { User } from '@/domain/db/users';
-import type { RpcError } from '@/lib/mcp';
 import { BackendFailureError } from '@/lib/mcp';
 import {
   RECIPE_TEMPLATE,
@@ -12,13 +10,15 @@ import {
   recipeResource,
   recipeUri,
 } from '@/domain/mcp/recipe-resources';
-import type { DriveContext } from '@/domain/mcp/tool-services';
-import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import type { DriveContext } from '@/domain/mcp/tool-services';
+import type { RpcError } from '@/lib/mcp';
+import type { User } from '@/domain/db/users';
 
 const collator = new Intl.Collator();
 
-const GOOGLE_DRIVE_ISN = /Google Drive isn't connected/;
+const GOOGLE_DRIVE_ISN = /Google Drive isn't connected/u;
 
 const someone = { id: 1 } as User;
 
@@ -208,11 +208,12 @@ describe('cachedRecipeLister', () => {
          (2, 'b', 'b@example.com', '${now}', '${now}')`,
     );
     const names = ['Soup', 'Apple pie', 'Naan', 'Curry', 'Bread'];
-    for (const [index, name] of names.entries())
+    for (const [index, name] of names.entries()) {
       database.raw.exec(
         `INSERT INTO recipes (user_id, drive_file_id, name, source, first_opened_at, last_opened_at)
          VALUES (1, 'id${index}', '${name}.cook', 'SOURCE OF ${name}', '${now}', '${now}')`,
       );
+    }
     database.raw.exec(
       `INSERT INTO recipes (user_id, drive_file_id, name, source, first_opened_at, last_opened_at)
        VALUES (2, 'other', 'Someone else.cook', 'x', '${now}', '${now}')`,

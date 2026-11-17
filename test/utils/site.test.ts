@@ -14,8 +14,8 @@ import {
   TERMS_LAST_UPDATED,
 } from '@/utils/site';
 
-const START_DIGITS_HYPHEN_DIGITS_HYPHEN = /^\d{4}-\d{2}-\d{2}$/;
-const START_HTTPS_COLON_SLASH_PLUS = /^https:\/\/[^/]+$/;
+const START_DIGITS_HYPHEN_DIGITS_HYPHEN = /^\d{4}-\d{2}-\d{2}$/u;
+const START_HTTPS_COLON_SLASH_PLUS = /^https:\/\/[^/]+$/u;
 
 describe('site identity', () => {
   it('gives the site an https address with no trailing slash', () => {

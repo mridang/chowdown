@@ -1,6 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { User } from '@/domain/db/users';
 import {
   MAX_BODY_BYTES,
   MCP_RATE_LIMITS,
@@ -9,8 +8,9 @@ import {
   chargeRefusedBody,
   checkRateLimits,
   readJsonBody,
-  type RateLimitDeps,
 } from '@/domain/mcp/request-limits';
+import type { RateLimitDeps } from '@/domain/mcp/request-limits';
+import type { User } from '@/domain/db/users';
 import type { RateLimitStore } from '@/lib/rate-limit';
 
 const collator = new Intl.Collator();
@@ -27,7 +27,9 @@ const streamed = (pieces: readonly Uint8Array[]) =>
     method: 'POST',
     body: new ReadableStream<Uint8Array>({
       start(controller) {
-        for (const piece of pieces) controller.enqueue(piece);
+        for (const piece of pieces) {
+          controller.enqueue(piece);
+        }
         controller.close();
       },
     }),

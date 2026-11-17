@@ -1,9 +1,8 @@
+import { ButtonLink } from '@/components/ui/button';
+import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 import type { Metadata } from 'next';
 
 import type { ReactElement } from 'react';
-
-import { ButtonLink } from '@/components/ui/button';
-import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 
 /** The tab title for the not-found page. */
 export const metadata: Metadata = { title: 'Recipe not found' };

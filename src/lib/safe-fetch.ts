@@ -20,8 +20,8 @@
 
 import { parseUrl } from '@/utils/url';
 
-const START_DIGITS_ANY_PLUS_END = /^[\d.]+$/;
-const TRAILING_DOT = /\.$/;
+const START_DIGITS_ANY_PLUS_END = /^[\d.]+$/u;
+const TRAILING_DOT = /\.$/u;
 
 /**
  * Who we say we are when the caller names nobody. A caller passes its own
@@ -35,7 +35,7 @@ const MAX_URL_LENGTH = 2048;
 
 /** Name endings that are not on the public web (private networks, reserved names). */
 const NOT_PUBLIC =
-  /\.(local|localhost|localdomain|internal|intranet|private|lan|home|corp|test|invalid|example|arpa)$/;
+  /\.(local|localhost|localdomain|internal|intranet|private|lan|home|corp|test|invalid|example|arpa)$/u;
 
 /**
  * Whether an address is a public web address we are willing to fetch: http or

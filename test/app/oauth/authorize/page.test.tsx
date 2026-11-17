@@ -6,21 +6,20 @@ import {
   it,
   jest,
 } from '@jest/globals';
-
-import type { DatabaseSync } from 'node:sqlite';
-import type { ReactElement } from 'react';
-
 import { s256 } from '@/lib/oauth';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../../lib/core/db/sqlite-d1';
+
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 import { htmlAt } from '../../../components/render';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
+import type { ReactElement } from 'react';
+import type { DatabaseSync } from 'node:sqlite';
 
-const HREF_RETURN_TO = /href="([^"]*)"[^>]*>Return to the app/;
-const AUTH_LOGIN_RETURN_TO = /^\/auth\/login\?returnTo=/;
+const HREF_RETURN_TO = /href="([^"]*)"[^>]*>Return to the app/u;
+const AUTH_LOGIN_RETURN_TO = /^\/auth\/login\?returnTo=/u;
 
 /** What the page asked Next to redirect to; `redirect` throws, as the real one does. */
 class RedirectedError extends Error {
@@ -36,25 +35,36 @@ class RedirectedError extends Error {
  * what this app's own gate before the approval shows (null lets the person
  * through), with the return addresses it was handed.
  */
-const state: {
+interface PageState {
   user: { email: string } | null;
   requestHeaders: Record<string, string>;
   gate: ReactElement | null;
   gatedReturns: string[];
-} = { user: null, requestHeaders: {}, gate: null, gatedReturns: [] };
+}
 
+const state: PageState = {
+  user: null,
+  requestHeaders: {},
+  gate: null,
+  gatedReturns: [],
+};
+
+// eslint-disable-next-line tslop/no-module-mocking -- next/navigation is a framework module the page imports directly, and its redirect and notFound throw inside a Next request
 jest.unstable_mockModule('next/navigation', () => ({
   redirect: (to: string) => {
     throw new RedirectedError(to);
   },
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- next/headers is a framework module the code under test imports directly, and it only works inside a Next request
 jest.unstable_mockModule('next/headers', () => ({
   headers: async () =>
     new Headers({ host: 'app.test', ...state.requestHeaders }),
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- @/lib/core/auth/current-user is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/lib/core/auth/current-user', () => ({
   getCurrentUser: async () => state.user,
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- @/app/oauth/authorize/app-gate is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/app/oauth/authorize/app-gate', () => ({
   approvalGate: (...args: readonly [unknown, string]) => {
     state.gatedReturns.push(args[1]);

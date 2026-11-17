@@ -39,5 +39,3 @@ export interface ThemePalette {
 
 /** Colour used for text drawn on the accent fill. */
 export const ON_ACCENT = '#ffffff';
-
-export { DARK_PALETTE, LIGHT_PALETTE } from '@/views/app';

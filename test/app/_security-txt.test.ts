@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { BRAND_URL, SECURITY_POLICY_URL } from '@/app/_brand';
 import { SECURITY_TXT_VALID_DAYS, securityTxt } from '@/app/_security-txt';
 
-const MAILTO = /^mailto:.+@.+/;
+const MAILTO = /^mailto:.+@.+/u;
 
 describe('securityTxt', () => {
   const now = new Date('2026-10-18T00:00:00Z');

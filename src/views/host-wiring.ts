@@ -14,24 +14,23 @@
 import {
   McpUiResourceTeardownRequestSchema,
   McpUiResourceTeardownResultSchema,
-  type App,
-  type McpUiHostContext,
 } from '@modelcontextprotocol/ext-apps/react';
 
-import {
-  isDisplayMode,
-  modeFromResult,
-  type DisplayMode,
-  type LayoutAction,
-} from '@/views/display-mode';
+import { isDisplayMode, modeFromResult } from '@/views/display-mode';
 import { firstThatWorks, followUpChannels } from '@/views/follow-up';
 import {
   hasFixedHeight,
   localeToLang,
   safeAreaVariables,
 } from '@/views/host-context';
+import { readOutcome } from '@/views/payload';
+import type { ToolOutcome } from '@/views/payload';
+import type { DisplayMode, LayoutAction } from '@/views/display-mode';
+import type {
+  App,
+  McpUiHostContext,
+} from '@modelcontextprotocol/ext-apps/react';
 import type { OpenAiApi } from '@/views/openai-bridge';
-import { readOutcome, type ToolOutcome } from '@/views/payload';
 import type { ViewAction } from '@/views/view-state';
 
 /**
@@ -55,8 +54,10 @@ export function applyDocumentContext(
   root: DocumentRoot,
 ): void {
   if (context.safeAreaInsets !== undefined) {
-    for (const [name, value] of safeAreaVariables(context.safeAreaInsets))
+    // eslint-disable-next-line functional/no-loop-statements -- each property is set on the document root as a side effect
+    for (const [name, value] of safeAreaVariables(context.safeAreaInsets)) {
       root.style.setProperty(name, value);
+    }
   }
   if (context.containerDimensions !== undefined) {
     root.toggleAttribute(

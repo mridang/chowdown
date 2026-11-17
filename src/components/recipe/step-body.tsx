@@ -1,15 +1,15 @@
 'use client';
 
-import type { ReactElement } from 'react';
-
 import { ClockIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
-import type { StepToken } from '@/lib/cooklang';
 
 import { useRecipeState } from '@/components/recipe/recipe-state';
 import { parseDurationMs } from '@/components/recipe/timer-duration';
-import { describeTimer, type TimerView } from '@/components/recipe/timer-state';
+import { describeTimer } from '@/components/recipe/timer-state';
 import { useOptionalStepTimers } from '@/components/recipe/use-step-timers';
+import type { TimerView } from '@/components/recipe/timer-state';
+import type { StepToken } from '@/lib/cooklang';
+import type { ReactElement } from 'react';
 
 /** The look of a timer button in each state: quiet until started, strongest when it has rung. */
 const CHIP_STATES: Readonly<Record<TimerView['state'], string>> = {
@@ -114,7 +114,7 @@ export function StepBody({
               </span>
             );
           }
-          case 'timer': {
+          default: {
             return (
               <TimerToken
                 key={index}

@@ -19,6 +19,9 @@ import type { ToolOutcome } from '@/views/payload';
  */
 export const INLINE_TILE_LIMIT = 8;
 
+/** Splits a title into the characters a person sees. */
+const GRAPHEMES = new Intl.Segmenter('en', { granularity: 'grapheme' });
+
 /** The longest recipe title the View repeats in its own sentences. */
 const NOTICE_TITLE_LIMIT = 80;
 
@@ -102,10 +105,11 @@ export type ListAction =
 export function shortTitle(title: string): string {
   const flat = title
     .replaceAll(/[\p{Cc}\p{Cf}]/gu, ' ')
-    .replaceAll(/\s+/g, ' ')
+    .replaceAll(/\s+/gu, ' ')
     .trim();
-  return flat.length > NOTICE_TITLE_LIMIT
-    ? `${flat.slice(0, NOTICE_TITLE_LIMIT - 1)}…`
+  const letters = Array.from(GRAPHEMES.segment(flat), ({ segment }) => segment);
+  return letters.length > NOTICE_TITLE_LIMIT
+    ? `${letters.slice(0, NOTICE_TITLE_LIMIT - 1).join('')}…`
     : flat;
 }
 
@@ -209,5 +213,6 @@ export function reduceListState(
     case 'filter-changed': {
       return { ...state, filter: action.value };
     }
+    // no default
   }
 }

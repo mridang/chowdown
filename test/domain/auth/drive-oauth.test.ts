@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
+import { z } from 'zod';
 import {
   DRIVE_SCOPE,
   buildDriveAuthUrl,
@@ -7,10 +8,9 @@ import {
   refreshAccessToken,
   revokeToken,
 } from '@/domain/auth/drive-oauth';
-import { z } from 'zod';
 
-const TOKEN_REFRESH_FAILED = /Token refresh failed: unexpected response/;
-const INVALID_GRANT = /invalid_grant/;
+const TOKEN_REFRESH_FAILED = /Token refresh failed: unexpected response/u;
+const INVALID_GRANT = /invalid_grant/u;
 
 const base = {
   clientId: 'client-id',
@@ -55,7 +55,7 @@ describe('grantedDrive', () => {
   it('is false when the person unticked Drive, or Google said nothing', () => {
     expect(grantedDrive('openid email profile')).toBe(false);
     expect(grantedDrive('')).toBe(false);
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
     expect(grantedDrive(undefined)).toBe(false);
   });
 

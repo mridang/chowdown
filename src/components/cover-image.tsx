@@ -1,9 +1,13 @@
 'use client';
 
-import { useState, type ReactElement, type ReactNode } from 'react';
+import { useState } from 'react';
 import { preload } from 'react-dom';
 
 import { imageSrc, imageSrcSet, isProxyableUrl } from '@/lib/cloudflare/images';
+import type { ReactNode } from 'react';
+
+/** The widths a cover is offered in when the caller names none. */
+const DEFAULT_WIDTHS: readonly number[] = [320, 480, 640];
 
 /**
  * The `sizes` attribute for an image: for one that loads lazily, `auto` first,
@@ -38,6 +42,7 @@ export function sizesFor(
  * `priority` so it loads straight away at high priority instead, which is what
  * keeps the largest-contentful-paint photo quick.
  */
+// eslint-disable-next-line sonarjs/function-return-type -- it returns the caller's fallback as it is, and wrapping it in a fragment is a useless fragment
 export function CoverImage({
   src,
   // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
@@ -47,7 +52,7 @@ export function CoverImage({
   priority = false,
   width,
   height,
-  widths = [320, 480, 640],
+  widths = DEFAULT_WIDTHS,
   sizes = '(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw',
 }: Readonly<{
   src: string;
@@ -70,7 +75,7 @@ export function CoverImage({
    * list is what browsers without `sizes="auto"` use.
    */
   sizes?: string;
-}>): ReactElement {
+}>): ReactNode {
   const [failed, setFailed] = useState(false);
   const proxied = isProxyableUrl(src);
   const largestWidth = widths.at(-1);
@@ -87,7 +92,7 @@ export function CoverImage({
     });
   }
   if (failed) {
-    return <>{fallback}</>;
+    return fallback;
   }
   return (
     <img

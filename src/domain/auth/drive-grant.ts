@@ -8,8 +8,8 @@
  * back is ever shown.
  */
 
-import type { DriveAttempt } from '@/domain/auth/drive-access';
 import { grantedDrive } from '@/domain/auth/drive-oauth';
+import type { DriveAttempt } from '@/domain/auth/drive-access';
 import type { TokenResponse } from '@/lib/google';
 
 /** What the check needs to know. */

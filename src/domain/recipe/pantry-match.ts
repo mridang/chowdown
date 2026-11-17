@@ -14,26 +14,27 @@
  */
 
 import { foldText } from '@/lib/intl';
-import { toBaseAmount, type BaseAmount } from '@/lib/cooklang';
+import { toBaseAmount } from '@/lib/cooklang';
 import { own } from '@/utils/own';
+import type { BaseAmount } from '@/lib/cooklang';
 
 const collator = new Intl.Collator();
 
-const A_HYPHEN_Z_PLUS = /[^a-z]+/;
-const ES = /(?:ch|sh|x|z|ss|o)es$/;
-const COLON_IE_OR_Y_END = /(?:ie|y)$/;
-const A_HYPHEN_Z = /[a-z]/i;
-const OF = /^of\s+/i;
-const WHITESPACE_RUN = /\s+/;
-const START_X_SPACE_STAR = /^[x×]\s*/i;
-const TRAILING_DOT = /\.$/;
+const A_HYPHEN_Z_PLUS = /[^a-z]+/u;
+const ES = /(?:ch|sh|x|z|ss|o)es$/u;
+const COLON_IE_OR_Y_END = /(?:ie|y)$/u;
+const A_HYPHEN_Z = /[a-z]/iu;
+const OF = /^of\s+/iu;
+const WHITESPACE_RUN = /\s+/u;
+const START_X_SPACE_STAR = /^[x×]\s*/iu;
+const TRAILING_DOT = /\.$/u;
 const ONE_TWO_THREE =
-  /^(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/i;
-const DOZEN = /^dozen/i;
-const START_COLON_AN_OR_ONE = /^(?:an?|one)\s+(?=([a-z]+)\b)/i;
-const HALF_AN = /^half an? /i;
-const AN_DOZEN = /^an? dozen\b/i;
-const HALF_AN_DOZEN = /^half an? dozen\b/i;
+  /^(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/iu;
+const DOZEN = /^dozen/iu;
+const START_COLON_AN_OR_ONE = /^(?:an?|one)\s+(?=([a-z]+)\b)/iu;
+const HALF_AN = /^half an? /iu;
+const AN_DOZEN = /^an? dozen\b/iu;
+const HALF_AN_DOZEN = /^half an? dozen\b/iu;
 
 /** Something the person has, with an amount when they gave one. */
 export interface PantryItem {
@@ -167,7 +168,7 @@ const CONTAINERS = new Set([
 ]);
 
 /** The number words people type for small counts. */
-const NUMBER_WORDS: Readonly<Record<string, number>> = {
+const NUMBER_WORDS = {
   one: 1,
   two: 2,
   three: 3,
@@ -213,6 +214,7 @@ function leadingAmount(
   // "2 x 400g tins of tomatoes": a count of sized packs.
   const packs = new RegExp(
     String.raw`^(\d+)\s*[x×]\s*(${NUM})\s*([a-zA-Z]+\.?)?\s*(.*)$`,
+    'u',
   ).exec(text);
   if (packs) {
     const size = (packs[2] ?? '').trim();
@@ -225,7 +227,7 @@ function leadingAmount(
       };
     }
   }
-  const lead = new RegExp(String.raw`^(${NUM})\s*(.*)$`).exec(text);
+  const lead = new RegExp(String.raw`^(${NUM})\s*(.*)$`, 'u').exec(text);
   if (!lead?.[2]) {
     return undefined;
   }
@@ -273,6 +275,7 @@ export function parsePantryItem(text: string): PantryItem {
   // "tomatoes (3)" and "Tomatoes, 3": the amount after the name.
   const after = new RegExp(
     String.raw`^(.+?)\s*(?:\(\s*(${NUM})\s*\)|,\s*(${NUM}))$`,
+    'u',
   ).exec(trimmed);
   if (after) {
     return {
@@ -326,7 +329,7 @@ const DESCRIPTORS = new Set([
 ]);
 
 /** Words that mean the same thing, mapped to one. */
-const SYNONYMS: Readonly<Record<string, string>> = {
+const SYNONYMS = {
   aubergine: 'eggplant',
   courgette: 'zucchini',
   capsicum: 'pepper',
@@ -355,7 +358,7 @@ const SYNONYMS: Readonly<Record<string, string>> = {
  * "ramen" is a noodle, so each side of a comparison gains the word it implies
  * and "cheddar" meets "cheddar cheese".
  */
-const IMPLIES: Readonly<Record<string, string>> = {
+const IMPLIES = {
   cheddar: 'cheese',
   parmesan: 'cheese',
   mozzarella: 'cheese',
@@ -434,7 +437,7 @@ const DIFFERENT_THING = new Set([
 ]);
 
 /** Plurals that don't follow the rules. */
-const IRREGULAR: Readonly<Record<string, string>> = {
+const IRREGULAR = {
   leaves: 'leaf',
   loaves: 'loaf',
   halves: 'half',
@@ -523,17 +526,14 @@ function withImplied(words: readonly string[]): readonly string[] {
 
 /** `name` with every `(…)` group, up to the first `)` after its `(`, replaced by a space. */
 function withoutParentheses(name: string): string {
-  let out = '';
-  let from = 0;
-  for (;;) {
+  const cut = (out: string, from: number): string => {
     const open = name.indexOf('(', from);
     const close = open === -1 ? -1 : name.indexOf(')', open + 1);
-    if (close === -1) {
-      return out + name.slice(from);
-    }
-    out += `${name.slice(from, open)} `;
-    from = close + 1;
-  }
+    return close === -1
+      ? out + name.slice(from)
+      : cut(`${out}${name.slice(from, open)} `, close + 1);
+  };
+  return cut('', 0);
 }
 
 /** The meaningful words of an ingredient name: singular, synonyms folded. */
@@ -673,7 +673,7 @@ function comparable(a: BaseAmount, b: BaseAmount): boolean {
 }
 
 /** The unit a dimension is always shown in; counts keep their own unit. */
-const FIXED_UNITS: Readonly<Record<string, string>> = {
+const FIXED_UNITS = {
   mass: 'g',
   volume: 'ml',
 };
@@ -773,8 +773,10 @@ function matchIngredient(
     return { kind: 'staple' };
   }
   const matching = pantry
+    .values()
     .map((item, index) => ({ item, index }))
-    .filter(({ item }) => sameIngredient(item.name, first.name));
+    .filter(({ item }) => sameIngredient(item.name, first.name))
+    .toArray();
   if (matching.length === 0) {
     return assumeStaples && isStaple(first.name)
       ? { kind: 'staple' }
@@ -826,6 +828,12 @@ export interface RankedMatch<T> {
   readonly match: PantryMatch;
 }
 
+/** Matches split into what can be cooked now and what is nearly there. */
+export interface RankedMatches<T> {
+  readonly canMake: readonly RankedMatch<T>[];
+  readonly almost: readonly RankedMatch<T>[];
+}
+
 /**
  * Split matches into what can be cooked now and what is nearly there, best
  * first. A recipe must use at least one of the person's items to count.
@@ -833,10 +841,7 @@ export interface RankedMatch<T> {
 export function rankMatches<T>(
   matches: readonly RankedMatch<T>[],
   allowMissing: number,
-): {
-  readonly canMake: readonly RankedMatch<T>[];
-  readonly almost: readonly RankedMatch<T>[];
-} {
+): RankedMatches<T> {
   const usable = matches.filter((m) => m.match.used > 0);
   const gap = (m: RankedMatch<T>) =>
     m.match.missing.length + m.match.short.length;

@@ -10,8 +10,8 @@
 
 import { revokeDriveLogin } from '@/domain/auth/drive-login';
 import { forgetAccessTokens } from '@/domain/auth/user-access-token';
-import type { User } from '@/domain/db/users';
 import { runInBackground } from '@/lib/core/runtime';
+import type { User } from '@/domain/db/users';
 
 /**
  * Tidy up after `user`'s account was deleted. The Drive permission is handed

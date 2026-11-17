@@ -1,12 +1,12 @@
-import type { ReactElement } from 'react';
-
-import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import {
   fileSlug,
   previewLines,
   tidyLine,
 } from '@/components/landing/cook-file';
 import { WindowFrame } from '@/components/landing/window-frame';
+import type { ReactElement } from 'react';
+
+import type { SampleRecipe } from '@/components/landing/demo-recipes';
 
 /** The highlight classes for one part of a line, or none for plain text. */
 function markClass(part: string): string | undefined {
@@ -37,7 +37,7 @@ function CookLine({ line }: Readonly<{ line: string }>): ReactElement {
     );
   }
   const parts = line.split(
-    /(@[^{@#~]+\{[^}]*\}|#[^{@#~]+\{[^}]*\}|~\{[^}]*\})/g,
+    /(@[^{@#~]+\{[^}]*\}|#[^{@#~]+\{[^}]*\}|~\{[^}]*\})/gu,
   );
   return (
     <>

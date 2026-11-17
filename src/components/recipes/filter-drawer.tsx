@@ -1,7 +1,5 @@
 'use client';
 
-import type { ReactElement, ReactNode } from 'react';
-
 import { SlidersIcon } from '@/components/icons';
 import { CountBadge } from '@/components/ui/chip';
 import {
@@ -11,6 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * On phones the filters live in a drawer opened from a "Filters" button, which

@@ -1,10 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import {
-  importRecipe,
-  type ExistingRecipe,
-  type ImportDeps,
-} from '@/domain/recipe/import-recipe';
+import { importRecipe } from '@/domain/recipe/import-recipe';
+import type { ExistingRecipe, ImportDeps } from '@/domain/recipe/import-recipe';
 
 const GOOD =
   '>> title: Pasta\n>> source: https://a.com/pasta\n\nBoil @pasta{200%g}.\n';
@@ -95,14 +92,16 @@ describe('importRecipe', () => {
 
   it('does not look for an existing copy when no url is given', async () => {
     const d = deps();
-    await importRecipe(d, { content: 'text' });
-    expect(d.calls['findExisting']).not.toHaveBeenCalled();
+    const out = await importRecipe(d, { content: 'text' });
+    expect(out).toMatchObject({ kind: 'created', id: 'new-id' });
+    expect(d.calls['findExisting']!.mock.calls).toEqual([]);
   });
 
   it('applies images the caller supplied and drops invalid ones', async () => {
     const d = deps();
     await importRecipe(d, {
       content: 'text',
+      // eslint-disable-next-line no-script-url -- the value is a javascript: URL on purpose, to prove it is refused
       images: ['https://a.com/hero.jpg', 'javascript:x'],
     });
     const saved = d.calls['create']!.mock.calls[0]![1] as string;
