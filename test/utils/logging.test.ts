@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import { z } from 'zod';
 
-import { isObject } from '@/lib/core/api/json';
 import { installFakeTracing } from '../lib/core/observability/fake-tracing';
 
 const tracing = installFakeTracing();
@@ -17,11 +17,7 @@ function firstLine(spy: ConsoleSpy): string {
 }
 
 function firstRecord(spy: ConsoleSpy): Record<string, unknown> {
-  const parsed: unknown = JSON.parse(firstLine(spy));
-  if (!isObject(parsed)) {
-    throw new Error('expected a JSON object line');
-  }
-  return parsed;
+  return z.record(z.string(), z.unknown()).parse(JSON.parse(firstLine(spy)));
 }
 
 afterEach(() => {

@@ -6,7 +6,8 @@ import type { ThemePalette } from '@/views/palette';
 
 const collator = new Intl.Collator();
 
-const START_HASH_N0_HYPHEN_N9 = /^#[0-9a-f]{6}$/u;
+/** Matches a six digit hexadecimal colour. */
+const HEX_COLOUR_PATTERN = /^#[0-9a-f]{6}$/u;
 
 /** Relative luminance of a `#rrggbb` colour, as WCAG defines it. */
 function luminance(hex: string): number {
@@ -85,7 +86,7 @@ describe('the palettes', () => {
   ])(
     'are written as six-digit hex colours, as the contrast check reads them (%j)',
     (colour) => {
-      expect(colour).toMatch(START_HASH_N0_HYPHEN_N9);
+      expect(colour).toMatch(HEX_COLOUR_PATTERN);
     },
   );
 

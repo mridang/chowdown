@@ -45,7 +45,11 @@ export interface JsonRpcErrorBody {
 
 /** A JSON-RPC reply: a result, or an error. */
 export type JsonRpcResponse =
-  | { readonly jsonrpc: '2.0'; readonly id: ReplyId; readonly result: object }
+  | {
+      readonly jsonrpc: '2.0';
+      readonly id: ReplyId;
+      readonly result: object;
+    }
   | {
       readonly jsonrpc: '2.0';
       readonly id: ReplyId;
@@ -53,9 +57,9 @@ export type JsonRpcResponse =
     };
 
 /** A successful reply. */
-function succeeded(
+function succeeded<Result extends object>(
   id: ReplyId,
-  result: Readonly<Record<string, unknown>>,
+  result: Result,
 ): JsonRpcResponse {
   return { jsonrpc: '2.0', id, result };
 }
@@ -84,17 +88,14 @@ export interface CacheHint {
 }
 
 /** One method the server answers. */
-export interface McpMethod<Ctx> {
+export interface McpMethod<Ctx, Result extends object = object> {
   /** Produce the result, or throw an {@link RpcError} to refuse the request. */
   readonly handle: (
     params: Readonly<Record<string, unknown>> | undefined,
     ctx: Ctx,
-  ) =>
-    | Readonly<Record<string, unknown>>
-    | Promise<Readonly<Record<string, unknown>>>;
+  ) => Result | Promise<Result>;
   /** Caching hints for the result (fixed, or chosen from the result). */
-  readonly cache?:
-    CacheHint | ((result: Readonly<Record<string, unknown>>) => CacheHint);
+  readonly cache?: CacheHint | ((result: Result) => CacheHint);
   /** The method belongs to the newest revision only (and so always gets its result fields). */
   readonly modernOnly?: true;
   /** The newest revision removed the method; the older revisions still use it. */
@@ -113,7 +114,7 @@ export interface McpServerOptions {
  * batching, CORS) is the caller's.
  */
 export class McpServer<Ctx> {
-  readonly #methods = new Map<string, McpMethod<Ctx>>();
+  #methods = new Map<string, McpMethod<Ctx>>();
   readonly #serverInfo: object;
   readonly #metaKey: string;
 
@@ -124,18 +125,15 @@ export class McpServer<Ctx> {
 
   /** Register a method the server answers. */
   register(method: string, handler: McpMethod<Ctx>): this {
-    // eslint-disable-next-line functional/immutable-data -- registering is what this method is for
-    this.#methods.set(method, handler);
+    this.#methods = new Map([...this.#methods, [method, handler]]);
     return this;
   }
 
   /** The `_meta` of a result, when it has one. */
-  #metaOf(
-    result: Readonly<Record<string, unknown>>,
+  #metaOf<Result extends object>(
+    result: Result,
   ): Readonly<Record<string, unknown>> {
-    return '_meta' in result && isPlainObject(result['_meta'])
-      ? result['_meta']
-      : {};
+    return '_meta' in result && isPlainObject(result._meta) ? result._meta : {};
   }
 
   /**
@@ -144,11 +142,10 @@ export class McpServer<Ctx> {
    * (merged into any `_meta` the result already has). Older revisions get the
    * result as it is.
    */
-  #forModernClient(
-    result: Readonly<Record<string, unknown>>,
+  #forModernClient<Result extends object>(
+    result: Result,
     method: McpMethod<Ctx>,
-  ): Readonly<Record<string, unknown>> {
-    // eslint-disable-next-line tslop/no-known-value-widening -- a JSON-RPC result is an open dictionary by protocol
+  ) {
     return {
       ...result,
       ...(typeof method.cache === 'function'

@@ -181,7 +181,7 @@ async function digestKey(text: string): Promise<string> {
 export async function counterKey(
   counted: Counted,
   headers: Headers,
-  sessionCookie: string | undefined,
+  sessionCookie?: string,
 ): Promise<string> {
   if (counted === 'person') {
     const session =

@@ -8,7 +8,7 @@ import robots from '@/app/robots';
 const TRAILING_DOLLAR = /\$$/u;
 
 const GROUPS = z.array(
-  z.looseObject({
+  z.object({
     userAgent: z.string(),
     allow: z.array(z.string()),
     disallow: z.array(z.string()),
