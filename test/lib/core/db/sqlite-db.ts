@@ -62,9 +62,12 @@ export function sqliteDatabase(
       readFileSync(path.join(process.cwd(), 'migrations', file), 'utf8'),
     );
   }
-  const exec = (sql: string, params: readonly unknown[], method: Method) => {
+  const exec = (
+    sql: string,
+    values: readonly SQLInputValue[],
+    method: Method,
+  ) => {
     const statement = raw.prepare(sql);
-    const values = params as SQLInputValue[];
     if (method === 'run') {
       const outcome = statement.run(...values);
       return { rows: [], meta: { changes: Number(outcome.changes) } };
@@ -73,6 +76,7 @@ export function sqliteDatabase(
     const rows = statement.all(...values);
     // For `get`, Drizzle wants the one row (itself an array), not a list.
     return {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- node:sqlite types the rows as records, but setReturnArrays(true) above makes each one an array, which is what the proxy driver expects
       rows: (method === 'get' ? rows[0] : rows) as unknown as unknown[],
     };
   };
@@ -91,5 +95,6 @@ export function sqliteDatabase(
     },
     { schema },
   );
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the driver here is Drizzle's sqlite-proxy, whose result type differs from the D1 client the app's Database names, though both expose the same query API
   return { db: client as unknown as Database, raw };
 }

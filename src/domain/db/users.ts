@@ -191,7 +191,7 @@ export async function claimDriveLease(
       ),
     )
     .run();
-  return (result.meta.changes ?? 0) > 0;
+  return result.meta.changes > 0;
 }
 
 /**
@@ -219,5 +219,5 @@ export async function claimBackfillLease(
       ),
     )
     .run();
-  return (result.meta.changes ?? 0) > 0;
+  return result.meta.changes > 0;
 }

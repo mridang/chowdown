@@ -62,14 +62,14 @@ describe('matchFile ignoring accents', () => {
 });
 
 describe('matchFile with a blank reference', () => {
-  const files = [
+  const blankReferenceFiles = [
     { id: 'a', name: 'Aloo gobi.cook' },
     { id: 'b', name: 'Biryani.cook' },
   ];
 
   it('points at nothing, so a missing recipe argument never picks the first recipe', () => {
-    expect(matchFile(files, '')).toBeUndefined();
-    expect(matchFile(files, ' '.repeat(3))).toBeUndefined();
+    expect(matchFile(blankReferenceFiles, '')).toBeUndefined();
+    expect(matchFile(blankReferenceFiles, ' '.repeat(3))).toBeUndefined();
   });
 });
 

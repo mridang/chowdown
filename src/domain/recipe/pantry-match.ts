@@ -219,10 +219,10 @@ function leadingAmount(
   if (packs) {
     const size = (packs[2] ?? '').trim();
     const unit = unitWord(packs[3] ?? '');
-    const total = Number(packs[1]) * Number(size.replace(',', '.'));
-    if (UNIT_WORDS.has(unit) && Number.isFinite(total)) {
+    const packTotal = Number(packs[1]) * Number(size.replace(',', '.'));
+    if (UNIT_WORDS.has(unit) && Number.isFinite(packTotal)) {
       return {
-        quantity: `${total} ${unit}`,
+        quantity: `${packTotal} ${unit}`,
         name: withoutContainer(packs[4] ?? ''),
       };
     }

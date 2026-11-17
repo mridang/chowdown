@@ -14,9 +14,9 @@ import {
   SESSION_SECRET,
   fakeCookies,
   jar,
+  nextResponseOf,
 } from '../../../domain/auth/auth-test-kit';
 import { locationOf, nextRequest, openWorld, signIn } from '../../api/world';
-import type { NextResponse } from 'next/server';
 import type { World } from '../../api/world';
 
 // eslint-disable-next-line tslop/no-module-mocking -- next/headers is a framework module the code under test imports directly, and it only works inside a Next request
@@ -34,7 +34,7 @@ afterEach(async () => world.close());
 
 /** The session the route put in its response cookie. */
 async function reissued(res: Awaited<ReturnType<typeof GET>>) {
-  const value = (res as NextResponse).cookies.get(SESSION_COOKIE)?.value;
+  const value = nextResponseOf(res).cookies.get(SESSION_COOKIE)?.value;
   return value ? new SessionTokens(SESSION_SECRET).verify(value) : null;
 }
 

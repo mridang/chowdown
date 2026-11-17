@@ -216,18 +216,16 @@ export function RecipeListScreen({
             {closeHint ? <CloseHint /> : null}
           </div>
         ) : null}
-        {state.phase === 'ready' ? (
-          <RecipeGrid
-            data={state.data}
-            pendingId={list.pendingId}
-            onOpen={onOpen}
-            expanded={expanded}
-            filter={list.filter}
-            onFilter={onFilter}
-            refocus={list.refocus}
-            onExpand={onExpand}
-          />
-        ) : null}
+        <RecipeGrid
+          data={state.data}
+          pendingId={list.pendingId}
+          onOpen={onOpen}
+          expanded={expanded}
+          filter={list.filter}
+          onFilter={onFilter}
+          refocus={list.refocus}
+          onExpand={onExpand}
+        />
         {list.notice ? (
           <output className="status-line">{list.notice}</output>
         ) : null}

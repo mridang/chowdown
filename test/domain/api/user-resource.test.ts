@@ -1,17 +1,18 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { parseUserPatch, userResource } from '@/domain/api/user-resource';
+import { aUser } from '../../fixtures/user';
 import type { User } from '@/domain/db/users';
 
 const user = (extra: Partial<User> = {}) =>
-  ({
+  aUser({
     id: 7,
     email: 'a@b.com',
     name: 'Ann',
     picture: 'https://x/p.png',
     units: 'metric',
     ...extra,
-  }) as User;
+  });
 
 describe('userResource', () => {
   it('shows identity and the measurement system in API form', () => {

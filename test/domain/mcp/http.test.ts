@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { z } from 'zod';
 
 import {
   corsFor,
@@ -9,10 +10,10 @@ import {
 } from '@/domain/mcp/http';
 import { MAX_BODY_BYTES } from '@/domain/mcp/request-limits';
 import { SERVER_INFO } from '@/domain/mcp/server-info';
+import { aUser } from '../../fixtures/user';
 import type { Authenticate } from '@/domain/mcp/http';
 import type { RateLimitDeps } from '@/domain/mcp/request-limits';
 import type { McpAuth } from '@/domain/mcp/auth';
-import type { User } from '@/domain/db/users';
 import type { RateLimitStore } from '@/lib/rate-limit';
 
 const collator = new Intl.Collator();
@@ -35,7 +36,7 @@ const post = (body: unknown, headers: Record<string, string> = {}) =>
 /** A POST whose body is exactly this text. */
 const postText = (body: string, headers: Record<string, string> = {}) =>
   new Request(`${SELF}/mcp`, { method: 'POST', headers, body });
-const user = { id: 1 } as User;
+const user = aUser({ id: 1 });
 const modern = (method: string, extra: Record<string, unknown> = {}) => ({
   jsonrpc: '2.0',
   id: 1,
@@ -85,6 +86,19 @@ interface Reply {
   };
 }
 
+const REPLY: z.ZodType<Reply> = z.looseObject({
+  jsonrpc: z.string().optional(),
+  id: z.unknown().optional(),
+  result: z.record(z.string(), z.unknown()).optional(),
+  error: z
+    .looseObject({
+      code: z.number(),
+      message: z.string(),
+      data: z.record(z.string(), z.unknown()).optional(),
+    })
+    .optional(),
+});
+
 /** Send a message through the real handler and read what came back. */
 async function send(
   body: unknown,
@@ -100,10 +114,19 @@ async function send(
     rate,
   );
   const text = await res.text();
+  const answer: unknown = text ? JSON.parse(text) : undefined;
   return {
     status: res.status,
     headers: res.headers,
-    json: text ? (JSON.parse(text) as Reply) : undefined,
+    /** The answer to a single message. */
+    json:
+      answer === undefined || Array.isArray(answer)
+        ? undefined
+        : REPLY.parse(answer),
+    /** The answers to a batch. */
+    batch: Array.isArray(answer)
+      ? answer.map((reply) => REPLY.parse(reply))
+      : undefined,
   };
 }
 
@@ -353,12 +376,12 @@ describe('handleMcpPost — malformed bodies', () => {
   });
 
   it('still answers a batch within the limit', async () => {
-    const { status, json } = await send([
+    const { status, batch } = await send([
       { jsonrpc: '2.0', id: 1, method: 'ping' },
       { jsonrpc: '2.0', id: 2, method: 'ping' },
     ]);
     expect(status).toBe(200);
-    expect(json).toHaveLength(2);
+    expect(batch).toHaveLength(2);
   });
 
   it('gives any notification an empty 202, not an error', async () => {
@@ -456,12 +479,12 @@ describe('handleMcpPost — malformed bodies', () => {
   });
 
   it('answers the requests in a batch that also holds replies, and skips the replies', async () => {
-    const { status, json } = await send([
+    const { status, batch } = await send([
       { jsonrpc: '2.0', id: 3, result: {} },
       { jsonrpc: '2.0', id: 4, method: 'ping' },
     ]);
     expect(status).toBe(200);
-    expect(json).toEqual([{ jsonrpc: '2.0', id: 4, result: {} }]);
+    expect(batch).toEqual([{ jsonrpc: '2.0', id: 4, result: {} }]);
   });
 
   it('gives a batch of only notifications an empty 202', async () => {
@@ -745,11 +768,11 @@ describe('handleMcpPost — batches', () => {
   const legacy = (id: number) => ({ jsonrpc: '2.0', id, method: 'ping' });
 
   it('serves a batch to older clients and answers each request in it', async () => {
-    const { status, json } = await send([legacy(1), legacy(2)], {
+    const { status, batch } = await send([legacy(1), legacy(2)], {
       'mcp-protocol-version': '2025-03-26',
     });
     expect(status).toBe(200);
-    expect(json).toEqual([
+    expect(batch).toEqual([
       { jsonrpc: '2.0', id: 1, result: {} },
       { jsonrpc: '2.0', id: 2, result: {} },
     ]);
@@ -842,7 +865,7 @@ describe('handleMcpPost — rate limiting', () => {
     }
     const res = await handleMcpPost(
       post(call(1)),
-      { id: 2 } as User,
+      aUser({ id: 2 }),
       ALL_SCOPES,
       SELF,
       rate.deps,
@@ -881,7 +904,7 @@ describe('handleMcpPost — rate limiting', () => {
     // 120 in six batches of twenty; the seventh goes over.
     for (let index = 0; index < 4; index++) {
       await send(
-        Array.from({ length: 20 }, (_, index) => call(index)),
+        Array.from({ length: 20 }, (_, callNumber) => call(callNumber)),
         {},
         ALL_SCOPES,
         rate.deps,

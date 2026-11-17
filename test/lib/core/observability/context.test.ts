@@ -32,7 +32,8 @@ describe('setErrorContext', () => {
     await setErrorContext({
       gone: unset,
       nan: Number.NaN,
-      object: { a: 1 } as never,
+      // @ts-expect-error -- deliberately an object, which the attribute types forbid, to check it is dropped
+      object: { a: 1 },
       kept: 'yes',
     });
     expect(fake.attributes).toEqual({ kept: 'yes' });

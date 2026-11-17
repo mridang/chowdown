@@ -129,8 +129,9 @@ describe('refreshAccessToken', () => {
     if (result.ok) {
       expect(result.value).toEqual({ access_token: 'fresh', expires_in: 3600 });
     }
+    const body = fetchSpy.mock.calls[0]?.[1]?.body;
     const form = new URLSearchParams(
-      String(fetchSpy.mock.calls[0]?.[1]?.body as string | undefined),
+      body instanceof URLSearchParams || typeof body === 'string' ? body : '',
     );
     expect(Object.fromEntries(form)).toEqual({
       refresh_token: 'rt',

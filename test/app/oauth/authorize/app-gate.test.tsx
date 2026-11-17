@@ -2,18 +2,19 @@ import { describe, expect, it } from '@jest/globals';
 
 import { approvalGate } from '@/app/oauth/authorize/app-gate';
 import { htmlAt } from '../../../components/render';
+import { aUser } from '../../../fixtures/user';
 import type { User } from '@/domain/db/users';
 
 const HERE = '/oauth/authorize?client_id=dcr_abc&state=xyz';
 
 const user = (extra: Partial<User> = {}) =>
-  ({
+  aUser({
     id: 7,
     email: 'cook@example.com',
     refresh_token_enc: 'sealed',
     recipes_folder_id: 'folder-1',
     ...extra,
-  }) as User;
+  });
 
 /** The gate's markup for a person, or null when it lets them through. */
 function gate(person: User): string | null {

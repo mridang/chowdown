@@ -87,12 +87,8 @@ describe('two edits of one recipe at the same time', () => {
   it.each([0, 1, 2, 3])('all of four land (%j)', async (index) => {
     const fake = folder({ 'Pancakes.cook': PANCAKES });
     const results = await Promise.all(
-      Array.from({ length: 4 }, async (_, index) =>
-        call(
-          'log_cooking',
-          { recipe: 'pancakes', note: `cook ${index}` },
-          fake,
-        ),
+      Array.from({ length: 4 }, async (_, slot) =>
+        call('log_cooking', { recipe: 'pancakes', note: `cook ${slot}` }, fake),
       ),
     );
     expect(results.map((r) => r.isError)).toEqual([

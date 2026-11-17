@@ -54,7 +54,7 @@ type MetaLookup = (keys: readonly string[]) => string | undefined;
 function metaLookup(recipe: Readonly<ParsedRecipe>): MetaLookup {
   const map = new Map(
     recipe.metadata
-      .filter(([, v]) => v?.trim())
+      .filter(([, v]) => v.trim())
       .map(([k, v]) => [normKey(k), v.trim()] as const),
   );
   // The first key (in the order asked for) that has a non-empty value wins.

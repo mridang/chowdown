@@ -7,15 +7,15 @@
 import { jest } from '@jest/globals';
 
 import { callTool } from '@/domain/mcp/tool-calls';
+import { aUser } from '../../fixtures/user';
 import type { Recipe } from '@/domain/db/recipes';
-import type { User } from '@/domain/db/users';
 import type { DriveFile } from '@/lib/google/drive';
 import type { DriveContext, ToolServices } from '@/domain/mcp/tool-services';
 
 const ID = /^id-/u;
 
 /** The signed-in user the tests act as. */
-export const USER = { id: 7, units: null, recipes_folder_id: 'folder' } as User;
+export const USER = aUser({ id: 7, units: null, recipes_folder_id: 'folder' });
 
 /** A small recipe. */
 export const PANCAKES = [

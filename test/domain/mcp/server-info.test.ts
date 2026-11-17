@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
+import { z } from 'zod';
 
 import { SITE_URL } from '@/utils/site';
 import {
@@ -27,23 +28,31 @@ async function pngSize(file: string): Promise<string> {
 
 describe('SERVER_VERSION', () => {
   it('is the version in package.json', async () => {
-    const manifest = JSON.parse(
-      await readFile(path.join(root, 'package.json'), 'utf8'),
-    ) as { version: string };
+    const manifest = z
+      .object({ version: z.string() })
+      .parse(
+        JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')),
+      );
     expect(SERVER_VERSION).toBe(manifest.version);
   });
 });
 
-const listing = JSON.parse(
-  await readFile(path.join(root, 'server.json'), 'utf8'),
-) as {
-  version: string;
-  title: string;
-  description: string;
-  websiteUrl: string;
-  icons: { src: string; mimeType: string; sizes: string[] }[];
-  remotes: { type: string; url: string }[];
-};
+const listing = z
+  .object({
+    version: z.string(),
+    title: z.string(),
+    description: z.string(),
+    websiteUrl: z.string(),
+    icons: z.array(
+      z.looseObject({
+        src: z.string(),
+        mimeType: z.string(),
+        sizes: z.array(z.string()),
+      }),
+    ),
+    remotes: z.array(z.looseObject({ type: z.string(), url: z.string() })),
+  })
+  .parse(JSON.parse(await readFile(path.join(root, 'server.json'), 'utf8')));
 
 describe('server.json', () => {
   it('has the version of the server', () => {

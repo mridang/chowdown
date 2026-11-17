@@ -231,12 +231,9 @@ describe('security events from the authorization request', () => {
   it('warns about an unknown client, with the id cut short', async () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     await check({ client_id: 'n'.repeat(500) });
-    const line = JSON.parse(String(warn.mock.calls[0]?.[0])) as {
-      event: string;
-      clientId: string;
-    };
-    expect(line.event).toBe('oauth.invalid_client');
-    expect(line.clientId).toHaveLength(200);
+    const line: unknown = JSON.parse(String(warn.mock.calls[0]?.[0]));
+    expect(line).toHaveProperty('event', 'oauth.invalid_client');
+    expect(line).toHaveProperty('clientId.length', 200);
     warn.mockRestore();
   });
 

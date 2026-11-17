@@ -45,6 +45,7 @@ function fakeContext(options: { readonly refuse?: boolean } = {}) {
 
 /** A constructor that hands back the given context, as `AudioContext` would. */
 function constructing(context: Readonly<Record<string, unknown>>): never {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the fake audio context implements only the members the beep calls, not the whole of AudioNode, OscillatorNode and GainNode
   return function constructed() {
     return context;
   } as never;
@@ -63,6 +64,7 @@ describe('createAlarm', () => {
   it('makes its audio context straight away, from the tap, and resumes it', () => {
     const { context } = fakeContext();
     const Context = jest.fn(() => context);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the mock stands in for the AudioContext constructor, of which only `new` is used
     createAlarm(Context as never);
     expect(Context.mock.calls).toEqual([[]]);
     expect(context.resume.mock.calls).toEqual([[]]);

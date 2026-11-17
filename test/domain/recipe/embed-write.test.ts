@@ -1,13 +1,16 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { backfillEmbeddings, embedRecipe } from '@/domain/recipe/embed-write';
+import { isObject } from '@/lib/core/api/json';
 import { asCalls } from '../../calls';
 
+import { fakeEnv } from '../../fixtures/env';
+import { fakeDb } from '../../lib/core/db/fake-db';
 import type { Database } from '@/domain/db/client';
 import type { EmbedWriteDeps } from '@/domain/recipe/embed-write';
 
-const db = {} as Database;
+const { db } = fakeDb();
 
-const env = {} as CloudflareEnv;
+const env = fakeEnv({});
 
 /** A cached recipe row, as far as embedding needs it. */
 const recipe = (id: string, extra: Readonly<Record<string, unknown>> = {}) => ({
@@ -83,8 +86,8 @@ describe('backfillEmbeddings', () => {
   it('embeds the recipes the repository says have no vector yet', async () => {
     const deps = fakes([recipe('a'), recipe('c')]);
     expect(await backfillEmbeddings(db, env, 1, 20, deps)).toBe(2);
-    const saved = (deps.save as jest.Mock).mock.calls.map(
-      ([, row]) => (row as { drive_file_id: string }).drive_file_id,
+    const saved = asCalls(deps.save).mock.calls.map(([, row]) =>
+      isObject(row) ? row['drive_file_id'] : undefined,
     );
     expect(saved).toEqual(['a', 'c']);
     const refresh = asCalls(deps.refreshLists);

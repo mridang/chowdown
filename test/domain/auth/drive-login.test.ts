@@ -14,8 +14,8 @@ import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import { aUser } from '../../fixtures/user';
 import { testEnv } from './session-fixture';
-import type { User } from '@/domain/db/users';
 
 let restore: () => void;
 let env: Record<string, unknown>;
@@ -31,7 +31,7 @@ afterEach(() => {
 });
 
 const userWith = (sealed: string | null) =>
-  ({ id: 1, refresh_token_enc: sealed }) as unknown as User;
+  aUser({ id: 1, refresh_token_enc: sealed });
 
 describe('revokeDriveLogin', () => {
   it('gives the unsealed refresh token back to Google', async () => {

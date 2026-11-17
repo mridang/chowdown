@@ -13,7 +13,9 @@ const realFetch = globalThis.fetch;
 
 /** Make the next `fetch` answer with the given status. */
 function respond(status: number, body = '') {
-  const fetchMock = jest.fn(async () => new Response(body, { status }));
+  const fetchMock = jest.fn<typeof fetch>(
+    async () => new Response(body, { status }),
+  );
   globalThis.fetch = fetchMock;
   return fetchMock;
 }
@@ -26,13 +28,15 @@ describe('trashRecipeFile', () => {
   it('marks the file trashed rather than deleting it', async () => {
     const fetchMock = respond(200, '{"id":"abc"}');
     expect(await trashRecipeFile('abc', 'tok')).toBe('trashed');
-    const [url, init] = fetchMock.mock.calls[0] as unknown as [
-      string,
-      RequestInit,
-    ];
-    expect(url).toContain('/files/abc');
-    expect(init.method).toBe('PATCH');
-    expect(JSON.parse(init.body as string)).toEqual({ trashed: true });
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(url instanceof Request ? url.url : String(url)).toContain(
+      '/files/abc',
+    );
+    expect(init?.method).toBe('PATCH');
+    const sent = init?.body;
+    expect(JSON.parse(typeof sent === 'string' ? sent : '')).toEqual({
+      trashed: true,
+    });
   });
 
   it('reports a file that is already gone as missing', async () => {
@@ -49,13 +53,13 @@ describe('trashRecipeFile', () => {
 describe('listRecipeFiles', () => {
   /** Answer each call with the next page, in order. */
   function pages(...bodies: object[]) {
-    const fetchMock = jest.fn();
+    const fetchMock = jest.fn<typeof fetch>();
     for (const body of bodies) {
       fetchMock.mockImplementationOnce(async () =>
         Response.json(body, { status: 200 }),
       );
     }
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    globalThis.fetch = fetchMock;
     return fetchMock;
   }
 
@@ -67,8 +71,12 @@ describe('listRecipeFiles', () => {
     const files = await listRecipeFiles('folder', 'tok');
     expect(files.map((f) => f.id)).toEqual(['1', '2']);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    const second = (fetchMock.mock.calls[1] as unknown as [string])[0];
-    expect(new URL(second).searchParams.get('pageToken')).toBe('next-1');
+    const [second] = fetchMock.mock.calls[1] ?? [];
+    expect(
+      new URL(
+        second instanceof Request ? second.url : String(second),
+      ).searchParams.get('pageToken'),
+    ).toBe('next-1');
   });
 
   it('keeps only .cook files', async () => {
@@ -108,14 +116,11 @@ describe('createRecipeFile', () => {
       'text with --chowdown-boundary in it',
       'tok',
     );
-    const [, init] = fetchMock.mock.calls[0] as unknown as [
-      string,
-      RequestInit,
-    ];
-    const type = (init.headers as Record<string, string>)['Content-Type']!;
+    const [, init] = fetchMock.mock.calls[0] ?? [];
+    const type = new Headers(init?.headers).get('Content-Type') ?? '';
     const boundary = BOUNDARY.exec(type)![1]!;
     expect(boundary).not.toBe('chowdown-boundary');
-    const body = init.body as string;
+    const body = typeof init?.body === 'string' ? init.body : '';
     expect(body.split(`--${boundary}`)).toHaveLength(4);
   });
 });

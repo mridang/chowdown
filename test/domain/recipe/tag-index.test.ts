@@ -6,8 +6,8 @@ import {
   rowTags,
   syncRecipeTags,
 } from '@/domain/recipe/tag-index';
-import type { Database } from '@/domain/db/client';
-import type { User } from '@/domain/db/users';
+import { aUser } from '../../fixtures/user';
+import { fakeDb } from '../../lib/core/db/fake-db';
 import type { TagSyncDeps } from '@/domain/recipe/tag-index';
 
 const SOURCE =
@@ -90,8 +90,8 @@ describe('rowTags', () => {
 });
 
 describe('syncRecipeTags', () => {
-  const user = { id: 9 } as unknown as User;
-  const db = {} as Database;
+  const user = aUser({ id: 9 });
+  const { db } = fakeDb();
   const cachedRow = (
     id: string,
     modified: string | null,

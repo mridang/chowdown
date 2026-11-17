@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
+import { z } from 'zod';
 
 import { PANCAKES, call, folder, said } from '../../../lib/mcp/tool-fakes';
 
@@ -34,11 +35,13 @@ describe('list_recipes', () => {
           ]),
         ),
       );
+    const LISTED = z.looseObject({
+      recipes: z.array(z.looseObject({ id: z.string() })),
+    });
     const idsOf = (result: Awaited<ReturnType<typeof call>>): string[] =>
-      (
-        (result.structuredContent as unknown as { recipes: { id: string }[] })
-          .recipes ?? []
-      ).map((r) => r.id);
+      LISTED.safeParse(result.structuredContent).data?.recipes.map(
+        (r) => r.id,
+      ) ?? [];
 
     it('gives the first 50 and says how to get the next page', async () => {
       const result = await call('list_recipes', {}, many());

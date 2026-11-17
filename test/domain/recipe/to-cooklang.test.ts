@@ -7,6 +7,7 @@ import {
   convertToCooklang,
   hasRecipeBody,
 } from '@/domain/recipe/to-cooklang';
+import { fakeEnv } from '../../fixtures/env';
 
 const realFetch = globalThis.fetch;
 
@@ -16,9 +17,9 @@ afterEach(() => {
 
 /** A fake Workers AI binding that returns the given Cooklang. */
 function envWith(response: string): CloudflareEnv {
-  return {
+  return fakeEnv({
     AI: { run: jest.fn(async () => ({ response })) },
-  } as unknown as CloudflareEnv;
+  });
 }
 
 const jsonLdPage = `<html><head><script type="application/ld+json">${JSON.stringify(
@@ -185,7 +186,7 @@ describe('when the model cannot convert', () => {
     const error: unknown =
       settled.status === 'rejected' ? settled.reason : settled.value;
     expect(error).toBeInstanceOf(ConversionError);
-    return (error as ConversionError).failure;
+    return error instanceof ConversionError ? error.failure : '';
   }
 
   it('says not a recipe when it answers with nothing', async () => {
@@ -194,24 +195,24 @@ describe('when the model cannot convert', () => {
   });
 
   it('says converter unavailable, in fixed words, when the call fails', async () => {
-    const env = {
+    const env = fakeEnv({
       AI: {
         run: jest.fn(async () => {
           throw new Error('AiError: 3040: capacity exceeded for account 1234');
         }),
       },
-    } as unknown as CloudflareEnv;
+    });
     expect(await failure(env)).toBe('converter unavailable');
   });
 
   it('says converter unavailable when the call throws before it returns anything', async () => {
-    const env = {
+    const env = fakeEnv({
       AI: {
         run: () => {
           throw new Error('binding gone');
         },
       },
-    } as unknown as CloudflareEnv;
+    });
     expect(await failure(env)).toBe('converter unavailable');
   });
 

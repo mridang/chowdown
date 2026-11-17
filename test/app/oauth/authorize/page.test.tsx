@@ -118,11 +118,34 @@ beforeEach(async () => {
 
 afterEach(() => restore());
 
+/** The page markup of a visit that rendered one; a redirect fails the test. */
+function markupOf(
+  result: { redirectedTo: string } | { markup: string },
+): string {
+  if (!('markup' in result)) {
+    throw new Error(
+      `expected a page, got a redirect to ${result.redirectedTo}`,
+    );
+  }
+  return result.markup;
+}
+
+/** The target of a visit that redirected; a page fails the test. */
+function redirectedOf(
+  result: { redirectedTo: string } | { markup: string },
+): string {
+  if (!('redirectedTo' in result)) {
+    throw new Error('expected a redirect, got a page');
+  }
+  return result.redirectedTo;
+}
+
 /** Render the page for these query parameters; a redirect comes back as its target. */
 async function visit(
   query: Record<string, string | undefined> = {},
 ): Promise<{ redirectedTo: string } | { markup: string }> {
-  const params = {
+  // eslint-disable-next-line tslop/no-known-value-widening -- a query value may be undefined to leave a parameter out, which the inferred type of the literal does not show
+  const params: Record<string, string | undefined> = {
     client_id: 'dcr_abc',
     redirect_uri: 'https://app.example/cb',
     response_type: 'code',
@@ -153,7 +176,7 @@ describe('the authorize page', () => {
   it('shows the approval screen to a signed-in person the app lets through', async () => {
     const result = await visit();
     expect(result).toHaveProperty('markup');
-    const { markup } = result as { markup: string };
+    const markup = markupOf(result);
     expect(markup).toContain('Connect <span');
     expect(markup).toContain('Assistant');
     expect(markup).toContain('someone@example.com');
@@ -165,7 +188,7 @@ describe('the authorize page', () => {
     state.user = null;
     const result = await visit();
     expect(result).toHaveProperty('redirectedTo');
-    const to = (result as { redirectedTo: string }).redirectedTo;
+    const to = redirectedOf(result);
     expect(to).toMatch(AUTH_LOGIN_RETURN_TO);
     const back = new URL(
       decodeURIComponent(to.split('returnTo=', 2)[1] ?? ''),
@@ -178,7 +201,7 @@ describe('the authorize page', () => {
 
   it('shows what the app asks for first instead of the approval', async () => {
     state.gate = <p>Do this first</p>;
-    const { markup } = (await visit()) as { markup: string };
+    const markup = markupOf(await visit());
     expect(markup).toContain('Do this first');
     expect(markup).not.toContain('action="/oauth/consent"');
   });
@@ -194,9 +217,7 @@ describe('the authorize page', () => {
 
   describe('a problem with the request', () => {
     it('shows an unknown client as an error, with no way back to anywhere', async () => {
-      const { markup } = (await visit({ client_id: 'nobody' })) as {
-        markup: string;
-      };
+      const markup = markupOf(await visit({ client_id: 'nobody' }));
       expect(markup).toContain('Can&#x27;t connect this app');
       expect(markup).toContain('invalid_client');
       expect(markup).not.toContain('Return to the app');
@@ -205,15 +226,13 @@ describe('the authorize page', () => {
     it('shows a redirect address the client never registered as an error, never redirecting to it', async () => {
       const result = await visit({ redirect_uri: 'https://evil.example/cb' });
       expect(result).toHaveProperty('markup');
-      expect((result as { markup: string }).markup).not.toContain(
-        'evil.example',
-      );
+      expect(markupOf(result)).not.toContain('evil.example');
     });
 
     it('does not redirect an anonymously registered client before the person has seen anything, and offers the way back as a link', async () => {
       const result = await visit({ response_type: 'token' });
       expect(result).not.toHaveProperty('redirectedTo');
-      const { markup } = result as { markup: string };
+      const markup = markupOf(result);
       expect(markup).toContain('unsupported_response_type');
       expect(markup).toContain('Return to the app');
       expect(markup).toContain('https://app.example/cb');
@@ -238,7 +257,7 @@ describe('the authorize page', () => {
         response_type: 'token',
       });
       expect(result).toHaveProperty('redirectedTo');
-      const to = new URL((result as { redirectedTo: string }).redirectedTo);
+      const to = new URL(redirectedOf(result));
       expect(to.origin + to.pathname).toBe('https://claude.ai/cb');
       expect(to.searchParams.get('error')).toBe('unsupported_response_type');
       expect(to.searchParams.get('state')).toBe('xyz');
@@ -252,20 +271,24 @@ describe('the authorize page', () => {
           'INSERT INTO rate_limits (key, window_start, count) VALUES (?, ?, ?)',
         )
         .run('oauth-cimd-all:all', Math.floor(Date.now() / 1000), 10_000);
-      const { markup } = (await visit({
-        client_id: CIMD,
-        redirect_uri: 'https://claude.ai/cb',
-      })) as { markup: string };
+      const markup = markupOf(
+        await visit({
+          client_id: CIMD,
+          redirect_uri: 'https://claude.ai/cb',
+        }),
+      );
       expect(markup).toContain('temporarily_unavailable');
     });
   });
 
   it('does not fetch a client document from this very site', async () => {
     const fetched = jest.spyOn(globalThis, 'fetch');
-    const { markup } = (await visit({
-      client_id: 'https://app.test/.well-known/oauth-authorization-server',
-      redirect_uri: 'https://app.test/cb',
-    })) as { markup: string };
+    const markup = markupOf(
+      await visit({
+        client_id: 'https://app.test/.well-known/oauth-authorization-server',
+        redirect_uri: 'https://app.test/cb',
+      }),
+    );
     expect(markup).toContain('invalid_client');
     expect(fetched).not.toHaveBeenCalled();
     fetched.mockRestore();
@@ -288,10 +311,12 @@ describe('the authorize page', () => {
     raw
       .prepare('UPDATE oauth_clients SET redirect_uris = ? WHERE client_id = ?')
       .run(JSON.stringify(['https://elsewhere.example/cb']), CIMD);
-    const { markup } = (await visit({
-      client_id: CIMD,
-      redirect_uri: 'https://elsewhere.example/cb',
-    })) as { markup: string };
+    const markup = markupOf(
+      await visit({
+        client_id: CIMD,
+        redirect_uri: 'https://elsewhere.example/cb',
+      }),
+    );
     expect(markup).toContain('elsewhere.example');
     expect(markup).toContain('is not on claude.ai');
   });

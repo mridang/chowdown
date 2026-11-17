@@ -212,12 +212,12 @@ export async function syncRecipeTags(
   const tagsOf = async (
     file: DriveFile,
   ): Promise<readonly [string, RecipeTags]> => {
-    const cached = byId.get(file.id);
-    const cachedTags = cached ? parseStoredTags(cached.tags) : null;
+    const known = byId.get(file.id);
+    const cachedTags = known ? parseStoredTags(known.tags) : null;
     if (
-      cached &&
+      known &&
       cachedTags &&
-      cached.modified_time === (file.modifiedTime ?? null)
+      known.modified_time === (file.modifiedTime ?? null)
     ) {
       return [file.id, cachedTags];
     }

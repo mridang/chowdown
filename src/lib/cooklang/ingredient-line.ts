@@ -199,10 +199,13 @@ const QUANTITY = new RegExp(
 
 /** Spell vulgar fractions out, joined to a whole number with a space (`1½` becomes `1 1/2`). */
 function withAsciiFractions(text: string): string {
-  return text.replaceAll(/(\d)?([½¼¾⅓⅔⅛⅜⅝⅞⅕⅖⅗⅘])/gu, (_, whole, fraction) => {
-    const ascii = VULGAR.get(fraction as string) ?? '';
-    return whole ? `${whole as string} ${ascii}` : ascii;
-  });
+  return text.replaceAll(
+    /(\d)?([½¼¾⅓⅔⅛⅜⅝⅞⅕⅖⅗⅘])/gu,
+    (_: string, whole: string | undefined, fraction: string) => {
+      const ascii = VULGAR.get(fraction) ?? '';
+      return whole ? `${whole} ${ascii}` : ascii;
+    },
+  );
 }
 
 /** The character references that turn up in text copied from web pages. */

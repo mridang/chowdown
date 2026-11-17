@@ -4,11 +4,12 @@ import { NextResponse } from 'next/server';
 import { SESSION_COOKIE, sessionClaims } from '@/domain/auth/app';
 import { SessionTokens } from '@/lib/session';
 import { setSessionCookie } from '@/lib/core/auth';
+import { aUser } from '../../../fixtures/user';
 import type { User } from '@/domain/auth/store';
 
 const SECRET = 'test-session-secret-value';
 const user = (overrides: Record<string, unknown> = {}) =>
-  ({
+  aUser({
     id: 7,
     email: 'a@b.com',
     name: 'Ada Lovelace',
@@ -17,7 +18,7 @@ const user = (overrides: Record<string, unknown> = {}) =>
     session_epoch: 0,
     recipes_folder_id: null,
     ...overrides,
-  }) as unknown as User;
+  });
 
 async function issued(
   u: User,

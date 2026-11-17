@@ -14,10 +14,10 @@ import {
   SESSION_SECRET,
   fakeCookies,
   jar,
+  nextResponseOf,
 } from '../../../domain/auth/auth-test-kit';
 import { installFakeTracing } from '../../../lib/core/observability/fake-tracing';
 import { locationOf, nextRequest, openWorld, signIn } from '../../api/world';
-import type { NextResponse } from 'next/server';
 import type { World } from '../../api/world';
 
 const DRIVE = /^drive\./u;
@@ -71,10 +71,10 @@ describe('GET /auth/drive', () => {
     expect(target?.searchParams.get('login_hint')).toBe('ada@example.com');
     const state = target?.searchParams.get('state');
     expect(state).toMatch(DRIVE);
-    expect(
-      (res as NextResponse).cookies.get('chowdown_oauth_state')?.value,
-    ).toBe(state);
-    expect((res as NextResponse).cookies.get('chowdown_return_to')?.value).toBe(
+    expect(nextResponseOf(res).cookies.get('chowdown_oauth_state')?.value).toBe(
+      state,
+    );
+    expect(nextResponseOf(res).cookies.get('chowdown_return_to')?.value).toBe(
       '/connect',
     );
   });
@@ -85,8 +85,7 @@ describe('GET /auth/drive', () => {
     jar.set(SESSION_COOKIE, await sessionTokenFor({ id: 1 }, { exp: soon }));
     const res = await GET(nextRequest('/auth/drive?returnTo=%2Fconnect'));
     expect(locationOf(res)?.href).toBe('https://chowdown.test/connect');
-    const cookie =
-      (res as NextResponse).cookies.get(SESSION_COOKIE)?.value ?? '';
+    const cookie = nextResponseOf(res).cookies.get(SESSION_COOKIE)?.value ?? '';
     const session = await new SessionTokens(SESSION_SECRET).verify(cookie);
     expect(session).toMatchObject({ drive: true, exp: soon });
   });
@@ -112,7 +111,7 @@ describe('GET /auth/drive', () => {
       ),
     );
     expect(
-      (res as NextResponse).cookies.get('chowdown_return_to')?.value ?? '',
+      nextResponseOf(res).cookies.get('chowdown_return_to')?.value ?? '',
     ).toBe('');
   });
 });

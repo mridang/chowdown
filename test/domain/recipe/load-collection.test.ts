@@ -3,12 +3,14 @@ import { DriveNotConnectedError } from '@/domain/auth/drive-access';
 import { loadCollection } from '@/domain/recipe/load-collection';
 import { asCalls } from '../../calls';
 
+import { fakeDb } from '../../lib/core/db/fake-db';
+import { aRecipe } from '../../fixtures/recipe';
+import { aUser } from '../../fixtures/user';
 import type { SessionPayload } from '@/lib/session';
-import type { Database } from '@/domain/db/client';
 import type { AppPageRows } from '@/domain/db/recipe-page';
 import type { CollectionDeps } from '@/domain/recipe/load-collection';
 
-const db = {} as Database;
+const { db } = fakeDb();
 
 /** Thrown by the fake redirect so a test can see where it went. */
 class RedirectedError extends Error {
@@ -45,18 +47,20 @@ function rows(
     user:
       user === false
         ? undefined
-        : ({
+        : aUser({
             id: 1,
             refresh_token_enc: token,
             recipes_folder_id: folder,
             session_epoch: epoch ?? 0,
-          } as AppPageRows['user']),
+          }),
     // The first `embedded` recipes carry an embedding stamp, the rest do not.
-    recipes: Array.from({ length: recipes }, (_, index) => ({
-      drive_file_id: `r${index}`,
-      parse_error: null,
-      embedded_at: index < (embedded ?? recipes) ? 'stamp' : null,
-    })) as unknown as AppPageRows['recipes'],
+    recipes: Array.from({ length: recipes }, (_, index) =>
+      aRecipe({
+        drive_file_id: `r${index}`,
+        parse_error: null,
+        embedded_at: index < (embedded ?? recipes) ? 'stamp' : null,
+      }),
+    ),
     favouriteIds: ['r0'],
   };
 }
@@ -180,9 +184,17 @@ describe('loadCollection', () => {
       {
         ...page,
         recipes: [
-          { drive_file_id: 'a', parse_error: null, embedded_at: 'stamp' },
-          { drive_file_id: 'b', parse_error: 'bad line', embedded_at: null },
-        ] as unknown as AppPageRows['recipes'],
+          aRecipe({
+            drive_file_id: 'a',
+            parse_error: null,
+            embedded_at: 'stamp',
+          }),
+          aRecipe({
+            drive_file_id: 'b',
+            parse_error: 'bad line',
+            embedded_at: null,
+          }),
+        ],
       },
     ]);
     const collection = await loadCollection('/app', deps);

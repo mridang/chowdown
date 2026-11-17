@@ -94,15 +94,17 @@ describe('Popover', () => {
 
 describe('supportsPopover', () => {
   it('is true for an element in a browser that has the Popover API', () => {
-    expect(supportsPopover(Object.create({ popover: null }) as object)).toBe(
-      true,
-    );
+    /** An element whose `popover` lives on its prototype, as in a browser that has the API. */
+    class PanelWithPopover {
+      get popover(): null {
+        return null;
+      }
+    }
+    expect(supportsPopover(new PanelWithPopover())).toBe(true);
   });
 
   it('is false in a browser that does not, so the component shows the panel itself', () => {
-    expect(supportsPopover(Object.create({ hidden: false }) as object)).toBe(
-      false,
-    );
+    expect(supportsPopover({ hidden: false })).toBe(false);
   });
 });
 
@@ -147,7 +149,9 @@ describe('applyPlacement', () => {
 
 describe('focusLeft', () => {
   // Stand-ins for DOM nodes: all `focusLeft` asks of them is identity.
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- a stand-in for a DOM node: focusLeft only compares identity, and the test runs without a DOM
   const inside = { id: 'inside' } as unknown as Node;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- a stand-in for a DOM node: focusLeft only compares identity, and the test runs without a DOM
   const outside = { id: 'outside' } as unknown as Node;
   const root = { contains: (node: Node | null) => node === inside };
 

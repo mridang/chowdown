@@ -58,7 +58,7 @@ export class JsonClient {
       if (!ok) {
         return { ok: false, error: `http ${status}`, raw, status };
       }
-      const parsed = safeJsonParse<unknown>(raw);
+      const parsed = safeJsonParse(raw);
       if (!parsed.ok) {
         return { ok: false, error: parsed.error, raw, status };
       }

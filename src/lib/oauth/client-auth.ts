@@ -12,15 +12,18 @@
  */
 
 import { createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
+import { z } from 'zod';
 import {
   ASSERTION_ALGORITHMS,
   FETCH_USER_AGENT,
   readCappedText,
 } from './client';
-import type { JSONWebKeySet } from 'jose';
 
 import type { ClientAuth } from './client';
 import type { OAuthFailure } from './token-endpoint';
+
+/** The shape of a client's key set: an object with a `keys` list of key objects. */
+const KEY_SET = z.object({ keys: z.array(z.looseObject({})) });
 
 /** The `client_assertion_type` a JWT assertion declares (RFC 7523 §2.2). */
 export const CLIENT_ASSERTION_TYPE =
@@ -137,9 +140,13 @@ export async function verifyClientAssertion(
   if (jwks === undefined) {
     return invalid('The client keys could not be fetched.');
   }
-  // Building the key set throws on a malformed one, verifying on a bad token.
+  const keySet = KEY_SET.safeParse(jwks);
+  if (!keySet.success) {
+    return invalid('The client_assertion is not valid.');
+  }
+  // Building the key set throws on a malformed key, verifying on a bad token.
   const verified = await (async () =>
-    jwtVerify(assertion, createLocalJWKSet(jwks as JSONWebKeySet), {
+    jwtVerify(assertion, createLocalJWKSet(keySet.data), {
       issuer: clientId,
       subject: clientId,
       audience: [...audiences],

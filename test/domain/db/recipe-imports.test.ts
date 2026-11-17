@@ -10,14 +10,14 @@ import {
   MAX_IMPORTS_PER_USER,
   purgeExpiredRecipeImports,
 } from '@/domain/db/recipe-imports';
-import { fakeDb } from '../../lib/core/db/fake-db';
+import { fakeDb, firstArgOf } from '../../lib/core/db/fake-db';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 import type { ImportItem } from '@/domain/recipe/prepare-import';
 
 const START_N0_HYPHEN_N9_A = /^[0-9a-f-]{36}$/u;
 
-const items = [{ kind: 'text', status: 'FAILED' }] as unknown as ImportItem[];
+const items: ImportItem[] = [{ title: 'a page', status: 'FAILED' }];
 const row = {
   id: 'i1',
   user_id: 1,
@@ -32,14 +32,10 @@ describe('createRecipeImport', () => {
     const created = await createRecipeImport(db, 1, items);
     expect(created).toMatchObject({ status: 'COMPLETED', items });
     expect(created.id).toMatch(START_N0_HYPHEN_N9_A);
-    const stored = calls.find((c) => c.method === 'values')?.args[0] as {
-      items: string;
-      user_id: number;
-      item_count: number;
-    };
-    expect(stored.user_id).toBe(1);
-    expect(stored.item_count).toBe(1);
-    expect(JSON.parse(stored.items)).toEqual(items);
+    const stored = firstArgOf(calls, 'values');
+    expect(stored['user_id']).toBe(1);
+    expect(stored['item_count']).toBe(1);
+    expect(JSON.parse(String(stored['items']))).toEqual(items);
   });
 });
 
@@ -74,7 +70,7 @@ const idsOf = (made: ReturnType<typeof real>, userId: number) =>
       'SELECT id FROM recipe_imports WHERE user_id = ? ORDER BY created_at',
     )
     .all(userId)
-    .map((row) => String(row['id']));
+    .map((entry) => String(entry['id']));
 
 describe('createRecipeImport retention', () => {
   const days = (n: number) =>
@@ -242,7 +238,7 @@ describe('purgeExpiredRecipeImports', () => {
         "EXPLAIN QUERY PLAN DELETE FROM recipe_imports WHERE created_at < 'x'",
       )
       .all()
-      .map((row) => String(row['detail']))
+      .map((entry) => String(entry['detail']))
       .join(' ');
     expect(plan).toContain('idx_recipe_imports_created');
   });

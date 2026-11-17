@@ -2,30 +2,19 @@ import { describe, expect, it } from '@jest/globals';
 
 import { getAppPageRows, getRecipePageRows } from '@/domain/db/recipe-page';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import { fakeDb } from '../../lib/core/db/fake-db';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
-import type { Database } from '@/domain/db/client';
 
-/** A query builder stub: every method chains, and the batch returns canned rows. */
+/** A fake database whose batch returns canned rows. */
 function dbReturning(results: unknown[]) {
-  const state = { queries: 0 };
-  const chain: Record<string, unknown> = {};
-  for (const method of ['select', 'from', 'where', 'limit']) {
-    chain[method] = () => chain;
-  }
-  const db = {
-    select: () => {
-      state.queries += 1;
-      return chain;
-    },
-    batch: async (queries: unknown[]) => {
-      expect(queries).toHaveLength(results.length);
-      return results;
-    },
-  } as unknown as Database;
+  const fake = fakeDb({ batch: [results] });
   return {
-    db,
+    db: fake.db,
     get queries() {
-      return state.queries;
+      return fake.calls.filter((c) => c.method === 'select').length;
+    },
+    get batched() {
+      return fake.batches[0]?.length;
     },
   };
 }
@@ -44,6 +33,7 @@ describe('getRecipePageRows', () => {
     ]);
     const rows = await getRecipePageRows(stub.db, 1, 'r1');
     expect(stub.queries).toBe(6);
+    expect(stub.batched).toBe(6);
     expect(rows).toEqual({
       recipe,
       favourite: true,
@@ -58,6 +48,7 @@ describe('getRecipePageRows', () => {
   it('copes with a recipe that has no favourite, similar list or user row', async () => {
     const stub = dbReturning([[], [], [], [], [], []]);
     const rows = await getRecipePageRows(stub.db, 1, 'gone');
+    expect(stub.batched).toBe(6);
     expect(rows).toEqual({
       favourite: false,
       similarJson: null,

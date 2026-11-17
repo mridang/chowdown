@@ -48,7 +48,7 @@ export type ServeEnv = EdgeLimitEnv & {
 export interface ServeApp {
   fetch(
     request: Request,
-    env: never,
+    env: ServeEnv,
     ctx: ExecutionContext,
   ): Response | Promise<Response>;
 }
@@ -187,7 +187,7 @@ async function answer(
     headers: forwardedHeaders(request.headers, csp, nonce),
   });
   const appStarted = performance.now();
-  const fetched = await app.fetch(forwarded, env as never, ctx);
+  const fetched = await app.fetch(forwarded, env, ctx);
   const appMs = performance.now() - appStarted;
   const isHtml = (fetched.headers.get('content-type') ?? '').startsWith(
     'text/html',

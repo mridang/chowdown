@@ -17,15 +17,18 @@ afterEach(() => {
 
 /** Make the next fetches answer with `responses`, in turn, and remember the calls. */
 function serving(...responses: readonly Response[]) {
-  const calls: { url: string; init: RequestInit }[] = [];
-  globalThis.fetch = (async (url: string, init: RequestInit) => {
-    calls.push({ url, init });
+  const calls: { url: string; init: RequestInit | undefined }[] = [];
+  globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    calls.push({
+      url: input instanceof Request ? input.url : String(input),
+      init,
+    });
     const next = responses[calls.length - 1];
     if (!next) {
       throw new Error('no more responses');
     }
     return next;
-  }) as unknown as typeof fetch;
+  };
   return calls;
 }
 
@@ -35,7 +38,7 @@ async function failure(url: string, timeoutMs?: number): Promise<string> {
   const error: unknown =
     settled.status === 'rejected' ? settled.reason : settled.value;
   expect(error).toBeInstanceOf(PageFetchError);
-  return (error as PageFetchError).failure;
+  return error instanceof PageFetchError ? error.failure : '';
 }
 
 describe('fetchPage', () => {
@@ -46,10 +49,11 @@ describe('fetchPage', () => {
       }),
     );
     await expect(fetchPage('https://a.com/x')).resolves.toBe('<html>ok</html>');
-    const headers = calls[0]?.init.headers as Record<string, string>;
-    expect(headers['User-Agent']).toBe(USER_AGENT);
-    expect(headers['User-Agent']).not.toMatch(MOZILLA);
-    expect(headers['Accept']).toContain('text/html');
+    const headers = new Headers(calls[0]?.init?.headers);
+    const agent = headers.get('User-Agent');
+    expect(agent).toBe(USER_AGENT);
+    expect(agent).not.toMatch(MOZILLA);
+    expect(headers.get('Accept')).toContain('text/html');
   });
 
   it('decodes UTF-8', async () => {

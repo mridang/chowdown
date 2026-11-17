@@ -190,7 +190,7 @@ describe('imageUrls', () => {
         'https://a.com/undefined',
         'not a url',
         { url: 'https://a.com/ok.jpg' },
-      ] as never),
+      ]),
     ).toEqual(['https://a.com/My%20Photo.jpg', 'https://a.com/ok.jpg']);
   });
 });

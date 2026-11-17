@@ -1,16 +1,17 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { recipeSummary } from '@/domain/api/recipe-resource';
+import { aRecipe } from '../../fixtures/recipe';
 import type { Recipe } from '@/domain/db/recipes';
 
 const row = (tags: string | null): Recipe =>
-  ({
+  aRecipe({
     drive_file_id: 'abc',
     name: 'Curry.cook',
     title: 'Curry',
     source: '>> cuisine: Indian\n\nCook @chicken{500%g}.\n',
     tags,
-  }) as Recipe;
+  });
 
 describe('recipeSummary', () => {
   it('gives a row indexed before eating styles existed its eating style', () => {

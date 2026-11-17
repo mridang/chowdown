@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { describe, expect, it, jest } from '@jest/globals';
 import ts from 'typescript';
+import { z } from 'zod';
 
 import {
   GENERIC_CLASSES,
@@ -257,14 +258,17 @@ const wranglerText = await readFile(
 );
 
 describe('wrangler.jsonc', () => {
-  const parsed = ts.parseConfigFileTextToJson('wrangler.jsonc', wranglerText)
-    .config as {
-    ratelimits: {
-      name: string;
-      namespace_id: string;
-      simple: { limit: number; period: number };
-    }[];
-  };
+  const parsed = z
+    .object({
+      ratelimits: z.array(
+        z.looseObject({
+          name: z.string(),
+          namespace_id: z.string(),
+          simple: z.looseObject({ limit: z.number(), period: z.number() }),
+        }),
+      ),
+    })
+    .parse(ts.parseConfigFileTextToJson('wrangler.jsonc', wranglerText).config);
 
   it('declares a binding for every class and for the overall bucket, and no others', () => {
     const declared = parsed.ratelimits

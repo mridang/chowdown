@@ -41,6 +41,7 @@ function refusing() {
 /** A cache that keeps responses in memory, keyed by URL. */
 function memoryCache(): Cache & { readonly stored: Map<string, Response> } {
   const stored = new Map<string, Response>();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the in-memory cache implements only match and put, the two members serve() calls, not the whole of Cache
   return {
     stored,
     match: async (request: RequestInfo | URL) =>
@@ -60,6 +61,7 @@ const ctx = () => {
   const pending: Promise<unknown>[] = [];
   return {
     pending,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the fake context has waitUntil and passThroughOnException, the two members the edge code calls, not the whole of ExecutionContext
     context: {
       waitUntil: (promise: Promise<unknown>) => {
         pending.push(promise);

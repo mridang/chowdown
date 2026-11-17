@@ -124,7 +124,7 @@ export async function listRecipesByUser(
 ): Promise<readonly Recipe[]> {
   return db.query.recipes.findMany({
     where: eq(recipes.user_id, userId),
-    orderBy: (r, { asc }) => [asc(r.name)],
+    orderBy: (r, { asc: ascending }) => [ascending(r.name)],
   });
 }
 
@@ -253,7 +253,7 @@ async function recipeWithSourceUrl(
     where: and(eq(recipes.user_id, userId), eq(recipes.source_url, sourceUrl)),
     // Stable when the same link was imported twice: the first by name wins,
     // as it did when this scanned the whole library in name order.
-    orderBy: (r, { asc }) => [asc(r.name)],
+    orderBy: (r, { asc: ascending }) => [ascending(r.name)],
   });
 }
 

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
+import { z } from 'zod';
 import { encodeCursor } from '@/lib/core/api';
 import { listRecipes } from '@/domain/api/recipe-list';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
@@ -10,7 +11,11 @@ import {
 import { insertUser } from '../auth/session-fixture';
 import type { DatabaseSync } from 'node:sqlite';
 import type { ApiResponse } from '@/lib/core/api';
-import type { RecipeSummary } from '@/domain/api/recipe-resource';
+
+/** The fields of a listed recipe these tests read. */
+const SUMMARIES = z.array(
+  z.looseObject({ id: z.string(), favourite: z.boolean() }),
+);
 
 /** The page a successful list produced, or a thrown failure for a refusal. */
 function pageOf(result: ApiResponse<unknown> | Response) {
@@ -21,9 +26,8 @@ function pageOf(result: ApiResponse<unknown> | Response) {
   if (!page) {
     throw new Error('expected a page result');
   }
-  const items = page.items as readonly RecipeSummary[];
   return {
-    items,
+    items: SUMMARIES.parse(page.items),
     next: page.next ? encodeCursor(page.next) : undefined,
     cacheControl: result.headers?.['Cache-Control'],
   };
@@ -121,7 +125,7 @@ describe('listRecipes', () => {
   it('refuses a favourite filter, which belongs to the favourites list', async () => {
     const res = await list('?favourite=true');
     expect(res).toBeInstanceOf(Response);
-    expect((res as Response).status).toBe(400);
+    expect(res).toHaveProperty('status', 400);
   });
 
   it('still lets the favourites list force its own favourite filter', async () => {
@@ -136,7 +140,7 @@ describe('listRecipes', () => {
   it('refuses a sort it does not know', async () => {
     const res = await list('?sort=colour');
     expect(res).toBeInstanceOf(Response);
-    expect((res as Response).status).toBe(400);
+    expect(res).toHaveProperty('status', 400);
   });
 
   it('filters by the free-text query', async () => {

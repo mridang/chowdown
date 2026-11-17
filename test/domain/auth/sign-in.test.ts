@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { LANDING_PATH, SESSION_COOKIE, sessionClaims } from '@/domain/auth/app';
 import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
+import { aUser } from '../../fixtures/user';
+import { fakeEnv } from '../../fixtures/env';
 import { SESSION_SECRET, appRequest } from './auth-test-kit';
 import type { User } from '@/domain/db/users';
 
@@ -10,7 +12,7 @@ const EMAIL = /email/u;
 
 const tracing = installFakeTracing();
 
-const person = {
+const person = aUser({
   id: 4,
   email: 'ada@example.com',
   name: 'Ada',
@@ -18,7 +20,7 @@ const person = {
   session_epoch: 2,
   refresh_token_enc: null,
   recipes_folder_id: null,
-} as unknown as User;
+});
 
 const upsertGoogleUser = jest
   .fn<(profile: unknown) => Promise<User>>()
@@ -46,12 +48,12 @@ const { completeSignIn, missingSignInSettings } =
 const { SessionTokens } = await import('@/lib/session');
 
 const env = (overrides: Record<string, string | null> = {}) =>
-  ({
+  fakeEnv({
     SESSION_SECRET,
     GOOGLE_OAUTH_CLIENT_ID: 'id',
     GOOGLE_OAUTH_CLIENT_SECRET: 'secret',
     ...overrides,
-  }) as unknown as CloudflareEnv;
+  });
 
 const context = (overrides: Record<string, unknown> = {}) => ({
   request: appRequest('GET', '/auth/callback'),

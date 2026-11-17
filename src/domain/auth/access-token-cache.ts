@@ -136,8 +136,8 @@ export function createAccessTokenCache(
     forgetUser: (userId) => {
       const prefix = `${userId}:`;
       // eslint-disable-next-line functional/no-loop-statements -- evicting entries from the cache map
-      for (const key of [...entries.keys()].filter((key) =>
-        key.startsWith(prefix),
+      for (const key of [...entries.keys()].filter((candidate) =>
+        candidate.startsWith(prefix),
       )) {
         // eslint-disable-next-line functional/immutable-data -- the cache is a mutable map by design
         entries.delete(key);

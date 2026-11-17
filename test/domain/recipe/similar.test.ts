@@ -12,10 +12,12 @@ import { asCalls } from '../../calls';
 
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import { aUser } from '../../fixtures/user';
+import { fakeEnv } from '../../fixtures/env';
+import { fakeDb } from '../../lib/core/db/fake-db';
+import { anEmbedding } from '../../fixtures/embedding';
 import type { EmbeddingDeps, SimilarRecipe } from '@/domain/recipe/similar';
 import type { EmbeddingRow } from '@/domain/db/embeddings';
-import type { Database } from '@/domain/db/client';
-import type { User } from '@/domain/db/users';
 
 /** An embedding row with the given 2-d vector. */
 function row(id: string, title: string, vector: number[]): EmbeddingRow {
@@ -286,10 +288,10 @@ describe('topSimilar', () => {
     // both places, instead of one place going to the ghost and being lost.
     const top = topSimilar(
       [
-        { drive_file_id: 'b', vector: '[1,0]' },
-        { drive_file_id: 'a', vector: '[0.9,0.1]' },
-        { drive_file_id: 'c', vector: '[0.5,0.5]' },
-      ] as never,
+        anEmbedding({ drive_file_id: 'b', vector: '[1,0]' }),
+        anEmbedding({ drive_file_id: 'a', vector: '[0.9,0.1]' }),
+        anEmbedding({ drive_file_id: 'c', vector: '[0.5,0.5]' }),
+      ],
       [1, 0],
       [files[0]!, files[2]!],
       2,
@@ -304,8 +306,8 @@ describe('topSimilar', () => {
 });
 
 describe('ensureEmbeddings', () => {
-  const db = {} as Database;
-  const user = { id: 2 } as unknown as User;
+  const { db } = fakeDb();
+  const user = aUser({ id: 2 });
 
   /** An embedding row with a known title and modified time. */
   const cached = (id: string, modified: string | null) => ({
@@ -317,7 +319,7 @@ describe('ensureEmbeddings', () => {
   function fakes(cache: EmbeddingRow[]) {
     const deps: EmbeddingDeps = {
       database: () => db,
-      env: () => ({}) as CloudflareEnv,
+      env: () => fakeEnv({}),
       listCached: async () => cache,
       save: jest.fn(async () => undefined),
       prune: jest.fn(async () => undefined),

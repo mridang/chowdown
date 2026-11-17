@@ -16,7 +16,7 @@ import {
   folder,
   said,
 } from '../../lib/mcp/tool-fakes';
-import type { User } from '@/domain/db/users';
+import { aUser } from '../../fixtures/user';
 
 const THE_ARGUMENTS_ARE =
   /The arguments are: recipe \(required\), note \(required\), ingredient, step\.$/u;
@@ -265,7 +265,7 @@ describe('callToolOrExplain', () => {
   const open = async () => folder({ 'Pancakes.cook': PANCAKES }).ctx;
 
   it('explains how to connect Drive, as a tool error, when it is not connected', async () => {
-    const noDrive = { id: 1, refresh_token_enc: null } as User;
+    const noDrive = aUser({ id: 1, refresh_token_enc: null });
     const result = await callToolOrExplain(noDrive, { name: 'list_recipes' });
     expect(result.isError).toBe(true);
     expect(said(result)).toContain('Connect Google Drive');

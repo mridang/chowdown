@@ -6,15 +6,16 @@ import {
   tagCookSourceBestEffort,
 } from '@/domain/recipe/tagging';
 import { parseRecipe } from '@/lib/cooklang';
+import { fakeEnv } from '../../fixtures/env';
 
 const DIET_VEGETARIAN = /- diet [^\n]*Vegetarian/u;
 
 const SOURCE = '>> title: Curry\n\nCook @chicken{500%g} in a #pan{}.\n';
 
 function envReturning(response: unknown): CloudflareEnv {
-  return {
+  return fakeEnv({
     AI: { run: jest.fn(async () => ({ response })) },
-  } as unknown as CloudflareEnv;
+  });
 }
 
 describe('suggestTags', () => {
@@ -72,28 +73,32 @@ describe('tagCookSourceBestEffort', () => {
   });
 
   it('returns the source unchanged when the model call throws', async () => {
-    const env = {
+    const env = fakeEnv({
       AI: {
         run: jest.fn(async () => {
           throw new Error('model down');
         }),
       },
-    } as unknown as CloudflareEnv;
+    });
     expect(await tagCookSourceBestEffort(SOURCE, 'c.cook', env)).toBe(SOURCE);
   });
 });
 
 describe('the tagging prompt', () => {
   it('does not ask the model for the eating style, which is worked out', async () => {
-    const run = jest.fn(async () => ({ response: '{}' }));
-    await suggestTags(parseRecipe(SOURCE, 'curry.cook'), {
-      AI: { run },
-    } as unknown as CloudflareEnv);
-    const calls = run.mock.calls as unknown as [
-      string,
-      { messages: { role: string; content: string }[] },
-    ][];
-    const system = calls[0]![1].messages.find(
+    const run = jest.fn<
+      (
+        model: string,
+        input: { messages: { role: string; content: string }[] },
+      ) => Promise<{ response: string }>
+    >(async () => ({ response: '{}' }));
+    await suggestTags(
+      parseRecipe(SOURCE, 'curry.cook'),
+      fakeEnv({
+        AI: { run },
+      }),
+    );
+    const system = run.mock.calls[0]![1].messages.find(
       (m) => m.role === 'system',
     )!.content;
     expect(system).not.toContain('diet_type');

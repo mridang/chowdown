@@ -110,7 +110,7 @@ export default async function AppPage({
             <input type="hidden" name="sort" value={query.sort} />
           )}
           {Object.entries(query.selected).map(([key, values]) =>
-            values?.length ? (
+            values.length > 0 ? (
               <input
                 key={key}
                 type="hidden"

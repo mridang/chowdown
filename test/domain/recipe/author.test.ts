@@ -14,6 +14,7 @@ import {
   withAuthor,
 } from '@/domain/recipe/author';
 import { expectSamePattern, fuzzInputs } from '../../regex-equivalence';
+import { fakeEnv } from '../../fixtures/env';
 
 const IGNORE_ANY_INSTRUCTIONS = /ignore any instructions/iu;
 
@@ -27,8 +28,16 @@ const ld = (data: unknown) =>
 
 /** An env whose model answers `reply` (text or parsed JSON) and counts how often it is asked. */
 function envReplying(reply: unknown) {
-  const run = jest.fn(async () => ({ response: reply }));
-  return { env: { AI: { run } } as unknown as Pick<CloudflareEnv, 'AI'>, run };
+  const run = jest.fn<
+    (
+      model: string,
+      input: {
+        messages: { role: string; content: string }[];
+        temperature: number;
+      },
+    ) => Promise<{ response: unknown }>
+  >(async () => ({ response: reply }));
+  return { env: fakeEnv({ AI: { run } }), run };
 }
 
 describe('cleanAuthorName', () => {
@@ -272,13 +281,13 @@ describe('askForAuthor', () => {
 
   it('gives nothing, and logs, when the model fails', async () => {
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    const env = {
+    const env = fakeEnv({
       AI: {
         run: async () => {
           throw new Error('down');
         },
       },
-    } as unknown as Pick<CloudflareEnv, 'AI'>;
+    });
     expect(await askForAuthor(evidence, env)).toBeUndefined();
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
@@ -287,13 +296,10 @@ describe('askForAuthor', () => {
   it('shows the model the page data and tells it to ignore instructions in it', async () => {
     const { env, run } = envReplying('{"author": null}');
     await askForAuthor(evidence, env);
-    const [, input] = run.mock.calls[0] as unknown as [
-      string,
-      { messages: { role: string; content: string }[]; temperature: number },
-    ];
-    expect(input.messages[0]?.content).toMatch(IGNORE_ANY_INSTRUCTIONS);
-    expect(input.messages[1]?.content).toContain('Maunika Gowardhan');
-    expect(input.temperature).toBe(0);
+    const [, input] = run.mock.calls[0] ?? [];
+    expect(input?.messages[0]?.content).toMatch(IGNORE_ANY_INSTRUCTIONS);
+    expect(input?.messages[1]?.content).toContain('Maunika Gowardhan');
+    expect(input?.temperature).toBe(0);
   });
 });
 

@@ -1,6 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
+import { z } from 'zod';
 import {
   afterEach,
   beforeEach,
@@ -10,6 +11,7 @@ import {
   jest,
 } from '@jest/globals';
 
+import { isObject } from '@/lib/core/api/json';
 import { createRecipeImport } from '@/domain/db/recipe-imports';
 import { getDatabase } from '@/domain/db/client';
 import { SCOPE_READ } from '@/domain/mcp/app';
@@ -57,27 +59,48 @@ interface Described extends Json {
   readonly schema?: Described;
   readonly content?: Readonly<Record<string, { readonly schema?: Described }>>;
   readonly headers?: Readonly<Record<string, unknown>>;
-  readonly required?: readonly string[];
+  /** The names of the required members of a schema, or whether a request body is required. */
+  readonly required?: readonly string[] | boolean;
   readonly properties?: Readonly<Record<string, unknown>>;
-  readonly additionalProperties?: boolean;
+  readonly additionalProperties?: boolean | Json;
 }
 
-interface Operation {
-  readonly operationId: string;
-  readonly tags: readonly string[];
-  readonly summary: string;
-  readonly security?: readonly Json[];
-  readonly parameters?: readonly Described[];
-  readonly requestBody?: Described;
-  readonly responses: Readonly<Record<string, Described>>;
-}
+const JSON_OBJECT = z.record(z.string(), z.unknown());
 
-interface Spec {
-  readonly openapi: string;
-  readonly info: { readonly description: string };
-  readonly paths: Readonly<Record<string, Readonly<Record<string, Operation>>>>;
-  readonly components: Json;
-}
+const DESCRIBED: z.ZodType<Described> = z.lazy(() =>
+  z.looseObject({
+    $ref: z.string().optional(),
+    name: z.string().optional(),
+    in: z.string().optional(),
+    schema: DESCRIBED.optional(),
+    content: z
+      .record(z.string(), z.looseObject({ schema: DESCRIBED.optional() }))
+      .optional(),
+    headers: JSON_OBJECT.optional(),
+    required: z.union([z.array(z.string()), z.boolean()]).optional(),
+    properties: JSON_OBJECT.optional(),
+    additionalProperties: z.union([z.boolean(), JSON_OBJECT]).optional(),
+  }),
+);
+
+const OPERATION = z.looseObject({
+  operationId: z.string(),
+  tags: z.array(z.string()),
+  summary: z.string(),
+  security: z.array(JSON_OBJECT).optional(),
+  parameters: z.array(DESCRIBED).optional(),
+  requestBody: DESCRIBED.optional(),
+  responses: z.record(z.string(), DESCRIBED),
+});
+
+type Operation = z.infer<typeof OPERATION>;
+
+const SPEC = z.looseObject({
+  openapi: z.string(),
+  info: z.looseObject({ description: z.string() }),
+  paths: z.record(z.string(), z.record(z.string(), OPERATION)),
+  components: JSON_OBJECT,
+});
 
 const ROOT = process.cwd();
 
@@ -85,9 +108,9 @@ const ROOT = process.cwd();
 // eslint-disable-next-line no-unassigned-vars -- never assigned on purpose: it stands for a key that is present with no value, and writing undefined inline is reported by sonarjs/no-undefined-assignment
 let absent: undefined;
 
-const spec = JSON.parse(
-  await readFile(path.join(ROOT, 'openapi.json'), 'utf8'),
-) as Spec;
+const spec = SPEC.parse(
+  JSON.parse(await readFile(path.join(ROOT, 'openapi.json'), 'utf8')),
+);
 
 const METHODS = ['get', 'put', 'post', 'patch', 'delete'] as const;
 
@@ -109,11 +132,11 @@ function deref(node: Described): Described {
   const found = node.$ref
     .replace(START_HASH_SLASH, '')
     .split('/')
-    .reduce<unknown>((at, key) => (at as Json | undefined)?.[key], spec);
+    .reduce<unknown>((at, key) => (isObject(at) ? at[key] : undefined), spec);
   if (!found) {
     throw new Error(`Unresolved reference ${node.$ref}`);
   }
-  return found as Described;
+  return DESCRIBED.parse(found);
 }
 
 /** The `$ref`s anywhere inside a node. */
@@ -319,9 +342,8 @@ const GOOD = new Map(
 
 /** The id of the import `arrange` made (it is generated). */
 function importId(): string {
-  const row = world.raw.prepare('SELECT id FROM recipe_imports').get() as
-    { id: string } | undefined;
-  return row?.id ?? 'none';
+  const id = world.raw.prepare('SELECT id FROM recipe_imports').get()?.['id'];
+  return typeof id === 'string' ? id : 'none';
 }
 
 /** A route handler, as Next calls it. */
@@ -329,6 +351,11 @@ type Handler = (
   request: Request,
   context: { params: Promise<Record<string, string>> },
 ) => Promise<Response>;
+
+/** Whether a route module's export is a handler (all of them are functions). */
+function isHandler(value: unknown): value is Handler {
+  return typeof value === 'function';
+}
 
 /** The module of each route, by its path in the document. */
 const ROUTES = new Map(
@@ -388,9 +415,9 @@ async function call(
   if (!load) {
     throw new Error(`${key} has no route module in ROUTES`);
   }
-  const routeModule = (await load()) as Readonly<Record<string, Handler>>;
-  const handler = routeModule[method];
-  if (!handler) {
+  const routeModule: unknown = await load();
+  const handler = isObject(routeModule) ? routeModule[method] : undefined;
+  if (!isHandler(handler)) {
     throw new Error(`${key} is documented but its route does not export it`);
   }
   return handler(
@@ -418,7 +445,7 @@ async function expectProblem(
   expect(mediaType(response)).toBe('application/problem+json');
   const body: unknown = await response.json();
   expect(misfit({ $ref: '#/components/schemas/Problem' }, body)).toBe('');
-  expect((body as { status: number }).status).toBe(response.status);
+  expect(isObject(body) ? body['status'] : undefined).toBe(response.status);
 }
 
 // ------------------------------------------------------------------- tests
@@ -557,7 +584,7 @@ describe.each(operations)('%s', (key, operation) => {
     it.each([
       ['that is not JSON', { body: '{' }],
       ['that is not an object', { json: ['x'] }],
-      ...((body.required ?? []).length > 0
+      ...(Array.isArray(body.required) && body.required.length > 0
         ? [['without its required members', { json: {} }] as const]
         : []),
     ])('refuses a body %s with 400', async (_what, override) => {
@@ -576,7 +603,10 @@ describe.each(operations)('%s', (key, operation) => {
       async (name) => {
         await arrange();
         const response = await call(key, good, {
-          json: { ...(good.json as Json), [name]: { wrong: 'type' } },
+          json: {
+            ...(isObject(good.json) ? good.json : {}),
+            [name]: { wrong: 'type' },
+          },
           type,
         });
         expect(response.status).toBe(400);
@@ -591,7 +621,10 @@ describe.each(operations)('%s', (key, operation) => {
       async () => {
         await arrange();
         const response = await call(key, good, {
-          json: { ...(good.json as Json), not_a_member: 1 },
+          json: {
+            ...(isObject(good.json) ? good.json : {}),
+            not_a_member: 1,
+          },
           type,
         });
         if (body.additionalProperties === false) {

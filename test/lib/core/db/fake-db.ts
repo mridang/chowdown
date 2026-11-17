@@ -1,3 +1,4 @@
+import { isObject } from '@/lib/core/api/json';
 import type { Database } from '@/domain/db/client';
 
 /** One call made on a fake query builder. */
@@ -7,6 +8,18 @@ export interface Call {
   /** The builder method called, such as `values` or `where`. */
   readonly method: string;
   readonly args: readonly unknown[];
+}
+
+/** The first argument of the first call of `method`, as the object it must be; anything else fails the test. */
+export function firstArgOf(
+  calls: readonly Call[],
+  method: string,
+): Readonly<Record<string, unknown>> {
+  const argument = calls.find((c) => c.method === method)?.args[0];
+  if (!isObject(argument)) {
+    throw new Error(`expected ${method} to be called with an object`);
+  }
+  return argument;
 }
 
 /**
@@ -76,10 +89,7 @@ export function fakeDb(results: FakeResults = {}) {
     batch: async (statements: unknown[]) => {
       const n = batches.length;
       batches.push(statements);
-      return (
-        (nth(results.batch, n) as unknown[] | undefined) ??
-        statements.map(() => [])
-      );
+      return nth(results.batch, n) ?? statements.map(() => []);
     },
     query: new Proxy(
       {},
@@ -91,5 +101,6 @@ export function fakeDb(results: FakeResults = {}) {
       },
     ),
   };
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the fake implements only the query-builder members the repositories call, not the whole Drizzle client
   return { db: db as unknown as Database, calls, batches };
 }

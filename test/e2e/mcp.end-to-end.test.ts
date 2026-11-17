@@ -4,15 +4,16 @@ import { createServer } from 'node:http';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { Readable } from 'node:stream';
+import { buffer } from 'node:stream/consumers';
 import { promisify } from 'node:util';
 
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 
+import { isObject } from '@/lib/core/api/json';
 import { respondToMcp } from '@/domain/mcp/http';
 import { SCOPE_READ, SCOPE_WRITE } from '@/lib/oauth';
+import { aUser } from '../fixtures/user';
 import type { Server } from 'node:http';
-import type { User } from '@/domain/db/users';
 
 const run = promisify(execFile);
 const require = createRequire(path.join(process.cwd(), 'package.json'));
@@ -130,7 +131,7 @@ const REVISIONS = {
 } satisfies Readonly<Record<string, readonly string[]>>;
 
 /** Whoever the suite is: signed in, with every scope and no Google Drive. */
-const SUITE_USER = { id: 1, refresh_token_enc: null } as Readonly<User>;
+const SUITE_USER = aUser({ id: 1, refresh_token_enc: null });
 
 /** The MCP endpoint on a loopback port, answering as `/mcp` does. */
 async function listen(): Promise<{ server: Server; url: string }> {
@@ -148,9 +149,7 @@ async function listen(): Promise<{ server: Server; url: string }> {
             typeof value === 'string' ? [[name, value]] : [],
           ),
         ),
-        ...(hasBody
-          ? { body: Readable.toWeb(incoming) as ReadableStream, duplex: 'half' }
-          : {}),
+        ...(hasBody ? { body: await buffer(incoming) } : {}),
       });
       try {
         const response = await respondToMcp(
@@ -245,8 +244,13 @@ describe('the MCP server against the official conformance suite', () => {
           ],
           { maxBuffer: 64 * 1024 * 1024 },
         ).catch((error: unknown) => {
-          const failure = error as Error & { stdout?: string };
-          throw new Error(failure.stdout ?? failure.message);
+          const stdout = isObject(error) ? error['stdout'] : undefined;
+          if (typeof stdout === 'string') {
+            throw new TypeError(stdout);
+          }
+          throw new Error(
+            error instanceof Error ? error.message : String(error),
+          );
         }),
       ).resolves.toBeDefined();
     },

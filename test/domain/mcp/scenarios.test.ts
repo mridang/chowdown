@@ -7,6 +7,7 @@ import {
   recipesFromIngredients,
   runScenarioTool,
 } from '@/domain/mcp/scenarios';
+import { aRecipe } from '../../fixtures/recipe';
 import type { ScenarioDeps, ScenarioRecipe } from '@/domain/mcp/scenarios';
 import type { Recipe } from '@/domain/db/recipes';
 
@@ -486,7 +487,7 @@ describe('filterOverview — recipes with no eating style', () => {
 
 describe('runScenarioTool', () => {
   const row = (id: string, name: string, source: string): Recipe =>
-    ({ drive_file_id: id, name, source, tags: null }) as Recipe;
+    aRecipe({ drive_file_id: id, name, source, tags: null });
   const CURRY = row(
     '1',
     'Curry.cook',

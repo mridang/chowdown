@@ -173,10 +173,9 @@ export function describeRedirect(
     kind,
     short,
     warning: warnings[kind],
-    note:
-      elsewhere && identity.kind === 'domain'
-        ? `This address is not on ${identity.domain}, the site that published the app. Some apps do work that way; approve only if you expect it.`
-        : undefined,
+    note: elsewhere
+      ? `This address is not on ${identity.domain}, the site that published the app. Some apps do work that way; approve only if you expect it.`
+      : undefined,
   };
 }
 

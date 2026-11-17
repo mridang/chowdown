@@ -2,12 +2,12 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { mutateRecipeForUser } from '@/domain/recipe/mutate-recipe-live';
 import { asCalls } from '../../calls';
 
-import type { Database } from '@/domain/db/client';
-import type { User } from '@/domain/db/users';
+import { aUser } from '../../fixtures/user';
+import { fakeDb } from '../../lib/core/db/fake-db';
 import type { MutateLiveDeps } from '@/domain/recipe/mutate-recipe-live';
 
-const db = {} as Database;
-const user = { id: 4 } as unknown as User;
+const { db } = fakeDb();
+const user = aUser({ id: 4 });
 
 /** An edit that appends a line, or one that changes nothing. */
 const append = (current: string) => ({

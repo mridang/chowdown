@@ -67,9 +67,10 @@ export function hasScope(granted: readonly string[], needed: string): boolean {
  */
 export function scopeForTool(name: string): Scope {
   const tool = TOOL_REGISTRY.named(name);
-  return tool === undefined
-    ? SCOPE_WRITE
-    : (TOOL_SCOPES.scopeFor(tool) as Scope);
+  if (tool === undefined) {
+    return SCOPE_WRITE;
+  }
+  return TOOL_SCOPES.scopeFor(tool) === SCOPE_READ ? SCOPE_READ : SCOPE_WRITE;
 }
 
 /** A JSON-RPC message as far as scope checking cares. */

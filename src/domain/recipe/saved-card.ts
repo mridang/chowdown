@@ -8,6 +8,7 @@
  * browser.
  */
 
+import { isObject } from '@/lib/core/api/json';
 import { domainOf, parseRecipe } from '@/lib/cooklang';
 import { minutesOf } from '@/domain/recipe/minutes';
 import { cleanTitle, levelOf, toneFor } from '@/domain/recipe/card-style';
@@ -20,10 +21,7 @@ function textOf(value: unknown): string | undefined {
 
 /** The text values of a tag, or none when the tag is absent or malformed. */
 function tagValues(tags: unknown, key: string): readonly string[] {
-  const values =
-    typeof tags === 'object' && tags !== null
-      ? (tags as Readonly<Record<string, unknown>>)[key]
-      : undefined;
+  const values = isObject(tags) ? tags[key] : undefined;
   return Array.isArray(values)
     ? values.filter((v): v is string => typeof v === 'string')
     : [];
@@ -31,10 +29,10 @@ function tagValues(tags: unknown, key: string): readonly string[] {
 
 /** The card for a recipe resource, or nothing when the answer is not one. */
 export function savedCard(body: unknown): CardRecipe | undefined {
-  if (typeof body !== 'object' || body === null) {
+  if (!isObject(body)) {
     return undefined;
   }
-  const resource = body as Readonly<Record<string, unknown>>;
+  const resource = body;
   const id = textOf(resource['id']);
   const title = textOf(resource['title']);
   if (!id || !title) {
