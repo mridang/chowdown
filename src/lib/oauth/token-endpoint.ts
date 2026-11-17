@@ -23,7 +23,7 @@ import {
   CODE_PREFIX,
   REFRESH_PREFIX,
   hashSecret,
-  // eslint-disable-next-line unicorn/no-keyword-prefix -- the name is exported from its module and used by other modules
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- newSecret is an exported name of the module's public surface, so it is not renamed
   newSecret,
 } from '@/lib/oauth/secrets';
 import {
@@ -34,7 +34,7 @@ import {
 import { logSecurityEvent } from '@/lib/oauth/security-log';
 import type { OAuthClient } from '@/lib/oauth/client';
 
-const WHITESPACE_RUN = /\s+/u;
+const EXCHANGE_REFRESH_TOKEN_PATTERN = /\s+/u;
 
 /** Access tokens live an hour; refresh tokens thirty days, renewed on use. */
 export const ACCESS_TTL_SECONDS = 60 * 60;
@@ -404,7 +404,7 @@ export async function exchangeRefreshToken(
     // Covered by the grant, not merely listed in it: a grant of the write scope
     // covers the read one. `offline_access` asks for what a refresh already is.
     const asked = request.scope
-      .split(WHITESPACE_RUN)
+      .split(EXCHANGE_REFRESH_TOKEN_PATTERN)
       .filter((s) => s !== '' && s !== SCOPE_OFFLINE_ACCESS);
     if (!asked.every((s) => isSupportedScope(s) && hasScope(grant.scope, s))) {
       return fail(

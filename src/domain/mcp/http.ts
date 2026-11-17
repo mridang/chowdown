@@ -141,7 +141,7 @@ export function corsFor(
   request: Request,
   selfOrigin: string,
   extraOrigins: string | undefined = configuredOrigins(),
-): Readonly<Record<string, string>> {
+) {
   const origin = request.headers.get('origin');
   if (origin === null) {
     return CORS_HEADERS;
@@ -156,7 +156,6 @@ export function corsFor(
     REQUESTED_HEADERS.test(requested)
       ? requested
       : undefined;
-  // eslint-disable-next-line tslop/no-known-value-widening -- response headers are an open dictionary of header names
   return {
     ...CORS_HEADERS,
     'Access-Control-Allow-Origin': origin,

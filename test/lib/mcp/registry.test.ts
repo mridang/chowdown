@@ -29,13 +29,12 @@ describe('ToolRegistry', () => {
     expect(registry.has('ghost')).toBe(false);
   });
 
-  it.each(['constructor', '__proto__', 'toString'])(
-    'finds nothing for an inherited property name, which a caller may send (%j)',
-    (name) => {
+  it('finds nothing for an inherited property name, which a caller may send', () => {
+    for (const name of ['constructor', '__proto__', 'toString']) {
       expect(registry.named(name)).toBeUndefined();
       expect(registry.has(name)).toBe(false);
-    },
-  );
+    }
+  });
 
   it('refuses two tools of one name, rather than letting one shadow the other', () => {
     expect(() => new ToolRegistry([new CountTool(), new CountTool()])).toThrow(

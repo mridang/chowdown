@@ -26,10 +26,10 @@ describe('readJson', () => {
   });
 
   it('ignores media type parameters and case', async () => {
-    const parsed = await readJson(
+    const result = await readJson(
       post('[]', 'Application/JSON; charset=utf-8'),
     );
-    expect(parsed.ok).toBe(true);
+    expect(result.ok).toBe(true);
   });
 
   it('refuses another media type with 415', async () => {
@@ -39,8 +39,8 @@ describe('readJson', () => {
 
   it('accepts the extra media types a route names', async () => {
     const request = post('{}', 'application/merge-patch+json');
-    const parsed = await readJson(request, ['application/merge-patch+json']);
-    expect(parsed.ok).toBe(true);
+    const result = await readJson(request, ['application/merge-patch+json']);
+    expect(result.ok).toBe(true);
   });
 
   it('refuses a body that is not JSON with 400', async () => {
@@ -53,8 +53,8 @@ describe('readJson', () => {
       method: 'POST',
       body: '{}',
     });
-    const parsed = await readJson(request);
-    expect(parsed.ok).toBe(false);
+    const result = await readJson(request);
+    expect(result.ok).toBe(false);
   });
 });
 
@@ -113,8 +113,8 @@ describe('readJson size limit', () => {
 
   it('takes a larger limit from the route', async () => {
     const body = jsonOf(500_000);
-    const large = await readJson(post(body), [], 1024 * 1024);
-    expect(large.ok).toBe(true);
+    const atLimit = await readJson(post(body), [], 1024 * 1024);
+    expect(atLimit.ok).toBe(true);
     const { status, body: problem } = await refusal(
       await readJson(post(body), [], 100 * 1024),
     );
@@ -133,13 +133,12 @@ describe('readJson size limit', () => {
     const bad = new Request('http://localhost/x', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-
-      body: new Uint8Array([0x22, 0xff, 0x22]),
+      body: new Uint8Array([0x22, 255, 0x22]),
     });
-    const refused = await refusal(await readJson(bad));
-    expect(refused.status).toBe(400);
-    const empty = await refusal(await readJson(post('')));
-    expect(empty.status).toBe(400);
+    const badRefusal = await refusal(await readJson(bad));
+    expect(badRefusal.status).toBe(400);
+    const emptyRefusal = await refusal(await readJson(post('')));
+    expect(emptyRefusal.status).toBe(400);
   });
 });
 
@@ -159,16 +158,15 @@ describe('readJsonObject', () => {
     });
   });
 
-  it.each(['[1]', '"x"', '3', 'null'])(
-    "answers 400 with the route's own sentence for other JSON (%j)",
-    async (body) => {
+  it("answers 400 with the route's own sentence for other JSON", async () => {
+    for (const body of ['[1]', '"x"', '3', 'null']) {
       const { status, body: problem } = await refusal(
         await readJsonObject(post(body), 'The patch must be a JSON object.'),
       );
       expect(status).toBe(400);
       expect(problem.detail).toBe('The patch must be a JSON object.');
-    },
-  );
+    }
+  });
 
   it('passes on the media-type refusal', async () => {
     const { status } = await refusal(

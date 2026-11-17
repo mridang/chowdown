@@ -20,8 +20,10 @@ import {
   EDGE_TTL_SECONDS,
 } from './site';
 
-const FFFF = /^(::ffff:)?127\./u;
-const COLON_DIGITS_PLUS_END = /:\d+$/u;
+/** A port at the end of a `Host` header value, such as `:8787`. */
+const HOST_PORT_SUFFIX = /:\d+$/u;
+/** A caller address in `127.0.0.0/8`, bare or IPv4-mapped. */
+const LOOPBACK_IPV4_CALLER = /^(::ffff:)?127\./u;
 
 /** The most query parameters a kept page may carry. */
 const MAX_PARAMS = 8;
@@ -44,13 +46,13 @@ const LOCAL_HOSTS: ReadonlySet<string> = new Set([
 function isLocal(request: Request, url: URL): boolean {
   const host = (request.headers.get('host') ?? '')
     .toLowerCase()
-    .replace(COLON_DIGITS_PLUS_END, '');
+    .replace(HOST_PORT_SUFFIX, '');
   const caller = request.headers.get('cf-connecting-ip') ?? '';
   return (
     LOCAL_HOSTS.has(url.hostname) ||
     LOCAL_HOSTS.has(host) ||
     caller === '::1' ||
-    FFFF.test(caller)
+    LOOPBACK_IPV4_CALLER.test(caller)
   );
 }
 
@@ -72,21 +74,17 @@ function allowedQuery(
   if (entries.length > MAX_PARAMS) {
     return null;
   }
+  const names = entries.map(([name]) => name);
   if (
+    new Set(names).size !== names.length ||
     entries.some(
       ([name, value]) => !allowed.has(name) || value.length > MAX_VALUE_LENGTH,
-    ) ||
-    new Set(entries.map(([name]) => name)).size !== entries.length
+    )
   ) {
     return null;
   }
   return new URLSearchParams(
-    entries.toSorted(([a], [b]) => {
-      if (a < b) {
-        return -1;
-      }
-      return a > b ? 1 : 0;
-    }),
+    entries.toSorted(([a], [b]) => Number(a > b) - Number(a < b)),
   );
 }
 
@@ -194,8 +192,12 @@ function isCache(value: unknown): value is Cache {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
-  const hasMatch = 'match' in value && typeof value.match === 'function';
-  return hasMatch && 'put' in value && typeof value.put === 'function';
+  return (
+    'match' in value &&
+    typeof value.match === 'function' &&
+    'put' in value &&
+    typeof value.put === 'function'
+  );
 }
 
 /** Cloudflare's per-colo cache; absent when running under plain Node. */

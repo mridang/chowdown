@@ -6,7 +6,7 @@
  *
  * The one setting the MCP endpoint reads is `MCP_ALLOWED_ORIGINS`, a
  * comma-separated list of extra browser origins that may call it, written as the
- * browser sends them (`https://tool.example`, `https://tool.example:8080`,
+ * browser sends them (`https://tool.example`, `https://tool.example:8443`,
  * `chrome-extension://abcdef`, `vscode-webview://abc`, `tauri://localhost`).
  * Origins that web clients use (our own, the assistants', localhost) are
  * already allowed; this is for a browser extension, an Electron or webview app
@@ -25,7 +25,7 @@ export const ALLOWED_ORIGINS_SETTING = 'MCP_ALLOWED_ORIGINS';
 export function getEnvSafe(name: string): string | undefined {
   try {
     const value: unknown = Object.entries(getEnv()).find(
-      ([setting]) => setting === name,
+      ([key]) => key === name,
     )?.[1];
     return typeof value === 'string' ? value : undefined;
   } catch {

@@ -23,29 +23,23 @@ export function CopyField({
   label: string;
 }>): ReactElement {
   const [copied, setCopied] = useState(false);
-  const copy = async (): Promise<void> => {
-    // `clipboard` is missing on insecure pages; then there is nothing to confirm.
-    if (!navigator.clipboard) {
-      return;
-    }
-
-    await navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), CONFIRMATION_MS);
-  };
   return (
     <div className="flex h-12 items-center gap-2 rounded-control border border-field bg-surface pr-1 pl-4">
-      {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- a labelled group around a code element; a fieldset would add a border and legend layout */}
-      <code
-        role="group"
-        aria-label={label}
-        className="min-w-0 flex-1 truncate font-mono text-sm"
-      >
-        {value}
-      </code>
+      <fieldset aria-label={label} className="m-0 min-w-0 flex-1 border-0 p-0">
+        <code className="block truncate font-mono text-sm">{value}</code>
+      </fieldset>
       <Button
         onClick={() => {
-          void copy();
+          // `clipboard` is missing on insecure pages; then there is nothing to confirm.
+
+          const clipboard = navigator.clipboard;
+          if (!clipboard) {
+            return;
+          }
+          void clipboard.writeText(value).then(() => {
+            setCopied(true);
+            return setTimeout(() => setCopied(false), CONFIRMATION_MS);
+          });
         }}
       >
         {copied ? <CheckIcon size="sm" /> : <CopyIcon size="sm" />}

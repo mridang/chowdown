@@ -53,7 +53,7 @@ export interface McpAuthDeps {
  * without a database lookup, which keeps a flood of made-up tokens from costing
  * two D1 reads apiece.
  */
-const ACCESS_TOKEN_FORMAT = new RegExp(
+const ACCESS_TOKEN_PATTERN = new RegExp(
   `^${ACCESS_PREFIX}_[A-Za-z0-9_-]{20,200}$`,
   'u',
 );
@@ -85,7 +85,7 @@ export async function authenticateMcpRequest(
   if (!token) {
     return { kind: 'no-token' };
   }
-  if (!ACCESS_TOKEN_FORMAT.test(token)) {
+  if (!ACCESS_TOKEN_PATTERN.test(token)) {
     return { kind: 'invalid-token' };
   }
   const { identify, findUser, now } = deps();

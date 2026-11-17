@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 
 import { readBodyText, readFormBody, readJsonBody } from '@/lib/core/api';
 
@@ -51,12 +51,12 @@ describe('readBodyText', () => {
   });
 
   it('refuses a body that announces itself as too large without reading it', async () => {
-    const pulled = jest.fn();
+    let pulled = false;
     // A zero buffer means nothing is pulled unless someone reads.
     const stream = new ReadableStream<Uint8Array>(
       {
         pull() {
-          pulled();
+          pulled = true;
         },
       },
       { highWaterMark: 0 },
@@ -68,17 +68,17 @@ describe('readBodyText', () => {
       duplex: 'half',
     } as RequestInit);
     expect(await readBodyText(request, 100)).toEqual({ kind: 'too-large' });
-    expect(pulled.mock.calls).toEqual([]);
+    expect(pulled).toBe(false);
   });
 
   it('cuts off a chunked body as soon as it passes the limit and cancels the upload', async () => {
-    const cancelled = jest.fn();
+    let cancelled = false;
     const stream = new ReadableStream<Uint8Array>({
       pull(controller) {
         controller.enqueue(new Uint8Array(40));
       },
       cancel() {
-        cancelled();
+        cancelled = true;
       },
     });
     const request = new Request('https://app.test/x', {
@@ -87,7 +87,7 @@ describe('readBodyText', () => {
       duplex: 'half',
     } as RequestInit);
     expect(await readBodyText(request, 100)).toEqual({ kind: 'too-large' });
-    expect(cancelled.mock.calls).toEqual([[]]);
+    expect(cancelled).toBe(true);
   });
 
   it('accepts a body of exactly the limit and refuses one byte more', async () => {
@@ -106,7 +106,7 @@ describe('readBodyText', () => {
 
   it('calls invalid UTF-8 unreadable', async () => {
     expect(
-      await readBodyText(chunked([new Uint8Array([0xff, 0xfe])]), 100),
+      await readBodyText(chunked([new Uint8Array([255, 254])]), 100),
     ).toEqual({ kind: 'unreadable' });
   });
 });
@@ -123,8 +123,7 @@ describe('readJsonBody', () => {
     expect(await readJsonBody(chunked(['{nope']), 100)).toEqual({
       kind: 'unparseable',
     });
-
-    expect(await readJsonBody(chunked([new Uint8Array([0xff])]), 100)).toEqual({
+    expect(await readJsonBody(chunked([new Uint8Array([255])]), 100)).toEqual({
       kind: 'unparseable',
     });
   });

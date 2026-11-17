@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   SIGN_IN_PURPOSE,
   checkState,
-  // eslint-disable-next-line unicorn/no-keyword-prefix -- the name is exported from its module and used by other modules
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- newState is the name exported by the module under test
   newState,
   purposeOf,
 } from '@/lib/web-security';
@@ -19,7 +19,7 @@ describe('newState', () => {
       expect(state).toMatch(
         new RegExp(String.raw`^${purpose}\.[0-9a-f-]{36}$`, 'u'),
       );
-      expect(state).not.toBe(newState(purpose));
+      expect(newState(purpose)).not.toBe(state);
     },
   );
 });
@@ -51,12 +51,16 @@ describe('checkState', () => {
 
   it('stops when either side is missing', () => {
     const state = newState(SIGN_IN_PURPOSE);
-    expect(checkState(null, state, PURPOSES)).toEqual({ ok: false });
+    expect(checkState(null, state, PURPOSES)).toEqual({
+      ok: false,
+    });
     expect(checkState(state, undefined, PURPOSES)).toEqual({
       ok: false,
       claimed: SIGN_IN_PURPOSE,
     });
-    expect(checkState('', '', PURPOSES)).toEqual({ ok: false });
+    expect(checkState('', '', PURPOSES)).toEqual({
+      ok: false,
+    });
   });
 
   it('stops when the two differ, still reporting the label for the wording', () => {

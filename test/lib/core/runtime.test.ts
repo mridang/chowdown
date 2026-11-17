@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import {
   getDB,
@@ -19,11 +19,16 @@ describe('without a Cloudflare context (tests, scripts)', () => {
   });
 
   it('lets background work run on its own', async () => {
-    const finished = jest.fn();
-    runInBackground(Promise.resolve().then(() => finished()));
+    let done = false;
+    runInBackground(
+      Promise.resolve().then(() => {
+        done = true;
+        return done;
+      }),
+    );
     await Promise.resolve();
     await Promise.resolve();
-    expect(finished.mock.calls).toEqual([[]]);
+    expect(done).toBe(true);
   });
 
   it('logs background work that fails rather than letting it escape', async () => {
@@ -41,15 +46,18 @@ describe('without a Cloudflare context (tests, scripts)', () => {
 });
 
 describe('with a Cloudflare context', () => {
+  let restore: (() => void) | null = null;
+
+  afterEach(() => {
+    restore?.();
+    restore = null;
+  });
+
   it("hands out the context's D1 binding and environment", () => {
     const { d1 } = sqliteD1();
-    const restore = installCloudflareContext(d1, { SECRET: 'value' });
-    try {
-      expect(getDB()).toBe(d1);
-      expect(getEnv()).toMatchObject({ SECRET: 'value', DB: d1 });
-      expect(isDatabaseBound()).toBe(true);
-    } finally {
-      restore();
-    }
+    restore = installCloudflareContext(d1, { SECRET: 'value' });
+    expect(getDB()).toBe(d1);
+    expect(getEnv()).toMatchObject({ SECRET: 'value', DB: d1 });
+    expect(isDatabaseBound()).toBe(true);
   });
 });

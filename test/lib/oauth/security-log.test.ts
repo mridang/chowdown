@@ -39,8 +39,9 @@ describe('logSecurityEvent', () => {
     'writes %s as a warning, so an alert can watch the warnings alone',
     (event) => {
       logSecurityEvent(event);
-      expect(warn.mock.calls).toEqual([[`{"event":"${event}"}`]]);
-      expect(info.mock.calls).toEqual([]);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(JSON.stringify({ event }));
+      expect(info).not.toHaveBeenCalled();
     },
   );
 
@@ -52,8 +53,9 @@ describe('logSecurityEvent', () => {
     'oauth.scope_narrowed',
   ])('writes %s as information', (event) => {
     logSecurityEvent(event);
-    expect(info.mock.calls).toEqual([[`{"event":"${event}"}`]]);
-    expect(warn.mock.calls).toEqual([]);
+    expect(info).toHaveBeenCalledTimes(1);
+    expect(info).toHaveBeenCalledWith(JSON.stringify({ event }));
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it('cannot be fooled by a hostile value: it stays one line of valid JSON', () => {

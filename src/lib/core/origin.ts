@@ -56,10 +56,9 @@ export function appOriginFromHeaders(headers: Headers): string {
   }
   const host = headers.get('host') ?? 'localhost';
   const forwarded = headers.get('x-forwarded-proto');
-  if (forwarded === 'http' || forwarded === 'https') {
-    return `${forwarded}://${host}`;
-  }
   const local = host.startsWith('localhost') || host.startsWith('127.');
-  const protocol = local ? 'http' : 'https';
-  return `${protocol}://${host}`;
+  const fallback = local ? 'http' : 'https';
+  const proto =
+    forwarded === 'http' || forwarded === 'https' ? forwarded : fallback;
+  return `${proto}://${host}`;
 }

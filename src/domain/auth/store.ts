@@ -51,3 +51,5 @@ export async function getSessionEpoch(id: number): Promise<number | undefined> {
 export async function bumpSessionEpoch(id: number): Promise<void> {
   return bumpEpoch(getDatabase(), id);
 }
+
+export { type User } from '@/domain/db/users';

@@ -15,11 +15,22 @@ import {
 } from '@/components/ui/popover';
 import { html, htmlAt } from '../render';
 
-const OUTPUT_GOOGLE = /^<output[^>]*>Google Drive connected<\/output>$/u;
-const DIV_POPOVER_AUTO = /<div[^>]*popover="auto"[^>]*data-popover=""/u;
-const POPOVERTARGET = /popovertarget/iu;
-const BUTTON_ARIA_LABEL = /<button[^>]*aria-label="Menu"[^>]*>Open<\/button>/u;
-const ID_POPOVER_AUTO = /id="([^"]+)" popover="auto"/u;
+/** Matches panel id attribute. */
+const PANEL_ID_ATTRIBUTE = /id="([^"]+)" popover="auto"/u;
+
+/** Matches menu trigger button. */
+const MENU_TRIGGER_BUTTON =
+  /<button[^>]*aria-label="Menu"[^>]*>Open<\/button>/u;
+
+/** Matches popovertarget attribute. */
+const POPOVERTARGET_ATTRIBUTE = /popovertarget/iu;
+
+/** Matches popover panel div. */
+const POPOVER_PANEL_DIV = /<div[^>]*popover="auto"[^>]*data-popover=""/u;
+
+/** Matches connected status paragraph. */
+const CONNECTED_STATUS_PARAGRAPH =
+  /^<output[^>]*>Google Drive connected<\/output>$/u;
 
 describe('PopoverSeparator', () => {
   it('is a thin rule that assistive technology knows is a separator', () => {
@@ -47,10 +58,10 @@ describe('Popover', () => {
       <a href="/x">Inside</a>
     </Popover>,
   );
-  const panelId = ID_POPOVER_AUTO.exec(out)?.[1];
+  const panelId = PANEL_ID_ATTRIBUTE.exec(out)?.[1];
 
   it('is a button that says the panel is closed, named for what it opens', () => {
-    expect(out).toMatch(BUTTON_ARIA_LABEL);
+    expect(out).toMatch(MENU_TRIGGER_BUTTON);
     expect(out).toContain('aria-expanded="false"');
     expect(out).toContain('data-state="closed"');
   });
@@ -58,11 +69,11 @@ describe('Popover', () => {
   it('ties the button to the panel for assistive technology, but does not let the browser open it before React is listening', () => {
     expect(panelId).toBeDefined();
     expect(out).toContain(`aria-controls="${panelId}"`);
-    expect(out).not.toMatch(POPOVERTARGET);
+    expect(out).not.toMatch(POPOVERTARGET_ATTRIBUTE);
   });
 
   it('keeps the panel in the page as a popover the browser hides until it is opened', () => {
-    expect(out).toMatch(DIV_POPOVER_AUTO);
+    expect(out).toMatch(POPOVER_PANEL_DIV);
   });
 
   it('keeps what is inside the panel out of the page until it is opened', () => {
@@ -83,11 +94,15 @@ describe('Popover', () => {
 
 describe('supportsPopover', () => {
   it('is true for an element in a browser that has the Popover API', () => {
-    expect(supportsPopover({ __proto__: { popover: null } })).toBe(true);
+    expect(supportsPopover(Object.create({ popover: null }) as object)).toBe(
+      true,
+    );
   });
 
   it('is false in a browser that does not, so the component shows the panel itself', () => {
-    expect(supportsPopover({ __proto__: { hidden: false } })).toBe(false);
+    expect(supportsPopover(Object.create({ hidden: false }) as object)).toBe(
+      false,
+    );
   });
 });
 
@@ -166,7 +181,7 @@ describe('isOpenOn', () => {
 describe('PopoverStatus', () => {
   it('is plain text that is announced politely, not a button', () => {
     const out = html(<PopoverStatus>Google Drive connected</PopoverStatus>);
-    expect(out).toMatch(OUTPUT_GOOGLE);
+    expect(out).toMatch(CONNECTED_STATUS_PARAGRAPH);
     expect(out).not.toContain('<button');
     expect(out).not.toContain('disabled');
   });

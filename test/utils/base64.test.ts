@@ -30,13 +30,12 @@ describe('base64 URL-safe', () => {
     expect(bytesToBase64Url(bytes)).toBe('-__-AQ');
   });
 
-  it.each([0, 1, 2, 3, 4, 5])(
-    'round-trips at every padding length (%j)',
-    (length) => {
+  it('round-trips at every padding length', () => {
+    for (const length of [0, 1, 2, 3, 4, 5]) {
       const bytes = Uint8Array.from({ length }, (_, index) => 250 - index);
       expect(base64UrlToBytes(bytesToBase64Url(bytes))).toEqual(bytes);
-    },
-  );
+    }
+  });
 
   it('refuses text that is not base64', () => {
     expect(() => base64UrlToBytes('a')).toThrow();

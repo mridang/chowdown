@@ -21,7 +21,7 @@ export type SecretPrefix =
   typeof CODE_PREFIX | typeof ACCESS_PREFIX | typeof REFRESH_PREFIX;
 
 /** A new random secret such as `cdn_at_Qk3…`. */
-// eslint-disable-next-line unicorn/no-keyword-prefix -- the name is exported from its module and used by other modules
+// eslint-disable-next-line unicorn/no-keyword-prefix -- newSecret is an exported name of the module's public surface, so it is not renamed
 export function newSecret(prefix: SecretPrefix): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   return `${prefix}_${bytesToBase64Url(bytes)}`;

@@ -10,15 +10,17 @@ import {
 import { SCOPE_READ } from '@/domain/mcp/app';
 import { SITE_NAME } from '@/utils/site';
 import { CLIENT_ASSERTION_TYPE } from '../../../src/lib/oauth/client-auth';
+
 import { MemoryStore } from './memory-store';
 import { quietSecurityLogs } from './quiet-logs';
+import type { TokenRequestResult } from '@/lib/oauth';
 import type { CryptoKey, JSONWebKeySet } from 'jose';
 
-import type { TokenRequestResult } from '@/lib/oauth';
-
-const ALREADY_USED = /already used/u;
-const START_U0020_U0021_U0023_HYPHEN =
+/** Matches printable ASCII without quotes or backslashes. */
+const PRINTABLE_ASCII_NO_QUOTES =
   /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/u;
+/** Matches the "already used" message. */
+const ALREADY_USED = /already used/u;
 
 const ORIGIN = 'https://site.example';
 const RESOURCE = `${ORIGIN}/mcp`;
@@ -36,7 +38,7 @@ quietSecurityLogs();
 let store: MemoryStore;
 
 /** A code issued to client-1 for the user 7. */
-async function issueCode() {
+async function freshCode() {
   return issueAuthorizationCode(
     store,
     {
@@ -168,7 +170,7 @@ describe('handleTokenRequest', () => {
       form({
         client_id: 'client-1',
         grant_type: 'authorization_code',
-        code: await issueCode(),
+        code: await freshCode(),
         redirect_uri: 'https://app.example/cb',
         code_verifier: VERIFIER,
         resource: RESOURCE,
@@ -190,7 +192,7 @@ describe('handleTokenRequest', () => {
           form({
             client_id: 'client-1',
             grant_type: 'authorization_code',
-            code: await issueCode(),
+            code: await freshCode(),
             redirect_uri: 'https://app.example/cb',
             code_verifier: 'x'.repeat(43),
           }),
@@ -209,7 +211,7 @@ describe('handleTokenRequest', () => {
           form({
             client_id: 'client-1',
             grant_type: 'authorization_code',
-            code: await issueCode(),
+            code: await freshCode(),
             redirect_uri: 'https://app.example/cb',
             code_verifier: VERIFIER,
             resource: 'https://elsewhere.example/mcp',
@@ -227,7 +229,7 @@ describe('handleTokenRequest', () => {
       form({
         client_id: 'client-1',
         grant_type: 'authorization_code',
-        code: await issueCode(),
+        code: await freshCode(),
         redirect_uri: 'https://app.example/cb',
         code_verifier: VERIFIER,
       }),
@@ -259,7 +261,7 @@ describe('handleTokenRequest', () => {
       form({
         client_id: 'client-1',
         grant_type: 'authorization_code',
-        code: await issueCode(),
+        code: await freshCode(),
         redirect_uri: 'https://app.example/cb',
         code_verifier: VERIFIER,
       }),
@@ -302,7 +304,7 @@ describe('error_description is printable ASCII without quotes or backslashes (RF
     const result = refusal(
       await handleTokenRequest(form(fields), store, ORIGIN, NOW),
     );
-    expect(result.description).toMatch(START_U0020_U0021_U0023_HYPHEN);
+    expect(result.description).toMatch(PRINTABLE_ASCII_NO_QUOTES);
   });
 });
 
@@ -346,7 +348,7 @@ describe('handleTokenRequest for a client that signs its requests', () => {
     client_assertion: await assertion(claims),
   });
 
-  const context = { fetchJwks: async () => jwks as unknown };
+  const context = { fetchJwks: async () => jwks };
 
   /** A code issued to the signing client. */
   async function codeFor() {

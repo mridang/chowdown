@@ -6,16 +6,16 @@ import {
 
 import type { DocumentRoot } from '@/views/host-wiring';
 
+/** A window the harness can post a message to. */
+interface MessageTarget {
+  postMessage: (data: unknown) => void;
+}
+
 /** Wait for queued messages to be delivered, in both directions. */
 export async function settle(): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, 20);
   });
-}
-
-/** A window that can be sent a message. */
-interface Postable {
-  postMessage: (data: unknown) => void;
 }
 
 /** A page root that records what the View does to it. */
@@ -79,10 +79,10 @@ export async function joinedHost(
       }
     }, 0);
   };
-  const viewWindow: Postable = {
+  const viewWindow: MessageTarget = {
     postMessage: (data) => deliver(data, hostWindow),
   };
-  const hostWindow: Postable = {
+  const hostWindow: MessageTarget = {
     postMessage: (data) => deliver(data, viewWindow),
   };
   Reflect.defineProperty(globalThis, 'window', {

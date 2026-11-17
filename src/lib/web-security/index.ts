@@ -7,7 +7,7 @@
 export { isSameOriginPost } from './csrf';
 export {
   checkState,
-  // eslint-disable-next-line unicorn/no-keyword-prefix -- the name is exported from its module and used by other modules
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- newState is an exported name of the module's public surface, so it is not renamed
   newState,
   purposeOf,
   SIGN_IN_PURPOSE,

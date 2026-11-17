@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { ok, created, noContent, page } from '@/lib/core/api';
+import { ok, accepted, created, noContent, page } from '@/lib/core/api';
 
 describe('results', () => {
   it('ok() carries the body, and optional headers and location', () => {
@@ -24,6 +24,14 @@ describe('results', () => {
       status: 201,
       body: { id: 7 },
       location: '/api/things/7',
+    });
+  });
+
+  it('accepted() is a 202 with the body and where to watch it', () => {
+    expect(accepted({ id: 'a' }, '/api/things/a')).toEqual({
+      status: 202,
+      body: { id: 'a' },
+      location: '/api/things/a',
     });
   });
 

@@ -1,4 +1,3 @@
-const EQUALS_END = /={1,2}$/u;
 /**
  * @packageDocumentation
  *
@@ -8,6 +7,9 @@ const EQUALS_END = /={1,2}$/u;
  * these, and they run unchanged on Cloudflare Workers and under Jest because
  * `btoa`/`atob` are globals in both.
  */
+
+/** One or two `=` padding characters at the end of base64 text. */
+const BASE64_PADDING = /={1,2}$/u;
 
 /** Encode raw bytes as standard (padded) base64. */
 export function bytesToBase64(bytes: Uint8Array): string {
@@ -25,7 +27,7 @@ export function bytesToBase64Url(bytes: Uint8Array): string {
   return bytesToBase64(bytes)
     .replaceAll('+', '-')
     .replaceAll('/', '_')
-    .replace(EQUALS_END, '');
+    .replace(BASE64_PADDING, '');
 }
 
 /** Decode URL-safe base64, with or without padding, into raw bytes. Throws on malformed input. */
