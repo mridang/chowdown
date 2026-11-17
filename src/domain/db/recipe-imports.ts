@@ -112,7 +112,7 @@ export async function purgeExpiredRecipeImports(
     .delete(recipeImports)
     .where(lt(recipeImports.created_at, retentionCutoff(now)))
     .run();
-  return result.meta.changes ?? 0;
+  return result.meta.changes;
 }
 
 /** One of the user's imports. */
@@ -183,5 +183,5 @@ export async function deleteRecipeImport(
     .delete(recipeImports)
     .where(and(eq(recipeImports.user_id, userId), eq(recipeImports.id, id)))
     .run();
-  return (result.meta.changes ?? 0) > 0;
+  return result.meta.changes > 0;
 }

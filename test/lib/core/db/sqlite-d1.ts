@@ -20,8 +20,8 @@ class Statement {
   ) {}
 
   /** The same statement with values bound to its placeholders. */
-  bind(...params: readonly unknown[]): Statement {
-    return new Statement(this.conn, this.sql, params as SQLInputValue[]);
+  bind(...params: readonly SQLInputValue[]): Statement {
+    return new Statement(this.conn, this.sql, params);
   }
 
   private prepared(arrays: boolean): StatementSync {
@@ -94,6 +94,7 @@ export function sqliteD1(...migrations: readonly string[]) {
       }
     },
   };
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the shim implements only the members of D1Database the app calls (prepare, batch, bind, run, all, first), so the whole of the interface cannot be satisfied
   return { d1: d1 as unknown as D1Database, raw };
 }
 
@@ -118,9 +119,11 @@ export function installCloudflareContext(
   env: Readonly<Record<string, unknown>> = {},
 ): () => void {
   const key = Symbol.for('__cloudflare-context__');
-  const holder = globalThis as unknown as Record<symbol, unknown>;
-  const previous = holder[key];
-  holder[key] = {
+  const previous: unknown = Object.getOwnPropertyDescriptor(
+    globalThis,
+    key,
+  )?.value;
+  Reflect.set(globalThis, key, {
     env: { ...env, DB: d1 },
     ctx: {
       waitUntil: (work: Promise<unknown>) => {
@@ -128,8 +131,8 @@ export function installCloudflareContext(
       },
     },
     cf: {},
-  };
+  });
   return () => {
-    holder[key] = previous;
+    Reflect.set(globalThis, key, previous);
   };
 }

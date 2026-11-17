@@ -1,15 +1,15 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { recipesFolderOf, syncFromDrive } from '@/domain/recipe/drive-sync';
+import { aUser } from '../../fixtures/user';
+import { fakeDb } from '../../lib/core/db/fake-db';
 import type { DriveSyncDeps } from '@/domain/recipe/drive-sync';
-import type { Database } from '@/domain/db/client';
-import type { User } from '@/domain/db/users';
 
-const db = { fake: 'db' } as unknown as Database;
+const { db } = fakeDb();
 
 /** A user, with or without a remembered Recipes folder. */
 const user = (folder: string | null) =>
-  ({ id: 7, recipes_folder_id: folder }) as unknown as User;
+  aUser({ id: 7, recipes_folder_id: folder });
 
 /** The user's cached recipes, as the one shared read returns them. */
 const cachedRows = [

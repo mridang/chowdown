@@ -64,10 +64,10 @@ let fetched: string[];
 
 /** Make every fetch answer with a fresh response from `respond`. */
 function serving(respond: () => Response): void {
-  globalThis.fetch = (async (url: string) => {
-    fetched.push(url);
+  globalThis.fetch = async (input: RequestInfo | URL) => {
+    fetched.push(input instanceof Request ? input.url : String(input));
     return respond();
-  }) as unknown as typeof fetch;
+  };
 }
 
 /** A small JPEG response. */

@@ -41,9 +41,7 @@ describe('search_recipes', () => {
     expect(second.structuredContent).toMatchObject({
       recipes: expect.any(Array),
     });
-    expect(
-      (second.structuredContent as { recipes: unknown[] }).recipes,
-    ).toHaveLength(20);
+    expect(second.structuredContent).toHaveProperty('recipes.length', 20);
     expect(said(second)).not.toContain('Call again');
   });
 });

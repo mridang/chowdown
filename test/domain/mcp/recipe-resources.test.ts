@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
-import { BackendFailureError } from '@/lib/mcp';
+import { BackendFailureError, RpcError } from '@/lib/mcp';
 import {
   RECIPE_TEMPLATE,
   cachedRecipeLister,
@@ -12,36 +12,47 @@ import {
 } from '@/domain/mcp/recipe-resources';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
+import { aUser } from '../../fixtures/user';
 import type { DriveContext } from '@/domain/mcp/tool-services';
-import type { RpcError } from '@/lib/mcp';
 import type { User } from '@/domain/db/users';
 
 const collator = new Intl.Collator();
 
 const GOOGLE_DRIVE_ISN = /Google Drive isn't connected/u;
 
-const someone = { id: 1 } as User;
+const someone = aUser({ id: 1 });
+
+// eslint-disable-next-line no-unassigned-vars -- never assigned on purpose: it stands for a key that is present with no value, and writing undefined inline is reported by sonarjs/no-undefined-assignment
+let unsetSystem: DriveContext['system'];
+
+/** A file operation these tests never reach. */
+const unused = async (): Promise<never> => {
+  throw new Error('not used');
+};
 
 /** A Drive holding two recipes, as the tools see it. */
 function driveWith(): (user: Readonly<User>) => Promise<DriveContext> {
   const read = jest.fn(
     async (id: string) => `>> source: ${id}\nBoil @eggs{2}.`,
   );
-  return async () =>
-    ({
-      user: someone,
-      token: 't',
-      files: {
-        list: async () => [
-          { id: 'abc123', name: 'Omelette.cook' },
-          { id: 'def_456', name: 'Soup.cook' },
-          { id: 'AbC_789', name: 'Mixed case.cook' },
-          { id: 'Same1', name: 'Twin one.cook' },
-          { id: 'sAME1', name: 'Twin two.cook' },
-        ],
-        read,
-      },
-    }) as unknown as DriveContext;
+  return async (): Promise<DriveContext> => ({
+    user: someone,
+    token: 't',
+    system: unsetSystem,
+    files: {
+      create: unused,
+      update: unused,
+      index: unused,
+      list: async () => [
+        { id: 'abc123', name: 'Omelette.cook' },
+        { id: 'def_456', name: 'Soup.cook' },
+        { id: 'AbC_789', name: 'Mixed case.cook' },
+        { id: 'Same1', name: 'Twin one.cook' },
+        { id: 'sAME1', name: 'Twin two.cook' },
+      ],
+      read,
+    },
+  });
 }
 
 /** The error `readRecipeResource` was refused with. */
@@ -49,7 +60,10 @@ async function refusal(uri: string, open = driveWith()): Promise<RpcError> {
   try {
     await readRecipeResource(someone, uri, open);
   } catch (error) {
-    return error as RpcError;
+    if (error instanceof RpcError) {
+      return error;
+    }
+    throw error;
   }
   throw new Error('expected a refusal');
 }
@@ -150,7 +164,12 @@ describe('readRecipeResource', () => {
 
   it('repeats only the start of an absurdly long address in the refusal', async () => {
     const error = await refusal(`recipe:///${'a'.repeat(5000)}!`);
-    expect((error.data as { uri: string }).uri).toHaveLength(200);
+    const data: unknown = error.data;
+    expect(
+      typeof data === 'object' && data !== null && 'uri' in data
+        ? data.uri
+        : undefined,
+    ).toHaveLength(200);
   });
 
   it('refuses an id the user has no recipe for, with the address in the detail', async () => {

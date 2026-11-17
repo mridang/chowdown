@@ -52,6 +52,7 @@ function fakePage(
     return makeSentinel().sentinel;
   });
   const environment: WakeLockEnvironment = {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the fake WakeLock has only `request`, and its sentinel only release and addEventListener, which is all the keeper calls
     wakeLock: { request } as never,
     isVisible,
     onVisibilityChange,

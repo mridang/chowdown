@@ -8,7 +8,8 @@ import {
   saveSimilarLists,
   upsertEmbedding,
 } from '@/domain/db/embeddings';
-import { fakeDb } from '../../lib/core/db/fake-db';
+import { isObject } from '@/lib/core/api/json';
+import { fakeDb, firstArgOf } from '../../lib/core/db/fake-db';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 
@@ -100,11 +101,11 @@ describe('upsertEmbedding', () => {
       modified_time: 't',
       vector: '[1]',
     });
-    const conflict = calls.find((c) => c.method === 'onConflictDoUpdate');
+    const set = firstArgOf(calls, 'onConflictDoUpdate')['set'];
     expect(
-      Object.keys((conflict?.args[0] as { set: object }).set).toSorted((a, b) =>
-        collator.compare(a, b),
-      ),
+      isObject(set)
+        ? Object.keys(set).toSorted((a, b) => collator.compare(a, b))
+        : set,
     ).toEqual(['modified_time', 'title', 'vector']);
   });
 });

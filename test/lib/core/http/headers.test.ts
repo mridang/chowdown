@@ -147,15 +147,15 @@ describe('applyResponseHeaders', () => {
 describe('Cross-Origin-Resource-Policy', () => {
   it.each(['/', '/some/page', '/some/page/abc', '/api/things'])(
     'keeps pages and data to this site (%j)',
-    (path) => {
-      expect(resourcePolicyFor(path)).toBe('same-site');
+    (pathname) => {
+      expect(resourcePolicyFor(pathname)).toBe('same-site');
     },
   );
 
   it.each(CACHED_FILES)(
     'opens the files other sites embed or fetch on purpose (%j)',
-    (path) => {
-      expect(resourcePolicyFor(path)).toBe('cross-origin');
+    (pathname) => {
+      expect(resourcePolicyFor(pathname)).toBe('cross-origin');
     },
   );
 
@@ -191,26 +191,26 @@ describe('Strict-Transport-Security', () => {
 describe('X-Robots-Tag', () => {
   it.each([...PRIVATE_PATHS, '/oauth/authorize'])(
     'keeps crawlers out of %j',
-    (path) => {
+    (pathname) => {
       expect(
-        applyResponseHeaders(at(path), html()).headers.get('X-Robots-Tag'),
+        applyResponseHeaders(at(pathname), html()).headers.get('X-Robots-Tag'),
       ).toBe('noindex, nofollow');
     },
   );
 
   it('leaves the pages the app makes public open to crawlers', () => {
-    for (const path of PUBLIC_PAGES) {
+    for (const pathname of PUBLIC_PAGES) {
       expect(
-        applyResponseHeaders(at(path), html()).headers.get('X-Robots-Tag'),
+        applyResponseHeaders(at(pathname), html()).headers.get('X-Robots-Tag'),
       ).toBeNull();
     }
   });
 
   it.each(CACHED_FILES)(
     'leaves the files crawlers are meant to read unmarked (%j)',
-    (path) => {
+    (pathname) => {
       expect(
-        applyResponseHeaders(at(path), html()).headers.get('X-Robots-Tag'),
+        applyResponseHeaders(at(pathname), html()).headers.get('X-Robots-Tag'),
       ).toBeNull();
     },
   );
@@ -258,7 +258,7 @@ describe('SECURITY_HEADERS', () => {
   });
 
   it("switches off every feature of OWASP's list, leaving only the clipboard for this origin", () => {
-    const policy = SECURITY_HEADERS['Permissions-Policy'] ?? '';
+    const policy = SECURITY_HEADERS['Permissions-Policy'];
     const parts = policy.split(', ');
     expect(parts).toHaveLength(29);
     expect(parts).toContain('clipboard-write=(self)');

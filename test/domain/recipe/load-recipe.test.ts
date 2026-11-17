@@ -6,19 +6,23 @@ import {
   similarCards,
 } from '@/domain/recipe/load-recipe';
 import { serializeSimilar } from '@/domain/recipe/similar';
+import { aUser } from '../../fixtures/user';
+import { fakeDb } from '../../lib/core/db/fake-db';
+import { aRecipe } from '../../fixtures/recipe';
 import type { RecipeLoadDeps } from '@/domain/recipe/load-recipe';
 import type { SessionPayload } from '@/lib/session';
-import type { Database } from '@/domain/db/client';
 import type { RecipePageRows } from '@/domain/db/recipe-page';
-import type { User } from '@/domain/db/users';
+
+/** When the fake sessions expire (Unix seconds); nothing here reads it. */
+const SESSION_EXPIRY = 2_000_000_000;
 
 /** A cached recipe row, as far as the cards need it. */
 const row = (id: string) =>
-  ({
+  aRecipe({
     drive_file_id: id,
     name: `${id}.cook`,
     source: `>> title: Recipe ${id}\n\nCook @onion{1}.\n`,
-  }) as never;
+  });
 
 const list = (...ids: string[]) =>
   serializeSimilar(ids.map((id) => ({ id, title: id })));
@@ -70,7 +74,7 @@ describe('similarCards', () => {
   });
 });
 
-const db = {} as Database;
+const { db } = fakeDb();
 
 /** Thrown by the fake redirect so a test can see where it went. */
 class RedirectedError extends Error {
@@ -96,11 +100,14 @@ const pageRows = (
 /** Fake collaborators; the Drive fallback answers `lookup`. */
 function fakes(overrides: Partial<RecipeLoadDeps> = {}) {
   const deps: RecipeLoadDeps = {
-    session: async () => ({ uid: 1, email: 'a@b.c' }) as SessionPayload,
+    session: async (): Promise<SessionPayload> => ({
+      uid: 1,
+      email: 'a@b.c',
+      exp: SESSION_EXPIRY,
+    }),
     database: () => db,
     pageRows: jest.fn(async () => pageRows()),
-    currentUser: async () =>
-      ({ id: 1, refresh_token_enc: 'sealed' }) as unknown as User,
+    currentUser: async () => aUser({ id: 1, refresh_token_enc: 'sealed' }),
     claimLookup: jest.fn<RecipeLoadDeps['claimLookup']>(async () => true),
     lookUp: jest.fn<RecipeLoadDeps['lookUp']>(async () => ({
       status: 'missing',
@@ -131,8 +138,12 @@ describe('loadRecipePageRows', () => {
 
   it('clears a session that was ended by signing out everywhere', async () => {
     const deps = fakes({
-      session: async () =>
-        ({ uid: 1, email: 'a@b.c', ep: 0 }) as SessionPayload,
+      session: async (): Promise<SessionPayload> => ({
+        uid: 1,
+        email: 'a@b.c',
+        ep: 0,
+        exp: SESSION_EXPIRY,
+      }),
       pageRows: async () => pageRows({ epoch: 1 }),
     });
     await expect(loadRecipePageRows('r1', deps)).rejects.toMatchObject({
@@ -176,8 +187,7 @@ describe('loadRecipePageRows', () => {
   it('sends someone with no Drive connection to the list', async () => {
     const deps = fakes({
       pageRows: async () => pageRows({ recipe: false }),
-      currentUser: async () =>
-        ({ id: 1, refresh_token_enc: null }) as unknown as User,
+      currentUser: async () => aUser({ id: 1, refresh_token_enc: null }),
     });
     await expect(loadRecipePageRows('r1', deps)).rejects.toMatchObject({
       to: '/app',

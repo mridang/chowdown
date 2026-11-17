@@ -7,6 +7,7 @@ import {
   embedText,
   measure,
 } from '@/domain/recipe/embeddings';
+import { fakeEnv } from '../../fixtures/env';
 import type { ParsedRecipe } from '@/lib/cooklang';
 
 describe('cosineSimilarity', () => {
@@ -62,7 +63,7 @@ describe('cosineSimilarity of unequal lengths', () => {
 describe('embedText', () => {
   /** An env whose model answers with `answer`. */
   const envAnswering = (answer: unknown) =>
-    ({ AI: { run: jest.fn(async () => answer) } }) as unknown as CloudflareEnv;
+    fakeEnv({ AI: { run: jest.fn(async () => answer) } });
 
   it('returns the first vector the model produced', async () => {
     const env = envAnswering({ data: [[0.1, 0.2]] });

@@ -243,8 +243,8 @@ export function removeMetadata(source: string, key: string): string {
   return source
     .split(LINE_BREAK_2)
     .filter((line) => {
-      const key = metadataParts(line)?.key;
-      return key?.trim().toLowerCase() !== target;
+      const lineKey = metadataParts(line)?.key;
+      return lineKey?.trim().toLowerCase() !== target;
     })
     .join('\n');
 }

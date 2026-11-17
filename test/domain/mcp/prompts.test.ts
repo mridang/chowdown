@@ -103,7 +103,10 @@ describe('getPrompt', () => {
     try {
       getPrompt('x'.repeat(100_000), {});
     } catch (error) {
-      expect((error as RpcError).message.length).toBeLessThan(400);
+      if (!(error instanceof RpcError)) {
+        throw error;
+      }
+      expect(error.message.length).toBeLessThan(400);
     }
   });
 
@@ -131,7 +134,10 @@ describe('getPrompt', () => {
     try {
       getPrompt(name, args);
     } catch (error) {
-      expect((error as RpcError).code).toBe(-32_602);
+      if (!(error instanceof RpcError)) {
+        throw error;
+      }
+      expect(error.code).toBe(-32_602);
     }
   });
 });

@@ -36,10 +36,10 @@ type RawStepItem =
 
 /** Structural view of a parsed `Recipe`, decoupled from the lib's types. */
 interface RawRecipe {
-  readonly metadata: Readonly<Record<string, string>>;
-  readonly ingredients: readonly RawQuantity[];
-  readonly cookwares: readonly RawQuantity[];
-  readonly steps: readonly (readonly RawStepItem[])[];
+  readonly metadata?: Readonly<Record<string, string>>;
+  readonly ingredients?: readonly RawQuantity[];
+  readonly cookwares?: readonly RawQuantity[];
+  readonly steps?: readonly (readonly RawStepItem[])[];
 }
 
 /** An ingredient line for the ingredients panel. */
@@ -262,7 +262,7 @@ export function parseRecipe(source: string, filename: string): ParsedRecipe {
   // The @cooklang/cooklang-ts boundary: its Recipe has the same runtime shape
   // as RawRecipe but declares different types (Metadata, Step, Ingredient), so
   // this reads it through our own decoupled structural view.
-  const raw = new Recipe(rest) as unknown as RawRecipe;
+  const raw: RawRecipe = new Recipe(rest);
   const metadata = raw.metadata ?? {};
   const title = metadata['title'] || filename.replace(COOK, '');
 

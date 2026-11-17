@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import Ajv2020 from 'ajv/dist/2020.js';
 
+import { isObject } from '@/lib/core/api/json';
 import { validateJson, unsupportedKeywords } from '@/lib/mcp';
 import { MAX_BODY_BYTES } from '@/domain/mcp/request-limits';
 import { TOOLS, toolNamed } from '@/domain/mcp/tool-definitions';
@@ -107,7 +108,8 @@ describe('the tool catalogue', () => {
     for (const tool of withViews) {
       expect(withViews.length).toBeGreaterThan(8);
       const meta: Readonly<Record<string, unknown>> = tool._meta;
-      const uri = (meta['ui'] as { resourceUri: string }).resourceUri;
+      const ui = meta['ui'];
+      const uri = isObject(ui) ? ui['resourceUri'] : undefined;
       expect(uris).toContain(uri);
       expect(meta['openai/outputTemplate']).toBe(uri);
       expect(meta['ui/resourceUri']).toBe(uri);
@@ -212,11 +214,10 @@ describe('what the tools accept as text', () => {
     const required: readonly string[] = schema.required ?? [];
     return required
       .values()
-      .filter(
-        (key) =>
-          (properties[key] as { type?: unknown } | undefined)?.type ===
-          'string',
-      )
+      .filter((key) => {
+        const property = properties[key];
+        return isObject(property) && property['type'] === 'string';
+      })
       .map((key) => [tool.name, key] as const)
       .toArray();
   });
@@ -254,11 +255,12 @@ describe('what the tools accept as text', () => {
     'keeps the largest block of text a tool takes within what one request can carry, even if every character needs six bytes of JSON (%j)',
     (tool) => {
       expect(CONTENT_MAX * 6).toBeLessThan(MAX_BODY_BYTES);
-      const properties: Readonly<Record<string, Record<string, unknown>>> =
-        (tool.inputSchema.properties ?? {}) as Readonly<
-          Record<string, Record<string, unknown>>
-        >;
-      for (const [key, schema] of Object.entries(properties)) {
+      const properties = Object.entries(
+        tool.inputSchema.properties ?? {},
+      ).filter((entry): entry is [string, Readonly<Record<string, unknown>>] =>
+        isObject(entry[1]),
+      );
+      for (const [key, schema] of properties) {
         const longest = Number(schema['maxLength'] ?? 0);
         expect({ tool: tool.name, key, fits: longest <= CONTENT_MAX }).toEqual({
           tool: tool.name,
@@ -446,11 +448,12 @@ describe('the input schemas', () => {
   it.each(TOOLS)(
     'bounds every string, list and number an assistant can send (%j)',
     (tool) => {
-      const properties: Readonly<Record<string, Record<string, unknown>>> =
-        (tool.inputSchema.properties ?? {}) as Readonly<
-          Record<string, Record<string, unknown>>
-        >;
-      for (const [key, schema] of Object.entries(properties)) {
+      const properties = Object.entries(
+        tool.inputSchema.properties ?? {},
+      ).filter((entry): entry is [string, Readonly<Record<string, unknown>>] =>
+        isObject(entry[1]),
+      );
+      for (const [key, schema] of properties) {
         const isBoundedText =
           schema['type'] === 'string' && schema['maxLength'] !== undefined;
         const isBoundedList =
@@ -537,13 +540,18 @@ describe('the input checker agrees with ajv', () => {
       expect(variants.length).toBeGreaterThan(6);
       for (const variant of variants) {
         const ours = validateJson(tool.inputSchema, variant).length === 0;
+        // JSON.stringify answers undefined for a variant that is undefined, though its type says string.
+        const shown = (JSON.stringify(variant) as string | undefined)?.slice(
+          0,
+          120,
+        );
         expect({
           tool: tool.name,
-          variant: JSON.stringify(variant)?.slice(0, 120),
+          variant: shown,
           valid: ours,
         }).toEqual({
           tool: tool.name,
-          variant: JSON.stringify(variant)?.slice(0, 120),
+          variant: shown,
           valid: ajvValid(variant),
         });
       }

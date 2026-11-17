@@ -4,12 +4,12 @@ import {
   deleteRecipe,
   deleteRecipeForUser,
 } from '@/domain/recipe/delete-recipe';
+import { aUser } from '../../fixtures/user';
+import { fakeDb } from '../../lib/core/db/fake-db';
 import type { DeleteDeps, DeleteLiveDeps } from '@/domain/recipe/delete-recipe';
-import type { Database } from '@/domain/db/client';
-import type { User } from '@/domain/db/users';
 
 /** Fake dependencies; `overrides` swap individual behaviours. */
-function deps(overrides: Partial<DeleteDeps> = {}) {
+function fakeDeps(overrides: Partial<DeleteDeps> = {}) {
   const calls = {
     owns: jest.fn<DeleteDeps['owns']>(async () => true),
     trash: jest.fn<DeleteDeps['trash']>(async () => 'trashed'),
@@ -22,27 +22,27 @@ function deps(overrides: Partial<DeleteDeps> = {}) {
 
 describe('deleteRecipe', () => {
   it('trashes the Drive file, then forgets the cache', async () => {
-    const d = deps();
+    const d = fakeDeps();
     expect(await deleteRecipe(d, 'abc')).toBe('deleted');
     expect(d.calls.trash).toHaveBeenCalledWith('abc');
     expect(d.calls.forget).toHaveBeenCalledWith('abc');
   });
 
   it('touches nothing for a recipe the user does not have', async () => {
-    const d = deps({ owns: async () => false });
+    const d = fakeDeps({ owns: async () => false });
     expect(await deleteRecipe(d, 'abc')).toBe('not-found');
     expect(d.calls.trash).not.toHaveBeenCalled();
     expect(d.calls.forget).not.toHaveBeenCalled();
   });
 
   it('still cleans the cache when the Drive file is already gone', async () => {
-    const d = deps({ trash: async () => 'missing' });
+    const d = fakeDeps({ trash: async () => 'missing' });
     expect(await deleteRecipe(d, 'abc')).toBe('deleted');
     expect(d.calls.forget).toHaveBeenCalledWith('abc');
   });
 
   it('keeps the cache when Drive refuses, so the recipe stays visible', async () => {
-    const d = deps({
+    const d = fakeDeps({
       trash: async () => {
         throw new Error('Trash file failed: 403');
       },
@@ -53,8 +53,8 @@ describe('deleteRecipe', () => {
 });
 
 describe('deleteRecipeForUser', () => {
-  const db = {} as Database;
-  const user = { id: 5 } as unknown as User;
+  const { db } = fakeDb();
+  const user = aUser({ id: 5 });
 
   /** Fake collaborators; the user owns the ids in `owned`. */
   function liveDeps(owned: readonly string[] = ['abc']) {

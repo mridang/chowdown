@@ -372,7 +372,7 @@ function answerOf(reply: unknown): string | undefined {
 /** `JSON.parse` that gives undefined instead of throwing. */
 // eslint-disable-next-line tslop/no-unknown-returns -- a JSON parse boundary: the caller checks the shape with its own guards
 function safeParse(text: string): unknown {
-  const parsed = safeJsonParse<unknown>(text);
+  const parsed = safeJsonParse(text);
   return parsed.ok ? parsed.value : undefined;
 }
 

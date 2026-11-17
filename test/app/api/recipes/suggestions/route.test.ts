@@ -8,7 +8,10 @@ import {
 } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
-import { installCloudflareContext } from '../../../../lib/core/db/sqlite-d1';
+import {
+  installCloudflareContext,
+  sqliteD1,
+} from '../../../../lib/core/db/sqlite-d1';
 import type { DriveFile } from '@/lib/google/drive';
 
 const AI_ERROR = /AiError|99/u;
@@ -85,7 +88,7 @@ let restore: () => void;
 beforeEach(() => {
   session.user = { id: 7 };
   jest.clearAllMocks();
-  restore = installCloudflareContext({} as D1Database);
+  restore = installCloudflareContext(sqliteD1().d1);
 });
 
 afterEach(() => restore());

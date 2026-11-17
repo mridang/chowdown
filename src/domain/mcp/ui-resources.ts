@@ -47,10 +47,10 @@ const HASH_LENGTH_IN_URI = 12;
  * The content-hashed `ui://` address of a view: stable while its HTML is
  * unchanged, different as soon as it changes.
  * @param name - The view's file name stem, such as `recipe-card`.
- * @param contentHash - SHA-256 (hex) of the view's HTML, from the build step.
+ * @param htmlHash - SHA-256 (hex) of the view's HTML, from the build step.
  */
-export function hashedResourceUri(name: string, contentHash: string): string {
-  return `ui://chowdown/${name}-${contentHash.slice(0, HASH_LENGTH_IN_URI)}.html`;
+export function hashedResourceUri(name: string, htmlHash: string): string {
+  return `ui://chowdown/${name}-${htmlHash.slice(0, HASH_LENGTH_IN_URI)}.html`;
 }
 
 /** The address the recipe card was first published at, before addresses were hashed. */

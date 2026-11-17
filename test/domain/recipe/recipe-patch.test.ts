@@ -39,10 +39,11 @@ describe('applyRecipePatch', () => {
     expect(applyRecipePatch(withImages, { images: null })).toMatchObject({
       ok: true,
     });
-    expect(
-      (applyRecipePatch(withImages, { images: [] }) as { source: string })
-        .source,
-    ).not.toContain('images');
+    const cleared = applyRecipePatch(withImages, { images: [] });
+    if (!cleared.ok) {
+      throw new Error(cleared.errors.join('; '));
+    }
+    expect(cleared.source).not.toContain('images');
   });
 
   it('refuses images that are not usable URLs', () => {

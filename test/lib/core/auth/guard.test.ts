@@ -15,15 +15,13 @@ import {
   jar,
   tokenFor,
 } from '../../../domain/auth/auth-test-kit';
-import type { User } from '@/domain/db/users';
+import { aUser } from '../../../fixtures/user';
 
 // eslint-disable-next-line tslop/no-module-mocking -- next/headers is a framework module the code under test imports directly, and it only works inside a Next request
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const getUserById = jest.fn(async (id: number) =>
-  id === 1
-    ? ({ id, email: 'a@b.com', session_epoch: 0 } as unknown as User)
-    : undefined,
+  id === 1 ? aUser({ id, email: 'a@b.com', session_epoch: 0 }) : undefined,
 );
 
 // eslint-disable-next-line tslop/no-module-mocking -- @/domain/auth/store is imported directly by the code under test, which has no parameter to take it instead

@@ -114,18 +114,12 @@ export async function joinedHost(
     { autoResize: false },
   );
   prepare(app);
-  await bridge.connect(
-    new HostTransport(
-      viewWindow as unknown as Window,
-      viewWindow as unknown as MessageEventSource,
-    ),
-  );
-  await app.connect(
-    new PostMessageTransport(
-      hostWindow as unknown as Window,
-      hostWindow as unknown as MessageEventSource,
-    ),
-  );
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the SDK transports want a browser Window, but they only call postMessage on it and compare it with event.source, which this fake has
+  const viewAsWindow = viewWindow as unknown as Window;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the SDK transports want a browser Window, but they only call postMessage on it and compare it with event.source, which this fake has
+  const hostAsWindow = hostWindow as unknown as Window;
+  await bridge.connect(new HostTransport(viewAsWindow, viewAsWindow));
+  await app.connect(new PostMessageTransport(hostAsWindow, hostAsWindow));
   await settle();
   return { app, bridge };
 }

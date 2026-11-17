@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
 import { planImport } from '@/domain/recipe/import-blob';
 import { prepareImport } from '@/domain/recipe/prepare-import';
+import { fakeEnv } from '../../fixtures/env';
 
 const AI_ERROR = /AiError|1234/u;
 
@@ -16,7 +17,7 @@ const PAGE = `<html><script type="application/ld+json">${JSON.stringify({
 /** An env whose model answers every request with `response`. */
 function envAnswering(response: string) {
   const run = jest.fn(async () => ({ response }));
-  return { env: { AI: { run } } as unknown as CloudflareEnv, run };
+  return { env: fakeEnv({ AI: { run } }), run };
 }
 
 const MODEL_COOKLANG = '>> title: Soup\n\nSimmer @leek{2} for ~{20%minutes}.\n';
@@ -178,7 +179,7 @@ describe('prepareImport', () => {
     });
 
     it('says converter unavailable, never what the model service said', async () => {
-      const env = {
+      const env = fakeEnv({
         AI: {
           run: jest.fn(async () => {
             throw new Error(
@@ -186,7 +187,7 @@ describe('prepareImport', () => {
             );
           }),
         },
-      } as unknown as CloudflareEnv;
+      });
       const problem = await problemOf(
         'Simmer two leeks for twenty minutes until soft and sweet.',
         env,
@@ -227,7 +228,7 @@ describe('prepareImport', () => {
     });
 
     it('says unexpected error for anything else, without its words', async () => {
-      const env = {
+      const env = fakeEnv({
         AI: {
           run: async () => ({
             get response(): string {
@@ -235,7 +236,7 @@ describe('prepareImport', () => {
             },
           }),
         },
-      } as unknown as CloudflareEnv;
+      });
       const problem = await problemOf(
         'Simmer two leeks for twenty minutes until soft and sweet.',
         env,

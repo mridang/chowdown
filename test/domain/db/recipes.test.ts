@@ -18,7 +18,7 @@ import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { indexedPlan, planOf } from '../../lib/core/db/plan';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
-import type { Database } from '@/domain/db/client';
+import { fakeDb } from '../../lib/core/db/fake-db';
 
 const collator = new Intl.Collator();
 
@@ -84,10 +84,10 @@ describe('upsertRecipe', () => {
     const made = seeded();
     const before = Date.now();
     await save(made, 1, 'f1', 'a');
-    const row = made.raw
+    const added = made.raw
       .prepare('SELECT first_opened_at AS added FROM recipes')
-      .get() as { added: string };
-    expect(Date.parse(row.added)).toBeGreaterThanOrEqual(before);
+      .get()?.['added'];
+    expect(Date.parse(String(added))).toBeGreaterThanOrEqual(before);
   });
 
   it('records the normalised source address, or an empty marker when there is none', async () => {
@@ -99,12 +99,12 @@ describe('upsertRecipe', () => {
       '>> source: https://www.site.com/a/?utm_source=x\n',
     );
     await save(made, 1, 'without', '>> title: Typed in\n');
-    const urls = made.raw
+    const storedUrls = made.raw
       .prepare(
         'SELECT drive_file_id AS id, source_url AS url FROM recipes ORDER BY id',
       )
       .all();
-    expect(urls).toEqual([
+    expect(storedUrls).toEqual([
       { id: 'with', url: 'site.com/a' },
       { id: 'without', url: '' },
     ]);
@@ -224,16 +224,9 @@ describe('findRecipeBySourceUrl', () => {
 
 describe('deleteRecipeData', () => {
   it('clears the recipe, its photo addresses, its embedding and its heart in one batch', async () => {
-    const statements: unknown[] = [];
-    const db = {
-      delete: () => ({ where: () => ({}) }),
-      batch: async (list: unknown[]) => {
-        statements.push(...list);
-        return [];
-      },
-    } as unknown as Database;
+    const { db, batches } = fakeDb();
     await deleteRecipeData(db, 1, 'abc');
-    expect(statements).toHaveLength(4);
+    expect(batches[0]).toHaveLength(4);
   });
 });
 

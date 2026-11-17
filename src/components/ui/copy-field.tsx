@@ -32,11 +32,10 @@ export function CopyField({
         onClick={() => {
           // `clipboard` is missing on insecure pages; then there is nothing to confirm.
 
-          const clipboard = navigator.clipboard;
-          if (!clipboard) {
+          if (!('clipboard' in navigator)) {
             return;
           }
-          void clipboard.writeText(value).then(() => {
+          void navigator.clipboard.writeText(value).then(() => {
             setCopied(true);
             return setTimeout(() => setCopied(false), CONFIRMATION_MS);
           });

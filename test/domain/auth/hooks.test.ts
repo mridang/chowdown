@@ -3,13 +3,13 @@ import { describe, expect, it } from '@jest/globals';
 import { EXTRA_PURPOSES } from '@/domain/auth/app';
 import { completeDriveConnect } from '@/domain/auth/drive-callback';
 import { OTHER_FLOWS, afterSignIn } from '@/domain/auth/hooks';
-import type { User } from '@/domain/db/users';
+import { aUser } from '../../fixtures/user';
 
 const collator = new Intl.Collator();
 
 describe('afterSignIn', () => {
   it('has nothing more to do once the person is recorded', async () => {
-    await expect(afterSignIn({ id: 1 } as User)).resolves.toBeUndefined();
+    await expect(afterSignIn(aUser({ id: 1 }))).resolves.toBeUndefined();
   });
 });
 
@@ -21,11 +21,11 @@ describe('OTHER_FLOWS', () => {
   });
 
   it('finishes a Drive round trip by connecting Drive', () => {
-    expect(OTHER_FLOWS.drive?.complete).toBe(completeDriveConnect);
+    expect(OTHER_FLOWS.drive.complete).toBe(completeDriveConnect);
   });
 
   it('sends a failed or cancelled Drive connection back to the list with a fixed reason', () => {
-    expect(OTHER_FLOWS.drive?.failurePath('error')).toBe('/app?drive=error');
-    expect(OTHER_FLOWS.drive?.failurePath('denied')).toBe('/app?drive=denied');
+    expect(OTHER_FLOWS.drive.failurePath('error')).toBe('/app?drive=error');
+    expect(OTHER_FLOWS.drive.failurePath('denied')).toBe('/app?drive=denied');
   });
 });

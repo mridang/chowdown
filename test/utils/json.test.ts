@@ -4,19 +4,19 @@ import { safeJsonParse } from '@/utils/json';
 
 describe('safeJsonParse', () => {
   it('parses valid JSON into an ok result', () => {
-    const result = safeJsonParse<{ a: number }>('{"a":1}');
+    const result = safeJsonParse('{"a":1}');
     expect(result).toEqual({ ok: true, value: { a: 1 } });
   });
 
   it('parses JSON primitives', () => {
-    expect(safeJsonParse<number>('42')).toEqual({ ok: true, value: 42 });
-    expect(safeJsonParse<boolean>('true')).toEqual({ ok: true, value: true });
-    expect(safeJsonParse<null>('null')).toEqual({ ok: true, value: null });
-    expect(safeJsonParse<string>('"hi"')).toEqual({ ok: true, value: 'hi' });
+    expect(safeJsonParse('42')).toEqual({ ok: true, value: 42 });
+    expect(safeJsonParse('true')).toEqual({ ok: true, value: true });
+    expect(safeJsonParse('null')).toEqual({ ok: true, value: null });
+    expect(safeJsonParse('"hi"')).toEqual({ ok: true, value: 'hi' });
   });
 
   it('parses arrays', () => {
-    expect(safeJsonParse<number[]>('[1,2,3]')).toEqual({
+    expect(safeJsonParse('[1,2,3]')).toEqual({
       ok: true,
       value: [1, 2, 3],
     });
@@ -37,9 +37,9 @@ describe('safeJsonParse', () => {
   });
 
   it('produces a discriminated result whose value is only present when ok', () => {
-    const result = safeJsonParse<{ a: number }>('{"a":1}');
+    const result = safeJsonParse('{"a":1}');
     if (result.ok) {
-      expect(result.value.a).toBe(1);
+      expect(result.value).toEqual({ a: 1 });
     } else {
       throw new Error('expected ok result');
     }

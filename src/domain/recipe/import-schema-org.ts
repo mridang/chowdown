@@ -65,7 +65,7 @@ function isJsonContainer(value: unknown): value is JsonObject {
 }
 
 /** True if a JSON-LD node's `@type` is (or includes) `Recipe`. */
-function isRecipeNode(node: unknown): node is JsonObject {
+function isRecipeNode(node: unknown): boolean {
   if (!isJsonContainer(node)) {
     return false;
   }

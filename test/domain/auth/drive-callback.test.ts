@@ -13,6 +13,7 @@ import { SessionTokens } from '@/lib/session';
 import { decryptSecret } from '@/lib/crypto';
 import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
 import { ORIGIN, nextRequest, openWorld, signIn } from '../../app/api/world';
+import { fakeEnv } from '../../fixtures/env';
 import { sessionTokenFor } from './session-fixture';
 import { answerFetch, SESSION_SECRET } from './auth-test-kit';
 import type { World } from '../../app/api/world';
@@ -66,7 +67,7 @@ async function connect(
   return completeDriveConnect(
     {
       request: nextRequest('/auth/callback', cookies),
-      env: world.env as unknown as CloudflareEnv,
+      env: fakeEnv(world.env),
       origin: ORIGIN,
       returnTo: options.returnTo,
     },

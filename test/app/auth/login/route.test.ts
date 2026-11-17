@@ -13,6 +13,7 @@ import {
   SESSION_SECRET,
   appRequest,
   installEnv,
+  nextResponseOf,
 } from '../../../domain/auth/auth-test-kit';
 import type { NextRequest, NextResponse } from 'next/server';
 
@@ -22,7 +23,7 @@ const SIGNIN_STATE_PREFIX = /^signin\./u;
 // The redirect path answers a NextResponse (it sets cookies); the 503 path
 // answers a plain problem Response. Only the redirect cases read cookies.
 const redirect = async (request: NextRequest): Promise<NextResponse> =>
-  (await GET(request)) as NextResponse;
+  nextResponseOf(await GET(request));
 
 let restore: () => void;
 

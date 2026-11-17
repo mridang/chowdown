@@ -1,8 +1,19 @@
 import { jest } from '@jest/globals';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { SessionTokens } from '@/lib/session';
-import { installCloudflareContext } from '../../lib/core/db/sqlite-d1';
+import {
+  installCloudflareContext,
+  sqliteD1,
+} from '../../lib/core/db/sqlite-d1';
+
+/** A route's answer as the `NextResponse` it must be to carry cookies; anything else fails the test. */
+export function nextResponseOf(res: Response): NextResponse {
+  if (!(res instanceof NextResponse)) {
+    throw new TypeError('expected a NextResponse');
+  }
+  return res;
+}
 
 /** The session secret the sign-in tests use. */
 export const SESSION_SECRET = 'test-session-secret-value-0123456789';
@@ -29,7 +40,7 @@ export const fakeCookies = async () => ({
 export function installEnv(
   env: Readonly<Record<string, unknown>> = signInEnv(),
 ): () => void {
-  return installCloudflareContext({} as D1Database, env);
+  return installCloudflareContext(sqliteD1().d1, env);
 }
 
 /** The bindings the sign-in tests run with, unless a test passes its own. */

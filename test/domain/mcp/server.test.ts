@@ -9,6 +9,7 @@ import {
 } from '@modelcontextprotocol/core';
 import { describe, expect, it, jest } from '@jest/globals';
 
+import { isObject } from '@/lib/core/api/json';
 import { SCENARIO_TOOLS } from '@/domain/mcp/scenarios';
 import {
   CACHE_HINTS,
@@ -32,10 +33,10 @@ import { APP_RESOURCES } from '@/domain/mcp/ui-resources';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
 import { SCOPE_READ, SCOPE_WRITE, scopeForTool } from '@/lib/oauth';
 import { PANCAKES, call, fakeServices, folder } from '../../lib/mcp/tool-fakes';
+import { aUser } from '../../fixtures/user';
 import type { ToolRunner } from '@/domain/mcp/server';
 import type { JsonRpcResponse } from '@/lib/mcp';
 import type { RecipeLister } from '@/domain/mcp/recipe-resources';
-import type { User } from '@/domain/db/users';
 
 const collator = new Intl.Collator();
 
@@ -44,6 +45,24 @@ const INVALID_ARGUMENTS_FOR =
 
 /** The address of a view the server serves. */
 const FIRST_VIEW = APP_RESOURCES.at(0)?.uri ?? '';
+
+/** The `result` of a reply that must carry one; an error or no reply fails the test. */
+function resultFrom(
+  reply: JsonRpcResponse | null | undefined,
+): Readonly<Record<string, unknown>> {
+  if (!reply || !('result' in reply) || !isObject(reply.result)) {
+    throw new Error(`expected an object result, got ${JSON.stringify(reply)}`);
+  }
+  return reply.result;
+}
+
+/** The message of a reply that must be an error; a result or no reply fails the test. */
+function errorMessageFrom(reply: JsonRpcResponse | null | undefined): string {
+  if (!reply || !('error' in reply)) {
+    throw new Error(`expected an error, got ${JSON.stringify(reply)}`);
+  }
+  return reply.error.message;
+}
 
 /** A recipe lister for a user with nothing cached, so no test reaches for a database. */
 const noRecipes: RecipeLister = async () => [];
@@ -95,24 +114,22 @@ describe('MCP tool scopes', () => {
 });
 
 describe('handleMcpMessage without Google Drive', () => {
-  const noDrive = { id: 1, refresh_token_enc: null } as User;
+  const noDrive = aUser({ id: 1, refresh_token_enc: null });
 
   it('tells the assistant how to fix it, as a tool error, when Drive is not connected', async () => {
-    const reply = (await handleMcpMessage(noDrive, {
+    const reply = await handleMcpMessage(noDrive, {
       jsonrpc: '2.0',
       id: 3,
       method: 'tools/call',
       params: { name: 'get_recipe', arguments: { name: 'pancakes' } },
-    })) as {
-      result: { isError: boolean; content: { text: string }[] };
-      error?: unknown;
-    };
-    expect(reply.error).toBeUndefined();
-    expect(reply.result.isError).toBe(true);
-    expect(reply.result.content[0]!.text).toContain('Connect Google Drive');
-    expect(reply.result.content[0]!.text).toContain(
-      'https://chowdown.apps.mrida.ng',
-    );
+    });
+    const result = CallToolResultSchema.parse(resultFrom(reply));
+    const text = result.content
+      .flatMap((item) => (item.type === 'text' ? [item.text] : []))
+      .join('\n');
+    expect(result.isError).toBe(true);
+    expect(text).toContain('Connect Google Drive');
+    expect(text).toContain('https://chowdown.apps.mrida.ng');
   });
 
   it.each(['notifications/initialized', 'notifications/cancelled'])(
@@ -126,7 +143,7 @@ describe('handleMcpMessage without Google Drive', () => {
 });
 
 describe('handleMcpMessage routing', () => {
-  const someone = { id: 1, refresh_token_enc: null } as User;
+  const someone = aUser({ id: 1, refresh_token_enc: null });
   const MODERN_META = {
     _meta: { 'io.modelcontextprotocol/protocolVersion': '2026-07-28' },
   };
@@ -194,10 +211,10 @@ describe('handleMcpMessage routing', () => {
   });
 
   it('lists the views and serves their HTML', async () => {
-    const listed = (await send({ method: 'resources/list' })) as {
-      result: { resources: { uri: string; mimeType: string }[] };
-    };
-    expect(listed.result.resources.map((r) => r.uri)).toEqual(
+    const listed = ListResourcesResultSchema.parse(
+      resultFrom(await send({ method: 'resources/list' })),
+    );
+    expect(listed.resources.map((r) => r.uri)).toEqual(
       APP_RESOURCES.filter((r) => !r.legacy).map((r) => r.uri),
     );
     // (The real recipe lister finds no database in a test and lists nothing.)
@@ -237,10 +254,10 @@ describe('handleMcpMessage routing', () => {
   });
 
   it('lists the prompts and returns one with its arguments filled in', async () => {
-    const listed = (await send({ method: 'prompts/list' })) as {
-      result: { prompts: { name: string }[] };
-    };
-    expect(listed.result.prompts.map((p) => p.name)).toEqual([
+    const listed = ListPromptsResultSchema.parse(
+      resultFrom(await send({ method: 'prompts/list' })),
+    );
+    expect(listed.prompts.map((p) => p.name)).toEqual([
       'what-should-i-cook',
       'use-up-ingredients',
       'plan-the-week',
@@ -314,7 +331,7 @@ describe('the tool catalogue', () => {
 
   it('is fully served: no advertised tool is unknown to the dispatcher', async () => {
     const empty = {
-      user: { id: 1 } as User,
+      user: aUser({ id: 1 }),
       token: 'tok',
       // eslint-disable-next-line sonarjs/no-undefined-assignment -- the key must be present with the value undefined, because the test is about an absent value and null means something else
       system: undefined,
@@ -359,7 +376,7 @@ describe('the tool catalogue', () => {
 });
 
 describe('handleMcpMessage — the newest revision', () => {
-  const someone = { id: 1, refresh_token_enc: null } as User;
+  const someone = aUser({ id: 1, refresh_token_enc: null });
   const MODERN = {
     _meta: {
       'io.modelcontextprotocol/protocolVersion': '2026-07-28',
@@ -379,13 +396,7 @@ describe('handleMcpMessage — the newest revision', () => {
     );
   const resultOf = async (
     message: Record<string, unknown>,
-  ): Promise<Record<string, unknown>> => {
-    const reply = await send(message);
-    if (!reply || !('result' in reply)) {
-      throw new Error(`expected a result, got ${JSON.stringify(reply)}`);
-    }
-    return reply.result as Record<string, unknown>;
-  };
+  ): Promise<Record<string, unknown>> => resultFrom(await send(message));
 
   it.each([
     ['tools/list', undefined, CACHE_HINTS.list],
@@ -488,7 +499,7 @@ describe('handleMcpMessage — the newest revision', () => {
     'puts no cache hints on results that are not cacheable (%j)',
     async (message) => {
       const reply = await send(message, async () => textResult('ok'));
-      const result = (reply as { result: Record<string, unknown> }).result;
+      const result = resultFrom(reply);
       expect(result).not.toHaveProperty('ttlMs');
       expect(result).not.toHaveProperty('cacheScope');
     },
@@ -525,7 +536,7 @@ describe('handleMcpMessage — the newest revision', () => {
       },
       withMeta,
     );
-    expect((reply as { result: { _meta: unknown } }).result._meta).toEqual({
+    expect(resultFrom(reply)).toHaveProperty('_meta', {
       'openai/outputTemplate': 'ui://x',
       [SERVER_INFO_KEY]: SERVER_INFO,
     });
@@ -567,10 +578,10 @@ describe('handleMcpMessage — the newest revision', () => {
 });
 
 describe('handleMcpMessage — what the server says about itself', () => {
-  const someone = { id: 1, refresh_token_enc: null } as User;
+  const someone = aUser({ id: 1, refresh_token_enc: null });
   const result = async (message: Record<string, unknown>) =>
-    (
-      (await handleMcpMessage(
+    resultFrom(
+      await handleMcpMessage(
         someone,
         {
           jsonrpc: '2.0',
@@ -579,8 +590,8 @@ describe('handleMcpMessage — what the server says about itself', () => {
         },
         undefined,
         noRecipes,
-      )) as { result: Record<string, unknown> }
-    ).result;
+      ),
+    );
 
   it('answers the older handshake with the full identity, the capabilities and the instructions', async () => {
     expect(
@@ -611,7 +622,7 @@ describe('handleMcpMessage — what the server says about itself', () => {
 });
 
 /** The setup the refusal tests share. */
-const someone = { id: 1, refresh_token_enc: null } as User;
+const someone = aUser({ id: 1, refresh_token_enc: null });
 const neverRun: ToolRunner = async () => {
   throw new Error('the tool must not run');
 };
@@ -641,7 +652,7 @@ describe('handleMcpMessage — refusals', () => {
       params: { name: 'wibble', arguments: {} },
     });
     expect(reply).toMatchObject({ error: { code: -32_602 } });
-    const message = (reply as { error: { message: string } }).error.message;
+    const message = errorMessageFrom(reply);
     expect(message).toContain('Unknown tool: wibble');
     expect(message).toContain('list_recipes');
   });
@@ -788,7 +799,7 @@ describe('handleMcpMessage — tool errors and other faults', () => {
       method: 'tools/call',
       params: { name: 'x'.repeat(100_000) },
     });
-    const message = (reply as { error: { message: string } }).error.message;
+    const message = errorMessageFrom(reply);
     expect(message.length).toBeLessThan(500);
   });
 
@@ -840,7 +851,6 @@ describe('handleMcpMessage — tool errors and other faults', () => {
 });
 
 describe('lists with more than one page, and lists with only one', () => {
-  const someone = { id: 1, refresh_token_enc: null } as User;
   const list = async (
     params: Record<string, unknown> | undefined,
     method = 'resources/list',
@@ -858,13 +868,10 @@ describe('lists with more than one page, and lists with only one', () => {
   ): Promise<{
     resources: { uri: string; name: string }[];
     nextCursor?: string;
-  }> => {
-    const reply = await list(params, 'resources/list', lister);
-    if (!reply || !('result' in reply)) {
-      throw new Error(`expected a result, got ${JSON.stringify(reply)}`);
-    }
-    return reply.result as never;
-  };
+  }> =>
+    ListResourcesResultSchema.parse(
+      resultFrom(await list(params, 'resources/list', lister)),
+    );
   const VIEWS = APP_RESOURCES.filter((r) => !r.legacy).length;
 
   it("lists the views, then the user's recipes, on the first page", async () => {
@@ -953,7 +960,6 @@ describe('lists with more than one page, and lists with only one', () => {
 });
 
 describe('every reply parses with the SDK’s own schema for its method', () => {
-  const someone = { id: 1, refresh_token_enc: null } as User;
   const MODERN = {
     _meta: { 'io.modelcontextprotocol/protocolVersion': '2026-07-28' },
   };

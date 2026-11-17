@@ -3,15 +3,16 @@ import { setFavouriteAndTag } from '@/domain/recipe/favourite';
 import { createKeyedQueue } from '@/lib/async';
 import { asCalls } from '../../calls';
 
-import type { Database } from '@/domain/db/client';
+import { aUser } from '../../fixtures/user';
+import { fakeDb } from '../../lib/core/db/fake-db';
 import type { User } from '@/domain/db/users';
 import type { FavouriteDeps } from '@/domain/recipe/favourite';
 
-const db = {} as Database;
+const { db } = fakeDb();
 
 /** A user with or without a Drive connection. */
 const user = (token: string | null) =>
-  ({ id: 3, refresh_token_enc: token }) as unknown as User;
+  aUser({ id: 3, refresh_token_enc: token });
 
 /** Fake collaborators; `background` work is collected to await in the test. */
 function fakes(

@@ -12,9 +12,11 @@ import {
   setUserUnits,
   upsertUser,
 } from '@/domain/db/users';
-import { fakeDb } from '../../lib/core/db/fake-db';
+import { isObject } from '@/lib/core/api/json';
+import { fakeDb, firstArgOf } from '../../lib/core/db/fake-db';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import type { Call } from '../../lib/core/db/fake-db';
 
 const collator = new Intl.Collator();
 
@@ -32,11 +34,12 @@ function seeded() {
 const saved = { id: 7, email: 'a@b.com' };
 
 /** The `set` the conflict clause of an upsert carries. */
-function updateOf(
-  calls: readonly { method: string; args: readonly unknown[] }[],
-) {
-  const conflict = calls.find((c) => c.method === 'onConflictDoUpdate');
-  return (conflict?.args[0] as { set: Record<string, unknown> }).set;
+function updateOf(calls: readonly Call[]) {
+  const set = firstArgOf(calls, 'onConflictDoUpdate')['set'];
+  if (!isObject(set)) {
+    throw new Error('expected the conflict clause to carry a set');
+  }
+  return set;
 }
 
 describe('upsertUser', () => {

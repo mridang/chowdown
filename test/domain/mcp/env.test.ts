@@ -3,16 +3,19 @@ import { afterEach, describe, expect, it } from '@jest/globals';
 import { ALLOWED_ORIGINS_SETTING, getEnvSafe } from '@/domain/mcp/env';
 
 const key = Symbol.for('__cloudflare-context__');
-const holder = globalThis as unknown as Record<symbol, unknown>;
-const before = holder[key];
+const before: unknown = Object.getOwnPropertyDescriptor(globalThis, key)?.value;
 
 /** Run with this as the Worker's environment, the way the runtime provides it. */
 function withEnv(env: Record<string, unknown>): void {
-  holder[key] = { env, ctx: { waitUntil: () => undefined }, cf: {} };
+  Reflect.set(globalThis, key, {
+    env,
+    ctx: { waitUntil: () => undefined },
+    cf: {},
+  });
 }
 
 afterEach(() => {
-  holder[key] = before;
+  Reflect.set(globalThis, key, before);
 });
 
 describe('ALLOWED_ORIGINS_SETTING', () => {
@@ -34,7 +37,7 @@ describe('getEnvSafe', () => {
   });
 
   it('answers undefined, not an error, where there is no environment at all', () => {
-    delete holder[key];
+    Reflect.deleteProperty(globalThis, key);
     expect(getEnvSafe(ALLOWED_ORIGINS_SETTING)).toBeUndefined();
   });
 });

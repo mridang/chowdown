@@ -36,6 +36,7 @@ function fakeSpeech() {
     createUtterance: (text) => {
       const made = fakeUtterance(text);
       utterances.push(made);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- the fake utterance has only the members speak() uses, not the ~20 of SpeechSynthesisUtterance
       return made as never;
     },
   };

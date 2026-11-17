@@ -4,8 +4,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { ACCESS_PREFIX, REFRESH_PREFIX, newSecret } from '@/lib/oauth';
 import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
 
-import type { User } from '@/domain/db/users';
-
+import { aUser } from '../../fixtures/user';
 import type { McpAuthDeps } from '@/domain/mcp/auth';
 
 const CDN_AT_ZA = /^cdn_at_[A-Za-z0-9_-]{43}$/u;
@@ -14,7 +13,7 @@ const tracing = installFakeTracing();
 const { authenticateMcpRequest } = await import('@/domain/mcp/auth');
 
 const ORIGIN = 'https://chowdown.test';
-const user = { id: 7 } as User;
+const user = aUser({ id: 7 });
 /** A token shaped like the ones we issue, so it gets as far as the database. */
 const GOOD = newSecret(ACCESS_PREFIX);
 const BAD = newSecret(ACCESS_PREFIX);
