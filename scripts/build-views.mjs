@@ -25,7 +25,8 @@ import { access, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { build } from 'esbuild';
 
-const ZOD_V4_LOCALES = /zod[\\/]v4[\\/]locales[\\/]index\.js$/u;
+// eslint-disable-next-line require-unicode-regexp -- esbuild hands the filter to Go's regexp engine, which rejects the (?u) flag that a JavaScript u flag becomes
+const ZOD_V4_LOCALES = /zod[\\/]v4[\\/]locales[\\/]index\.js$/;
 
 /** A size in kilobytes with one decimal, for the build log. */
 const KILOBYTES = new Intl.NumberFormat('en', {
