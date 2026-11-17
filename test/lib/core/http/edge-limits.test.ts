@@ -118,16 +118,12 @@ describe('counterKey', () => {
       await counterKey(
         'token',
         new Headers({ authorization: 'Bearer abc123' }),
-
-        undefined,
       ),
     ).toMatch(START_T_COLON_N0_HYPHEN);
     expect(
       await counterKey(
         'token',
         new Headers({ 'cf-connecting-ip': '2001:db8:1:2::9' }),
-
-        undefined,
       ),
     ).toBe(ips.edgeCounterSubject);
   });
