@@ -3,11 +3,11 @@ import { describe, expect, it } from '@jest/globals';
 import {
   MAX_IMPORT_BODY_BYTES,
   MAX_INPUT,
-  compareImportPositions,
   importPosition,
   importSummary,
   parseImportInput,
 } from '@/domain/api/recipe-import-resource';
+import { compareNewestFirst } from '@/domain/api/newest-first';
 import type { RecipeImport } from '@/domain/db/recipe-imports';
 
 const imported: RecipeImport = {
@@ -25,14 +25,15 @@ describe('parseImportInput', () => {
     });
   });
 
-  it('wants text', () => {
-    for (const body of [undefined, null, {}, { input: '  ' }, { input: 3 }]) {
+  it.each([undefined, null, {}, { input: '  ' }, { input: 3 }])(
+    'wants text (%j)',
+    (body) => {
       expect(parseImportInput(body)).toEqual({
         ok: false,
         errors: ['input: required.'],
       });
-    }
-  });
+    },
+  );
 
   it('refuses text over the limit, but not at it', () => {
     expect(parseImportInput({ input: 'x'.repeat(MAX_INPUT + 1) })).toEqual({
@@ -79,11 +80,11 @@ describe('import order', () => {
   it('puts the newest first, and breaks ties by id', () => {
     const older = { key: '2026-01-01', id: 'z' };
     const newer = { key: '2026-01-02', id: 'a' };
-    expect(compareImportPositions(newer, older)).toBeLessThan(0);
-    expect(compareImportPositions(older, newer)).toBeGreaterThan(0);
+    expect(compareNewestFirst(newer, older)).toBeLessThan(0);
+    expect(compareNewestFirst(older, newer)).toBeGreaterThan(0);
     expect(
-      compareImportPositions({ key: 'k', id: 'a' }, { key: 'k', id: 'b' }),
+      compareNewestFirst({ key: 'k', id: 'a' }, { key: 'k', id: 'b' }),
     ).toBeLessThan(0);
-    expect(compareImportPositions(newer, newer)).toBe(0);
+    expect(compareNewestFirst(newer, newer)).toBe(0);
   });
 });

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-import { postNote } from '@/app/(site)/recipe/[id]/_components/note-request';
 import { z } from 'zod';
+import { postNote } from '@/app/(site)/recipe/[id]/_components/note-request';
 
 afterEach(() => {
   jest.restoreAllMocks();

@@ -11,11 +11,11 @@ import { PANCAKES, call, fakeServices, folder } from '../../lib/mcp/tool-fakes';
 
 const collator = new Intl.Collator();
 
-const BY_MEANING_NOT = /^By meaning, not name:/;
-const BY_NAME_ONLY = /^By name only:/;
+const BY_MEANING_NOT = /^By meaning, not name:/u;
+const BY_NAME_ONLY = /^By name only:/u;
 const YOURSELF_DO_NOT =
-  /YOURSELF|do NOT|Call this when|Use this when|Use it|prefer /;
-const ZA_Z0 = /^[A-Za-z0-9_.-]{1,128}$/;
+  /YOURSELF|do NOT|Call this when|Use this when|Use it|prefer /u;
+const ZA_Z0 = /^[A-Za-z0-9_.-]{1,128}$/u;
 
 /** A JSON Schema 2020-12 validator that rejects schemas with unknown keywords. */
 function createAjv(): Ajv2020 {
@@ -23,43 +23,45 @@ function createAjv(): Ajv2020 {
 }
 
 /** Arguments that every tool accepts, one set per tool. */
-const GOOD_ARGUMENTS: Readonly<Record<string, Record<string, unknown>>> = {
-  list_recipes: { limit: 20, offset: 0 },
-  browse_recipes: {
-    cuisine: 'French',
-    limit: 5,
-    offset: 5,
-    max_minutes: 30,
-    difficulty: 'easy',
-    dietary_needs: 'Gluten-free',
-  },
-  recipes_from_ingredients: {
-    ingredients: ['200 g flour', '2 eggs'],
-    offset: 10,
-  },
-  list_filters: {},
-  search_recipes: { query: 'pan', limit: 10, offset: 10 },
-  find_recipes: { query: 'something quick' },
-  find_similar: { recipe: 'pancakes' },
-  get_recipe: { recipe: 'pancakes' },
-  import_recipe: {
-    content: 'A page about bread',
-    url: 'https://example.com/bread',
-    name: 'Bread',
-    images: ['https://example.com/a.jpg'],
-  },
-  add_recipe: { name: 'Green curry', content: 'Simmer @milk{1%l}.' },
-  capture_idea: { name: 'paneer ki sabji', prompt: 'make it', draft: 'x' },
-  log_cooking: { recipe: 'pancakes', note: 'Added vanilla' },
-  set_measurement_system: { system: 'us' },
-  favourite_recipe: { recipe: 'pancakes' },
-  tag_recipe: { recipe: 'pancakes' },
-  set_recipe_images: {
-    recipe: 'pancakes',
-    images: ['https://example.com/a.jpg'],
-  },
-  annotate_recipe: { recipe: 'pancakes', note: 'rest it', step: 1 },
-};
+const GOOD_ARGUMENTS = new Map(
+  Object.entries({
+    list_recipes: { limit: 20, offset: 0 },
+    browse_recipes: {
+      cuisine: 'French',
+      limit: 5,
+      offset: 5,
+      max_minutes: 30,
+      difficulty: 'easy',
+      dietary_needs: 'Gluten-free',
+    },
+    recipes_from_ingredients: {
+      ingredients: ['200 g flour', '2 eggs'],
+      offset: 10,
+    },
+    list_filters: {},
+    search_recipes: { query: 'pan', limit: 10, offset: 10 },
+    find_recipes: { query: 'something quick' },
+    find_similar: { recipe: 'pancakes' },
+    get_recipe: { recipe: 'pancakes' },
+    import_recipe: {
+      content: 'A page about bread',
+      url: 'https://example.com/bread',
+      name: 'Bread',
+      images: ['https://example.com/a.jpg'],
+    },
+    add_recipe: { name: 'Green curry', content: 'Simmer @milk{1%l}.' },
+    capture_idea: { name: 'paneer ki sabji', prompt: 'make it', draft: 'x' },
+    log_cooking: { recipe: 'pancakes', note: 'Added vanilla' },
+    set_measurement_system: { system: 'us' },
+    favourite_recipe: { recipe: 'pancakes' },
+    tag_recipe: { recipe: 'pancakes' },
+    set_recipe_images: {
+      recipe: 'pancakes',
+      images: ['https://example.com/a.jpg'],
+    },
+    annotate_recipe: { recipe: 'pancakes', note: 'rest it', step: 1 },
+  } satisfies Readonly<Record<string, Record<string, unknown>>>),
+);
 
 /** A fresh Drive folder with two recipes. */
 const kitchen = () =>
@@ -71,15 +73,15 @@ const kitchen = () =>
 describe('the tool catalogue', () => {
   it('has a unique, valid name for every tool', () => {
     const names = TOOLS.map((t) => t.name);
-    expect(new Set(names).size).toBe(names.length);
     for (const name of names) {
+      expect(new Set(names).size).toBe(names.length);
       expect(name).toMatch(ZA_Z0);
     }
   });
 
   it('has a set of good arguments for every tool, and for no other', () => {
     expect(
-      Object.keys(GOOD_ARGUMENTS).toSorted((a, b) => collator.compare(a, b)),
+      [...GOOD_ARGUMENTS.keys()].toSorted((a, b) => collator.compare(a, b)),
     ).toEqual(
       TOOLS.map((t) => t.name).toSorted((a, b) => collator.compare(a, b)),
     );
@@ -91,18 +93,19 @@ describe('the tool catalogue', () => {
     expect(toolNamed('constructor')).toBeUndefined();
   });
 
-  it('describes what each tool does without telling the model how to behave', () => {
-    for (const tool of TOOLS) {
+  it.each(TOOLS)(
+    'describes what each tool does without telling the model how to behave (%j)',
+    (tool) => {
       expect(tool.description.length).toBeGreaterThan(20);
       expect(tool.description).not.toMatch(YOURSELF_DO_NOT);
-    }
-  });
+    },
+  );
 
   it('gives each UI tool a View that exists and a matching output schema', () => {
     const uris = APP_RESOURCES.map((r) => r.uri) as readonly string[];
     const withViews = TOOLS.filter((tool) => 'ui' in tool._meta);
-    expect(withViews.length).toBeGreaterThan(8);
     for (const tool of withViews) {
+      expect(withViews.length).toBeGreaterThan(8);
       const meta: Readonly<Record<string, unknown>> = tool._meta;
       const uri = (meta['ui'] as { resourceUri: string }).resourceUri;
       expect(uris).toContain(uri);
@@ -166,30 +169,32 @@ describe('how the tools name what they take', () => {
     expect(browse).not.toContain('diet');
   });
 
-  it('lists only the canonical names: the older spellings are accepted but not advertised', () => {
-    for (const [tool, old] of [
-      ['get_recipe', 'name'],
-      ['find_similar', 'name'],
-      ['browse_recipes', 'diet'],
-    ] as const) {
+  it.each([
+    ['get_recipe', 'name'],
+    ['find_similar', 'name'],
+    ['browse_recipes', 'diet'],
+  ] as const)(
+    'lists only the canonical names: the older spellings are accepted but not advertised (%j %j)',
+    (tool, old) => {
       expect(Object.keys(propertiesOf(tool))).not.toContain(old);
-    }
-  });
+    },
+  );
 });
 
 describe('long results', () => {
-  it('lets every tool that can return more than a page ask for the next one', () => {
-    for (const name of [
-      'list_recipes',
-      'search_recipes',
-      'browse_recipes',
-      'recipes_from_ingredients',
-    ]) {
+  it.each([
+    'list_recipes',
+    'search_recipes',
+    'browse_recipes',
+    'recipes_from_ingredients',
+  ])(
+    'lets every tool that can return more than a page ask for the next one (%j)',
+    (name) => {
       const schema = toolNamed(name)?.inputSchema;
       const properties = schema?.properties ?? {};
       expect(Object.keys(properties)).toContain('offset');
-    }
-  });
+    },
+  );
 
   it('says in the description how many a listing returns at a time', () => {
     expect(toolNamed('list_recipes')?.description).toContain(
@@ -206,12 +211,14 @@ describe('what the tools accept as text', () => {
       schema.properties ?? {};
     const required: readonly string[] = schema.required ?? [];
     return required
+      .values()
       .filter(
         (key) =>
           (properties[key] as { type?: unknown } | undefined)?.type ===
           'string',
       )
-      .map((key) => [tool.name, key] as const);
+      .map((key) => [tool.name, key] as const)
+      .toArray();
   });
 
   it('has required text to try', () => {
@@ -222,7 +229,7 @@ describe('what the tools accept as text', () => {
     '%s refuses a blank `%s`, so nothing empty is ever written to a recipe',
     (name, key) => {
       const tool = toolNamed(name);
-      const good = GOOD_ARGUMENTS[name] ?? {};
+      const good = GOOD_ARGUMENTS.get(name) ?? {};
       const problems = validateJson(
         tool?.inputSchema ?? {},
         { ...good, [key]: ' '.repeat(3) },
@@ -232,19 +239,21 @@ describe('what the tools accept as text', () => {
     },
   );
 
-  it('refuses a blank note, and a blank request for an idea, by name', () => {
-    for (const [name, key] of [
-      ['log_cooking', 'note'],
-      ['annotate_recipe', 'note'],
-      ['capture_idea', 'prompt'],
-    ] as const) {
+  it.each([
+    ['log_cooking', 'note'],
+    ['annotate_recipe', 'note'],
+    ['capture_idea', 'prompt'],
+  ] as const)(
+    'refuses a blank note, and a blank request for an idea, by name (%j %j)',
+    (name, key) => {
       expect(REQUIRED_TEXT).toContainEqual([name, key]);
-    }
-  });
+    },
+  );
 
-  it('keeps the largest block of text a tool takes within what one request can carry, even if every character needs six bytes of JSON', () => {
-    expect(CONTENT_MAX * 6).toBeLessThan(MAX_BODY_BYTES);
-    for (const tool of TOOLS) {
+  it.each(TOOLS)(
+    'keeps the largest block of text a tool takes within what one request can carry, even if every character needs six bytes of JSON (%j)',
+    (tool) => {
+      expect(CONTENT_MAX * 6).toBeLessThan(MAX_BODY_BYTES);
       const properties: Readonly<Record<string, Record<string, unknown>>> =
         (tool.inputSchema.properties ?? {}) as Readonly<
           Record<string, Record<string, unknown>>
@@ -257,8 +266,8 @@ describe('what the tools accept as text', () => {
           fits: true,
         });
       }
-    }
-  });
+    },
+  );
 });
 
 describe('what the model has to read', () => {
@@ -293,6 +302,7 @@ describe('the _meta of a tool', () => {
   const NAME = '[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?';
   const GRAMMAR = new RegExp(
     String.raw`^(?:${LABEL}(?:\.${LABEL})*/)?${NAME}$`,
+    'u',
   );
 
   /** The keys ChatGPT documents, which have a second `/` and so break the spec's grammar. */
@@ -308,26 +318,24 @@ describe('the _meta of a tool', () => {
       (key) => !GRAMMAR.test(key) && !OPENAI_STATUS_KEYS.has(key),
     );
     expect(offenders).toEqual([]);
-    // The exception is exactly these two: if the grammar ever accepts them,
-    // the allowance should go.
-    for (const key of OPENAI_STATUS_KEYS) {
-      expect(GRAMMAR.test(key)).toBe(false);
-      expect(keys).toContain(key);
-    }
+    expect(Array.from(OPENAI_STATUS_KEYS, (key) => GRAMMAR.test(key))).toEqual([
+      false,
+      false,
+    ]);
+    expect(keys).toEqual(expect.arrayContaining([...OPENAI_STATUS_KEYS]));
   });
 
-  it('lets a View call back only the two read tools it reads from', () => {
-    expect(
-      TOOLS.filter((t) => 'openai/widgetAccessible' in t._meta).map(
-        (t) => t.name,
-      ),
-    ).toEqual(['list_recipes', 'get_recipe']);
-    for (const tool of TOOLS.filter(
-      (t) => 'openai/widgetAccessible' in t._meta,
-    )) {
+  it.each(TOOLS.filter((t) => 'openai/widgetAccessible' in t._meta))(
+    'lets a View call back only the two read tools it reads from (%j)',
+    (tool) => {
+      expect(
+        TOOLS.filter((t) => 'openai/widgetAccessible' in t._meta).map(
+          (t) => t.name,
+        ),
+      ).toEqual(['list_recipes', 'get_recipe']);
       expect(tool.annotations.readOnlyHint).toBe(true);
-    }
-  });
+    },
+  );
 });
 
 describe('what each tool says about signing in', () => {
@@ -342,8 +350,9 @@ describe('what each tool says about signing in', () => {
 });
 
 describe('titles and annotations', () => {
-  it('gives every tool a title and all four hints as booleans', () => {
-    for (const tool of TOOLS) {
+  it.each(TOOLS)(
+    'gives every tool a title and all four hints as booleans (%j)',
+    (tool) => {
       expect(tool.title.length).toBeGreaterThan(3);
       expect(tool.annotations.title).toBe(tool.title);
       for (const hint of [
@@ -354,11 +363,12 @@ describe('titles and annotations', () => {
       ] as const) {
         expect(typeof tool.annotations[hint]).toBe('boolean');
       }
-    }
-  });
+    },
+  );
 
-  it('marks a tool read-only exactly when its token scope is read-only', () => {
-    for (const tool of TOOLS) {
+  it.each(TOOLS)(
+    'marks a tool read-only exactly when its token scope is read-only (%j)',
+    (tool) => {
       expect({
         tool: tool.name,
         readOnly: tool.annotations.readOnlyHint,
@@ -366,18 +376,19 @@ describe('titles and annotations', () => {
         tool: tool.name,
         readOnly: scopeForTool(tool.name) === SCOPE_READ,
       });
-    }
-  });
+    },
+  );
 
-  it('never calls a read-only tool destructive, or a tool that writes idempotent by accident', () => {
-    for (const tool of TOOLS.filter((t) => t.annotations.readOnlyHint)) {
+  it.each(TOOLS.filter((t) => t.annotations.readOnlyHint))(
+    'never calls a read-only tool destructive, or a tool that writes idempotent by accident (%j)',
+    (tool) => {
       expect(tool.annotations).toMatchObject({
         destructiveHint: false,
         idempotentHint: true,
         openWorldHint: false,
       });
-    }
-  });
+    },
+  );
 
   it('flags exactly the tools that overwrite a recipe as destructive', () => {
     expect(
@@ -419,8 +430,9 @@ describe('the input schemas', () => {
     },
   );
 
-  it('uses only keywords the server checks, so none is silently ignored', () => {
-    for (const tool of TOOLS) {
+  it.each(TOOLS)(
+    'uses only keywords the server checks, so none is silently ignored (%j)',
+    (tool) => {
       expect({
         tool: tool.name,
         unchecked: unsupportedKeywords(tool.inputSchema),
@@ -428,11 +440,12 @@ describe('the input schemas', () => {
         tool: tool.name,
         unchecked: [],
       });
-    }
-  });
+    },
+  );
 
-  it('bounds every string, list and number an assistant can send', () => {
-    for (const tool of TOOLS) {
+  it.each(TOOLS)(
+    'bounds every string, list and number an assistant can send (%j)',
+    (tool) => {
       const properties: Readonly<Record<string, Record<string, unknown>>> =
         (tool.inputSchema.properties ?? {}) as Readonly<
           Record<string, Record<string, unknown>>
@@ -458,16 +471,14 @@ describe('the input schemas', () => {
           bounded: true,
         });
       }
-    }
-  });
+    },
+  );
 });
 
 describe('the output schemas', () => {
-  it('are valid JSON Schema 2020-12', () => {
-    for (const tool of TOOLS) {
-      if ('outputSchema' in tool) {
-        expect(createAjv().validateSchema(tool.outputSchema ?? {})).toBe(true);
-      }
+  it.each(TOOLS)('are valid JSON Schema 2020-12 (%j)', (tool) => {
+    if ('outputSchema' in tool) {
+      expect(createAjv().validateSchema(tool.outputSchema ?? {})).toBe(true);
     }
   });
 });
@@ -506,7 +517,7 @@ describe('the input checker agrees with ajv', () => {
     '%s: on its good arguments and every single-edit variation of them',
     (_name, tool) => {
       const ajvValid = createAjv().compile(tool.inputSchema);
-      const good = GOOD_ARGUMENTS[tool.name] ?? {};
+      const good = GOOD_ARGUMENTS.get(tool.name) ?? {};
       const properties = Object.keys(tool.inputSchema.properties ?? {});
       const variants: readonly unknown[] = [
         good,
@@ -572,7 +583,7 @@ describe('every result conforms to the tool that returned it', () => {
     async (_name, tool) => {
       const result = await call(
         tool.name,
-        GOOD_ARGUMENTS[tool.name] ?? {},
+        GOOD_ARGUMENTS.get(tool.name) ?? {},
         kitchen(),
         fakeServices(),
       );

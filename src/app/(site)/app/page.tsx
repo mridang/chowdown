@@ -1,7 +1,5 @@
-import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { EmptyCollection } from '@/components/recipes/empty-collection';
 import {
@@ -24,7 +22,6 @@ import {
   parseQuery,
   SORTS,
   sortRecipes,
-  type RawParams,
 } from '@/components/recipes/search-query';
 import { STICKY_SIDEBAR_CLASS } from '@/components/site/header-height';
 import { SortSelect } from '@/components/recipes/sort-select';
@@ -39,6 +36,9 @@ import { driveAttemptOf } from '@/domain/auth/drive-access';
 import { countOf } from '@/lib/intl';
 import { toCardRecipe } from '@/domain/recipe/card-data';
 import { loadCollection } from '@/domain/recipe/load-collection';
+import type { RawParams } from '@/components/recipes/search-query';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 /** How many cards are likely on screen at first, and so load their photos eagerly. */
 const ABOVE_THE_FOLD = 3;

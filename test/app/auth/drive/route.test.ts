@@ -6,28 +6,24 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import type { NextResponse } from 'next/server';
 
-import { SessionTokens } from '@/lib/session';
 import { SESSION_COOKIE } from '@/domain/auth/app';
+import { SessionTokens } from '@/lib/session';
+import { sessionTokenFor } from '../../../domain/auth/session-fixture';
 import {
   SESSION_SECRET,
   fakeCookies,
   jar,
-  sessionTokenFor,
-} from '../../../domain/auth/session-fixture';
+} from '../../../domain/auth/auth-test-kit';
 import { installFakeTracing } from '../../../lib/core/observability/fake-tracing';
-import {
-  locationOf,
-  nextRequest,
-  openWorld,
-  signIn,
-  type World,
-} from '../../api/world';
+import { locationOf, nextRequest, openWorld, signIn } from '../../api/world';
+import type { NextResponse } from 'next/server';
+import type { World } from '../../api/world';
 
-const DRIVE = /^drive\./;
+const DRIVE = /^drive\./u;
 
 const tracing = installFakeTracing();
+// eslint-disable-next-line tslop/no-module-mocking -- next/headers is a framework module the code under test imports directly, and it only works inside a Next request
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const { GET } = await import('@/app/auth/drive/route');
@@ -36,9 +32,7 @@ let world: World;
 
 beforeEach(() => {
   world = openWorld();
-  for (const key of Object.keys(tracing.attributes)) {
-    delete tracing.attributes[key];
-  }
+  tracing.reset();
 });
 
 afterEach(async () => world.close());

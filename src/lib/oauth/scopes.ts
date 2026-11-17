@@ -11,7 +11,7 @@ import { SCOPE_READ, SCOPE_WRITE, SUPPORTED_SCOPES } from '@/domain/mcp/app';
 import { TOOL_SCOPES } from '@/domain/mcp/tool-context';
 import { TOOL_REGISTRY } from '@/domain/mcp/tools';
 
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /**
  * The OpenID Connect scope that asks for a refresh token. Every grant here gets
@@ -94,5 +94,3 @@ export function scopeForMessage(message: ScopedMessage): Scope {
   }
   return SCOPE_READ;
 }
-
-export { SCOPE_READ, SCOPE_WRITE, SUPPORTED_SCOPES } from '@/domain/mcp/app';

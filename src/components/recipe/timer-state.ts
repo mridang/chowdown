@@ -93,6 +93,7 @@ export function remainingMs(timer: StepTimer, now: number): number {
     case 'done': {
       return 0;
     }
+    // no default
   }
 }
 
@@ -179,6 +180,7 @@ function addTime(timer: StepTimer, ms: number, now: number): StepTimer {
     case 'done': {
       return withPhase(timer, { status: 'running', endsAt: now + ms });
     }
+    // no default
   }
 }
 
@@ -244,13 +246,17 @@ export function timerReducer(
         addTime(t, action.ms, action.now),
       );
     }
+    // no default
   }
 }
 
 /** The ids of the timers that have rung. */
 export function doneIds(timers: readonly StepTimer[]): ReadonlySet<string> {
   return new Set(
-    timers.filter((t) => t.phase.status === 'done').map((t) => t.id),
+    timers
+      .values()
+      .filter((t) => t.phase.status === 'done')
+      .map((t) => t.id),
   );
 }
 

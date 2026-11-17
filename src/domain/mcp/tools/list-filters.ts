@@ -5,16 +5,11 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
-import { runScenario } from '@/domain/mcp/tools/recipe-support';
-import {
-  McpTool,
-  READS,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
-} from '@/lib/mcp';
 import { z } from 'zod';
+import { runScenario } from '@/domain/mcp/tools/recipe-support';
+import { McpTool, READS } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type { ToolAnnotations, ToolArgs, ToolResult } from '@/lib/mcp';
 
 export class ListFiltersTool extends McpTool<
   'list_filters',

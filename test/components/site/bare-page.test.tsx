@@ -4,8 +4,8 @@ import { BRAND_NAME } from '@/app/_brand';
 import { BarePage, MessagePage } from '@/components/site/bare-page';
 import { html } from '../render';
 
-const H1_WE_COULDN = /<h1[^>]*>We couldn&#x27;t find that page<\/h1>/;
-const DIV_HREF_MAIN = /^<div[^>]*><a href="#main"[^>]*>Skip to content<\/a>/;
+const H1_WE_COULDN = /<h1[^>]*>We couldn&#x27;t find that page<\/h1>/u;
+const DIV_HREF_MAIN = /^<div[^>]*><a href="#main"[^>]*>Skip to content<\/a>/u;
 
 describe('BarePage', () => {
   it('brings its own main landmark and a wordmark that links home', () => {

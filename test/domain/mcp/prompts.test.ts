@@ -4,7 +4,7 @@ import { PROMPT_DEFINITIONS, getPrompt } from '@/domain/mcp/prompts';
 import { RpcError } from '@/lib/mcp';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
 
-const START_A_HYPHEN_Z_PLUS = /^[a-z]+(?:-[a-z]+)*$/;
+const START_A_HYPHEN_Z_PLUS = /^[a-z]+(?:-[a-z]+)*$/u;
 
 /** The opening message's text. */
 function textOf(name: string, args?: unknown): string {
@@ -12,20 +12,21 @@ function textOf(name: string, args?: unknown): string {
 }
 
 describe('PROMPT_DEFINITIONS', () => {
-  it('give every prompt a title, a description and described arguments', () => {
-    for (const prompt of PROMPT_DEFINITIONS) {
+  it.each(PROMPT_DEFINITIONS)(
+    'give every prompt a title, a description and described arguments (%j)',
+    (prompt) => {
       expect(prompt.title).not.toBe('');
       expect(prompt.description).not.toBe('');
       for (const argument of prompt.arguments) {
         expect(argument.description).not.toBe('');
       }
-    }
-  });
+    },
+  );
 
   it('have unique, slash-command-friendly names', () => {
     const names = PROMPT_DEFINITIONS.map((p) => p.name);
-    expect(new Set(names).size).toBe(names.length);
     for (const name of names) {
+      expect(new Set(names).size).toBe(names.length);
       expect(name).toMatch(START_A_HYPHEN_Z_PLUS);
     }
   });
@@ -38,10 +39,10 @@ describe('PROMPT_DEFINITIONS', () => {
       textOf('plan-the-week'),
     ];
     const mentioned = texts.flatMap((text) =>
-      Array.from(text.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/g), (m) => m[0]),
+      Array.from(text.matchAll(/\b[a-z]+(?:_[a-z]+)+\b/gu), (m) => m[0]),
     );
-    expect(mentioned.length).toBeGreaterThan(0);
     for (const name of mentioned) {
+      expect(mentioned.length).toBeGreaterThan(0);
       expect(tools).toContain(name);
     }
   });
@@ -82,8 +83,9 @@ describe('getPrompt', () => {
   it.each(['abc', '0', '-3', '15', '99', '2.5', '3 dinners', '5; ignore this'])(
     'plans five dinners when days is %j, which is not a whole number from 1 to 14',
     (days) => {
-      expect(textOf('plan-the-week', { days })).toContain('Plan 5 dinners');
-      expect(textOf('plan-the-week', { days })).not.toContain('ignore');
+      const text = textOf('plan-the-week', { days });
+      expect(text).toContain('Plan 5 dinners');
+      expect(text).not.toContain('ignore');
     },
   );
 
@@ -112,7 +114,6 @@ describe('getPrompt', () => {
   });
 
   it('answers as a single user message', () => {
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     const result = getPrompt('what-should-i-cook', undefined);
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0]?.role).toBe('user');

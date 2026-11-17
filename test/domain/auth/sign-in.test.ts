@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { LANDING_PATH, SESSION_COOKIE, sessionClaims } from '@/domain/auth/app';
-import type { User } from '@/domain/auth/store';
-import { SESSION_SECRET, appRequest } from './auth-test-kit';
 import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
+import { SESSION_SECRET, appRequest } from './auth-test-kit';
+import type { User } from '@/domain/db/users';
 
-const SESSION_SECRET_2 = /SESSION_SECRET/;
-const EMAIL = /email/;
+const SESSION_SECRET_2 = /SESSION_SECRET/u;
+const EMAIL = /email/u;
 
 const tracing = installFakeTracing();
 
@@ -27,6 +27,7 @@ const afterSignIn = jest
   .fn<(user: unknown) => Promise<void>>()
   .mockResolvedValue();
 
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/auth/store is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/domain/auth/store', () => ({
   upsertGoogleUser,
   // Importing core/auth via its barrel now also loads the current-user lookup,
@@ -34,6 +35,7 @@ jest.unstable_mockModule('@/domain/auth/store', () => ({
   getUserById: jest.fn(async () => person),
   getSessionEpoch: jest.fn(async () => 0),
 }));
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/auth/hooks is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/domain/auth/hooks', () => ({
   afterSignIn,
   OTHER_FLOWS: {},
@@ -55,14 +57,13 @@ const context = (overrides: Record<string, unknown> = {}) => ({
   request: appRequest('GET', '/auth/callback'),
   env: env(),
   origin: 'https://app.test',
-  returnTo: void 0,
+  // eslint-disable-next-line sonarjs/no-undefined-assignment -- the key must be present with the value undefined, because the test is about an absent value and null means something else
+  returnTo: undefined,
   ...overrides,
 });
 
 beforeEach(() => {
-  for (const key of Object.keys(tracing.attributes)) {
-    delete tracing.attributes[key];
-  }
+  tracing.reset();
   upsertGoogleUser.mockClear();
   afterSignIn.mockClear();
 });

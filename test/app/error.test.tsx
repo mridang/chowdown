@@ -4,9 +4,10 @@ import { ERROR_REASSURANCE } from '@/app/_brand';
 import ErrorPage from '@/app/error';
 import { html } from '../components/render';
 
-const HREF_BACK_TO = /<a [^>]*href="\/"[^>]*>Back to the home page<\/a>/;
-const BUTTON_TYPE_BUTTON = /<button[^>]*type="button"[^>]*>Try again<\/button>/;
-const H1_THAT_DIDN = /<h1[^>]*>That didn&#x27;t work<\/h1>/;
+const HREF_BACK_TO = /<a [^>]*href="\/"[^>]*>Back to the home page<\/a>/u;
+const BUTTON_TYPE_BUTTON =
+  /<button[^>]*type="button"[^>]*>Try again<\/button>/u;
+const H1_THAT_DIDN = /<h1[^>]*>That didn&#x27;t work<\/h1>/u;
 
 describe('ErrorPage', () => {
   const retry = () => undefined;

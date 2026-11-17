@@ -12,8 +12,8 @@ import { problemMessage } from '@/components/api/problem-message';
 import {
   postImport,
   readImport,
-  type PreparedImport,
 } from '@/app/(site)/(pages)/recipes/add/_components/recipe-requests';
+import type { PreparedImport } from '@/app/(site)/(pages)/recipes/add/_components/recipe-requests';
 
 /** Where the wizard is: pasting, stepping through the drafts, or finished. */
 export type Phase = 'input' | 'review' | 'done';

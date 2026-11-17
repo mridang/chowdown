@@ -5,7 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { z } from 'zod';
 import {
   editRecipe,
   label,
@@ -19,18 +19,14 @@ import {
   RECIPE_REFERENCE,
 } from '@/domain/mcp/tools/schemas';
 import { appendNote, parseRecipe } from '@/lib/cooklang';
-import {
-  errorResult,
-  type JsonSchema,
-  McpTool,
-  NOT_BLANK,
-  textArg,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
-  writes,
+import { errorResult, McpTool, NOT_BLANK, textArg, writes } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type {
+  JsonSchema,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
 
 export class AnnotateRecipeTool extends McpTool<
   'annotate_recipe',
@@ -53,7 +49,7 @@ export class AnnotateRecipeTool extends McpTool<
         .string()
         .min(1)
         .max(5000)
-        .regex(new RegExp(NOT_BLANK))
+        .regex(new RegExp(NOT_BLANK, 'u'))
         .describe('The note text.'),
       ingredient: z
         .string()
@@ -90,7 +86,11 @@ export class AnnotateRecipeTool extends McpTool<
         return errorResult('What note should I add?');
       }
       const hasIngredient = Boolean(textArg(args['ingredient']).trim());
-      if (hasIngredient && args['step'] != null) {
+      if (
+        hasIngredient &&
+        args['step'] !== undefined &&
+        args['step'] !== null
+      ) {
         return errorResult(
           'A note goes in one place: give either `ingredient` or `step`, not both. Nothing was changed.',
         );

@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 
 import { decryptSecret, encryptSecret, generateKeyBase64 } from '@/lib/crypto';
 
-const BIT = /256-bit/;
+const BIT = /256-bit/u;
 
 describe('crypto', () => {
   it('round-trips a secret through encrypt/decrypt', async () => {

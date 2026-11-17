@@ -1,21 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
 import { OPTIONS, POST } from '@/app/oauth/token/route';
 import { createDatabase } from '@/domain/db/client';
 import { D1OAuthStore } from '@/domain/db/oauth';
 import { issueAuthorizationCode, s256 } from '@/lib/oauth';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
+import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../../lib/core/db/sqlite-d1';
-import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
-import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
-import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
+import type { DatabaseSync } from 'node:sqlite';
 
-const START_DIGITS_PLUS_END = /^\d+$/;
-const BASIC_REALM = /^Basic realm=/;
+const START_DIGITS_PLUS_END = /^\d+$/u;
+const BASIC_REALM = /^Basic realm=/u;
 
 const ORIGIN = 'https://app.test';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';

@@ -2,19 +2,19 @@ import { describe, expect, it } from '@jest/globals';
 
 import { ConsentCard } from '@/app/oauth/authorize/consent-card';
 import { clientIdentity, describeRedirect } from '@/lib/oauth';
-import { html } from '../../../components/render';
 import { BRAND_NAME } from '@/app/_brand';
 import { SCOPE_READ, SCOPE_TEXT, SCOPE_WRITE } from '@/domain/mcp/app';
+import { html } from '../../../components/render';
 
-const VALUE_APPROVE_NAME = /value="approve" name="decision">Approve/;
-const VALUE_DENY_NAME = /value="deny" name="decision">Cancel/;
-const FORM_ARIA_LABEL = /<form [^>]*aria-label=/;
+const VALUE_APPROVE_NAME = /value="approve" name="decision">Approve/u;
+const VALUE_DENY_NAME = /value="deny" name="decision">Cancel/u;
+const FORM_ARIA_LABEL = /<form [^>]*aria-label=/u;
 const VALUE_WRITE_CHECKED =
-  /value="write"[^>]*checked|checked=""[^>]*value="write"/;
-const INPUT_NAME_ACCESS = /<input[^>]*name="access"[^>]*value="read"/;
-const INPUT_NAME_ACCESS_2 = /<input[^>]*name="access"[^>]*value="write"/;
+  /value="write"[^>]*checked|checked=""[^>]*value="write"/u;
+const INPUT_NAME_ACCESS = /<input[^>]*name="access"[^>]*value="read"/u;
+const INPUT_NAME_ACCESS_2 = /<input[^>]*name="access"[^>]*value="write"/u;
 const SPAN_CLASS_FONT =
-  /<span class="[^"]*font-semibold[^"]*">claude\.ai<\/span><code/;
+  /<span class="[^"]*font-semibold[^"]*">claude\.ai<\/span><code/u;
 
 const FIELDS = [
   { name: 'client_id', value: 'https://claude.ai/oauth/meta' },
@@ -54,10 +54,11 @@ function card(
 describe('ConsentCard', () => {
   it('has exactly one h1, naming the app', () => {
     const markup = card();
-    expect(markup.match(/<h1/g)).toHaveLength(1);
+    expect(markup.match(/<h1/gu)).toHaveLength(1);
     expect(markup).toMatch(
       new RegExp(
         String.raw`<h1[^>]*>Connect <span[^>]*>Claude</span> to ${BRAND_NAME}\?</h1>`,
+        'u',
       ),
     );
   });
@@ -110,7 +111,7 @@ describe('ConsentCard', () => {
     expect(markup).toContain('<legend');
     expect(markup).toMatch(INPUT_NAME_ACCESS_2);
     expect(markup).toMatch(INPUT_NAME_ACCESS);
-    expect(markup.match(/name="access"[^>]*checked/g)).toHaveLength(1);
+    expect(markup.match(/name="access"[^>]*checked/gu)).toHaveLength(1);
     expect(markup).toMatch(VALUE_WRITE_CHECKED);
   });
 

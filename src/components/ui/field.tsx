@@ -1,14 +1,9 @@
-import {
-  cloneElement,
-  isValidElement,
-  type ComponentProps,
-  type ReactElement,
-  type ReactNode,
-} from 'react';
+import { cloneElement, isValidElement } from 'react';
 
 import { ChevronIcon, SearchIcon } from '@/components/icons';
 import { Callout } from '@/components/ui/callout';
 import { cn } from '@/components/ui/cn';
+import type { ComponentProps, ReactElement, ReactNode } from 'react';
 
 /** The height of a search box. */
 const HEIGHTS = { md: 'h-10', lg: 'h-12' } as const;

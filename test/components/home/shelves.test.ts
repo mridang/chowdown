@@ -78,8 +78,9 @@ describe('fromTheShelf', () => {
       fromTheShelf(list, seed)
         .map((r) => r.id)
         .join(',');
-    expect(ids(5)).toBe(ids(5));
-    expect(ids(5)).not.toBe(ids(6));
+    const five = ids(5);
+    expect(five).toBe(ids(5));
+    expect(five).not.toBe(ids(6));
   });
 
   it('prefers recipes with a photo', () => {
@@ -100,16 +101,15 @@ describe('fromTheShelf', () => {
     expect(fromTheShelf([], 9)).toEqual([]);
   });
 
-  it('never picks the same recipe twice, whatever the size of the collection', () => {
-    // 12 recipes, 4 picks: the first stride tried (3) shares a factor with 12
-    // and would revisit recipes, so a different one has to be found.
-    for (const length of [8, 9, 12, 15, 16, 20, 24]) {
+  it.each([8, 9, 12, 15, 16, 20, 24])(
+    'never picks the same recipe twice, whatever the size of the collection (%j)',
+    (length) => {
       for (const seed of [0, 1, 7, 100]) {
         const picks = fromTheShelf(many(length, { cover: 'x' }), seed);
         expect(new Set(picks.map((r) => r.id)).size).toBe(4);
       }
-    }
-  });
+    },
+  );
 
   it('copes with a negative seed', () => {
     expect(fromTheShelf(many(10), -7)).toHaveLength(4);

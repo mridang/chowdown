@@ -5,7 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { z } from 'zod';
 import { recipeCardResult } from '@/domain/mcp/tool-results';
 import {
   alsoMatchingNote,
@@ -18,16 +18,15 @@ import {
   RECIPE_REFERENCE,
   WIDGET_CALLABLE,
 } from '@/domain/mcp/tools/schemas';
-import {
-  type ArgumentSpellings,
-  type JsonSchema,
-  McpTool,
-  READS,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
+import { McpTool, READS } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type {
+  ArgumentSpellings,
+  JsonSchema,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
 
 export class GetRecipeTool extends McpTool<
   'get_recipe',

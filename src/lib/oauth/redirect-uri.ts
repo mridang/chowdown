@@ -10,14 +10,15 @@
 
 import { parseUrl } from '@/utils/url';
 
-const START_U0021_HYPHEN_U007E_PLUS = /^[\u0021-\u007E]+$/;
-const CD_FE_AB = /^\[(f[cd][0-9a-f]{2}|fe[89ab][0-9a-f]):/;
-const FFFF = /^\[::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})\]$/;
+const START_U0021_HYPHEN_U007E_PLUS = /^[\u0021-\u007E]+$/u;
+const CD_FE_AB = /^\[(f[cd][0-9a-f]{2}|fe[89ab][0-9a-f]):/u;
+const FFFF = /^\[::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})\]$/u;
 const START_DIGITS_DOT_DIGITS_DOT =
-  /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+  /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/u;
 
 /** Schemes that can run script or read files; never a valid redirect target, dotted or not. */
 const FORBIDDEN_SCHEMES: ReadonlySet<string> = new Set([
+  // eslint-disable-next-line no-script-url -- the scheme is listed so that it is refused
   'javascript:',
   'data:',
   'file:',
@@ -82,7 +83,12 @@ function mappedIpv4(host: string): string | undefined {
     return undefined;
   }
   const [high = 0, low = 0] = match.slice(1).map((g) => Number.parseInt(g, 16));
-  return [high >> 8, high & 255, low >> 8, low & 255].join('.');
+  return [
+    Math.floor(high / 256),
+    high % 256,
+    Math.floor(low / 256),
+    low % 256,
+  ].join('.');
 }
 
 /**

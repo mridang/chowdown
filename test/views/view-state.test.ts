@@ -1,7 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { REQUEST_ARGUMENTS } from '@/views/app';
-import type { ToolOutcome } from '@/views/payload';
 import {
   INITIAL_VIEW_STATE,
   LOADING_TIMEOUT_MS,
@@ -9,9 +8,9 @@ import {
   describeRequest,
   isPending,
   reduceViewState,
-  type ViewAction,
-  type ViewState,
 } from '@/views/view-state';
+import type { ViewAction, ViewState } from '@/views/view-state';
+import type { ToolOutcome } from '@/views/payload';
 
 type Data = { readonly n: number };
 
@@ -42,7 +41,6 @@ describe('describeRequest', () => {
   });
 
   it('says nothing when the arguments do not', () => {
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(describeRequest(undefined)).toBeUndefined();
     expect(describeRequest({ [FIRST]: '  ', other: 3 })).toBeUndefined();
   });

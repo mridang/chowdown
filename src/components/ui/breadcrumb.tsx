@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import type { ReactElement } from 'react';
-
 import { cn } from '@/components/ui/cn';
+import type { ReactElement } from 'react';
 
 /** One step of the trail; the last has no link when it is the current page. */
 export interface Crumb {

@@ -1,15 +1,12 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 
-import {
-  fetchImage,
-  isImagesBinding,
-  type ImageFetch,
-} from '@/lib/cloudflare/images/proxy';
+import { fetchImage, isImagesBinding } from '@/lib/cloudflare/images/proxy';
+import type { SafeFetcher } from '@/lib/safe-fetch';
 
 const image = (type = 'image/jpeg', headers: Record<string, string> = {}) =>
   new Response('bytes', { headers: { 'content-type': type, ...headers } });
 const returning =
-  (res: Response): ImageFetch =>
+  (res: Response): SafeFetcher =>
   async () =>
     res;
 
@@ -42,11 +39,11 @@ describe('fetchImage', () => {
       });
     const images = (
       out: ArrayBuffer | Error,
-      seen: { width?: number } = {},
+      seen: (width: number) => void = () => undefined,
     ) => ({
       input: () => ({
         transform: (t: { width: number }) => {
-          seen.width = t.width;
+          seen(t.width);
           return {
             output: async () => {
               if (out instanceof Error) {
@@ -60,13 +57,13 @@ describe('fetchImage', () => {
     });
 
     it('scales a large photo to the width it is given and sends WebP', async () => {
-      const seen: { width?: number } = {};
+      const seen = jest.fn<(width: number) => void>();
       // The caller (the image service) snaps the width; the proxy uses it as given.
       const result = await fetchImage('https://a.com/x.jpg', 700, {
         fetcher: returning(big()),
         images: images(new Uint8Array(9000).buffer, seen),
       });
-      expect(seen.width).toBe(700);
+      expect(seen.mock.calls).toEqual([[700]]);
       expect(result).toMatchObject({ ok: true, type: 'image/webp' });
       expect(result.ok && result.bytes.byteLength).toBe(9000);
     });
@@ -89,13 +86,10 @@ describe('fetchImage', () => {
     });
 
     it('leaves small photos and GIFs alone', async () => {
-      let used = false;
-      const spy = {
-        input: () => {
-          used = true;
-          throw new Error('should not be called');
-        },
-      };
+      const input = jest.fn(() => {
+        throw new Error('should not be called');
+      });
+      const spy = { input };
       await fetchImage('https://a.com/x.jpg', 640, {
         fetcher: returning(image()),
         images: spy,
@@ -108,20 +102,17 @@ describe('fetchImage', () => {
         ),
         images: spy,
       });
-      expect(used).toBe(false);
+      expect(input.mock.calls).toEqual([]);
     });
   });
 
   it('refuses an address it should not fetch, without fetching', async () => {
-    let called = false;
+    const fetcher = jest.fn(async () => image());
     const result = await fetchImage('http://127.0.0.1/x.jpg', 640, {
-      fetcher: async () => {
-        called = true;
-        return image();
-      },
+      fetcher,
     });
     expect(result).toMatchObject({ ok: false, status: 400 });
-    expect(called).toBe(false);
+    expect(fetcher.mock.calls).toEqual([]);
   });
 
   it.each([
@@ -159,8 +150,8 @@ describe('fetchImage with the shared safe fetch', () => {
   describe('the shared safe fetch', () => {
     /** A fetcher that answers each call from `responses` and remembers the calls. */
     function serving(...responses: readonly Response[]) {
-      const calls: { url: string; init: Parameters<ImageFetch>[1] }[] = [];
-      const fetcher: ImageFetch = async (url, init) => {
+      const calls: { url: string; init: Parameters<SafeFetcher>[1] }[] = [];
+      const fetcher: SafeFetcher = async (url, init) => {
         calls.push({ url, init });
         return responses[calls.length - 1] ?? new Response('', { status: 500 });
       };

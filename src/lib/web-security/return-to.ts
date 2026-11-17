@@ -18,10 +18,9 @@ export function safeReturnPath(
   }
   // Backslashes are treated as slashes by browsers (`/\evil.example`), and
   // control characters can smuggle in line breaks.
-  for (const char of value) {
-    if (char === '\\' || (char.codePointAt(0) ?? 0) < 0x20) {
-      return undefined;
-    }
-  }
-  return value;
+  return Array.from(value).some(
+    (char) => char === '\\' || (char.codePointAt(0) ?? 0) < 0x20,
+  )
+    ? undefined
+    : value;
 }

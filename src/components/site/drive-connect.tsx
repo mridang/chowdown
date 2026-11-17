@@ -1,13 +1,10 @@
-import type { ReactElement } from 'react';
-
 import { DriveIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
 import { EmptyState } from '@/components/ui/empty-state';
-import {
-  driveConnectHref,
-  type DriveAttempt,
-} from '@/domain/auth/drive-access';
+import { driveConnectHref } from '@/domain/auth/drive-access';
+import type { DriveAttempt } from '@/domain/auth/drive-access';
+import type { ReactElement } from 'react';
 
 /** What to tell someone whose last attempt didn't work. */
 const ATTEMPT_MESSAGE: Readonly<Record<DriveAttempt, string>> = {
@@ -101,7 +98,7 @@ export function DriveConnectNotice({
 }: NoticeProps): ReactElement {
   return (
     <Callout
-      shape="banner"
+      layout="banner"
       className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
     >
       <div>

@@ -31,39 +31,47 @@ export class JsonClient {
     req: JsonRequest,
     schema: ZodType<T>,
   ): Promise<Result<T>> {
-    const url = new URL(this.baseUrl + req.path);
-    if (req.query) {
-      url.search = new URLSearchParams(req.query).toString();
-    }
-    let status: number | undefined;
+    const base = new URL(this.baseUrl + req.path);
+    const url = req.query
+      ? new URL(`?${new URLSearchParams(req.query).toString()}`, base)
+      : base;
     try {
       const response = await this.fetcher(url, req.init);
-      status = response.status;
-      const raw = await response.text();
-      if (!response.ok) {
-        return { ok: false, error: `http ${response.status}`, raw, status };
-      }
-      let parsed: unknown;
+      const { status, ok } = response;
       try {
-        parsed = JSON.parse(raw) as unknown;
+        const raw = await response.text();
+        if (!ok) {
+          return { ok: false, error: `http ${status}`, raw, status };
+        }
+        const parsed = ((): { value: unknown } | { error: string } => {
+          try {
+            return { value: JSON.parse(raw) as unknown };
+          } catch (error) {
+            return {
+              error: error instanceof Error ? error.message : 'invalid JSON',
+            };
+          }
+        })();
+        if ('error' in parsed) {
+          return { ok: false, error: parsed.error, raw, status };
+        }
+        const decoded = schema.safeParse(parsed.value);
+        return decoded.success
+          ? { ok: true, value: decoded.data, raw, status }
+          : { ok: false, error: decoded.error.message, raw, status };
       } catch (error) {
         return {
           ok: false,
-          error: error instanceof Error ? error.message : 'invalid JSON',
-          raw,
+          error: error instanceof Error ? error.message : String(error),
+          raw: '',
           status,
         };
       }
-      const decoded = schema.safeParse(parsed);
-      return decoded.success
-        ? { ok: true, value: decoded.data, raw, status }
-        : { ok: false, error: decoded.error.message, raw, status };
     } catch (error) {
       return {
         ok: false,
         error: error instanceof Error ? error.message : String(error),
         raw: '',
-        status,
       };
     }
   }

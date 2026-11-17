@@ -4,9 +4,13 @@ import { expect } from '@jest/globals';
 function seeded(seed: number): () => number {
   let state = seed;
   return () => {
+    // eslint-disable-next-line no-bitwise -- mulberry32 is defined on 32-bit integer operations
     state = (state + 0x6d_2b_79_f5) >>> 0;
+    // eslint-disable-next-line no-bitwise -- mulberry32 is defined on 32-bit integer operations
     let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    // eslint-disable-next-line no-bitwise -- mulberry32 is defined on 32-bit integer operations
+    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+    // eslint-disable-next-line no-bitwise -- mulberry32 is defined on 32-bit integer operations
     return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
   };
 }

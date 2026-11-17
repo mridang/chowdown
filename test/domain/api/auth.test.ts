@@ -1,20 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
 import { requireLiveUid, requireUid, requireUser } from '@/domain/api/auth';
-import type { Auth } from '@/domain/api/auth';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
-import {
-  insertUser,
-  jar,
-  sessionTokenFor,
-  testEnv,
-} from '../../domain/auth/session-fixture';
+import { insertUser, sessionTokenFor, testEnv } from '../auth/session-fixture';
+import { jar } from '../auth/auth-test-kit';
+import type { DatabaseSync } from 'node:sqlite';
+import type { Auth } from '@/domain/api/auth';
 
 const ORIGIN = 'https://chowdown.test';
 

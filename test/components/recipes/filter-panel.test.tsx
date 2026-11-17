@@ -1,10 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { FilterPanel } from '@/components/recipes/filter-panel';
-import type { FacetData } from '@/components/recipes/search-query';
 import { html } from '../render';
+import type { FacetData } from '@/components/recipes/search-query';
 
-const OPEN = /^[^>]*\sopen=""/;
+const OPEN = /^[^>]*\sopen=""/u;
 
 /** A filter with one option, switched on or off. */
 const facet = (

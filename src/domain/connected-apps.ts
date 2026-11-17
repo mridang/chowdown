@@ -6,8 +6,8 @@
  * apps that have been given access.
  */
 
-import type { ConnectedApp as StoredConnectedApp } from '@/domain/db/oauth';
 import { SCOPE_WRITE } from '@/domain/mcp/app';
+import type { ConnectedApp as StoredConnectedApp } from '@/domain/db/oauth';
 
 /** An app the user has connected, as `GET /api/users/self/connections` returns it. */
 export interface ConnectedApp {
@@ -42,11 +42,9 @@ export function connectedAppResource(
 
 /** The address an assistant connects to, for the site served at `origin`. */
 export function mcpUrl(origin: string): string {
-  let base = origin;
-  while (base.endsWith('/')) {
-    base = base.slice(0, -1);
-  }
-  return `${base}/mcp`;
+  const chars = Array.from(origin);
+  const kept = chars.slice(0, chars.findLastIndex((char) => char !== '/') + 1);
+  return `${kept.join('')}/mcp`;
 }
 
 /**

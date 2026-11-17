@@ -1,13 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactElement,
-} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { PlusIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -19,6 +13,7 @@ import {
 } from '@/components/ui/field';
 
 import { postNote } from '@/app/(site)/recipe/[id]/_components/note-request';
+import type { ReactElement } from 'react';
 
 /**
  * "Add a note" control on a recipe page. Lets the user attach a personal note
@@ -104,7 +99,9 @@ export function AddNote({
         </SelectField>
         <div className="ml-auto flex gap-2">
           <Button
-            onClick={() => void save()}
+            onClick={() => {
+              void save();
+            }}
             disabled={busy || !text.trim()}
             className="disabled:opacity-50"
           >

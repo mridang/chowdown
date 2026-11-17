@@ -3,14 +3,15 @@ import { describe, expect, it } from '@jest/globals';
 import { Card } from '@/components/ui/card';
 import { cssClassesOf, html } from '../render';
 
-const ESC_P_HYPHEN_DIGITS = /\bp-\d/;
+const ESC_P_HYPHEN_DIGITS = /\bp-\d/u;
 
 describe('Card', () => {
   it('is a white, bordered, rounded box with room inside', () => {
     const out = html(<Card>hello</Card>);
-    expect(cssClassesOf(out, 'div')).toContain('rounded-card');
-    expect(cssClassesOf(out, 'div')).toContain('bg-white');
-    expect(cssClassesOf(out, 'div')).toContain('border-line');
+    const classes = cssClassesOf(out, 'div');
+    expect(classes).toContain('rounded-card');
+    expect(classes).toContain('bg-white');
+    expect(classes).toContain('border-line');
     expect(out).toContain('hello');
   });
 

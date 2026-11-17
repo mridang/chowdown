@@ -4,16 +4,17 @@ import { bytesToBase64Url } from '@/utils/base64';
 import {
   SESSION_TTL_SECONDS,
   SessionTokens,
-  type NewSession,
   requireSessionSecret,
   sessionIsCurrent,
 } from '@/lib/session';
+import type { NewSession } from '@/lib/session';
 
-const SESSION_UNDERSCORE_SECRET = /SESSION_SECRET/;
+const SESSION_UNDERSCORE_SECRET = /SESSION_SECRET/u;
 
 const SECRET = 'test-session-secret-value';
 
 /** A value that is deliberately missing, as opposed to a key that is left out. */
+// eslint-disable-next-line no-unassigned-vars -- never assigned on purpose: it stands for a key that is present with no value, and writing undefined inline is reported by sonarjs/no-undefined-assignment
 let absent: undefined;
 
 // Thin adapters over the SessionTokens handle, so each case reads as a
@@ -161,11 +162,12 @@ describe('a correctly signed token with the wrong contents', () => {
     ).toBeNull();
   });
 
-  it('is refused when the body is not an object', async () => {
-    for (const text of ['null', '3', '"x"', '[]']) {
+  it.each(['null', '3', '"x"', '[]'])(
+    'is refused when the body is not an object (%j)',
+    async (text) => {
       expect(await verifySessionToken(await signed(text), SECRET)).toBeNull();
-    }
-  });
+    },
+  );
 
   it('is refused when it has no expiry', async () => {
     expect(
@@ -182,11 +184,12 @@ describe('a correctly signed token with the wrong contents', () => {
 });
 
 describe('a malformed token', () => {
-  it('is refused without a dot, or with an empty signature or a non-base64 one', async () => {
-    for (const token of ['', 'abc', '.abc', 'abc.', 'abc.!!!']) {
+  it.each(['', 'abc', '.abc', 'abc.', 'abc.!!!'])(
+    'is refused without a dot, or with an empty signature or a non-base64 one (%j)',
+    async (token) => {
       expect(await verifySessionToken(token, SECRET)).toBeNull();
-    }
-  });
+    },
+  );
 });
 
 describe('session epoch', () => {
@@ -246,7 +249,6 @@ describe('requireSessionSecret', () => {
   });
 
   it('refuses when there is none, rather than falling back to a value anyone could guess', () => {
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(() => requireSessionSecret(undefined)).toThrow(
       SESSION_UNDERSCORE_SECRET,
     );

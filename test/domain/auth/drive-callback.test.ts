@@ -6,22 +6,17 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import type { NextResponse } from 'next/server';
 
 import { SESSION_COOKIE, SIGN_IN_FAILED_PATH } from '@/domain/auth/app';
 import { DRIVE_SCOPE } from '@/domain/auth/drive-oauth';
 import { SessionTokens } from '@/lib/session';
 import { decryptSecret } from '@/lib/crypto';
-import {
-  ORIGIN,
-  answerFetch,
-  nextRequest,
-  openWorld,
-  signIn,
-  type World,
-} from '../../app/api/world';
-import { SESSION_SECRET, sessionTokenFor } from './session-fixture';
 import { installFakeTracing } from '../../lib/core/observability/fake-tracing';
+import { ORIGIN, nextRequest, openWorld, signIn } from '../../app/api/world';
+import { sessionTokenFor } from './session-fixture';
+import { answerFetch, SESSION_SECRET } from './auth-test-kit';
+import type { World } from '../../app/api/world';
+import type { NextResponse } from 'next/server';
 
 const tracing = installFakeTracing();
 const { completeDriveConnect } = await import('@/domain/auth/drive-callback');
@@ -30,9 +25,7 @@ let world: World;
 
 beforeEach(() => {
   world = openWorld();
-  for (const key of Object.keys(tracing.attributes)) {
-    delete tracing.attributes[key];
-  }
+  tracing.reset();
   jest.spyOn(console, 'error').mockImplementation(() => undefined);
 });
 

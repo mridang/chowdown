@@ -22,7 +22,8 @@ describe('Feature', () => {
 
   it('swaps the sides only when flipped', () => {
     expect(feature()).not.toContain('lg:order');
-    expect(feature(true)).toContain('lg:order-2');
-    expect(feature(true)).toContain('lg:order-1');
+    const flipped = feature(true);
+    expect(flipped).toContain('lg:order-2');
+    expect(flipped).toContain('lg:order-1');
   });
 });

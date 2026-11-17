@@ -1,10 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { RecipeCardData, RecipeListData } from '@/domain/mcp/ui-types';
-import { INITIAL_LIST_STATE, type ListState } from '@/views/list-state';
+import { INITIAL_LIST_STATE } from '@/views/list-state';
 import { RecipeListApp, RecipeListScreen } from '@/views/recipe-list-view';
-import type { ViewState } from '@/views/view-state';
 import { html } from '../components/render';
+import type { ListState } from '@/views/list-state';
+import type { ViewState } from '@/views/view-state';
+import type { RecipeCardData, RecipeListData } from '@/domain/mcp/ui-types';
 
 const LIST: RecipeListData = {
   recipes: [
@@ -74,7 +75,7 @@ describe('RecipeListScreen', () => {
     const out = screen({ phase: 'ready', data: LIST });
     expect(out).toContain('Your recipes');
     expect(out).toContain('2 recipes');
-    expect(out.match(/<button/g)).toHaveLength(2);
+    expect(out.match(/<button/gu)).toHaveLength(2);
     expect(out).toContain('<ul class="grid"');
     expect(out).toContain('idea');
   });
@@ -96,7 +97,7 @@ describe('RecipeListScreen', () => {
       { phase: 'ready', data: LIST },
       { ...INITIAL_LIST_STATE, pendingId: '1' },
     );
-    expect(out.match(/<button[^>]*aria-busy="true"/g)).toHaveLength(1);
+    expect(out.match(/<button[^>]*aria-busy="true"/gu)).toHaveLength(1);
   });
 
   it('shows what happened to the last tap', () => {
@@ -141,7 +142,7 @@ describe('RecipeListScreen', () => {
 describe('RecipeListScreen at scale', () => {
   it('draws eight tiles inline and offers every recipe behind a button', () => {
     const out = screen({ phase: 'ready', data: recipes(12) });
-    expect(out.match(/class="tile"/g)).toHaveLength(8);
+    expect(out.match(/class="tile"/gu)).toHaveLength(8);
     expect(out).toContain('Show all 12 recipes');
     expect(out).not.toContain('Recipe 9<');
     expect(out).not.toContain('Back');
@@ -149,7 +150,7 @@ describe('RecipeListScreen at scale', () => {
 
   it('offers nothing to expand when the list fits', () => {
     const out = screen({ phase: 'ready', data: recipes(8) });
-    expect(out.match(/class="tile"/g)).toHaveLength(8);
+    expect(out.match(/class="tile"/gu)).toHaveLength(8);
     expect(out).not.toContain('Show all');
   });
 
@@ -159,7 +160,7 @@ describe('RecipeListScreen at scale', () => {
       INITIAL_LIST_STATE,
       { expanded: true },
     );
-    expect(out.match(/class="tile"/g)).toHaveLength(12);
+    expect(out.match(/class="tile"/gu)).toHaveLength(12);
     expect(out).toContain('Back');
     expect(out).toContain('type="search"');
     expect(out).toContain('aria-label="Filter recipes by name"');
@@ -172,7 +173,7 @@ describe('RecipeListScreen at scale', () => {
       { ...INITIAL_LIST_STATE, filter: 'recipe 1' },
       { expanded: true },
     );
-    expect(out.match(/class="tile"/g)).toHaveLength(4);
+    expect(out.match(/class="tile"/gu)).toHaveLength(4);
     expect(out).toContain('4 recipes of 12');
   });
 

@@ -15,7 +15,7 @@ import { compareText, foldText } from '@/lib/intl';
 import { FACETS } from '@/domain/recipe/taxonomy';
 import type { RecipeTags } from '@/domain/recipe/tag-index';
 
-const WHITESPACE_RUN = /\s+/;
+const WHITESPACE_RUN = /\s+/u;
 
 /** Parsed filter state from the query string. */
 export interface FilterState {
@@ -110,13 +110,10 @@ export function matchesFilters(
   ) {
     return false;
   }
-  for (const [key, wanted] of Object.entries(state.selected)) {
+  return Object.entries(state.selected).every(([key, wanted]) => {
     const have = new Set((recipe.tags[key] ?? []).map((v) => v.toLowerCase()));
-    if (!wanted.some((w) => have.has(w.toLowerCase()))) {
-      return false;
-    }
-  }
-  return true;
+    return wanted.some((w) => have.has(w.toLowerCase()));
+  });
 }
 
 /** How many times each value appears, by value, in order of first appearance. */

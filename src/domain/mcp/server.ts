@@ -17,7 +17,6 @@
  */
 
 import { errorMessage, logError } from '@/utils/logging';
-import type { User } from '@/domain/db/users';
 import {
   ERROR_INVALID_PARAMS,
   InvalidToolArgumentsError,
@@ -27,8 +26,6 @@ import {
   UnknownToolError,
   isPlainObject,
   negotiateLegacyVersion,
-  type CacheHint,
-  type JsonRpcResponse,
 } from '@/lib/mcp';
 import {
   CAPABILITIES,
@@ -43,7 +40,6 @@ import {
   listCachedRecipes,
   readRecipeResource,
   recipeResource,
-  type RecipeLister,
 } from '@/domain/mcp/recipe-resources';
 import { callToolOrExplain } from '@/domain/mcp/tool-calls';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
@@ -52,10 +48,11 @@ import {
   RESOURCE_MIME_TYPE,
   findAppResource,
 } from '@/domain/mcp/ui-resources';
+import type { RecipeLister } from '@/domain/mcp/recipe-resources';
+import type { CacheHint, JsonRpcResponse } from '@/lib/mcp';
+import type { User } from '@/domain/db/users';
 
-const RECIPES = /^recipes:(\d{1,9})$/;
-
-export type { JsonRpcMessage, JsonRpcResponse } from '@/lib/mcp';
+const RECIPES = /^recipes:(\d{1,9})$/u;
 
 /** Runs a tool by name; the real one opens Drive and the database, so tests pass their own. */
 export type ToolRunner = typeof callToolOrExplain;
@@ -108,7 +105,8 @@ function refuseCursor(params: Params): void {
 }
 
 /** The answer to the older revisions' `initialize` handshake. */
-function initializeResult(params: Params): object {
+function initializeResult(params: Params): Readonly<Record<string, unknown>> {
+  // eslint-disable-next-line tslop/no-known-value-widening -- a JSON-RPC result is an open dictionary by protocol
   return {
     protocolVersion: negotiateLegacyVersion(params?.['protocolVersion']),
     capabilities: CAPABILITIES,
@@ -118,7 +116,8 @@ function initializeResult(params: Params): object {
 }
 
 /** The newest revision's way to learn what a server is, with no handshake. */
-function discoverResult(): object {
+function discoverResult(): Readonly<Record<string, unknown>> {
+  // eslint-disable-next-line tslop/no-known-value-widening -- a JSON-RPC result is an open dictionary by protocol
   return {
     supportedVersions: SUPPORTED_VERSIONS,
     capabilities: CAPABILITIES,
@@ -174,7 +173,7 @@ function decodedCursor(cursor: string): string | undefined {
 async function resourceListResult(
   params: Params,
   { user, listRecipes }: McpContext,
-): Promise<object> {
+): Promise<Readonly<Record<string, unknown>>> {
   const offset = offsetOfCursor(params?.['cursor']);
   const views =
     offset === 0
@@ -206,8 +205,11 @@ async function resourceListResult(
 }
 
 /** The answer to `resources/templates/list`: where a single recipe can be read. */
-function resourceTemplateListResult(params: Params): object {
+function resourceTemplateListResult(
+  params: Params,
+): Readonly<Record<string, unknown>> {
   refuseCursor(params);
+  // eslint-disable-next-line tslop/no-known-value-widening -- a JSON-RPC result is an open dictionary by protocol
   return { resourceTemplates: [RECIPE_TEMPLATE] };
 }
 
@@ -218,8 +220,10 @@ function resourceTemplateListResult(params: Params): object {
  * is read at an address whose content is whatever the current build ships (the
  * older hash-free addresses, and the stale hashed ones that get the current view).
  */
-export function readCache(result: object): CacheHint {
-  const contents = 'contents' in result ? result.contents : undefined;
+export function readCache(
+  result: Readonly<Record<string, unknown>>,
+): CacheHint {
+  const contents = result['contents'];
   const first: unknown = Array.isArray(contents) ? contents[0] : undefined;
   const uri =
     isPlainObject(first) && typeof first['uri'] === 'string'
@@ -240,7 +244,7 @@ export function readCache(result: object): CacheHint {
 async function readResource(
   params: Params,
   { user }: McpContext,
-): Promise<object> {
+): Promise<Readonly<Record<string, unknown>>> {
   const uri = params?.['uri'];
   if (typeof uri !== 'string') {
     throw new RpcError(
@@ -270,8 +274,9 @@ async function readResource(
 }
 
 /** The answer to `prompts/get`. */
-function promptResult(params: Params): object {
-  return getPrompt(params?.['name'], params?.['arguments']);
+function promptResult(params: Params): Readonly<Record<string, unknown>> {
+  // eslint-disable-next-line tslop/no-known-value-widening -- a JSON-RPC result is an open dictionary by protocol
+  return { ...getPrompt(params?.['name'], params?.['arguments']) };
 }
 
 /** The names of the tools the server advertises. */
@@ -304,7 +309,10 @@ function unknownToolError(name: unknown): RpcError {
  * spec counts input validation among tool execution errors). A tool that still
  * reports its arguments as invalid by throwing is a malformed request too.
  */
-async function callTool(params: Params, ctx: McpContext): Promise<object> {
+async function callTool(
+  params: Params,
+  ctx: McpContext,
+): Promise<Readonly<Record<string, unknown>>> {
   const name = params?.['name'];
   if (!isAdvertisedTool(name)) {
     throw unknownToolError(name);
@@ -317,7 +325,7 @@ async function callTool(params: Params, ctx: McpContext): Promise<object> {
     );
   }
   try {
-    return await ctx.runTool(ctx.user, params);
+    return { ...(await ctx.runTool(ctx.user, params)) };
   } catch (error) {
     if (error instanceof UnknownToolError) {
       throw unknownToolError(error.tool);

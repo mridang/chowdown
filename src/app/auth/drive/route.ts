@@ -8,7 +8,6 @@
  * (unless `?force=1`, from a page that has found the stored login unusable).
  */
 
-import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import {
@@ -24,6 +23,7 @@ import { newState, safeReturnPath } from '@/lib/web-security';
 import { getEnv } from '@/lib/core/runtime';
 import { setErrorContext } from '@/lib/core/observability/context';
 import { appOrigin } from '@/lib/core/origin';
+import type { NextRequest } from 'next/server';
 
 /**
  * `GET /auth/drive`: connect Google Drive for the signed-in person.

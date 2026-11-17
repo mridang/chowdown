@@ -1,6 +1,6 @@
-import { describe, expect, it } from '@jest/globals';
 import { access, readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { describe, expect, it } from '@jest/globals';
 
 import {
   BRAND_NAME,
@@ -13,7 +13,7 @@ import {
 import { PRIVACY_LAST_UPDATED, TERMS_LAST_UPDATED } from '@/utils/site';
 import { pngSize } from '../png';
 
-const ESC_A_HYPHEN_Z_PLUS = /\b[a-z]+(_[a-z]+)+\b/;
+const ESC_A_HYPHEN_Z_PLUS = /\b[a-z]+(_[a-z]+)+\b/u;
 
 async function exists(file: string): Promise<boolean> {
   try {
@@ -74,10 +74,10 @@ describe('what the installed app offers', () => {
 
   it('shows Chrome its richer install dialog: screenshots for both form factors, each a real PNG', async () => {
     const shots = MANIFEST_EXTRAS.screenshots ?? [];
-    expect(shots.filter((s) => s.form_factor === 'wide')).toHaveLength(2);
-    expect(shots.filter((s) => s.form_factor === 'narrow')).toHaveLength(3);
-    expect(shots.length).toBeLessThanOrEqual(8);
     for (const shot of shots) {
+      expect(shots.filter((s) => s.form_factor === 'wide')).toHaveLength(2);
+      expect(shots.filter((s) => s.form_factor === 'narrow')).toHaveLength(3);
+      expect(shots.length).toBeLessThanOrEqual(8);
       expect(shot.type).toBe('image/png');
       expect(shot.label).toBeTruthy();
       expect(shot.src.startsWith('/screenshots/')).toBe(true);

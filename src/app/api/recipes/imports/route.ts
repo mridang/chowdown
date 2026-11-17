@@ -26,8 +26,8 @@ import {
   readJson,
   sliceAfter,
 } from '@/lib/core/api';
+import { compareNewestFirst } from '@/domain/api/newest-first';
 import {
-  compareImportPositions,
   importPosition,
   importSummary,
   MAX_IMPORT_BODY_BYTES,
@@ -136,7 +136,7 @@ const importsCollection = new ApiController<UidContext>({
       const slice = sliceAfter(
         all,
         importPosition,
-        compareImportPositions,
+        compareNewestFirst,
         after,
         limit,
       );

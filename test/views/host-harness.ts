@@ -1,7 +1,4 @@
-import {
-  App,
-  PostMessageTransport as ViewTransport,
-} from '@modelcontextprotocol/ext-apps';
+import { App, PostMessageTransport } from '@modelcontextprotocol/ext-apps';
 import {
   AppBridge,
   PostMessageTransport as HostTransport,
@@ -11,7 +8,14 @@ import type { DocumentRoot } from '@/views/host-wiring';
 
 /** Wait for queued messages to be delivered, in both directions. */
 export async function settle(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 20));
+  return new Promise((resolve) => {
+    setTimeout(resolve, 20);
+  });
+}
+
+/** A window that can be sent a message. */
+interface Postable {
+  postMessage: (data: unknown) => void;
 }
 
 /** A page root that records what the View does to it. */
@@ -70,13 +74,15 @@ export async function joinedHost(
   >();
   const deliver = (data: unknown, source: unknown) => {
     setTimeout(() => {
-      for (const listener of listeners) listener({ data, source });
+      for (const listener of listeners) {
+        listener({ data, source });
+      }
     }, 0);
   };
-  const viewWindow: { postMessage: (data: unknown) => void } = {
+  const viewWindow: Postable = {
     postMessage: (data) => deliver(data, hostWindow),
   };
-  const hostWindow: { postMessage: (data: unknown) => void } = {
+  const hostWindow: Postable = {
     postMessage: (data) => deliver(data, viewWindow),
   };
   Reflect.defineProperty(globalThis, 'window', {
@@ -115,7 +121,7 @@ export async function joinedHost(
     ),
   );
   await app.connect(
-    new ViewTransport(
+    new PostMessageTransport(
       hostWindow as unknown as Window,
       hostWindow as unknown as MessageEventSource,
     ),

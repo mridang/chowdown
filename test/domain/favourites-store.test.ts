@@ -28,10 +28,11 @@ describe('favourites store', () => {
     const unsubscribe = subscribeFavourites(listener);
     setFavouriteOverride('a', true);
     setFavouriteOverride('a', false);
-    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener.mock.calls).toEqual([[], []]);
     unsubscribe();
     setFavouriteOverride('a', true);
-    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener.mock.calls).toEqual([[], []]);
+    expect(getFavouriteOverride('a')).toBe(true);
   });
 });
 

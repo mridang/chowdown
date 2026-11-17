@@ -5,8 +5,7 @@
  * file and naming it here; nothing else holds a list to keep in step.
  */
 
-import { ToolRegistry, type NameOf } from '@/lib/mcp';
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { ToolRegistry } from '@/lib/mcp';
 import { ListRecipesTool } from '@/domain/mcp/tools/list-recipes';
 import { BrowseRecipesTool } from '@/domain/mcp/tools/browse-recipes';
 import { RecipesFromIngredientsTool } from '@/domain/mcp/tools/recipes-from-ingredients';
@@ -24,6 +23,8 @@ import { FavouriteRecipeTool } from '@/domain/mcp/tools/favourite-recipe';
 import { TagRecipeTool } from '@/domain/mcp/tools/tag-recipe';
 import { SetRecipeImagesTool } from '@/domain/mcp/tools/set-recipe-images';
 import { AnnotateRecipeTool } from '@/domain/mcp/tools/annotate-recipe';
+import type { NameOf } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
 
 export { ListRecipesTool } from '@/domain/mcp/tools/list-recipes';
 export { BrowseRecipesTool } from '@/domain/mcp/tools/browse-recipes';

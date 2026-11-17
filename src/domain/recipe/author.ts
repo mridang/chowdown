@@ -26,18 +26,18 @@ import { upsertMetadata } from '@/lib/cooklang';
 import { decodeEntities, visibleText } from '@/domain/recipe/html-text';
 import { scanHtml } from '@/domain/recipe/import-html-scan';
 
-const TAB = /[ \t]/;
-const PATTERN_2 = /(?!)/;
+const TAB = /[ \t]/u;
+const PATTERN_2 = /(?!)/u;
 const START_GT_SPACE_STAR_COLON =
-  /^>>\s*(?:author|by):[ \t]*(\S[^\n\r\u2028\u2029]*)/im;
-const DOT_A_HYPHEN_Z_END = /\.[a-z]{2,}$/i;
+  /^>>\s*(?:author|by):[ \t]*(\S[^\n\r\u2028\u2029]*)/imu;
+const DOT_A_HYPHEN_Z_END = /\.[a-z]{2,}$/iu;
 const ESC_L = /\p{L}{3,}/u;
 const ESC_L_2 = /\p{L}{2,}/u;
-const HTTPS_WWW = /[\d<>@/\\{}[\]=]|https?:|www\./i;
-const SPACE_COMMA_SEMICOLON_COLON_ANY = /[\s,;:.]/;
-const SPACE_COMMA_SEMICOLON_COLON = /[\s,;:]/;
-const SPACE_OR_HYPHEN_SPACE_ANY = /\s[|–—-]\s.*$/;
-const TITLE = /<title[^>]*>([^<]{0,300})</i;
+const HTTPS_WWW = /[\d<>@/\\{}[\]=]|https?:|www\./iu;
+const SPACE_COMMA_SEMICOLON_COLON_ANY = /[\s,;:.]/u;
+const SPACE_COMMA_SEMICOLON_COLON = /[\s,;:]/u;
+const SPACE_OR_HYPHEN_SPACE_ANY = /\s[|–—-]\s.*$/u;
+const TITLE = /<title[^>]*>([^<]{0,300})</iu;
 
 /** What a page says about who made its recipe, gathered but not yet judged. */
 export interface AuthorEvidence {
@@ -181,7 +181,7 @@ export function authorEvidence(html: string): AuthorEvidence {
       ...meta('article:author', 'property'),
     ].filter((name) => name !== '' && !name.startsWith('http')),
     siteName: meta('og:site_name', 'property')[0] ?? websiteName ?? '',
-    title: decodeEntities(title).replaceAll(/\s+/g, ' ').trim(),
+    title: decodeEntities(title).replaceAll(/\s+/gu, ' ').trim(),
     description: (meta('description', 'name')[0] ?? '').slice(0, 220),
     bylines,
     openingText: text.slice(0, 700),
@@ -206,7 +206,7 @@ export const BYLINE = new RegExp(
 
 /** What stands in front of a name in a byline and is not part of it. */
 const NAME_PREFIX =
-  /^(?:view all posts by|all posts by|posts by|recipe by|recipes by|written by|created by|submitted by|posted by|by|author:?)\s+/i;
+  /^(?:view all posts by|all posts by|posts by|recipe by|recipes by|written by|created by|submitted by|posted by|by|author:?)\s+/iu;
 
 /** Words that mean a candidate is page furniture or a role, not a person. */
 export const NOT_A_NAME = new RegExp(
@@ -216,20 +216,16 @@ export const NOT_A_NAME = new RegExp(
     'contributors?|subscribe|newsletter|cookies?|privacy|login|sign|unknown',
     'anonymous|guest|author|undefined|null',
   ].join('|')})\b`,
-  'i',
+  'iu',
 );
 
 /** `text` without the leading characters `leading` accepts and the trailing ones `trailing` accepts. */
 function trimEdges(text: string, leading: RegExp, trailing: RegExp): string {
-  let start = 0;
-  let end = text.length;
-  while (start < end && leading.test(text.charAt(start))) {
-    start += 1;
-  }
-  while (end > start && trailing.test(text.charAt(end - 1))) {
-    end -= 1;
-  }
-  return text.slice(start, end);
+  const units = Array.from({ length: text.length }, (_, at) => text.charAt(at));
+  const first = units.findIndex((unit) => !leading.test(unit));
+  const start = first === -1 ? text.length : first;
+  const last = units.slice(start).findLastIndex((unit) => !trailing.test(unit));
+  return text.slice(start, start + last + 1);
 }
 
 /**
@@ -245,7 +241,7 @@ export function cleanAuthorName(raw: string): string | undefined {
   }
   const stripped = trimEdges(
     decodeEntities(raw)
-      .replaceAll(/\s+/g, ' ')
+      .replaceAll(/\s+/gu, ' ')
       .trim()
       .replace(NAME_PREFIX, '')
       // "Jane Cook | Some Blog" and "Jane Cook - Some Blog" are the name and a site.
@@ -273,9 +269,8 @@ function withCapitals(name: string): string {
         .toLowerCase()
         .replaceAll(
           /(^|[\s'’-])(\p{L})/gu,
-          (_, before: string, letter: string) => {
-            return `${before}${letter.toUpperCase()}`;
-          },
+          (_, before: string, letter: string) =>
+            `${before}${letter.toUpperCase()}`,
         )
     : name;
 }
@@ -324,7 +319,7 @@ function plain(text: string): string {
     .normalize('NFKD')
     .replaceAll(/\p{M}/gu, '')
     .toLowerCase()
-    .replaceAll(/[^a-z0-9]+/g, '');
+    .replaceAll(/[^a-z0-9]+/gu, '');
 }
 
 /** The model that reads the page's summary. */
@@ -375,6 +370,7 @@ function answerOf(reply: unknown): string | undefined {
 }
 
 /** `JSON.parse` that gives undefined instead of throwing. */
+// eslint-disable-next-line tslop/no-unknown-returns -- a JSON parse boundary: the caller checks the shape with its own guards
 function safeParse(text: string): unknown {
   const parsed = safeJsonParse<unknown>(text);
   return parsed.ok ? parsed.value : undefined;

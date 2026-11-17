@@ -1,8 +1,10 @@
-const LD_JSON = /ld\+json/i;
+import { own } from '@/utils/own';
+
+const LD_JSON = /ld\+json/iu;
 const LT_SLASH_COLON_SCRIPT_OR =
-  /<\/(?:script|style|noscript|svg|template)\s*>/i;
-const SCRIPT_STYLE_NOSCRIPT = /<(script|style|noscript|svg|template)\b/i;
-const LT_COLON_SCRIPT_OR_STYLE = /<(?:script|style|noscript|svg|template)\b/i;
+  /<\/(?:script|style|noscript|svg|template)\s*>/iu;
+const SCRIPT_STYLE_NOSCRIPT = /<(script|style|noscript|svg|template)\b/iu;
+const LT_COLON_SCRIPT_OR_STYLE = /<(?:script|style|noscript|svg|template)\b/iu;
 /**
  * @packageDocumentation
  *
@@ -14,7 +16,7 @@ const LT_COLON_SCRIPT_OR_STYLE = /<(?:script|style|noscript|svg|template)\b/i;
  */
 
 /** The character references that turn up in the text of web pages. */
-const ENTITIES: Readonly<Record<string, string>> = {
+const ENTITIES = {
   '&amp;': '&',
   '&#39;': "'",
   '&#x27;': "'",
@@ -32,8 +34,8 @@ const ENTITIES: Readonly<Record<string, string>> = {
 /** Replace the character references in `text` that are worth reading, leaving any other as it is. */
 export function decodeEntities(text: string): string {
   return text.replaceAll(
-    /&(?:#x?[0-9a-fA-F]{1,6}|[a-zA-Z]{2,8});/g,
-    (entity) => ENTITIES[entity] ?? entity,
+    /&(?:#x?[0-9a-fA-F]{1,6}|[a-zA-Z]{2,8});/gu,
+    (entity) => own(ENTITIES, entity) ?? entity,
   );
 }
 
@@ -64,22 +66,26 @@ export function withoutScriptsAndStyles(html: string): string {
  */
 export function withoutBulkMarkup(html: string): string {
   const [head = '', ...rest] = html.split(SCRIPT_STYLE_NOSCRIPT);
-  const kept: string[] = [head];
-  for (let index = 0; index + 1 < rest.length; index += 2) {
-    const name = (rest[index] ?? '').toLowerCase();
-    const part = rest[index + 1] ?? '';
-    const closer = LT_SLASH_COLON_SCRIPT_OR.exec(part);
-    if (!closer) {
-      break;
-    }
-    const end = closer.index + closer[0].length;
+  const pairs = Array.from({ length: Math.floor(rest.length / 2) }, (_, n) => ({
+    name: (rest[2 * n] ?? '').toLowerCase(),
+    part: rest[2 * n + 1] ?? '',
+  })).map(({ name, part }) => ({
+    name,
+    part,
+    closer: LT_SLASH_COLON_SCRIPT_OR.exec(part),
+  }));
+  // An unterminated block ends the scan: everything after it is dropped.
+  const unterminated = pairs.findIndex(({ closer }) => !closer);
+  const kept = (
+    unterminated === -1 ? pairs : pairs.slice(0, unterminated)
+  ).flatMap(({ name, part, closer }) => {
+    const end = (closer?.index ?? 0) + (closer?.[0].length ?? 0);
     const startTag = part.slice(0, part.indexOf('>') + 1);
-    if (name === 'script' && LD_JSON.test(startTag)) {
-      kept.push(`<script${part.slice(0, end)}`);
-    }
-    kept.push(part.slice(end));
-  }
-  return kept.join('');
+    return name === 'script' && LD_JSON.test(startTag)
+      ? [`<script${part.slice(0, end)}`, part.slice(end)]
+      : [part.slice(end)];
+  });
+  return [head, ...kept].join('');
 }
 
 /** The most of a page that is looked at (a page is capped well below this on the way in). */
@@ -93,11 +99,11 @@ const MAX_PAGE = 400_000;
 export function visibleText(html: string, limit: number): string {
   return decodeEntities(
     withoutScriptsAndStyles(html.slice(0, MAX_PAGE)).replaceAll(
-      /<[^<>]*>/g,
+      /<[^<>]*>/gu,
       ' ',
     ),
   )
-    .replaceAll(/\s+/g, ' ')
+    .replaceAll(/\s+/gu, ' ')
     .trim()
     .slice(0, limit);
 }

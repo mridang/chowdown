@@ -1,11 +1,24 @@
+import { cn } from '@/components/ui/cn';
 import type { ReactElement, ReactNode } from 'react';
 
-import { cn } from '@/components/ui/cn';
+/** The rounding class for a placeholder's corners. */
+function roundingOf(
+  corners: 'rounded' | 'square' | 'circle',
+  tone: 'bar' | 'block',
+): string {
+  if (corners === 'square') {
+    return '';
+  }
+  if (corners === 'circle') {
+    return 'rounded-full';
+  }
+  return tone === 'bar' ? 'rounded-control' : 'rounded-card';
+}
 
 /** One grey placeholder shape; give it the width and height of what it stands for. */
 export function Skeleton({
   tone = 'bar',
-  shape = 'rounded',
+  corners = 'rounded',
   // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
 }: Readonly<{
@@ -16,20 +29,13 @@ export function Skeleton({
    * The corners: `rounded` is the usual softened rectangle, `square` has none
    * (a photo), `circle` is round (an avatar, a step number).
    */
-  shape?: 'rounded' | 'square' | 'circle';
+  corners?: 'rounded' | 'square' | 'circle';
   // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
 }>): ReactElement {
   const colour = tone === 'bar' ? 'bg-ink/10' : 'bg-ink/5';
-  let corners: string;
-  if (shape === 'square') {
-    corners = '';
-  } else if (shape === 'circle') {
-    corners = 'rounded-full';
-  } else {
-    corners = tone === 'bar' ? 'rounded-control' : 'rounded-card';
-  }
-  return <div className={cn(colour, corners, className)} />;
+  const rounding = roundingOf(corners, tone);
+  return <div className={cn(colour, rounding, className)} />;
 }
 
 /**
@@ -49,13 +55,15 @@ export function SkeletonFrame({
   children: ReactNode;
 }>): ReactElement {
   return (
-    <div
-      role="status"
+    <output
       aria-busy="true"
-      className={cn('animate-pulse motion-reduce:animate-none', className)}
+      className={cn(
+        'block animate-pulse motion-reduce:animate-none',
+        className,
+      )}
     >
       <span className="sr-only">{label}</span>
       {children}
-    </div>
+    </output>
   );
 }

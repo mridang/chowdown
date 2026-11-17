@@ -13,15 +13,16 @@ describe('own', () => {
     expect(own(table, 'pinch')).toBeUndefined();
   });
 
-  it('does not mistake what every object inherits for a listed word', () => {
-    for (const word of [
-      'constructor',
-      'toString',
-      '__proto__',
-      'hasOwnProperty',
-      'valueOf',
-    ]) {
+  it.each([
+    'constructor',
+    'toString',
+    '__proto__',
+    'hasOwnProperty',
+    'valueOf',
+  ])(
+    'does not mistake what every object inherits for a listed word (%j)',
+    (word) => {
       expect(own(table, word)).toBeUndefined();
-    }
-  });
+    },
+  );
 });

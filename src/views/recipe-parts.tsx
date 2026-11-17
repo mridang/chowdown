@@ -10,11 +10,11 @@
  * itself (hosts that cannot send a message back to the chat).
  */
 
+import { safeHttpUrl, sourceHost } from '@/views/follow-up';
 import type { ReactElement } from 'react';
 
 import type { StepToken } from '@/lib/cooklang';
 import type { RecipeCardData } from '@/domain/mcp/ui-types';
-import { safeHttpUrl, sourceHost } from '@/views/follow-up';
 
 /** The small label above a title: "Recipe" or "Recipe idea". */
 export function Eyebrow({
@@ -70,6 +70,7 @@ function Token({ token }: Readonly<{ token: StepToken }>): ReactElement {
     case 'timer': {
       return <span className="tok-timer">{token.label}</span>;
     }
+    // no default
   }
 }
 
@@ -99,9 +100,9 @@ export function focusWhenShown(element: HTMLElement | null): void {
 /** Tells the person where to leave fullscreen when the Back button cannot. */
 export function CloseHint(): ReactElement {
   return (
-    <span className="status-line hint" role="status">
+    <output className="status-line hint">
       Use the close button in the header to leave fullscreen.
-    </span>
+    </output>
   );
 }
 

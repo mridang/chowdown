@@ -12,12 +12,15 @@ describe('SampleStrip', () => {
     expect(out).toContain('Example recipes');
   });
 
-  it('lists every recipe as an item with its title', () => {
-    expect(out.match(/<li/g)).toHaveLength(recipes.length);
-    for (const recipe of recipes) expect(out).toContain(recipe.title);
-  });
+  it.each(recipes)(
+    'lists every recipe as an item with its title (%j)',
+    (recipe) => {
+      expect(out.match(/<li/gu)).toHaveLength(recipes.length);
+      expect(out).toContain(recipe.title);
+    },
+  );
 
   it('staggers every second card', () => {
-    expect(out.match(/lg:mt-8/g)).toHaveLength(3);
+    expect(out.match(/lg:mt-8/gu)).toHaveLength(3);
   });
 });

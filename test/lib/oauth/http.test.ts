@@ -35,7 +35,9 @@ describe('bearerToken', () => {
 
 describe('CORS_HEADERS', () => {
   const list = (name: string) =>
-    (CORS_HEADERS[name] ?? '').split(',').map((v) => v.trim());
+    (new Map(Object.entries(CORS_HEADERS)).get(name) ?? '')
+      .split(',')
+      .map((v) => v.trim());
 
   it('allows the methods the endpoints answer, including DELETE so a session-ending client gets our 405', () => {
     expect(list('Access-Control-Allow-Methods')).toEqual([
@@ -123,15 +125,13 @@ describe('oauthError', () => {
 });
 
 describe('Pragma: no-cache on every JSON answer (RFC 6749 5.1)', () => {
-  it('goes with Cache-Control: no-store on successes and errors', () => {
-    for (const response of [
-      noStoreJson({}),
-      oauthError('invalid_request', 'No.'),
-    ]) {
+  it.each([noStoreJson({}), oauthError('invalid_request', 'No.')])(
+    'goes with Cache-Control: no-store on successes and errors (%j)',
+    (response) => {
       expect(response.headers.get('cache-control')).toBe('no-store');
       expect(response.headers.get('pragma')).toBe('no-cache');
-    }
-  });
+    },
+  );
 });
 
 describe('readOAuthForm', () => {

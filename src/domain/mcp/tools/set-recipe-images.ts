@@ -5,7 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { z } from 'zod';
 import {
   editRecipe,
   label,
@@ -19,16 +19,14 @@ import {
 } from '@/domain/mcp/tools/schemas';
 import { validImageUrls, withImages } from '@/domain/recipe/media';
 import { removeMetadata } from '@/lib/cooklang';
-import {
-  errorResult,
-  type JsonSchema,
-  McpTool,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
-  writes,
+import { errorResult, McpTool, writes } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type {
+  JsonSchema,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
 
 export class SetRecipeImagesTool extends McpTool<
   'set_recipe_images',

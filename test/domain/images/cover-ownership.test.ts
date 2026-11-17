@@ -1,13 +1,11 @@
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import { indexUnindexedRecipes } from '@/domain/db/recipe-images';
 import { upsertRecipe } from '@/domain/db/recipes';
 import { userHasCover } from '@/domain/images/cover-ownership';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
-import {
-  sqliteDatabase,
-  type SqliteDatabase,
-} from '../../lib/core/db/sqlite-db';
+import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import type { SqliteDatabase } from '../../lib/core/db/sqlite-db';
 
 const PHOTO = 'https://photos.example.org/soup.jpg?w=440,400';
 const OTHER = 'https://photos.example.org/stew.jpg';
@@ -26,12 +24,13 @@ function recipe(userId: number, fileId: string, source: string): void {
 
 beforeEach(() => {
   database = sqliteDatabase(...APP_MIGRATIONS);
-  for (const id of [1, 2])
+  for (const id of [1, 2]) {
     database.raw
       .prepare(
         "INSERT INTO users (id, google_sub, email, created_at, updated_at) VALUES (?, ?, ?, 't', 't')",
       )
       .run(id, `sub-${id}`, `user${id}@example.com`);
+  }
 });
 
 describe('userHasCover', () => {
@@ -92,15 +91,14 @@ describe('userHasCover', () => {
 
 describe('userHasCover with the recipe_images index', () => {
   /** Every statement sent to the database while `work` runs. */
-  async function sentWhile(work: () => Promise<unknown>): Promise<string[]> {
-    const sent: string[] = [];
+  async function sentWhile(work: () => Promise<void>): Promise<string[]> {
     const prepare = database.raw.prepare.bind(database.raw);
-    database.raw.prepare = (sql: string) => {
-      sent.push(sql);
-      return prepare(sql);
-    };
+    const spy = jest
+      .spyOn(database.raw, 'prepare')
+      .mockImplementation((sql: string) => prepare(sql));
     await work();
-    database.raw.prepare = prepare;
+    const sent = spy.mock.calls.map(([sql]) => sql);
+    spy.mockRestore();
     return sent;
   }
 
@@ -166,16 +164,14 @@ describe('userHasCover with the recipe_images index', () => {
     recipe(1, 'a', `>> images: ${PHOTO}\n`);
     // Rewrite the recipe after the text was read but before the batch runs.
     const original = database.db.batch.bind(database.db);
-    let rewritten = false;
-    (database.db as { batch: unknown }).batch = async (
-      statements: Parameters<typeof original>[0],
-    ) => {
-      if (!rewritten) {
-        rewritten = true;
-        await save(1, 'a', `>> images: ${OTHER}\n`);
-      }
-      return original(statements);
-    };
+    jest
+      .spyOn(database.db, 'batch')
+      .mockImplementationOnce(
+        async (statements: Parameters<typeof original>[0]) => {
+          await save(1, 'a', `>> images: ${OTHER}\n`);
+          return original(statements);
+        },
+      );
     await indexUnindexedRecipes(database.db, 1);
     expect(await userHasCover(database.db, 1, OTHER)).toBe(true);
     expect(await userHasCover(database.db, 1, PHOTO)).toBe(false);

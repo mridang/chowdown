@@ -1,7 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
-import type { User } from '@/domain/db/users';
 import { callTool, callToolOrExplain } from '@/domain/mcp/tool-calls';
 import {
   BackendFailureError,
@@ -17,9 +16,10 @@ import {
   folder,
   said,
 } from '../../lib/mcp/tool-fakes';
+import type { User } from '@/domain/db/users';
 
 const THE_ARGUMENTS_ARE =
-  /The arguments are: recipe \(required\), note \(required\), ingredient, step\.$/;
+  /The arguments are: recipe \(required\), note \(required\), ingredient, step\.$/u;
 
 describe('the arguments are checked before anything runs', () => {
   it('refuses an unknown tool without opening Drive', async () => {
@@ -48,15 +48,16 @@ describe('the arguments are checked before anything runs', () => {
     },
   );
 
-  it('refuses arguments that are not an object', async () => {
-    for (const bad of ['text', 5, [], null, true]) {
+  it.each(['text', 5, [], null, true])(
+    'refuses arguments that are not an object (%j)',
+    async (bad) => {
       await expect(
         callTool(USER, { name: 'list_recipes', arguments: bad }),
       ).rejects.toMatchObject({
         problems: ['`arguments` must be an object.'],
       });
-    }
-  });
+    },
+  );
 
   it('treats omitted arguments as none', async () => {
     const result = await callTool(
@@ -166,8 +167,9 @@ describe('the arguments are checked before anything runs', () => {
       const result = await call(name, args, fake);
       expect(result.isError).toBe(true);
       expect(result.structuredContent).toBeUndefined();
-      expect(said(result)).toContain(`Invalid arguments for ${name}: `);
-      expect(said(result)).toContain(problem);
+      const text = said(result);
+      expect(text).toContain(`Invalid arguments for ${name}: `);
+      expect(text).toContain(problem);
       expect(fake.updates).toEqual([]);
       expect(fake.created).toEqual([]);
     },
@@ -292,9 +294,10 @@ describe('callToolOrExplain', () => {
       },
     );
     expect(result.isError).toBe(true);
-    expect(said(result)).toContain('Google Drive');
-    expect(said(result)).toContain('Try again in a minute');
-    expect(said(result)).not.toContain('12345');
+    const text = said(result);
+    expect(text).toContain('Google Drive');
+    expect(text).toContain('Try again in a minute');
+    expect(text).not.toContain('12345');
     expect(quiet).toHaveBeenCalled();
     quiet.mockRestore();
   });
@@ -317,8 +320,9 @@ describe('callToolOrExplain', () => {
       },
     );
     expect(result.isError).toBe(true);
-    expect(said(result)).toContain('the AI model');
-    expect(said(result)).not.toContain('internal');
+    const text = said(result);
+    expect(text).toContain('the AI model');
+    expect(text).not.toContain('internal');
     quiet.mockRestore();
   });
 

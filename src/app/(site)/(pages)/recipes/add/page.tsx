@@ -1,6 +1,4 @@
-import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import type { ReactElement } from 'react';
 
 import { DriveConnectPanel } from '@/components/site/drive-connect';
 import { Container } from '@/components/ui/layout';
@@ -14,8 +12,10 @@ import { AddRecipesPage } from '@/app/(site)/(pages)/recipes/add/_components/add
 import {
   addRecipesPath,
   sharedImportInput,
-  type ShareParams,
 } from '@/app/(site)/(pages)/recipes/add/_components/shared-input';
+import type { ShareParams } from '@/app/(site)/(pages)/recipes/add/_components/shared-input';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 /** The tab title of the Add recipes page. */
 export const metadata: Metadata = { title: 'Add recipes' };

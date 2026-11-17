@@ -16,38 +16,29 @@ import {
   DriveNotConnectedError,
   isDriveConnected,
 } from '@/domain/auth/drive-access';
-import { sessionIsCurrent, type SessionPayload } from '@/lib/session';
+import { sessionIsCurrent } from '@/lib/session';
 import { getUserAccessToken } from '@/domain/auth/user-access-token';
-import type { Database } from '@/domain/db/client';
-import {
-  getRecipePageRows,
-  type RecipePageRows,
-} from '@/domain/db/recipe-page';
-import { claimDriveLease, type User } from '@/domain/db/users';
+import { getRecipePageRows } from '@/domain/db/recipe-page';
+import { claimDriveLease } from '@/domain/db/users';
 import { getFileContent, listRecipeFiles } from '@/domain/drive/recipe-files';
 import { getDatabase } from '@/domain/db/client';
-import {
-  toCardRecipe,
-  toneFor,
-  type CardRecipe,
-  type Tone,
-} from '@/domain/recipe/card-data';
-import {
-  extractNotes,
-  parseRecipe,
-  sourceUrlOf,
-  type Note,
-  type ParsedRecipe,
-} from '@/lib/cooklang';
+import { toCardRecipe } from '@/domain/recipe/card-data';
+import { toneFor } from '@/domain/recipe/card-style';
+import { extractNotes, parseRecipe, sourceUrlOf } from '@/lib/cooklang';
 import { recipesFolderOf } from '@/domain/recipe/drive-sync';
 import { minutesOf } from '@/domain/recipe/minutes';
-import { initialUnits, type UnitChoice } from '@/domain/recipe/page-view';
+import { initialUnits } from '@/domain/recipe/page-view';
 import { parseSimilar } from '@/domain/recipe/similar';
-import {
-  indexRecipeWrite,
-  rowTags,
-  type RecipeTags,
-} from '@/domain/recipe/tag-index';
+import { indexRecipeWrite, rowTags } from '@/domain/recipe/tag-index';
+import type { UnitChoice } from '@/domain/recipe/page-view';
+import type { Note, ParsedRecipe } from '@/lib/cooklang';
+import type { CardRecipe } from '@/domain/recipe/card-data';
+import type { Tone } from '@/domain/recipe/card-style';
+import type { User } from '@/domain/db/users';
+import type { RecipePageRows } from '@/domain/db/recipe-page';
+import type { RecipeTags } from '@/domain/recipe/tag-index';
+import type { SessionPayload } from '@/lib/session';
+import type { Database } from '@/domain/db/client';
 
 /** How many "you might also like" recipes the page shows (one full row). */
 export const ALSO_LIKE_COUNT = 4;

@@ -6,23 +6,25 @@ const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
 
 /** The ways a recipe spells a unit of time, and what each is worth. */
-const UNIT_MS: Readonly<Record<string, number>> = {
-  s: SECOND,
-  sec: SECOND,
-  secs: SECOND,
-  second: SECOND,
-  seconds: SECOND,
-  m: MINUTE,
-  min: MINUTE,
-  mins: MINUTE,
-  minute: MINUTE,
-  minutes: MINUTE,
-  h: HOUR,
-  hr: HOUR,
-  hrs: HOUR,
-  hour: HOUR,
-  hours: HOUR,
-};
+const UNIT_MS = new Map<string, number>(
+  Object.entries({
+    s: SECOND,
+    sec: SECOND,
+    secs: SECOND,
+    second: SECOND,
+    seconds: SECOND,
+    m: MINUTE,
+    min: MINUTE,
+    mins: MINUTE,
+    minute: MINUTE,
+    minutes: MINUTE,
+    h: HOUR,
+    hr: HOUR,
+    hrs: HOUR,
+    hour: HOUR,
+    hours: HOUR,
+  }),
+);
 
 /**
  * The longest countdown cook mode will run. A recipe that says "48 hours" is
@@ -37,17 +39,17 @@ const LONGEST_MS = 24 * HOUR;
  */
 const TERM = new RegExp(
   String.raw`(?<amount>${AMOUNT_PATTERN})(?:\s*(?:[-–—]|to)\s*(?:${AMOUNT_PATTERN}))?\s*(?<unit>[a-z]+)?`,
-  'gi',
+  'giu',
 );
 
 /** A range written with spaces around its dash or "to": "1 hour - 1 hour 30 min". */
-const SPACED_RANGE = /\s(?:[-–—]|to)\s/i;
+const SPACED_RANGE = /\s(?:[-–—]|to)\s/iu;
 
 /** What a bare number means after a term in this unit: "1h30" is 30 minutes. */
-const IMPLIED_UNIT_MS: Readonly<Record<number, number>> = {
-  [HOUR]: MINUTE,
-  [MINUTE]: SECOND,
-};
+const IMPLIED_UNIT_MS = new Map<number, number>([
+  [HOUR, MINUTE],
+  [MINUTE, SECOND],
+]);
 
 /** One term read from the label: its amount, and its unit if it was written. */
 interface Term {
@@ -56,7 +58,7 @@ interface Term {
 }
 
 /** What may sit between two terms that belong together: "1 hour and 30 minutes", "1 hr, 30 min". */
-const CONNECTOR = /^\s*(?:(?:,|and|&|\+)\s*)?$/i;
+const CONNECTOR = /^\s*(?:(?:,|and|&|\+)\s*)?$/iu;
 
 /**
  * The terms at the start of the label that run on from one another. A label
@@ -82,7 +84,8 @@ function termsOf(label: string): readonly Term[] {
     const word = groups?.['unit']?.toLowerCase();
     return {
       amount: amount ?? Number.NaN,
-      unitMs: word === undefined ? undefined : (UNIT_MS[word] ?? Number.NaN),
+      unitMs:
+        word === undefined ? undefined : (UNIT_MS.get(word) ?? Number.NaN),
     };
   });
 }
@@ -101,7 +104,7 @@ function totalOf(terms: readonly Term[]): number | null {
     ({ total, previous }, term) => {
       const unitMs =
         term.unitMs ??
-        (previous === null ? undefined : IMPLIED_UNIT_MS[previous]);
+        (previous === null ? undefined : IMPLIED_UNIT_MS.get(previous));
       return {
         total: total + term.amount * (unitMs ?? Number.NaN),
         previous: unitMs ?? null,

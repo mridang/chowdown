@@ -12,11 +12,12 @@
  * malformed metadata value can never inject a bad `src`.
  */
 
-import { type ParsedRecipe, upsertMetadata } from '@/lib/cooklang';
+import { upsertMetadata } from '@/lib/cooklang';
 import { bestRenditions } from '@/domain/recipe/image-renditions';
+import type { ParsedRecipe } from '@/lib/cooklang';
 
-const UNDEFINED_NULL_NAN = /^(undefined|null|nan|false)$/i;
-const WHITESPACE_RUN = /\s+/;
+const UNDEFINED_NULL_NAN = /^(undefined|null|nan|false)$/iu;
+const WHITESPACE_RUN = /\s+/u;
 
 /** A recipe's media for display. */
 export interface RecipeMedia {

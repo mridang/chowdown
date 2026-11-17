@@ -25,32 +25,31 @@ import { ensureRecipesFolder } from '@/domain/drive/recipes-folder';
 import { indexRecipeWrite } from '@/domain/recipe/tag-index';
 import { isUnitSystem } from '@/lib/cooklang';
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
-import { listEmbeddings, type EmbeddingRow } from '@/domain/db/embeddings';
+import { listEmbeddings } from '@/domain/db/embeddings';
 import { listFavouriteIds } from '@/domain/db/favourites';
 import { findRecipeBySourceUrl, listRecipesByUser } from '@/domain/db/recipes';
-import { setUserUnits, type User } from '@/domain/db/users';
-import type { DriveFile } from '@/lib/google/drive';
+import { setUserUnits } from '@/domain/db/users';
 import { embedText } from '@/domain/recipe/embeddings';
 import { setFavouriteAndTag } from '@/domain/recipe/favourite';
-import type { ExistingRecipe } from '@/domain/recipe/import-recipe';
 import { syncFromDrive } from '@/domain/recipe/drive-sync';
 import { ensureEmbeddings } from '@/domain/recipe/similar';
 import {
   tagCookSource,
   tagCookSourceBestEffort,
 } from '@/domain/recipe/tagging';
-import {
-  addMissingCover,
-  convertImport,
-  type ConversionOptions,
-} from '@/domain/recipe/to-cooklang';
-import type { UnitSystem } from '@/lib/cooklang';
+import { addMissingCover, convertImport } from '@/domain/recipe/to-cooklang';
 import { DAILY_BUDGETS, spendBudget } from '@/domain/daily-budget';
 import { getEnv, runInBackground } from '@/lib/core/runtime';
 import { getDatabase } from '@/domain/db/client';
 import { errorMessage, logError } from '@/utils/logging';
-import type { ScenarioDeps } from '@/domain/mcp/scenarios';
 import { BackendFailureError } from '@/lib/mcp';
+import type { ScenarioDeps } from '@/domain/mcp/scenarios';
+import type { ConversionOptions } from '@/domain/recipe/to-cooklang';
+import type { UnitSystem } from '@/lib/cooklang';
+import type { ExistingRecipe } from '@/domain/recipe/import-recipe';
+import type { User } from '@/domain/db/users';
+import type { EmbeddingRow } from '@/domain/db/embeddings';
+import type { DriveFile } from '@/lib/google/drive';
 
 /**
  * Run one outside call and turn any failure of it into a {@link BackendFailureError}
@@ -151,6 +150,12 @@ function needsEmbedding(
   );
 }
 
+/** The files to hand to the indexer, and how many are left waiting. */
+export interface BackfillPlan {
+  readonly files: readonly DriveFile[];
+  readonly waiting: number;
+}
+
 /**
  * Choose which files to hand to `ensureEmbeddings` so one call embeds at most
  * `limit` recipes, however large the folder is. Files that are indexed and
@@ -172,7 +177,7 @@ export function planBackfill(
   cached: readonly EmbeddingRow[],
   limit: number,
   first?: string,
-): { readonly files: readonly DriveFile[]; readonly waiting: number } {
+): BackfillPlan {
   const byId = new Map(cached.map((row) => [row.drive_file_id, row]));
   const pending = files.filter((f) => needsEmbedding(f, byId.get(f.id)));
   const chosen = new Set(
@@ -374,7 +379,9 @@ export const liveToolServices: ToolServices = {
         listFavouriteIds(getDatabase(), user.id),
       ),
     // Not guarded: the scenario code decides which sync failures matter.
-    sync: async () => syncFromDrive(user),
+    sync: async () => {
+      await syncFromDrive(user);
+    },
     inBackground: runInBackground,
   }),
 };

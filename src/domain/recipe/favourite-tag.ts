@@ -10,14 +10,14 @@
 
 import { removeMetadata, upsertMetadata } from '@/lib/cooklang';
 
-const TRUE_YES = /^(true|yes|1)$/i;
+const TRUE_YES = /^(true|yes|1)$/iu;
 
 /** The metadata key carrying the favourite marker. */
 export const FAVOURITE_KEY = 'favourite';
 
 /** Whether a recipe's source carries the favourite marker. */
 export function hasFavouriteTag(source: string): boolean {
-  const m = new RegExp(String.raw`^>>\s*${FAVOURITE_KEY}:\s*(.*)$`, 'im').exec(
+  const m = new RegExp(String.raw`^>>\s*${FAVOURITE_KEY}:\s*(.*)$`, 'imu').exec(
     source,
   );
   return m !== null && TRUE_YES.test((m[1] ?? '').trim());

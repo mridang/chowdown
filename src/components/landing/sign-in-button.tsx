@@ -1,7 +1,6 @@
-import type { ReactElement } from 'react';
-
 import { GoogleIcon } from '@/components/icons';
 import { ButtonLink } from '@/components/ui/button';
+import type { ReactElement } from 'react';
 
 /**
  * The Google sign-in button used throughout the landing page. It is a plain

@@ -43,7 +43,7 @@ const MAX_KEPT = 200;
  * `[^<>]*` cannot cross another bracket, which is what keeps a run of
  * unterminated tags linear instead of quadratic.
  */
-const TAG = /<(meta|script)(?=[\s/>])([^<>]*)>|<\/script\s*>/gi;
+const TAG = /<(meta|script)(?=[\s/>])([^<>]*)>|<\/script\s*>/giu;
 
 /**
  * One attribute: a name, then optionally `=` and a double-quoted, single-quoted
@@ -59,7 +59,7 @@ export const ATTRIBUTE = new RegExp(
     String.raw`|([^\s"'=<>${'`'}]+)`,
     '))?',
   ].join(''),
-  'g',
+  'gu',
 );
 
 /** The attributes in the text between a tag's name and its `>`. */

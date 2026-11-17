@@ -4,9 +4,9 @@ import {
   registerWhenLoaded,
   ServiceWorker,
   WORKER_URL,
-  type WorkerEnvironment,
 } from '@/components/site/service-worker';
 import { html } from '../render';
+import type { WorkerEnvironment } from '@/components/site/service-worker';
 
 /** A browser stand-in: production, with service workers, still loading. */
 function browser(
@@ -45,16 +45,18 @@ describe('registerWhenLoaded', () => {
       },
     });
     registerWhenLoaded(env);
-    expect(env.register).not.toHaveBeenCalled();
-    for (const listener of listeners) listener();
-    expect(env.register).toHaveBeenCalledTimes(1);
+    expect(env.register.mock.calls).toEqual([]);
+    for (const listener of listeners) {
+      listener();
+    }
+    expect(env.register.mock.calls).toEqual([[WORKER_URL, { scope: '/' }]]);
   });
 
   it('hands back the way to stop waiting', () => {
     const stop = jest.fn();
     const cleanup = registerWhenLoaded(browser({ onLoad: () => stop }));
     cleanup?.();
-    expect(stop).toHaveBeenCalledTimes(1);
+    expect(stop.mock.calls).toEqual([[]]);
   });
 
   it('does nothing in development, where a worker would keep stale pages', () => {

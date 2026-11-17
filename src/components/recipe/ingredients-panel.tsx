@@ -1,15 +1,16 @@
 'use client';
 
-import { useId, useState, type ReactElement } from 'react';
+import { useId, useState } from 'react';
 
 import { CheckIcon, MinusIcon, PanIcon, PlusIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
 import { Eyebrow, Heading } from '@/components/ui/layout';
 import { Segmented } from '@/components/ui/segmented';
-import type { UnitChoice } from '@/domain/recipe/page-view';
 
 import { NoteChip } from '@/components/recipe/note-chip';
 import { useRecipeState } from '@/components/recipe/recipe-state';
+import type { ReactElement } from 'react';
+import type { UnitChoice } from '@/domain/recipe/page-view';
 
 /** One line of the ingredient list, with any personal notes that belong to it. */
 export interface PanelIngredient {
@@ -80,6 +81,7 @@ export function IngredientsPanel({
         <span className="text-sm text-muted" id={servingsLabelId}>
           Servings
         </span>
+        {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- a labelled group of buttons; a fieldset would add a border and legend layout */}
         <span
           className="flex items-center gap-1"
           role="group"
@@ -117,6 +119,7 @@ export function IngredientsPanel({
             const ticked = done.has(index);
             return (
               <li key={`${ingredient.name}-${index}`} className="py-1">
+                {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- a button that toggles the row; a native checkbox is not the control here */}
                 <button
                   type="button"
                   role="checkbox"

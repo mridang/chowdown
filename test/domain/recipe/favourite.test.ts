@@ -1,13 +1,11 @@
-import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
+import { setFavouriteAndTag } from '@/domain/recipe/favourite';
+import { createKeyedQueue } from '@/lib/async';
+import { asCalls } from '../../calls';
 
 import type { Database } from '@/domain/db/client';
 import type { User } from '@/domain/db/users';
-import {
-  setFavouriteAndTag,
-  type FavouriteDeps,
-} from '@/domain/recipe/favourite';
-import { createKeyedQueue } from '@/lib/async';
+import type { FavouriteDeps } from '@/domain/recipe/favourite';
 
 const db = {} as Database;
 
@@ -95,10 +93,10 @@ describe('setFavouriteAndTag', () => {
 
   it('leaves the file alone when it already says the right thing', async () => {
     const { deps, settle } = fakes({ file: '>> favourite: true\n\nCook.\n' });
-    await setFavouriteAndTag(3, 'f1', true, deps);
+    expect(await setFavouriteAndTag(3, 'f1', true, deps)).toBe(true);
     await settle();
-    expect(deps.writeFile).not.toHaveBeenCalled();
-    expect(asCalls(deps.index)).not.toHaveBeenCalled();
+    expect(asCalls(deps.writeFile).mock.calls).toEqual([]);
+    expect(asCalls(deps.index).mock.calls).toEqual([]);
   });
 
   it('keeps the heart in the app only for someone without Drive', async () => {
@@ -110,18 +108,25 @@ describe('setFavouriteAndTag', () => {
   });
 
   it('does nothing in Drive when the account has gone', async () => {
-    const { deps, settle } = fakes({ user: void 0 });
-    await setFavouriteAndTag(3, 'f1', true, deps);
+    // eslint-disable-next-line sonarjs/no-undefined-assignment -- the key must be present with the value undefined, because the test is about an absent value and null means something else
+    const { deps, settle } = fakes({ user: undefined });
+    expect(await setFavouriteAndTag(3, 'f1', true, deps)).toBe(true);
     await settle();
-    expect(deps.readFile).not.toHaveBeenCalled();
+    expect(asCalls(deps.readFile).mock.calls).toEqual([]);
+    expect(asCalls(deps.writeFile).mock.calls).toEqual([]);
   });
 
   it('skips the cache refresh for a recipe that is not cached', async () => {
-    const { deps, settle } = fakes({ row: void 0 });
-    await setFavouriteAndTag(3, 'f1', true, deps);
+    // eslint-disable-next-line sonarjs/no-undefined-assignment -- the key must be present with the value undefined, because the test is about an absent value and null means something else
+    const { deps, settle } = fakes({ row: undefined });
+    expect(await setFavouriteAndTag(3, 'f1', true, deps)).toBe(true);
     await settle();
-    expect(deps.writeFile).toHaveBeenCalled();
-    expect(asCalls(deps.index)).not.toHaveBeenCalled();
+    expect(asCalls(deps.writeFile)).toHaveBeenCalledWith(
+      'f1',
+      expect.stringContaining('>> favourite: true'),
+      'tok',
+    );
+    expect(asCalls(deps.index).mock.calls).toEqual([]);
   });
 });
 
@@ -132,8 +137,9 @@ describe('setFavouriteAndTag with quick repeated clicks', () => {
     await setFavouriteAndTag(3, 'f1', false, deps);
     await setFavouriteAndTag(3, 'f1', true, deps);
     await settle();
-    expect(asCalls(deps.writeFile)).toHaveBeenCalledTimes(1);
-    expect(asCalls(deps.writeFile)).toHaveBeenCalledWith(
+    const write = asCalls(deps.writeFile);
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(write).toHaveBeenCalledWith(
       'f1',
       expect.stringContaining('>> favourite: true'),
       'tok',
@@ -160,13 +166,17 @@ describe('setFavouriteAndTag with quick repeated clicks', () => {
       readFile: async () => {
         running.now += 1;
         running.most = Math.max(running.most, running.now);
-        await new Promise((resolve) => setTimeout(resolve, 5));
+        await new Promise((resolve) => {
+          setTimeout(resolve, 5);
+        });
         running.now -= 1;
         return '>> title: A\n';
       },
     };
     await setFavouriteAndTag(3, 'f1', true, slow);
-    await new Promise((resolve) => setTimeout(resolve, 1));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 1);
+    });
     await setFavouriteAndTag(3, 'f1', false, slow);
     await setFavouriteAndTag(3, 'f1', true, slow);
     await settle();
@@ -178,6 +188,7 @@ describe('setFavouriteAndTag with quick repeated clicks', () => {
     await setFavouriteAndTag(3, 'f1', true, deps);
     await setFavouriteAndTag(3, 'f2', true, deps);
     await settle();
-    expect(asCalls(deps.writeFile)).toHaveBeenCalledTimes(2);
+    const written = asCalls(deps.writeFile).mock.calls.map(([id]) => id);
+    expect(written).toEqual(['f1', 'f2']);
   });
 });

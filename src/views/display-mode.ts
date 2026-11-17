@@ -142,6 +142,7 @@ export function reduceLayout(
     case 'collapse-refused': {
       return { ...state, collapseRefused: true };
     }
+    // no default
   }
 }
 
@@ -158,6 +159,6 @@ export function modeFromResult(result: unknown): DisplayMode | undefined {
   if (typeof result !== 'object' || result === null) {
     return undefined;
   }
-  const mode: unknown = Reflect.get(result, 'mode');
+  const mode: unknown = 'mode' in result ? result.mode : undefined;
   return isDisplayMode(mode) ? mode : undefined;
 }

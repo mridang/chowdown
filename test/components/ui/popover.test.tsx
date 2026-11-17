@@ -15,17 +15,16 @@ import {
 } from '@/components/ui/popover';
 import { html, htmlAt } from '../render';
 
-const ROLE_STATUS_GOOGLE =
-  /^<p role="status"[^>]*>Google Drive connected<\/p>$/;
-const DIV_POPOVER_AUTO = /<div[^>]*popover="auto"[^>]*data-popover=""/;
-const POPOVERTARGET = /popovertarget/i;
-const BUTTON_ARIA_LABEL = /<button[^>]*aria-label="Menu"[^>]*>Open<\/button>/;
-const ID_POPOVER_AUTO = /id="([^"]+)" popover="auto"/;
+const OUTPUT_GOOGLE = /^<output[^>]*>Google Drive connected<\/output>$/u;
+const DIV_POPOVER_AUTO = /<div[^>]*popover="auto"[^>]*data-popover=""/u;
+const POPOVERTARGET = /popovertarget/iu;
+const BUTTON_ARIA_LABEL = /<button[^>]*aria-label="Menu"[^>]*>Open<\/button>/u;
+const ID_POPOVER_AUTO = /id="([^"]+)" popover="auto"/u;
 
 describe('PopoverSeparator', () => {
   it('is a thin rule that assistive technology knows is a separator', () => {
     const out = html(<PopoverSeparator />);
-    expect(out).toContain('role="separator"');
+    expect(out).toContain('<hr');
     expect(out).toContain('h-px');
   });
 });
@@ -167,7 +166,7 @@ describe('isOpenOn', () => {
 describe('PopoverStatus', () => {
   it('is plain text that is announced politely, not a button', () => {
     const out = html(<PopoverStatus>Google Drive connected</PopoverStatus>);
-    expect(out).toMatch(ROLE_STATUS_GOOGLE);
+    expect(out).toMatch(OUTPUT_GOOGLE);
     expect(out).not.toContain('<button');
     expect(out).not.toContain('disabled');
   });
@@ -191,8 +190,8 @@ describe('escapeHandler', () => {
     const close = jest.fn();
     const focusButton = jest.fn();
     escapeHandler(close, focusButton)({ key: 'Escape' });
-    expect(close).toHaveBeenCalledTimes(1);
-    expect(focusButton).toHaveBeenCalledTimes(1);
+    expect(close.mock.calls).toEqual([[]]);
+    expect(focusButton.mock.calls).toEqual([[]]);
   });
 
   it('leaves every other key to whatever has focus', () => {
@@ -200,7 +199,7 @@ describe('escapeHandler', () => {
     const focusButton = jest.fn();
     escapeHandler(close, focusButton)({ key: 'ArrowDown' });
     escapeHandler(close, focusButton)({ key: 'Tab' });
-    expect(close).not.toHaveBeenCalled();
-    expect(focusButton).not.toHaveBeenCalled();
+    expect(close.mock.calls).toEqual([]);
+    expect(focusButton.mock.calls).toEqual([]);
   });
 });

@@ -7,7 +7,7 @@ import {
 } from '@/domain/drive/recipe-files';
 import { isDriveFileId } from '@/lib/google/drive';
 
-const BOUNDARY = /boundary=(.+)$/;
+const BOUNDARY = /boundary=(.+)$/u;
 
 const realFetch = globalThis.fetch;
 
@@ -93,7 +93,8 @@ describe('listRecipeFiles', () => {
       ),
     );
     globalThis.fetch = fetchMock;
-    await listRecipeFiles('folder', 'tok');
+    const files = await listRecipeFiles('folder', 'tok');
+    expect(files).toEqual([]);
     expect(fetchMock).toHaveBeenCalledTimes(20);
   });
 });
@@ -124,9 +125,10 @@ describe('isDriveFileId', () => {
     expect(isDriveFileId('1AbC_-xyz9')).toBe(true);
   });
 
-  it('refuses anything that could change a query', () => {
-    for (const id of ['', 'a b', "a'b", 'a/b', 'a.cook', '../x']) {
+  it.each(['', 'a b', "a'b", 'a/b', 'a.cook', '../x'])(
+    'refuses anything that could change a query (%j)',
+    (id) => {
       expect(isDriveFileId(id)).toBe(false);
-    }
-  });
+    },
+  );
 });

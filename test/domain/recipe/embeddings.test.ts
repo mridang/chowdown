@@ -1,6 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { ParsedRecipe } from '@/lib/cooklang';
 import {
   buildEmbeddingText,
   cosineBetween,
@@ -8,6 +7,7 @@ import {
   embedText,
   measure,
 } from '@/domain/recipe/embeddings';
+import type { ParsedRecipe } from '@/lib/cooklang';
 
 describe('cosineSimilarity', () => {
   it('is 1 for identical vectors', () => {
@@ -69,13 +69,14 @@ describe('embedText', () => {
     expect(await embedText(env, 'hello')).toEqual([0.1, 0.2]);
   });
 
-  it('throws when the answer holds no vector', async () => {
-    for (const answer of [{}, { data: [] }, { data: [[]] }, null, 'x']) {
+  it.each([{}, { data: [] }, { data: [[]] }, null, 'x'])(
+    'throws when the answer holds no vector (%j)',
+    async (answer) => {
       await expect(embedText(envAnswering(answer), 'hello')).rejects.toThrow(
         'no vector',
       );
-    }
-  });
+    },
+  );
 });
 
 describe('cosineBetween', () => {
@@ -83,15 +84,16 @@ describe('cosineBetween', () => {
   const vector = (seed: number, length = 16) =>
     Array.from({ length }, (_, index) => Math.sin(seed * 31 + index * 7.3));
 
-  it('gives exactly the same answer as cosineSimilarity', () => {
-    for (const seed of [1, 2, 3, 4, 5]) {
+  it.each([1, 2, 3, 4, 5])(
+    'gives exactly the same answer as cosineSimilarity (%j)',
+    (seed) => {
       const a = vector(seed);
       const b = vector(seed + 10);
       expect(cosineBetween(measure(a), measure(b))).toBe(
         cosineSimilarity(a, b),
       );
-    }
-  });
+    },
+  );
 
   it('is 0 when either vector is all zeros', () => {
     expect(cosineBetween(measure([0, 0]), measure([1, 2]))).toBe(0);

@@ -7,7 +7,6 @@
  * like" row and the landing page all read recipes the same way.
  */
 
-import type { Recipe } from '@/domain/db/recipes';
 import {
   domainOf,
   isUncurated,
@@ -18,13 +17,9 @@ import {
 import { extractMedia } from '@/domain/recipe/media';
 import { minutesOf } from '@/domain/recipe/minutes';
 import { rowTags } from '@/domain/recipe/tag-index';
-import {
-  cleanTitle,
-  levelOf,
-  toneFor,
-  type DifficultyLevel,
-  type Tone,
-} from '@/domain/recipe/card-style';
+import { cleanTitle, levelOf, toneFor } from '@/domain/recipe/card-style';
+import type { DifficultyLevel, Tone } from '@/domain/recipe/card-style';
+import type { Recipe } from '@/domain/db/recipes';
 
 /** One recipe as the pages show it. Missing facts are empty, never invented. */
 export interface CardRecipe {
@@ -98,10 +93,3 @@ export function toCardRecipe(
     ...(options.withSource ? { cooklang: row.source } : {}),
   };
 }
-
-export {
-  cleanTitle,
-  toneFor,
-  type DifficultyLevel,
-  type Tone,
-} from '@/domain/recipe/card-style';

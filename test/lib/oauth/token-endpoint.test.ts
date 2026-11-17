@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 
-import { MemoryStore } from './memory-store';
-import { quietSecurityLogs, type LogSpy } from './quiet-logs';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import {
   ACCESS_TTL_SECONDS,
   CODE_TTL_SECONDS,
@@ -14,21 +13,22 @@ import {
   issueAuthorizationCode,
   revokeToken,
   s256,
-  type CodeRecord,
-  type OAuthFailure,
-  type TokenResponse,
   withinRefreshGrace,
 } from '@/lib/oauth';
-import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import { MemoryStore } from './memory-store';
+import { quietSecurityLogs } from './quiet-logs';
+import type { LogSpy } from './quiet-logs';
+import type { CodeRecord, OAuthFailure, TokenResponse } from '@/lib/oauth';
 
-const START_CDN_UNDERSCORE_RT_UNDERSCORE = /^cdn_rt_/;
-const START_CDN_UNDERSCORE_AT_UNDERSCORE = /^cdn_at_/;
+const START_CDN_UNDERSCORE_RT_UNDERSCORE = /^cdn_rt_/u;
+const START_CDN_UNDERSCORE_AT_UNDERSCORE = /^cdn_at_/u;
 
 const RESOURCE = 'https://site.example/mcp';
 const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
 const NOW = 1_000_000;
 
 /** A value that is deliberately missing, as opposed to a key that is left out. */
+// eslint-disable-next-line no-unassigned-vars -- never assigned on purpose: it stands for a key that is present with no value, and writing undefined inline is reported by sonarjs/no-undefined-assignment
 let absent: undefined;
 
 const isFailure = (r: TokenResponse | OAuthFailure): r is OAuthFailure =>
@@ -440,6 +440,7 @@ describe('exchangeRefreshToken', () => {
       const racing = new Proxy(store, {
         get(target, property) {
           if (property !== 'rotateRefreshToken') {
+            // eslint-disable-next-line tslop/no-reflect-get -- a Proxy trap hands every other property to its target, and Reflect.get is how a trap does it
             const value: unknown = Reflect.get(target, property, target);
             return typeof value === 'function'
               ? (value.bind(target) as unknown)
@@ -471,6 +472,7 @@ describe('exchangeRefreshToken', () => {
           if (property === 'rotateRefreshToken') {
             return async () => false;
           }
+          // eslint-disable-next-line tslop/no-reflect-get -- a Proxy trap hands every other property to its target, and Reflect.get is how a trap does it
           const value: unknown = Reflect.get(target, property, target);
           return typeof value === 'function'
             ? (value.bind(target) as unknown)

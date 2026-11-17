@@ -8,7 +8,6 @@
  * signed in.
  */
 
-import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser, getSession, setSessionCookie } from '@/lib/core/auth';
@@ -16,6 +15,7 @@ import { safeReturnPath } from '@/lib/web-security';
 import { SESSION_COOKIE } from '@/domain/auth/app';
 import { getEnv } from '@/lib/core/runtime';
 import { appOrigin } from '@/lib/core/origin';
+import type { NextRequest } from 'next/server';
 
 /**
  * `GET /auth/refresh`: reissue the session cookie from the database and

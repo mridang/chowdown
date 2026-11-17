@@ -8,12 +8,11 @@ import { uncuratedFilename } from '@/lib/cooklang';
 import {
   buildRecipeCardData,
   buildRecipeListData,
-  errorResult,
   recipeCardResult,
   recipeListResult,
   recipeListSummaryResult,
-  textResult,
 } from '@/domain/mcp/tool-results';
+import { errorResult, textResult } from '@/lib/mcp';
 
 const SOURCE = [
   '>> servings: 4',

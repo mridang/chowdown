@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { RecipeNotes } from '@/app/(site)/recipe/[id]/_components/recipe-notes';
 import { htmlAt } from '../../../../../components/render';
 
-const H2_YOUR_NOTES = /<h2[^>]*>.*Your notes<\/h2>/s;
+const H2_YOUR_NOTES = /<h2[^>]*>.*Your notes<\/h2>/su;
 
 const markup = (general: readonly { label?: string; text: string }[]) =>
   htmlAt(
@@ -25,7 +25,7 @@ describe('RecipeNotes', () => {
 
   it('lists the notes that belong to the whole recipe', () => {
     const out = markup([{ text: 'Doubled well' }, { text: 'Less salt' }]);
-    expect(out.match(/<li/g)).toHaveLength(2);
+    expect(out.match(/<li/gu)).toHaveLength(2);
     expect(out).toContain('Doubled well');
     expect(out).toContain('Less salt');
     expect(out).not.toContain('Jot down what you changed');

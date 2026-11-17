@@ -1,6 +1,5 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import { cn } from '@/components/ui/cn';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * The colours of each kind of message. `neutral` is a quiet note; `plain` is
@@ -16,7 +15,7 @@ const TONES = {
 } as const;
 
 /** The box a message sits in: a compact one under a form, or a wide strip. */
-const SHAPES = {
+const LAYOUTS = {
   inline: 'rounded-control px-4 py-3 text-sm leading-relaxed',
   banner: 'rounded-card px-5 py-4',
 } as const;
@@ -28,13 +27,13 @@ const SHAPES = {
  */
 export function Callout({
   tone = 'neutral',
-  shape = 'inline',
+  layout = 'inline',
   // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className,
   children,
 }: Readonly<{
   tone?: keyof typeof TONES;
-  shape?: keyof typeof SHAPES;
+  layout?: keyof typeof LAYOUTS;
   // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
   className?: string;
   children: ReactNode;
@@ -42,7 +41,7 @@ export function Callout({
   return (
     <div
       role={tone === 'error' ? 'alert' : undefined}
-      className={cn(TONES[tone], SHAPES[shape], className)}
+      className={cn(TONES[tone], LAYOUTS[layout], className)}
     >
       {children}
     </div>

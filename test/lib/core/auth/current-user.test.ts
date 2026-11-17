@@ -8,7 +8,6 @@ import {
 } from '@jest/globals';
 
 import { SESSION_COOKIE } from '@/domain/auth/app';
-import type { User } from '@/domain/auth/store';
 import {
   fakeCookies,
   installEnv,
@@ -16,9 +15,11 @@ import {
   tokenFor,
 } from '../../../domain/auth/auth-test-kit';
 import { installFakeTracing } from '../observability/fake-tracing';
+import type { User } from '@/domain/db/users';
 
 const tracing = installFakeTracing();
 
+// eslint-disable-next-line tslop/no-module-mocking -- next/headers is a framework module the code under test imports directly, and it only works inside a Next request
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 /** The accounts that exist: id to the epoch their sessions must carry. */
@@ -31,6 +32,7 @@ const getUserById = jest.fn(async (id: number) => {
 });
 const getSessionEpoch = jest.fn(async (id: number) => accounts.get(id)?.epoch);
 
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/auth/store is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/domain/auth/store', () => ({
   getUserById,
   getSessionEpoch,
@@ -68,8 +70,7 @@ async function signIn(
 
 describe('getSession', () => {
   it('puts only the internal user number and the method on the error context', async () => {
-    delete tracing.attributes['user.id'];
-    delete tracing.attributes['auth.method'];
+    tracing.reset();
     await signIn({ id: 9 });
     await getSession();
     expect(tracing.attributes).toEqual({
@@ -79,9 +80,7 @@ describe('getSession', () => {
   });
 
   it('puts nothing on it when the cookie does not verify', async () => {
-    for (const key of Object.keys(tracing.attributes)) {
-      delete tracing.attributes[key];
-    }
+    tracing.reset();
     jar.set(SESSION_COOKIE, 'not-a-token');
     await getSession();
     expect(tracing.attributes).toEqual({});

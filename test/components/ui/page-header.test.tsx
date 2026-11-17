@@ -6,7 +6,7 @@ import { html } from '../render';
 describe('PageHeader', () => {
   it('has the page’s one h1, with the eyebrow above it', () => {
     const out = html(<PageHeader eyebrow="Your collection" title="Recipes" />);
-    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out.match(/<h1/gu)).toHaveLength(1);
     expect(out.indexOf('Your collection')).toBeLessThan(out.indexOf('Recipes'));
   });
 

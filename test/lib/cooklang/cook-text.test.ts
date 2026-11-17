@@ -21,8 +21,8 @@ import {
   upsertMetadata,
 } from '@/lib/cooklang';
 
-const IMAGES = /images/i;
-const COOK_LINE_ONE = /-- \[cook \d{4}-\d{2}-\d{2}\] line one line two/;
+const IMAGES = /images/iu;
+const COOK_LINE_ONE = /-- \[cook \d{4}-\d{2}-\d{2}\] line one line two/u;
 
 import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
 
@@ -99,9 +99,16 @@ describe('cooking logs', () => {
   });
 
   it('round-trips entries via extractCookingLogs', () => {
-    let src = '>> title: T\n\nCook it.';
-    src = appendCookingLog(src, 'first', new Date('2026-01-01T00:00:00Z'));
-    src = appendCookingLog(src, 'second', new Date('2026-02-02T00:00:00Z'));
+    const first = appendCookingLog(
+      '>> title: T\n\nCook it.',
+      'first',
+      new Date('2026-01-01T00:00:00Z'),
+    );
+    const src = appendCookingLog(
+      first,
+      'second',
+      new Date('2026-02-02T00:00:00Z'),
+    );
     expect(extractCookingLogs(src)).toEqual([
       { date: '2026-01-01', note: 'first' },
       { date: '2026-02-02', note: 'second' },
@@ -263,7 +270,7 @@ describe('appendNote + extractNotes', () => {
       text: 'line one\nline two',
     });
     expect(out).toContain('-- [note] line one line two');
-    expect(out.match(/\[note\]/g)).toHaveLength(1);
+    expect(out.match(/\[note\]/gu)).toHaveLength(1);
   });
 
   it('does not disturb the original method or the cooking log', () => {
@@ -412,14 +419,15 @@ describe('upsertMetadata with repeated keys', () => {
 describe('replaceNote and removeNote with out-of-range positions', () => {
   const source = '-- [note] one\nCook.\n-- [note] two\n';
 
-  it('refuses a negative or fractional position', () => {
-    for (const index of [-1, 0.5]) {
+  it.each([-1, 0.5])(
+    'refuses a negative or fractional position (%j)',
+    (index) => {
       expect(removeNote(source, index)).toBeUndefined();
       expect(
         replaceNote(source, index, { scope: 'general', key: '', text: 'x' }),
       ).toBeUndefined();
-    }
-  });
+    },
+  );
 });
 
 const FAST_MS = 1000;

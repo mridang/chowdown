@@ -1,6 +1,6 @@
-import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { describe, expect, it, jest } from '@jest/globals';
 
+import { MAX_LIVE_GRANTS_PER_APP, OAUTH_LIMITS } from '@/lib/oauth';
 import {
   D1OAuthStore,
   listConnectedApps,
@@ -10,12 +10,12 @@ import {
   revokeConnectedApp,
   saveClient,
 } from '@/domain/db/oauth';
-import { MAX_LIVE_GRANTS_PER_APP, OAUTH_LIMITS } from '@/lib/oauth';
-import type { RateLimitStore } from '@/lib/rate-limit';
+import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
 import { fakeDb } from '../../lib/core/db/fake-db';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 import { quietSecurityLogs } from '../../lib/oauth/quiet-logs';
+import type { RateLimitStore } from '@/lib/rate-limit';
 
 quietSecurityLogs();
 
@@ -555,8 +555,10 @@ describe('against a real SQLite database', () => {
     it('accepts an assertion once and refuses it the second time, per client', async () => {
       const { db } = sqliteDatabase(...MIGRATIONS);
       const store = new D1OAuthStore(db);
-      expect(await store.claimAssertion('a', 'jti-1', 99)).toBe(true);
-      expect(await store.claimAssertion('a', 'jti-1', 99)).toBe(false);
+      const first = await store.claimAssertion('a', 'jti-1', 99);
+      const second = await store.claimAssertion('a', 'jti-1', 99);
+      expect(first).toBe(true);
+      expect(second).toBe(false);
       expect(await store.claimAssertion('b', 'jti-1', 99)).toBe(true);
     });
   });
@@ -615,35 +617,39 @@ describe('against a real SQLite database', () => {
   });
 
   describe('createGrant', () => {
-    it("keeps the user's other grants for the same client working, and other users' and clients' too", async () => {
-      const { db, raw } = sqliteDatabase(...MIGRATIONS);
-      const store = new D1OAuthStore(db);
-      await store.createGrant(grantRecord('laptop'), [
-        ...tokenRows('o1', 'o2').map((t) => ({ ...t, grantId: 'laptop' })),
-      ]);
-      await store.createGrant(grantRecord('other-user', 8), [
-        ...tokenRows('u1', 'u2').map((t) => ({ ...t, grantId: 'other-user' })),
-      ]);
-      await store.createGrant(grantRecord('other-client', 7, 'c2'), [
-        ...tokenRows('c1', 'c2').map((t) => ({
-          ...t,
-          grantId: 'other-client',
-        })),
-      ]);
-      await store.createGrant(
-        grantRecord('desktop'),
-        tokenRows('n1', 'n2').map((t) => ({ ...t, grantId: 'desktop' })),
-      );
-      expect(
-        raw
-          .prepare('SELECT id FROM oauth_grants WHERE revoked_at IS NOT NULL')
-          .all(),
-      ).toEqual([]);
-      for (const token of ['o1', 'n1', 'u1', 'c1']) {
+    it.each(['o1', 'n1', 'u1', 'c1'])(
+      "keeps the user's other grants for the same client working, and other users' and clients' too (%j)",
+      async (token) => {
+        const { db, raw } = sqliteDatabase(...MIGRATIONS);
+        const store = new D1OAuthStore(db);
+        await store.createGrant(grantRecord('laptop'), [
+          ...tokenRows('o1', 'o2').map((t) => ({ ...t, grantId: 'laptop' })),
+        ]);
+        await store.createGrant(grantRecord('other-user', 8), [
+          ...tokenRows('u1', 'u2').map((t) => ({
+            ...t,
+            grantId: 'other-user',
+          })),
+        ]);
+        await store.createGrant(grantRecord('other-client', 7, 'c2'), [
+          ...tokenRows('c1', 'c2').map((t) => ({
+            ...t,
+            grantId: 'other-client',
+          })),
+        ]);
+        await store.createGrant(
+          grantRecord('desktop'),
+          tokenRows('n1', 'n2').map((t) => ({ ...t, grantId: 'desktop' })),
+        );
+        expect(
+          raw
+            .prepare('SELECT id FROM oauth_grants WHERE revoked_at IS NOT NULL')
+            .all(),
+        ).toEqual([]);
         const found = await store.findToken(token);
         expect(found?.grant.revoked).toBe(false);
-      }
-    });
+      },
+    );
 
     it('retires only the oldest connections beyond the cap', async () => {
       const { db, raw } = sqliteDatabase(...MIGRATIONS);
@@ -1044,13 +1050,21 @@ describe('against a real SQLite database', () => {
       const { db, raw } = sqliteDatabase(...MIGRATIONS);
       seedClient(raw, CIMD, 'cimd', ago(900), ago(600), ahead(600));
       const fetchImpl = serve();
-      await resolveClient(db, CIMD, fetchImpl, { ...unlimited, now: NOW });
+      const cached = await resolveClient(db, CIMD, fetchImpl, {
+        ...unlimited,
+        now: NOW,
+      });
       expect(fetchImpl).not.toHaveBeenCalled();
-      await resolveClient(db, CIMD, fetchImpl, {
+      expect(cached).toMatchObject({ clientId: CIMD, kind: 'cimd' });
+      const refreshed = await resolveClient(db, CIMD, fetchImpl, {
         ...unlimited,
         now: NOW + 3_600_000,
       });
       expect(fetchImpl).toHaveBeenCalledTimes(1);
+      expect(refreshed).toMatchObject({
+        clientId: CIMD,
+        name: 'Fresh',
+      });
     });
 
     it('records how long to reuse a fetched document, from its cache headers', async () => {

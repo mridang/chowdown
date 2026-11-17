@@ -1,19 +1,16 @@
-import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
+import { backfillEmbeddings, embedRecipe } from '@/domain/recipe/embed-write';
+import { asCalls } from '../../calls';
 
 import type { Database } from '@/domain/db/client';
-import {
-  backfillEmbeddings,
-  embedRecipe,
-  type EmbedWriteDeps,
-} from '@/domain/recipe/embed-write';
+import type { EmbedWriteDeps } from '@/domain/recipe/embed-write';
 
 const db = {} as Database;
 
 const env = {} as CloudflareEnv;
 
 /** A cached recipe row, as far as embedding needs it. */
-const recipe = (id: string, extra: object = {}) => ({
+const recipe = (id: string, extra: Readonly<Record<string, unknown>> = {}) => ({
   drive_file_id: id,
   name: `${id}.cook`,
   source: `>> title: ${id}\n\nCook @onion{1}.\n`,
@@ -90,9 +87,10 @@ describe('backfillEmbeddings', () => {
       ([, row]) => (row as { drive_file_id: string }).drive_file_id,
     );
     expect(saved).toEqual(['a', 'c']);
-    expect(asCalls(deps.refreshLists)).toHaveBeenCalledTimes(1);
+    const refresh = asCalls(deps.refreshLists);
+    expect(refresh).toHaveBeenCalledTimes(1);
     // Only the lists these two recipes can affect are worked out.
-    expect(asCalls(deps.refreshLists)).toHaveBeenCalledWith(db, 1, ['a', 'c']);
+    expect(refresh).toHaveBeenCalledWith(db, 1, ['a', 'c']);
   });
 
   it('asks for no more than the limit', async () => {

@@ -4,8 +4,8 @@ import {
   ACCESS_TOKEN_MAX_AGE_SECONDS,
   accessTokenKey,
   createAccessTokenCache,
-  type MintedToken,
 } from '@/domain/auth/access-token-cache';
+import type { MintedToken } from '@/domain/auth/access-token-cache';
 
 /** A clock the test can move, in epoch milliseconds. */
 function clock(start = 1_000_000) {
@@ -29,8 +29,9 @@ function minter(expiresIn = 3599) {
 
 describe('accessTokenKey', () => {
   it('tells apart people and the logins they hold', () => {
-    expect(accessTokenKey(1, 'a')).not.toBe(accessTokenKey(2, 'a'));
-    expect(accessTokenKey(1, 'a')).not.toBe(accessTokenKey(1, 'b'));
+    const key = accessTokenKey(1, 'a');
+    expect(key).not.toBe(accessTokenKey(2, 'a'));
+    expect(key).not.toBe(accessTokenKey(1, 'b'));
   });
 });
 
@@ -91,7 +92,8 @@ describe('createAccessTokenCache', () => {
       .fn<() => Promise<MintedToken>>()
       .mockRejectedValueOnce(new Error('google down'))
       .mockResolvedValueOnce({ access_token: 'ok', expires_in: 3599 });
-    await expect(cache.resolve('k', mint)).rejects.toThrow('google down');
+    const failure = cache.resolve('k', mint);
+    await expect(failure).rejects.toThrow('google down');
     expect(await cache.resolve('k', mint)).toBe('ok');
   });
 
@@ -113,10 +115,10 @@ describe('createAccessTokenCache', () => {
     await cache.resolve('b', mint);
     await cache.resolve('c', mint);
     expect(mint).toHaveBeenCalledTimes(3);
-    await cache.resolve('b', mint);
-    await cache.resolve('c', mint);
+    expect(await cache.resolve('b', mint)).toBe('t2');
+    expect(await cache.resolve('c', mint)).toBe('t3');
     expect(mint).toHaveBeenCalledTimes(3);
-    await cache.resolve('a', mint);
+    expect(await cache.resolve('a', mint)).toBe('t4');
     expect(mint).toHaveBeenCalledTimes(4);
   });
 });

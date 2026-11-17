@@ -17,8 +17,6 @@ import {
   setPageTitle,
   titleForFinished,
   vibrateOnFinish,
-  type Alarm,
-  type AudioContextConstructor,
 } from '@/components/recipe/timer-alerts';
 import {
   ADD_TIME_MS,
@@ -26,10 +24,13 @@ import {
   doneIds,
   settle,
   timerReducer,
-  type StepTimer,
-  type TimerSpec,
 } from '@/components/recipe/timer-state';
 import { useNow } from '@/components/recipe/use-clock';
+import type {
+  Alarm,
+  AudioContextConstructor,
+} from '@/components/recipe/timer-alerts';
+import type { StepTimer, TimerSpec } from '@/components/recipe/timer-state';
 
 /** What the timers offer to the rest of cook mode. */
 export interface StepTimers {
@@ -101,6 +102,7 @@ export function useStepTimers(recipeTitle: string): StepTimers {
   // Ring each timer once as it finishes.
   useEffect(() => {
     const fresh = newlyFinished(alerted.current, view);
+    // eslint-disable-next-line functional/immutable-data -- a React ref is a mutable cell by design
     alerted.current = doneIds(view);
     if (fresh.length === 0) {
       return;
@@ -136,6 +138,7 @@ export function useStepTimers(recipeTitle: string): StepTimers {
   useEffect(
     () => () => {
       alarm.current?.close();
+      // eslint-disable-next-line functional/immutable-data -- a React ref is a mutable cell by design
       alarm.current = null;
     },
     [],
@@ -144,6 +147,7 @@ export function useStepTimers(recipeTitle: string): StepTimers {
   // Every press of a timer's control is a tap, which is when the browser lets a
   // page make its beeper; make it on the first one.
   const prime = useCallback(() => {
+    // eslint-disable-next-line functional/immutable-data -- a React ref is a mutable cell by design
     alarm.current ??= createAlarm(browserAudioContext()) ?? null;
   }, []);
   const toggle = useCallback(
@@ -186,6 +190,7 @@ export function useStepTimers(recipeTitle: string): StepTimers {
     dispatch({ type: 'clear' });
     setAnnouncement('');
     alarm.current?.close();
+    // eslint-disable-next-line functional/immutable-data -- a React ref is a mutable cell by design
     alarm.current = null;
   }, []);
 

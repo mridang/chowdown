@@ -4,7 +4,7 @@ import { RecipeRow, RecipeRows } from '@/components/recipes/recipe-row';
 import { toCardRecipe } from '@/domain/recipe/card-data';
 import { html } from '../render';
 
-const H2_DAL_H2 = /<h2[^>]*>Dal<\/h2>/;
+const H2_DAL_H2 = /<h2[^>]*>Dal<\/h2>/u;
 
 const SOURCE = [
   '>> title: Dal',
@@ -27,7 +27,7 @@ describe('RecipeRow', () => {
   it('is one link to the recipe page', () => {
     const out = html(<RecipeRow recipe={recipe} />);
     expect(out).toContain('href="/recipe/dal"');
-    expect(out.match(/<a /g)).toHaveLength(1);
+    expect(out.match(/<a /gu)).toHaveLength(1);
   });
 
   it('shows the title, cuisine, source site and facts', () => {

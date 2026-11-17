@@ -22,7 +22,7 @@ import {
   truncate,
 } from '@/lib/intl';
 
-const AB = /^ab( 👨‍👩‍👧)?…$/;
+const AB = /^ab( 👨‍👩‍👧)?…$/u;
 
 describe('compareText', () => {
   it('alphabetises accented letters with their base letter', () => {

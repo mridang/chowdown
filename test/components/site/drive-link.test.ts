@@ -19,20 +19,21 @@ describe('driveOpenHref', () => {
     expect(driveOpenHref('')).toBe(DRIVE_HOME_HREF);
   });
 
-  it('never builds a link from something that is not shaped like a Drive id', () => {
-    for (const bad of [
-      '../../evil',
-      'a/b',
-      'abc?authuser=1',
-      'abc#frag',
-      'a b',
-      'https://evil.test',
-      '<script>',
-      'abc\n',
-    ]) {
+  it.each([
+    '../../evil',
+    'a/b',
+    'abc?authuser=1',
+    'abc#frag',
+    'a b',
+    'https://evil.test',
+    '<script>',
+    'abc\n',
+  ])(
+    'never builds a link from something that is not shaped like a Drive id (%j)',
+    (bad) => {
       expect(driveOpenHref(bad)).toBe(DRIVE_HOME_HREF);
-    }
-  });
+    },
+  );
 });
 
 describe('driveLink', () => {

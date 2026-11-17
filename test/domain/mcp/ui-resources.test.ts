@@ -3,14 +3,6 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from '@jest/globals';
 
 import {
-  contentHash as cardHash,
-  html as cardHtml,
-} from '../../../dist/views/recipe-card';
-import {
-  contentHash as listHash,
-  html as listHtml,
-} from '../../../dist/views/recipe-list';
-import {
   APP_RESOURCES,
   CARD_RESOURCE_URI,
   LEGACY_CARD_RESOURCE_URI,
@@ -27,21 +19,25 @@ import {
   viewToolMeta,
 } from '@/domain/mcp/ui-resources';
 import { SITE_URL } from '@/utils/site';
+// eslint-disable-next-line sonarjs/no-wildcard-import -- the test inspects every export of the built view bundle, so it needs the whole namespace
+import * as cardView from '../../../dist/views/recipe-card';
+// eslint-disable-next-line sonarjs/no-wildcard-import -- the test inspects every export of the built view bundle, so it needs the whole namespace
+import * as listView from '../../../dist/views/recipe-list';
 
-const EVAL = /\beval\(/;
-const NEW_EVENT_SOURCE = /new EventSource\b/;
-const NEW_WEB_SOCKET = /new WebSocket\b/;
-const FETCH = /\bfetch\(/;
-const SRC_HREF = /\b(src|href)=/;
-const IFRAME = /<iframe\b/;
-const IMG = /<img\b/;
-const LINK = /<link\b/;
-const TITLE_TITLE = /<title>[^<]+<\/title>/;
-const DOCTYPE_HTML = /^<!doctype html>/;
-const UI_CHOWDOWN_RECIPE = /^ui:\/\/chowdown\/recipe-list-[0-9a-f]{12}\.html$/;
+const EVAL = /\beval\(/u;
+const NEW_EVENT_SOURCE = /new EventSource\b/u;
+const NEW_WEB_SOCKET = /new WebSocket\b/u;
+const FETCH = /\bfetch\(/u;
+const SRC_HREF = /\b(src|href)=/u;
+const IFRAME = /<iframe\b/u;
+const IMG = /<img\b/u;
+const LINK = /<link\b/u;
+const TITLE_TITLE = /<title>[^<]+<\/title>/u;
+const DOCTYPE_HTML = /^<!doctype html>/u;
+const UI_CHOWDOWN_RECIPE = /^ui:\/\/chowdown\/recipe-list-[0-9a-f]{12}\.html$/u;
 const UI_CHOWDOWN_RECIPE_2 =
-  /^ui:\/\/chowdown\/recipe-card-[0-9a-f]{12}\.html$/;
-const SCRIPT_TYPE_MODULE = /<script type="module">[\s\S]*<\/script>/;
+  /^ui:\/\/chowdown\/recipe-card-[0-9a-f]{12}\.html$/u;
+const SCRIPT_TYPE_MODULE = /<script type="module">[\s\S]*<\/script>/u;
 
 /** The document with its inline script removed: what the host's CSP actually has to police. */
 function shellOf(html: string): string {
@@ -52,27 +48,26 @@ describe('ui resource addresses', () => {
   it('puts a hash of the HTML in each address, so a changed view gets a new one', () => {
     expect(CARD_RESOURCE_URI).toMatch(UI_CHOWDOWN_RECIPE_2);
     expect(LIST_RESOURCE_URI).toMatch(UI_CHOWDOWN_RECIPE);
-    expect(CARD_RESOURCE_URI).toContain(cardHash.slice(0, 12));
-    expect(LIST_RESOURCE_URI).toContain(listHash.slice(0, 12));
+    expect(CARD_RESOURCE_URI).toContain(cardView.contentHash.slice(0, 12));
+    expect(LIST_RESOURCE_URI).toContain(listView.contentHash.slice(0, 12));
   });
 
   it('derives the hash from the generated HTML itself', () => {
-    expect(cardHash).toBe(createHash('sha256').update(cardHtml).digest('hex'));
-    expect(listHash).toBe(createHash('sha256').update(listHtml).digest('hex'));
+    expect(cardView.contentHash).toBe(
+      createHash('sha256').update(cardView.html).digest('hex'),
+    );
+    expect(listView.contentHash).toBe(
+      createHash('sha256').update(listView.html).digest('hex'),
+    );
   });
 
   it('hashedResourceUri is stable for one hash and differs for another', () => {
     const a = 'a'.repeat(64);
     const b = `b${'a'.repeat(63)}`;
-    expect(hashedResourceUri('recipe-card', a)).toBe(
-      hashedResourceUri('recipe-card', a),
-    );
-    expect(hashedResourceUri('recipe-card', a)).not.toBe(
-      hashedResourceUri('recipe-card', b),
-    );
-    expect(hashedResourceUri('recipe-card', a)).toBe(
-      'ui://chowdown/recipe-card-aaaaaaaaaaaa.html',
-    );
+    const uri = hashedResourceUri('recipe-card', a);
+    expect(uri).toBe(hashedResourceUri('recipe-card', a));
+    expect(uri).not.toBe(hashedResourceUri('recipe-card', b));
+    expect(uri).toBe('ui://chowdown/recipe-card-aaaaaaaaaaaa.html');
   });
 
   it('still knows the old, hash-free addresses', () => {
@@ -119,7 +114,7 @@ describe('ui resources served', () => {
     const stale = 'ui://chowdown/recipe-card-000000000000.html';
     const resource = findAppResource(stale);
     expect(resource?.uri).toBe(stale);
-    expect(resource?.html).toBe(cardHtml);
+    expect(resource?.html).toBe(cardView.html);
     expect(resource?.meta).toBe(VIEW_RESOURCE_META);
   });
 
@@ -127,22 +122,23 @@ describe('ui resources served', () => {
     const stale = 'ui://chowdown/recipe-list-abcdef012345.html';
     const resource = findAppResource(stale);
     expect(resource?.uri).toBe(stale);
-    expect(resource?.html).toBe(listHtml);
+    expect(resource?.html).toBe(listView.html);
   });
 
-  it('refuses addresses that only look like a hashed view address', () => {
-    for (const uri of [
-      'ui://chowdown/other-aaaaaaaaaaaa.html',
-      'ui://chowdown/recipe-card-aaaaaaaaaaa.html',
-      'ui://chowdown/recipe-card-aaaaaaaaaaaaa.html',
-      'ui://chowdown/recipe-card-AAAAAAAAAAAA.html',
-      'ui://chowdown/recipe-card-000000000000.htmlx',
-      'ui://other/recipe-card-000000000000.html',
-      'ui://chowdown/recipe-card-000000000000.html/../x',
-    ]) {
+  it.each([
+    'ui://chowdown/other-aaaaaaaaaaaa.html',
+    'ui://chowdown/recipe-card-aaaaaaaaaaa.html',
+    'ui://chowdown/recipe-card-aaaaaaaaaaaaa.html',
+    'ui://chowdown/recipe-card-AAAAAAAAAAAA.html',
+    'ui://chowdown/recipe-card-000000000000.htmlx',
+    'ui://other/recipe-card-000000000000.html',
+    'ui://chowdown/recipe-card-000000000000.html/../x',
+  ])(
+    'refuses addresses that only look like a hashed view address (%j)',
+    (uri) => {
       expect(findAppResource(uri)).toBeUndefined();
-    }
-  });
+    },
+  );
 
   it('marks only the current hashed addresses as immutable, so only they are cached for long', () => {
     expect(findAppResource(CARD_RESOURCE_URI)?.immutable).toBe(true);
@@ -161,8 +157,9 @@ describe('ui resources served', () => {
     expect(APP_RESOURCES.map((r) => r.uri)).not.toContain(stale?.uri);
   });
 
-  it('ships a real HTML5 document for each view', () => {
-    for (const resource of APP_RESOURCES) {
+  it.each(APP_RESOURCES)(
+    'ships a real HTML5 document for each view (%j)',
+    (resource) => {
       expect(resource.html).toMatch(DOCTYPE_HTML);
       expect(resource.html).toContain('<meta charset="utf-8">');
       expect(resource.html).toContain(
@@ -170,8 +167,8 @@ describe('ui resources served', () => {
       );
       expect(resource.html).toMatch(TITLE_TITLE);
       expect(resource.html).toContain('<div id="root">');
-    }
-  });
+    },
+  );
 
   it('uses the media type the MCP Apps spec requires', async () => {
     const official = await import('@modelcontextprotocol/ext-apps/server');
@@ -183,11 +180,12 @@ describe('ui resources served', () => {
     expect(LEGACY_RESOURCE_URI_META_KEY).toBe(official.RESOURCE_URI_META_KEY);
   });
 
-  it('keeps the bundle small enough to fetch on a phone', () => {
-    for (const resource of APP_RESOURCES) {
+  it.each(APP_RESOURCES)(
+    'keeps the bundle small enough to fetch on a phone (%j)',
+    (resource) => {
       expect(resource.html.length).toBeLessThan(600 * 1024);
-    }
-  });
+    },
+  );
 });
 
 describe('viewToolMeta', () => {
@@ -235,8 +233,9 @@ describe('Content-Security-Policy', () => {
     expect(openai).not.toHaveProperty('frame_domains');
   });
 
-  it('is true: the views load nothing from the network', () => {
-    for (const { html } of [{ html: cardHtml }, { html: listHtml }]) {
+  it.each([{ html: cardView.html }, { html: listView.html }])(
+    'is true: the views load nothing from the network (%j)',
+    ({ html }) => {
       const shell = shellOf(html);
       expect(shell).not.toMatch(LINK);
       expect(shell).not.toMatch(IMG);
@@ -247,15 +246,16 @@ describe('Content-Security-Policy', () => {
       expect(html).not.toContain('XMLHttpRequest');
       expect(html).not.toMatch(NEW_WEB_SOCKET);
       expect(html).not.toMatch(NEW_EVENT_SOURCE);
-    }
-  });
+    },
+  );
 
-  it('works under the default policy, which forbids eval', () => {
-    for (const html of [cardHtml, listHtml]) {
+  it.each([cardView.html, listView.html])(
+    'works under the default policy, which forbids eval (%j)',
+    (html) => {
       expect(html).not.toMatch(EVAL);
       expect(html).not.toContain('new Function(');
-    }
-  });
+    },
+  );
 });
 
 describe('view resource metadata', () => {
@@ -302,9 +302,10 @@ describe('view resource metadata', () => {
     expect(VIEW_RESOURCE_META['openai/widgetDescription']).not.toBe('');
   });
 
-  it('puts the same metadata on every served resource', () => {
-    for (const resource of APP_RESOURCES) {
+  it.each(APP_RESOURCES)(
+    'puts the same metadata on every served resource (%j)',
+    (resource) => {
       expect(resource.meta).toBe(VIEW_RESOURCE_META);
-    }
-  });
+    },
+  );
 });

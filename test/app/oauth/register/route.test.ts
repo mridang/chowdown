@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
-
-import type { DatabaseSync } from 'node:sqlite';
+import { z } from 'zod';
 
 import { OPTIONS, POST } from '@/app/oauth/register/route';
 import {
@@ -10,8 +9,9 @@ import {
 import { quietSecurityLogs } from '../../../lib/oauth/quiet-logs';
 import { APP_MIGRATIONS } from '../../../lib/core/db/migrations';
 import urls from '../../../fixtures/insecure-urls.json' with { type: 'json' };
+import type { DatabaseSync } from 'node:sqlite';
 
-const START_DIGITS_PLUS_END = /^\d+$/;
+const START_DIGITS_PLUS_END = /^\d+$/u;
 
 const body = JSON.stringify({
   client_name: 'Assistant',
@@ -41,8 +41,10 @@ beforeEach(() => {
 afterEach(() => restore());
 
 /** How many clients are in the registry. */
-const registered = (): unknown =>
-  raw.prepare('SELECT COUNT(*) AS n FROM oauth_clients').get()?.['n'];
+const registered = () =>
+  z
+    .number()
+    .parse(raw.prepare('SELECT COUNT(*) AS n FROM oauth_clients').get()?.['n']);
 
 describe('POST /oauth/register', () => {
   it('registers a client and answers 201 with its details, uncached', async () => {

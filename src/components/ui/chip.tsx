@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import type { ReactElement, ReactNode } from 'react';
 
 import { CloseIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
 import { PillLink } from '@/components/ui/pill';
+import type { ReactElement, ReactNode } from 'react';
 
 /** An active-filter chip; following it removes that filter. */
 export function FilterChip({

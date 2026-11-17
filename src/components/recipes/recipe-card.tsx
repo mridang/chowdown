@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import type { ReactElement, ReactNode } from 'react';
 
 import { CoverImage } from '@/components/cover-image';
 
@@ -11,7 +10,9 @@ import { cn } from '@/components/ui/cn';
 import { Heading } from '@/components/ui/layout';
 import { TintTile } from '@/components/ui/tint-tile';
 import { duration, sentenceCase } from '@/utils/text';
-import type { CardRecipe, Tone } from '@/domain/recipe/card-data';
+import type { ReactElement, ReactNode } from 'react';
+import type { CardRecipe } from '@/domain/recipe/card-data';
+import type { Tone } from '@/domain/recipe/card-style';
 
 /**
  * How wide a photo in the grid is laid out. The grid has one column, then two,

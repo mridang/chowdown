@@ -1,7 +1,6 @@
-import type { ReactElement } from 'react';
-
 import { Container } from '@/components/ui/layout';
 import { Skeleton, SkeletonFrame } from '@/components/ui/skeleton';
+import type { ReactElement } from 'react';
 
 /** One key per placeholder row in the filter sidebar. */
 const SIDEBAR_ROWS = [0, 1, 2, 3, 4] as const;

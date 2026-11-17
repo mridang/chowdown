@@ -34,20 +34,17 @@ import {
   runServerTool,
   sendFollowUpMessage,
 } from '@/views/host-wiring';
-import {
-  getOpenAi,
-  globalsFromEvent,
-  type OpenAiGlobals,
-} from '@/views/openai-bridge';
-import { readOutcome, type ToolOutcome } from '@/views/payload';
+import { getOpenAi, globalsFromEvent } from '@/views/openai-bridge';
+import { readOutcome } from '@/views/payload';
 import {
   INITIAL_VIEW_STATE,
   LOADING_TIMEOUT_MS,
   isPending,
   reduceViewState,
-  type ViewAction,
-  type ViewState,
 } from '@/views/view-state';
+import type { OpenAiGlobals } from '@/views/openai-bridge';
+import type { ToolOutcome } from '@/views/payload';
+import type { ViewAction, ViewState } from '@/views/view-state';
 
 /** What a View gets: the current state of its data, its layout, and host actions. */
 export interface WidgetBridge<T> {
@@ -222,7 +219,9 @@ export function useWidgetData<T>(
   const capabilities = app?.getHostCapabilities();
   const openLink =
     app !== null && capabilities?.openLinks !== undefined
-      ? (url: string) => void app.openLink({ url }).catch(() => undefined)
+      ? (url: string) => {
+          void app.openLink({ url }).catch(() => undefined);
+        }
       : undefined;
 
   return {

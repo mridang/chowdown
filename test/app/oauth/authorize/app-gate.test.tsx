@@ -1,8 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { approvalGate } from '@/app/oauth/authorize/app-gate';
-import type { User } from '@/domain/auth/store';
 import { htmlAt } from '../../../components/render';
+import type { User } from '@/domain/db/users';
 
 const HERE = '/oauth/authorize?client_id=dcr_abc&state=xyz';
 
@@ -37,9 +37,9 @@ describe('approvalGate', () => {
   });
 
   it('heads the screen it shows, as the page has no other heading', () => {
-    expect(gate(user({ refresh_token_enc: null }))?.match(/<h1/g)).toHaveLength(
-      1,
-    );
+    expect(
+      gate(user({ refresh_token_enc: null }))?.match(/<h1/gu),
+    ).toHaveLength(1);
   });
 
   it('asks a person whose Drive connection was lost to reconnect it', () => {

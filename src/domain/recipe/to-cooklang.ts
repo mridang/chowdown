@@ -28,10 +28,10 @@ import {
   extractRecipeFromHtml,
 } from '@/domain/recipe/import-schema-org';
 
-const IMAGES = /^>>\s*images:\s*(\S+)/im;
-const IMAGES_2 = /^>>\s*images:/im;
-const NEWLINE_SPACE_STAR_END = /\n?```\s*$/;
-const Z_A = /^\s*```[a-zA-Z]*\s*\n?/;
+const IMAGES = /^>>\s*images:\s*(\S+)/imu;
+const IMAGES_2 = /^>>\s*images:/imu;
+const NEWLINE_SPACE_STAR_END = /\n?```\s*$/u;
+const Z_A = /^\s*```[a-zA-Z]*\s*\n?/u;
 
 /** The model used for conversion. Swappable; fp8-fast balances quality/latency. */
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
@@ -88,6 +88,7 @@ async function fetchPageOrNull(url: string): Promise<string | null> {
 async function askModel(
   env: CloudflareEnv,
   userMessage: string,
+  // eslint-disable-next-line tslop/no-unknown-returns -- the model's answer is arbitrary JSON, which the caller reads field by field
 ): Promise<unknown> {
   try {
     return await env.AI.run(MODEL, {

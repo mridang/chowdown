@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, type ReactElement } from 'react';
+import { useState } from 'react';
 
 import { CoverImage } from '@/components/cover-image';
 import { cn } from '@/components/ui/cn';
 import { TintTile } from '@/components/ui/tint-tile';
-import type { Tone } from '@/domain/recipe/card-data';
+import type { ReactElement } from 'react';
+import type { Tone } from '@/domain/recipe/card-style';
 
 /**
  * The recipe's big photo. The caller sets the shape with `className` (an aspect
@@ -57,6 +58,7 @@ export function HeroPhoto({
       )}
 
       {images.length > 1 ? (
+        // eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- a labelled group of buttons; a fieldset would add a border and legend layout
         <div
           role="group"
           aria-label="Photos"

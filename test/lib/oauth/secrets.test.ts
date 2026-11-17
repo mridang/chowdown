@@ -3,8 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 // eslint-disable-next-line unicorn/no-keyword-prefix -- the name is exported from its module and used by other modules
 import { hashSecret, newSecret } from '@/lib/oauth';
 
-const START_N0_HYPHEN_N9_A = /^[0-9a-f]{64}$/;
-const START_CDN_UNDERSCORE_AT_UNDERSCORE = /^cdn_at_[A-Za-z0-9_-]{43}$/;
+const START_N0_HYPHEN_N9_A = /^[0-9a-f]{64}$/u;
+const START_CDN_UNDERSCORE_AT_UNDERSCORE = /^cdn_at_[A-Za-z0-9_-]{43}$/u;
 
 describe('newSecret', () => {
   it('is prefixed, url-safe and different every time', () => {

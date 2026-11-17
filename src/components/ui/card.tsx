@@ -1,10 +1,9 @@
+import { cn } from '@/components/ui/cn';
 import type {
   ComponentPropsWithoutRef,
   ElementType,
   ReactElement,
 } from 'react';
-
-import { cn } from '@/components/ui/cn';
 
 /** The inner space of a card, from none at all to the roomy default. */
 const PADDING = {

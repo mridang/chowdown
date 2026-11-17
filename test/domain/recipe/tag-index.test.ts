@@ -1,14 +1,14 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { Database } from '@/domain/db/client';
-import type { User } from '@/domain/db/users';
 import { parseRecipe } from '@/lib/cooklang';
 import {
   extractFacetTags,
   rowTags,
   syncRecipeTags,
-  type TagSyncDeps,
 } from '@/domain/recipe/tag-index';
+import type { Database } from '@/domain/db/client';
+import type { User } from '@/domain/db/users';
+import type { TagSyncDeps } from '@/domain/recipe/tag-index';
 
 const SOURCE =
   '>> cuisine: Indian\n>> protein: Chicken\n\nCook @chicken thigh{500%g} with @onion{1}.\n';
@@ -204,8 +204,9 @@ describe('syncRecipeTags', () => {
     expect(saved).toHaveLength(1);
   });
 
-  it('re-reads a cached row whose tags are missing or broken', async () => {
-    for (const tags of [null, '{not json', '[1]', '{"cuisine":"Thai"}']) {
+  it.each([null, '{not json', '[1]', '{"cuisine":"Thai"}'])(
+    're-reads a cached row whose tags are missing or broken (%j)',
+    async (tags) => {
       const { deps, saved } = fakes([cachedRow('a', 'm', tags)], {
         a: SOURCE,
       });
@@ -216,8 +217,8 @@ describe('syncRecipeTags', () => {
         deps,
       );
       expect(saved).toHaveLength(1);
-    }
-  });
+    },
+  );
 
   it('treats a file with no Drive timestamp as matching a row with none', async () => {
     const { deps } = fakes([

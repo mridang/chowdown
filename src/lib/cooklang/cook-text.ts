@@ -1,10 +1,10 @@
 import { compareText } from '@/lib/intl';
 
-const LINE_BREAK_2 = /\r?\n/;
-const WWW = /^www\./;
-const SOURCE = /^>>\s*source:\s*(\S+)/im;
-const COOK = /\.cook$/i;
-const START_DOT_PLUS = /^\.+/;
+const LINE_BREAK_2 = /\r?\n/u;
+const WWW = /^www\./u;
+const SOURCE = /^>>\s*source:\s*(\S+)/imu;
+const COOK = /\.cook$/iu;
+const START_DOT_PLUS = /^\.+/u;
 
 /**
  * @packageDocumentation
@@ -51,8 +51,8 @@ function isoDate(when: Date = new Date()): string {
  */
 export function sanitiseName(name: string): string {
   return name
-    .replaceAll(/[/\\]+/g, ' ')
-    .replaceAll(/\s+/g, ' ')
+    .replaceAll(/[/\\]+/gu, ' ')
+    .replaceAll(/\s+/gu, ' ')
     .replace(START_DOT_PLUS, '')
     .trim();
 }
@@ -68,6 +68,9 @@ export function isUncurated(filename: string): boolean {
   return filename.toLowerCase().includes(UNCURATED_MARKER);
 }
 
+/** The marker a bookmarked recipe carries until it has been reviewed. */
+const UNCURATED_PATTERN = /\[uncurated\]/iu;
+
 /**
  * Human-facing recipe name from a filename: drop the `.cook` extension and the
  * uncurated marker, then tidy whitespace. `pancakes.cook` -> `pancakes`;
@@ -76,8 +79,8 @@ export function isUncurated(filename: string): boolean {
 export function recipeDisplayName(filename: string): string {
   return filename
     .replace(COOK, '')
-    .replace(new RegExp(`\\s*\\${UNCURATED_MARKER}\\s*`, 'i'), ' ')
-    .replaceAll(/\s+/g, ' ')
+    .replace(UNCURATED_PATTERN, ' ')
+    .replaceAll(/\s+/gu, ' ')
     .trim();
 }
 
@@ -120,7 +123,7 @@ export function buildStubSource(
 }
 
 /** What ends a line for `.` in a regular expression. */
-const LINE_BREAK = /[\n\r\u2028\u2029]/;
+const LINE_BREAK = /[\n\r\u2028\u2029]/u;
 
 /**
  * Read a `>> key: value` line: the text between `>>` and the first colon, and
@@ -146,16 +149,12 @@ function metadataParts(
 
 /** `path` without any run of `/` at its end. */
 function withoutTrailingSlashes(path: string): string {
-  let end = path.length;
-  while (end > 0 && path.charAt(end - 1) === '/') {
-    end -= 1;
-  }
-  return path.slice(0, end);
+  return path.endsWith('/') ? withoutTrailingSlashes(path.slice(0, -1)) : path;
 }
 
 /** Every run of whitespace that holds a line break becomes one space. */
 function flattenLineBreaks(text: string): string {
-  return text.replaceAll(/\s+/g, (run) => (run.includes('\n') ? ' ' : run));
+  return text.replaceAll(/\s+/gu, (run) => (run.includes('\n') ? ' ' : run));
 }
 
 /**
@@ -210,8 +209,10 @@ export function upsertMetadata(
 
   // Insert the keys that weren't already present.
   const toInsert = pairs
+    .values()
     .filter(([k]) => !firstLineOfKey.has(k.trim().toLowerCase()))
-    .map(([k, v]) => `>> ${k.trim()}: ${v}`);
+    .map(([k, v]) => `>> ${k.trim()}: ${v}`)
+    .toArray();
   const out = (
     toInsert.length > 0
       ? rewritten.toSpliced(lastMetadataLine(rewritten) + 1, 0, ...toInsert)
@@ -250,7 +251,7 @@ export function removeMetadata(source: string, key: string): string {
 
 /** Metadata values that mean "no value" — a model's way of saying it doesn't know. */
 const EMPTY_VALUE =
-  /^(unknown|n\/a|na|none|null|undefined|-+|tbd|not specified)?$/i;
+  /^(unknown|n\/a|na|none|null|undefined|-+|tbd|not specified)?$/iu;
 
 /**
  * Drop `>> key: value` metadata lines whose value is blank or a placeholder
@@ -301,7 +302,7 @@ export function sourceDomainOf(source: string): string | undefined {
 
 /** Query parameters that only track where a click came from, never which page. */
 const TRACKING_PARAM =
-  /^(utm\w*|fbclid|gclid|mc_\w+|ref|ref_src|igshid|si|feature|spm|cid)$/i;
+  /^(utm\w*|fbclid|gclid|mc_\w+|ref|ref_src|igshid|si|feature|spm|cid)$/iu;
 
 /**
  * Normalise a URL for "is this the same page?" comparison: lower-case host
@@ -344,7 +345,7 @@ export interface Note {
 }
 
 /** Matches a note comment: `-- [note]`, `-- [note ingredient:x]`, `-- [note step:2]`. */
-const NOTE_LINE = /^-- \[note(?:\s+(ingredient|step):([^\]]+))?\]([\s\S]*)$/;
+const NOTE_LINE = /^-- \[note(?:\s+(ingredient|step):([^\]]+))?\]([\s\S]*)$/u;
 
 /**
  * Append a personal note to a recipe's source, non-destructively. The text is
@@ -376,7 +377,7 @@ export function extractNotes(source: string): readonly Note[] {
  * be written at all.
  */
 export function flatNoteKey(key: string): string {
-  return key.replaceAll(/[\]\s]+/g, ' ').trim();
+  return key.replaceAll(/[\]\s]+/gu, ' ').trim();
 }
 
 /** The text of one note as a comment line (the format {@link appendNote} writes). */
@@ -436,7 +437,7 @@ export interface CookingLogEntry {
 }
 
 /** Matches a cooking-log comment line: `-- [cook YYYY-MM-DD] note`. */
-const LOG_LINE = /^-- \[cook (\d{4}-\d{2}-\d{2})\] (.*)$/;
+const LOG_LINE = /^-- \[cook (\d{4}-\d{2}-\d{2})\] (.*)$/u;
 
 /**
  * Append a dated cooking-log entry to a recipe's source, non-destructively.

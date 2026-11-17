@@ -11,10 +11,10 @@
 import { and, eq, sql } from 'drizzle-orm';
 
 import { chunked } from '@/domain/db/chunk';
-import type { Database } from '@/domain/db/client';
 import { recipes, recipeImages } from '@/domain/db/schema';
 import { parseRecipe } from '@/lib/cooklang';
 import { recipeImageUrls } from '@/domain/recipe/media';
+import type { Database } from '@/domain/db/client';
 
 /** Anything `db.batch` accepts. */
 type Statement = Parameters<Database['batch']>[0][number];
@@ -119,6 +119,7 @@ export async function indexUnindexedRecipes(
         ),
     ];
   });
+  // eslint-disable-next-line functional/no-loop-statements -- the batches must run one after another
   for (const [first, ...rest] of chunked(statements, INDEX_BATCH)) {
     // `batch` wants at least one statement; a chunk always has one.
     if (first) {

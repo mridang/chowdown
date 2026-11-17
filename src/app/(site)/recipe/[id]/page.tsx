@@ -1,16 +1,11 @@
-import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import type { ReactElement } from 'react';
 
-import {
-  IngredientsPanel,
-  type PanelIngredient,
-} from '@/components/recipe/ingredients-panel';
+import { IngredientsPanel } from '@/components/recipe/ingredients-panel';
 import { Method } from '@/components/recipe/method';
 import { RecipeStateProvider } from '@/components/recipe/recipe-state';
 import { STICKY_PANEL_CLASS } from '@/components/site/header-height';
 import { Container } from '@/components/ui/layout';
-import { cleanTitle } from '@/domain/recipe/card-data';
+import { cleanTitle } from '@/domain/recipe/card-style';
 import { firstTag } from '@/domain/recipe/first-tag';
 import { loadRecipe } from '@/domain/recipe/load-recipe';
 import { extractMedia } from '@/domain/recipe/media';
@@ -34,6 +29,9 @@ import { RecipeHero } from '@/app/(site)/recipe/[id]/_components/recipe-hero';
 import { RecipeExtras } from '@/app/(site)/recipe/[id]/_components/recipe-extras';
 import { RecipeNotes } from '@/app/(site)/recipe/[id]/_components/recipe-notes';
 import { RecipeTags } from '@/app/(site)/recipe/[id]/_components/recipe-tags';
+import type { PanelIngredient } from '@/components/recipe/ingredients-panel';
+import type { ReactElement } from 'react';
+import type { Metadata } from 'next';
 
 /**
  * The page's title: the recipe's own, or a plain "Recipe" when it cannot be
@@ -130,6 +128,7 @@ export default async function RecipePage({
         type="application/ld+json"
         // Recipe text comes from files and imports, so `<` is escaped: a
         // "</script>" in a title must not be able to end this tag.
+        // eslint-disable-next-line react/no-danger -- JSON-LD is script text, React would escape its quotes, and `<` is escaped by jsonLdText
         dangerouslySetInnerHTML={{ __html: jsonLdText(jsonLd) }}
       />
 

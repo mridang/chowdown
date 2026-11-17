@@ -46,6 +46,7 @@ describe('applyRecipePatch', () => {
   });
 
   it('refuses images that are not usable URLs', () => {
+    // eslint-disable-next-line no-script-url -- the value is a javascript: URL on purpose, to prove it is refused
     expect(errors({ images: ['javascript:alert(1)'] })[0]).toContain('images');
     expect(errors({ images: 'x' })[0]).toContain('images');
   });

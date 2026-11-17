@@ -2,7 +2,6 @@ import { describe, expect, it, jest } from '@jest/globals';
 
 import { callTool } from '@/domain/mcp/tool-calls';
 import { noteTarget } from '@/domain/mcp/tools/recipe-support';
-
 import {
   PANCAKES,
   USER,
@@ -12,8 +11,8 @@ import {
   said,
 } from '../../../lib/mcp/tool-fakes';
 
-const AND_MORE = /; and 2 more\./;
-const ALLOWANCE_USED_UP = /allowance.*used up.*2 hour/;
+const AND_MORE = /; and 2 more\./u;
+const ALLOWANCE_USED_UP = /allowance.*used up.*2 hour/u;
 
 describe('the daily allowance for tools that call a model', () => {
   const used = (wait: number | undefined) =>
@@ -50,7 +49,7 @@ describe('the daily allowance for tools that call a model', () => {
       'import_recipe',
       { content: 'A page about bread' },
       folder(),
-      // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
       used(undefined),
     );
     expect(result.isError).not.toBe(true);
@@ -85,7 +84,7 @@ describe('two edits of one recipe at the same time', () => {
     expect(final).toContain('rest it');
   });
 
-  it('all of four land', async () => {
+  it.each([0, 1, 2, 3])('all of four land (%j)', async (index) => {
     const fake = folder({ 'Pancakes.cook': PANCAKES });
     const results = await Promise.all(
       Array.from({ length: 4 }, async (_, index) =>
@@ -104,9 +103,7 @@ describe('two edits of one recipe at the same time', () => {
     ]);
     const final = fake.contents.get('Pancakes.cook') ?? '';
     expect(logged(final)).toBe(4);
-    for (const index of [0, 1, 2, 3]) {
-      expect(final).toContain(`cook ${index}`);
-    }
+    expect(final).toContain(`cook ${index}`);
   });
 
   it('shows each caller the recipe as it was stored, with the other edit in it', async () => {
@@ -360,9 +357,10 @@ describe('a call that names no recipe, or an ambiguous one, never touches the wr
         services,
       );
       expect(result.isError).toBe(true);
-      expect(said(result)).toContain('Several recipes match "pie"');
-      expect(said(result)).toContain('Apple pie (id: id-Apple pie.cook)');
-      expect(said(result)).toContain('as `recipe`');
+      const text = said(result);
+      expect(text).toContain('Several recipes match "pie"');
+      expect(text).toContain('Apple pie (id: id-Apple pie.cook)');
+      expect(text).toContain('as `recipe`');
       expect(fake.updates).toEqual([]);
       expect(services.setFavourite).not.toHaveBeenCalled();
     },
@@ -405,7 +403,8 @@ describe('when very many recipes match one reference', () => {
       },
     );
     expect(result.isError).toBe(true);
-    expect(said(result)).toContain('Several recipes match "pie"');
-    expect(said(result)).toMatch(AND_MORE);
+    const text = said(result);
+    expect(text).toContain('Several recipes match "pie"');
+    expect(text).toMatch(AND_MORE);
   });
 });

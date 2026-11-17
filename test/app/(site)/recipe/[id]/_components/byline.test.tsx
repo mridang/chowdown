@@ -8,10 +8,11 @@ import {
 } from '@/app/(site)/recipe/[id]/_components/byline';
 import { html } from '../../../../../components/render';
 
-const CLASS_TRUNCATE = /class="[^"]*truncate[^"]*"/;
-const FONT_HAND = /font-hand-(\w+)/;
-const CLASS_FONT_HAND = /class="[^"]*font-hand-\w[^"]*"[^>]*>Ethan Chlebowski</;
-const BY_ETHAN_CHLEBOWSKI = />by<.*Ethan Chlebowski/;
+const CLASS_TRUNCATE = /class="[^"]*truncate[^"]*"/u;
+const FONT_HAND = /font-hand-(\w+)/u;
+const CLASS_FONT_HAND =
+  /class="[^"]*font-hand-\w[^"]*"[^>]*>Ethan Chlebowski</u;
+const BY_ETHAN_CHLEBOWSKI = />by<.*Ethan Chlebowski/u;
 
 const SITE = 'https://www.seriouseats.com/recipes/dal';
 
@@ -67,7 +68,7 @@ describe('AuthorLine', () => {
   });
 
   it('sets the name in a handwriting face, and nothing else', () => {
-    expect(out.match(/font-hand-/g)).toHaveLength(1);
+    expect(out.match(/font-hand-/gu)).toHaveLength(1);
     expect(out).toMatch(CLASS_FONT_HAND);
   });
 
@@ -90,7 +91,7 @@ describe('AuthorLine', () => {
   });
 
   it('shows a name as text, never as markup', () => {
-    const hostile = html(<AuthorLine name={'<img src=x onerror=alert(1)>'} />);
+    const hostile = html(<AuthorLine name="<img src=x onerror=alert(1)>" />);
     expect(hostile).not.toContain('<img');
     expect(hostile).toContain('&lt;img src=x onerror=alert(1)&gt;');
   });

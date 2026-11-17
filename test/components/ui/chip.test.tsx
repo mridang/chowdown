@@ -3,8 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { CountBadge, FilterChip, Tag } from '@/components/ui/chip';
 import { html } from '../render';
 
-const SPAN = />3<\/span>$/;
-const SPAN_CLASS_SR = /<span class="sr-only">Remove filter<\/span>/;
+const SPAN = />3<\/span>$/u;
+const SPAN_CLASS_SR = /<span class="sr-only">Remove filter<\/span>/u;
 
 describe('FilterChip', () => {
   const out = html(<FilterChip href="/app?q=x">Easy</FilterChip>);

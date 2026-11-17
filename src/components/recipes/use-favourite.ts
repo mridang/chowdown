@@ -1,4 +1,4 @@
-import { useCallback, useState, useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 
 import {
   getFavouriteOverride,
@@ -72,14 +72,14 @@ export function useFavourite(recipeId: string, initial: boolean): Favourite {
   );
   const [busy, setBusy] = useState(false);
 
-  const toggle = useCallback(async () => {
+  const toggle = async (): Promise<void> => {
     setBusy(true);
     try {
       await saveFavourite(recipeId, !on);
     } finally {
       setBusy(false);
     }
-  }, [on, recipeId]);
+  };
 
   return { on, busy, toggle };
 }

@@ -6,24 +6,20 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import type { NextResponse } from 'next/server';
 
-import { SessionTokens } from '@/lib/session';
 import { SESSION_COOKIE } from '@/domain/auth/app';
+import { SessionTokens } from '@/lib/session';
+import { sessionTokenFor } from '../../../domain/auth/session-fixture';
 import {
   SESSION_SECRET,
   fakeCookies,
   jar,
-  sessionTokenFor,
-} from '../../../domain/auth/session-fixture';
-import {
-  locationOf,
-  nextRequest,
-  openWorld,
-  signIn,
-  type World,
-} from '../../api/world';
+} from '../../../domain/auth/auth-test-kit';
+import { locationOf, nextRequest, openWorld, signIn } from '../../api/world';
+import type { NextResponse } from 'next/server';
+import type { World } from '../../api/world';
 
+// eslint-disable-next-line tslop/no-module-mocking -- next/headers is a framework module the code under test imports directly, and it only works inside a Next request
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const { GET } = await import('@/app/auth/refresh/route');
@@ -64,17 +60,18 @@ describe('GET /auth/refresh', () => {
     expect(session?.['drive']).toBe(true);
   });
 
-  it('goes to /app when there is no returnTo, or an unsafe one', async () => {
-    await signIn(world);
-    for (const query of [
-      '',
-      '?returnTo=https%3A%2F%2Fevil.example',
-      '?returnTo=%2F%2Fevil.example',
-    ]) {
+  it.each([
+    '',
+    '?returnTo=https%3A%2F%2Fevil.example',
+    '?returnTo=%2F%2Fevil.example',
+  ])(
+    'goes to /app when there is no returnTo, or an unsafe one (%j)',
+    async (query) => {
+      await signIn(world);
       const res = await GET(nextRequest(`/auth/refresh${query}`));
       expect(locationOf(res)?.href).toBe('https://chowdown.test/app');
-    }
-  });
+    },
+  );
 
   it('never lengthens the session', async () => {
     await signIn(world);

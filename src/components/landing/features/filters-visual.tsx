@@ -1,10 +1,9 @@
-import type { ReactElement, ReactNode } from 'react';
-
-import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import { MiniCard } from '@/components/landing/features/mini-card';
 import { WindowFrame } from '@/components/landing/window-frame';
 import { cn } from '@/components/ui/cn';
 import { Eyebrow } from '@/components/ui/layout';
+import type { SampleRecipe } from '@/components/landing/demo-recipes';
+import type { ReactElement, ReactNode } from 'react';
 
 /** One filter option in the mock-up: a box, a name and how many recipes match. */
 function FilterOption({

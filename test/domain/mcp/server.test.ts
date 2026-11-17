@@ -9,8 +9,6 @@ import {
 } from '@modelcontextprotocol/core';
 import { describe, expect, it, jest } from '@jest/globals';
 
-import type { User } from '@/domain/db/users';
-import type { RecipeLister } from '@/domain/mcp/recipe-resources';
 import { SCENARIO_TOOLS } from '@/domain/mcp/scenarios';
 import {
   CACHE_HINTS,
@@ -18,26 +16,31 @@ import {
   handleMcpMessage,
   readCache,
   isAdvertisedTool,
-  type JsonRpcResponse,
-  type ToolRunner,
 } from '@/domain/mcp/server';
 import { callTool } from '@/domain/mcp/tool-calls';
-import { InvalidToolArgumentsError, UnknownToolError } from '@/lib/mcp';
+import {
+  InvalidToolArgumentsError,
+  UnknownToolError,
+  textResult,
+} from '@/lib/mcp';
 import {
   CAPABILITIES,
   INSTRUCTIONS,
   SERVER_INFO,
 } from '@/domain/mcp/server-info';
-import { textResult } from '@/domain/mcp/tool-results';
 import { APP_RESOURCES } from '@/domain/mcp/ui-resources';
 import { TOOLS } from '@/domain/mcp/tool-definitions';
-import { PANCAKES, call, fakeServices, folder } from '../../lib/mcp/tool-fakes';
 import { SCOPE_READ, SCOPE_WRITE, scopeForTool } from '@/lib/oauth';
+import { PANCAKES, call, fakeServices, folder } from '../../lib/mcp/tool-fakes';
+import type { ToolRunner } from '@/domain/mcp/server';
+import type { JsonRpcResponse } from '@/lib/mcp';
+import type { RecipeLister } from '@/domain/mcp/recipe-resources';
+import type { User } from '@/domain/db/users';
 
 const collator = new Intl.Collator();
 
 const INVALID_ARGUMENTS_FOR =
-  /Invalid arguments for get_recipe: .*`recipe` is required.*`limit` is not an argument/;
+  /Invalid arguments for get_recipe: .*`recipe` is required.*`limit` is not an argument/u;
 
 /** The address of a view the server serves. */
 const FIRST_VIEW = APP_RESOURCES.at(0)?.uri ?? '';
@@ -112,16 +115,14 @@ describe('handleMcpMessage without Google Drive', () => {
     );
   });
 
-  it('gives no reply to any notification', async () => {
-    for (const method of [
-      'notifications/initialized',
-      'notifications/cancelled',
-    ]) {
+  it.each(['notifications/initialized', 'notifications/cancelled'])(
+    'gives no reply to any notification (%j)',
+    async (method) => {
       expect(
         await handleMcpMessage(noDrive, { jsonrpc: '2.0', method }),
       ).toBeNull();
-    }
-  });
+    },
+  );
 });
 
 describe('handleMcpMessage routing', () => {
@@ -219,8 +220,8 @@ describe('handleMcpMessage routing', () => {
 
   it('serves the older view addresses without listing them', async () => {
     const legacy = APP_RESOURCES.filter((r) => r.legacy);
-    expect(legacy.length).toBeGreaterThan(0);
     for (const view of legacy) {
+      expect(legacy.length).toBeGreaterThan(0);
       expect(
         await send({ method: 'resources/read', params: { uri: view.uri } }),
       ).toMatchObject({ result: { contents: [{ uri: view.uri }] } });
@@ -315,7 +316,8 @@ describe('the tool catalogue', () => {
     const empty = {
       user: { id: 1 } as User,
       token: 'tok',
-      system: void 0,
+      // eslint-disable-next-line sonarjs/no-undefined-assignment -- the key must be present with the value undefined, because the test is about an absent value and null means something else
+      system: undefined,
       files: {
         list: async () => [],
         read: async () => '',
@@ -350,11 +352,9 @@ describe('the tool catalogue', () => {
     expect(unknown).toEqual([]);
   });
 
-  it('describes every scenario tool', () => {
+  it.each(SCENARIO_TOOLS)('describes every scenario tool (%j)', (scenario) => {
     const names = TOOLS.map((t) => t.name) as readonly string[];
-    for (const scenario of SCENARIO_TOOLS) {
-      expect(names).toContain(scenario);
-    }
+    expect(names).toContain(scenario);
   });
 });
 
@@ -405,13 +405,14 @@ describe('handleMcpMessage — the newest revision', () => {
     },
   );
 
-  it('gives every cache hint a non-negative lifetime and a scope the spec knows', () => {
-    for (const hint of Object.values(CACHE_HINTS)) {
+  it.each(Object.values(CACHE_HINTS))(
+    'gives every cache hint a non-negative lifetime and a scope the spec knows (%j)',
+    (hint) => {
       expect(Number.isInteger(hint.ttlMs)).toBe(true);
       expect(hint.ttlMs).toBeGreaterThanOrEqual(0);
       expect(['public', 'private']).toContain(hint.cacheScope);
-    }
-  });
+    },
+  );
 
   it('keeps the large view cached longer than the lists, and shares them all except what is per person', () => {
     expect(CACHE_HINTS.read.ttlMs).toBeGreaterThan(CACHE_HINTS.list.ttlMs);
@@ -477,20 +478,21 @@ describe('handleMcpMessage — the newest revision', () => {
     expect(result).not.toHaveProperty('ttlMs');
   });
 
-  it('puts no cache hints on results that are not cacheable', async () => {
-    for (const message of [
-      { method: 'ping' },
-      {
-        method: 'tools/call',
-        params: { name: 'list_recipes', arguments: {}, ...MODERN },
-      },
-    ]) {
+  it.each([
+    { method: 'ping' },
+    {
+      method: 'tools/call',
+      params: { name: 'list_recipes', arguments: {}, ...MODERN },
+    },
+  ])(
+    'puts no cache hints on results that are not cacheable (%j)',
+    async (message) => {
       const reply = await send(message, async () => textResult('ok'));
       const result = (reply as { result: Record<string, unknown> }).result;
       expect(result).not.toHaveProperty('ttlMs');
       expect(result).not.toHaveProperty('cacheScope');
-    }
-  });
+    },
+  );
 
   it('puts no cache hints on an error', async () => {
     const reply = await send({
@@ -501,16 +503,14 @@ describe('handleMcpMessage — the newest revision', () => {
     expect(JSON.stringify(reply)).not.toContain('ttlMs');
   });
 
-  it('names the server in the _meta of every result', async () => {
-    for (const message of [
-      { method: 'prompts/list', params: MODERN },
-      { method: 'tools/list', params: MODERN },
-      { method: 'resources/list', params: MODERN },
-      { method: 'server/discover', params: MODERN },
-    ]) {
-      const result = await resultOf(message);
-      expect(result['_meta']).toMatchObject({ [SERVER_INFO_KEY]: SERVER_INFO });
-    }
+  it.each([
+    { method: 'prompts/list', params: MODERN },
+    { method: 'tools/list', params: MODERN },
+    { method: 'resources/list', params: MODERN },
+    { method: 'server/discover', params: MODERN },
+  ])('names the server in the _meta of every result (%j)', async (message) => {
+    const result = await resultOf(message);
+    expect(result['_meta']).toMatchObject({ [SERVER_INFO_KEY]: SERVER_INFO });
   });
 
   it('adds the server to a result’s own _meta instead of replacing it', async () => {
@@ -627,14 +627,12 @@ const send = async (
   );
 
 describe('handleMcpMessage — refusals', () => {
-  it('echoes the request id on every error', async () => {
-    for (const message of [
-      { method: 'nope' },
-      { method: 'resources/read', params: { uri: 'ui://nope' } },
-      { method: 'tools/call', params: { name: 'nope' } },
-    ]) {
-      expect(await send(message)).toMatchObject({ id: 'q1' });
-    }
+  it.each([
+    { method: 'nope' },
+    { method: 'resources/read', params: { uri: 'ui://nope' } },
+    { method: 'tools/call', params: { name: 'nope' } },
+  ])('echoes the request id on every error (%j)', async (message) => {
+    expect(await send(message)).toMatchObject({ id: 'q1' });
   });
 
   it('answers a tool that is not advertised with -32602 and the tool names, without running anything', async () => {
@@ -648,23 +646,25 @@ describe('handleMcpMessage — refusals', () => {
     expect(message).toContain('list_recipes');
   });
 
-  it('answers a missing or non-text tool name the same way', async () => {
-    for (const params of [{}, { name: 7 }, { name: null }, undefined]) {
+  it.each([{}, { name: 7 }, { name: null }, undefined])(
+    'answers a missing or non-text tool name the same way (%j)',
+    async (params) => {
       expect(await send({ method: 'tools/call', params })).toMatchObject({
         error: { code: -32_602 },
       });
-    }
-  });
+    },
+  );
 
-  it('answers arguments that are not an object with -32602, before running anything', async () => {
-    for (const args of ['x', 5, [], null]) {
+  it.each(['x', 5, [], null])(
+    'answers arguments that are not an object with -32602, before running anything (%j)',
+    async (args) => {
       const reply = await send({
         method: 'tools/call',
         params: { name: 'list_recipes', arguments: args },
       });
       expect(reply).toMatchObject({ error: { code: -32_602 } });
-    }
-  });
+    },
+  );
 
   it('runs a tool that is advertised, whatever its arguments are', async () => {
     const ran: unknown[] = [];
@@ -809,37 +809,34 @@ describe('handleMcpMessage — tool errors and other faults', () => {
     spy.mockRestore();
   });
 
-  it('tells a view that is not there from a request with no address, and says which', async () => {
-    expect(
-      await send({ method: 'resources/read', params: { uri: 'ui://nope' } }),
-    ).toEqual({
-      jsonrpc: '2.0',
-      id: 'q1',
-      error: {
-        code: -32_602,
-        message: 'Resource not found',
-        data: { uri: 'ui://nope' },
-      },
-    });
-    for (const params of [{}, { uri: 5 }, { uri: null }, undefined]) {
+  it.each([{}, { uri: 5 }, { uri: null }, undefined])(
+    'tells a view that is not there from a request with no address, and says which (%j)',
+    async (params) => {
+      expect(
+        await send({ method: 'resources/read', params: { uri: 'ui://nope' } }),
+      ).toEqual({
+        jsonrpc: '2.0',
+        id: 'q1',
+        error: {
+          code: -32_602,
+          message: 'Resource not found',
+          data: { uri: 'ui://nope' },
+        },
+      });
       expect(await send({ method: 'resources/read', params })).toMatchObject({
         error: { code: -32_602, message: expect.stringContaining('`uri`') },
       });
-    }
-  });
+    },
+  );
 
-  it('does not take the names of things every object has for methods', async () => {
-    for (const method of [
-      'constructor',
-      'toString',
-      '__proto__',
-      'hasOwnProperty',
-    ]) {
+  it.each(['constructor', 'toString', '__proto__', 'hasOwnProperty'])(
+    'does not take the names of things every object has for methods (%j)',
+    async (method) => {
       expect(await send({ method })).toMatchObject({
         error: { code: -32_601 },
       });
-    }
-  });
+    },
+  );
 });
 
 describe('lists with more than one page, and lists with only one', () => {
@@ -947,11 +944,12 @@ describe('lists with more than one page, and lists with only one', () => {
     },
   );
 
-  it('treats an absent, null or empty cursor on resources/list as the start', async () => {
-    for (const params of [undefined, { cursor: null }, { cursor: '' }]) {
+  it.each([undefined, { cursor: null }, { cursor: '' }])(
+    'treats an absent, null or empty cursor on resources/list as the start (%j)',
+    async (params) => {
       expect(await list(params)).toHaveProperty('result');
-    }
-  });
+    },
+  );
 });
 
 describe('every reply parses with the SDK’s own schema for its method', () => {
@@ -962,7 +960,7 @@ describe('every reply parses with the SDK’s own schema for its method', () => 
   const resultOf = async (
     method: string,
     params: Record<string, unknown> | undefined,
-  ): Promise<unknown> => {
+  ) => {
     const reply = await handleMcpMessage(
       someone,
       { jsonrpc: '2.0', id: 1, method, params },
@@ -1024,12 +1022,13 @@ describe('every reply parses with the SDK’s own schema for its method', () => 
 });
 
 describe('isAdvertisedTool', () => {
-  it('is true for the tools in the catalogue and nothing else', () => {
-    for (const tool of TOOLS) {
-      expect(isAdvertisedTool(tool.name)).toBe(true);
-    }
-    for (const other of ['nope', '', 'LIST_RECIPES', 5, null, undefined]) {
+  it.each(['nope', '', 'LIST_RECIPES', 5, null, undefined])(
+    'is true for the tools in the catalogue and nothing else (%j)',
+    (other) => {
+      for (const tool of TOOLS) {
+        expect(isAdvertisedTool(tool.name)).toBe(true);
+      }
       expect(isAdvertisedTool(other)).toBe(false);
-    }
-  });
+    },
+  );
 });

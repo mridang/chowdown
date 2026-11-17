@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { DriveIcon, HeartIcon, PlusIcon, SearchIcon } from '@/components/icons';
 import { isServerHref } from '@/components/ui/button';
 import { POPOVER_ITEM } from '@/components/ui/popover';
 
 import { NEW_TAB } from '@/components/site/drive-link';
+import type { ReactElement } from 'react';
 import type { NavIcon, NavLink } from '@/components/site/nav-links';
 
 /** The picture for each kind of menu link; the Drive one is the colour logo. */

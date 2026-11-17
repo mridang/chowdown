@@ -12,14 +12,15 @@ describe('RECIPES', () => {
     expect(new Set(RECIPES.map((recipe) => recipe.id)).size).toBe(8);
   });
 
-  it('gives every recipe the facts a card shows, and no photo', () => {
-    for (const recipe of RECIPES) {
+  it.each(RECIPES)(
+    'gives every recipe the facts a card shows, and no photo (%j)',
+    (recipe) => {
       expect(recipe.minutes).toBeGreaterThan(0);
       expect(recipe.servings).toBeGreaterThan(0);
       expect(['Easy', 'Medium', 'Hard']).toContain(recipe.difficulty);
       expect(recipe.cover).toBeUndefined();
-    }
-  });
+    },
+  );
 });
 
 describe('HERO_RECIPE', () => {

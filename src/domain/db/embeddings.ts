@@ -9,8 +9,8 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
 
 import { chunked } from '@/domain/db/chunk';
-import type { Database } from '@/domain/db/client';
 import { embeddings, recipes } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 
 /** A cached embedding row. */
 export type EmbeddingRow = typeof embeddings.$inferSelect;
@@ -81,6 +81,7 @@ export async function deleteEmbeddingsNotIn(
     .from(embeddings)
     .where(eq(embeddings.user_id, userId));
   const stale = cached.map((row) => row.id).filter((id) => !keep.has(id));
+  // eslint-disable-next-line functional/no-loop-statements -- the batches must run one after another
   for (const ids of chunked(stale)) {
     // The recipe stays, so its `embedded_at` is cleared in the same batch.
     await db.batch([
@@ -146,6 +147,7 @@ export async function saveSimilarLists(
         ),
       ),
   );
+  // eslint-disable-next-line functional/no-loop-statements -- the batches must run one after another
   for (const [first, ...rest] of chunked(statements, BATCH_SIZE)) {
     // `batch` wants at least one statement; a chunk always has one.
     if (first) {

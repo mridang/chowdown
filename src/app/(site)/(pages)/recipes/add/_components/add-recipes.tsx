@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactElement,
-} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { CloseIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -20,22 +14,23 @@ import {
 import { useFocusOnChange } from '@/components/ui/use-focus-on-change';
 import { countOf } from '@/lib/intl';
 import { problemMessage } from '@/components/api/problem-message';
-import type { CardRecipe } from '@/domain/recipe/card-data';
 import { savedCard } from '@/domain/recipe/saved-card';
 
 import {
   ANNOUNCEMENTS,
   missingFieldErrors,
   prepareImport,
-  type Phase,
 } from '@/app/(site)/(pages)/recipes/add/_components/import-flow';
 import {
   discardImport,
   postRecipe,
-  type ImportDraft,
 } from '@/app/(site)/(pages)/recipes/add/_components/recipe-requests';
 import { SavedRecipes } from '@/app/(site)/(pages)/recipes/add/_components/saved-recipes';
 import { SHARED_HINT } from '@/app/(site)/(pages)/recipes/add/_components/shared-input';
+import type { ImportDraft } from '@/app/(site)/(pages)/recipes/add/_components/recipe-requests';
+import type { Phase } from '@/app/(site)/(pages)/recipes/add/_components/import-flow';
+import type { ReactElement } from 'react';
+import type { CardRecipe } from '@/domain/recipe/card-data';
 
 /** The wizard's heading for each phase. */
 const HEADINGS: Readonly<Record<Phase, string>> = {
@@ -125,6 +120,7 @@ export function AddRecipes({
       if (importId.current) {
         // The drafts have been dealt with; tidy the import away.
         discardImport(importId.current);
+        // eslint-disable-next-line functional/immutable-data -- a React ref holds the in-flight request and import id outside render state
         importId.current = null;
       }
       return;
@@ -141,11 +137,13 @@ export function AddRecipes({
       return;
     }
     const controller = new AbortController();
+    // eslint-disable-next-line functional/immutable-data -- a React ref holds the in-flight request and import id outside render state
     inflight.current = controller;
     setBusy(true);
     setPrepareError(null);
     setAnnouncement(ANNOUNCEMENTS.preparing);
     const outcome = await prepareImport(input, controller.signal);
+    // eslint-disable-next-line functional/immutable-data -- a React ref holds the in-flight request and import id outside render state
     inflight.current = null;
     setBusy(false);
     switch (outcome.kind) {
@@ -160,11 +158,13 @@ export function AddRecipes({
       }
       case 'prepared': {
         setAnnouncement('');
+        // eslint-disable-next-line functional/immutable-data -- a React ref holds the in-flight request and import id outside render state
         importId.current = outcome.prepared.id;
         setDrafts(outcome.prepared.drafts);
         setPhase('review');
         seek(outcome.prepared.drafts, 0);
       }
+      // no default
     }
   }, [input, seek]);
 
@@ -272,7 +272,9 @@ export function AddRecipes({
           <div className="mt-5 flex flex-wrap gap-3">
             <Button
               size="lg"
-              onClick={() => void prepare()}
+              onClick={() => {
+                void prepare();
+              }}
               disabled={busy || !input.trim()}
               aria-busy={busy}
               className="disabled:opacity-50"
@@ -340,7 +342,9 @@ export function AddRecipes({
           <div className="mt-5 flex flex-wrap gap-3">
             <Button
               size="lg"
-              onClick={() => void saveCurrent()}
+              onClick={() => {
+                void saveCurrent();
+              }}
               disabled={busy}
               aria-busy={busy}
               className="disabled:opacity-50"
@@ -362,9 +366,9 @@ export function AddRecipes({
 
       {phase === 'done' ? (
         <>
-          <p className="mt-3 text-lg" role="status">
+          <output className="mt-3 block text-lg">
             Saved {countOf(savedCount, 'recipe')} to your Drive.
-          </p>
+          </output>
           <SavedRecipes recipes={savedCards} />
           <div className="mt-5">
             <Button size="lg" onClick={onClose}>
@@ -375,13 +379,12 @@ export function AddRecipes({
       ) : null}
 
       {/* Always present, so screen readers are already listening when it fills. */}
-      <p
-        role="status"
+      <output
         aria-live="polite"
-        className="mt-4 text-sm text-muted empty:hidden"
+        className="mt-4 block text-sm text-muted empty:hidden"
       >
         {announcement}
-      </p>
+      </output>
     </Card>
   );
 }

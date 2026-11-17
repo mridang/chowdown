@@ -3,18 +3,18 @@ import { describe, expect, it } from '@jest/globals';
 import { AddRecipesPage } from '@/app/(site)/(pages)/recipes/add/_components/add-recipes-page';
 import { htmlAt } from '../../../../../../components/render';
 
-const BUTTON_TYPE_BUTTON = /<button[^>]*type="button"[^>]*>.*Write it myself/;
+const BUTTON_TYPE_BUTTON = /<button[^>]*type="button"[^>]*>.*Write it myself/u;
 const BUTTON_TYPE_BUTTON_2 =
-  /<button[^>]*type="button"[^>]*>.*Import links or text/;
-const HREF_APP_ALL = /<a [^>]*href="\/app"[^>]*>.*All recipes<\/a>/;
-const H1_TABINDEX_ADD = /<h1 tabindex="-1"[^>]*>Add recipes<\/h1>/;
-const H1_ADD_RECIPES = /<h1[^>]*>Add recipes<\/h1>/;
+  /<button[^>]*type="button"[^>]*>.*Import links or text/u;
+const HREF_APP_ALL = /<a [^>]*href="\/app"[^>]*>.*All recipes<\/a>/u;
+const H1_TABINDEX_ADD = /<h1 tabindex="-1"[^>]*>Add recipes<\/h1>/u;
+const H1_ADD_RECIPES = /<h1[^>]*>Add recipes<\/h1>/u;
 
 describe('AddRecipesPage', () => {
   const out = htmlAt(<AddRecipesPage />, { pathname: '/recipes/add' });
 
   it('has the page’s one heading', () => {
-    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out.match(/<h1/gu)).toHaveLength(1);
     expect(out).toMatch(H1_ADD_RECIPES);
   });
 

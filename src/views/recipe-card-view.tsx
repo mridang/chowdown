@@ -12,9 +12,8 @@
  * connection to the host is in {@link RecipeCardApp}.
  */
 
-import { useState, type ReactElement } from 'react';
+import { useState } from 'react';
 
-import type { RecipeCardData } from '@/domain/mcp/ui-types';
 import { isRecipeCardData } from '@/views/guards';
 import {
   Eyebrow,
@@ -25,6 +24,8 @@ import {
 import { Announcer, LoadingCard, MessageCard } from '@/views/status-panels';
 import { STYLES } from '@/views/styles';
 import { useWidgetData } from '@/views/use-widget-data';
+import type { ReactElement } from 'react';
+import type { RecipeCardData } from '@/domain/mcp/ui-types';
 import type { ViewState } from '@/views/view-state';
 
 /** How many ingredients the compact card names before saying "+N more". */
@@ -139,6 +140,7 @@ export function RecipeCardScreen({
           />
         );
       }
+      // no default
     }
   })();
   return (

@@ -6,17 +6,15 @@ import {
   authorizeParamsFrom,
   grantedScope,
   redirectWith,
-  type AuthorizeParams,
-  type OAuthClient,
   validateAuthorizeRequest,
 } from '@/lib/oauth';
-
-import { quietSecurityLogs } from './quiet-logs';
 import { SCOPE_READ, SCOPE_WRITE } from '@/domain/mcp/app';
+import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
+import { quietSecurityLogs } from './quiet-logs';
+import type { AuthorizeParams, OAuthClient } from '@/lib/oauth';
 
 const START_U0020_U0021_U0023_HYPHEN =
-  /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/;
-import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
+  /^[\u0020\u0021\u0023-\u005B\u005D-\u007E]+$/u;
 
 const ORIGIN = 'https://site.example';
 const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
@@ -41,6 +39,7 @@ const good: AuthorizeParams = {
 };
 
 // An absent parameter: a key set to this overrides the valid default with undefined.
+// eslint-disable-next-line no-unassigned-vars -- never assigned on purpose: it stands for a key that is present with no value, and writing undefined inline is reported by sonarjs/no-undefined-assignment
 let unset: string | undefined;
 
 const check = async (overrides: AuthorizeParams = {}) =>
@@ -260,7 +259,7 @@ describe('grantedScope', () => {
     const asked = [SCOPE_READ, SCOPE_WRITE] as const;
     expect(grantedScope(asked, 'write')).toEqual(asked);
     expect(grantedScope(asked, null)).toEqual(asked);
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
     expect(grantedScope(asked, undefined)).toEqual(asked);
     expect(grantedScope(asked, 'anything else')).toEqual(asked);
     expect(grantedScope(asked, 'read')).toEqual([SCOPE_READ]);

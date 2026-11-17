@@ -24,7 +24,7 @@ import { runInBackground } from '@/lib/core/runtime';
 import { getDatabase } from '@/domain/db/client';
 import { appOrigin } from '@/lib/core/origin';
 
-const BASIC = /^basic\s/i;
+const BASIC = /^basic\s/iu;
 
 /**
  * `POST /oauth/token`: trade an authorization code (`grant_type=

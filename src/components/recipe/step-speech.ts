@@ -1,9 +1,8 @@
+import { AMOUNT_PATTERN, parseAmount } from '@/components/recipe/amount';
 import type { StepToken } from '@/lib/cooklang';
 
-import { AMOUNT_PATTERN, parseAmount } from '@/components/recipe/amount';
-
-const WHITESPACE_RUN = /\s+/;
-const TRAILING_DOT = /\.$/;
+const WHITESPACE_RUN = /\s+/u;
+const TRAILING_DOT = /\.$/u;
 
 /**
  * A step turned into the words someone would say, for a speech synthesiser.
@@ -14,29 +13,31 @@ const TRAILING_DOT = /\.$/;
  */
 
 /** How a unit is said, singular and plural, keyed by the abbreviations recipes use. */
-const UNIT_WORDS: Readonly<Record<string, readonly [string, string]>> = {
-  g: ['gram', 'grams'],
-  gr: ['gram', 'grams'],
-  kg: ['kilogram', 'kilograms'],
-  mg: ['milligram', 'milligrams'],
-  ml: ['millilitre', 'millilitres'],
-  l: ['litre', 'litres'],
-  tsp: ['teaspoon', 'teaspoons'],
-  tbsp: ['tablespoon', 'tablespoons'],
-  tbs: ['tablespoon', 'tablespoons'],
-  oz: ['ounce', 'ounces'],
-  lb: ['pound', 'pounds'],
-  lbs: ['pound', 'pounds'],
-  sec: ['second', 'seconds'],
-  secs: ['second', 'seconds'],
-  s: ['second', 'seconds'],
-  min: ['minute', 'minutes'],
-  mins: ['minute', 'minutes'],
-  m: ['minute', 'minutes'],
-  hr: ['hour', 'hours'],
-  hrs: ['hour', 'hours'],
-  h: ['hour', 'hours'],
-};
+const UNIT_WORDS = new Map<string, readonly [string, string]>(
+  Object.entries({
+    g: ['gram', 'grams'],
+    gr: ['gram', 'grams'],
+    kg: ['kilogram', 'kilograms'],
+    mg: ['milligram', 'milligrams'],
+    ml: ['millilitre', 'millilitres'],
+    l: ['litre', 'litres'],
+    tsp: ['teaspoon', 'teaspoons'],
+    tbsp: ['tablespoon', 'tablespoons'],
+    tbs: ['tablespoon', 'tablespoons'],
+    oz: ['ounce', 'ounces'],
+    lb: ['pound', 'pounds'],
+    lbs: ['pound', 'pounds'],
+    sec: ['second', 'seconds'],
+    secs: ['second', 'seconds'],
+    s: ['second', 'seconds'],
+    min: ['minute', 'minutes'],
+    mins: ['minute', 'minutes'],
+    m: ['minute', 'minutes'],
+    hr: ['hour', 'hours'],
+    hrs: ['hour', 'hours'],
+    h: ['hour', 'hours'],
+  }),
+);
 
 /** Fractions that have a natural spoken form, as a part of something and as a part of a whole number. */
 const FRACTION_WORDS: readonly {
@@ -106,7 +107,7 @@ function amountPhrase(text: string, withUnit: boolean): Phrase {
 
 /** A unit as it is said: singular or plural as asked; unknown words pass through. */
 function unitWords(unit: string, singular: boolean): string {
-  const words = UNIT_WORDS[unit.toLowerCase().replace(TRAILING_DOT, '')];
+  const words = UNIT_WORDS.get(unit.toLowerCase().replace(TRAILING_DOT, ''));
   if (!words) {
     return unit;
   }
@@ -116,7 +117,7 @@ function unitWords(unit: string, singular: boolean): string {
 /** `5 min`, `1/2 tsp`, `1-2 hours`: an amount, an optional range end, then the rest. */
 const QUANTITY = new RegExp(
   String.raw`^(?<from>${AMOUNT_PATTERN})(?:\s*(?:[-–—]|to)\s*(?<to>${AMOUNT_PATTERN}))?\s*(?<rest>.*)$`,
-  'i',
+  'iu',
 );
 
 /**
@@ -156,18 +157,18 @@ export function spokenQuantity(label: string): string {
 /** Temperatures read better with their words: "180°C" is "180 degrees Celsius". */
 function speakDegrees(text: string): string {
   return text
-    .replaceAll(/(\d)\s?°\s?C\b/g, '$1 degrees Celsius')
-    .replaceAll(/(\d)\s?°\s?F\b/g, '$1 degrees Fahrenheit')
-    .replaceAll(/(\d)\s?°/g, '$1 degrees');
+    .replaceAll(/(\d)\s?°\s?C\b/gu, '$1 degrees Celsius')
+    .replaceAll(/(\d)\s?°\s?F\b/gu, '$1 degrees Fahrenheit')
+    .replaceAll(/(\d)\s?°/gu, '$1 degrees');
 }
 
 /** Tidy the joined words: single spaces, no space before punctuation, no doubled commas. */
 function tidy(text: string): string {
   return text
-    .replaceAll(/\s+/g, ' ')
-    .replaceAll(/ ([,.;:!?])/g, '$1')
-    .replaceAll(/,(\s*,)+/g, ',')
-    .replaceAll(/,\s*([.;:!?])/g, '$1')
+    .replaceAll(/\s+/gu, ' ')
+    .replaceAll(/ ([,.;:!?])/gu, '$1')
+    .replaceAll(/,(\s*,)+/gu, ',')
+    .replaceAll(/,\s*([.;:!?])/gu, '$1')
     .trim();
 }
 
@@ -191,6 +192,7 @@ function spokenToken(
         ? `${token.name}, ${spokenQuantity(scale(token.quantity))},`
         : token.name;
     }
+    // no default
   }
 }
 

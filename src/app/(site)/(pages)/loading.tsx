@@ -1,6 +1,5 @@
-import type { ReactElement } from 'react';
-
 import { PageSkeleton } from '@/components/site/page-skeleton';
+import type { ReactElement } from 'react';
 
 /**
  * Shown the instant one of these pages (Cook with AI, Add recipes) is chosen,

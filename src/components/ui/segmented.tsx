@@ -1,8 +1,8 @@
 'use client';
 
-import { useId, type ReactElement } from 'react';
-
+import { useId } from 'react';
 import { cn } from '@/components/ui/cn';
+import type { ReactElement } from 'react';
 
 /**
  * A segmented control: one option selected at a time (units, view mode). It is a
@@ -36,6 +36,7 @@ export function Segmented<T extends string>({
             type="radio"
             name={name}
             value={option.value}
+            aria-label={option.label}
             checked={option.value === value}
             onChange={() => onValueChange(option.value)}
             className="peer sr-only"

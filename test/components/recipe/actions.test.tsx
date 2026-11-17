@@ -8,7 +8,7 @@ import {
 } from '@/components/recipe/actions';
 import { htmlAt } from '../render';
 
-const BUTTON_SHARE_BUTTON = /<button[^>]*>.*Share<\/button>/s;
+const BUTTON_SHARE_BUTTON = /<button[^>]*>.*Share<\/button>/su;
 
 describe('focusMoreActionsButton', () => {
   it('focuses the "More actions" button inside the container', () => {

@@ -6,8 +6,8 @@
  * reading of a result around these guards is shared (`payload.ts`).
  */
 
-import type { RecipeCardData, RecipeListData } from '@/domain/mcp/ui-types';
 import { everyEntry, isRecord, isString } from '@/views/payload';
+import type { RecipeCardData, RecipeListData } from '@/domain/mcp/ui-types';
 
 /** Whether the value is an array of arrays (the shape of recipe steps). */
 function isArray(value: unknown): value is readonly unknown[] {

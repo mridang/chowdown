@@ -6,8 +6,8 @@
  * is read-only; the measurement system is the one editable preference.
  */
 
-import type { User } from '@/domain/db/users';
 import { listOr } from '@/lib/intl';
+import type { User } from '@/domain/db/users';
 
 /** The measurement systems a user can prefer. */
 export const MEASUREMENT_SYSTEMS = ['METRIC', 'US', 'IMPERIAL'] as const;

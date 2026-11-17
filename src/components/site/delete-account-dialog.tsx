@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 
 import { deleteAccount } from '@/components/site/delete-account';
+import type { ReactElement } from 'react';
 
 /**
  * The confirmation in front of "Delete account". It says plainly what goes
@@ -98,7 +99,9 @@ export function DeleteAccountDialog({
           <Button
             variant="primary"
             disabled={busy}
-            onClick={() => void confirm()}
+            onClick={() => {
+              void confirm();
+            }}
           >
             {busy ? 'Deleting…' : 'Delete my account'}
           </Button>

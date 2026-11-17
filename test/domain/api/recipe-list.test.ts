@@ -1,23 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
+import { encodeCursor } from '@/lib/core/api';
 import { listRecipes } from '@/domain/api/recipe-list';
-import { encodeCursor, type ApiResponse } from '@/lib/core/api';
-import type { RecipeSummary } from '@/domain/api/recipe-resource';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
-import { insertUser } from '../../domain/auth/session-fixture';
+import { insertUser } from '../auth/session-fixture';
+import type { DatabaseSync } from 'node:sqlite';
+import type { ApiResponse } from '@/lib/core/api';
+import type { RecipeSummary } from '@/domain/api/recipe-resource';
 
 /** The page a successful list produced, or a thrown failure for a refusal. */
-function pageOf(result: ApiResponse<unknown> | Response): {
-  readonly items: readonly RecipeSummary[];
-  readonly next: string | undefined;
-  readonly cacheControl: string | undefined;
-} {
+function pageOf(result: ApiResponse<unknown> | Response) {
   if (result instanceof Response) {
     throw new TypeError(`expected a page, got a ${result.status} response`);
   }

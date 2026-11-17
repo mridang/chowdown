@@ -3,8 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { DeleteDialog } from '@/components/recipe/delete-dialog';
 import { htmlAt } from '../render';
 
-const ARIA_LABELLEDBY = /aria-labelledby="([^"]+)"/;
-const H2_DELETE_THIS = /<h2[^>]*>Delete this recipe\?<\/h2>/;
+const ARIA_LABELLEDBY = /aria-labelledby="([^"]+)"/u;
+const H2_DELETE_THIS = /<h2[^>]*>Delete this recipe\?<\/h2>/u;
 
 const markup = (open: boolean) =>
   htmlAt(

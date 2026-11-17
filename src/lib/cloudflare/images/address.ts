@@ -19,8 +19,6 @@ import { ALLOWED_HOSTS, ALLOWED_WIDTHS } from '@/lib/cloudflare/images/site';
 
 // The service reads the catalog through this render surface, so the
 // app-specific default width is surfaced here alongside the widths it snaps to.
-export { DEFAULT_WIDTH } from '@/lib/cloudflare/images/site';
-
 /** The path every app serves its pictures from. */
 export const IMAGE_PATH = '/img';
 

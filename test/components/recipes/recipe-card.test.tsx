@@ -8,7 +8,7 @@ import {
 import { toCardRecipe } from '@/domain/recipe/card-data';
 import { html } from '../render';
 
-const H2_DAL_H2 = /<h2[^>]*>Dal<\/h2>/;
+const H2_DAL_H2 = /<h2[^>]*>Dal<\/h2>/u;
 
 const SOURCE = [
   '>> title: Dal',

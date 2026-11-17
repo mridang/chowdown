@@ -36,7 +36,8 @@ describe('find_recipes', () => {
       folder({ 'Pancakes.cook': PANCAKES }),
       services,
     );
-    expect(said(result)).toContain('3 recipes not searchable yet');
-    expect(said(result)).toContain('Search again');
+    const text = said(result);
+    expect(text).toContain('3 recipes not searchable yet');
+    expect(text).toContain('Search again');
   });
 });

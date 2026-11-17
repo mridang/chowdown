@@ -5,7 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { z } from 'zod';
 import { recipeListResult } from '@/domain/mcp/tool-results';
 import {
   indexingNote,
@@ -18,17 +18,15 @@ import {
   RECIPE_REFERENCE,
 } from '@/domain/mcp/tools/schemas';
 import { parseVector, topSimilar } from '@/domain/recipe/similar';
-import {
-  type ArgumentSpellings,
-  errorResult,
-  type JsonSchema,
-  McpTool,
-  READS,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
+import { errorResult, McpTool, READS } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type {
+  ArgumentSpellings,
+  JsonSchema,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
 
 export class FindSimilarTool extends McpTool<
   'find_similar',

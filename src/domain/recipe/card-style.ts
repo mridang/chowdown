@@ -1,4 +1,4 @@
-const WHITESPACE = /\s/;
+const WHITESPACE = /\s/u;
 /**
  * @packageDocumentation
  *
@@ -32,10 +32,10 @@ function firstUnit(char: string): number {
 export function toneFor(text: string): Tone {
   // A small rolling hash over the characters; kept below 997 so it never
   // outgrows a safe integer however long the text is.
-  let hash = 0;
-  for (const char of text) {
-    hash = (hash * 31 + firstUnit(char)) % 997;
-  }
+  const hash = Array.from(text).reduce(
+    (rolling, char) => (rolling * 31 + firstUnit(char)) % 997,
+    0,
+  );
   return TONES.at(hash % TONES.length) ?? TONES[0];
 }
 
@@ -46,16 +46,14 @@ export function toneFor(text: string): Tone {
  */
 export function cleanTitle(title: string): string {
   // The first separator with whitespace on both sides ends the title.
-  for (const found of title.matchAll(/[|–—]/g)) {
-    const at = found.index;
-    if (
-      WHITESPACE.test(title.charAt(at - 1)) &&
-      WHITESPACE.test(title.charAt(at + 1))
-    ) {
-      return title.slice(0, at).trim() || title;
-    }
-  }
-  return title.trim() || title;
+  const separator = [...title.matchAll(/[|–—]/gu)].find(
+    (found) =>
+      WHITESPACE.test(title.charAt(found.index - 1)) &&
+      WHITESPACE.test(title.charAt(found.index + 1)),
+  );
+  return (
+    (separator ? title.slice(0, separator.index).trim() : title.trim()) || title
+  );
 }
 
 /** The difficulties a tag can name, in order. */

@@ -1,6 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { ParsedRecipe } from '@/lib/cooklang';
 import {
   extractMedia,
   normalizeImageUrl,
@@ -8,6 +7,7 @@ import {
   withImages,
 } from '@/domain/recipe/media';
 import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
+import type { ParsedRecipe } from '@/lib/cooklang';
 
 function recipe(metadata: [string, string][]): ParsedRecipe {
   return { title: 'X', metadata, ingredients: [], cookware: [], steps: [] };
@@ -84,6 +84,7 @@ describe('validImageUrls', () => {
     expect(
       validImageUrls([
         'https://a.com/1.jpg',
+        // eslint-disable-next-line no-script-url -- the value is a javascript: URL on purpose, to prove it is refused
         'javascript:alert(1)',
         '/relative.jpg',
         ' https://a.com/1.jpg ',
@@ -131,6 +132,7 @@ describe('withImages', () => {
 
   it('leaves the source alone when no url is valid', () => {
     const src = '>> title: T\n>> images: https://keep.com/x.jpg\n';
+    // eslint-disable-next-line no-script-url -- the value is a javascript: URL on purpose, to prove it is refused
     expect(withImages(src, ['not a url', 'javascript:x'])).toBe(src);
   });
 });
@@ -148,6 +150,7 @@ describe('normalizeImageUrl', () => {
   });
 
   it('rejects non-http schemes and relative paths', () => {
+    // eslint-disable-next-line no-script-url -- the value is a javascript: URL on purpose, to prove it is refused
     expect(normalizeImageUrl('javascript:alert(1)')).toBeUndefined();
     expect(normalizeImageUrl('/img/x.jpg')).toBeUndefined();
     expect(normalizeImageUrl('')).toBeUndefined();

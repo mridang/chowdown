@@ -3,8 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { SortSelect } from '@/components/recipes/sort-select';
 import { htmlAt } from '../render';
 
-const OPTION_VALUE_TITLE = /<option value="title" selected="">/;
-const OPTION_VALUE_TIME = /<option value="time" selected="">/;
+const OPTION_VALUE_TITLE = /<option value="title" selected="">/u;
+const OPTION_VALUE_TIME = /<option value="time" selected="">/u;
 
 const OPTIONS = [
   { value: 'title', label: 'Title A–Z', href: '/app' },

@@ -33,7 +33,7 @@ export function installEnv(
 }
 
 /** The bindings the sign-in tests run with, unless a test passes its own. */
-function signInEnv(): Record<string, unknown> {
+function signInEnv() {
   return {
     SESSION_SECRET,
     GOOGLE_OAUTH_CLIENT_ID: 'client-id',

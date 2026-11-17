@@ -1,11 +1,10 @@
 'use client';
 
-import type { ReactElement } from 'react';
-
 import { MenuIcon } from '@/components/icons';
 import { Popover } from '@/components/ui/popover';
 
 import { MenuLink } from '@/components/site/menu-link';
+import type { ReactElement } from 'react';
 import type { NavLink } from '@/components/site/nav-links';
 
 /**

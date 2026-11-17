@@ -30,8 +30,8 @@ export type ImportInput =
 /** Check the `input` of `POST /api/recipes/imports`: required, not blank, within the limit. */
 export function parseImportInput(body: unknown): ImportInput {
   const input: unknown =
-    typeof body === 'object' && body !== null
-      ? Reflect.get(body, 'input')
+    typeof body === 'object' && body !== null && 'input' in body
+      ? body.input
       : undefined;
   if (typeof input !== 'string' || !input.trim()) {
     return { ok: false, errors: ['input: required.'] };
@@ -67,7 +67,3 @@ export function importPosition(
 ): CursorPosition {
   return { key: imported.created_at, id: imported.id };
 }
-
-/** Order two import positions newest first, ties by id: "after" then means older. */
-
-export { compareNewestFirst as compareImportPositions } from '@/domain/api/newest-first';

@@ -8,19 +8,17 @@
  */
 
 import { getUserAccessToken } from '@/domain/auth/user-access-token';
-import type { Database } from '@/domain/db/client';
 import { deleteOrphanEmbeddings } from '@/domain/db/embeddings';
-import {
-  deleteRecipesNotIn,
-  listSyncRecipes,
-  type SyncRecipeRow,
-} from '@/domain/db/recipes';
-import { setRecipesFolderId, type User } from '@/domain/db/users';
+import { deleteRecipesNotIn, listSyncRecipes } from '@/domain/db/recipes';
+import { setRecipesFolderId } from '@/domain/db/users';
 import { listRecipeFiles } from '@/domain/drive/recipe-files';
 import { ensureRecipesFolder } from '@/domain/drive/recipes-folder';
-import type { DriveFile } from '@/lib/google/drive';
 import { getDatabase } from '@/domain/db/client';
 import { syncRecipeTags } from '@/domain/recipe/tag-index';
+import type { User } from '@/domain/db/users';
+import type { SyncRecipeRow } from '@/domain/db/recipes';
+import type { DriveFile } from '@/lib/google/drive';
+import type { Database } from '@/domain/db/client';
 
 /**
  * Everything {@link syncFromDrive} reaches out to, gathered in one place so a
@@ -58,7 +56,7 @@ export interface DriveSyncDeps {
     files: readonly DriveFile[],
     token: string,
     cached: readonly SyncRecipeRow[],
-  ) => Promise<unknown>;
+  ) => Promise<void>;
   /** Drop cache rows for files not in `keep` that were not saved after `since`. */
   readonly pruneRecipes: (
     db: Database,
@@ -66,9 +64,9 @@ export interface DriveSyncDeps {
     keep: readonly string[],
     since: string,
     cached: readonly SyncRecipeRow[],
-  ) => Promise<unknown>;
+  ) => Promise<void>;
   /** Drop embeddings whose recipe is gone. */
-  readonly pruneEmbeddings: (db: Database, userId: number) => Promise<unknown>;
+  readonly pruneEmbeddings: (db: Database, userId: number) => Promise<void>;
 }
 
 /** The real thing: D1, Google Drive and the tag index. */
@@ -80,8 +78,9 @@ const liveDeps: DriveSyncDeps = {
   rememberFolder: setRecipesFolderId,
   listFiles: listRecipeFiles,
   listCached: listSyncRecipes,
-  syncTags: async (user, files, token, cached) =>
-    syncRecipeTags(user, files, token, undefined, cached),
+  syncTags: async (user, files, token, cached) => {
+    await syncRecipeTags(user, files, token, undefined, cached);
+  },
   // The database helper takes a plain array; hand it a copy of ours.
   pruneRecipes: async (db, userId, keep, since, cached) =>
     deleteRecipesNotIn(db, userId, [...keep], since, cached),

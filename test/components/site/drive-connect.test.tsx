@@ -7,9 +7,9 @@ import {
 } from '@/components/site/drive-connect';
 import { html } from '../render';
 
-const H2_COULDN_REACH = /<h2[^>]*>Couldn’t reach Google Drive<\/h2>/;
-const H1_CONNECT = /<h1[^>]*>Connect/;
-const H2_CONNECT_YOUR = /<h2[^>]*>Connect your Google Drive<\/h2>/;
+const H2_COULDN_REACH = /<h2[^>]*>Couldn’t reach Google Drive<\/h2>/u;
+const H1_CONNECT = /<h1[^>]*>Connect/u;
+const H2_CONNECT_YOUR = /<h2[^>]*>Connect your Google Drive<\/h2>/u;
 
 describe('DriveConnectPanel', () => {
   it('invites someone to connect, with a button that always asks again', () => {

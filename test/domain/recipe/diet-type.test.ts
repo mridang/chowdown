@@ -7,8 +7,8 @@ import {
   MEAT,
   PLANT_DAIRY,
 } from '@/domain/recipe/diet-type';
-
 import { expectSamePattern, fuzzInputs } from '../../regex-equivalence';
+
 describe('classifyDietType', () => {
   it('calls anything with meat or poultry non-vegetarian', () => {
     expect(classifyDietType(['chicken thighs', 'rice'])).toBe('Non-vegetarian');
@@ -198,7 +198,7 @@ describe('classifyDietType — look-alikes and hidden animal products', () => {
 
   it('is fast on very long input', () => {
     const started = Date.now();
-    classifyDietType(['vegan ' + 'cream '.repeat(50_000)]);
+    classifyDietType([`vegan ${'cream '.repeat(50_000)}`]);
     expect(Date.now() - started).toBeLessThan(500);
   });
 });
@@ -221,7 +221,7 @@ describe('MEAT, rewritten', () => {
       String.raw`s|guinea fowl|elk|moose|grouse|animal rennet)\b|^\s*(?:lean |extra lea`,
       String.raw`n )?mince\b`,
     ].join(''),
-    '',
+    'u',
   );
   const pieces = [
     'chicken',
@@ -296,7 +296,7 @@ describe('FISH, rewritten', () => {
       'h|carp|mullet|pike|sea urchin|uni|clamato|taramasalata|bottarga|bagoon',
       String.raw`g|kamaboko|machli|jhinga|kimchi|caesar|dover sole|lemon sole)\b`,
     ].join(''),
-    '',
+    'u',
   );
   const pieces = [
     'fish',
@@ -365,7 +365,7 @@ describe('DAIRY_OR_EGG, rewritten', () => {
       'ranch|dulce de leche|queso|monterey jack|pepper jack|grana padano|asia',
       String.raw`go|cotija)\b`,
     ].join(''),
-    '',
+    'u',
   );
   const pieces = [
     'milk',
@@ -431,7 +431,7 @@ describe('PLANT_DAIRY, rewritten', () => {
       String.raw`mayonnaise|egg)\b[\s-]*)+|\bcream of (?:coconut|wheat|rice|tartar)\b|`,
       String.raw`\bcreamed corn\b|\bcoconut cream\b`,
     ].join(''),
-    'g',
+    'gu',
   );
   const pieces = [
     'almond ',

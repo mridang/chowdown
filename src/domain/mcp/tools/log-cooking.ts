@@ -5,7 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { z } from 'zod';
 import {
   cookedOn,
   editRecipe,
@@ -18,18 +18,14 @@ import {
   RECIPE_REFERENCE,
 } from '@/domain/mcp/tools/schemas';
 import { appendCookingLog } from '@/lib/cooklang';
-import {
-  errorResult,
-  type JsonSchema,
-  McpTool,
-  NOT_BLANK,
-  textArg,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
-  writes,
+import { errorResult, McpTool, NOT_BLANK, textArg, writes } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type {
+  JsonSchema,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
 
 export class LogCookingTool extends McpTool<
   'log_cooking',
@@ -52,12 +48,12 @@ export class LogCookingTool extends McpTool<
         .string()
         .min(1)
         .max(5000)
-        .regex(new RegExp(NOT_BLANK))
+        .regex(new RegExp(NOT_BLANK, 'u'))
         .describe('What to record about this cook.'),
       date: z
         .string()
         .max(10)
-        .regex(new RegExp(String.raw`^\d{4}-\d{2}-\d{2}$`))
+        .regex(/^\d{4}-\d{2}-\d{2}$/u)
         .describe(
           'The day it was cooked, as YYYY-MM-DD, for a cook that was not today (default: today). Not in the future.',
         )

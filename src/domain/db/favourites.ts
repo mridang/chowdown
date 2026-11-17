@@ -8,8 +8,8 @@
 
 import { and, eq } from 'drizzle-orm';
 
-import type { Database } from '@/domain/db/client';
 import { favourites } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 
 /** Whether the user has hearted a given recipe. */
 export async function isFavourite(

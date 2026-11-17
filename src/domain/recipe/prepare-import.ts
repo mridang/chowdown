@@ -12,7 +12,7 @@
 import { withAuthor } from '@/domain/recipe/author';
 import { parseRecipe } from '@/lib/cooklang';
 import { fetchPage, PageFetchError } from '@/domain/recipe/fetch-page';
-import { MAX_IMPORT_UNITS, type ImportUnit } from '@/domain/recipe/import-blob';
+import { MAX_IMPORT_UNITS } from '@/domain/recipe/import-blob';
 import { mapSequentially } from '@/lib/async';
 import { tagCookSourceBestEffort } from '@/domain/recipe/tagging';
 import {
@@ -20,6 +20,7 @@ import {
   convertToCooklang,
   hasRecipeBody,
 } from '@/domain/recipe/to-cooklang';
+import type { ImportUnit } from '@/domain/recipe/import-blob';
 
 /** One prepared unit of an import. */
 export interface ImportItem {

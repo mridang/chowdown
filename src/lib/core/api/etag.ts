@@ -1,4 +1,4 @@
-const START_W_SLASH = /^W\//;
+const START_W_SLASH = /^W\//u;
 /**
  * @packageDocumentation
  *

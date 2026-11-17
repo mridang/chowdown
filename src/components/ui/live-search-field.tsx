@@ -1,17 +1,16 @@
 'use client';
 
-import { debounce, parseAsString, useQueryStates, type Options } from 'nuqs';
-import {
-  useMemo,
-  useTransition,
-  type ComponentProps,
-  type ReactElement,
-} from 'react';
-
+import { debounce, parseAsString, useQueryStates } from 'nuqs';
+import { useMemo, useTransition } from 'react';
 import { SearchField } from '@/components/ui/field';
+import type { Options } from 'nuqs';
+import type { ComponentProps, ReactElement } from 'react';
 
 /** How long typing must pause before the address is updated, in milliseconds. */
 const PAUSE_MS = 200;
+
+/** Nothing is dropped when the text changes, unless the caller names parameters. */
+const NO_RESETS: readonly string[] = [];
 
 /**
  * A search box that updates the page as you type. The text lives in one query
@@ -25,7 +24,7 @@ const PAUSE_MS = 200;
  */
 export function LiveSearchField({
   param: parameter = 'q',
-  resets = [],
+  resets = NO_RESETS,
   ...props
 }: Readonly<
   {
@@ -71,7 +70,9 @@ export function LiveSearchField({
       name={parameter}
       value={text}
       aria-busy={pending}
-      onChange={(event) => void update(event.target.value)}
+      onChange={(event) => {
+        void update(event.target.value);
+      }}
       onKeyDown={(event) => {
         props.onKeyDown?.(event);
         if (event.key === 'Enter') {

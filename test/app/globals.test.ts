@@ -3,23 +3,23 @@ import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
 
-const BUTTON = /(^|,)\s*button,/;
+const BUTTON = /(^|,)\s*button,/u;
 const BUTTON_NOT_DISABLED =
-  /(button:not\(:disabled\),[^{]*)\{\s*cursor: pointer;/;
-const DATA_POPOVER_DATA = /\[data-popover\]\[data-open\] \{\s*display: block/;
+  /(button:not\(:disabled\),[^{]*)\{\s*cursor: pointer;/u;
+const DATA_POPOVER_DATA = /\[data-popover\]\[data-open\] \{\s*display: block/u;
 const DATA_POPOVER_DISPLAY =
-  /\[data-popover\] \{\s*display: none;\s*position: absolute;/;
-const SUPPORTS_POPOVERTARGET = /@supports ([^{]*) \{\s*\[popovertarget\]/;
+  /\[data-popover\] \{\s*display: none;\s*position: absolute;/u;
+const SUPPORTS_POPOVERTARGET = /@supports ([^{]*) \{\s*\[popovertarget\]/u;
 const POPOVERTARGET_HAS_DATA =
-  /\[popovertarget\]:has\(\+ \[data-popover\]:popover-open\) \{\s*anchor-name: --popover-anchor/;
-const KEYFRAMES_DIALOG_IN = /@keyframes dialog-in \{\s*from \{\s*opacity: 0/;
-const HTML_HAS_DIALOG = /html:has\(dialog:modal\) \{\s*overflow: hidden;\s*\}/;
-const HTML_SCROLLBAR_GUTTER = /html \{\s*scrollbar-gutter: stable/;
-const LI_TEXT_WRAP = /p,\s*li,[\s\S]*\{\s*text-wrap: pretty/;
-const H1_H6_TEXT = /h1,[\s\S]*h6,\s*\.text-center \{\s*text-wrap: balance/;
-const FONT_HAND = /--font-hand:/;
+  /\[popovertarget\]:has\(\+ \[data-popover\]:popover-open\) \{\s*anchor-name: --popover-anchor/u;
+const KEYFRAMES_DIALOG_IN = /@keyframes dialog-in \{\s*from \{\s*opacity: 0/u;
+const HTML_HAS_DIALOG = /html:has\(dialog:modal\) \{\s*overflow: hidden;\s*\}/u;
+const HTML_SCROLLBAR_GUTTER = /html \{\s*scrollbar-gutter: stable/u;
+const LI_TEXT_WRAP = /p,\s*li,[\s\S]*\{\s*text-wrap: pretty/u;
+const H1_H6_TEXT = /h1,[\s\S]*h6,\s*\.text-center \{\s*text-wrap: balance/u;
+const FONT_HAND = /--font-hand:/u;
 const MEDIA_PREFERS_REDUCED =
-  /@media \(prefers-reduced-motion: reduce\) \{([^{}]*\{[^}]*\})/;
+  /@media \(prefers-reduced-motion: reduce\) \{([^{}]*\{[^}]*\})/u;
 
 const css = await readFile(
   path.join(process.cwd(), 'src', 'app', 'globals.css'),
@@ -28,7 +28,7 @@ const css = await readFile(
 
 /** The `#rrggbb` value declared for a custom property, as red, green, blue (0-255). */
 function colourOf(name: string): readonly [number, number, number] {
-  const hex = new RegExp(String.raw`${name}:\s*#([0-9a-f]{6})`, 'i').exec(
+  const hex = new RegExp(String.raw`${name}:\s*#([0-9a-f]{6})`, 'iu').exec(
     css,
   )?.[1];
   if (!hex) {
@@ -42,6 +42,7 @@ function colourOf(name: string): readonly [number, number, number] {
 function inkStrength(name: string): number {
   const percent = new RegExp(
     String.raw`${name}:\s*color-mix\(in srgb, var\(--color-ink\) (\d+)%`,
+    'u',
   ).exec(css)?.[1];
   if (!percent) {
     throw new Error(`${name} is not ink at a fixed strength`);
@@ -115,7 +116,7 @@ describe('reduced motion', () => {
     expect(block).not.toContain('!important');
     const before = css.slice(0, css.indexOf('@media (prefers-reduced-motion'));
     // Every `@layer name {` opened before the rule has been closed again.
-    const opened = (before.match(/@layer [a-z-]+ \{/g) ?? []).length;
+    const opened = (before.match(/@layer [a-z-]+ \{/gu) ?? []).length;
     expect(opened).toBe(0);
   });
 });
@@ -131,12 +132,14 @@ describe('the handwriting font tokens', () => {
     'aurore',
   ];
 
-  it('expose each face as a theme font, so `font-hand-<face>` is a utility', () => {
-    for (const face of faces)
+  it.each(faces)(
+    'expose each face as a theme font, so `font-hand-<face>` is a utility (%j)',
+    (face) => {
       expect(css).toContain(
         `--font-hand-${face}: var(--font-hand-${face}-face), cursive;`,
       );
-  });
+    },
+  );
 
   it('leave no general `font-hand`, so handwriting cannot be applied to anything but a name', () => {
     expect(css).not.toMatch(FONT_HAND);
@@ -240,18 +243,20 @@ describe('popover placement', () => {
     expect(css).toContain('position-try-fallbacks: flip-block');
   });
 
-  it('applies the anchored layout only where every part of it exists', () => {
-    const condition = SUPPORTS_POPOVERTARGET.exec(css)?.[1];
-    for (const part of [
-      'selector(:popover-open)',
-      'selector(:has(*))',
-      '(anchor-name: --a)',
-      '(position-anchor: --a)',
-      '(position-area: bottom)',
-      '(position-try-fallbacks: flip-block)',
-    ])
+  it.each([
+    'selector(:popover-open)',
+    'selector(:has(*))',
+    '(anchor-name: --a)',
+    '(position-anchor: --a)',
+    '(position-area: bottom)',
+    '(position-try-fallbacks: flip-block)',
+  ])(
+    'applies the anchored layout only where every part of it exists (%j)',
+    (part) => {
+      const condition = SUPPORTS_POPOVERTARGET.exec(css)?.[1];
       expect(condition).toContain(part);
-  });
+    },
+  );
 
   it('reads a measured position where anchor positioning is missing', () => {
     const measured = blockOf('@supports not (position-area: bottom)');
@@ -278,8 +283,9 @@ describe('popover placement', () => {
         'button:not(:disabled)',
         'summary',
         'select:not(:disabled)',
-      ])
+      ]) {
         expect(rule).toContain(selector);
+      }
       expect(rule).toContain("[role='button']");
     });
 

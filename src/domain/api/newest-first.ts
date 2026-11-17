@@ -6,6 +6,7 @@
  * older than it. Imports and connected apps are listed this way.
  */
 
+import { compareCodeUnits } from '@/lib/intl';
 import type { CursorPosition } from '@/lib/core/api';
 
 /** Order two positions newest first, ties by id: "after" then means older. */
@@ -14,6 +15,6 @@ export function compareNewestFirst(
   b: CursorPosition,
 ): number {
   return a.key === b.key
-    ? a.id.localeCompare(b.id)
-    : b.key.localeCompare(a.key);
+    ? compareCodeUnits(a.id, b.id)
+    : compareCodeUnits(b.key, a.key);
 }

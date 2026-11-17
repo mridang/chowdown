@@ -27,7 +27,7 @@ interface Rendition {
 }
 
 /** A file name ending in `-<width>x<height>` before its extension. */
-const SIZE_IN_NAME = /^(.+)-(\d{2,5})x(\d{2,5})(\.[A-Za-z0-9]+)$/;
+const SIZE_IN_NAME = /^(.+)-(\d{2,5})x(\d{2,5})(\.[A-Za-z0-9]+)$/u;
 
 /** Query parameters that only say how to size or encode a copy of the photo. */
 const SIZING_PARAMS: ReadonlySet<string> = new Set([

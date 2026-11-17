@@ -1,10 +1,10 @@
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { LinkIcon } from '@/components/icons';
 import { AuthorName } from '@/components/recipe/author-name';
 import { TextLink } from '@/components/ui/text-link';
 import { domainOf } from '@/lib/cooklang';
+import type { ReactElement } from 'react';
 
 /**
  * The metadata keys that name a recipe's author, most specific first. They are
@@ -15,7 +15,7 @@ const AUTHOR_KEYS: readonly string[] = ['author', 'by'];
 
 /** A metadata key with case, spaces, underscores and hyphens ignored ("Author", "AUTHOR"). */
 function normalisedKey(key: string): string {
-  return key.toLowerCase().replaceAll(/[\s_-]+/g, '');
+  return key.toLowerCase().replaceAll(/[\s_-]+/gu, '');
 }
 
 /** Whether a metadata key is one that names the author (and so is shown in the byline). */

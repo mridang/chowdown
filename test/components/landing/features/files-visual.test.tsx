@@ -13,7 +13,7 @@ describe('FilesVisual', () => {
   });
 
   it('lists up to six files, the first one highlighted', () => {
-    expect(out.match(/<li/g)).toHaveLength(6);
-    expect(out.match(/bg-marigold\/25/g)).toHaveLength(1);
+    expect(out.match(/<li/gu)).toHaveLength(6);
+    expect(out.match(/bg-marigold\/25/gu)).toHaveLength(1);
   });
 });

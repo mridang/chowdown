@@ -1,12 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { Database } from '@/domain/db/client';
 import { getAppPageRows, getRecipePageRows } from '@/domain/db/recipe-page';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
+import type { Database } from '@/domain/db/client';
 
 /** A query builder stub: every method chains, and the batch returns canned rows. */
-function dbReturning(results: unknown[]): { db: Database; queries: number } {
+function dbReturning(results: unknown[]) {
   const state = { queries: 0 };
   const chain: Record<string, unknown> = {};
   for (const method of ['select', 'from', 'where', 'limit']) {

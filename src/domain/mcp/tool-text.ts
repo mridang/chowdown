@@ -18,7 +18,7 @@ import { countOf } from '@/lib/intl';
 import type { StepToken } from '@/lib/cooklang';
 import type { RecipeCardData, RecipeListItem } from '@/domain/mcp/ui-types';
 
-const START_SPACE_STAR_HYPHEN = /^\s*-{3,}/;
+const START_SPACE_STAR_HYPHEN = /^\s*-{3,}/u;
 
 /** The most recipes a list prints before saying how many more there are. */
 export const LIST_TEXT_LIMIT = 200;
@@ -54,7 +54,7 @@ export function plainTitle(title: string): string {
   const flat = title
     .replaceAll(INVISIBLE, '')
     .replaceAll(/[\p{Cc}\u2028\u2029]/gu, ' ')
-    .replaceAll(/\s+/g, ' ')
+    .replaceAll(/\s+/gu, ' ')
     .trim();
   return flat.length > TITLE_TEXT_LIMIT
     ? `${flat.slice(0, TITLE_TEXT_LIMIT - 1).trimEnd()}…`
@@ -128,13 +128,13 @@ function stepText(step: readonly StepToken[]): string {
         case 'cookware': {
           return token.name;
         }
-        case 'timer': {
+        default: {
           return token.label;
         }
       }
     })
     .join('')
-    .replaceAll(/\s+/g, ' ')
+    .replaceAll(/\s+/gu, ' ')
     .trim();
 }
 

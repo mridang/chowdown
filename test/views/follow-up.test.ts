@@ -77,8 +77,9 @@ describe('sourceHost', () => {
   });
 
   it('is undefined for anything that is not a web link', () => {
+    // eslint-disable-next-line no-script-url -- the value is a javascript: URL on purpose, to prove it is refused
     expect(sourceHost('javascript:alert(1)')).toBeUndefined();
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
     expect(sourceHost(undefined)).toBeUndefined();
   });
 });
@@ -92,11 +93,12 @@ describe('safeHttpUrl', () => {
   });
 
   it('refuses everything that is not http or https', () => {
+    // eslint-disable-next-line no-script-url -- the value is a javascript: URL on purpose, to prove it is refused
     expect(safeHttpUrl('javascript:alert(1)')).toBeUndefined();
     expect(safeHttpUrl('data:text/html,hi')).toBeUndefined();
     expect(safeHttpUrl('/relative/path')).toBeUndefined();
     expect(safeHttpUrl('not a url')).toBeUndefined();
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
+
     expect(safeHttpUrl(undefined)).toBeUndefined();
   });
 });

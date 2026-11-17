@@ -41,11 +41,12 @@ describe('noteIndex', () => {
     expect(noteIndex('12')).toBe(11);
   });
 
-  it('refuses anything that is not a positive whole number', () => {
-    for (const bad of ['0', '-1', 'a', '1.5', '', '01', '1234567']) {
+  it.each(['0', '-1', 'a', '1.5', '', '01', '1234567'])(
+    'refuses anything that is not a positive whole number (%j)',
+    (bad) => {
       expect(noteIndex(bad)).toBeUndefined();
-    }
-  });
+    },
+  );
 });
 
 describe('parseNoteInput', () => {

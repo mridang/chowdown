@@ -28,13 +28,14 @@ import {
   toCookIngredient,
   upsertMetadata,
 } from '@/lib/cooklang';
-import { scanHtml, type Attributes } from '@/domain/recipe/import-html-scan';
+import { scanHtml } from '@/domain/recipe/import-html-scan';
 import { validImageUrls } from '@/domain/recipe/media';
+import type { Attributes } from '@/domain/recipe/import-html-scan';
 
-const DIET = /Diet$/;
-const HTTPS_SCHEMA_ORG = /^https?:\/\/schema\.org\//;
-const RETURN_NEWLINE_PLUS = /\r?\n+/;
-const PT = /^PT(?:(\d+)H)?(?:(\d+)M)?$/;
+const DIET = /Diet$/u;
+const HTTPS_SCHEMA_ORG = /^https?:\/\/schema\.org\//u;
+const RETURN_NEWLINE_PLUS = /\r?\n+/u;
+const PT = /^PT(?:(\d+)H)?(?:(\d+)M)?$/u;
 
 /** A JSON object whose members are not yet known to be anything in particular. */
 type JsonObject = Readonly<Record<string, unknown>>;
@@ -78,13 +79,10 @@ function findRecipeNodeAt(input: unknown, depth: number): JsonObject | null {
     return null;
   }
   if (Array.isArray(input)) {
-    for (const item of input) {
-      const found = findRecipeNodeAt(item, depth + 1);
-      if (found) {
-        return found;
-      }
-    }
-    return null;
+    return input.reduce<JsonObject | null>(
+      (found, item) => found ?? findRecipeNodeAt(item, depth + 1),
+      null,
+    );
   }
   if (isJsonContainer(input)) {
     if (isRecipeNode(input)) {
@@ -147,7 +145,7 @@ function firstString(value: unknown): string | undefined {
   const text = [value, head].find(
     (item): item is string => typeof item === 'string',
   );
-  return text?.replaceAll(/\s+/g, ' ').trim();
+  return text?.replaceAll(/\s+/gu, ' ').trim();
 }
 
 /** Author display name from schema.org `author` (string, object, or array). */
@@ -380,6 +378,7 @@ export function resolveImageRefs( // eslint-disable-line unicorn/prevent-abbrevi
   node: JsonObject,
   byId: ReadonlyMap<string, JsonObject>,
 ): JsonObject {
+  // eslint-disable-next-line tslop/no-unknown-returns -- the value is arbitrary JSON-LD, which the caller checks node by node
   const resolve = (value: unknown, depth: number): unknown => {
     if (depth > MAX_DEPTH) {
       return value;

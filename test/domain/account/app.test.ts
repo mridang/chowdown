@@ -3,16 +3,11 @@ import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import { afterAccountDeleted } from '@/domain/account/app';
 import { getUserAccessToken } from '@/domain/auth/user-access-token';
 import { getDatabase } from '@/domain/db/client';
-import { getUserById, type User } from '@/domain/db/users';
+import { getUserById } from '@/domain/db/users';
+import { addRecipe, fakeGoogle, openWorld, signIn } from '../../app/api/world';
 import { settleBackground } from '../../lib/core/db/sqlite-d1';
-import {
-  addRecipe,
-  fakeGoogle,
-  openWorld,
-  signIn,
-  type GoogleFake,
-  type World,
-} from '../../app/api/world';
+import type { GoogleFake, World } from '../../app/api/world';
+import type { User } from '@/domain/db/users';
 
 let world: World;
 let google: GoogleFake;

@@ -1,7 +1,6 @@
-import type { ReactElement } from 'react';
-
 import { Accordion } from '@/components/ui/accordion';
 import { FacetSection } from '@/components/ui/facet';
+import type { ReactElement } from 'react';
 import type { FacetData, FacetKey } from '@/components/recipes/search-query';
 
 /** The groups that start open even when nothing in them is switched on. */

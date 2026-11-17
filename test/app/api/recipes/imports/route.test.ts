@@ -7,23 +7,28 @@ import {
   jest,
 } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
 import { DAILY_BUDGETS } from '@/domain/daily-budget';
-import type { ImportUnit } from '@/domain/recipe/import-blob';
-import type { ImportItem } from '@/domain/recipe/prepare-import';
 import { APP_MIGRATIONS } from '../../../../lib/core/db/migrations';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../../../lib/core/db/sqlite-d1';
+import type { DatabaseSync } from 'node:sqlite';
+
+import type { ImportUnit } from '@/domain/recipe/import-blob';
+import type { ImportItem } from '@/domain/recipe/prepare-import';
 
 /** Who is signed in; null means nobody. */
-const session: { uid: number | null } = { uid: 7 };
+interface SessionState {
+  uid: number | null;
+}
+
+const session: SessionState = { uid: 7 };
 
 // The sign-in gate has its own tests (test/lib/api/auth.test.ts); here it just
 // says who is calling, in the shape the routes read.
 const { problems } = await import('@/lib/core/api');
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/api/auth is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/domain/api/auth', () => ({
   requireLiveUid: async () =>
     session.uid === null
@@ -42,6 +47,7 @@ const prepareImport = jest.fn<
   })),
 );
 
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/recipe/prepare-import is imported directly by the code under test, which has no parameter to take it instead
 jest.unstable_mockModule('@/domain/recipe/prepare-import', () => ({
   prepareImport,
 }));

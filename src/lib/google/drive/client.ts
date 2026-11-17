@@ -16,14 +16,10 @@
 
 import { JsonClient } from '@/lib/http';
 
-import {
-  DriveFileListResponseSchema,
-  DriveFileSchema,
-  type DriveFile,
-  type DriveFileListResponse,
-} from './models';
+import { DriveFileListResponseSchema, DriveFileSchema } from './models';
+import type { DriveFile, DriveFileListResponse } from './models';
 
-const START_WORD_HYPHEN_PLUS_END = /^[\w-]+$/;
+const START_WORD_HYPHEN_PLUS_END = /^[\w-]+$/u;
 
 /** Base address of the Drive metadata API. */
 const DRIVE_API = 'https://www.googleapis.com/drive/v3';
@@ -113,8 +109,8 @@ export class DriveClient {
     }
     const created: unknown = await response.json();
     const id: unknown =
-      typeof created === 'object' && created !== null
-        ? Reflect.get(created, 'id')
+      typeof created === 'object' && created !== null && 'id' in created
+        ? created.id
         : undefined;
     if (typeof id !== 'string') {
       throw new TypeError('Create folder failed: no folder id in the answer');

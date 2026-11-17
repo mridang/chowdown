@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import type { ReactElement, ReactNode } from 'react';
-
 import { cn } from '@/components/ui/cn';
+import type { ReactElement, ReactNode } from 'react';
 
 /** The border, fill and weight of each kind of pill. */
 const VARIANTS = {

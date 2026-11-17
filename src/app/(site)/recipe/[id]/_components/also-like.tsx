@@ -1,7 +1,6 @@
-import type { ReactElement } from 'react';
-
 import { RecipeCard, RecipeGrid } from '@/components/recipes/recipe-card';
 import { Container, Heading } from '@/components/ui/layout';
+import type { ReactElement } from 'react';
 import type { CardRecipe } from '@/domain/recipe/card-data';
 
 /**

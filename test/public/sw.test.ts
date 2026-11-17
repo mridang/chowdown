@@ -1,7 +1,7 @@
-import { describe, expect, it, jest } from '@jest/globals';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import vm from 'node:vm';
+import { describe, expect, it, jest } from '@jest/globals';
 
 const collator = new Intl.Collator();
 
@@ -140,12 +140,13 @@ describe('public/sw.js', () => {
     expect(calls).toMatchObject({ claimed: 1, preloadEnabled: 0 });
   });
 
-  it('does not answer anything but page navigations', () => {
-    const { listeners } = loadWorker({ online: false, preload: true });
-    for (const mode of ['cors', 'no-cors', 'same-origin']) {
+  it.each(['cors', 'no-cors', 'same-origin'])(
+    'does not answer anything but page navigations (%j)',
+    (mode) => {
+      const { listeners } = loadWorker({ online: false, preload: true });
       expect(fetchEvent(listeners, mode).answered).toBe(false);
-    }
-  });
+    },
+  );
 
   it('uses the preloaded response when there is one', async () => {
     const { listeners } = loadWorker({ online: false, preload: true });
@@ -236,7 +237,10 @@ async function push(
 ) {
   const waited: Promise<unknown>[] = [];
   worker.listeners.get('push')?.({
-    data: data === null ? null : { json: (): unknown => JSON.parse(data) },
+    data:
+      data === null
+        ? null
+        : { json: () => JSON.parse(data) as Record<string, unknown> },
     waitUntil: (p: Promise<unknown>) => waited.push(p),
   } as never);
   await Promise.all(waited);
@@ -274,7 +278,7 @@ describe('public/sw.js: push', () => {
     });
     const waited: Promise<unknown>[] = [];
     worker.listeners.get('push')?.({
-      data: { json: (): unknown => JSON.parse('not json') },
+      data: { json: () => JSON.parse('not json') as Record<string, unknown> },
       waitUntil: (p: Promise<unknown>) => waited.push(p),
     } as never);
     await Promise.all(waited);

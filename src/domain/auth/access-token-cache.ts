@@ -85,13 +85,18 @@ export function createAccessTokenCache(
 
   /** Keep `pending` under `key`, dropping the oldest entries past the bound. */
   const remember = (key: string, pending: Promise<Entry>): void => {
+    // eslint-disable-next-line functional/immutable-data -- the cache is a mutable map by design
     entries.delete(key);
+    // eslint-disable-next-line functional/immutable-data -- the cache is a mutable map by design
     entries.set(key, pending);
+    // eslint-disable-next-line functional/no-loop-statements -- evicting entries from the cache map
     for (const oldest of [...entries.keys()].slice(
       0,
       Math.max(0, entries.size - maxEntries),
-    ))
+    )) {
+      // eslint-disable-next-line functional/immutable-data -- the cache is a mutable map by design
       entries.delete(oldest);
+    }
   };
 
   /** Mint a token, remember the attempt under `key`, and answer with the token. */
@@ -107,6 +112,7 @@ export function createAccessTokenCache(
     } catch (error) {
       // Only forget our own failed attempt, not a newer one that replaced it.
       if (entries.get(key) === pending) {
+        // eslint-disable-next-line functional/immutable-data -- the cache is a mutable map by design
         entries.delete(key);
       }
       throw error;
@@ -129,10 +135,13 @@ export function createAccessTokenCache(
     },
     forgetUser: (userId) => {
       const prefix = `${userId}:`;
+      // eslint-disable-next-line functional/no-loop-statements -- evicting entries from the cache map
       for (const key of [...entries.keys()].filter((key) =>
         key.startsWith(prefix),
-      ))
+      )) {
+        // eslint-disable-next-line functional/immutable-data -- the cache is a mutable map by design
         entries.delete(key);
+      }
     },
   };
 }

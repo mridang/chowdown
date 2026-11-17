@@ -1,6 +1,6 @@
 import { access } from 'node:fs/promises';
 
-const EMNAPI = /^@emnapi\//;
+const EMNAPI = /^@emnapi\//u;
 
 /** The globs, only for a folder this app has, so knip finds nothing to hint about. */
 const whenPresent = async (folder: string, glob: string) => {

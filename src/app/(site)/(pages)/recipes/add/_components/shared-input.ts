@@ -93,17 +93,15 @@ const OTHER_LINE_BREAKS: ReadonlySet<number> = new Set([
  * everything that is not text removed, the ends trimmed.
  */
 function cleaned(value: string): string {
-  let text = '';
-  for (const char of value.replaceAll('\r\n', '\n')) {
+  return Array.from(value.replaceAll('\r\n', '\n'), (char) => {
     if (OTHER_LINE_BREAKS.has(char.codePointAt(0) ?? 0)) {
-      text += '\n';
-    } else if (isText(char)) {
-      text += char;
-    } else {
-      // Not text: dropped.
+      return '\n';
     }
-  }
-  return text.trim();
+    // Anything that is not text is dropped.
+    return isText(char) ? char : '';
+  })
+    .join('')
+    .trim();
 }
 
 const segmenter = new Intl.Segmenter();

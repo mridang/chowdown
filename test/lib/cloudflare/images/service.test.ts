@@ -1,7 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { snapWidth } from '@/lib/cloudflare/images/address';
-import type { ImageFetch } from '@/lib/cloudflare/images/proxy';
 import {
   BROWSER_SECONDS,
   EDGE_SECONDS,
@@ -9,16 +8,16 @@ import {
   imageHeaders,
   refuse,
   serveImage,
-  type ImageAccess,
-  type ImageCache,
 } from '@/lib/cloudflare/images/service';
 import {
   ALLOWED_HOSTS,
   ALLOWED_WIDTHS,
   DEFAULT_WIDTH,
 } from '@/lib/cloudflare/images/site';
+import type { ImageAccess, ImageCache } from '@/lib/cloudflare/images/service';
+import type { SafeFetcher } from '@/lib/safe-fetch';
 
-const START_DQUOTE_N0_HYPHEN_N9 = /^"[0-9a-f]{32}"$/;
+const START_DQUOTE_N0_HYPHEN_N9 = /^"[0-9a-f]{32}"$/u;
 
 const HOST = ALLOWED_HOSTS?.[0] ?? 'photos.example.org';
 const PHOTO = `https://${HOST}/soup.jpg`;
@@ -37,7 +36,7 @@ function ask(
 }
 
 /** A fetcher that serves a small JPEG. */
-const serving: ImageFetch = async () =>
+const serving: SafeFetcher = async () =>
   new Response(new Uint8Array([1, 2, 3]), {
     headers: { 'content-type': 'image/jpeg' },
   });
@@ -181,7 +180,7 @@ describe('serveImage', () => {
         },
       }),
     };
-    const big: ImageFetch = async () =>
+    const big: SafeFetcher = async () =>
       new Response(new Uint8Array(100_000), {
         headers: { 'content-type': 'image/jpeg' },
       });
@@ -375,7 +374,7 @@ describe('serveImage access and failures', () => {
   });
 
   describe('when the picture cannot be had', () => {
-    const answer = async (fetcher: ImageFetch) =>
+    const answer = async (fetcher: SafeFetcher) =>
       serveImage(ask(), {
         access: open,
         fetcher,

@@ -293,14 +293,14 @@ describe('image references', () => {
 });
 
 /** How long `work` takes, in milliseconds. */
-function milliseconds(work: () => unknown): number {
+function milliseconds(work: () => void): number {
   const started = performance.now();
   work();
   return performance.now() - started;
 }
 
 describe('hostile pages', () => {
-  const pages: Readonly<Record<string, string>> = {
+  const pages = {
     'meta tags with a content and nothing else': '<meta content="a" '.repeat(
       2000,
     ),
@@ -309,7 +309,7 @@ describe('hostile pages', () => {
     'ld+json scripts that never close':
       '<script type="application/ld+json">'.repeat(30_000),
     'a megabyte of unterminated ld+json': `<script type="application/ld+json">${'{'.repeat(1_000_000)}`,
-  };
+  } satisfies Readonly<Record<string, string>>;
 
   it.each(Object.entries(pages))(
     'extractOgImage reads %s in under 100 ms',

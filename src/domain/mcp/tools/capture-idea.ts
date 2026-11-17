@@ -5,7 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { z } from 'zod';
 import { plainTitle } from '@/domain/mcp/tool-text';
 import { saveUnlessThere } from '@/domain/mcp/tools/recipe-support';
 import {
@@ -15,17 +15,14 @@ import {
   RECIPE_CARD_OUTPUT_SCHEMA,
 } from '@/domain/mcp/tools/schemas';
 import { buildStubSource, uncuratedFilename } from '@/lib/cooklang';
-import {
-  type JsonSchema,
-  McpTool,
-  NOT_BLANK,
-  textArg,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
-  writes,
+import { McpTool, NOT_BLANK, textArg, writes } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type {
+  JsonSchema,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
 
 export class CaptureIdeaTool extends McpTool<
   'capture_idea',
@@ -45,13 +42,13 @@ export class CaptureIdeaTool extends McpTool<
         .string()
         .min(1)
         .max(NAME_MAX)
-        .regex(new RegExp(NOT_BLANK))
+        .regex(new RegExp(NOT_BLANK, 'u'))
         .describe('The dish name to use for the file.'),
       prompt: z
         .string()
         .min(1)
         .max(20_000)
-        .regex(new RegExp(NOT_BLANK))
+        .regex(new RegExp(NOT_BLANK, 'u'))
         .describe('The original request, kept verbatim.'),
       draft: z
         .string()

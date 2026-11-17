@@ -6,13 +6,13 @@
 
 import { jest } from '@jest/globals';
 
+import { callTool } from '@/domain/mcp/tool-calls';
 import type { Recipe } from '@/domain/db/recipes';
 import type { User } from '@/domain/db/users';
 import type { DriveFile } from '@/lib/google/drive';
-import { callTool } from '@/domain/mcp/tool-calls';
 import type { DriveContext, ToolServices } from '@/domain/mcp/tool-services';
 
-const ID = /^id-/;
+const ID = /^id-/u;
 
 /** The signed-in user the tests act as. */
 export const USER = { id: 7, units: null, recipes_folder_id: 'folder' } as User;
@@ -68,6 +68,7 @@ export function folder(
   const updates: [string, string][] = [];
   const indexed: [string, string, string][] = [];
   const nameOf = (id: string) => id.replace(ID, '');
+  // eslint-disable-next-line no-unassigned-vars -- never assigned on purpose: it stands for a key that is present with no value, and writing undefined inline is reported by sonarjs/no-undefined-assignment
   let unsetSystem: DriveContext['system'];
   const ctx: DriveContext = {
     user: USER,
@@ -175,7 +176,7 @@ export function fakeServices(overrides: Partial<ToolServices> = {}) {
         row('Soup', '>> cuisine: French\n\nBoil @water{1%l}.\n'),
       ],
       favouriteIds: async () => [],
-      sync: async () => 0,
+      sync: async () => {},
       inBackground: () => undefined,
     })),
     openDrive: jest.fn<ToolServices['openDrive']>(async () => {

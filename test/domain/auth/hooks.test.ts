@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { EXTRA_PURPOSES } from '@/domain/auth/app';
 import { completeDriveConnect } from '@/domain/auth/drive-callback';
 import { OTHER_FLOWS, afterSignIn } from '@/domain/auth/hooks';
-import type { User } from '@/domain/auth/store';
+import type { User } from '@/domain/db/users';
 
 const collator = new Intl.Collator();
 
@@ -21,13 +21,11 @@ describe('OTHER_FLOWS', () => {
   });
 
   it('finishes a Drive round trip by connecting Drive', () => {
-    expect(OTHER_FLOWS['drive']?.complete).toBe(completeDriveConnect);
+    expect(OTHER_FLOWS.drive?.complete).toBe(completeDriveConnect);
   });
 
   it('sends a failed or cancelled Drive connection back to the list with a fixed reason', () => {
-    expect(OTHER_FLOWS['drive']?.failurePath('error')).toBe('/app?drive=error');
-    expect(OTHER_FLOWS['drive']?.failurePath('denied')).toBe(
-      '/app?drive=denied',
-    );
+    expect(OTHER_FLOWS.drive?.failurePath('error')).toBe('/app?drive=error');
+    expect(OTHER_FLOWS.drive?.failurePath('denied')).toBe('/app?drive=denied');
   });
 });

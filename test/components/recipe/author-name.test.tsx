@@ -3,11 +3,11 @@ import { describe, expect, it } from '@jest/globals';
 import { AuthorName, handwritingFor } from '@/components/recipe/author-name';
 import { html } from '../render';
 
-const SPAN = /^<span /;
-const START_LT_P = /^<p /;
-const CLASS_TRUNCATE = /class="[^"]*\btruncate\b[^"]*"/;
-const FONT_HAND = /font-hand-(\w+)/;
-const ETHAN_CHLEBOWSKI_SPAN = />Ethan Chlebowski<\/span>$/;
+const SPAN = /^<span /u;
+const START_LT_P = /^<p /u;
+const CLASS_TRUNCATE = /class="[^"]*\btruncate\b[^"]*"/u;
+const FONT_HAND = /font-hand-(\w+)/u;
+const ETHAN_CHLEBOWSKI_SPAN = />Ethan Chlebowski<\/span>$/u;
 
 /** Real-looking names: every first name with every surname (400 people). */
 const FIRST = [
@@ -130,7 +130,7 @@ describe('AuthorName', () => {
       'aurore',
     ][handwritingFor('Ethan Chlebowski')];
     expect(out).toContain(`font-hand-${face}`);
-    expect(out.match(/font-hand-/g)).toHaveLength(1);
+    expect(out.match(/font-hand-/gu)).toHaveLength(1);
   });
 
   it('uses every one of the seven faces for some name', () => {
@@ -172,7 +172,7 @@ describe('AuthorName', () => {
   });
 
   it('never turns a hostile name into markup', () => {
-    const out = html(<AuthorName name={'<img src=x onerror=alert(1)>"'} />);
+    const out = html(<AuthorName name='<img src=x onerror=alert(1)>"' />);
     expect(out).not.toContain('<img');
     expect(out).toContain('&lt;img src=x onerror=alert(1)&gt;');
   });

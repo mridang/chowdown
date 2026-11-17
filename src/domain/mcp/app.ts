@@ -20,6 +20,7 @@ export const SCOPE_READ = 'recipes:read';
 export const SCOPE_WRITE = 'recipes:write';
 
 /** What each scope lets the app do, in plain words, for the approval screen. */
+// eslint-disable-next-line tslop/no-known-value-widening -- scopes arrive as arbitrary strings, so callers index this table with a plain string
 export const SCOPE_TEXT: Readonly<Record<string, string>> = {
   [SCOPE_READ]: 'See your recipes, search them and find similar ones',
   [SCOPE_WRITE]:

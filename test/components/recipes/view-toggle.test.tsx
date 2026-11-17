@@ -5,7 +5,7 @@ import { htmlAt } from '../render';
 
 /** The radio button for a layout, as markup. */
 const radio = (markup: string, value: string) =>
-  new RegExp(`<input[^>]*value="${value}"[^>]*>`).exec(markup)?.[0] ?? '';
+  new RegExp(`<input[^>]*value="${value}"[^>]*>`, 'u').exec(markup)?.[0] ?? '';
 
 describe('ViewToggle', () => {
   it('is a labelled group offering the grid and the list', () => {

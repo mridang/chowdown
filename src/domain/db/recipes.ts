@@ -13,7 +13,6 @@ import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { normalizeSourceUrl, sourceUrlOf } from '@/lib/cooklang';
 import { compareCodeUnits } from '@/lib/intl';
 import { chunked } from '@/domain/db/chunk';
-import type { Database } from '@/domain/db/client';
 import { replaceRecipeImages } from '@/domain/db/recipe-images';
 import {
   embeddings,
@@ -21,6 +20,7 @@ import {
   recipeImages,
   recipes,
 } from '@/domain/db/schema';
+import type { Database } from '@/domain/db/client';
 
 /** A full recipe row. */
 export type Recipe = typeof recipes.$inferSelect;
@@ -233,6 +233,7 @@ async function backfillSourceUrls(
         and(eq(recipes.user_id, userId), eq(recipes.drive_file_id, row.id)),
       ),
   );
+  // eslint-disable-next-line functional/no-loop-statements -- the batches must run one after another
   for (const [first, ...rest] of chunked(statements, BACKFILL_BATCH)) {
     // `batch` wants at least one statement; a chunk always has one.
     if (first) {
@@ -292,10 +293,12 @@ export function staleRecipeIds(
   since: string,
 ): readonly string[] {
   return cached
+    .values()
     .filter(
       (row) => !keep.has(row.id) && compareCodeUnits(row.seenAt, since) < 0,
     )
-    .map((row) => row.id);
+    .map((row) => row.id)
+    .toArray();
 }
 
 /**
@@ -320,6 +323,7 @@ export async function deleteRecipesNotIn(
     new Set(keepFileIds),
     since,
   );
+  // eslint-disable-next-line functional/no-loop-statements -- the batches must run one after another
   for (const ids of chunked(stale)) {
     await db.batch([
       db

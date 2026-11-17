@@ -20,7 +20,7 @@ export type IconSize = keyof typeof ICON_SIZES;
 
 type IconProps = SVGProps<SVGSVGElement> & {
   /** One of the standard sizes, instead of sizing the icon with classes. */
-  size?: IconSize;
+  readonly size?: IconSize;
 };
 
 /** The class list for an icon of the given size, joined with any of its own. */
@@ -58,7 +58,7 @@ function Icon({ children, size, className, ...props }: IconProps) {
 export const HeartIcon = ({
   filled,
   ...p
-}: IconProps & { filled?: boolean }) => (
+}: IconProps & { readonly filled?: boolean }) => (
   <Icon {...p} fill={filled ? 'currentColor' : 'none'}>
     <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
   </Icon>
@@ -281,7 +281,7 @@ export const CubeIcon = (p: IconProps) => (
   </Icon>
 );
 
-const PROTEIN_ICONS: Record<string, (p: IconProps) => React.ReactElement> = {
+const PROTEIN_ICONS = {
   chicken: ChickenIcon,
   beef: BeefIcon,
   pork: PorkIcon,
@@ -298,12 +298,11 @@ const PROTEIN_ICONS: Record<string, (p: IconProps) => React.ReactElement> = {
 export function ProteinIcon({
   protein,
   ...props
-}: IconProps & { protein: string }) {
+}: IconProps & { readonly protein: string }) {
   const key = protein.toLowerCase();
-  // `hasOwn`, so a word like "constructor" is not read off the object's prototype.
-  const Component = Object.hasOwn(PROTEIN_ICONS, key)
-    ? (PROTEIN_ICONS[key] ?? PanIcon)
-    : PanIcon;
+  const Component =
+    Object.entries(PROTEIN_ICONS).find(([name]) => name === key)?.[1] ??
+    PanIcon;
   return <Component {...props} />;
 }
 

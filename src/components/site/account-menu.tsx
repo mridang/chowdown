@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, type ReactElement } from 'react';
+import { useState } from 'react';
 
 import {
   ChevronIcon,
@@ -19,9 +19,10 @@ import {
 
 import { MenuLink } from '@/components/site/menu-link';
 import { DeleteAccountDialog } from '@/components/site/delete-account-dialog';
-import type { DriveLink } from '@/components/site/drive-link';
 import { InstallIosHint } from '@/components/site/install-ios-hint';
 import { useInstallPrompt } from '@/components/site/use-install-prompt';
+import type { ReactElement } from 'react';
+import type { DriveLink } from '@/components/site/drive-link';
 
 /**
  * The person's Google photo, or their initial when there is none or it fails to
@@ -126,7 +127,9 @@ export function AccountMenu({
         {install ? (
           <button
             type="button"
-            onClick={() => void install()}
+            onClick={() => {
+              void install();
+            }}
             className={POPOVER_ITEM}
           >
             <Html5Icon size="menu" />

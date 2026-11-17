@@ -1,7 +1,5 @@
 'use client';
 
-import type { ReactElement } from 'react';
-
 import { HeartIcon } from '@/components/icons';
 import {
   HEART_BUTTON_BASE,
@@ -10,6 +8,7 @@ import {
 } from '@/components/recipes/heart-look';
 import { useFavourite } from '@/components/recipes/use-favourite';
 import { cn } from '@/components/ui/cn';
+import type { ReactElement } from 'react';
 
 /**
  * How the heart is presented:
@@ -58,7 +57,9 @@ export function FavouriteButton({
   return (
     <button
       type="button"
-      onClick={() => void toggle()}
+      onClick={() => {
+        void toggle();
+      }}
       disabled={busy}
       aria-pressed={on}
       // The labelled button's visible text is its name; the overlay has only an

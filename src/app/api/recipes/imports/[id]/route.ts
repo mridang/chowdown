@@ -8,12 +8,13 @@
 import { NextResponse } from 'next/server';
 
 import { requireLiveUid } from '@/domain/api/auth';
-import { problems, type IdContext } from '@/lib/core/api';
+import { problems } from '@/lib/core/api';
 import {
   deleteRecipeImport,
   getRecipeImport,
 } from '@/domain/db/recipe-imports';
 import { getDatabase } from '@/domain/db/client';
+import type { IdContext } from '@/lib/core/api';
 
 /**
  * `GET /api/recipes/imports/:id`: the import with all its drafts. Answers 200,

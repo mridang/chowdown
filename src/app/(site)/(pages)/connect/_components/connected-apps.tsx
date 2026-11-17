@@ -1,13 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { PlugIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { accessLabel, type ConnectedApp } from '@/domain/connected-apps';
+import { accessLabel } from '@/domain/connected-apps';
 import { imageSrc } from '@/lib/cloudflare/images';
 import { relativeTime } from '@/lib/intl';
+import type { ConnectedApp } from '@/domain/connected-apps';
+import type { ReactElement } from 'react';
 
 /** Whether a value has the members of a {@link ConnectedApp} that this list shows. */
 function isConnectedApp(value: unknown): value is ConnectedApp {
@@ -158,11 +160,7 @@ export function ConnectedApps(): ReactElement {
     );
   }
   if (apps === null) {
-    return (
-      <p className="mt-5 text-subtle" role="status">
-        Loading…
-      </p>
-    );
+    return <output className="mt-5 block text-subtle">Loading…</output>;
   }
   if (apps.length === 0) {
     return (
@@ -180,7 +178,9 @@ export function ConnectedApps(): ReactElement {
             key={app.id}
             app={app}
             busy={busyId === app.id}
-            onDisconnect={() => void disconnect(app.id)}
+            onDisconnect={() => {
+              void disconnect(app.id);
+            }}
           />
         ))}
       </ul>

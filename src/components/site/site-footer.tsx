@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { PanIcon, SparkIcon } from '@/components/icons';
 import { Logo } from '@/components/site/logo';
 import { Container } from '@/components/ui/layout';
+import type { ReactElement } from 'react';
 
 import type { NavLink } from '@/components/site/nav-links';
 

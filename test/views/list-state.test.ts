@@ -1,15 +1,14 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { RecipeCardData } from '@/domain/mcp/ui-types';
 import {
   INITIAL_LIST_STATE,
   INLINE_TILE_LIMIT,
   reduceListState,
   shortTitle,
   visibleRecipes,
-  type ListAction,
-  type ListState,
 } from '@/views/list-state';
+import type { ListAction, ListState } from '@/views/list-state';
+import type { RecipeCardData } from '@/domain/mcp/ui-types';
 
 const RECIPE: RecipeCardData = {
   id: '1',

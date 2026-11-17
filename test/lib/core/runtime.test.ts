@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 
 import {
   getDB,
@@ -19,17 +19,19 @@ describe('without a Cloudflare context (tests, scripts)', () => {
   });
 
   it('lets background work run on its own', async () => {
-    let done = false;
-    runInBackground(Promise.resolve().then(() => (done = true)));
+    const finished = jest.fn();
+    runInBackground(Promise.resolve().then(() => finished()));
     await Promise.resolve();
     await Promise.resolve();
-    expect(done).toBe(true);
+    expect(finished.mock.calls).toEqual([[]]);
   });
 
   it('logs background work that fails rather than letting it escape', async () => {
     const log = jest.spyOn(console, 'error').mockImplementation(() => {});
     runInBackground(Promise.reject(new Error('boom')));
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
     expect(log).toHaveBeenCalledWith(
       'background task failed',
       expect.any(Error),
@@ -39,18 +41,15 @@ describe('without a Cloudflare context (tests, scripts)', () => {
 });
 
 describe('with a Cloudflare context', () => {
-  let restore: (() => void) | null = null;
-
-  afterEach(() => {
-    restore?.();
-    restore = null;
-  });
-
   it("hands out the context's D1 binding and environment", () => {
     const { d1 } = sqliteD1();
-    restore = installCloudflareContext(d1, { SECRET: 'value' });
-    expect(getDB()).toBe(d1);
-    expect(getEnv()).toMatchObject({ SECRET: 'value', DB: d1 });
-    expect(isDatabaseBound()).toBe(true);
+    const restore = installCloudflareContext(d1, { SECRET: 'value' });
+    try {
+      expect(getDB()).toBe(d1);
+      expect(getEnv()).toMatchObject({ SECRET: 'value', DB: d1 });
+      expect(isDatabaseBound()).toBe(true);
+    } finally {
+      restore();
+    }
   });
 });

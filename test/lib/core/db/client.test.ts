@@ -45,8 +45,8 @@ describe('createDatabase', () => {
     const tables = Object.values(schema).filter((value) =>
       is(value, SQLiteTable),
     );
-    expect(tables.length).toBeGreaterThan(0);
     for (const table of tables) {
+      expect(tables.length).toBeGreaterThan(0);
       expect(Array.isArray(await db.select().from(table))).toBe(true);
     }
   });

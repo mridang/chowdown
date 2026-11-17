@@ -37,11 +37,8 @@ describe('PillLink', () => {
         'a',
       ),
     ).toContain('h-8');
-    expect(cssClassesOf(html(<PillLink href="/">x</PillLink>), 'a')).toContain(
-      'h-9',
-    );
-    expect(cssClassesOf(html(<PillLink href="/">x</PillLink>), 'a')).toContain(
-      'focus-ring',
-    );
+    const classes = cssClassesOf(html(<PillLink href="/">x</PillLink>), 'a');
+    expect(classes).toContain('h-9');
+    expect(classes).toContain('focus-ring');
   });
 });

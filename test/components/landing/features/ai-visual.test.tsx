@@ -17,7 +17,9 @@ describe('AiVisual', () => {
     const picks = RECIPES.filter(
       (r) => r.protein === 'chicken' && r.minutes <= 40,
     ).slice(0, 2);
-    expect(picks.length).toBeGreaterThan(0);
-    for (const recipe of picks) expect(out).toContain(recipe.title);
+    for (const recipe of picks) {
+      expect(picks.length).toBeGreaterThan(0);
+      expect(out).toContain(recipe.title);
+    }
   });
 });

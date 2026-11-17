@@ -12,9 +12,10 @@
  */
 
 import { isObject } from '@/lib/core/api';
-import { parseRecipe, type ParsedRecipe, upsertMetadata } from '@/lib/cooklang';
+import { parseRecipe, upsertMetadata } from '@/lib/cooklang';
 import { buildEmbeddingText } from '@/domain/recipe/embeddings';
 import { FACETS, validateTags } from '@/domain/recipe/taxonomy';
+import type { ParsedRecipe } from '@/lib/cooklang';
 
 /** The model used for tagging — same fast instruct model as conversion. */
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';

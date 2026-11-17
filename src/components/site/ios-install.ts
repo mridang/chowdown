@@ -16,8 +16,8 @@
 
 import { BRAND_NAME } from '@/app/_brand';
 
-const VERSION = /Version\/[\d.]+/;
-const I_PHONE_I_PAD_I_POD = /iPhone|iPad|iPod/;
+const VERSION = /Version\/[\d.]+/u;
+const I_PHONE_I_PAD_I_POD = /iPhone|iPad|iPod/u;
 
 /** The `localStorage` key that remembers the tip was dismissed. */
 export const IOS_HINT_STORAGE_KEY = `${BRAND_NAME.toLowerCase()}:ios-install-hint-dismissed`;
@@ -37,7 +37,7 @@ export const IOS_HINT_TEXT = 'Install: tap Share, then Add to Home Screen.';
  * not there.
  */
 const NOT_SAFARI =
-  /CriOS|FxiOS|EdgiOS|OPiOS|OPT\/|GSA\/|DuckDuckGo|YaBrowser|FBAN|FBAV|FB_IAB|Instagram|Line\/|Twitter|LinkedInApp|Snapchat|MicroMessenger|Pinterest|Slack|Telegram|WhatsApp/;
+  /CriOS|FxiOS|EdgiOS|OPiOS|OPT\/|GSA\/|DuckDuckGo|YaBrowser|FBAN|FBAV|FB_IAB|Instagram|Line\/|Twitter|LinkedInApp|Snapchat|MicroMessenger|Pinterest|Slack|Telegram|WhatsApp/u;
 
 /** What the page can tell about the device and how it was opened. */
 export type InstallEnvironment = Readonly<{

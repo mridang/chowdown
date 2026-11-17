@@ -49,7 +49,7 @@ export function hasFixedHeight(
  * hyphens in the usual groups (`en`, `pt-BR`, `zh-Hant-TW`). The tag comes from
  * the host and ends up in the document, so anything stranger is ignored.
  */
-const LANGUAGE_TAG = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,4}$/;
+const LANGUAGE_TAG = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,4}$/u;
 
 /**
  * The value for the document's `lang` attribute from the host's locale, or

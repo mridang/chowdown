@@ -13,18 +13,15 @@
  * controller-side resolver.
  */
 
-import {
-  SessionTokens,
-  sessionIsCurrent,
-  type SessionPayload,
-} from '@/lib/session';
+import { SessionTokens, sessionIsCurrent } from '@/lib/session';
 import { SESSION_COOKIE } from '@/domain/auth/app';
 import { getSessionEpoch, getUserById } from '@/domain/auth/store';
-import type { User } from '@/domain/db/users';
 import { isSameOriginPost } from '@/lib/web-security';
 import { appOrigin } from '@/lib/core/origin';
 import { getEnv } from '@/lib/core/runtime';
 import { problems } from '@/lib/core/api';
+import type { SessionPayload } from '@/lib/session';
+import type { User } from '@/domain/db/users';
 
 /** Methods that never change data and so need no origin check. */
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -57,13 +54,11 @@ function cookieValue(request: Request, name: string): string | undefined {
   if (!header) {
     return undefined;
   }
-  for (const part of header.split(';')) {
-    const eq = part.indexOf('=');
-    if (eq !== -1 && part.slice(0, eq).trim() === name) {
-      return part.slice(eq + 1).trim();
-    }
-  }
-  return undefined;
+  return header
+    .split(';')
+    .map((part) => ({ part, eq: part.indexOf('=') }))
+    .filter(({ part, eq }) => eq !== -1 && part.slice(0, eq).trim() === name)
+    .map(({ part, eq }) => part.slice(eq + 1).trim())[0];
 }
 
 /** The signed session claims on a request, or null when there is no trustworthy cookie. */

@@ -1,6 +1,5 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * The band at the top of a page: an optional eyebrow, the page's one `h1`, an

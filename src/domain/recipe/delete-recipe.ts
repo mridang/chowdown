@@ -11,12 +11,12 @@
  */
 
 import { getUserAccessToken } from '@/domain/auth/user-access-token';
-import type { Database } from '@/domain/db/client';
 import { deleteRecipeData, getRecipeByFileId } from '@/domain/db/recipes';
-import type { User } from '@/domain/db/users';
 import { trashRecipeFile } from '@/domain/drive/recipe-files';
 import { getDatabase } from '@/domain/db/client';
 import { refreshSimilarLists } from '@/domain/recipe/similar';
+import type { User } from '@/domain/db/users';
+import type { Database } from '@/domain/db/client';
 
 /** The side effects a delete needs, injected so the logic is testable. */
 export interface DeleteDeps {
@@ -61,7 +61,7 @@ export interface DeleteLiveDeps {
     db: Database,
     userId: number,
     fileId: string,
-  ) => Promise<unknown>;
+  ) => Promise<object | undefined>;
   /** Move a Drive file to the trash. */
   readonly trashFile: (
     fileId: string,
@@ -72,9 +72,9 @@ export interface DeleteLiveDeps {
     db: Database,
     userId: number,
     fileId: string,
-  ) => Promise<unknown>;
+  ) => Promise<void>;
   /** Recompute everyone's similar lists. */
-  readonly refreshSimilar: (db: Database, userId: number) => Promise<unknown>;
+  readonly refreshSimilar: (db: Database, userId: number) => Promise<void>;
 }
 
 /** The real thing. */

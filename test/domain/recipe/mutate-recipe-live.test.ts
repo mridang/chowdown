@@ -1,12 +1,10 @@
-import { asCalls } from '../../calls';
 import { describe, expect, it, jest } from '@jest/globals';
+import { mutateRecipeForUser } from '@/domain/recipe/mutate-recipe-live';
+import { asCalls } from '../../calls';
 
 import type { Database } from '@/domain/db/client';
 import type { User } from '@/domain/db/users';
-import {
-  mutateRecipeForUser,
-  type MutateLiveDeps,
-} from '@/domain/recipe/mutate-recipe-live';
+import type { MutateLiveDeps } from '@/domain/recipe/mutate-recipe-live';
 
 const db = {} as Database;
 const user = { id: 4 } as unknown as User;
@@ -111,13 +109,11 @@ describe('mutateRecipeForUser', () => {
   });
 
   it('indexes under the file id when the cached row has vanished mid-write', async () => {
-    let lookups = 0;
-    const deps = fakes({ a: 'one\n' }, ['a'], {
-      findRecipe: async () => {
-        lookups += 1;
-        return lookups === 1 ? { name: 'a.cook' } : undefined;
-      },
-    });
+    const findRecipe = jest
+      .fn<() => Promise<{ name: string } | undefined>>()
+      .mockResolvedValueOnce({ name: 'a.cook' })
+      .mockImplementation(async () => undefined);
+    const deps = fakes({ a: 'one\n' }, ['a'], { findRecipe });
     await mutateRecipeForUser(user, 'a', null, append, deps);
     expect(asCalls(deps.index)).toHaveBeenCalledWith(
       db,

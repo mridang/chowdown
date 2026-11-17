@@ -14,11 +14,11 @@ import {
   parseIngredientLine,
 } from '@/lib/cooklang/ingredient-line';
 
-const COOK = /\.cook$/i;
-const LINE_BREAK = /\r?\n/;
-const BRACES = /[{}]/;
-const ZA = /[A-Za-z]/;
-const START_SPACE_SLASH_ESC_STAR = /^[\s/\-•*]+/;
+const COOK = /\.cook$/iu;
+const LINE_BREAK = /\r?\n/u;
+const BRACES = /[{}]/u;
+const ZA = /[A-Za-z]/u;
+const START_SPACE_SLASH_ESC_STAR = /^[\s/\-•*]+/u;
 
 /** A measured thing: an ingredient, a piece of cookware, or a timer. */
 interface RawQuantity {
@@ -71,9 +71,8 @@ export interface ParsedRecipe {
 /** Format a quantity + units into a single label (`200 g`, `2`, ``). */
 export function formatQuantity(item: Readonly<RawQuantity>): string {
   const { quantity, units } = item;
-  const hasQuantity =
-    quantity != null && quantity !== '' && quantity !== 'some';
-  const q = hasQuantity ? String(quantity) : '';
+  const text = String(quantity ?? '');
+  const q = text === 'some' ? '' : text;
   if (q && units) {
     return `${q} ${units}`;
   }
@@ -102,6 +101,7 @@ function toToken(item: Readonly<RawStepItem>): StepToken {
         label: formatQuantity(item) || (item.name ?? ''),
       };
     }
+    // no default
   }
 }
 
@@ -115,7 +115,7 @@ function quantityLabel(parsed: ReturnType<typeof parseIngredientLine>): string {
 
 /** Whether a stored name still has an amount, a bracket or stray punctuation in it. */
 const UNTIDY_NAME =
-  /^[^A-Za-z]|\(|^\d|,\s*[~\d]|\s,|,\s*(?:to taste|as needed|a )/;
+  /^[^A-Za-z]|\(|^\d|,\s*[~\d]|\s,|,\s*(?:to taste|as needed|a )/u;
 
 /**
  * Put right an ingredient that was stored badly, which importers did before
@@ -183,13 +183,12 @@ function ingredientLine(
   if (close === -1 || amount.includes('{')) {
     return undefined;
   }
-  let after = rest.slice(close + 1);
-  if (after.startsWith('(')) {
-    const end = after.indexOf(')');
-    if (end !== -1 && !after.slice(1, end).includes('(')) {
-      after = after.slice(end + 1);
-    }
-  }
+  const tail = rest.slice(close + 1);
+  const end = tail.startsWith('(') ? tail.indexOf(')') : -1;
+  const after =
+    end !== -1 && !tail.slice(1, end).includes('(')
+      ? tail.slice(end + 1)
+      : tail;
   return after.trim() === ''
     ? { name: rest.slice(0, brace).trimEnd() || rest.charAt(0), amount }
     : undefined;

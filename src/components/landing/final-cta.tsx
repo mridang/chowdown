@@ -1,7 +1,6 @@
-import type { ReactElement } from 'react';
-
 import { SignInButton } from '@/components/landing/sign-in-button';
 import { Container, Heading } from '@/components/ui/layout';
+import type { ReactElement } from 'react';
 
 /** The closing call to action: a marigold band with one more way in. */
 export function FinalCta(): ReactElement {

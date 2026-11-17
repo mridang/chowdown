@@ -6,10 +6,8 @@
  * without a browser.
  */
 
-import {
-  requestDeletion,
-  type DeletionResult,
-} from '@/components/ui/request-deletion';
+import { requestDeletion } from '@/components/ui/request-deletion';
+import type { DeletionResult } from '@/components/ui/request-deletion';
 
 /** What the person is told when the request could not be made at all. */
 const OFFLINE_MESSAGE =

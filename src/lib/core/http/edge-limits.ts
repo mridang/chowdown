@@ -30,12 +30,12 @@
  * request through.
  */
 
+import { errorMessage, logError } from '@/utils/logging';
 import { clientSubject } from './client-address';
 import { CSP_REPORT_PATH } from './reporting';
 import { DISCOVERY_PATHS, STATIC_PREFIXES } from './site';
-import { errorMessage, logError } from '@/utils/logging';
 
-const BEARER = /^Bearer\s+(\S+)$/i;
+const BEARER = /^Bearer\s+(\S+)$/iu;
 
 /** One Workers Rate Limiting binding: `limit` says whether `key` may go ahead. */
 export interface RateLimitBinding {
@@ -297,6 +297,7 @@ export function tooManyRequests(
         headers: { ...common, 'Content-Type': 'text/plain; charset=utf-8' },
       });
     }
+    // no default
   }
 }
 

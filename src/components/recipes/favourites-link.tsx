@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore, type ReactElement } from 'react';
+import { useSyncExternalStore } from 'react';
 
 import { HeartIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
@@ -9,6 +9,7 @@ import {
   liveFavouriteCount,
   subscribeFavourites,
 } from '@/domain/favourites-store';
+import type { ReactElement } from 'react';
 
 /**
  * The Favourites switch above the filters: a toggle that follows `href` and

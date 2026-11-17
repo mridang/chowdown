@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { planImport } from '@/domain/recipe/import-blob';
 import { prepareImport } from '@/domain/recipe/prepare-import';
 
-const AI_ERROR = /AiError|1234/;
+const AI_ERROR = /AiError|1234/u;
 
 /** A page carrying a schema.org Recipe, so no model call is needed. */
 const PAGE = `<html><script type="application/ld+json">${JSON.stringify({

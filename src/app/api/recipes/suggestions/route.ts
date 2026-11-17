@@ -25,8 +25,8 @@ import { recipeDisplayName } from '@/lib/cooklang';
 import { embedText } from '@/domain/recipe/embeddings';
 import { ensureEmbeddings, topSimilar } from '@/domain/recipe/similar';
 import { getEnv } from '@/lib/core/runtime';
-import type { User } from '@/domain/db/users';
 import { DAILY_BUDGETS } from '@/domain/daily-budget';
+import type { User } from '@/domain/db/users';
 
 export const dynamic = 'force-dynamic';
 

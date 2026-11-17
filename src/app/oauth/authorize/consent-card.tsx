@@ -1,5 +1,3 @@
-import type { ReactElement } from 'react';
-
 import { CheckIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Callout } from '@/components/ui/callout';
@@ -9,11 +7,11 @@ import {
   SCOPE_WRITE,
   describeScopes,
   sanitiseDisplayName,
-  type ClientIdentity,
-  type RedirectDescription,
 } from '@/lib/oauth';
 import { BRAND_NAME } from '@/app/_brand';
 import { READ_ONLY_TEXT } from '@/domain/mcp/app';
+import type { ClientIdentity, RedirectDescription } from '@/lib/oauth';
+import type { ReactElement } from 'react';
 
 /** One hidden form field carrying part of the authorization request through to the decision. */
 export interface HiddenField {
@@ -58,6 +56,7 @@ function AccessChoice(): ReactElement {
             type="radio"
             name="access"
             value="write"
+            aria-label="Everything it asked for"
             defaultChecked
             className="focus-ring mt-1"
           />
@@ -71,6 +70,7 @@ function AccessChoice(): ReactElement {
             type="radio"
             name="access"
             value="read"
+            aria-label="Read only"
             className="focus-ring mt-1"
           />
           <span className="leading-relaxed">

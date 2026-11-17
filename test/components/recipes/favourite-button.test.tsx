@@ -27,7 +27,7 @@ describe('FavouriteButton, overlay', () => {
     const out = html(
       <FavouriteButton recipeId="dal" initial={false} variant="overlay" />,
     );
-    expect(out.replaceAll(/<[^<>]*>/g, '')).toBe('');
+    expect(out.replaceAll(/<[^<>]*>/gu, '')).toBe('');
   });
 
   it('takes its position from the caller', () => {

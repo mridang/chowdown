@@ -1,6 +1,5 @@
-import type { ReactElement } from 'react';
-
 import { cn } from '@/components/ui/cn';
+import type { ReactElement } from 'react';
 
 /** The width, height and type size of each badge. */
 const SIZES = {

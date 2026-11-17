@@ -11,16 +11,10 @@
 import { facet } from '@/domain/recipe/taxonomy';
 import { FAVOURITE_KEY } from '@/domain/recipe/favourite-tag';
 import { MEDIA_META_KEYS } from '@/domain/recipe/media';
-import {
-  convertQuantity,
-  isUnitSystem,
-  scaleQuantity,
-  type Note,
-  type StepToken,
-  type UnitSystem,
-} from '@/lib/cooklang';
+import { convertQuantity, isUnitSystem, scaleQuantity } from '@/lib/cooklang';
+import type { Note, StepToken, UnitSystem } from '@/lib/cooklang';
 
-const DIGITS_PLUS = /\d+/;
+const DIGITS_PLUS = /\d+/u;
 
 /** What the servings stepper starts on when a recipe doesn't say. */
 export const DEFAULT_SERVINGS = 4;
@@ -198,7 +192,7 @@ export function stepText(tokens: readonly StepToken[]): string {
       }
     })
     .join('')
-    .replaceAll(/\s+/g, ' ')
+    .replaceAll(/\s+/gu, ' ')
     .trim();
 }
 

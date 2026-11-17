@@ -22,7 +22,6 @@ const [WRITE_TOOL = ''] = WRITE_TOOLS;
 
 describe('normaliseScope', () => {
   it('grants everything supported when nothing is asked for', () => {
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(normaliseScope(undefined)).toEqual([SCOPE_READ, SCOPE_WRITE]);
     expect(normaliseScope('  ')).toEqual([SCOPE_READ, SCOPE_WRITE]);
   });
@@ -62,11 +61,9 @@ describe('hasScope', () => {
 });
 
 describe('scopeForTool', () => {
-  it('needs only read for viewing tools', () => {
+  it.each(READ_ONLY_TOOLS)('needs only read for viewing tools (%j)', (tool) => {
     expect(READ_ONLY_TOOLS).not.toHaveLength(0);
-    for (const tool of READ_ONLY_TOOLS) {
-      expect(scopeForTool(tool)).toBe(SCOPE_READ);
-    }
+    expect(scopeForTool(tool)).toBe(SCOPE_READ);
   });
 
   it('needs write for anything that changes data, including unknown tools', () => {

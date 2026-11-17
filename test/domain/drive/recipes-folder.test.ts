@@ -7,17 +7,16 @@ import {
   jest,
 } from '@jest/globals';
 
-import type { DatabaseSync } from 'node:sqlite';
-
 import { recipesFolderFor } from '@/domain/drive/recipes-folder';
 import { getUserById } from '@/domain/db/users';
 import { getDatabase } from '@/domain/db/client';
-import { insertUser } from '../../domain/auth/session-fixture';
+import { insertUser } from '../auth/session-fixture';
 import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import {
   installCloudflareContext,
   sqliteD1,
 } from '../../lib/core/db/sqlite-d1';
+import type { DatabaseSync } from 'node:sqlite';
 
 let raw: DatabaseSync;
 let restore: () => void;

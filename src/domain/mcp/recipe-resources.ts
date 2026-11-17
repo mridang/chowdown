@@ -21,17 +21,17 @@
 import { asc, eq } from 'drizzle-orm';
 
 import { DriveNotConnectedError } from '@/domain/auth/drive-access';
-import type { Database } from '@/domain/db/client';
 import { recipes } from '@/domain/db/schema';
-import type { User } from '@/domain/db/users';
 import { recipeDisplayName } from '@/lib/cooklang';
 import { getDatabase } from '@/domain/db/client';
 import { ERROR_INTERNAL, ERROR_INVALID_PARAMS, RpcError } from '@/lib/mcp';
-import { openUserDrive, type DriveContext } from '@/domain/mcp/tool-services';
-import { guarded } from '@/domain/mcp/tool-services';
+import { openUserDrive, guarded } from '@/domain/mcp/tool-services';
 import { plainTitle } from '@/domain/mcp/tool-text';
+import type { DriveContext } from '@/domain/mcp/tool-services';
+import type { User } from '@/domain/db/users';
+import type { Database } from '@/domain/db/client';
 
-const ZA_Z0 = /^[A-Za-z0-9_-]+$/;
+const ZA_Z0 = /^[A-Za-z0-9_-]+$/u;
 
 /** What every recipe address starts with: the scheme and the two slashes. */
 export const RECIPE_URI_PREFIX = 'recipe://';
@@ -188,8 +188,15 @@ export function cachedRecipeLister(database: () => Database): RecipeLister {
 /** The real {@link RecipeLister}, over the production database. */
 export const listCachedRecipes: RecipeLister = cachedRecipeLister(getDatabase);
 
+/** The shape of one recipe in `resources/list`. */
+export interface ListedRecipeResource {
+  readonly uri: string;
+  readonly name: string;
+  readonly mimeType: string;
+}
+
 /** One recipe as an entry of `resources/list`. */
-export function recipeResource(entry: RecipeEntry): object {
+export function recipeResource(entry: RecipeEntry): ListedRecipeResource {
   return {
     uri: recipeUri(entry.id),
     name: plainTitle(recipeDisplayName(entry.name)),

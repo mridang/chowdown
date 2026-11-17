@@ -1,4 +1,4 @@
-const INVALID_GRANT = /invalid_grant/i;
+const INVALID_GRANT = /invalid_grant/iu;
 /**
  * @packageDocumentation
  *

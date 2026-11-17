@@ -14,8 +14,8 @@
 
 import type { ParsedRecipe } from '@/lib/cooklang';
 
-const COMMA_SEMICOLON = /[,;]/;
-const START_SPACE_STAR_DIGITS_PLUS = /^\s*(\d+(?:\.\d+)?)\s*$/;
+const COMMA_SEMICOLON = /[,;]/u;
+const START_SPACE_STAR_DIGITS_PLUS = /^\s*(\d+(?:\.\d+)?)\s*$/u;
 
 /** The subset of schema.org/Recipe we emit. All fields optional but `name`. */
 export interface RecipeJsonLd {
@@ -44,7 +44,7 @@ export interface RecipeJsonLd {
 
 /** Normalise a metadata key: lowercase, strip spaces/underscores/hyphens. */
 function normKey(key: string): string {
-  return key.toLowerCase().replaceAll(/[\s_-]+/g, '');
+  return key.toLowerCase().replaceAll(/[\s_-]+/gu, '');
 }
 
 /** Looks up the first of several metadata keys that has a value. */
@@ -61,19 +61,21 @@ function metaLookup(recipe: Readonly<ParsedRecipe>): MetaLookup {
   return (keys) => keys.map((k) => map.get(normKey(k))).find(Boolean);
 }
 
+/** A number of hours at the start of a string. */
+const HOURS_UNIT = /^(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b/iu;
+/** A number of minutes at the start of a string. */
+const MINUTES_UNIT = /^(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)\b/iu;
+
 /**
- * The first match of `unit` (a sticky pattern) that starts at a run of digits
- * in `value`: a number followed by its unit.
+ * The first match of `unit` (a pattern anchored with `^`) that starts at a run
+ * of digits in `value`: a number followed by its unit.
  */
 function numberBefore(value: string, unit: RegExp): RegExpExecArray | null {
-  for (const digits of value.matchAll(/\d+/g)) {
-    unit.lastIndex = digits.index;
-    const found = unit.exec(value);
-    if (found) {
-      return found;
-    }
-  }
-  return null;
+  return (
+    Array.from(value.matchAll(/\d+/gu), (digits) =>
+      unit.exec(value.slice(digits.index)),
+    ).find(Boolean) ?? null
+  );
 }
 
 /**
@@ -82,14 +84,8 @@ function numberBefore(value: string, unit: RegExp): RegExpExecArray | null {
  * string carries no recognisable hours/minutes.
  */
 export function toIsoDuration(value: string): string | undefined {
-  const hours = numberBefore(
-    value,
-    /(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b/iy,
-  );
-  const mins = numberBefore(
-    value,
-    /(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)\b/iy,
-  );
+  const hours = numberBefore(value, HOURS_UNIT);
+  const mins = numberBefore(value, MINUTES_UNIT);
   // A bare number with no unit is read as minutes ("prep: 20").
   const bare = hours || mins ? null : START_SPACE_STAR_DIGITS_PLUS.exec(value);
   if (!hours && !mins && !bare) {
@@ -180,8 +176,12 @@ export function recipeToJsonLd(
             '@type': 'HowToStep' as const,
             text: step
               .map((t) => {
-                if (t.kind === 'text') return t.text;
-                if (t.kind === 'timer') return t.label;
+                if (t.kind === 'text') {
+                  return t.text;
+                }
+                if (t.kind === 'timer') {
+                  return t.label;
+                }
                 return t.name;
               })
               .join('')

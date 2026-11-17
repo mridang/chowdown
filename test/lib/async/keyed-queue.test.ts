@@ -3,15 +3,15 @@ import { describe, expect, it } from '@jest/globals';
 import { createKeyedQueue } from '@/lib/async';
 
 /** Let queued microtasks run, so a job that is ready to start has started. */
-const tick = async () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+const tick = async () =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, 0);
+  });
 
 /** A promise that can be settled from outside, to hold a job open. */
 function gate() {
-  const handle: { open: () => void } = { open: () => undefined };
-  const opened = new Promise<void>((resolve) => {
-    handle.open = resolve;
-  });
-  return { opened, open: () => handle.open() };
+  const { promise: opened, resolve: open } = Promise.withResolvers<void>();
+  return { opened, open };
 }
 
 describe('createKeyedQueue', () => {

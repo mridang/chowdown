@@ -42,7 +42,6 @@ describe('resource and issuer', () => {
 
 describe('isProtectedResourcePath', () => {
   it('answers for the bare well-known path and for the MCP endpoint path', () => {
-    // eslint-disable-next-line unicorn/no-useless-undefined -- the parameter is required, so the call needs the explicit argument
     expect(isProtectedResourcePath(undefined)).toBe(true);
     expect(isProtectedResourcePath([])).toBe(true);
     expect(isProtectedResourcePath(['mcp'])).toBe(true);

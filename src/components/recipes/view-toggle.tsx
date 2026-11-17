@@ -1,10 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useTransition, type ReactElement } from 'react';
-
-import { viewCookie, type ListView } from '@/components/recipes/list-view';
+import { useState, useTransition } from 'react';
+import { viewCookie } from '@/components/recipes/list-view';
 import { Segmented } from '@/components/ui/segmented';
+import type { ReactElement } from 'react';
+
+import type { ListView } from '@/components/recipes/list-view';
 
 /** The choices, as the segmented control shows them. */
 const OPTIONS = [
@@ -42,7 +44,7 @@ export function ViewToggle({
       options={OPTIONS}
       onValueChange={(next) => {
         setChosen(next);
-        // eslint-disable-next-line unicorn/no-document-cookie -- tried cookieStore.set: it is async and missing from Firefox and older Safari, and the cookie must be written before router.refresh() reads it
+        // eslint-disable-next-line unicorn/no-document-cookie, functional/immutable-data -- tried cookieStore.set: it is async and missing from Firefox and older Safari, and the cookie must be written before router.refresh() reads it
         document.cookie = viewCookie(next, location.protocol === 'https:');
         startTransition(() => router.refresh());
       }}

@@ -5,7 +5,7 @@
  * it, the arguments it accepts, and what it does when called.
  */
 
-import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import { z } from 'zod';
 import {
   editRecipe,
   label,
@@ -17,16 +17,14 @@ import {
   RECIPE_CARD_OUTPUT_SCHEMA,
   RECIPE_REFERENCE,
 } from '@/domain/mcp/tools/schemas';
-import {
-  errorResult,
-  type JsonSchema,
-  McpTool,
-  type ToolAnnotations,
-  type ToolArgs,
-  type ToolResult,
-  writes,
+import { errorResult, McpTool, writes } from '@/lib/mcp';
+import type { ToolContent, ToolContext } from '@/domain/mcp/tool-context';
+import type {
+  JsonSchema,
+  ToolAnnotations,
+  ToolArgs,
+  ToolResult,
 } from '@/lib/mcp';
-import { z } from 'zod';
 
 export class TagRecipeTool extends McpTool<
   'tag_recipe',

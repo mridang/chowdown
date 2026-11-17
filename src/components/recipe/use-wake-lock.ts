@@ -20,6 +20,11 @@ type Holding =
       readonly sentinel: Pick<WakeLockSentinel, 'release'>;
     };
 
+/** A ref-shaped cell holding what the keeper has, replaced whole. */
+interface HoldingCell {
+  current: Holding;
+}
+
 /**
  * Whether the keeper should ask for a lock now: only when nothing is held or
  * being asked for, and the page is visible (the browser refuses a lock for a
@@ -51,12 +56,13 @@ export function keepScreenAwake(environment: WakeLockEnvironment): () => void {
   }
   // The one piece of state, held in a cell shaped like a React ref: it lives
   // outside rendering and is only ever replaced whole.
-  const holding: { current: Holding } = { current: { phase: 'idle' } };
+  const holding: HoldingCell = { current: { phase: 'idle' } };
 
   const acquire = (): void => {
     if (!shouldRequestLock(holding.current.phase, environment.isVisible())) {
       return;
     }
+    // eslint-disable-next-line functional/immutable-data -- the wake-lock state lives in a ref-shaped cell that outlives rendering and is replaced whole
     holding.current = { phase: 'requesting' };
     void wakeLock
       .request('screen')
@@ -65,11 +71,13 @@ export function keepScreenAwake(environment: WakeLockEnvironment): () => void {
           // Stopped while the request was in flight: give it straight back.
           void sentinel.release();
         } else {
+          // eslint-disable-next-line functional/immutable-data -- the wake-lock state lives in a ref-shaped cell that outlives rendering and is replaced whole
           holding.current = { phase: 'held', sentinel };
           // The browser releases it when the page is hidden. Note that, and ask
           // again if the page is still visible (released for another reason).
           sentinel.addEventListener('release', () => {
             if (holding.current.phase !== 'stopped') {
+              // eslint-disable-next-line functional/immutable-data -- the wake-lock state lives in a ref-shaped cell that outlives rendering and is replaced whole
               holding.current = { phase: 'idle' };
               acquire();
             }
@@ -79,6 +87,7 @@ export function keepScreenAwake(environment: WakeLockEnvironment): () => void {
       })
       .catch(() => {
         if (holding.current.phase !== 'stopped') {
+          // eslint-disable-next-line functional/immutable-data -- the wake-lock state lives in a ref-shaped cell that outlives rendering and is replaced whole
           holding.current = { phase: 'idle' };
         }
       });
@@ -89,6 +98,7 @@ export function keepScreenAwake(environment: WakeLockEnvironment): () => void {
   return () => {
     stopWatching();
     const before = holding.current;
+    // eslint-disable-next-line functional/immutable-data -- the wake-lock state lives in a ref-shaped cell that outlives rendering and is replaced whole
     holding.current = { phase: 'stopped' };
     if (before.phase === 'held') {
       void before.sentinel.release();

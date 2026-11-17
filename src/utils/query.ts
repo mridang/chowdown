@@ -1,4 +1,4 @@
-const START_HASH_STAR_ESC_HASH = /^([^?#]*)(\?[^#]*)?(#.*)?$/;
+const START_HASH_STAR_ESC_HASH = /^([^?#]*)(\?[^#]*)?(#.*)?$/u;
 /**
  * @packageDocumentation
  *

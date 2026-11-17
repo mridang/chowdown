@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import type { ReactElement, ReactNode } from 'react';
 
 import { ClockIcon, FlameIcon, ProteinIcon } from '@/components/icons';
 import { CardFact } from '@/components/recipes/card-fact';
@@ -8,6 +7,7 @@ import { FavouriteButton } from '@/components/recipes/favourite-button';
 import { PhotoBlock } from '@/components/recipes/recipe-card';
 import { Heading } from '@/components/ui/layout';
 import { duration, sentenceCase } from '@/utils/text';
+import type { ReactElement, ReactNode } from 'react';
 import type { CardRecipe } from '@/domain/recipe/card-data';
 
 /**

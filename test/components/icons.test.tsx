@@ -65,18 +65,14 @@ describe('icons', () => {
     expect(html(<ProteinIcon protein="dragon" />)).toContain('<svg');
   });
 
-  it('does not mistake a name from JavaScript’s own objects for a protein', () => {
-    for (const word of [
-      'constructor',
-      'toString',
-      '__proto__',
-      'hasOwnProperty',
-    ]) {
+  it.each(['constructor', 'toString', '__proto__', 'hasOwnProperty'])(
+    'does not mistake a name from JavaScript’s own objects for a protein (%j)',
+    (word) => {
       expect(html(<ProteinIcon protein={word} />)).toBe(
         html(<ProteinIcon protein="dragon" />),
       );
-    }
-  });
+    },
+  );
 
   it('draws Drive as Google’s logo in its own colours, sized like the others', () => {
     const out = html(<DriveIcon size="md" />);

@@ -3,8 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { HeroPhoto } from '@/components/recipe/hero-photo';
 import { html } from '../render';
 
-const DIV_CLASS_ARIA = /<div[^>]*class="([^"]*)"[^>]*aria-label="Photos"/;
-const DIV_ARIA_LABEL = /<div[^>]*aria-label="Photos"[^>]*class="([^"]*)"/;
+const DIV_CLASS_ARIA = /<div[^>]*class="([^"]*)"[^>]*aria-label="Photos"/u;
+const DIV_ARIA_LABEL = /<div[^>]*aria-label="Photos"[^>]*class="([^"]*)"/u;
 
 describe('HeroPhoto', () => {
   it('shows a tinted tile in the recipe colour when there is no photo', () => {

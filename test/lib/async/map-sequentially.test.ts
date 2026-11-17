@@ -18,7 +18,9 @@ describe('mapSequentially', () => {
     await mapSequentially(['a', 'b', 'c'], async (name) => {
       log.push(`start ${name}`);
       // Yield to the event loop so an overlapping run would interleave.
-      await new Promise((resolve) => setTimeout(resolve, 1));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 1);
+      });
       log.push(`end ${name}`);
     });
     expect(log).toEqual([

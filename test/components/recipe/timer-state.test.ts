@@ -9,9 +9,11 @@ import {
   remainingMs,
   settle,
   timerReducer,
-  type StepTimer,
-  type TimerAction,
-  type TimerSpec,
+} from '@/components/recipe/timer-state';
+import type {
+  StepTimer,
+  TimerAction,
+  TimerSpec,
 } from '@/components/recipe/timer-state';
 
 const MIN = 60_000;

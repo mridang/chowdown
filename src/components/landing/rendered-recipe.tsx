@@ -1,12 +1,11 @@
-import type { ReactElement } from 'react';
-
 import { ClockIcon, ServingsIcon } from '@/components/icons';
-import type { SampleRecipe } from '@/components/landing/demo-recipes';
 import { WindowFrame } from '@/components/landing/window-frame';
 import { Difficulty } from '@/components/ui/difficulty';
 import { Eyebrow } from '@/components/ui/layout';
 import { TintTile } from '@/components/ui/tint-tile';
 import { duration, sentenceCase } from '@/utils/text';
+import type { SampleRecipe } from '@/components/landing/demo-recipes';
+import type { ReactElement } from 'react';
 
 /** The same recipe as the Cooklang file beside it, rendered the way chowdown shows it. */
 export function RenderedRecipe({

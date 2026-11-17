@@ -1,19 +1,17 @@
 import { describe, expect, it } from '@jest/globals';
-import type { ReactElement } from 'react';
 
 import { RecipeStateProvider } from '@/components/recipe/recipe-state';
 import { StepBody } from '@/components/recipe/step-body';
-import {
-  StepTimersContext,
-  type StepTimers,
-} from '@/components/recipe/use-step-timers';
-import type { StepTimer } from '@/components/recipe/timer-state';
+import { StepTimersContext } from '@/components/recipe/use-step-timers';
 import { htmlAt } from '../render';
+import type { ReactElement } from 'react';
+import type { StepTimers } from '@/components/recipe/use-step-timers';
+import type { StepTimer } from '@/components/recipe/timer-state';
 
-const BUTTON_TYPE_BUTTON = /<button type="button"[^>]*>/;
-const SVG_SVG_MINUTES = /<svg[^>]*>.*<\/svg>5 minutes/s;
-const SPAN_CLASS_TEXT = /<span class="text-forest">pan<\/span>/;
-const SPAN_CLASS_UNDERLINE = /<span class="[^"]*underline[^"]*">onion<\/span>/;
+const BUTTON_TYPE_BUTTON = /<button type="button"[^>]*>/u;
+const SVG_SVG_MINUTES = /<svg[^>]*>.*<\/svg>5 minutes/su;
+const SPAN_CLASS_TEXT = /<span class="text-forest">pan<\/span>/u;
+const SPAN_CLASS_UNDERLINE = /<span class="[^"]*underline[^"]*">onion<\/span>/u;
 
 const MIN = 60_000;
 const NOW = 5_000_000;

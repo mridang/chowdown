@@ -21,7 +21,7 @@ describe('Breadcrumb', () => {
     );
     expect(out).toContain('href="/app"');
     expect(out).toContain('href="/app?cuisine=Indian"');
-    expect(out.match(/aria-hidden="true"/g)).toHaveLength(1);
+    expect(out.match(/aria-hidden="true"/gu)).toHaveLength(1);
   });
 
   it('shows the last step as the current page when it has no link', () => {

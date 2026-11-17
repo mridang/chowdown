@@ -1,7 +1,6 @@
-import type { ComponentProps, ReactElement } from 'react';
-
 import { ChevronIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
+import type { ComponentProps, ReactElement } from 'react';
 
 /**
  * Collapsible sections (filters, FAQ), built on the browser's own `<details>`:

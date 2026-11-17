@@ -1,5 +1,3 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import {
   ClockIcon,
   GlobeIcon,
@@ -14,6 +12,7 @@ import { Fact } from '@/components/recipe/fact';
 import { Difficulty } from '@/components/ui/difficulty';
 import { duration, sentenceCase } from '@/utils/text';
 import { firstTag } from '@/domain/recipe/first-tag';
+import type { ReactElement, ReactNode } from 'react';
 import type { RecipeTags } from '@/domain/recipe/tag-index';
 
 /** One entry of the facts grid, ready to hand to `Fact`. */

@@ -7,8 +7,8 @@ import {
   toBaseAmount,
 } from '@/lib/cooklang';
 import { LEADING_NUMBER } from '@/lib/cooklang/units';
-
 import { expectSamePattern, fuzzInputs } from '../../regex-equivalence';
+
 describe('isUnitSystem', () => {
   it('accepts the three systems and rejects others', () => {
     expect(isUnitSystem('metric')).toBe(true);
@@ -134,11 +134,12 @@ describe('toBaseAmount', () => {
 });
 
 describe('units named like JavaScript built-ins', () => {
-  it('are not units, and so leave the quantity alone', () => {
-    for (const unit of ['constructor', 'toString', '__proto__']) {
+  it.each(['constructor', 'toString', '__proto__'])(
+    'are not units, and so leave the quantity alone (%j)',
+    (unit) => {
       expect(convertQuantity(`2 ${unit}`, 'metric')).toBe(`2 ${unit}`);
-    }
-  });
+    },
+  );
 });
 
 const FAST_MS = 1000;
@@ -177,7 +178,7 @@ describe('LEADING_NUMBER, rewritten', () => {
       String.raw`^(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d*\s*[½⅓⅔¼¾⅛⅜⅝⅞]|\d+(?:[.,]\d+)?(?:\s+`,
       String.raw`\d+\s*\/\s*\d+|\s*\/\s*\d+)?)`,
     ].join(''),
-    '',
+    'u',
   );
   const pieces = [
     '1',

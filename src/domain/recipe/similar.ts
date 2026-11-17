@@ -11,17 +11,13 @@
  * the Drive ↔ cache ↔ ranking flow so neither caller has to duplicate it.
  */
 
-import type { Database } from '@/domain/db/client';
 import {
   deleteEmbeddingsNotIn,
   listEmbeddings,
   saveSimilarLists,
   upsertEmbedding,
-  type EmbeddingRow,
 } from '@/domain/db/embeddings';
-import type { User } from '@/domain/db/users';
 import { getFileContent } from '@/domain/drive/recipe-files';
-import type { DriveFile } from '@/lib/google/drive';
 import { getEnv } from '@/lib/core/runtime';
 import { getDatabase } from '@/domain/db/client';
 import { parseRecipe, recipeDisplayName } from '@/lib/cooklang';
@@ -33,6 +29,10 @@ import {
   measure,
 } from '@/domain/recipe/embeddings';
 import { mapSequentially } from '@/lib/async';
+import type { DriveFile } from '@/lib/google/drive';
+import type { EmbeddingRow } from '@/domain/db/embeddings';
+import type { User } from '@/domain/db/users';
+import type { Database } from '@/domain/db/client';
 
 /** How many "find similar" recipes are stored and shown per recipe. */
 export const SIMILAR_COUNT = 6;
@@ -84,13 +84,13 @@ export interface EmbeddingDeps {
   readonly save: (
     db: Database,
     row: Parameters<typeof upsertEmbedding>[1],
-  ) => Promise<unknown>;
+  ) => Promise<void>;
   /** Drop embeddings for files that are no longer in `keep`. */
   readonly prune: (
     db: Database,
     userId: number,
     keep: readonly string[],
-  ) => Promise<unknown>;
+  ) => Promise<void>;
   /** Download a file's text from Drive. */
   readonly readFile: (fileId: string, token: string) => Promise<string>;
   /** Turn text into an embedding vector. */
@@ -103,7 +103,7 @@ export interface EmbeddingDeps {
     db: Database,
     userId: number,
     changedIds: readonly string[],
-  ) => Promise<unknown>;
+  ) => Promise<void>;
 }
 
 /** The real thing: D1, Drive and Workers AI. */
@@ -250,12 +250,14 @@ export function similarFromRows(
   const selfVector = parseVector(self.vector);
   return bestOf(
     rows
+      .values()
       .filter((r) => r.drive_file_id !== selfId)
       .map((r) => ({
         id: r.drive_file_id,
         title: r.title,
         score: cosineSimilarity(selfVector, parseVector(r.vector)),
-      })),
+      }))
+      .toArray(),
     n,
   );
 }
@@ -276,12 +278,14 @@ function nearestTo(
 ): readonly SimilarRecipe[] {
   return bestOf(
     candidates
+      .values()
       .filter((b) => b.id !== a.id)
       .map((b) => ({
         id: b.id,
         title: b.title,
         score: cosineBetween(a.vector, b.vector),
-      })),
+      }))
+      .toArray(),
     n,
   );
 }
@@ -341,8 +345,10 @@ export function updateSimilarLists(
     [
       changedIds.filter((id) => known.has(id)),
       prepared
+        .values()
         .filter((p) => hasShortList(p, prepared.length, n))
-        .map((p) => p.id),
+        .map((p) => p.id)
+        .toArray(),
     ].flat(),
   );
   const changedRows = prepared.filter((p) => changed.has(p.id));

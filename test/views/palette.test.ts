@@ -1,15 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
-import {
-  DARK_PALETTE,
-  LIGHT_PALETTE,
-  ON_ACCENT,
-  type ThemePalette,
-} from '@/views/palette';
+import { ON_ACCENT } from '@/views/palette';
+import { DARK_PALETTE, LIGHT_PALETTE } from '@/views/app';
+import type { ThemePalette } from '@/views/palette';
 
 const collator = new Intl.Collator();
 
-const START_HASH_N0_HYPHEN_N9 = /^#[0-9a-f]{6}$/;
+const START_HASH_N0_HYPHEN_N9 = /^#[0-9a-f]{6}$/u;
 
 /** Relative luminance of a `#rrggbb` colour, as WCAG defines it. */
 function luminance(hex: string): number {
@@ -81,15 +78,16 @@ describe('the palettes', () => {
     );
   });
 
-  it('are written as six-digit hex colours, as the contrast check reads them', () => {
-    for (const colour of [
-      ON_ACCENT,
-      ...Object.values<string>({ ...LIGHT_PALETTE }),
-      ...Object.values<string>({ ...DARK_PALETTE }),
-    ]) {
+  it.each([
+    ON_ACCENT,
+    ...Object.values<string>({ ...LIGHT_PALETTE }),
+    ...Object.values<string>({ ...DARK_PALETTE }),
+  ])(
+    'are written as six-digit hex colours, as the contrast check reads them (%j)',
+    (colour) => {
       expect(colour).toMatch(START_HASH_N0_HYPHEN_N9);
-    }
-  });
+    },
+  );
 
   it('draw the dark card darker than the light one', () => {
     expect(luminance(DARK_PALETTE.fallbackSurface)).toBeLessThan(

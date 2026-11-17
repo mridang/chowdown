@@ -1,5 +1,3 @@
-import type { ReactElement } from 'react';
-
 import {
   Accordion,
   AccordionContent,
@@ -8,6 +6,7 @@ import {
 } from '@/components/ui/accordion';
 import { Container, Eyebrow, Heading } from '@/components/ui/layout';
 import { Section } from '@/components/ui/section';
+import type { ReactElement } from 'react';
 
 /** The questions and their answers, in the order they are shown. */
 export const FAQ = [

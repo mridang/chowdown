@@ -3,7 +3,6 @@ import path from 'node:path';
 
 import { describe, expect, it } from '@jest/globals';
 
-import type { Database } from '@/domain/db/client';
 import {
   deleteRecipeData,
   deleteRecipesNotIn,
@@ -19,10 +18,11 @@ import { APP_MIGRATIONS } from '../../lib/core/db/migrations';
 import { indexedPlan, planOf } from '../../lib/core/db/plan';
 import { sqliteDatabase } from '../../lib/core/db/sqlite-db';
 import urls from '../../fixtures/insecure-urls.json' with { type: 'json' };
+import type { Database } from '@/domain/db/client';
 
 const collator = new Intl.Collator();
 
-const SELECT_2 = /^\s*select/i;
+const SELECT_2 = /^\s*select/iu;
 
 /** A database with every migration applied and two people in it. */
 function seeded() {

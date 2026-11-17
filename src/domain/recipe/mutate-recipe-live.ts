@@ -5,17 +5,14 @@
  */
 
 import { getUserAccessToken } from '@/domain/auth/user-access-token';
-import type { Database } from '@/domain/db/client';
 import { getRecipeByFileId } from '@/domain/db/recipes';
-import type { User } from '@/domain/db/users';
 import { getFileContent, updateRecipeFile } from '@/domain/drive/recipe-files';
 import { getDatabase } from '@/domain/db/client';
-import {
-  mutateRecipe,
-  type Edit,
-  type MutateOutcome,
-} from '@/domain/recipe/mutate-recipe';
+import { mutateRecipe } from '@/domain/recipe/mutate-recipe';
 import { indexRecipeWrite } from '@/domain/recipe/tag-index';
+import type { Edit, MutateOutcome } from '@/domain/recipe/mutate-recipe';
+import type { User } from '@/domain/db/users';
+import type { Database } from '@/domain/db/client';
 
 /**
  * What {@link mutateRecipeForUser} reaches out to, gathered in one place so a
@@ -40,7 +37,7 @@ export interface MutateLiveDeps {
     fileId: string,
     source: string,
     token: string,
-  ) => Promise<unknown>;
+  ) => Promise<void>;
   /** Refresh the cached row (source and tags) after a write. */
   readonly index: (
     db: Database,
@@ -48,7 +45,7 @@ export interface MutateLiveDeps {
     fileId: string,
     name: string,
     source: string,
-  ) => Promise<unknown>;
+  ) => Promise<void>;
 }
 
 /** The real thing. */

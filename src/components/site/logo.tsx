@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import type { ReactElement } from 'react';
 
 import { BRAND_NAME, BRAND_TAGLINE } from '@/app/_brand';
 import { PanIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
+import type { ReactElement } from 'react';
 
 /**
  * The app's mark: a frying pan, drawn as an outline. It illustrates the

@@ -7,8 +7,8 @@ import {
   positionOf,
   sortRecipes,
   toFilterParams,
-  type QueryableRecipe,
 } from '@/domain/api/recipe-query';
+import type { QueryableRecipe } from '@/domain/api/recipe-query';
 
 const recipe = (
   id: string,

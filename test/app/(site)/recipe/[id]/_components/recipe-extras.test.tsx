@@ -18,7 +18,7 @@ describe('RecipeExtras', () => {
       />,
     );
     expect(out).toContain('<dl');
-    expect(out.match(/<dt/g)).toHaveLength(2);
+    expect(out.match(/<dt/gu)).toHaveLength(2);
     expect(out).toContain('>yield</dt>');
     expect(out).toContain('>2 loaves</dd>');
     expect(out).toContain('>oven</dt>');
@@ -36,7 +36,7 @@ describe('RecipeExtras', () => {
     );
     expect(out).not.toContain('Nigella');
     expect(out).not.toContain('Someone');
-    expect(out.match(/<dt/g)).toHaveLength(1);
+    expect(out.match(/<dt/gu)).toHaveLength(1);
   });
 
   it('draws nothing when the author was all that was left over', () => {

@@ -1,12 +1,12 @@
 'use client';
 
-import type { ReactElement } from 'react';
-
 import { CheckIcon, ClockIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/components/ui/cn';
 
-import { describeTimer, type StepTimer } from '@/components/recipe/timer-state';
+import { describeTimer } from '@/components/recipe/timer-state';
+import type { StepTimer } from '@/components/recipe/timer-state';
+import type { ReactElement } from 'react';
 import type { StepTimers } from '@/components/recipe/use-step-timers';
 
 /** The look of a tray entry by state: a ring of colour for one that has rung, with no motion. */
@@ -28,14 +28,16 @@ function TimerEntry({
 }: Readonly<{ timer: StepTimer; timers: StepTimers }>): ReactElement {
   const view = describeTimer(timer, timer.label, timers.now);
   const step = timer.step + 1;
-  let main = () => timers.restart(timer.id);
-  if (view.state === 'running') {
-    main = () => timers.pause(timer.id);
-  } else if (view.state === 'paused') {
-    main = () => timers.resume(timer.id);
-  } else {
-    // Done: the main button runs the timer again from the top.
-  }
+  // Done: the main button runs the timer again from the top.
+  const main = (() => {
+    if (view.state === 'running') {
+      return () => timers.pause(timer.id);
+    }
+    if (view.state === 'paused') {
+      return () => timers.resume(timer.id);
+    }
+    return () => timers.restart(timer.id);
+  })();
   return (
     <li
       className={cn(

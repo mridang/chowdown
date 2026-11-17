@@ -4,7 +4,7 @@ import { ConnectBand } from '@/components/site/connect-band';
 import { MCP_URL } from '@/utils/site';
 import { html } from '../render';
 
-const HREF_CONNECT_SET = /<a [^>]*href="\/connect"[^>]*>Set it up/;
+const HREF_CONNECT_SET = /<a [^>]*href="\/connect"[^>]*>Set it up/u;
 
 describe('ConnectBand', () => {
   const out = html(<ConnectBand />);

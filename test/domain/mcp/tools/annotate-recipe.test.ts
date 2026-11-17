@@ -77,8 +77,9 @@ describe('annotate_recipe', () => {
       fake,
     );
     expect(result.isError).toBe(true);
-    expect(said(result)).toContain('no ingredient called "saffron"');
-    expect(said(result)).toContain('Its ingredients are: flour, eggs');
+    const text = said(result);
+    expect(text).toContain('no ingredient called "saffron"');
+    expect(text).toContain('Its ingredients are: flour, eggs');
     expect(fake.updates).toEqual([]);
   });
 
@@ -117,9 +118,10 @@ describe('a recipe with a very long ingredient list', () => {
       fake,
     );
     expect(result.isError).toBe(true);
-    expect(said(result)).toContain('ingredient11');
-    expect(said(result)).toContain(', and more.');
-    expect(said(result)).not.toContain('ingredient12');
+    const text = said(result);
+    expect(text).toContain('ingredient11');
+    expect(text).toContain(', and more.');
+    expect(text).not.toContain('ingredient12');
     expect(fake.updates).toEqual([]);
   });
 });

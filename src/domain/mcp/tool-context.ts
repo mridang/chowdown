@@ -6,14 +6,13 @@
  * failures are worth explaining to an assistant.
  */
 
-import { ReadWriteScopes, type FailureExplainer } from '@/lib/mcp';
+import { ReadWriteScopes } from '@/lib/mcp';
+import { SCOPE_READ, SCOPE_WRITE, explainFailure } from '@/domain/mcp/app';
+import { liveToolServices } from '@/domain/mcp/tool-services';
+import type { FailureExplainer } from '@/lib/mcp';
 import type { RecipeCardData, RecipeListData } from '@/domain/mcp/ui-types';
 import type { User } from '@/domain/db/users';
-import { SCOPE_READ, SCOPE_WRITE, explainFailure } from '@/domain/mcp/app';
-import {
-  liveToolServices,
-  type ToolServices,
-} from '@/domain/mcp/tool-services';
+import type { ToolServices } from '@/domain/mcp/tool-services';
 
 /**
  * What every tool in this app is given: who is calling, and the outside things

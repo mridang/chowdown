@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useRef } from 'react';
+import type { RefObject } from 'react';
 
 /**
  * Whether focus should move to the heading, given the last step it was moved
@@ -44,6 +45,7 @@ export function useFocusOnChange<T extends HTMLElement>(
     if (shouldMoveFocus(last.current, key)) {
       target.current?.focus();
     }
+    // eslint-disable-next-line functional/immutable-data -- a React ref is a mutable cell by design
     last.current = key;
   }, [key]);
   return target;

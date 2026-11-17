@@ -1,9 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { RecipeCardData } from '@/domain/mcp/ui-types';
 import { RecipeCardApp, RecipeCardScreen } from '@/views/recipe-card-view';
-import type { ViewState } from '@/views/view-state';
 import { html } from '../components/render';
+import type { RecipeCardData } from '@/domain/mcp/ui-types';
+import type { ViewState } from '@/views/view-state';
 
 const RECIPE: RecipeCardData = {
   id: 'r1',
@@ -80,8 +80,9 @@ describe('RecipeCardScreen', () => {
     expect(screen({ phase: 'ready', data: RECIPE })).toContain(
       'Recipe loaded: Pasta al Limone',
     );
-    expect(screen({ phase: 'waiting' })).not.toContain('Recipe loaded');
-    expect(screen({ phase: 'waiting' })).toContain('aria-live="polite"');
+    const waiting = screen({ phase: 'waiting' });
+    expect(waiting).not.toContain('Recipe loaded');
+    expect(waiting).toContain('aria-live="polite"');
   });
 
   it('points at the host’s close control when it would not leave fullscreen', () => {

@@ -7,12 +7,8 @@
  */
 
 import { SESSION_COOKIE } from '@/domain/auth/app';
-import {
-  GENERIC_CLASSES,
-  genericClass,
-  type ClassSpec,
-  type EdgeLimits,
-} from '@/lib/core/http/edge-limits';
+import { GENERIC_CLASSES, genericClass } from '@/lib/core/http/edge-limits';
+import type { ClassSpec, EdgeLimits } from '@/lib/core/http/edge-limits';
 
 /** The kinds of request this app counts besides the classes every app has. */
 type OwnClass =

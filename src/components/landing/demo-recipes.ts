@@ -8,7 +8,8 @@
  * shows beside the finished recipe it produces.
  */
 
-import type { CardRecipe, DifficultyLevel } from '@/domain/recipe/card-data';
+import type { CardRecipe } from '@/domain/recipe/card-data';
+import type { DifficultyLevel } from '@/domain/recipe/card-style';
 
 /** The soft colours a recipe tile can wear, re-exported for the landing page's mock-ups. */
 
@@ -176,5 +177,3 @@ export const RECIPES: SampleRecipes = [
   HERO_RECIPE,
   ...REST.map((base) => toSample(base)),
 ];
-
-export { type Tone } from '@/domain/recipe/card-data';

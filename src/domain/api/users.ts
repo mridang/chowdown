@@ -10,8 +10,9 @@
 import { ApiController, problems, readJsonObject } from '@/lib/core/api';
 import { sessionUser } from '@/domain/api/auth';
 import { parseUserPatch, userResource } from '@/domain/api/user-resource';
-import { getUserById, setUserUnits, type User } from '@/domain/db/users';
+import { getUserById, setUserUnits } from '@/domain/db/users';
 import { getDatabase } from '@/domain/db/client';
+import type { User } from '@/domain/db/users';
 
 /** A validated preference patch: the raw body (to see which keys were sent) and the parsed units. */
 interface ParsedUserPatch {

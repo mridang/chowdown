@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   ChevronLeftIcon,
@@ -17,7 +17,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { NumberBadge } from '@/components/ui/number-badge';
-import type { StepToken } from '@/lib/cooklang';
 import { stepText } from '@/domain/recipe/page-view';
 
 import { ReadAloudButton } from '@/components/recipe/read-aloud';
@@ -28,6 +27,8 @@ import {
   StepTimersContext,
 } from '@/components/recipe/use-step-timers';
 import { useWakeLock } from '@/components/recipe/use-wake-lock';
+import type { ReactElement } from 'react';
+import type { StepToken } from '@/lib/cooklang';
 
 /**
  * The step to show after a move: `index` clamped to the steps there are, so
@@ -174,6 +175,7 @@ export function CookMode({
             than a bar whose width is set inline, which the Content Security
             Policy would refuse.)
           */}
+            {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- one bar per step, which a progress element cannot draw */}
             <div
               className="mt-4 flex gap-1"
               role="progressbar"
@@ -241,9 +243,7 @@ export function CookMode({
 
             <TimerTray timers={timers} />
             {/* Told to screen readers politely when a timer finishes. */}
-            <p role="status" className="sr-only">
-              {timers.announcement}
-            </p>
+            <output className="sr-only">{timers.announcement}</output>
 
             <div className="flex items-center justify-between gap-3">
               <Button

@@ -17,7 +17,7 @@ import { replacingHeaders } from './headers';
 import { CSP_REPORT_DIRECTIVES } from './reporting';
 import { EXTRA_DIRECTIVES, EXTRA_IMG_SOURCES } from './site';
 
-const NONCE = /'nonce-([^']+)'/;
+const NONCE = /'nonce-([^']+)'/u;
 
 /** A fresh, unguessable nonce: 16 random bytes, base64. */
 // eslint-disable-next-line unicorn/no-keyword-prefix -- the name is exported from its module and used by other modules

@@ -1,8 +1,7 @@
-import type { ReactElement } from 'react';
-
 import { PanIcon } from '@/components/icons';
 import { cn } from '@/components/ui/cn';
-import type { Tone } from '@/domain/recipe/card-data';
+import type { ReactElement } from 'react';
+import type { Tone } from '@/domain/recipe/card-style';
 
 /** Soft tints, so a missing photo is a quiet block of colour and not a loud one. */
 const TINTS: Readonly<Record<Tone, string>> = {

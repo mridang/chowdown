@@ -1,6 +1,5 @@
-import type { ReactElement } from 'react';
-
 import { Container } from '@/components/ui/layout';
+import type { ReactElement } from 'react';
 
 /** The three figures, each as a big value and a line saying what it means. */
 const FIGURES = [

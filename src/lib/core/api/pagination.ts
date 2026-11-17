@@ -15,7 +15,7 @@
 
 import { problems } from './problem';
 
-const EQUALS_END = /={1,2}$/;
+const EQUALS_END = /={1,2}$/u;
 
 /** The default page size when the client asks for none. */
 export const DEFAULT_LIMIT = 20;
@@ -104,11 +104,7 @@ export function sliceAfter<T>(
 
 /** Base64url-encode bytes (RFC 4648 §5: `+/` → `-_`, no padding). */
 function bytesToBase64Url(bytes: Uint8Array): string {
-  let binary = '';
-  for (const byte of bytes) {
-    binary += String.fromCodePoint(byte);
-  }
-  return btoa(binary)
+  return btoa(Array.from(bytes, (byte) => String.fromCodePoint(byte)).join(''))
     .replaceAll('+', '-')
     .replaceAll('/', '_')
     .replace(EQUALS_END, '');

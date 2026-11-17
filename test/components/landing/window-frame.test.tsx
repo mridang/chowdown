@@ -13,7 +13,7 @@ describe('WindowFrame', () => {
 
   it('draws three window dots', () => {
     const out = html(<WindowFrame label="x">y</WindowFrame>);
-    expect(out.match(/rounded-full/g)).toHaveLength(3);
+    expect(out.match(/rounded-full/gu)).toHaveLength(3);
   });
 
   it('shows a title only when given one', () => {

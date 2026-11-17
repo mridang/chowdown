@@ -8,16 +8,17 @@ import {
 } from '@jest/globals';
 
 import { entityTag } from '@/lib/core/api';
-import { fakeCookies } from '../../../../../domain/auth/session-fixture';
+import { fakeCookies } from '../../../../../domain/auth/auth-test-kit';
 import {
   addRecipe,
   fakeGoogle,
   fromApp,
   openWorld,
   signIn,
-  type World,
 } from '../../../world';
+import type { World } from '../../../world';
 
+// eslint-disable-next-line tslop/no-module-mocking -- next/headers is a framework module the code under test imports directly, and it only works inside a Next request
 jest.unstable_mockModule('next/headers', () => ({ cookies: fakeCookies }));
 
 const { GET, POST } = await import('@/app/api/recipes/[id]/notes/route');

@@ -1,15 +1,9 @@
 'use client';
 
-import {
-  useEffect,
-  useState,
-  useSyncExternalStore,
-  type ReactElement,
-} from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 import { PlayIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import type { StepToken } from '@/lib/cooklang';
 
 import { useRecipeState } from '@/components/recipe/recipe-state';
 import {
@@ -18,6 +12,8 @@ import {
   stopSpeaking,
 } from '@/components/recipe/speaker';
 import { spokenStep } from '@/components/recipe/step-speech';
+import type { ReactElement } from 'react';
+import type { StepToken } from '@/lib/cooklang';
 
 /** A subscription that never fires: whether the browser can speak does not change. */
 function subscribeToNothing(): () => void {

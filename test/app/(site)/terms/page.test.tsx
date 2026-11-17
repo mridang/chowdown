@@ -3,34 +3,35 @@ import { describe, expect, it } from '@jest/globals';
 import TermsPage, { metadata } from '@/app/(site)/terms/page';
 import { html } from '../../../components/render';
 
-const HREF_BACK_TO = /<a [^>]*href="\/"[^>]*>.*Back to Chowdown<\/a>/;
+const HREF_BACK_TO = /<a [^>]*href="\/"[^>]*>.*Back to Chowdown<\/a>/u;
 const HREF_PRIVACY_PRIVACY =
-  /<a [^>]*href="\/privacy"[^>]*>privacy policy<\/a>/;
+  /<a [^>]*href="\/privacy"[^>]*>privacy policy<\/a>/u;
 const HREF_HTTPS_GITHUB =
-  /<a [^>]*href="https:\/\/github\.com\/mridang\/chowdown"[^>]*>GitHub<\/a>/;
-const H1_TERMS_OF = /<h1[^>]*>Terms of Service<\/h1>/;
+  /<a [^>]*href="https:\/\/github\.com\/mridang\/chowdown"[^>]*>GitHub<\/a>/u;
+const H1_TERMS_OF = /<h1[^>]*>Terms of Service<\/h1>/u;
 
 describe('TermsPage', () => {
   const out = html(<TermsPage />);
 
   it('has one heading, the terms’ title', () => {
-    expect(out.match(/<h1/g)).toHaveLength(1);
+    expect(out.match(/<h1/gu)).toHaveLength(1);
     expect(out).toMatch(H1_TERMS_OF);
   });
 
-  it('covers use, recipes, AI, the service, the code, data and contact', () => {
-    for (const heading of [
-      'Using Chowdown',
-      'Your recipes',
-      'Artificial intelligence',
-      'The service',
-      'Open source',
-      'Your data',
-      'Contact',
-    ]) {
-      expect(out).toMatch(new RegExp(`<h2[^>]*>${heading}</h2>`));
-    }
-  });
+  it.each([
+    'Using Chowdown',
+    'Your recipes',
+    'Artificial intelligence',
+    'The service',
+    'Open source',
+    'Your data',
+    'Contact',
+  ])(
+    'covers use, recipes, AI, the service, the code, data and contact (%j)',
+    (heading) => {
+      expect(out).toMatch(new RegExp(`<h2[^>]*>${heading}</h2>`, 'u'));
+    },
+  );
 
   it('calls the AI import and tagging a best effort', () => {
     expect(out).toContain('are a best effort');

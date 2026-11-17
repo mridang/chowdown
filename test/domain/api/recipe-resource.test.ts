@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { Recipe } from '@/domain/db/recipes';
 import { recipeSummary } from '@/domain/api/recipe-resource';
+import type { Recipe } from '@/domain/db/recipes';
 
 const row = (tags: string | null): Recipe =>
   ({

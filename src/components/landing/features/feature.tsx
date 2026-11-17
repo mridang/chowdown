@@ -1,6 +1,5 @@
-import type { ReactElement, ReactNode } from 'react';
-
 import { Eyebrow, Heading } from '@/components/ui/layout';
+import type { ReactElement, ReactNode } from 'react';
 
 /**
  * One selling point: an eyebrow, a heading, a short paragraph and one picture
