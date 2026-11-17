@@ -152,12 +152,7 @@ function toResponse(
   if (body === undefined) {
     return new Response(null, { status, headers });
   }
-  const response = Response.json(body, { status });
-  // eslint-disable-next-line functional/no-loop-statements -- each header replaces the one JSON already set, which a headers init cannot do
-  for (const [name, value] of headers.entries()) {
-    response.headers.set(name, value);
-  }
-  return response;
+  return Response.json(body, { status, headers });
 }
 
 /**
@@ -167,7 +162,7 @@ function toResponse(
  */
 export class ApiController<Ctx = Request> {
   readonly #options: ApiControllerOptions<Ctx>;
-  readonly #endpoints = new Map<HttpMethod, Endpoint<unknown, unknown, Ctx>>();
+  #endpoints = new Map<HttpMethod, Endpoint<unknown, unknown, Ctx>>();
 
   constructor(options: ApiControllerOptions<Ctx> = {}) {
     this.#options = options;
@@ -175,8 +170,10 @@ export class ApiController<Ctx = Request> {
 
   /** Register an endpoint for its method. */
   on<Input, Output>(endpoint: Endpoint<Input, Output, Ctx>): this {
-    // eslint-disable-next-line functional/immutable-data -- registering is what this method is for
-    this.#endpoints.set(endpoint.method, endpoint);
+    this.#endpoints = new Map([
+      ...this.#endpoints,
+      [endpoint.method, endpoint],
+    ]);
     return this;
   }
 
@@ -216,11 +213,13 @@ export class ApiController<Ctx = Request> {
    */
   handlers(): Record<HttpMethod, RouteHandler> {
     return Object.fromEntries(
-      Array.from(this.#endpoints, ([method, endpoint]) => [
-        method,
-        (async (request, route = {}) =>
-          this.#run(endpoint, request, route)) satisfies RouteHandler,
-      ]),
+      Array.from(
+        this.#endpoints,
+        ([method, endpoint]): [HttpMethod, RouteHandler] => [
+          method,
+          async (request, route = {}) => this.#run(endpoint, request, route),
+        ],
+      ),
     ) as Record<HttpMethod, RouteHandler>;
   }
 }

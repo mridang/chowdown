@@ -35,7 +35,7 @@ interface ContextTracing {
 const MAX_TEXT = 256;
 
 /** The tracing API once loaded; `null` where there is none. */
-// eslint-disable-next-line functional/no-let -- the loaded module is remembered across requests, by design
+// eslint-disable-next-line functional/no-let -- the module is loaded once, on first use, and remembered for later calls
 let loaded: ContextTracing | null | undefined;
 
 /**
@@ -72,13 +72,13 @@ async function withActiveSpan(
       // Context is a convenience: it must never fail a request.
     }
   };
-  if (loaded === undefined) {
-    await load()
-      .then(run)
-      .catch(() => undefined);
-  } else {
+  if (loaded !== undefined) {
     run(loaded);
+    return;
   }
+  await load()
+    .then(run)
+    .catch(() => undefined);
 }
 
 /** The attributes worth keeping: defined, and a string, a finite number or a boolean. */
@@ -94,7 +94,7 @@ function accepted(attributes: ContextAttributes): [string, ContextValue][] {
       ) {
         return [[key, value]];
       }
-      // Anything else is not kept.
+      // Anything else (an object, undefined, NaN) is not kept.
       return [];
     },
   );
@@ -112,16 +112,17 @@ export async function setErrorContext(
 ): Promise<void> {
   try {
     const kept = accepted(attributes);
-    if (kept.length > 0) {
-      await withActiveSpan((span) => {
-        // eslint-disable-next-line functional/no-loop-statements -- each attribute is set on the span as a side effect
-        for (const [key, value] of kept) {
-          span.setAttribute(key, value);
-        }
-      });
+    if (kept.length === 0) {
+      return;
     }
+    await withActiveSpan((span) => {
+      // eslint-disable-next-line functional/no-loop-statements -- the loop only sets each attribute on the span
+      for (const [key, value] of kept) {
+        span.setAttribute(key, value);
+      }
+    });
   } catch {
-    // Context is a convenience: it must never fail a request.
+    // Never rejects: context is a courtesy to whoever reads the error.
   }
 }
 

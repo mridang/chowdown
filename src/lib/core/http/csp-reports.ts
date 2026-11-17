@@ -1,5 +1,3 @@
-const START_COLON_INLINE_OR_EVAL =
-  /^(?:inline|eval|self|trusted-types-sink|wasm-eval)$/u;
 /**
  * @packageDocumentation
  *
@@ -35,6 +33,9 @@ export interface ReportSummary {
   readonly source: string;
 }
 
+/** The keywords a browser reports for a block, instead of an address. */
+const BLOCKED_KEYWORD = /^(?:inline|eval|self|trusted-types-sink|wasm-eval)$/u;
+
 /** The most reports taken from one request. */
 export const MAX_REPORTS_PER_REQUEST = 20;
 
@@ -53,7 +54,8 @@ function short(value: unknown, limit: number): string {
     return '';
   }
   // Control characters (a line break in a log line could pass for another line) become spaces.
-  const printable = Array.from(value.slice(0, limit * 2), (char) => {
+  const head = value.slice(0, limit * 2);
+  const printable = Array.from(head, (char) => {
     const code = char.codePointAt(0) ?? 0;
     return code < 32 || code === 127 ? ' ' : char;
   }).join('');
@@ -65,7 +67,11 @@ function field(
   body: Readonly<Record<string, unknown>>,
   ...keys: readonly string[]
 ): string {
-  return keys.map((key) => body[key]).find((v) => typeof v === 'string') ?? '';
+  return (
+    keys
+      .map((key) => body[key])
+      .find((v): v is string => typeof v === 'string') ?? ''
+  );
 }
 
 /** The path of an address, without its origin, query or fragment; '' when it is not one. */
@@ -82,7 +88,7 @@ function pathOf(address: string): string {
  * keywords browsers use (`inline`, `eval`, `self`), or just the origin.
  */
 function blockedOf(address: string): string {
-  if (address === '' || START_COLON_INLINE_OR_EVAL.test(address)) {
+  if (address === '' || BLOCKED_KEYWORD.test(address)) {
     return address;
   }
   try {
@@ -99,16 +105,6 @@ function fromExtension(body: Readonly<Record<string, unknown>>): boolean {
     field(body, 'blockedURL', 'blocked-uri'),
     field(body, 'sourceFile', 'source-file'),
   ].some((address) => EXTENSION_SCHEME.test(address));
-}
-
-/** The one CSP report in a legacy `csp-report` body, if the body holds one. */
-function legacyCspEntries(
-  body: unknown,
-): readonly (readonly [string, Readonly<Record<string, unknown>>])[] {
-  if (isRecord(body) && isRecord(body['csp-report'])) {
-    return [['csp-violation', body['csp-report']]];
-  }
-  return [];
 }
 
 /** Boil one report body down to a summary. */
@@ -143,6 +139,15 @@ function summarise(
   };
 }
 
+/** The single report a body in the one-report format carries, if it does. */
+function singleReport(
+  body: unknown,
+): readonly (readonly [string, Readonly<Record<string, unknown>>])[] {
+  return isRecord(body) && isRecord(body['csp-report'])
+    ? [['csp-violation', body['csp-report']]]
+    : [];
+}
+
 /**
  * The reports in a request body, whichever format it came in, as summaries,
  * leaving out anything an extension caused and keeping at most
@@ -158,11 +163,10 @@ export function summariseReports(body: unknown): readonly ReportSummary[] {
           ? [[short(entry['type'], 40), entry['body']]]
           : [],
       )
-    : legacyCspEntries(body);
+    : singleReport(body);
   return entries
     .slice(0, MAX_REPORTS_PER_REQUEST)
-    .values()
-    .filter(([, report]) => !fromExtension(report))
-    .map(([type, report]) => summarise(type, report))
-    .toArray();
+    .flatMap(([type, report]) =>
+      fromExtension(report) ? [] : [summarise(type, report)],
+    );
 }

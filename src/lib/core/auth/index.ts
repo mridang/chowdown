@@ -7,11 +7,11 @@
  */
 export {
   getCurrentUser,
+  getLiveSessionUid,
   getSession,
   getSessionUid,
-  getLiveSessionUid,
 } from './current-user';
 export { setSessionCookie } from './session-cookie';
-export { type FlowStart, startFlowCookies, finishFlow } from './flow-cookies';
-export { crossSiteRefusal, type Caller, requireSignedIn } from './guard';
-export { type GoogleAuthKitConfig, GoogleAuthKit } from './google-auth-kit';
+export { finishFlow, startFlowCookies, type FlowStart } from './flow-cookies';
+export { crossSiteRefusal, requireSignedIn, type Caller } from './guard';
+export { GoogleAuthKit, type GoogleAuthKitConfig } from './google-auth-kit';

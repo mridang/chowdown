@@ -16,7 +16,7 @@ export const STATE_TTL_SECONDS = 600;
 export const SIGN_IN_PURPOSE = 'signin';
 
 /** A fresh `state` for the given purpose: `<purpose>.<random>`. */
-// eslint-disable-next-line unicorn/no-keyword-prefix -- the name is exported from its module and used by other modules
+// eslint-disable-next-line unicorn/no-keyword-prefix -- newState is an exported name of the module's public surface, so it is not renamed
 export function newState(purpose: string): string {
   return `${purpose}.${crypto.randomUUID()}`;
 }
@@ -42,10 +42,10 @@ export function checkState(
   validPurposes: readonly string[],
 ): StateCheck {
   const purpose = state ? purposeOf(state, validPurposes) : undefined;
-  // A non-empty `expected` that equals `state` means `state` is non-empty too.
-  return expected && state === expected && purpose
-    ? { ok: true, purpose }
-    : { ok: false, claimed: purpose };
+  if (state && expected && state === expected && purpose) {
+    return { ok: true, purpose };
+  }
+  return { ok: false, claimed: purpose };
 }
 
 /**

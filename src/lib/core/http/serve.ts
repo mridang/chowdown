@@ -19,8 +19,13 @@
  */
 
 import { setErrorContext } from '../observability/context';
-// eslint-disable-next-line unicorn/no-keyword-prefix -- newNonce is the name this file shares with the other apps
-import { buildCsp, cspSurfaceFor, forwardedHeaders, newNonce } from './csp';
+import {
+  buildCsp,
+  cspSurfaceFor,
+  forwardedHeaders,
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- `newNonce` is the name ./csp exports, and an import must not be renamed
+  newNonce,
+} from './csp';
 import {
   edgeCache,
   edgeCacheKey,
@@ -76,6 +81,12 @@ interface Timing {
   readonly edge: 'hit' | 'miss' | 'skip';
   /** Milliseconds the app took, when it was asked. */
   readonly appMs?: number;
+}
+
+/** The answer to a request, and what happened on the way to it. */
+interface Answered {
+  readonly response: Response;
+  readonly timing: Timing;
 }
 
 /** Milliseconds as `Server-Timing` wants them: a number with at most one decimal. */
@@ -142,7 +153,7 @@ async function answer(
     pages = EDGE_CACHED_PAGES,
     queryParams = CACHED_QUERY_PARAMS,
   }: ServeDeps,
-): Promise<{ readonly response: Response; readonly timing: Timing }> {
+): Promise<Answered> {
   const refused = await edgeLimitRefusal(request, env, limits);
   if (refused) {
     return {
@@ -160,16 +171,17 @@ async function answer(
     isEdgeCacheable(request, pages, limits.sessionCookie, queryParams)
       ? edgeCacheKey(request, env.CF_VERSION_METADATA?.id ?? 'dev', queryParams)
       : undefined;
-  const lookedUp = Boolean(cache && key);
-  const hit = cache && key ? await cache.match(key) : undefined;
-  if (hit) {
-    return {
-      response: applyResponseHeaders(
-        request,
-        await withFreshNonce(hit, nonce, csp),
-      ),
-      timing: { edge: 'hit' },
-    };
+  if (cache && key) {
+    const hit = await cache.match(key);
+    if (hit) {
+      return {
+        response: applyResponseHeaders(
+          request,
+          await withFreshNonce(hit, nonce, csp),
+        ),
+        timing: { edge: 'hit' },
+      };
+    }
   }
   const forwarded = new Request(request, {
     headers: forwardedHeaders(request.headers, csp, nonce),
@@ -192,6 +204,6 @@ async function answer(
   }
   return {
     response: applyResponseHeaders(request, response),
-    timing: { edge: lookedUp ? 'miss' : 'skip', appMs },
+    timing: { edge: cache && key ? 'miss' : 'skip', appMs },
   };
 }

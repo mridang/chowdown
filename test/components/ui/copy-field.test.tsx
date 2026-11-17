@@ -3,9 +3,12 @@ import { describe, expect, it } from '@jest/globals';
 import { CopyField } from '@/components/ui/copy-field';
 import { html } from '../render';
 
-const BUTTON_TYPE_BUTTON = /<button type="button"[^>]*>.*Copy<\/button>/u;
-const CODE_ARIA_LABEL =
-  /<code[^>]*aria-label="MCP server address"[^>]*>https:\/\/app\.test\/mcp<\/code>/u;
+/** Matches mcp address code. */
+const MCP_ADDRESS_CODE =
+  /<fieldset[^>]*aria-label="MCP server address"[^>]*><code[^>]*>https:\/\/app\.test\/mcp<\/code><\/fieldset>/u;
+
+/** Matches copy button. */
+const COPY_BUTTON = /<button type="button"[^>]*>.*Copy<\/button>/u;
 
 describe('CopyField', () => {
   const out = html(
@@ -13,11 +16,11 @@ describe('CopyField', () => {
   );
 
   it('shows the value, named for assistive technology', () => {
-    expect(out).toMatch(CODE_ARIA_LABEL);
+    expect(out).toMatch(MCP_ADDRESS_CODE);
   });
 
   it('has a Copy button that does not submit a form', () => {
-    expect(out).toMatch(BUTTON_TYPE_BUTTON);
+    expect(out).toMatch(COPY_BUTTON);
   });
 
   it('does not claim to have copied anything yet', () => {

@@ -10,23 +10,17 @@ export type LogSpy = jest.SpiedFunction<typeof console.info>;
  * to look at them.
  */
 export function quietSecurityLogs() {
-  const spies = new Map<'info' | 'warn', LogSpy>();
+  const spies: Partial<Record<'info' | 'warn', LogSpy>> = {};
   beforeEach(() => {
-    spies.set(
-      'info',
-      jest.spyOn(console, 'info').mockImplementation(() => {}),
-    );
-    spies.set(
-      'warn',
-      jest.spyOn(console, 'warn').mockImplementation(() => {}),
-    );
+    spies.info = jest.spyOn(console, 'info').mockImplementation(() => {});
+    spies.warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
   });
   afterEach(() => {
-    spies.get('info')?.mockRestore();
-    spies.get('warn')?.mockRestore();
+    spies.info?.mockRestore();
+    spies.warn?.mockRestore();
   });
   return {
-    info: () => spies.get('info')!,
-    warn: () => spies.get('warn')!,
+    info: () => spies.info!,
+    warn: () => spies.warn!,
   };
 }

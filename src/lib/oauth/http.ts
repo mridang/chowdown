@@ -9,7 +9,8 @@
 import { readFormBody } from '@/lib/core/api';
 import type { FormBody } from '@/lib/core/api';
 
-const BEARER = /^Bearer\s+(\S+)$/iu;
+/** An `Authorization: Bearer <token>` header, capturing the token. */
+const BEARER_HEADER = /^Bearer\s+(\S+)$/iu;
 
 /**
  * CORS for endpoints a browser-based client may call. The MCP headers are
@@ -21,7 +22,8 @@ const BEARER = /^Bearer\s+(\S+)$/iu;
  * 405 instead of a CORS failure. `Retry-After` is exposed so a page can back
  * off when it is rate limited.
  */
-export const CORS_HEADERS = {
+// eslint-disable-next-line tslop/no-known-value-widening -- callers index these headers by name, which the literal type does not allow
+export const CORS_HEADERS: Readonly<Record<string, string>> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': [
@@ -80,13 +82,13 @@ export function oauthError(
 /** The token from an `Authorization: Bearer …` header, if present. */
 export function bearerToken(request: Request): string | undefined {
   const header = request.headers.get('authorization') ?? '';
-  const match = BEARER.exec(header);
+  const match = BEARER_HEADER.exec(header);
   return match?.[1];
 }
 
 /** Anything that looks up a submitted form field by name (`URLSearchParams` and `FormData` both do). */
 export type FormFields = Readonly<{
-  get(name: string): FormDataEntryValue | null;
+  get(name: string): FormDataEntryValue | null | undefined;
 }>;
 
 /** The most a token, revocation or consent form may weigh. Real ones are a few hundred bytes; the PKCE verifier, code and tokens are the bulk. */
@@ -126,6 +128,8 @@ export function formFailure(
     case 'unreadable': {
       return oauthError('invalid_request', 'The request body is not readable.');
     }
-    // no default
+    default: {
+      return form satisfies never;
+    }
   }
 }

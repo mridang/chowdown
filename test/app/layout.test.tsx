@@ -4,24 +4,28 @@ import { BRAND_URL, COLOR_SCHEME, INDEX_BY_DEFAULT } from '@/app/_brand';
 import manifest from '@/app/manifest';
 import { html } from '../components/render';
 
-const HTML_LANG_EN = /<html lang="en" class="fonts-on-html" data-test="yes"/u;
-const START_PERCENT_S_ANY_PLUS = /^%s · .+/u;
+/** Matches title template format. */
+const TITLE_TEMPLATE_FORMAT = /^%s · .+/u;
+
+/** Matches html element opening. */
+const HTML_ELEMENT_OPENING =
+  /<html lang="en" class="fonts-on-html" data-test="yes"/u;
 
 // The stylesheet, the fonts (which only work inside the Next compiler) and the
 // two scripts are not what is under test: the frame around the page is.
-// eslint-disable-next-line tslop/no-module-mocking -- a stylesheet cannot be loaded by Jest
+// eslint-disable-next-line tslop/no-module-mocking -- @/app/globals.css is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/app/globals.css', () => ({}));
-// eslint-disable-next-line tslop/no-module-mocking -- @/app/_fonts is imported directly by the code under test, which has no parameter to take it instead
+// eslint-disable-next-line tslop/no-module-mocking -- @/app/_fonts is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/app/_fonts', () => ({
   HTML_CLASS: 'fonts-on-html',
   BODY_CLASS: 'classes-on-body',
   HTML_ATTRIBUTES: { 'data-test': 'yes' },
 }));
-// eslint-disable-next-line tslop/no-module-mocking -- @/components/site/service-worker is imported directly by the code under test, which has no parameter to take it instead
+// eslint-disable-next-line tslop/no-module-mocking -- @/components/site/service-worker is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/components/site/service-worker', () => ({
   ServiceWorker: () => <i id="service-worker" />,
 }));
-// eslint-disable-next-line tslop/no-module-mocking -- @/components/site/theme-script is imported directly by the code under test, which has no parameter to take it instead
+// eslint-disable-next-line tslop/no-module-mocking -- @/components/site/theme-script is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/components/site/theme-script', () => ({
   ThemeScript: () => <i id="theme-script" />,
 }));
@@ -50,7 +54,7 @@ describe('RootLayout', () => {
 
   it('puts the app’s name after a page’s own title', () => {
     expect(metadata.title).toMatchObject({
-      template: expect.stringMatching(START_PERCENT_S_ANY_PLUS),
+      template: expect.stringMatching(TITLE_TEMPLATE_FORMAT),
     });
   });
 
@@ -74,7 +78,7 @@ describe('RootLayout', () => {
         <main>hello</main>
       </RootLayout>,
     );
-    expect(out).toMatch(HTML_LANG_EN);
+    expect(out).toMatch(HTML_ELEMENT_OPENING);
     expect(out).toContain('<body class="classes-on-body">');
     expect(out.indexOf('theme-script')).toBeLessThan(out.indexOf('<main>'));
     expect(out).toContain('<main>hello</main>');

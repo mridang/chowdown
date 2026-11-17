@@ -4,7 +4,8 @@ import { DELETE } from '@/app/api/sessions/self/route';
 import { SESSION_COOKIE } from '@/domain/auth/app';
 import { appRequest } from '../../../../domain/auth/auth-test-kit';
 
-const EXPIRES_THU_JAN = /expires=Thu, 01 Jan 1970/iu;
+/** Matches epoch expiry. */
+const EPOCH_EXPIRY = /expires=Thu, 01 Jan 1970/iu;
 
 describe('DELETE /api/sessions/self', () => {
   it('clears the session cookie and answers 204', async () => {
@@ -12,7 +13,7 @@ describe('DELETE /api/sessions/self', () => {
     expect(res.status).toBe(204);
     const cookie = res.headers.get('set-cookie') ?? '';
     expect(cookie).toContain(`${SESSION_COOKIE}=;`);
-    expect(cookie).toMatch(EXPIRES_THU_JAN);
+    expect(cookie).toMatch(EPOCH_EXPIRY);
   });
 
   it('is idempotent: signing out when already signed out is fine', async () => {

@@ -18,7 +18,7 @@ export function safeReturnPath(
   }
   // Backslashes are treated as slashes by browsers (`/\evil.example`), and
   // control characters can smuggle in line breaks.
-  return Array.from(value).some(
+  return Iterator.from(value).some(
     (char) => char === '\\' || (char.codePointAt(0) ?? 0) < 0x20,
   )
     ? undefined

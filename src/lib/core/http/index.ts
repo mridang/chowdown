@@ -6,13 +6,8 @@
  * security/cache response headers, the client address, and the per-app surface
  * these read.
  */
-export {
-  type ServeEnv,
-  type ServeApp,
-  type ServeDeps,
-  serverTiming,
-  serve,
-} from './serve';
+export type { ServeEnv, ServeApp, ServeDeps } from './serve';
+export { serverTiming, serve } from './serve';
 export { EDGE_LIMITS } from './extras';
 export {
   isEdgeCacheable,
@@ -21,16 +16,18 @@ export {
   withFreshNonce,
   edgeCache,
 } from './edge-cache';
+export type {
+  RateLimitBinding,
+  Counted,
+  RefusalStyle,
+  ClassSpec,
+  GenericClass,
+  EdgeLimitEnv,
+  EdgeLimits,
+} from './edge-limits';
 export {
-  type RateLimitBinding,
-  type Counted,
-  type RefusalStyle,
-  type ClassSpec,
-  type GenericClass,
   GENERIC_CLASSES,
   OVERALL_BINDING,
-  type EdgeLimitEnv,
-  type EdgeLimits,
   genericClass,
   genericLimits,
   counterKey,
@@ -43,20 +40,17 @@ export {
   REPORTING_ENDPOINTS,
   CSP_REPORT_DIRECTIVES,
 } from './reporting';
+export type { CspSurface } from './csp';
 export {
-  // eslint-disable-next-line unicorn/no-keyword-prefix -- the name is exported from its module and used by other modules
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- re-export of the public name from csp.ts
   newNonce,
-  type CspSurface,
   buildCsp,
   cspSurfaceFor,
   nonceOf,
   forwardedHeaders,
 } from './csp';
-export {
-  type ReportSummary,
-  MAX_REPORTS_PER_REQUEST,
-  summariseReports,
-} from './csp-reports';
+export type { ReportSummary } from './csp-reports';
+export { MAX_REPORTS_PER_REQUEST, summariseReports } from './csp-reports';
 export {
   SECURITY_HEADERS,
   resourcePolicyFor,

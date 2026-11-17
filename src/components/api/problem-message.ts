@@ -12,7 +12,7 @@
 function stringMember(body: unknown, key: string): string | undefined {
   const value: unknown =
     typeof body === 'object' && body !== null
-      ? Object.entries(body).find(([name]) => name === key)?.[1]
+      ? new Map(Object.entries(body)).get(key)
       : undefined;
   return typeof value === 'string' ? value : undefined;
 }
@@ -21,7 +21,7 @@ function stringMember(body: unknown, key: string): string | undefined {
 function stringListMember(body: unknown, key: string): readonly string[] {
   const value: unknown =
     typeof body === 'object' && body !== null
-      ? Object.entries(body).find(([name]) => name === key)?.[1]
+      ? new Map(Object.entries(body)).get(key)
       : undefined;
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string')

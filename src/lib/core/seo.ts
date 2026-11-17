@@ -19,8 +19,7 @@ import {
  * What is particular to the app (its schema.org category, what a visitor must
  * have, and its feature list) comes from `@/utils/site`.
  */
-export function landingJsonLd(): Readonly<Record<string, unknown>> {
-  // eslint-disable-next-line tslop/no-known-value-widening -- JSON-LD is an open dictionary of schema.org terms
+export function landingJsonLd() {
   return {
     '@context': 'https://schema.org',
     '@graph': [

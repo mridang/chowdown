@@ -15,8 +15,8 @@ import {
   RenameTool,
   fixtureContext,
 } from './tool-fixtures';
-import type { FixtureContext } from './tool-fixtures';
 import type { FailureExplainer, FailureLog } from '@/lib/mcp';
+import type { FixtureContext } from './tool-fixtures';
 
 /** The text of a result's one piece of content. */
 const textOf = (result: { content: readonly { text: string }[] }) =>
@@ -128,14 +128,13 @@ describe('ToolInvoker.invoke', () => {
     ).rejects.toBeInstanceOf(UnknownToolError);
   });
 
-  it.each([undefined, {}, { name: '' }, { name: 7 }])(
-    'throws a malformed request when the call names no tool (%j)',
-    async (params) => {
+  it('throws a malformed request when the call names no tool', async () => {
+    for (const params of [undefined, {}, { name: '' }, { name: 7 }]) {
       await expect(
         invokerFor().invoke(params, fixtureContext()),
       ).rejects.toBeInstanceOf(InvalidToolArgumentsError);
-    },
-  );
+    }
+  });
 
   it('throws a malformed request when the arguments are not an object', async () => {
     await expect(

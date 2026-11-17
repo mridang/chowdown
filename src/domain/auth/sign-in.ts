@@ -49,11 +49,7 @@ export function missingSignInSettings(env: CloudflareEnv): string[] {
     ['GOOGLE_OAUTH_CLIENT_SECRET', env.GOOGLE_OAUTH_CLIENT_SECRET],
     ['SESSION_SECRET', env.SESSION_SECRET],
   ];
-  return required
-    .values()
-    .filter(([, value]) => !value)
-    .map(([name]) => name)
-    .toArray();
+  return required.flatMap(([name, value]) => (value ? [] : [name]));
 }
 
 /** Finish a sign-in: record the person, issue their session and send them on. */

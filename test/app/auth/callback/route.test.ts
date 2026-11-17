@@ -25,7 +25,7 @@ import {
   installEnv,
   jar,
 } from '../../../domain/auth/auth-test-kit';
-import type { User } from '@/domain/db/users';
+import type { User } from '@/domain/auth/store';
 
 const person = {
   id: 4,
@@ -59,7 +59,7 @@ const OTHER_FLOWS = Object.fromEntries(
   ]),
 );
 
-// eslint-disable-next-line tslop/no-module-mocking -- @/domain/auth/store is imported directly by the code under test, which has no parameter to take it instead
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/auth/store is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/domain/auth/store', () => ({
   upsertGoogleUser,
   // The kit pulls in the current-user lookup, which reads these; a sign-in
@@ -67,7 +67,7 @@ jest.unstable_mockModule('@/domain/auth/store', () => ({
   getUserById: jest.fn(async () => person),
   getSessionEpoch: jest.fn(async () => 0),
 }));
-// eslint-disable-next-line tslop/no-module-mocking -- @/domain/auth/hooks is imported directly by the code under test, which has no parameter to take it instead
+// eslint-disable-next-line tslop/no-module-mocking -- @/domain/auth/hooks is imported directly by the code under test, which has no injection point; ESM needs the module replaced before the import
 jest.unstable_mockModule('@/domain/auth/hooks', () => ({
   afterSignIn,
   OTHER_FLOWS,

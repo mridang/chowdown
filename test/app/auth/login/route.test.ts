@@ -16,7 +16,8 @@ import {
 } from '../../../domain/auth/auth-test-kit';
 import type { NextRequest, NextResponse } from 'next/server';
 
-const SIGNIN = /^signin\./u;
+/** Matches the sign-in state prefix. */
+const SIGNIN_STATE_PREFIX = /^signin\./u;
 
 // The redirect path answers a NextResponse (it sets cookies); the 503 path
 // answers a plain problem Response. Only the redirect cases read cookies.
@@ -58,7 +59,7 @@ describe('GET /auth/login', () => {
   it('keeps the same one-time state in the address and in an httpOnly cookie', async () => {
     const res = await redirect(appRequest('GET', '/auth/login'));
     const state = locationOf(res)?.searchParams.get('state');
-    expect(state).toMatch(SIGNIN);
+    expect(state).toMatch(SIGNIN_STATE_PREFIX);
     expect(res.cookies.get(STATE_COOKIE)).toMatchObject({
       value: state,
       httpOnly: true,
@@ -87,7 +88,7 @@ describe('GET /auth/login', () => {
     'https://evil.example/',
     '//evil.example',
     String.raw`/\evil.example`,
-    // eslint-disable-next-line no-script-url -- the value is a javascript: URL on purpose, to prove it is refused
+    // eslint-disable-next-line no-script-url -- a script URL is the unsafe returnTo the route must refuse
     'javascript:alert(1)',
     '/a\r\nb',
   ])('refuses to remember the returnTo %s', async (target) => {
@@ -152,8 +153,8 @@ describe('GET /auth/login on a server that is not set up', () => {
   it('names every missing setting, and never a value', async () => {
     restore();
     restore = installEnv({ GOOGLE_OAUTH_CLIENT_ID: 'visible-id-value' });
-    const res = await GET(appRequest('GET', '/auth/login'));
-    const text = await res.text();
+    const response = await GET(appRequest('GET', '/auth/login'));
+    const text = await response.text();
     expect(text).toContain('GOOGLE_OAUTH_CLIENT_SECRET, SESSION_SECRET');
     expect(text).not.toContain('visible-id-value');
   });

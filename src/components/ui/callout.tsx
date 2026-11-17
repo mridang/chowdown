@@ -28,20 +28,19 @@ const LAYOUTS = {
 export function Callout({
   tone = 'neutral',
   layout = 'inline',
-  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
-  className,
+  className: cssClasses,
   children,
 }: Readonly<{
   tone?: keyof typeof TONES;
   layout?: keyof typeof LAYOUTS;
-  // eslint-disable-next-line unicorn/no-keyword-prefix -- className is the React prop name
+  // eslint-disable-next-line unicorn/no-keyword-prefix -- React prop name
   className?: string;
   children: ReactNode;
 }>): ReactElement {
   return (
     <div
       role={tone === 'error' ? 'alert' : undefined}
-      className={cn(TONES[tone], LAYOUTS[layout], className)}
+      className={cn(TONES[tone], LAYOUTS[layout], cssClasses)}
     >
       {children}
     </div>

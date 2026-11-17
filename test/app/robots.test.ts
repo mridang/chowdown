@@ -3,7 +3,8 @@ import { describe, expect, it } from '@jest/globals';
 import { BRAND_URL, CRAWLABLE_PATHS, PRIVATE_PATHS } from '@/app/_brand';
 import robots from '@/app/robots';
 
-const ESC_END = /\$$/u;
+/** Matches trailing dollar. */
+const TRAILING_DOLLAR = /\$$/u;
 
 type Group = { userAgent: string; allow: string[]; disallow: string[] };
 
@@ -17,18 +18,14 @@ describe('robots.txt', () => {
    * wins, `Allow` wins a tie, `$` anchors the end and `*` matches anything.
    */
   const allowed = (target: string): boolean => {
-    const matches = (pattern: string): boolean => {
-      const escaped = pattern.replaceAll(/[.+?^{}()|[\]\\]/gu, String.raw`\$&`);
-      return new RegExp(`^${escaped.replaceAll('*', '.*')}`, 'u').test(target);
-    };
+    const escaped = String.raw`\$&`;
+    const matches = (pattern: string): boolean =>
+      new RegExp(
+        `^${pattern.replaceAll(/[.+?^{}()|[\]\\]/gu, escaped).replaceAll('*', '.*')}`,
+        'u',
+      ).test(target);
     const hit = (patterns: string[]): number =>
-      Math.max(
-        -1,
-        ...patterns
-          .values()
-          .filter((p) => matches(p))
-          .map((p) => p.length),
-      );
+      Math.max(-1, ...patterns.flatMap((p) => (matches(p) ? [p.length] : [])));
     return hit(rule.allow) >= hit(rule.disallow);
   };
 
@@ -42,12 +39,11 @@ describe('robots.txt', () => {
     expect(rule.disallow).toEqual([...PRIVATE_PATHS]);
   });
 
-  it.each(CRAWLABLE_PATHS)(
-    'lets crawlers read each public page (%j)',
-    (path) => {
-      expect(allowed(path.replace(ESC_END, ''))).toBe(true);
-    },
-  );
+  it('lets crawlers read each public page', () => {
+    for (const path of CRAWLABLE_PATHS) {
+      expect(allowed(path.replace(TRAILING_DOLLAR, ''))).toBe(true);
+    }
+  });
 
   // A bare `Disallow: /app` is a prefix rule and once hid /apple-icon.png too.
   it.each([
